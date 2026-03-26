@@ -61,16 +61,21 @@ const BrokenItemFallback = ({ node }: { node: ItemNode }) => {
 
 export const ItemRenderer = ({ node }: { node: ItemNode }) => {
   const ref = useRef<Group>(null!)
+  const isGhost = !!(node.metadata as Record<string, unknown> | null)?.isGhostPreview
 
   useRegistry(node.id, node.type, ref)
 
   return (
     <group position={node.position} ref={ref} rotation={node.rotation} visible={node.visible}>
-      <ErrorBoundary fallback={<BrokenItemFallback node={node} />}>
-        <Suspense fallback={<PreviewModel node={node} />}>
-          <ModelRenderer node={node} />
-        </Suspense>
-      </ErrorBoundary>
+      {isGhost ? (
+        <GhostPreviewWrapper node={node} />
+      ) : (
+        <ErrorBoundary fallback={<BrokenItemFallback node={node} />}>
+          <Suspense fallback={<PreviewModel node={node} />}>
+            <ModelRenderer node={node} />
+          </Suspense>
+        </ErrorBoundary>
+      )}
       {node.children?.map((childId) => (
         <NodeRenderer key={childId} nodeId={childId} />
       ))}
@@ -97,6 +102,42 @@ const PreviewModel = ({ node }: { node: ItemNode }) => {
         args={[node.asset.dimensions[0], node.asset.dimensions[1], node.asset.dimensions[2]]}
       />
     </mesh>
+  )
+}
+
+// Ghost preview material: semi-transparent with blue tint for AI preview nodes
+const ghostMaterial = new MeshStandardNodeMaterial({
+  color: '#4A9EFF',
+  roughness: 0.8,
+  metalness: 0.1,
+  transparent: true,
+  opacity: 0.5,
+  depthWrite: false,
+})
+
+// Ghost edge highlight material (wireframe overlay)
+const ghostEdgeMaterial = new MeshStandardNodeMaterial({
+  color: '#4A9EFF',
+  roughness: 1,
+  metalness: 0,
+  transparent: true,
+  opacity: 0.8,
+  wireframe: true,
+})
+
+const GhostPreviewWrapper = ({ node }: { node: ItemNode }) => {
+  const [w, h, d] = node.asset.dimensions
+  return (
+    <group position-y={h / 2}>
+      {/* Semi-transparent fill */}
+      <mesh material={ghostMaterial}>
+        <boxGeometry args={[w, h, d]} />
+      </mesh>
+      {/* Wireframe edge highlight */}
+      <mesh material={ghostEdgeMaterial}>
+        <boxGeometry args={[w, h, d]} />
+      </mesh>
+    </group>
   )
 }
 

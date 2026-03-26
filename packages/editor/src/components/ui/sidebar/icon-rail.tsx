@@ -1,7 +1,7 @@
 'use client'
 
 import { useViewer } from '@pascal-app/viewer'
-import { Moon, Ruler, Sun } from 'lucide-react'
+import { Moon, Ruler, Sparkles, Sun } from 'lucide-react'
 import { motion } from 'motion/react'
 import { type ReactNode, useEffect, useState } from 'react'
 import {
@@ -11,7 +11,7 @@ import {
 } from './../../../components/ui/primitives/tooltip'
 import { cn } from './../../../lib/utils'
 
-export type PanelId = 'site' | 'settings'
+export type PanelId = 'site' | 'settings' | 'ai'
 
 interface IconRailProps {
   activePanel: PanelId
@@ -20,9 +20,10 @@ interface IconRailProps {
   className?: string
 }
 
-const panels: { id: PanelId; iconSrc: string; label: string }[] = [
+const panels: { id: PanelId; iconSrc?: string; label: string; lucideIcon?: string }[] = [
   { id: 'site', iconSrc: '/icons/level.png', label: 'Site' },
   { id: 'settings', iconSrc: '/icons/settings.png', label: 'Settings' },
+  { id: 'ai', label: 'AI Assistant', lucideIcon: 'sparkles' },
 ]
 
 export function IconRail({ activePanel, onPanelChange, appMenuButton, className }: IconRailProps) {
@@ -62,14 +63,23 @@ export function IconRail({ activePanel, onPanelChange, appMenuButton, className 
                 onClick={() => onPanelChange(panel.id)}
                 type="button"
               >
-                <img
-                  alt={panel.label}
-                  className={cn(
-                    'h-6 w-6 object-contain transition-all',
-                    !isActive && 'opacity-50 saturate-0',
-                  )}
-                  src={panel.iconSrc}
-                />
+                {panel.iconSrc ? (
+                  <img
+                    alt={panel.label}
+                    className={cn(
+                      'h-6 w-6 object-contain transition-all',
+                      !isActive && 'opacity-50 saturate-0',
+                    )}
+                    src={panel.iconSrc}
+                  />
+                ) : panel.lucideIcon === 'sparkles' ? (
+                  <Sparkles
+                    className={cn(
+                      'h-5 w-5 transition-all',
+                      isActive ? 'text-sidebar-primary' : 'opacity-50 saturate-0',
+                    )}
+                  />
+                ) : null}
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">{panel.label}</TooltipContent>

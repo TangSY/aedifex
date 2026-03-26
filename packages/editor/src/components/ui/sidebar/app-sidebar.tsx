@@ -1,6 +1,7 @@
 'use client'
 
 import { type ReactNode, useEffect, useState } from 'react'
+import { AIChatPanel } from './../../../components/ai/ai-chat-panel'
 import { CommandPalette } from './../../../components/ui/command-palette'
 import { EditorCommands } from './../../../components/ui/command-palette/editor-commands'
 import {
@@ -43,6 +44,8 @@ export function AppSidebar({
         return <SitePanel {...sitePanelProps} />
       case 'settings':
         return <SettingsPanel {...settingsPanelProps} />
+      case 'ai':
+        return <AIChatPanel />
       default:
         return null
     }
