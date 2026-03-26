@@ -55,6 +55,7 @@ const PostProcessingPasses = () => {
   const hasPipelineErrorRef = useRef(false)
   const retryCountRef = useRef(0)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [isWebGPU, setIsWebGPU] = useState<boolean | null>(null)
 
   // Background color uniform — updated every frame via lerp, read by the TSL pipeline.
   // Initialised from the current theme so there's no flash on first render.
@@ -80,8 +81,7 @@ const PostProcessingPasses = () => {
     setPipelineVersion((v) => v + 1)
   }, [])
 
-  // Renderer initialization
-
+  // Renderer initialization + WebGPU backend detection
   useEffect(() => {
     let mounted = true
 
@@ -92,11 +92,24 @@ const PostProcessingPasses = () => {
         }
 
         if (mounted) {
+          // Detect whether the WebGPU backend is active or we fell back to WebGL2.
+          // When WebGPU is unavailable, THREE.WebGPURenderer uses a WebGL2 backend
+          // that lacks GPUDevice — the TSL post-processing pipeline cannot run.
+          const hasWebGPU = !!(renderer as any).backend?.device
+          setIsWebGPU(hasWebGPU)
           setIsInitialized(true)
+
+          if (!hasWebGPU) {
+            console.info(
+              '[viewer] WebGL2 backend detected — post-processing disabled for better performance. ' +
+                'Basic rendering continues via the standard pipeline.',
+            )
+          }
         }
       } catch (error) {
         console.error('[viewer] Failed to initialize renderer for post-processing.', error)
         if (mounted) {
+          setIsWebGPU(false)
           setIsInitialized(false)
         }
       }
@@ -114,9 +127,10 @@ const PostProcessingPasses = () => {
     retryCountRef.current = 0
   }, [])
 
-  // Build / rebuild the post-processing pipeline
+  // Build / rebuild the post-processing pipeline — WebGPU only
   useEffect(() => {
-    if (!(renderer && scene && camera && isInitialized)) {
+    // Skip pipeline entirely on WebGL2 — R3F's default render loop handles basic rendering
+    if (!(renderer && scene && camera && isInitialized && isWebGPU)) {
       return
     }
 
@@ -188,8 +202,6 @@ const PostProcessingPasses = () => {
 
       const gi = giPass.rgb
       const ao = (denoisePass as any).r
-      // const gi = giPass.rgb;
-      // const ao = giPass.a;
 
       // Background detection via alpha: renderer clears with alpha=0 (setClearAlpha(0) in useFrame),
       // so background pixels have scenePassColor.a=0 while geometry pixels have output.a=1.
@@ -292,9 +304,12 @@ const PostProcessingPasses = () => {
       }
       renderPipelineRef.current = null
     }
-  }, [renderer, scene, camera, isInitialized, zoneLayers])
+  }, [renderer, scene, camera, isInitialized, isWebGPU, zoneLayers])
 
   useFrame((_, delta) => {
+    // WebGL2 backend — skip post-processing, let R3F handle basic rendering
+    if (!isWebGPU) return
+
     // Animate background colour toward the current theme target (same lerp as AnimatedBackground)
     bgTarget.current.set(useViewer.getState().theme === 'dark' ? DARK_BG : LIGHT_BG)
     bgCurrent.current.lerp(bgTarget.current, Math.min(delta, 0.1) * 4)

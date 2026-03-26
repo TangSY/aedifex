@@ -9,7 +9,7 @@ import {
   WallSystem,
   WindowSystem,
 } from '@pascal-app/core'
-import { Bvh } from '@react-three/drei'
+import { AdaptiveDpr, Bvh } from '@react-three/drei'
 import { Canvas, extend, type ThreeToJSXElements, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three/webgpu'
@@ -112,6 +112,7 @@ const Viewer: React.FC<ViewerProps> = ({
         renderer.toneMappingExposure = 0.9
         return renderer
       }}
+      performance={{ min: 0.5 }}
       shadows={{
         type: THREE.PCFShadowMap,
         enabled: true,
@@ -143,6 +144,7 @@ const Viewer: React.FC<ViewerProps> = ({
       <WindowSystem />
       <ZoneSystem />
       <PostProcessing />
+      <AdaptiveDpr pixelated />
       {/* <DebugRenderer /> */}
       <GPUDeviceWatcher />
 
