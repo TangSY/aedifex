@@ -76,7 +76,7 @@ export function createProposals(
   useAIChat.getState().setProposals(proposals)
 
   // Apply the first proposal by default
-  if (proposals.length > 0) {
+  if (proposals.length > 0 && proposals[0]) {
     switchToProposal(proposals[0].id)
   }
 

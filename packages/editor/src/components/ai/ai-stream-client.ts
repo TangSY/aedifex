@@ -233,6 +233,20 @@ function parseToolCall(name: string, input: Record<string, unknown>): AIToolCall
         description: (input.description as string) ?? '',
       }
 
+    case 'propose_placement':
+      return {
+        tool: 'propose_placement',
+        question: (input.question as string) ?? '',
+        options: ((input.options as Record<string, unknown>[]) ?? []).map((opt) => ({
+          id: (opt.id as string) ?? '',
+          label: (opt.label as string) ?? '',
+          catalogSlug: (opt.catalogSlug as string) ?? '',
+          position: (opt.position as [number, number, number]) ?? [0, 0, 0],
+          rotationY: (opt.rotationY as number) ?? 0,
+          reason: (opt.reason as string) ?? '',
+        })),
+      }
+
     default:
       return null
   }

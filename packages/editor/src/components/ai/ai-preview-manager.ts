@@ -165,7 +165,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         useScene.getState().updateNode(op.nodeId, {
           position: op.position,
           rotation: op.rotation,
-          metadata: stripTransientMetadata(nodes[op.nodeId]?.metadata),
+          metadata: stripTransientMetadata(nodes[op.nodeId]?.metadata) as Record<string, never>,
         })
         affectedNodeIds.push(op.nodeId)
         break
@@ -179,7 +179,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           })
         }
         useScene.getState().updateNode(op.nodeId, {
-          metadata: stripTransientMetadata(nodes[op.nodeId]?.metadata),
+          metadata: stripTransientMetadata(nodes[op.nodeId]?.metadata) as Record<string, never>,
           // material: op.material, // Material field depends on node schema
         })
         affectedNodeIds.push(op.nodeId)

@@ -1,11 +1,14 @@
 import {
+  type AnyNode,
   type AnyNodeId,
   type AssetInput,
+  type WallNode,
   spatialGridManager,
   useScene,
 } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { resolveCatalogSlug } from './ai-catalog-resolver'
+import { optimizeLayout } from './ai-layout-optimizer'
 import type {
   AIToolCall,
   AddItemToolCall,
@@ -45,14 +48,19 @@ export function validateToolCall(toolCall: AIToolCall): ValidatedOperation[] {
         const fullOp = { ...opRecord, tool: opRecord.type ?? guessToolType(opRecord) } as AIToolCall
         return validateToolCall(fullOp)
       })
+    case 'propose_placement':
+      // propose_placement is not a mutation — it's handled separately by the chat panel
+      return []
   }
 }
 
 /**
  * Validate and resolve all tool calls from a message.
+ * After validation, runs the layout optimizer for post-correction.
  */
 export function validateAllToolCalls(toolCalls: AIToolCall[]): ValidatedOperation[] {
-  return toolCalls.flatMap(validateToolCall)
+  const validated = toolCalls.flatMap(validateToolCall)
+  return optimizeLayout(validated)
 }
 
 // ============================================================================
@@ -117,6 +125,20 @@ function validateAddItem(call: AddItemToolCall): ValidatedAddItem {
             adjustmentReason: 'Collision detected but could not auto-resolve. Placed at requested position.',
           }
         }
+      }
+
+      // Check wall clearance — push item away from walls if too close
+      const wallAdj = adjustForWallClearance(
+        position,
+        asset.dimensions ?? [1, 1, 1],
+        rotation,
+        levelId,
+      )
+      if (wallAdj) {
+        position = wallAdj.position
+        adjustmentReason = adjustmentReason
+          ? `${adjustmentReason} ${wallAdj.reason}`
+          : wallAdj.reason
       }
 
       // Apply slab elevation
@@ -228,6 +250,20 @@ function validateMoveItem(call: MoveItemToolCall): ValidatedMoveItem {
         }
       }
 
+      // Check wall clearance
+      const wallAdj = adjustForWallClearance(
+        position,
+        node.asset.dimensions,
+        rotation,
+        levelId,
+      )
+      if (wallAdj) {
+        position = wallAdj.position
+        adjustmentReason = adjustmentReason
+          ? `${adjustmentReason} ${wallAdj.reason}`
+          : wallAdj.reason
+      }
+
       // Apply slab elevation
       const elevation = spatialGridManager.getSlabElevationForItem(
         levelId,
@@ -326,4 +362,178 @@ function guessToolType(op: Record<string, unknown>): string {
   if ('nodeId' in op && 'position' in op) return 'move_item'
   if ('nodeId' in op) return 'remove_item'
   return 'add_item'
+}
+
+// ============================================================================
+// Wall & Zone Boundary Validation
+// ============================================================================
+
+/** Minimum clearance (meters) between item AABB edge and wall centerline. */
+const WALL_CLEARANCE = 0.15
+
+/**
+ * Collect all WallNode instances belonging to a given level.
+ */
+function getWallsForLevel(levelId: string): WallNode[] {
+  const { nodes } = useScene.getState()
+  const walls: WallNode[] = []
+  const visited = new Set<string>()
+  const queue: string[] = [levelId]
+
+  while (queue.length > 0) {
+    const nodeId = queue.shift()!
+    if (visited.has(nodeId)) continue
+    visited.add(nodeId)
+
+    const node = nodes[nodeId as AnyNodeId] as AnyNode | undefined
+    if (!node) continue
+
+    if (node.type === 'wall') {
+      walls.push(node as WallNode)
+    }
+    if ('children' in node && Array.isArray(node.children)) {
+      for (const childId of node.children) {
+        queue.push(childId as string)
+      }
+    }
+  }
+  return walls
+}
+
+/**
+ * Compute the item's axis-aligned bounding box in the XZ plane.
+ * Returns { minX, maxX, minZ, maxZ }.
+ */
+function getItemAABB(
+  position: [number, number, number],
+  dimensions: [number, number, number],
+  rotation: [number, number, number],
+): { minX: number; maxX: number; minZ: number; maxZ: number } {
+  const [x, , z] = position
+  const [w, , d] = dimensions
+  const yRot = rotation[1]
+  const cos = Math.cos(yRot)
+  const sin = Math.sin(yRot)
+  const halfW = w / 2
+  const halfD = d / 2
+
+  // 4 corners of the rotated footprint
+  const corners: [number, number][] = [
+    [x + (-halfW * cos + halfD * sin), z + (-halfW * sin - halfD * cos)],
+    [x + (halfW * cos + halfD * sin), z + (halfW * sin - halfD * cos)],
+    [x + (halfW * cos - halfD * sin), z + (halfW * sin + halfD * cos)],
+    [x + (-halfW * cos - halfD * sin), z + (-halfW * sin + halfD * cos)],
+  ]
+
+  const xs = corners.map((c) => c[0])
+  const zs = corners.map((c) => c[1])
+  return {
+    minX: Math.min(...xs),
+    maxX: Math.max(...xs),
+    minZ: Math.min(...zs),
+    maxZ: Math.max(...zs),
+  }
+}
+
+/**
+ * Minimum distance from a point to a line segment (in 2D XZ plane).
+ */
+function distPointToSegment(
+  px: number,
+  pz: number,
+  ax: number,
+  az: number,
+  bx: number,
+  bz: number,
+): number {
+  const dx = bx - ax
+  const dz = bz - az
+  const lenSq = dx * dx + dz * dz
+  if (lenSq === 0) return Math.hypot(px - ax, pz - az)
+
+  let t = ((px - ax) * dx + (pz - az) * dz) / lenSq
+  t = Math.max(0, Math.min(1, t))
+  const closestX = ax + t * dx
+  const closestZ = az + t * dz
+  return Math.hypot(px - closestX, pz - closestZ)
+}
+
+/**
+ * Check if an item's AABB overlaps or is too close to any wall.
+ * If so, push the item away from the nearest offending wall.
+ * Returns the adjusted position, or null if no adjustment needed.
+ */
+function adjustForWallClearance(
+  position: [number, number, number],
+  dimensions: [number, number, number],
+  rotation: [number, number, number],
+  levelId: string,
+): { position: [number, number, number]; reason: string } | null {
+  const walls = getWallsForLevel(levelId)
+  if (walls.length === 0) return null
+
+  let [px, py, pz] = position
+  let adjusted = false
+  const reasons: string[] = []
+
+  // Check each wall and push item away if too close
+  for (const wall of walls) {
+    const thickness = wall.thickness ?? 0.2
+    const halfThick = thickness / 2
+    const minClearance = halfThick + WALL_CLEARANCE
+
+    const aabb = getItemAABB([px, py, pz], dimensions, rotation)
+
+    // Check all 4 AABB edge midpoints against the wall segment
+    const testPoints: [number, number][] = [
+      [(aabb.minX + aabb.maxX) / 2, aabb.minZ], // bottom edge center
+      [(aabb.minX + aabb.maxX) / 2, aabb.maxZ], // top edge center
+      [aabb.minX, (aabb.minZ + aabb.maxZ) / 2], // left edge center
+      [aabb.maxX, (aabb.minZ + aabb.maxZ) / 2], // right edge center
+      [aabb.minX, aabb.minZ], // corners
+      [aabb.maxX, aabb.minZ],
+      [aabb.minX, aabb.maxZ],
+      [aabb.maxX, aabb.maxZ],
+    ]
+
+    // Compute wall normal direction (perpendicular to wall segment)
+    const wallDx = wall.end[0] - wall.start[0]
+    const wallDz = wall.end[1] - wall.start[1]
+    const wallLen = Math.hypot(wallDx, wallDz)
+    if (wallLen < 0.001) continue
+
+    // Normal = wall direction rotated 90 degrees
+    const normalX = -wallDz / wallLen
+    const normalZ = wallDx / wallLen
+
+    for (const [tx, tz] of testPoints) {
+      const dist = distPointToSegment(
+        tx, tz,
+        wall.start[0], wall.start[1],
+        wall.end[0], wall.end[1],
+      )
+
+      if (dist < minClearance) {
+        // Determine which side of the wall the item center is on
+        const toCenterX = px - wall.start[0]
+        const toCenterZ = pz - wall.start[1]
+        const side = Math.sign(toCenterX * normalX + toCenterZ * normalZ) || 1
+
+        // Push along wall normal direction (toward the item's side)
+        const pushDist = minClearance - dist + 0.05 // extra 5cm safety margin
+        px += normalX * side * pushDist
+        pz += normalZ * side * pushDist
+        adjusted = true
+        reasons.push(`Pushed away from wall to maintain ${WALL_CLEARANCE}m clearance`)
+        break // Re-check with updated position on next wall
+      }
+    }
+  }
+
+  if (!adjusted) return null
+
+  return {
+    position: [px, py, pz],
+    reason: reasons[0] ?? 'Position adjusted for wall clearance.',
+  }
 }

@@ -39,12 +39,28 @@ export interface BatchOperationsToolCall {
   description: string
 }
 
+export interface PlacementOption {
+  id: string
+  label: string
+  catalogSlug: string
+  position: [number, number, number]
+  rotationY: number
+  reason: string
+}
+
+export interface ProposePlacementToolCall {
+  tool: 'propose_placement'
+  question: string
+  options: PlacementOption[]
+}
+
 export type AIToolCall =
   | AddItemToolCall
   | RemoveItemToolCall
   | MoveItemToolCall
   | UpdateMaterialToolCall
   | BatchOperationsToolCall
+  | ProposePlacementToolCall
 
 // ============================================================================
 // Validated Operation (output of mutation executor)
@@ -146,6 +162,20 @@ export interface Proposal {
 // Scene Context (sent to Claude API)
 // ============================================================================
 
+export interface SceneWallSummary {
+  id: string
+  start: [number, number]
+  end: [number, number]
+  thickness: number
+}
+
+export interface SceneZoneSummary {
+  id: string
+  name: string
+  polygon: [number, number][]
+  bounds: { min: [number, number]; max: [number, number] }
+}
+
 export interface SceneContext {
   activeZone?: {
     id: string
@@ -154,6 +184,8 @@ export interface SceneContext {
   }
   levelId: string
   items: SceneItemSummary[]
+  walls: SceneWallSummary[]
+  zones: SceneZoneSummary[]
   wallCount: number
   zoneCount: number
 }

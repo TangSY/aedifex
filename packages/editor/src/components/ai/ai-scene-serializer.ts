@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, WallNode, ZoneNode } from '@pascal-app/core'
 import { useScene } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import type { SceneContext, SceneItemSummary } from './types'
@@ -17,12 +17,16 @@ export function serializeSceneContext(): SceneContext {
     return {
       levelId: '',
       items: [],
+      walls: [],
+      zones: [],
       wallCount: 0,
       zoneCount: 0,
     }
   }
 
   const items: SceneItemSummary[] = []
+  const walls: SceneContext['walls'] = []
+  const zones: SceneContext['zones'] = []
   let wallCount = 0
   let zoneCount = 0
   let activeZone: SceneContext['activeZone'] | undefined
@@ -30,7 +34,7 @@ export function serializeSceneContext(): SceneContext {
   // Collect all nodes belonging to this level
   const levelNode = nodes[levelId]
   if (!levelNode || !('children' in levelNode)) {
-    return { levelId, items: [], wallCount: 0, zoneCount: 0 }
+    return { levelId, items: [], walls: [], zones: [], wallCount: 0, zoneCount: 0 }
   }
 
   // Walk through all nodes to find items, walls, and zones on this level
@@ -58,16 +62,43 @@ export function serializeSceneContext(): SceneContext {
         })
         break
       }
-      case 'wall':
+      case 'wall': {
         wallCount++
+        const wallNode = node as WallNode
+        walls.push({
+          id: wallNode.id,
+          start: [...wallNode.start] as [number, number],
+          end: [...wallNode.end] as [number, number],
+          thickness: wallNode.thickness ?? 0.2,
+        })
         break
+      }
       case 'zone': {
         zoneCount++
+        const zoneNode = node as ZoneNode
+        const polygon = zoneNode.polygon as [number, number][]
+
+        // Compute AABB bounds from polygon
+        const xs = polygon.map((p) => p[0])
+        const zs = polygon.map((p) => p[1])
+        const zoneBounds = {
+          min: [Math.min(...xs), Math.min(...zs)] as [number, number],
+          max: [Math.max(...xs), Math.max(...zs)] as [number, number],
+        }
+
+        zones.push({
+          id: zoneNode.id,
+          name: zoneNode.name ?? 'Zone',
+          polygon,
+          bounds: zoneBounds,
+        })
+
         // Use the selected zone if available
-        if (selection.nodeId === node.id || selection.path?.includes(node.id)) {
+        if (selection.zoneId === node.id || selection.selectedIds?.includes(node.id)) {
           activeZone = {
             id: node.id,
-            name: node.name ?? 'Zone',
+            name: zoneNode.name ?? 'Zone',
+            bounds: zoneBounds,
           }
         }
         break
@@ -108,6 +139,8 @@ export function serializeSceneContext(): SceneContext {
   return {
     levelId,
     items,
+    walls,
+    zones,
     wallCount,
     zoneCount,
     activeZone,
@@ -115,26 +148,129 @@ export function serializeSceneContext(): SceneContext {
 }
 
 /**
- * Format scene context as a string for the Claude system prompt.
+ * Format scene context as a string for the AI system prompt.
+ * Includes spatial geometry (zone boundaries, wall positions) so AI can make
+ * reasonable placement decisions.
+ * Enhanced with semantic spatial descriptions (wall directions, room shape,
+ * available areas) to help LLM reason about space more effectively.
  */
 export function formatSceneContextForPrompt(ctx: SceneContext): string {
   const lines: string[] = [
     `Current scene (level: ${ctx.levelId}):`,
     `- ${ctx.wallCount} walls, ${ctx.zoneCount} zones`,
-    `- ${ctx.items.length} items:`,
   ]
 
+  // Zone spatial data with semantic descriptions
+  if (ctx.zones.length > 0) {
+    lines.push('- Zones:')
+    for (const zone of ctx.zones) {
+      const sizeX = zone.bounds.max[0] - zone.bounds.min[0]
+      const sizeZ = zone.bounds.max[1] - zone.bounds.min[1]
+      const area = sizeX * sizeZ
+      const shape = Math.abs(sizeX - sizeZ) < 0.5
+        ? 'square'
+        : sizeX > sizeZ ? 'wide (X-axis longer)' : 'deep (Z-axis longer)'
+
+      lines.push(`  "${zone.name}" (${zone.id}):`)
+      lines.push(`    Size: ${sizeX.toFixed(2)}m × ${sizeZ.toFixed(2)}m (${area.toFixed(1)}m²), Shape: ${shape}`)
+      lines.push(`    Bounds: min=(${zone.bounds.min[0].toFixed(2)}, ${zone.bounds.min[1].toFixed(2)}) max=(${zone.bounds.max[0].toFixed(2)}, ${zone.bounds.max[1].toFixed(2)})`)
+      lines.push(`    Center: (${((zone.bounds.min[0] + zone.bounds.max[0]) / 2).toFixed(2)}, ${((zone.bounds.min[1] + zone.bounds.max[1]) / 2).toFixed(2)})`)
+    }
+  }
+
+  // Wall positions with semantic descriptions (direction, length, orientation)
+  if (ctx.walls.length > 0) {
+    lines.push('- Walls (with semantic info):')
+
+    // 分析墙体并添加语义标注
+    const wallInfos = ctx.walls.map((wall) => {
+      const dx = wall.end[0] - wall.start[0]
+      const dz = wall.end[1] - wall.start[1]
+      const length = Math.hypot(dx, dz)
+      const angle = Math.atan2(dz, dx)
+
+      // 判断墙体朝向
+      let orientation: string
+      const absDx = Math.abs(dx)
+      const absDz = Math.abs(dz)
+      if (absDx > absDz * 3) {
+        orientation = 'horizontal (along X-axis)'
+      } else if (absDz > absDx * 3) {
+        orientation = 'vertical (along Z-axis)'
+      } else {
+        orientation = `diagonal (${(angle * 180 / Math.PI).toFixed(0)}°)`
+      }
+
+      // 计算墙面内侧法线方向
+      const normalX = -dz / length
+      const normalZ = dx / length
+
+      return { wall, length, orientation, normalX, normalZ, dx, dz }
+    })
+
+    // 找出最长墙
+    const longestWall = wallInfos.reduce((a, b) => a.length > b.length ? a : b)
+
+    for (const info of wallInfos) {
+      const { wall, length, orientation } = info
+      const isLongest = info === longestWall ? ' [LONGEST]' : ''
+      lines.push(`  [${wall.id}] (${wall.start[0].toFixed(2)}, ${wall.start[1].toFixed(2)}) → (${wall.end[0].toFixed(2)}, ${wall.end[1].toFixed(2)}) length=${length.toFixed(2)}m ${orientation}${isLongest}`)
+    }
+
+    // 额外的墙体总结
+    lines.push(`  Summary: longest wall is ${longestWall.length.toFixed(2)}m (${longestWall.orientation})`)
+  }
+
   if (ctx.activeZone) {
-    lines.splice(1, 0, `- Active zone: "${ctx.activeZone.name}" (${ctx.activeZone.id})`)
+    lines.push(`- Active zone: "${ctx.activeZone.name}" (${ctx.activeZone.id})`)
+    if (ctx.activeZone.bounds) {
+      lines.push(`  Bounds: min=(${ctx.activeZone.bounds.min[0].toFixed(2)}, ${ctx.activeZone.bounds.min[1].toFixed(2)}) max=(${ctx.activeZone.bounds.max[0].toFixed(2)}, ${ctx.activeZone.bounds.max[1].toFixed(2)})`)
+    }
   }
 
-  for (const item of ctx.items) {
-    const pos = item.position.map((v) => v.toFixed(2)).join(', ')
-    lines.push(`  [${item.id}] ${item.name} (${item.catalogSlug}) at (${pos}) rot=${item.rotationY.toFixed(2)}`)
-  }
-
+  // Existing items with grouping info
+  lines.push(`- ${ctx.items.length} items:`)
   if (ctx.items.length === 0) {
     lines.push('  (empty — no items placed yet)')
+  } else {
+    for (const item of ctx.items) {
+      const pos = item.position.map((v) => v.toFixed(2)).join(', ')
+      const dim = item.dimensions.map((v) => v.toFixed(2)).join('×')
+      lines.push(`  [${item.id}] ${item.name} (${item.catalogSlug}) at (${pos}) rot=${item.rotationY.toFixed(2)} size=${dim}m`)
+    }
+
+    // 空闲区域分析（简化：基于 zone bounds 和已有物品位置）
+    if (ctx.zones.length > 0) {
+      lines.push('- Available areas (approximate, avoiding existing items):')
+      for (const zone of ctx.zones) {
+        const occupied = ctx.items.map((item) => ({
+          cx: item.position[0],
+          cz: item.position[2],
+          hw: item.dimensions[0] / 2,
+          hd: item.dimensions[2] / 2,
+        }))
+
+        // 将 zone 分为 4 象限，标注每个象限的占用情况
+        const midX = (zone.bounds.min[0] + zone.bounds.max[0]) / 2
+        const midZ = (zone.bounds.min[1] + zone.bounds.max[1]) / 2
+        const quadrants = [
+          { name: 'top-left (min X, min Z)', minX: zone.bounds.min[0], maxX: midX, minZ: zone.bounds.min[1], maxZ: midZ },
+          { name: 'top-right (max X, min Z)', minX: midX, maxX: zone.bounds.max[0], minZ: zone.bounds.min[1], maxZ: midZ },
+          { name: 'bottom-left (min X, max Z)', minX: zone.bounds.min[0], maxX: midX, minZ: midZ, maxZ: zone.bounds.max[1] },
+          { name: 'bottom-right (max X, max Z)', minX: midX, maxX: zone.bounds.max[0], minZ: midZ, maxZ: zone.bounds.max[1] },
+        ]
+
+        for (const q of quadrants) {
+          const itemsInQuadrant = occupied.filter(
+            (o) => o.cx >= q.minX && o.cx <= q.maxX && o.cz >= q.minZ && o.cz <= q.maxZ,
+          )
+          const status = itemsInQuadrant.length === 0
+            ? 'EMPTY (available)'
+            : `${itemsInQuadrant.length} items`
+          lines.push(`    ${q.name}: ${status}`)
+        }
+      }
+    }
   }
 
   return lines.join('\n')

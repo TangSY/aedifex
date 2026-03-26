@@ -1,6 +1,6 @@
 'use client'
 
-import { Bot, Check, Loader2, Send, Sparkles, Trash2, X } from 'lucide-react'
+import { Bot, Check, Loader2, MapPin, Maximize2, Send, Sparkles, Trash2, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   type FormEvent,
@@ -28,7 +28,7 @@ import {
 } from './ai-proposal-manager'
 import { formatSceneContextForPrompt, serializeSceneContext } from './ai-scene-serializer'
 import { streamChat } from './ai-stream-client'
-import type { AIToolCall, ChatMessage, Proposal, ValidatedOperation } from './types'
+import type { AIToolCall, ChatMessage, PlacementOption, Proposal, ProposePlacementToolCall, ValidatedOperation } from './types'
 
 // ============================================================================
 // Chat Panel Component
@@ -84,9 +84,123 @@ export function AIChatPanel() {
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`
   }, [input])
 
+  const processToolCalls = useCallback(
+    async (messageId: string, toolCalls: AIToolCall[]) => {
+      // Capture before screenshot
+      const beforeScreenshot = await captureScreenshot()
+      if (beforeScreenshot) {
+        setScreenshotBefore(messageId, beforeScreenshot)
+      }
+
+      const validated = validateAllToolCalls(toolCalls)
+      setOperations(messageId, validated)
+
+      // Apply ghost preview for valid operations
+      const validOps = validated.filter((op) => op.status !== 'invalid')
+      if (validOps.length > 0) {
+        applyGhostPreview(validOps)
+      }
+
+      setAIProcessing(false)
+
+      // Trigger conversation summarization check
+      summarizeIfNeeded()
+    },
+    [setOperations, setAIProcessing, setScreenshotBefore, summarizeIfNeeded],
+  )
+
+  // Listen for placement option selections
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const text = (e as CustomEvent).detail as string
+      if (text) {
+        setInput(text)
+        // Auto-send after a microtask to let React update the input
+        setTimeout(() => {
+          setInput('')
+          addUserMessage(text)
+          setAIProcessing(true)
+          startStreaming()
+
+          const sceneCtx = serializeSceneContext()
+          const history = useAIChat.getState().getConversationHistory()
+
+          const abortController = streamChat(
+            {
+              messages: [...history, { role: 'user', content: text }],
+              catalogSummary: catalogSummaryRef.current!,
+              sceneContext: formatSceneContextForPrompt(sceneCtx),
+            },
+            {
+              onTextChunk: (t) => appendStreamContent(t),
+              onToolCall: () => {},
+              onComplete: (fullText, toolCalls) => {
+                const messageId = finishStreaming(toolCalls.length > 0 ? toolCalls : undefined)
+                if (toolCalls.length > 0 && !toolCalls.some((tc) => tc.tool === 'propose_placement')) {
+                  processToolCalls(messageId, toolCalls)
+                } else {
+                  setAIProcessing(false)
+                }
+              },
+              onError: (err) => {
+                setStreamError(err)
+                setAIProcessing(false)
+              },
+            },
+          )
+          abortRef.current = abortController
+        }, 0)
+      }
+    }
+    window.addEventListener('ai-select-option', handler)
+    return () => window.removeEventListener('ai-select-option', handler)
+  }, [addUserMessage, appendStreamContent, finishStreaming, processToolCalls, setAIProcessing, setStreamError, startStreaming, summarizeIfNeeded])
+
   const handleSend = useCallback(async () => {
     const trimmed = input.trim()
     if (!trimmed || isStreaming || isAIProcessing) return
+
+    // Check if user is confirming/rejecting a pending operation via text
+    const pendingMsg = [...messages].reverse().find(
+      (m) => m.operationStatus === 'pending' && m.operations?.length,
+    )
+    if (pendingMsg?.operations) {
+      const lower = trimmed.toLowerCase()
+      const confirmWords = [
+        '确认', '确定', '好的', '好', '可以', '行', '没问题', '就这样', '应用',
+        '同意', '执行', 'ok', 'yes', 'confirm', 'apply', 'sure', '嗯', '对',
+        'y', '是', '是的', '就这样吧', '可以的',
+      ]
+      const rejectWords = [
+        '取消', '撤销', '不要', '不行', '算了', '拒绝', '放弃', '不用了',
+        'no', 'cancel', 'reject', 'undo', '别', '不', 'n',
+      ]
+      const isConfirm = confirmWords.some((w) => lower === w || lower === w + '。' || lower === w + '！')
+      const isReject = rejectWords.some((w) => lower === w || lower === w + '。' || lower === w + '！')
+
+      if (isConfirm) {
+        setInput('')
+        addUserMessage(trimmed)
+        const log = confirmGhostPreview(pendingMsg.operations)
+        log.messageId = pendingMsg.id
+        addOperationLog(log)
+        confirmOperations(pendingMsg.id)
+        setTimeout(async () => {
+          const afterScreenshot = await captureScreenshot()
+          if (afterScreenshot) {
+            setScreenshotAfter(pendingMsg.id, afterScreenshot)
+          }
+        }, 200)
+        return
+      }
+      if (isReject) {
+        setInput('')
+        addUserMessage(trimmed)
+        clearGhostPreview()
+        rejectOperations(pendingMsg.id)
+        return
+      }
+    }
 
     setInput('')
     addUserMessage(trimmed)
@@ -112,7 +226,13 @@ export function AIChatPanel() {
         onComplete: (fullText, toolCalls) => {
           const messageId = finishStreaming(toolCalls.length > 0 ? toolCalls : undefined)
 
-          if (toolCalls.length > 0) {
+          // Check if any tool call is a propose_placement
+          const proposalCall = toolCalls.find((tc) => tc.tool === 'propose_placement') as ProposePlacementToolCall | undefined
+          if (proposalCall) {
+            // propose_placement is handled as UI options, not as mutations
+            setAIProcessing(false)
+            summarizeIfNeeded()
+          } else if (toolCalls.length > 0) {
             processToolCalls(messageId, toolCalls)
           } else {
             setAIProcessing(false)
@@ -136,32 +256,12 @@ export function AIChatPanel() {
     finishStreaming,
     setStreamError,
     setAIProcessing,
+    messages,
+    confirmOperations,
+    rejectOperations,
+    addOperationLog,
+    setScreenshotAfter,
   ])
-
-  const processToolCalls = useCallback(
-    async (messageId: string, toolCalls: AIToolCall[]) => {
-      // Capture before screenshot
-      const beforeScreenshot = await captureScreenshot()
-      if (beforeScreenshot) {
-        setScreenshotBefore(messageId, beforeScreenshot)
-      }
-
-      const validated = validateAllToolCalls(toolCalls)
-      setOperations(messageId, validated)
-
-      // Apply ghost preview for valid operations
-      const validOps = validated.filter((op) => op.status !== 'invalid')
-      if (validOps.length > 0) {
-        applyGhostPreview(validOps)
-      }
-
-      setAIProcessing(false)
-
-      // Trigger conversation summarization check
-      summarizeIfNeeded()
-    },
-    [setOperations, setAIProcessing, setScreenshotBefore, summarizeIfNeeded],
-  )
 
   const handleConfirm = useCallback(
     async (messageId: string, operations: ValidatedOperation[]) => {
@@ -393,6 +493,153 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick: (text: string) =
 }
 
 // ============================================================================
+// Before/After Comparison with Lightbox
+// ============================================================================
+
+function BeforeAfterComparison({ before, after }: { before: string; after: string }) {
+  const [isOpen, setIsOpen] = useState(false)
+  // Slider position as percentage (0–100), default 50% center
+  const [sliderPos, setSliderPos] = useState(50)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isDragging = useRef(false)
+
+  const updateSlider = useCallback((clientX: number) => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const x = clientX - rect.left
+    const pct = Math.max(0, Math.min(100, (x / rect.width) * 100))
+    setSliderPos(pct)
+  }, [])
+
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      isDragging.current = true
+      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+      updateSlider(e.clientX)
+    },
+    [updateSlider],
+  )
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isDragging.current) return
+      updateSlider(e.clientX)
+    },
+    [updateSlider],
+  )
+
+  const onPointerUp = useCallback(() => {
+    isDragging.current = false
+  }, [])
+
+  return (
+    <>
+      {/* Thumbnail grid */}
+      <div className="mt-2 grid grid-cols-2 gap-1.5">
+        <div>
+          <p className="mb-0.5 font-barlow text-[10px] text-muted-foreground">Before</p>
+          <img alt="Before" className="rounded border border-border/30" src={before} />
+        </div>
+        <div>
+          <p className="mb-0.5 font-barlow text-[10px] text-muted-foreground">After</p>
+          <img alt="After" className="rounded border border-border/30" src={after} />
+        </div>
+      </div>
+      {/* Click-to-compare button */}
+      <button
+        className="mt-1 flex w-full items-center justify-center gap-1 rounded bg-accent/40 py-1 font-barlow text-[10px] text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+        onClick={() => { setIsOpen(true); setSliderPos(50) }}
+        type="button"
+      >
+        <Maximize2 className="h-3 w-3" />
+        滑动对比
+      </button>
+
+      {/* Fullscreen slider comparison overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
+            onClick={() => setIsOpen(false)}
+          >
+            <motion.div
+              animate={{ scale: 1 }}
+              className="relative"
+              exit={{ scale: 0.95 }}
+              initial={{ scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: '90vw', maxHeight: '90vh' }}
+            >
+              {/* Labels */}
+              <div className="mb-2 flex justify-between px-1 font-barlow text-xs text-white/70">
+                <span>Before</span>
+                <span>After</span>
+              </div>
+
+              {/* Comparison container */}
+              <div
+                className="relative select-none overflow-hidden rounded-lg"
+                onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                ref={containerRef}
+                style={{ touchAction: 'none' }}
+              >
+                {/* After image (bottom layer, fully visible) */}
+                <img
+                  alt="After"
+                  className="block max-h-[80vh] max-w-[90vw] object-contain"
+                  draggable={false}
+                  src={after}
+                />
+
+                {/* Before image (top layer, clipped by slider) */}
+                <div
+                  className="absolute inset-0 overflow-hidden"
+                  style={{ width: `${sliderPos}%` }}
+                >
+                  <img
+                    alt="Before"
+                    className="block max-h-[80vh] max-w-[90vw] object-contain"
+                    draggable={false}
+                    src={before}
+                  />
+                </div>
+
+                {/* Slider divider line */}
+                <div
+                  className="absolute top-0 bottom-0 w-0.5 cursor-ew-resize bg-white shadow-[0_0_6px_rgba(0,0,0,0.5)]"
+                  style={{ left: `${sliderPos}%`, transform: 'translateX(-50%)' }}
+                >
+                  {/* Slider handle */}
+                  <div className="absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-black/50 shadow-lg">
+                    <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M8 6l-4 6 4 6M16 6l4 6-4 6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Close button */}
+              <button
+                className="absolute -top-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-white transition-colors hover:bg-white/40"
+                onClick={() => setIsOpen(false)}
+                type="button"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  )
+}
+
+// ============================================================================
 // Message Bubble
 // ============================================================================
 
@@ -414,6 +661,19 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       >
         <p className="whitespace-pre-wrap break-words">{message.content}</p>
 
+        {/* Placement proposal options */}
+        {message.toolCalls?.some((tc) => tc.tool === 'propose_placement') && (
+          <PlacementProposalCards
+            message={message}
+            onSelectOption={(option) => {
+              // 将用户选择作为消息发回，触发 AI 执行
+              const text = `我选择方案 ${option.id}：${option.label}`
+              // Trigger the input and send via parent — use a custom event
+              window.dispatchEvent(new CustomEvent('ai-select-option', { detail: text }))
+            }}
+          />
+        )}
+
         {/* Operation summary */}
         {message.operations && message.operations.length > 0 && (
           <div className="mt-2 border-border/30 border-t pt-2">
@@ -424,26 +684,12 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           </div>
         )}
 
-        {/* Before/After thumbnails */}
+        {/* Before/After thumbnails with click-to-enlarge */}
         {message.screenshotBefore && message.screenshotAfter && (
-          <div className="mt-2 grid grid-cols-2 gap-1.5">
-            <div>
-              <p className="mb-0.5 font-barlow text-[10px] text-muted-foreground">Before</p>
-              <img
-                alt="Before"
-                className="rounded border border-border/30"
-                src={message.screenshotBefore}
-              />
-            </div>
-            <div>
-              <p className="mb-0.5 font-barlow text-[10px] text-muted-foreground">After</p>
-              <img
-                alt="After"
-                className="rounded border border-border/30"
-                src={message.screenshotAfter}
-              />
-            </div>
-          </div>
+          <BeforeAfterComparison
+            after={message.screenshotAfter}
+            before={message.screenshotBefore}
+          />
         )}
       </div>
     </div>
@@ -522,6 +768,50 @@ function OperationSummary({
           <X className="h-3 w-3" /> 已拒绝
         </div>
       )}
+    </div>
+  )
+}
+
+// ============================================================================
+// Placement Proposal Cards (propose_placement tool)
+// ============================================================================
+
+function PlacementProposalCards({
+  message,
+  onSelectOption,
+}: {
+  message: ChatMessage
+  onSelectOption: (option: PlacementOption) => void
+}) {
+  const proposalCall = message.toolCalls?.find(
+    (tc) => tc.tool === 'propose_placement',
+  ) as ProposePlacementToolCall | undefined
+  if (!proposalCall) return null
+
+  return (
+    <div className="mt-2 border-border/30 border-t pt-2">
+      <p className="mb-1.5 font-barlow font-medium text-xs">{proposalCall.question}</p>
+      <div className="flex flex-col gap-1.5">
+        {proposalCall.options.map((option) => (
+          <button
+            className="group flex items-start gap-2 rounded-lg border border-border/50 bg-accent/20 px-2.5 py-2 text-left transition-all hover:border-sidebar-primary/50 hover:bg-sidebar-primary/10"
+            key={option.id}
+            onClick={() => onSelectOption(option)}
+            type="button"
+          >
+            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20 font-barlow font-semibold text-[10px] text-sidebar-primary">
+              {option.id}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-barlow font-medium text-xs">{option.label}</p>
+              <p className="mt-0.5 font-barlow text-[10px] text-muted-foreground leading-relaxed">
+                {option.reason}
+              </p>
+            </div>
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-sidebar-primary" />
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

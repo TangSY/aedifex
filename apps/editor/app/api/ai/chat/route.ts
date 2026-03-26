@@ -59,26 +59,51 @@ function recordTokenUsage(clientId: string, tokens: number) {
 // ============================================================================
 
 function buildSystemPrompt(catalogSummary: string, sceneContext: string): string {
-  return `You are an AI interior design assistant for Pascal Editor, a 3D building/interior editor.
+  return `You are an AI interior design agent for Pascal Editor, a 3D building/interior editor.
 You help professional designers with furniture placement, layout optimization, and material selection.
 
-## Your Capabilities
-You have 5 tools to manipulate the scene:
-1. add_item: Add furniture from the catalog
-2. remove_item: Remove existing furniture
-3. move_item: Move/rotate existing furniture
-4. update_material: Change material/color of items
-5. batch_operations: Execute multiple operations at once
+## Agent Behavior (CRITICAL)
 
-## Rules
-- ONLY use items from the catalog below. Never invent items.
-- Positions are in meters [x, y, z] where Y is up.
-- rotationY is in radians (0 = default, Math.PI/2 = 90°, Math.PI = 180°).
-- When placing items, consider realistic room layouts and spacing.
-- For batch_operations, provide a description summarizing all changes.
-- When the user asks to "furnish" or "set up" a room, use batch_operations with multiple add_item operations.
-- Keep responses concise — describe what you're doing in 1-2 sentences, then use tool calls.
-- Respond in the same language as the user's message.
+You are an AGENT, not a simple tool executor. Think before acting:
+
+1. **Analyze the space first.** Read the scene context carefully — understand zone boundaries, wall positions, room shape, and existing items before placing anything.
+2. **Ask when uncertain.** If the user's request is ambiguous (e.g., "add a sofa" without specifying where in a large room with multiple possible locations), use the \`propose_placement\` tool to present 2-3 options with reasons. Let the user choose.
+3. **Explain your reasoning.** Before using tool calls, briefly explain your spatial reasoning: which wall you're placing against, why you chose a specific position, how items relate to each other.
+4. **Be proactive about conflicts.** If placing a new item would create a crowded layout or block a walkway, mention it and suggest alternatives.
+5. **Respond in the same language as the user's message.**
+
+### When to use propose_placement vs direct placement:
+- **Direct placement (add_item/batch_operations):** When the request is specific ("put a sofa against the north wall") or the room has an obvious layout (small room, one clear arrangement).
+- **propose_placement:** When there are multiple reasonable options (large room, user says "add a sofa" without location), or when it would be helpful to confirm before executing. Include 2-3 options with clear reasons for each.
+
+## Your Tools
+1. **add_item**: Add furniture from the catalog
+2. **remove_item**: Remove existing furniture
+3. **move_item**: Move/rotate existing furniture
+4. **update_material**: Change material/color of items
+5. **batch_operations**: Execute multiple operations at once
+6. **propose_placement**: Present placement options to the user for confirmation
+
+## Coordinate Rules
+- Positions are in meters [x, y, z] where Y is up (Y=0 for floor items).
+- rotationY is in radians (0 = default, π/2 = 90°, π = 180°, -π/2 = 270°).
+- ONLY use items from the catalog below.
+
+## Spatial Reasoning Guide
+
+### How to Calculate Positions
+1. **Read zone bounds** to know the room extents: min/max X and Z.
+2. **Read wall positions** to know where walls are. Walls have start/end points and thickness.
+3. **Against-wall placement:** Find the target wall, compute its normal direction, then place the item at: wall_surface + half_item_depth + 0.05m offset. Face the item toward room center (rotation = wall normal angle).
+4. **Center placement:** For companion items (coffee table in front of sofa), compute the primary item's position + facing direction × ideal_distance.
+5. **Always check bounds:** Ensure position ± half_dimensions stays within zone bounds.
+
+### Spatial Rules
+- **Against-wall items** (sofas, bookshelves, TV stands, desks, beds): Place flush against a wall, facing room center.
+- **Center items** (coffee tables, dining tables): Place relative to their functional group, NOT at room center unless appropriate.
+- **Companion spacing:** coffee table ↔ sofa: 0.3–0.5m; TV stand ↔ sofa: 2–3m; nightstand ↔ bed: 0m (adjacent); dining chair ↔ table: 0.5–0.6m.
+- **Walkways:** Minimum 0.6m between furniture groups. 0.8–1.0m in front of doors/windows.
+- **Rotation:** Items against a wall face AWAY from the wall. Facing items (sofa ↔ TV) have opposing rotations.
 
 ## Catalog
 ${catalogSummary}
@@ -97,7 +122,7 @@ const OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'add_item',
-      description: 'Add a furniture item from the catalog to the scene.',
+      description: 'Add a furniture item from the catalog to the scene. Use when you are confident about the placement.',
       parameters: {
         type: 'object',
         properties: {
@@ -108,15 +133,15 @@ const OPENAI_TOOLS: ChatCompletionTool[] = [
           position: {
             type: 'array',
             items: { type: 'number' },
-            description: 'Position in meters [x, y, z]. Y is up (usually 0 for floor items).',
+            description: 'Position in meters [x, y, z]. Y is up (usually 0 for floor items). Calculate based on wall positions and zone bounds.',
           },
           rotationY: {
             type: 'number',
-            description: 'Y-axis rotation in radians.',
+            description: 'Y-axis rotation in radians. Against-wall items should face away from wall.',
           },
           description: {
             type: 'string',
-            description: 'Brief description of why this item was added.',
+            description: 'Brief description of why this item was placed here.',
           },
         },
         required: ['catalogSlug', 'position', 'rotationY'],
@@ -203,7 +228,7 @@ const OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'batch_operations',
-      description: 'Execute multiple add/remove/move/update operations at once. Use for room setups or style changes.',
+      description: 'Execute multiple add/remove/move/update operations at once. Use for room setups, style changes, or when placing multiple related items.',
       parameters: {
         type: 'object',
         properties: {
@@ -233,6 +258,58 @@ const OPENAI_TOOLS: ChatCompletionTool[] = [
           },
         },
         required: ['operations', 'description'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'propose_placement',
+      description: 'Present 2-3 placement options to the user for confirmation. Use when there are multiple reasonable positions, or when you want to confirm before placing. The user will select an option and you will then execute it.',
+      parameters: {
+        type: 'object',
+        properties: {
+          question: {
+            type: 'string',
+            description: 'The question to ask the user (e.g., "I found 2 good spots for the sofa. Which do you prefer?")',
+          },
+          options: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  description: 'Unique option ID (e.g., "A", "B", "C")',
+                },
+                label: {
+                  type: 'string',
+                  description: 'Short label (e.g., "Against the long wall")',
+                },
+                catalogSlug: {
+                  type: 'string',
+                  description: 'The catalog item to place.',
+                },
+                position: {
+                  type: 'array',
+                  items: { type: 'number' },
+                  description: 'Proposed position [x, y, z].',
+                },
+                rotationY: {
+                  type: 'number',
+                  description: 'Proposed Y-axis rotation in radians.',
+                },
+                reason: {
+                  type: 'string',
+                  description: 'Why this position is recommended.',
+                },
+              },
+              required: ['id', 'label', 'catalogSlug', 'position', 'rotationY', 'reason'],
+            },
+            description: '2-3 placement options for the user to choose from.',
+          },
+        },
+        required: ['question', 'options'],
       },
     },
   },
