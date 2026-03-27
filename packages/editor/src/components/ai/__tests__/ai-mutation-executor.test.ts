@@ -62,6 +62,9 @@ import type {
   MoveItemToolCall,
   UpdateMaterialToolCall,
   BatchOperationsToolCall,
+  ValidatedAddItem,
+  ValidatedRemoveItem,
+  ValidatedMoveItem,
 } from '../types'
 
 // ============================================================================
@@ -87,12 +90,14 @@ describe('validateToolCall — add_item', () => {
 
     const results = validateToolCall(call)
     expect(results).toHaveLength(1)
-    expect(results[0].type).toBe('add_item')
-    expect(results[0].status).toBe('valid')
-    if (results[0].type === 'add_item') {
-      expect(results[0].asset.id).toBe('sofa-modern')
-      expect(results[0].position).toEqual([2, 0, 3])
-    }
+
+    const op = results[0]!
+    expect(op.type).toBe('add_item')
+    expect(op.status).toBe('valid')
+
+    const addOp = op as ValidatedAddItem
+    expect(addOp.asset.id).toBe('sofa-modern')
+    expect(addOp.position).toEqual([2, 0, 3])
   })
 
   it('returns invalid for unknown catalog slug', () => {
@@ -105,10 +110,12 @@ describe('validateToolCall — add_item', () => {
 
     const results = validateToolCall(call)
     expect(results).toHaveLength(1)
-    expect(results[0].status).toBe('invalid')
-    if (results[0].type === 'add_item') {
-      expect(results[0].errorReason).toContain('not found')
-    }
+
+    const op = results[0]!
+    expect(op.status).toBe('invalid')
+
+    const addOp = op as ValidatedAddItem
+    expect(addOp.errorReason).toContain('not found')
   })
 
   it('adjusts position on collision', () => {
@@ -128,10 +135,12 @@ describe('validateToolCall — add_item', () => {
 
     const results = validateToolCall(call)
     expect(results).toHaveLength(1)
-    expect(results[0].status).toBe('adjusted')
-    if (results[0].type === 'add_item') {
-      expect(results[0].adjustmentReason).toContain('collision')
-    }
+
+    const op = results[0]!
+    expect(op.status).toBe('adjusted')
+
+    const addOp = op as ValidatedAddItem
+    expect(addOp.adjustmentReason).toContain('collision')
   })
 })
 
@@ -153,8 +162,10 @@ describe('validateToolCall — remove_item', () => {
 
     const results = validateToolCall(call)
     expect(results).toHaveLength(1)
-    expect(results[0].type).toBe('remove_item')
-    expect(results[0].status).toBe('valid')
+
+    const op = results[0]!
+    expect(op.type).toBe('remove_item')
+    expect(op.status).toBe('valid')
   })
 
   it('returns invalid for non-existent node', () => {
@@ -165,10 +176,12 @@ describe('validateToolCall — remove_item', () => {
 
     const results = validateToolCall(call)
     expect(results).toHaveLength(1)
-    expect(results[0].status).toBe('invalid')
-    if (results[0].type === 'remove_item') {
-      expect(results[0].errorReason).toContain('not found')
-    }
+
+    const op = results[0]!
+    expect(op.status).toBe('invalid')
+
+    const removeOp = op as ValidatedRemoveItem
+    expect(removeOp.errorReason).toContain('not found')
   })
 
   it('returns invalid for non-item nodes (e.g., wall)', () => {
@@ -185,10 +198,12 @@ describe('validateToolCall — remove_item', () => {
 
     const results = validateToolCall(call)
     expect(results).toHaveLength(1)
-    expect(results[0].status).toBe('invalid')
-    if (results[0].type === 'remove_item') {
-      expect(results[0].errorReason).toContain('wall')
-    }
+
+    const op = results[0]!
+    expect(op.status).toBe('invalid')
+
+    const removeOp = op as ValidatedRemoveItem
+    expect(removeOp.errorReason).toContain('wall')
   })
 })
 
@@ -212,11 +227,13 @@ describe('validateToolCall — move_item', () => {
 
     const results = validateToolCall(call)
     expect(results).toHaveLength(1)
-    expect(results[0].type).toBe('move_item')
-    expect(results[0].status).toBe('valid')
-    if (results[0].type === 'move_item') {
-      expect(results[0].position).toEqual([3, 0, 5])
-    }
+
+    const op = results[0]!
+    expect(op.type).toBe('move_item')
+    expect(op.status).toBe('valid')
+
+    const moveOp = op as ValidatedMoveItem
+    expect(moveOp.position).toEqual([3, 0, 5])
   })
 
   it('returns invalid for non-existent node', () => {
@@ -227,7 +244,7 @@ describe('validateToolCall — move_item', () => {
     }
 
     const results = validateToolCall(call)
-    expect(results[0].status).toBe('invalid')
+    expect(results[0]!.status).toBe('invalid')
   })
 })
 
@@ -247,8 +264,10 @@ describe('validateToolCall — update_material', () => {
 
     const results = validateToolCall(call)
     expect(results).toHaveLength(1)
-    expect(results[0].type).toBe('update_material')
-    expect(results[0].status).toBe('valid')
+
+    const op = results[0]!
+    expect(op.type).toBe('update_material')
+    expect(op.status).toBe('valid')
   })
 
   it('returns invalid for non-existent node', () => {
@@ -259,7 +278,7 @@ describe('validateToolCall — update_material', () => {
     }
 
     const results = validateToolCall(call)
-    expect(results[0].status).toBe('invalid')
+    expect(results[0]!.status).toBe('invalid')
   })
 })
 
@@ -292,8 +311,8 @@ describe('validateAllToolCalls — batch operations', () => {
     const results = validateAllToolCalls([batch])
     // Should produce 2 validated operations
     expect(results.length).toBe(2)
-    expect(results[0].type).toBe('add_item')
-    expect(results[1].type).toBe('remove_item')
+    expect(results[0]!.type).toBe('add_item')
+    expect(results[1]!.type).toBe('remove_item')
   })
 
   it('handles multiple independent tool calls', () => {

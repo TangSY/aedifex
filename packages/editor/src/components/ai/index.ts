@@ -2,7 +2,13 @@ export { AIChatPanel } from './ai-chat-panel'
 export { useAIChat } from './ai-chat-store'
 export { resolveCatalogSlug, generateCatalogSummary } from './ai-catalog-resolver'
 export { serializeSceneContext } from './ai-scene-serializer'
-export { validateAllToolCalls } from './ai-mutation-executor'
+export { validateAllToolCalls, buildToolResult } from './ai-mutation-executor'
+export {
+  runAgentLoop,
+  confirmOperationsFromUI,
+  rejectOperationsFromUI,
+  answerPendingQuestion,
+} from './ai-agent-loop'
 export {
   applyGhostPreview,
   confirmGhostPreview,

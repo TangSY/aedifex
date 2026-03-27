@@ -9,7 +9,7 @@ import type { AIToolCall } from './types'
 export interface StreamCallbacks {
   onTextChunk: (text: string) => void
   onToolCall: (toolCall: AIToolCall) => void
-  onComplete: (fullText: string, toolCalls: AIToolCall[]) => void
+  onComplete: (fullText: string, toolCalls: AIToolCall[], toolCallIds: string[]) => void
   onError: (error: string) => void
 }
 
@@ -19,7 +19,7 @@ export interface StreamCallbacks {
  */
 export function streamChat(
   request: {
-    messages: { role: string; content: string }[]
+    messages: { role: string; content: string; tool_call_id?: string }[]
     catalogSummary: string
     sceneContext: string
   },
@@ -38,7 +38,7 @@ export function streamChat(
 
 async function processStream(
   request: {
-    messages: { role: string; content: string }[]
+    messages: { role: string; content: string; tool_call_id?: string }[]
     catalogSummary: string
     sceneContext: string
   },
@@ -83,7 +83,7 @@ async function processStream(
   // State for tracking OpenAI tool_calls across streaming chunks.
   // OpenAI streams tool calls by index — each chunk carries an index and
   // a partial function name/arguments fragment. We accumulate per-index.
-  const pendingTools: Map<number, { name: string; arguments: string }> = new Map()
+  const pendingTools: Map<number, { id: string; name: string; arguments: string }> = new Map()
 
   try {
     while (true) {
@@ -129,10 +129,14 @@ async function processStream(
             const fn = tc.function as Record<string, unknown> | undefined
 
             if (!pendingTools.has(index)) {
-              pendingTools.set(index, { name: '', arguments: '' })
+              pendingTools.set(index, { id: '', name: '', arguments: '' })
             }
             const pending = pendingTools.get(index)!
 
+            // Track tool call ID (sent in the first chunk for each tool call)
+            if (tc.id) {
+              pending.id = tc.id as string
+            }
             if (fn?.name) {
               pending.name = fn.name as string
             }
@@ -146,6 +150,7 @@ async function processStream(
         const finishReason = choice.finish_reason as string | null
         if (finishReason) {
           // Assemble all accumulated tool calls
+          const toolCallIds: string[] = []
           for (const [, pending] of pendingTools) {
             if (!pending.name) continue
             try {
@@ -153,6 +158,7 @@ async function processStream(
               const toolCall = parseToolCall(pending.name, input)
               if (toolCall) {
                 toolCalls.push(toolCall)
+                toolCallIds.push(pending.id)
                 callbacks.onToolCall(toolCall)
               }
             } catch {
@@ -160,13 +166,14 @@ async function processStream(
             }
           }
 
-          callbacks.onComplete(fullText, toolCalls)
+          callbacks.onComplete(fullText, toolCalls, toolCallIds)
           return
         }
       }
     }
 
     // Stream ended without finish_reason — flush pending tools
+    const toolCallIds: string[] = []
     for (const [, pending] of pendingTools) {
       if (!pending.name) continue
       try {
@@ -174,6 +181,7 @@ async function processStream(
         const toolCall = parseToolCall(pending.name, input)
         if (toolCall) {
           toolCalls.push(toolCall)
+          toolCallIds.push(pending.id)
           callbacks.onToolCall(toolCall)
         }
       } catch {
@@ -181,7 +189,7 @@ async function processStream(
       }
     }
 
-    callbacks.onComplete(fullText, toolCalls)
+    callbacks.onComplete(fullText, toolCalls, toolCallIds)
   } finally {
     reader.releaseLock()
   }
@@ -245,6 +253,25 @@ function parseToolCall(name: string, input: Record<string, unknown>): AIToolCall
           rotationY: (opt.rotationY as number) ?? 0,
           reason: (opt.reason as string) ?? '',
         })),
+      }
+
+    case 'ask_user':
+      return {
+        tool: 'ask_user',
+        question: (input.question as string) ?? '',
+        suggestions: input.suggestions as string[] | undefined,
+      }
+
+    case 'confirm_preview':
+      return {
+        tool: 'confirm_preview',
+        reason: input.reason as string | undefined,
+      }
+
+    case 'reject_preview':
+      return {
+        tool: 'reject_preview',
+        reason: input.reason as string | undefined,
       }
 
     default:

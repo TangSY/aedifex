@@ -1,9 +1,8 @@
 'use client'
 
-import { Bot, Check, Loader2, MapPin, Maximize2, Send, Sparkles, Trash2, X } from 'lucide-react'
+import { Bot, Check, Loader2, MapPin, Maximize2, MessageCircleQuestion, Send, Sparkles, Trash2, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
-  type FormEvent,
   type KeyboardEvent,
   useCallback,
   useEffect,
@@ -11,24 +10,22 @@ import {
   useState,
 } from 'react'
 import { cn } from '../../lib/utils'
-import { captureScreenshot } from '../editor/thumbnail-generator'
+import {
+  answerPendingQuestion,
+  confirmOperationsFromUI,
+  rejectOperationsFromUI,
+  runAgentLoop,
+} from './ai-agent-loop'
 import { generateCatalogSummary } from './ai-catalog-resolver'
 import { useAIChat } from './ai-chat-store'
-import { validateAllToolCalls } from './ai-mutation-executor'
-import {
-  applyGhostPreview,
-  clearGhostPreview,
-  confirmGhostPreview,
-} from './ai-preview-manager'
 import {
   confirmActiveProposal,
   isProposalModeActive,
   rejectAllProposals,
   switchToProposal,
 } from './ai-proposal-manager'
-import { formatSceneContextForPrompt, serializeSceneContext } from './ai-scene-serializer'
-import { streamChat } from './ai-stream-client'
-import type { AIToolCall, ChatMessage, PlacementOption, Proposal, ProposePlacementToolCall, ValidatedOperation } from './types'
+import { serializeSceneContext } from './ai-scene-serializer'
+import type { ChatMessage, PlacementOption, Proposal, ProposePlacementToolCall, ValidatedOperation } from './types'
 
 // ============================================================================
 // Chat Panel Component
@@ -43,26 +40,19 @@ export function AIChatPanel() {
     error,
     proposals,
     activeProposalId,
+    loopState,
+    iterationCount,
+    pendingQuestion,
     addUserMessage,
-    startStreaming,
-    appendStreamContent,
-    finishStreaming,
-    setStreamError,
-    setOperations,
     confirmOperations,
     rejectOperations,
-    setAIProcessing,
-    setScreenshotBefore,
     setScreenshotAfter,
     clearChat,
     clearError,
-    addOperationLog,
-    summarizeIfNeeded,
   } = useAIChat()
 
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const abortRef = useRef<AbortController | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Cache catalog summary (expensive to regenerate)
@@ -84,209 +74,55 @@ export function AIChatPanel() {
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`
   }, [input])
 
-  const processToolCalls = useCallback(
-    async (messageId: string, toolCalls: AIToolCall[]) => {
-      // Capture before screenshot
-      const beforeScreenshot = await captureScreenshot()
-      if (beforeScreenshot) {
-        setScreenshotBefore(messageId, beforeScreenshot)
-      }
-
-      const validated = validateAllToolCalls(toolCalls)
-      setOperations(messageId, validated)
-
-      // Apply ghost preview for valid operations
-      const validOps = validated.filter((op) => op.status !== 'invalid')
-      if (validOps.length > 0) {
-        applyGhostPreview(validOps)
-      }
-
-      setAIProcessing(false)
-
-      // Trigger conversation summarization check
-      summarizeIfNeeded()
-    },
-    [setOperations, setAIProcessing, setScreenshotBefore, summarizeIfNeeded],
-  )
-
   // Listen for placement option selections
   useEffect(() => {
     const handler = (e: Event) => {
       const text = (e as CustomEvent).detail as string
-      if (text) {
-        setInput(text)
-        // Auto-send after a microtask to let React update the input
-        setTimeout(() => {
-          setInput('')
-          addUserMessage(text)
-          setAIProcessing(true)
-          startStreaming()
-
-          const sceneCtx = serializeSceneContext()
-          const history = useAIChat.getState().getConversationHistory()
-
-          const abortController = streamChat(
-            {
-              messages: [...history, { role: 'user', content: text }],
-              catalogSummary: catalogSummaryRef.current!,
-              sceneContext: formatSceneContextForPrompt(sceneCtx),
-            },
-            {
-              onTextChunk: (t) => appendStreamContent(t),
-              onToolCall: () => {},
-              onComplete: (fullText, toolCalls) => {
-                const messageId = finishStreaming(toolCalls.length > 0 ? toolCalls : undefined)
-                if (toolCalls.length > 0 && !toolCalls.some((tc) => tc.tool === 'propose_placement')) {
-                  processToolCalls(messageId, toolCalls)
-                } else {
-                  setAIProcessing(false)
-                }
-              },
-              onError: (err) => {
-                setStreamError(err)
-                setAIProcessing(false)
-              },
-            },
-          )
-          abortRef.current = abortController
-        }, 0)
+      if (text && !isAIProcessing) {
+        addUserMessage(text)
+        runAgentLoop({
+          userMessage: text,
+          catalogSummary: catalogSummaryRef.current!,
+        })
       }
     }
     window.addEventListener('ai-select-option', handler)
     return () => window.removeEventListener('ai-select-option', handler)
-  }, [addUserMessage, appendStreamContent, finishStreaming, processToolCalls, setAIProcessing, setStreamError, startStreaming, summarizeIfNeeded])
+  }, [addUserMessage, isAIProcessing])
 
-  const handleSend = useCallback(async () => {
+  const handleSend = useCallback(() => {
     const trimmed = input.trim()
     if (!trimmed || isStreaming || isAIProcessing) return
 
-    // Check if user is confirming/rejecting a pending operation via text
-    const pendingMsg = [...messages].reverse().find(
-      (m) => m.operationStatus === 'pending' && m.operations?.length,
-    )
-    if (pendingMsg?.operations) {
-      const lower = trimmed.toLowerCase()
-      const confirmWords = [
-        '确认', '确定', '好的', '好', '可以', '行', '没问题', '就这样', '应用',
-        '同意', '执行', 'ok', 'yes', 'confirm', 'apply', 'sure', '嗯', '对',
-        'y', '是', '是的', '就这样吧', '可以的',
-      ]
-      const rejectWords = [
-        '取消', '撤销', '不要', '不行', '算了', '拒绝', '放弃', '不用了',
-        'no', 'cancel', 'reject', 'undo', '别', '不', 'n',
-      ]
-      const isConfirm = confirmWords.some((w) => lower === w || lower === w + '。' || lower === w + '！')
-      const isReject = rejectWords.some((w) => lower === w || lower === w + '。' || lower === w + '！')
-
-      if (isConfirm) {
-        setInput('')
-        addUserMessage(trimmed)
-        const log = confirmGhostPreview(pendingMsg.operations)
-        log.messageId = pendingMsg.id
-        addOperationLog(log)
-        confirmOperations(pendingMsg.id)
-        setTimeout(async () => {
-          const afterScreenshot = await captureScreenshot()
-          if (afterScreenshot) {
-            setScreenshotAfter(pendingMsg.id, afterScreenshot)
-          }
-        }, 200)
-        return
-      }
-      if (isReject) {
-        setInput('')
-        addUserMessage(trimmed)
-        clearGhostPreview()
-        rejectOperations(pendingMsg.id)
-        return
-      }
+    // If there's a pending question, answer it instead of starting a new loop
+    if (pendingQuestion) {
+      setInput('')
+      answerPendingQuestion(trimmed)
+      return
     }
 
     setInput('')
     addUserMessage(trimmed)
-    setAIProcessing(true)
-    startStreaming()
 
-    const sceneCtx = serializeSceneContext()
-    const history = useAIChat.getState().getConversationHistory()
-
-    const abortController = streamChat(
-      {
-        messages: [...history, { role: 'user', content: trimmed }],
-        catalogSummary: catalogSummaryRef.current!,
-        sceneContext: formatSceneContextForPrompt(sceneCtx),
-      },
-      {
-        onTextChunk: (text) => {
-          appendStreamContent(text)
-        },
-        onToolCall: (_toolCall) => {
-          // Tool calls are accumulated and processed in onComplete
-        },
-        onComplete: (fullText, toolCalls) => {
-          const messageId = finishStreaming(toolCalls.length > 0 ? toolCalls : undefined)
-
-          // Check if any tool call is a propose_placement
-          const proposalCall = toolCalls.find((tc) => tc.tool === 'propose_placement') as ProposePlacementToolCall | undefined
-          if (proposalCall) {
-            // propose_placement is handled as UI options, not as mutations
-            setAIProcessing(false)
-            summarizeIfNeeded()
-          } else if (toolCalls.length > 0) {
-            processToolCalls(messageId, toolCalls)
-          } else {
-            setAIProcessing(false)
-          }
-        },
-        onError: (err) => {
-          setStreamError(err)
-          setAIProcessing(false)
-        },
-      },
-    )
-
-    abortRef.current = abortController
-  }, [
-    input,
-    isStreaming,
-    isAIProcessing,
-    addUserMessage,
-    startStreaming,
-    appendStreamContent,
-    finishStreaming,
-    setStreamError,
-    setAIProcessing,
-    messages,
-    confirmOperations,
-    rejectOperations,
-    addOperationLog,
-    setScreenshotAfter,
-  ])
+    // Start the agentic loop — all business logic is in ai-agent-loop.ts
+    runAgentLoop({
+      userMessage: trimmed,
+      catalogSummary: catalogSummaryRef.current!,
+    })
+  }, [input, isStreaming, isAIProcessing, pendingQuestion, addUserMessage])
 
   const handleConfirm = useCallback(
-    async (messageId: string, operations: ValidatedOperation[]) => {
-      const log = confirmGhostPreview(operations)
-      log.messageId = messageId
-      addOperationLog(log)
-      confirmOperations(messageId)
-
-      // Capture after screenshot (small delay to let renderer update)
-      setTimeout(async () => {
-        const afterScreenshot = await captureScreenshot()
-        if (afterScreenshot) {
-          setScreenshotAfter(messageId, afterScreenshot)
-        }
-      }, 200)
+    (messageId: string, operations: ValidatedOperation[]) => {
+      confirmOperationsFromUI(messageId, operations)
     },
-    [confirmOperations, addOperationLog, setScreenshotAfter],
+    [],
   )
 
   const handleReject = useCallback(
     (messageId: string) => {
-      clearGhostPreview()
-      rejectOperations(messageId)
+      rejectOperationsFromUI(messageId)
     },
-    [rejectOperations],
+    [],
   )
 
   const handleKeyDown = useCallback(
@@ -302,22 +138,14 @@ export function AIChatPanel() {
   const handleProposalConfirm = useCallback(() => {
     const ops = confirmActiveProposal()
     if (ops) {
-      // Find the latest message with pending operations
       const pendingMsg = [...messages].reverse().find(
         (m) => m.operationStatus === 'pending' && m.operations?.length,
       )
       if (pendingMsg) {
-        confirmOperations(pendingMsg.id)
-        // Capture after screenshot
-        setTimeout(async () => {
-          const afterScreenshot = await captureScreenshot()
-          if (afterScreenshot) {
-            setScreenshotAfter(pendingMsg.id, afterScreenshot)
-          }
-        }, 200)
+        confirmOperationsFromUI(pendingMsg.id, pendingMsg.operations!)
       }
     }
-  }, [messages, confirmOperations, setScreenshotAfter])
+  }, [messages])
 
   const handleProposalReject = useCallback(() => {
     rejectAllProposals()
@@ -325,9 +153,9 @@ export function AIChatPanel() {
       (m) => m.operationStatus === 'pending' && m.operations?.length,
     )
     if (pendingMsg) {
-      rejectOperations(pendingMsg.id)
+      rejectOperationsFromUI(pendingMsg.id)
     }
-  }, [messages, rejectOperations])
+  }, [messages])
 
   return (
     <div className="flex h-full flex-col">
@@ -371,11 +199,25 @@ export function AIChatPanel() {
                   {streamingContent || (
                     <span className="flex items-center gap-1.5 text-muted-foreground">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      思考中...
+                      {iterationCount > 1 ? `迭代 ${iterationCount} — 思考中...` : '思考中...'}
                     </span>
                   )}
                 </div>
               </div>
+            )}
+
+            {/* Pending Question from AI */}
+            {pendingQuestion && (
+              <PendingQuestionCard
+                question={pendingQuestion.question}
+                suggestions={pendingQuestion.suggestions}
+                onAnswer={(answer) => {
+                  answerPendingQuestion(answer)
+                }}
+                onSuggestionClick={(suggestion) => {
+                  setInput(suggestion)
+                }}
+              />
             )}
 
             <div ref={messagesEndRef} />
@@ -412,21 +254,21 @@ export function AIChatPanel() {
           <textarea
             ref={textareaRef}
             className="max-h-[120px] min-h-[36px] flex-1 resize-none rounded-lg border border-input bg-accent/30 px-3 py-2 font-barlow text-sm shadow-xs outline-none placeholder:text-muted-foreground/50 focus:border-sidebar-primary/50 focus:ring-1 focus:ring-sidebar-primary/20"
-            disabled={isStreaming || isAIProcessing}
+            disabled={isStreaming || (isAIProcessing && !pendingQuestion)}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="描述你想要的设计变更..."
+            placeholder={pendingQuestion ? '回答 AI 的问题...' : '描述你想要的设计变更...'}
             rows={1}
             value={input}
           />
           <button
             className={cn(
               'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all',
-              input.trim() && !isStreaming && !isAIProcessing
+              input.trim() && !isStreaming && !(isAIProcessing && !pendingQuestion)
                 ? 'bg-sidebar-primary text-white hover:bg-sidebar-primary/90'
                 : 'bg-accent/50 text-muted-foreground',
             )}
-            disabled={!input.trim() || isStreaming || isAIProcessing}
+            disabled={!input.trim() || isStreaming || (isAIProcessing && !pendingQuestion)}
             onClick={handleSend}
             type="button"
           >
@@ -493,12 +335,57 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick: (text: string) =
 }
 
 // ============================================================================
+// Pending Question Card (AI asks user a question)
+// ============================================================================
+
+function PendingQuestionCard({
+  question,
+  suggestions,
+  onAnswer,
+  onSuggestionClick,
+}: {
+  question: string
+  suggestions?: string[]
+  onAnswer: (answer: string) => void
+  onSuggestionClick: (suggestion: string) => void
+}) {
+  return (
+    <motion.div
+      animate={{ opacity: 1, y: 0 }}
+      className="flex gap-2"
+      initial={{ opacity: 0, y: 8 }}
+    >
+      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-yellow-500/20">
+        <MessageCircleQuestion className="h-3.5 w-3.5 text-yellow-500" />
+      </div>
+      <div className="flex-1 rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-3 py-2">
+        <p className="font-barlow text-sm">{question}</p>
+        {suggestions && suggestions.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {suggestions.map((s) => (
+              <button
+                className="rounded-md border border-border/50 bg-accent/30 px-2 py-1 font-barlow text-[11px] transition-colors hover:bg-accent/60"
+                key={s}
+                onClick={() => onSuggestionClick(s)}
+                type="button"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+// ============================================================================
 // Before/After Comparison with Lightbox
 // ============================================================================
 
 function BeforeAfterComparison({ before, after }: { before: string; after: string }) {
   const [isOpen, setIsOpen] = useState(false)
-  // Slider position as percentage (0–100), default 50% center
+  // Slider position as percentage (0-100), default 50% center
   const [sliderPos, setSliderPos] = useState(50)
   const containerRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
@@ -666,9 +553,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           <PlacementProposalCards
             message={message}
             onSelectOption={(option) => {
-              // 将用户选择作为消息发回，触发 AI 执行
               const text = `我选择方案 ${option.id}：${option.label}`
-              // Trigger the input and send via parent — use a custom event
               window.dispatchEvent(new CustomEvent('ai-select-option', { detail: text }))
             }}
           />

@@ -61,6 +61,9 @@ export type AIToolCall =
   | UpdateMaterialToolCall
   | BatchOperationsToolCall
   | ProposePlacementToolCall
+  | AskUserToolCall
+  | ConfirmPreviewToolCall
+  | RejectPreviewToolCall
 
 // ============================================================================
 // Validated Operation (output of mutation executor)
@@ -198,6 +201,79 @@ export interface SceneItemSummary {
   rotationY: number
   dimensions: [number, number, number]
   category: string
+}
+
+// ============================================================================
+// Agentic Loop — Tool Result (fed back to LLM)
+// ============================================================================
+
+/** Structured result of executing a tool call, fed back to LLM for iteration */
+export interface ToolResult {
+  /** The tool name that was called */
+  toolName: string
+  /** Whether execution succeeded */
+  success: boolean
+  /** Human-readable summary of what happened */
+  summary: string
+  /** Details for the LLM to reason about */
+  details: {
+    /** Operations that were validated and applied */
+    validCount: number
+    /** Operations that needed position/collision adjustments */
+    adjustedCount: number
+    /** Operations that failed validation */
+    invalidCount: number
+    /** Specific adjustment descriptions */
+    adjustments: string[]
+    /** Specific error descriptions */
+    errors: string[]
+  }
+}
+
+// ============================================================================
+// Agentic Loop — Additional Tool Call Types
+// ============================================================================
+
+/** LLM asks the user a question and waits for response */
+export interface AskUserToolCall {
+  tool: 'ask_user'
+  question: string
+  /** Optional suggested responses */
+  suggestions?: string[]
+}
+
+/** LLM confirms the current ghost preview */
+export interface ConfirmPreviewToolCall {
+  tool: 'confirm_preview'
+  reason?: string
+}
+
+/** LLM rejects the current ghost preview */
+export interface RejectPreviewToolCall {
+  tool: 'reject_preview'
+  reason?: string
+}
+
+// ============================================================================
+// Agentic Loop — State
+// ============================================================================
+
+export type AgentLoopState = 'idle' | 'running' | 'paused' | 'complete'
+
+/** Message format for the agentic loop (supports tool_result role) */
+export interface AgentMessage {
+  role: 'user' | 'assistant' | 'tool'
+  content: string
+  /** Tool call ID (required for tool role messages) */
+  tool_call_id?: string
+}
+
+/** Pending question from ask_user tool */
+export interface PendingQuestion {
+  question: string
+  suggestions?: string[]
+  /** Resolve function to resume the agentic loop */
+  resolve: (answer: string) => void
 }
 
 // ============================================================================

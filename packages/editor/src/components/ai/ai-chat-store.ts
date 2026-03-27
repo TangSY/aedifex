@@ -4,7 +4,9 @@ import type {
   AIChatRequest,
   AIOperationLog,
   AIToolCall,
+  AgentLoopState,
   ChatMessage,
+  PendingQuestion,
   Proposal,
   ValidatedOperation,
 } from './types'
@@ -35,6 +37,11 @@ export interface AIChatState {
   // Conversation summarization
   conversationSummary: string | null
   isSummarizing: boolean
+
+  // Agentic loop
+  loopState: AgentLoopState
+  iterationCount: number
+  pendingQuestion: PendingQuestion | null
 
   // Feature flag
   isEnabled: boolean
@@ -69,6 +76,12 @@ export interface AIChatActions {
   // AI lock
   setAIProcessing: (processing: boolean) => void
 
+  // Agentic loop
+  setLoopState: (state: AgentLoopState) => void
+  setIterationCount: (count: number) => void
+  setPendingQuestion: (question: PendingQuestion | null) => void
+  resolvePendingQuestion: (answer: string) => void
+
   // Summarization
   summarizeIfNeeded: () => Promise<void>
 
@@ -92,6 +105,9 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
   error: null,
   conversationSummary: null,
   isSummarizing: false,
+  loopState: 'idle',
+  iterationCount: 0,
+  pendingQuestion: null,
   isEnabled: true,
 
   // Message actions
@@ -218,6 +234,27 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
     set({ isAIProcessing: processing })
   },
 
+  // Agentic loop
+  setLoopState: (loopState) => {
+    set({ loopState })
+  },
+
+  setIterationCount: (iterationCount) => {
+    set({ iterationCount })
+  },
+
+  setPendingQuestion: (pendingQuestion) => {
+    set({ pendingQuestion })
+  },
+
+  resolvePendingQuestion: (answer) => {
+    const { pendingQuestion } = get()
+    if (pendingQuestion) {
+      pendingQuestion.resolve(answer)
+      set({ pendingQuestion: null, loopState: 'running' })
+    }
+  },
+
   // Summarization
   summarizeIfNeeded: async () => {
     const { messages, conversationSummary, isSummarizing } = get()
@@ -274,6 +311,9 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
       error: null,
       conversationSummary: null,
       isSummarizing: false,
+      loopState: 'idle',
+      iterationCount: 0,
+      pendingQuestion: null,
     })
   },
 

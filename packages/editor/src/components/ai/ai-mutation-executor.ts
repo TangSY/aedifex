@@ -14,6 +14,7 @@ import type {
   AddItemToolCall,
   MoveItemToolCall,
   RemoveItemToolCall,
+  ToolResult,
   UpdateMaterialToolCall,
   ValidatedAddItem,
   ValidatedMoveItem,
@@ -49,7 +50,12 @@ export function validateToolCall(toolCall: AIToolCall): ValidatedOperation[] {
         return validateToolCall(fullOp)
       })
     case 'propose_placement':
-      // propose_placement is not a mutation — it's handled separately by the chat panel
+    case 'ask_user':
+    case 'confirm_preview':
+    case 'reject_preview':
+      // Non-mutation tools — handled separately by the agent loop
+      return []
+    default:
       return []
   }
 }
@@ -61,6 +67,54 @@ export function validateToolCall(toolCall: AIToolCall): ValidatedOperation[] {
 export function validateAllToolCalls(toolCalls: AIToolCall[]): ValidatedOperation[] {
   const validated = toolCalls.flatMap(validateToolCall)
   return optimizeLayout(validated)
+}
+
+/**
+ * Build a structured ToolResult from validated operations.
+ * This result is fed back to the LLM so it can iterate on its decisions.
+ */
+export function buildToolResult(
+  toolName: string,
+  operations: ValidatedOperation[],
+): ToolResult {
+  const validCount = operations.filter((op) => op.status === 'valid').length
+  const adjustedCount = operations.filter((op) => op.status === 'adjusted').length
+  const invalidCount = operations.filter((op) => op.status === 'invalid').length
+
+  const adjustments: string[] = []
+  const errors: string[] = []
+
+  for (const op of operations) {
+    if (op.status === 'adjusted') {
+      const reason = 'adjustmentReason' in op ? op.adjustmentReason : undefined
+      if (reason) adjustments.push(`${op.type}: ${reason}`)
+    }
+    if (op.status === 'invalid') {
+      const reason = 'errorReason' in op ? op.errorReason : undefined
+      if (reason) errors.push(`${op.type}: ${reason}`)
+    }
+  }
+
+  const success = invalidCount === 0
+  const parts: string[] = []
+  if (validCount > 0) parts.push(`${validCount} succeeded`)
+  if (adjustedCount > 0) parts.push(`${adjustedCount} adjusted`)
+  if (invalidCount > 0) parts.push(`${invalidCount} failed`)
+
+  return {
+    toolName,
+    success,
+    summary: `Executed ${operations.length} operations: ${parts.join(', ')}.${
+      adjustments.length > 0 ? ` Adjustments: ${adjustments.join('; ')}` : ''
+    }${errors.length > 0 ? ` Errors: ${errors.join('; ')}` : ''}`,
+    details: {
+      validCount,
+      adjustedCount,
+      invalidCount,
+      adjustments,
+      errors,
+    },
+  }
 }
 
 // ============================================================================

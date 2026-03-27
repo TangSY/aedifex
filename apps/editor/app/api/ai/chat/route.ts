@@ -83,6 +83,16 @@ You are an AGENT, not a simple tool executor. Think before acting:
 4. **update_material**: Change material/color of items
 5. **batch_operations**: Execute multiple operations at once
 6. **propose_placement**: Present placement options to the user for confirmation
+7. **ask_user**: Ask the user a clarifying question when you need more information before proceeding
+8. **confirm_preview**: Confirm the current ghost preview (used when the user says they're satisfied)
+9. **reject_preview**: Reject the current ghost preview (used when the user wants to discard changes)
+
+## Agentic Loop
+You operate in a loop: you call tools, receive execution results (including any position adjustments or validation errors), and can iterate. When you receive a tool_result:
+- If operations were ADJUSTED (position shifted due to collision/bounds), review the adjustments and decide if another iteration is needed.
+- If operations were INVALID (catalog not found, node doesn't exist), try a different approach or ask_user for clarification.
+- If all operations were VALID, respond with a summary. The system will handle confirm/reject via UI buttons.
+- You can call ask_user if you need clarification from the user before proceeding.
 
 ## Coordinate Rules
 - Positions are in meters [x, y, z] where Y is up (Y=0 for floor items).
@@ -313,6 +323,60 @@ const OPENAI_TOOLS: ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'ask_user',
+      description: 'Ask the user a clarifying question when you need more information before proceeding. Use when the request is ambiguous or you need to confirm details.',
+      parameters: {
+        type: 'object',
+        properties: {
+          question: {
+            type: 'string',
+            description: 'The question to ask the user.',
+          },
+          suggestions: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Optional suggested responses for the user to choose from.',
+          },
+        },
+        required: ['question'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'confirm_preview',
+      description: 'Confirm and apply the current ghost preview. Use when the user explicitly agrees with the current preview state.',
+      parameters: {
+        type: 'object',
+        properties: {
+          reason: {
+            type: 'string',
+            description: 'Brief explanation of what is being confirmed.',
+          },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'reject_preview',
+      description: 'Reject and discard the current ghost preview. Use when the user wants to undo/cancel the current preview.',
+      parameters: {
+        type: 'object',
+        properties: {
+          reason: {
+            type: 'string',
+            description: 'Brief explanation of why the preview is being rejected.',
+          },
+        },
+      },
+    },
+  },
 ]
 
 // ============================================================================
@@ -337,7 +401,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  let body: { messages: { role: string; content: string }[]; catalogSummary: string; sceneContext: string }
+  let body: { messages: { role: string; content: string; tool_call_id?: string }[]; catalogSummary: string; sceneContext: string }
   try {
     body = await request.json()
   } catch {
@@ -363,11 +427,20 @@ export async function POST(request: NextRequest) {
       tools: OPENAI_TOOLS,
       stream: true,
       messages: [
-        { role: 'system', content: systemPrompt },
-        ...messages.map((m) => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-        })),
+        { role: 'system' as const, content: systemPrompt },
+        ...messages.map((m) => {
+          if (m.role === 'tool' && m.tool_call_id) {
+            return {
+              role: 'tool' as const,
+              content: m.content,
+              tool_call_id: m.tool_call_id,
+            }
+          }
+          return {
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+          }
+        }),
       ],
     })
 
