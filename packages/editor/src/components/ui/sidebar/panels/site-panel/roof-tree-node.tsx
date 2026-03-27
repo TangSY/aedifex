@@ -1,5 +1,5 @@
-import { type AnyNodeId, type RoofNode, type RoofSegmentNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, type RoofNode, type RoofSegmentNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { AnimatePresence } from 'motion/react'
 import Image from 'next/image'
 import { useCallback, useEffect, useState } from 'react'

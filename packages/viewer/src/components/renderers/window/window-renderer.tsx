@@ -1,4 +1,4 @@
-import { useRegistry, type WindowNode } from '@pascal-app/core'
+import { useRegistry, type WindowNode } from '@aedifex/core'
 import { useRef } from 'react'
 import type { Mesh } from 'three'
 import { useNodeEvents } from '../../../hooks/use-node-events'

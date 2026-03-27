@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "@number-flow/react": "^0.5.14",
-    "@pascal-app/core": "workspace:*",
-    "@pascal-app/editor": "workspace:*",
-    "@pascal-app/viewer": "workspace:*",
+    "@aedifex/core": "workspace:*",
+    "@aedifex/editor": "workspace:*",
+    "@aedifex/viewer": "workspace:*",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@tailwindcss/postcss": "^4.2.1",
@@ -30,7 +30,7 @@
     "three": "^0.183.1"
   },
   "devDependencies": {
-    "@pascal/typescript-config": "workspace:*",
+    "@aedifex/typescript-config": "workspace:*",
     "@types/howler": "^2.2.12",
     "@types/node": "^22.19.12",
     "@types/react": "19.2.2",

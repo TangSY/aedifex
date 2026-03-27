@@ -85,7 +85,7 @@ canPlaceOnCeiling(
 When items rest on a slab (not flat ground), use these to get the correct Y:
 
 ```ts
-import { spatialGridManager } from '@pascal-app/core'
+import { spatialGridManager } from '@aedifex/core'
 
 // Y at a single point
 const y = spatialGridManager.getSlabElevationAt(levelId, x, z)

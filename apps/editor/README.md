@@ -1,4 +1,4 @@
-# Pascal Editor
+# Aedifex
 
 A 3D building editor built with React Three Fiber and WebGPU.
 
@@ -19,8 +19,8 @@ editor-v2/
 
 | Package | Responsibility |
 |---------|---------------|
-| **@pascal-app/core** | Node schemas, scene state (Zustand), systems (geometry generation), spatial queries, event bus |
-| **@pascal-app/viewer** | 3D rendering via React Three Fiber, default camera/controls, post-processing |
+| **@aedifex/core** | Node schemas, scene state (Zustand), systems (geometry generation), spatial queries, event bus |
+| **@aedifex/viewer** | 3D rendering via React Three Fiber, default camera/controls, post-processing |
 | **apps/editor** | UI components, tools, custom behaviors, editor-specific systems |
 
 The **viewer** renders the scene with sensible defaults. The **editor** extends it with interactive tools, selection management, and editing capabilities.
@@ -31,8 +31,8 @@ Each package has its own Zustand store for managing state:
 
 | Store | Package | Responsibility |
 |-------|---------|----------------|
-| `useScene` | `@pascal-app/core` | Scene data: nodes, root IDs, dirty nodes, CRUD operations. Persisted to IndexedDB with undo/redo via Zundo. |
-| `useViewer` | `@pascal-app/viewer` | Viewer state: current selection (building/level/zone IDs), level display mode (stacked/exploded/solo), camera mode. |
+| `useScene` | `@aedifex/core` | Scene data: nodes, root IDs, dirty nodes, CRUD operations. Persisted to IndexedDB with undo/redo via Zundo. |
+| `useViewer` | `@aedifex/viewer` | Viewer state: current selection (building/level/zone IDs), level display mode (stacked/exploded/solo), camera mode. |
 | `useEditor` | `apps/editor` | Editor state: active tool, structure layer visibility, panel states, editor-specific preferences. |
 
 **Access patterns:**
@@ -88,7 +88,7 @@ Nodes are stored in a **flat dictionary** (`Record<id, Node>`), not a nested tre
 
 ### Scene State (Zustand Store)
 
-The scene is managed by a Zustand store in `@pascal-app/core`:
+The scene is managed by a Zustand store in `@aedifex/core`:
 
 ```typescript
 useScene.getState() = {
@@ -178,7 +178,7 @@ const WallRenderer = ({ node }) => {
 
 Systems are React components that run in the render loop (`useFrame`) to update geometry and transforms. They process **dirty nodes** marked by the store.
 
-**Core Systems (in `@pascal-app/core`):**
+**Core Systems (in `@aedifex/core`):**
 
 | System | Responsibility |
 |--------|---------------|
@@ -188,7 +188,7 @@ Systems are React components that run in the render loop (`useFrame`) to update 
 | `RoofSystem` | Generates roof geometry |
 | `ItemSystem` | Positions items on walls, ceilings, or floors (slab elevation) |
 
-**Viewer Systems (in `@pascal-app/viewer`):**
+**Viewer Systems (in `@aedifex/viewer`):**
 
 | System | Responsibility |
 |--------|---------------|

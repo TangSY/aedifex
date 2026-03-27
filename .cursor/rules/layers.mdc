@@ -12,15 +12,15 @@ Three.js `Layers` control which objects each camera and render pass sees. We use
 
 | Constant | Value | Package | Purpose |
 |---|---|---|---|
-| `SCENE_LAYER` | `0` | `@pascal-app/viewer` | Default Three.js layer — all regular scene geometry |
+| `SCENE_LAYER` | `0` | `@aedifex/viewer` | Default Three.js layer — all regular scene geometry |
 | `EDITOR_LAYER` | `1` | `apps/editor` | Editor-only helpers: grid, tool previews, cursor meshes, snap guides |
-| `ZONE_LAYER` | `2` | `@pascal-app/viewer` | Zone floor fills and wall borders — composited in a separate post-processing pass |
+| `ZONE_LAYER` | `2` | `@aedifex/viewer` | Zone floor fills and wall borders — composited in a separate post-processing pass |
 
 Import the constants from their owning packages:
 
 ```ts
 // In viewer code
-import { SCENE_LAYER, ZONE_LAYER } from '@pascal-app/viewer'
+import { SCENE_LAYER, ZONE_LAYER } from '@aedifex/viewer'
 
 // In editor code
 import { EDITOR_LAYER } from '@/lib/constants'
@@ -50,7 +50,7 @@ The editor camera enables `EDITOR_LAYER` so tools and helpers are visible during
 ## Rules
 
 - **Never hardcode layer numbers.** Always use the named constants.
-- **`SCENE_LAYER` and `ZONE_LAYER` belong in `@pascal-app/viewer`** — they are renderer concerns, not editor concerns.
+- **`SCENE_LAYER` and `ZONE_LAYER` belong in `@aedifex/viewer`** — they are renderer concerns, not editor concerns.
 - **`EDITOR_LAYER` belongs in `apps/editor`** — the viewer must never import it; editor behaviour is injected via props/children.
 - **Zone meshes must set `layers={ZONE_LAYER}`** so they are picked up by `zonePass` and excluded from `scenePass` depth buffers.
 - **Editor helper meshes must set `layers={EDITOR_LAYER}`** so they are invisible to the thumbnail camera and the viewer's render passes.

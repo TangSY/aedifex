@@ -1,7 +1,7 @@
 {
-  "name": "@pascal-app/viewer",
+  "name": "@aedifex/viewer",
   "version": "0.3.0",
-  "description": "3D viewer component for Pascal building editor",
+  "description": "3D viewer component for Aedifex building editor",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -22,7 +22,7 @@
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
-    "@pascal-app/core": "workspace:*",
+    "@aedifex/core": "workspace:*",
     "@react-three/drei": "^10",
     "@react-three/fiber": "^9",
     "react": "^18 || ^19",
@@ -33,7 +33,7 @@
     "zustand": "^5"
   },
   "devDependencies": {
-    "@pascal/typescript-config": "workspace:*",
+    "@aedifex/typescript-config": "workspace:*",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.2",
     "@types/three": "^0.183.0",
@@ -51,10 +51,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/pascalorg/editor.git",
+    "url": "https://github.com/aedifex-app/editor.git",
     "directory": "packages/viewer"
   },
   "license": "MIT",
-  "homepage": "https://github.com/pascalorg/editor/tree/main/packages/viewer#readme",
-  "bugs": "https://github.com/pascalorg/editor/issues"
+  "homepage": "https://github.com/aedifex-app/editor/tree/main/packages/viewer#readme",
+  "bugs": "https://github.com/aedifex-app/editor/issues"
 }

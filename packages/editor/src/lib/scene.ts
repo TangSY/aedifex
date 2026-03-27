@@ -1,7 +1,7 @@
 'use client'
 
-import { resolveLevelId, sceneRegistry, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { resolveLevelId, sceneRegistry, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import useEditor, {
   hasCustomPersistedEditorUiState,
   normalizePersistedEditorUiState,
@@ -35,7 +35,7 @@ const EMPTY_PERSISTED_SELECTION: PersistedSelectionPath = {
   selectedIds: [],
 }
 
-const SELECTION_STORAGE_KEY = 'pascal-editor-selection'
+const SELECTION_STORAGE_KEY = 'aedifex-editor-selection'
 
 function getSelectionStorageKey(): string {
   const projectId = useViewer.getState().projectId
@@ -369,7 +369,7 @@ export function applySceneGraphToEditor(sceneGraph?: SceneGraph | null) {
   syncEditorSelectionFromCurrentScene()
 }
 
-const LOCAL_STORAGE_KEY = 'pascal-editor-scene'
+const LOCAL_STORAGE_KEY = 'aedifex-editor-scene'
 
 export function saveSceneToLocalStorage(scene: SceneGraph): void {
   try {

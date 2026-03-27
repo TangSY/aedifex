@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId, AssetInput } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, AssetInput } from '@aedifex/core'
 
 // ============================================================================
 // Claude Tool Call Types

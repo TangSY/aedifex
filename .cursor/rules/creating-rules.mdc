@@ -70,7 +70,7 @@ Concrete guidance with examples.
 | `renderers` | Node renderer pattern in `packages/viewer` |
 | `systems` | Core and viewer systems architecture |
 | `tools` | Editor tools structure in `apps/editor` |
-| `viewer-isolation` | Keeping `@pascal-app/viewer` editor-agnostic |
+| `viewer-isolation` | Keeping `@aedifex/viewer` editor-agnostic |
 | `scene-registry` | Global node ID → Object3D map and `useRegistry` |
 | `selection-managers` | Two-layer selection (viewer + editor), events, outliner |
 | `events` | Typed event bus — emitting and listening to node and grid events |

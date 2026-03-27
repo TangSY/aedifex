@@ -1,4 +1,4 @@
-import { type DoorNode, useRegistry } from '@pascal-app/core'
+import { type DoorNode, useRegistry } from '@aedifex/core'
 import { useRef } from 'react'
 import type { Mesh } from 'three'
 import { useNodeEvents } from '../../../hooks/use-node-events'

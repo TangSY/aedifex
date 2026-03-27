@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  transpilePackages: ['three', '@pascal-app/viewer', '@pascal-app/core', '@pascal-app/editor'],
+  transpilePackages: ['three', '@aedifex/viewer', '@aedifex/core', '@aedifex/editor'],
   turbopack: {
     resolveAlias: {
       react: './node_modules/react',

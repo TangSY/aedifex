@@ -1,5 +1,5 @@
-import { type EventSuffix, emitter, type GridEvent } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type EventSuffix, emitter, type GridEvent } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import { Plane, Raycaster, Vector2, Vector3 } from 'three'

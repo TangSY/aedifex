@@ -5,8 +5,8 @@ import {
   type WallNode,
   spatialGridManager,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { resolveCatalogSlug } from './ai-catalog-resolver'
 import { clampToWall, hasWallChildOverlap } from '../tools/door/door-math'
 import { optimizeLayout } from './ai-layout-optimizer'

@@ -3,8 +3,8 @@ import {
   type AnyNodeId,
   ItemNode,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { nanoid } from 'nanoid'
 import { useAIChat } from './ai-chat-store'
 import type { Proposal, ValidatedOperation } from './types'

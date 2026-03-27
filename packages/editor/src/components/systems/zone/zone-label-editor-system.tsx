@@ -1,7 +1,7 @@
 'use client'
 
-import { useScene, type ZoneNode } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { useScene, type ZoneNode } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Check, Pencil } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'

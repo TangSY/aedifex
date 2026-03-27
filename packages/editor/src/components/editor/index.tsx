@@ -1,8 +1,8 @@
 'use client'
 
 import { Icon } from '@iconify/react'
-import { initSpaceDetectionSync, initSpatialGridSync, useScene } from '@pascal-app/core'
-import { InteractiveSystem, useViewer, Viewer } from '@pascal-app/viewer'
+import { initSpaceDetectionSync, initSpatialGridSync, useScene } from '@aedifex/core'
+import { InteractiveSystem, useViewer, Viewer } from '@aedifex/viewer'
 import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { ViewerOverlay } from '../../components/viewer-overlay'
 import { ViewerZoneSystem } from '../../components/viewer-zone-system'

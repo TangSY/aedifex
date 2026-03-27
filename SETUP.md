@@ -1,6 +1,6 @@
-# Pascal Editor - Setup Guide
+# Aedifex - Setup Guide
 
-This guide will help you set up the Pascal Editor with authentication and database integration.
+This guide will help you set up the Aedifex with authentication and database integration.
 
 ## Prerequisites
 
@@ -89,12 +89,12 @@ The editor will be available at http://localhost:3000
 │       └── features/
 │           └── cloud-sync/  # Cloud sync feature
 ├── packages/
-│   ├── auth/               # @pascal-app/auth - Authentication package
+│   ├── auth/               # @aedifex/auth - Authentication package
 │   │   ├── src/
 │   │   │   ├── server.ts   # Better Auth server config
 │   │   │   └── client.ts   # Better Auth client
 │   │   └── README.md
-│   ├── db/                 # @pascal-app/db - Database package
+│   ├── db/                 # @aedifex/db - Database package
 │   │   ├── src/
 │   │   │   ├── client.ts   # Supabase client (with RLS)
 │   │   │   ├── server.ts   # Supabase admin client
@@ -103,8 +103,8 @@ The editor will be available at http://localhost:3000
 │   │   │   ├── config.toml
 │   │   │   └── migrations/ # SQL migrations
 │   │   └── README.md
-│   ├── core/               # @pascal-app/core - Core editor logic
-│   ├── viewer/             # @pascal-app/viewer - 3D viewer
+│   ├── core/               # @aedifex/core - Core editor logic
+│   ├── viewer/             # @aedifex/viewer - 3D viewer
 │   └── ui/                 # @repo/ui - Shared UI components
 └── turbo.json
 ```

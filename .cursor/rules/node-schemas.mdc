@@ -52,8 +52,8 @@ Then add `MyNode` to the `AnyNode` union in `packages/core/src/schema/types.ts`.
 Always use `.parse()` to validate and generate a proper typed ID. Never construct a plain object manually.
 
 ```ts
-import { WallNode } from '@pascal-app/core'
-import { useScene } from '@pascal-app/core'
+import { WallNode } from '@aedifex/core'
+import { useScene } from '@aedifex/core'
 
 // 1. Parse validates and fills defaults (including auto-generated id)
 const wall = WallNode.parse({ name: 'Wall 1', start: [0, 0], end: [5, 0] })

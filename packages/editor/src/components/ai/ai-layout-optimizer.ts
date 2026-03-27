@@ -1,5 +1,5 @@
-import type { WallNode } from '@pascal-app/core'
-import { useScene } from '@pascal-app/core'
+import type { WallNode } from '@aedifex/core'
+import { useScene } from '@aedifex/core'
 import type { ValidatedAddItem, ValidatedMoveItem, ValidatedOperation } from './types'
 
 // ============================================================================

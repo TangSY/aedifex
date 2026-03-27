@@ -55,7 +55,7 @@ if [[ ! -f "$GOOGLE_SA_ABS" ]]; then
 fi
 
 MAIN_SHA="$(git -C "$ROOT_DIR" rev-parse main)"
-WORKTREE_DIR="$(mktemp -d /tmp/pascal-release-android-XXXXXX)"
+WORKTREE_DIR="$(mktemp -d /tmp/aedifex-release-android-XXXXXX)"
 
 cleanup() {
   if git -C "$ROOT_DIR" worktree list --porcelain | rg -q "^worktree ${WORKTREE_DIR}$"; then
@@ -145,7 +145,7 @@ echo "  EAS build id:      $BUILD_ID"
 echo "  Build version:     ${BUILD_VERSION:-unknown}"
 echo "  Build commit:      ${BUILD_COMMIT:-unknown}"
 echo "  Play Store track:  $TRACK"
-echo "  EAS submissions:   https://expo.dev/accounts/pascalorg/projects/pascal/submissions"
+echo "  EAS submissions:   https://expo.dev/accounts/aedifex/projects/aedifex/submissions"
 echo
 echo "EAS auto-submit will upload the AAB to the Play Store '$TRACK' track."
 echo "Check the Google Play Console for processing status."

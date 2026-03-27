@@ -1,5 +1,5 @@
-import { emitter, type GridEvent, type LevelNode, useScene, type WallNode } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { emitter, type GridEvent, type LevelNode, useScene, type WallNode } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useRef } from 'react'
 import { DoubleSide, type Group, type Mesh, Shape, ShapeGeometry, Vector3 } from 'three'
 import { EDITOR_LAYER } from '../../../lib/constants'

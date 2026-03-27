@@ -1,11 +1,11 @@
-# @pascal-app/viewer
+# @aedifex/viewer
 
-3D viewer component for Pascal building editor.
+3D viewer component for Aedifex building editor.
 
 ## Installation
 
 ```bash
-npm install @pascal-app/viewer @pascal-app/core
+npm install @aedifex/viewer @aedifex/core
 ```
 
 ## Peer Dependencies
@@ -26,8 +26,8 @@ npm install react three @react-three/fiber @react-three/drei
 ## Usage
 
 ```typescript
-import { Viewer, useViewer } from '@pascal-app/viewer'
-import { useScene } from '@pascal-app/core'
+import { Viewer, useViewer } from '@aedifex/viewer'
+import { useScene } from '@aedifex/core'
 
 function App() {
   return (
@@ -41,7 +41,7 @@ function App() {
 ## Custom Camera Controls
 
 ```typescript
-import { Viewer } from '@pascal-app/viewer'
+import { Viewer } from '@aedifex/viewer'
 import { CameraControls } from '@react-three/drei'
 
 function App() {
@@ -56,7 +56,7 @@ function App() {
 ## Viewer State
 
 ```typescript
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 
 function ViewerControls() {
   const levelMode = useViewer(s => s.levelMode)
@@ -78,11 +78,11 @@ function ViewerControls() {
 ## Asset CDN Helpers
 
 ```typescript
-import { resolveCdnUrl, ASSETS_CDN_URL } from '@pascal-app/viewer'
+import { resolveCdnUrl, ASSETS_CDN_URL } from '@aedifex/viewer'
 
 // Resolves relative paths to CDN URLs
 const url = resolveCdnUrl('/items/chair/model.glb')
-// → 'https://pascal-cdn.wawasensei.dev/items/chair/model.glb'
+// → 'https://aedifex-cdn.wawasensei.dev/items/chair/model.glb'
 
 // Handles external URLs and asset:// protocol
 const externalUrl = resolveCdnUrl('https://example.com/model.glb')

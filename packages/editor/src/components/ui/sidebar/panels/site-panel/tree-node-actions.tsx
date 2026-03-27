@@ -1,5 +1,5 @@
-import { type AnyNode, type AnyNodeId, emitter, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNode, type AnyNodeId, emitter, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Camera, Eye, EyeOff, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import {

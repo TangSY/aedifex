@@ -1,4 +1,4 @@
-import type { DoorNode, ItemNode, RoofNode, RoofSegmentNode, WindowNode } from '@pascal-app/core'
+import type { DoorNode, ItemNode, RoofNode, RoofSegmentNode, WindowNode } from '@aedifex/core'
 import { Vector3 } from 'three'
 import { sfxEmitter } from '../../../lib/sfx-bus'
 import useEditor from '../../../store/use-editor'

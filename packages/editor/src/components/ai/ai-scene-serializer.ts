@@ -1,6 +1,6 @@
-import type { AnyNode, AnyNodeId, DoorNode, WallNode, WindowNode, ZoneNode } from '@pascal-app/core'
-import { useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import type { AnyNode, AnyNodeId, DoorNode, WallNode, WindowNode, ZoneNode } from '@aedifex/core'
+import { useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import type { SceneContext, SceneItemSummary } from './types'
 
 /**

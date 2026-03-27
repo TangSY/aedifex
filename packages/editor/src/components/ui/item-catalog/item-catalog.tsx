@@ -1,7 +1,7 @@
 'use client'
 
-import type { AssetInput } from '@pascal-app/core'
-import { resolveCdnUrl } from '@pascal-app/viewer'
+import type { AssetInput } from '@aedifex/core'
+import { resolveCdnUrl } from '@aedifex/viewer'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import {

@@ -36,13 +36,13 @@ importers:
       '@number-flow/react':
         specifier: ^0.5.14
         version: 0.5.14(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@pascal-app/core':
+      '@aedifex/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@pascal-app/editor':
+      '@aedifex/editor':
         specifier: workspace:*
         version: link:../../packages/editor
-      '@pascal-app/viewer':
+      '@aedifex/viewer':
         specifier: workspace:*
         version: link:../../packages/viewer
       '@react-three/drei':
@@ -85,7 +85,7 @@ importers:
         specifier: ^0.183.1
         version: 0.183.2
     devDependencies:
-      '@pascal/typescript-config':
+      '@aedifex/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/howler':
@@ -158,7 +158,7 @@ importers:
         specifier: ^5
         version: 5.0.12(@types/react@19.2.2)(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
     devDependencies:
-      '@pascal/typescript-config':
+      '@aedifex/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/react':
@@ -273,13 +273,13 @@ importers:
         specifier: ^5.0.11
         version: 5.0.12(@types/react@19.2.2)(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
     devDependencies:
-      '@pascal-app/core':
+      '@aedifex/core':
         specifier: workspace:*
         version: link:../core
-      '@pascal-app/viewer':
+      '@aedifex/viewer':
         specifier: workspace:*
         version: link:../viewer
-      '@pascal/typescript-config':
+      '@aedifex/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/howler':
@@ -369,7 +369,7 @@ importers:
 
   packages/viewer:
     dependencies:
-      '@pascal-app/core':
+      '@aedifex/core':
         specifier: workspace:*
         version: link:../core
       '@react-three/drei':
@@ -391,7 +391,7 @@ importers:
         specifier: ^5
         version: 5.0.12(@types/react@19.2.2)(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
     devDependencies:
-      '@pascal/typescript-config':
+      '@aedifex/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/node':

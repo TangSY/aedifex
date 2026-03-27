@@ -7,8 +7,8 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 const mockNodes: Record<string, unknown> = {}
 const mockSelection = { levelId: 'level-1' }
 
-// Mock @pascal-app/core
-vi.mock('@pascal-app/core', () => ({
+// Mock @aedifex/core
+vi.mock('@aedifex/core', () => ({
   useScene: {
     getState: () => ({
       nodes: mockNodes,
@@ -20,8 +20,8 @@ vi.mock('@pascal-app/core', () => ({
   },
 }))
 
-// Mock @pascal-app/viewer
-vi.mock('@pascal-app/viewer', () => ({
+// Mock @aedifex/viewer
+vi.mock('@aedifex/viewer', () => ({
   useViewer: {
     getState: () => ({
       selection: mockSelection,
@@ -54,7 +54,7 @@ vi.mock('../ai-catalog-resolver', () => ({
   }),
 }))
 
-import { spatialGridManager } from '@pascal-app/core'
+import { spatialGridManager } from '@aedifex/core'
 import { validateToolCall, validateAllToolCalls } from '../ai-mutation-executor'
 import type {
   AddItemToolCall,

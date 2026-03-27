@@ -59,7 +59,7 @@ function recordTokenUsage(clientId: string, tokens: number) {
 // ============================================================================
 
 function buildSystemPrompt(catalogSummary: string, sceneContext: string): string {
-  return `You are an AI interior design agent for Pascal Editor, a 3D building/interior editor.
+  return `You are an AI interior design agent for Aedifex, a 3D building/interior editor.
 You help professional designers with building structure creation, furniture placement, layout optimization, and material selection.
 
 ## What You CAN Do

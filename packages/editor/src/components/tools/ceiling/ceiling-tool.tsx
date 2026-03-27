@@ -1,5 +1,5 @@
-import { CeilingNode, emitter, type GridEvent, type LevelNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { CeilingNode, emitter, type GridEvent, type LevelNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BufferGeometry, DoubleSide, type Group, type Line, Shape, Vector3 } from 'three'
 import { mix, positionLocal } from 'three/tsl'

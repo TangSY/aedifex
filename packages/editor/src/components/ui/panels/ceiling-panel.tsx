@@ -1,7 +1,7 @@
 'use client'
 
-import { type AnyNode, type CeilingNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNode, type CeilingNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Edit, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect } from 'react'
 import useEditor from '../../../store/use-editor'

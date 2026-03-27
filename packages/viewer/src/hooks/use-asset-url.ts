@@ -1,4 +1,4 @@
-import { loadAssetUrl } from '@pascal-app/core'
+import { loadAssetUrl } from '@aedifex/core'
 import { useEffect, useState } from 'react'
 
 /**

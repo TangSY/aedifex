@@ -1,5 +1,5 @@
-import { useScene, type ZoneNode } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { useScene, type ZoneNode } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useState } from 'react'
 import { ColorDot } from './../../../../../components/ui/primitives/color-dot'
 import { InlineRenameInput } from './inline-rename-input'

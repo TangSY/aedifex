@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Viewer Isolation
 
-`@pascal-app/viewer` is a standalone 3D canvas library. It must never know about editor-specific features, UI state, or tools. This keeps it usable in the read-only `/viewer/[id]` route and in any future embedding context.
+`@aedifex/viewer` is a standalone 3D canvas library. It must never know about editor-specific features, UI state, or tools. This keeps it usable in the read-only `/viewer/[id]` route and in any future embedding context.
 
 ## The Rule
 
@@ -29,7 +29,7 @@ The editor mounts the viewer and passes what it needs:
 
 ```tsx
 // apps/editor/components/editor-canvas.tsx  ✅
-import { Viewer } from '@pascal-app/viewer'
+import { Viewer } from '@aedifex/viewer'
 import { ToolManager } from '../tools/tool-manager'
 import { useEditor } from '../../store/use-editor'
 

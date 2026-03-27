@@ -1,4 +1,4 @@
-import { type AnyNodeId, emitter, useScene } from '@pascal-app/core'
+import { type AnyNodeId, emitter, useScene } from '@aedifex/core'
 import { ChevronRight } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { forwardRef, useEffect, useRef } from 'react'

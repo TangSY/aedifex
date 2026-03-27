@@ -8,8 +8,8 @@ import {
   type RoofSegmentNode,
   RoofSegmentNode as RoofSegmentNodeSchema,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Copy, Move, Plus, Trash2 } from 'lucide-react'
 import { useCallback } from 'react'
 import { sfxEmitter } from '../../../lib/sfx-bus'

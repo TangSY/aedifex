@@ -31,7 +31,7 @@ export const sceneRegistry = {
 Every renderer must call `useRegistry` with a `ref` to its root mesh or group. Registration is synchronous (`useLayoutEffect`) so it's available before the first paint.
 
 ```tsx
-import { useRegistry } from '@pascal-app/core'
+import { useRegistry } from '@aedifex/core'
 
 export function WallRenderer({ node }: { node: WallNode }) {
   const ref = useRef<Mesh>(null!)

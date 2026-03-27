@@ -61,7 +61,7 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled
 }
 
-export function PascalRadio() {
+export function AedifexRadio() {
   const [shuffledPlaylist] = useState(() => shuffleArray(PLAYLIST))
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
   const { masterVolume, radioVolume, muted, isRadioPlaying, setRadioPlaying } = useAudio()
@@ -177,7 +177,7 @@ export function PascalRadio() {
       <div className="flex items-center justify-between gap-2 px-3 py-2 font-medium text-sm">
         <div className="flex items-center gap-2">
           <Disc3 className={cn('h-4 w-4 shrink-0', isRadioPlaying && 'animate-spin')} />
-          <span className="hidden whitespace-nowrap sm:inline">Radio Pascal</span>
+          <span className="hidden whitespace-nowrap sm:inline">Radio Aedifex</span>
         </div>
         <div className="flex items-center gap-2">
           <div

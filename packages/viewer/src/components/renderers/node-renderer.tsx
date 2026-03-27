@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNode, useScene } from '@pascal-app/core'
+import { type AnyNode, useScene } from '@aedifex/core'
 import { BuildingRenderer } from './building/building-renderer'
 import { CeilingRenderer } from './ceiling/ceiling-renderer'
 import { DoorRenderer } from './door/door-renderer'

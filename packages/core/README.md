@@ -1,11 +1,11 @@
-# @pascal-app/core
+# @aedifex/core
 
-Core library for Pascal 3D building editor.
+Core library for Aedifex 3D building editor.
 
 ## Installation
 
 ```bash
-npm install @pascal-app/core
+npm install @aedifex/core
 ```
 
 ## Peer Dependencies
@@ -27,7 +27,7 @@ npm install react three @react-three/fiber @react-three/drei
 ## Usage
 
 ```typescript
-import { useScene, WallNode, ItemNode } from '@pascal-app/core'
+import { useScene, WallNode, ItemNode } from '@aedifex/core'
 
 // Create a wall
 const wall = WallNode.parse({

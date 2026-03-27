@@ -1,5 +1,5 @@
-import { type BuildingNode, LevelNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type BuildingNode, LevelNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Building2, Plus } from 'lucide-react'
 import { useState } from 'react'
 import {

@@ -8,9 +8,9 @@ import {
   resolveLevelId,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useRef } from 'react'
 import useEditor, { type Phase, type StructureLayer } from './../../store/use-editor'
 

@@ -1,5 +1,5 @@
-import { resolveLevelId, type SlabNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { resolveLevelId, type SlabNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback } from 'react'
 import { PolygonEditor } from '../shared/polygon-editor'
 

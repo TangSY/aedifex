@@ -8,8 +8,8 @@ import type {
   ItemNode,
   WallEvent,
   WallNode,
-} from '@pascal-app/core'
-import { getScaledDimensions, sceneRegistry, useScene } from '@pascal-app/core'
+} from '@aedifex/core'
+import { getScaledDimensions, sceneRegistry, useScene } from '@aedifex/core'
 import { Vector3 } from 'three'
 import {
   calculateCursorRotation,

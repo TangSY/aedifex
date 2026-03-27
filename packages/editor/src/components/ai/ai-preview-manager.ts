@@ -6,8 +6,8 @@ import {
   WallNode as WallSchema,
   WindowNode,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { nanoid } from 'nanoid'
 import type {
   AIOperationLog,

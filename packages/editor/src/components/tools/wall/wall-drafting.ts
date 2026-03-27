@@ -1,5 +1,5 @@
-import { useScene, type WallNode, WallNode as WallSchema } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { useScene, type WallNode, WallNode as WallSchema } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { sfxEmitter } from '../../../lib/sfx-bus'
 
 export type WallPlanPoint = [number, number]

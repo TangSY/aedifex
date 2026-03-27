@@ -1,8 +1,8 @@
 'use client'
 
-import type { AnyNodeId, LevelNode } from '@pascal-app/core'
-import { useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import type { AnyNodeId, LevelNode } from '@aedifex/core'
+import { useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Command } from 'cmdk'
 import { ChevronRight, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -258,7 +258,7 @@ export function CommandPalette() {
 
   const takeSnapshot = () => {
     if (!cameraScope) return
-    import('@pascal-app/core').then(({ emitter }) => {
+    import('@aedifex/core').then(({ emitter }) => {
       run(() =>
         emitter.emit('camera-controls:capture', { nodeId: cameraScope.nodeId as AnyNodeId }),
       )
@@ -267,7 +267,7 @@ export function CommandPalette() {
 
   const viewSnapshot = () => {
     if (!(cameraScope && hasScopeSnapshot)) return
-    import('@pascal-app/core').then(({ emitter }) => {
+    import('@aedifex/core').then(({ emitter }) => {
       run(() => emitter.emit('camera-controls:view', { nodeId: cameraScope.nodeId as AnyNodeId }))
     })
   }

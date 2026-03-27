@@ -1,7 +1,7 @@
 'use client'
 
-import type { DoorNode } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import type { DoorNode } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import Image from 'next/image'
 import { useState } from 'react'
 import useEditor from './../../../../../store/use-editor'

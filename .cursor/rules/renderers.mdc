@@ -36,9 +36,9 @@ A renderer **must not**:
 
 ```tsx
 // packages/viewer/src/components/renderers/my-node/index.tsx
-import { useRegistry } from '@pascal-app/core'
+import { useRegistry } from '@aedifex/core'
 import { useNodeEvents } from '../../hooks/use-node-events'
-import { useScene } from '@pascal-app/core'
+import { useScene } from '@aedifex/core'
 
 export function MyNodeRenderer({ node }: { node: MyNode }) {
   const ref = useRef<Mesh>(null!)

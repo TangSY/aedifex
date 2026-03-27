@@ -1,4 +1,4 @@
-import { useRegistry, useScene, type WallNode } from '@pascal-app/core'
+import { useRegistry, useScene, type WallNode } from '@aedifex/core'
 import { useLayoutEffect, useRef } from 'react'
 import type { Mesh } from 'three'
 import { useNodeEvents } from '../../../hooks/use-node-events'

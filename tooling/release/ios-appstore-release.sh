@@ -49,7 +49,7 @@ fi
 export ASC_PRIVATE_KEY_PATH
 
 MAIN_SHA="$(git -C "$ROOT_DIR" rev-parse main)"
-WORKTREE_DIR="$(mktemp -d /tmp/pascal-release-XXXXXX)"
+WORKTREE_DIR="$(mktemp -d /tmp/aedifex-release-XXXXXX)"
 
 cleanup() {
   if git -C "$ROOT_DIR" worktree list --porcelain | rg -q "^worktree ${WORKTREE_DIR}$"; then
@@ -202,7 +202,7 @@ echo "  Build number:        $BUILD_NUMBER"
 echo "  Build commit:        ${BUILD_COMMIT:-unknown}"
 echo "  ASC build id:        $ASC_BUILD_ID"
 echo "  ASC version id:      $VERSION_ID"
-echo "  EAS submissions page: https://expo.dev/accounts/pascalorg/projects/pascal/submissions"
+echo "  EAS submissions page: https://expo.dev/accounts/aedifex/projects/aedifex/submissions"
 
 if [[ "$VALIDATE_EXIT" -ne 0 ]]; then
   if printf '%s' "$VALIDATE_OUTPUT" | rg -q 'availability\.missing'; then

@@ -1,7 +1,7 @@
 'use client'
 
-import type { AnyNodeId, Collection, CollectionId } from '@pascal-app/core'
-import { useScene } from '@pascal-app/core'
+import type { AnyNodeId, Collection, CollectionId } from '@aedifex/core'
+import { useScene } from '@aedifex/core'
 import {
   Check,
   ChevronDown,
