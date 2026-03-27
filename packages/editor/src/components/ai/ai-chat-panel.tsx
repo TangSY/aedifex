@@ -20,11 +20,9 @@ import { generateCatalogSummary } from './ai-catalog-resolver'
 import { useAIChat } from './ai-chat-store'
 import {
   confirmActiveProposal,
-  isProposalModeActive,
   rejectAllProposals,
   switchToProposal,
 } from './ai-proposal-manager'
-import { serializeSceneContext } from './ai-scene-serializer'
 import type { ChatMessage, PlacementOption, Proposal, ProposePlacementToolCall, ValidatedOperation } from './types'
 
 // ============================================================================
@@ -40,13 +38,9 @@ export function AIChatPanel() {
     error,
     proposals,
     activeProposalId,
-    loopState,
     iterationCount,
     pendingQuestion,
     addUserMessage,
-    confirmOperations,
-    rejectOperations,
-    setScreenshotAfter,
     clearChat,
     clearError,
   } = useAIChat()
