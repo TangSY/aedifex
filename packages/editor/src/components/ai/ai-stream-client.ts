@@ -234,6 +234,48 @@ function parseToolCall(name: string, input: Record<string, unknown>): AIToolCall
         reason: input.reason as string | undefined,
       }
 
+    case 'add_wall':
+      return {
+        tool: 'add_wall',
+        start: input.start as [number, number],
+        end: input.end as [number, number],
+        thickness: input.thickness as number | undefined,
+        height: input.height as number | undefined,
+        description: input.description as string | undefined,
+      }
+
+    case 'add_door':
+      return {
+        tool: 'add_door',
+        wallId: input.wallId as string,
+        positionAlongWall: (input.positionAlongWall as number) ?? 0,
+        width: input.width as number | undefined,
+        height: input.height as number | undefined,
+        side: input.side as 'front' | 'back' | undefined,
+        hingesSide: input.hingesSide as 'left' | 'right' | undefined,
+        swingDirection: input.swingDirection as 'inward' | 'outward' | undefined,
+        description: input.description as string | undefined,
+      }
+
+    case 'add_window':
+      return {
+        tool: 'add_window',
+        wallId: input.wallId as string,
+        positionAlongWall: (input.positionAlongWall as number) ?? 0,
+        heightFromFloor: input.heightFromFloor as number | undefined,
+        width: input.width as number | undefined,
+        height: input.height as number | undefined,
+        side: input.side as 'front' | 'back' | undefined,
+        description: input.description as string | undefined,
+      }
+
+    case 'remove_node':
+      return {
+        tool: 'remove_node',
+        nodeId: input.nodeId as string,
+        reason: input.reason as string | undefined,
+      }
+
     case 'batch_operations':
       return {
         tool: 'batch_operations',

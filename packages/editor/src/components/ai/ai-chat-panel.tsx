@@ -24,6 +24,7 @@ import {
   rejectAllProposals,
   switchToProposal,
 } from './ai-proposal-manager'
+import { isGhostPreviewActive } from './ai-preview-manager'
 import { serializeSceneContext } from './ai-scene-serializer'
 import type { ChatMessage, PlacementOption, Proposal, ProposePlacementToolCall, ValidatedOperation } from './types'
 
@@ -98,7 +99,24 @@ export function AIChatPanel() {
     if (pendingQuestion) {
       setInput('')
       answerPendingQuestion(trimmed)
+      textareaRef.current?.focus()
       return
+    }
+
+    // Check if the user is confirming a pending preview via text
+    const pendingMsg = [...messages].reverse().find(
+      (m) => m.operationStatus === 'pending' && m.operations?.length,
+    )
+    if (pendingMsg && isGhostPreviewActive()) {
+      // Detect confirmation intent from user text
+      const confirmPatterns = /^(好|确认|可以|行|没问题|就这样|确定|ok|yes|对|嗯|同意|就这个|放这|就放这|不错|挺好)/i
+      if (confirmPatterns.test(trimmed)) {
+        setInput('')
+        addUserMessage(trimmed)
+        confirmOperationsFromUI(pendingMsg.id, pendingMsg.operations!)
+        textareaRef.current?.focus()
+        return
+      }
     }
 
     setInput('')
@@ -109,7 +127,10 @@ export function AIChatPanel() {
       userMessage: trimmed,
       catalogSummary: catalogSummaryRef.current!,
     })
-  }, [input, isStreaming, isAIProcessing, pendingQuestion, addUserMessage])
+
+    // Keep textarea focused after sending
+    textareaRef.current?.focus()
+  }, [input, isStreaming, isAIProcessing, pendingQuestion, addUserMessage, messages])
 
   const handleConfirm = useCallback(
     (messageId: string, operations: ValidatedOperation[]) => {
@@ -625,14 +646,18 @@ function OperationSummary({
             key={i}
           >
             <span className="shrink-0">
-              {op.type === 'add_item' && '+ '}
-              {op.type === 'remove_item' && '- '}
+              {(op.type === 'add_item' || op.type === 'add_wall' || op.type === 'add_door' || op.type === 'add_window') && '+ '}
+              {(op.type === 'remove_item' || op.type === 'remove_node') && '- '}
               {op.type === 'move_item' && '~ '}
               {op.type === 'update_material' && '* '}
             </span>
             <span className="truncate">
               {op.type === 'add_item' && `添加 ${op.asset?.name ?? 'item'}`}
+              {op.type === 'add_wall' && `添加墙体`}
+              {op.type === 'add_door' && `添加门`}
+              {op.type === 'add_window' && `添加窗户`}
               {op.type === 'remove_item' && `移除 ${op.nodeId}`}
+              {op.type === 'remove_node' && `移除${op.nodeType === 'wall' ? '墙体' : op.nodeType === 'door' ? '门' : op.nodeType === 'window' ? '窗户' : '节点'} ${op.nodeId}`}
               {op.type === 'move_item' && `移动 ${op.nodeId}`}
               {op.type === 'update_material' && `更新材质 ${op.nodeId}`}
             </span>

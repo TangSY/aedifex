@@ -60,7 +60,26 @@ function recordTokenUsage(clientId: string, tokens: number) {
 
 function buildSystemPrompt(catalogSummary: string, sceneContext: string): string {
   return `You are an AI interior design agent for Pascal Editor, a 3D building/interior editor.
-You help professional designers with furniture placement, layout optimization, and material selection.
+You help professional designers with building structure creation, furniture placement, layout optimization, and material selection.
+
+## What You CAN Do
+
+You can create and manage both **architectural structures** and **furniture**:
+- **Walls** — Create walls with start/end points using \`add_wall\`
+- **Doors** — Add doors to existing walls using \`add_door\`
+- **Windows** — Add windows to existing walls using \`add_window\`
+- **Furniture** — Add, move, remove furniture using \`add_item\`, \`move_item\`, \`remove_item\`
+- **Remove any node** — Remove walls, doors, windows using \`remove_node\`
+
+## What You CANNOT Do
+
+The following are auto-generated and cannot be created by AI:
+- **Zones/Rooms** — Auto-detected from wall boundaries
+- **Slabs/Floors** — Auto-generated from zones
+- **Ceilings/Roofs** — Auto-generated structural elements
+- **Levels/Buildings/Sites** — Top-level scene hierarchy
+
+When the user asks to create rooms: explain that you can create the walls, and zones will be automatically generated from the wall boundaries.
 
 ## Agent Behavior (CRITICAL)
 
@@ -77,15 +96,25 @@ You are an AGENT, not a simple tool executor. Think before acting:
 - **propose_placement:** When there are multiple reasonable options (large room, user says "add a sofa" without location), or when it would be helpful to confirm before executing. Include 2-3 options with clear reasons for each.
 
 ## Your Tools
+
+### Furniture Tools
 1. **add_item**: Add furniture from the catalog
-2. **remove_item**: Remove existing furniture
+2. **remove_item**: Remove existing furniture by ID
 3. **move_item**: Move/rotate existing furniture
 4. **update_material**: Change material/color of items
-5. **batch_operations**: Execute multiple operations at once
-6. **propose_placement**: Present placement options to the user for confirmation
-7. **ask_user**: Ask the user a clarifying question when you need more information before proceeding
-8. **confirm_preview**: Confirm the current ghost preview (used when the user says they're satisfied)
-9. **reject_preview**: Reject the current ghost preview (used when the user wants to discard changes)
+
+### Architectural Tools
+5. **add_wall**: Create a wall segment with start/end coordinates
+6. **add_door**: Add a door to an existing wall
+7. **add_window**: Add a window to an existing wall
+8. **remove_node**: Remove any node (wall, door, window, item)
+
+### Control Tools
+9. **batch_operations**: Execute multiple operations at once
+10. **propose_placement**: Present placement options to the user for confirmation
+11. **ask_user**: Ask the user a clarifying question
+12. **confirm_preview**: Confirm the current ghost preview
+13. **reject_preview**: Reject the current ghost preview
 
 ## Agentic Loop
 You operate in a loop: you call tools, receive execution results (including any position adjustments or validation errors), and can iterate. When you receive a tool_result:
@@ -97,7 +126,36 @@ You operate in a loop: you call tools, receive execution results (including any 
 ## Coordinate Rules
 - Positions are in meters [x, y, z] where Y is up (Y=0 for floor items).
 - rotationY is in radians (0 = default, π/2 = 90°, π = 180°, -π/2 = 270°).
+- Wall coordinates use [x, z] for start/end points (2D floor plan).
 - ONLY use items from the catalog below.
+
+## Wall & Door/Window Coordinate System
+
+### Wall Coordinates
+- Walls are defined by \`start: [x, z]\` and \`end: [x, z]\` in world coordinates.
+- Walls snap to a 0.5m grid. Minimum wall length is 0.5m.
+- Default wall thickness is 0.2m, default height is 2.8m.
+- When creating rooms, create walls that form a closed loop (end of one wall = start of next).
+
+### Door/Window Placement (Wall-Local Coordinates)
+- Doors and windows are placed ON existing walls using \`positionAlongWall\` (distance in meters from the wall start point).
+- Example: A wall from (0,0) to (5,0) has length 5m. \`positionAlongWall: 2.5\` places the door at the wall's center.
+- Doors default: width=0.9m, height=2.1m. Windows default: width=1.5m, height=1.5m.
+- \`side\`: "front" or "back" — which side of the wall the door/window faces.
+- Door-specific: \`hingesSide\` ("left"/"right"), \`swingDirection\` ("inward"/"outward").
+- The system automatically clamps position to stay within wall bounds and checks for overlap with existing doors/windows.
+
+### Creating a Room (Example)
+To create a 5m × 4m room:
+\`\`\`
+add_wall: start=[0,0], end=[5,0]    // bottom wall
+add_wall: start=[5,0], end=[5,4]    // right wall
+add_wall: start=[5,4], end=[0,4]    // top wall
+add_wall: start=[0,4], end=[0,0]    // left wall
+add_door: wallId="<bottom-wall-id>", positionAlongWall=2.5  // door at center of bottom wall
+add_window: wallId="<top-wall-id>", positionAlongWall=2.5   // window at center of top wall
+\`\`\`
+Note: After creating walls, zones are auto-detected. You can then furnish the room.
 
 ## Spatial Reasoning Guide
 
@@ -237,8 +295,154 @@ const OPENAI_TOOLS: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'add_wall',
+      description: 'Create a wall segment. Walls are defined by start and end coordinates in the floor plan (X-Z plane). Walls snap to 0.5m grid.',
+      parameters: {
+        type: 'object',
+        properties: {
+          start: {
+            type: 'array',
+            items: { type: 'number' },
+            description: 'Start point [x, z] in meters.',
+          },
+          end: {
+            type: 'array',
+            items: { type: 'number' },
+            description: 'End point [x, z] in meters.',
+          },
+          thickness: {
+            type: 'number',
+            description: 'Wall thickness in meters (default: 0.2).',
+          },
+          height: {
+            type: 'number',
+            description: 'Wall height in meters (default: 2.8).',
+          },
+          description: {
+            type: 'string',
+            description: 'Brief description of this wall.',
+          },
+        },
+        required: ['start', 'end'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_door',
+      description: 'Add a door to an existing wall. The door is positioned along the wall using positionAlongWall (meters from wall start). Requires a valid wallId.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallId: {
+            type: 'string',
+            description: 'The node ID of the wall to add the door to.',
+          },
+          positionAlongWall: {
+            type: 'number',
+            description: 'Position along the wall in meters from the start point. E.g., for a 5m wall, 2.5 places it at center.',
+          },
+          width: {
+            type: 'number',
+            description: 'Door width in meters (default: 0.9).',
+          },
+          height: {
+            type: 'number',
+            description: 'Door height in meters (default: 2.1).',
+          },
+          side: {
+            type: 'string',
+            enum: ['front', 'back'],
+            description: 'Which side of the wall the door faces.',
+          },
+          hingesSide: {
+            type: 'string',
+            enum: ['left', 'right'],
+            description: 'Which side the hinges are on.',
+          },
+          swingDirection: {
+            type: 'string',
+            enum: ['inward', 'outward'],
+            description: 'Whether the door swings inward or outward.',
+          },
+          description: {
+            type: 'string',
+            description: 'Brief description.',
+          },
+        },
+        required: ['wallId', 'positionAlongWall'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_window',
+      description: 'Add a window to an existing wall. The window is positioned along the wall using positionAlongWall (meters from wall start). Requires a valid wallId.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallId: {
+            type: 'string',
+            description: 'The node ID of the wall to add the window to.',
+          },
+          positionAlongWall: {
+            type: 'number',
+            description: 'Position along the wall in meters from the start point.',
+          },
+          heightFromFloor: {
+            type: 'number',
+            description: 'Height of window center from floor in meters (default: 1.2).',
+          },
+          width: {
+            type: 'number',
+            description: 'Window width in meters (default: 1.5).',
+          },
+          height: {
+            type: 'number',
+            description: 'Window height in meters (default: 1.5).',
+          },
+          side: {
+            type: 'string',
+            enum: ['front', 'back'],
+            description: 'Which side of the wall the window faces.',
+          },
+          description: {
+            type: 'string',
+            description: 'Brief description.',
+          },
+        },
+        required: ['wallId', 'positionAlongWall'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'remove_node',
+      description: 'Remove any scene node (wall, door, window, or item). For removing furniture specifically, you can also use remove_item. This is more general and works with architectural elements too.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: {
+            type: 'string',
+            description: 'The node ID of the node to remove.',
+          },
+          reason: {
+            type: 'string',
+            description: 'Brief reason for removing.',
+          },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'batch_operations',
-      description: 'Execute multiple add/remove/move/update operations at once. Use for room setups, style changes, or when placing multiple related items.',
+      description: 'Execute multiple operations at once. Use for room creation (walls + doors + windows), room setups (furniture), style changes, or any multi-step operation.',
       parameters: {
         type: 'object',
         properties: {
@@ -249,13 +453,24 @@ const OPENAI_TOOLS: ChatCompletionTool[] = [
               properties: {
                 type: {
                   type: 'string',
-                  enum: ['add_item', 'remove_item', 'move_item', 'update_material'],
+                  enum: ['add_item', 'remove_item', 'move_item', 'update_material', 'add_wall', 'add_door', 'add_window', 'remove_node'],
                 },
                 catalogSlug: { type: 'string' },
                 nodeId: { type: 'string' },
                 position: { type: 'array', items: { type: 'number' } },
                 rotationY: { type: 'number' },
                 material: { type: 'string' },
+                start: { type: 'array', items: { type: 'number' } },
+                end: { type: 'array', items: { type: 'number' } },
+                thickness: { type: 'number' },
+                height: { type: 'number' },
+                wallId: { type: 'string' },
+                positionAlongWall: { type: 'number' },
+                heightFromFloor: { type: 'number' },
+                width: { type: 'number' },
+                side: { type: 'string' },
+                hingesSide: { type: 'string' },
+                swingDirection: { type: 'string' },
                 description: { type: 'string' },
                 reason: { type: 'string' },
               },

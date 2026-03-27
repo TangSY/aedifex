@@ -33,6 +33,47 @@ export interface UpdateMaterialToolCall {
   reason?: string
 }
 
+export interface AddWallToolCall {
+  tool: 'add_wall'
+  start: [number, number]
+  end: [number, number]
+  thickness?: number
+  height?: number
+  description?: string
+}
+
+export interface AddDoorToolCall {
+  tool: 'add_door'
+  wallId: string
+  /** Position along the wall in meters (0 = wall start, wallLength = wall end) */
+  positionAlongWall: number
+  width?: number
+  height?: number
+  side?: 'front' | 'back'
+  hingesSide?: 'left' | 'right'
+  swingDirection?: 'inward' | 'outward'
+  description?: string
+}
+
+export interface AddWindowToolCall {
+  tool: 'add_window'
+  wallId: string
+  /** Position along the wall in meters */
+  positionAlongWall: number
+  /** Height of window center from floor */
+  heightFromFloor?: number
+  width?: number
+  height?: number
+  side?: 'front' | 'back'
+  description?: string
+}
+
+export interface RemoveNodeToolCall {
+  tool: 'remove_node'
+  nodeId: string
+  reason?: string
+}
+
 export interface BatchOperationsToolCall {
   tool: 'batch_operations'
   operations: Omit<AIToolCall, 'tool' | 'operations'>[]
@@ -59,6 +100,10 @@ export type AIToolCall =
   | RemoveItemToolCall
   | MoveItemToolCall
   | UpdateMaterialToolCall
+  | AddWallToolCall
+  | AddDoorToolCall
+  | AddWindowToolCall
+  | RemoveNodeToolCall
   | BatchOperationsToolCall
   | ProposePlacementToolCall
   | AskUserToolCall
@@ -106,11 +151,66 @@ export interface ValidatedUpdateMaterial {
   errorReason?: string
 }
 
+export interface ValidatedAddWall {
+  type: 'add_wall'
+  status: ValidatedOperationStatus
+  start: [number, number]
+  end: [number, number]
+  thickness: number
+  height?: number
+  adjustmentReason?: string
+  errorReason?: string
+}
+
+export interface ValidatedAddDoor {
+  type: 'add_door'
+  status: ValidatedOperationStatus
+  wallId: AnyNodeId
+  /** Wall-local X position (center of door) */
+  localX: number
+  /** Wall-local Y position (center of door = height/2) */
+  localY: number
+  width: number
+  height: number
+  side?: 'front' | 'back'
+  hingesSide: 'left' | 'right'
+  swingDirection: 'inward' | 'outward'
+  adjustmentReason?: string
+  errorReason?: string
+}
+
+export interface ValidatedAddWindow {
+  type: 'add_window'
+  status: ValidatedOperationStatus
+  wallId: AnyNodeId
+  /** Wall-local X position (center of window) */
+  localX: number
+  /** Wall-local Y position (center of window) */
+  localY: number
+  width: number
+  height: number
+  side?: 'front' | 'back'
+  adjustmentReason?: string
+  errorReason?: string
+}
+
+export interface ValidatedRemoveNode {
+  type: 'remove_node'
+  status: ValidatedOperationStatus
+  nodeId: AnyNodeId
+  nodeType: string
+  errorReason?: string
+}
+
 export type ValidatedOperation =
   | ValidatedAddItem
   | ValidatedRemoveItem
   | ValidatedMoveItem
   | ValidatedUpdateMaterial
+  | ValidatedAddWall
+  | ValidatedAddDoor
+  | ValidatedAddWindow
+  | ValidatedRemoveNode
 
 // ============================================================================
 // Chat Message Types
@@ -170,6 +270,8 @@ export interface SceneWallSummary {
   start: [number, number]
   end: [number, number]
   thickness: number
+  length?: number
+  children?: { type: string; id: string; localX: number; width: number }[]
 }
 
 export interface SceneZoneSummary {

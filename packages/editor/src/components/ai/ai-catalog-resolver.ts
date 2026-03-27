@@ -146,6 +146,9 @@ function findSuggestions(slug: string): AssetInput[] {
 export function generateCatalogSummary(): string {
   const lines: string[] = ['Available furniture catalog:']
 
+  // Categories that require walls to be present — these items attach to walls
+  const WALL_DEPENDENT_CATEGORIES = new Set(['window', 'door'])
+
   // Group by category for readability
   const grouped = new Map<string, AssetInput[]>()
   for (const item of CATALOG_ITEMS) {
@@ -155,14 +158,21 @@ export function generateCatalogSummary(): string {
   }
 
   for (const [category, items] of grouped) {
-    lines.push(`\n[${category}]`)
+    if (WALL_DEPENDENT_CATEGORIES.has(category)) {
+      lines.push(`\n[${category}] ⚠️ REQUIRES EXISTING WALLS — only use when walls exist in scene`)
+    } else {
+      lines.push(`\n[${category}]`)
+    }
     for (const item of items) {
       const [w, h, d] = item.dimensions ?? [1, 1, 1]
-      const attach = item.attachTo ? ` attach:${item.attachTo}` : ''
+      const attach = item.attachTo ? ` attach:${item.attachTo} (MUST have wall)` : ''
       const tags = item.tags?.length ? ` tags:${item.tags.join(',')}` : ''
       lines.push(`- ${item.id}: ${item.name} (${w}x${h}x${d}m${attach}${tags})`)
     }
   }
+
+  lines.push('\n⚠️ IMPORTANT: Items with "attach:wall" can ONLY be placed on existing walls.')
+  lines.push('If no walls exist, do NOT use window/door items. Tell the user to create walls first (B key).')
 
   return lines.join('\n')
 }

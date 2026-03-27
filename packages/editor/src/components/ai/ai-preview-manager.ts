@@ -1,17 +1,24 @@
 import {
   type AnyNode,
   type AnyNodeId,
+  DoorNode,
   ItemNode,
+  WallNode as WallSchema,
+  WindowNode,
   useScene,
 } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { nanoid } from 'nanoid'
 import type {
   AIOperationLog,
+  ValidatedAddDoor,
   ValidatedAddItem,
+  ValidatedAddWall,
+  ValidatedAddWindow,
   ValidatedMoveItem,
   ValidatedOperation,
   ValidatedRemoveItem,
+  ValidatedRemoveNode,
 } from './types'
 
 // ============================================================================
@@ -67,8 +74,28 @@ export function applyGhostPreview(operations: ValidatedOperation[]): AnyNodeId[]
         if (id) affectedIds.push(id)
         break
       }
+      case 'add_wall': {
+        const id = createGhostWall(op, levelId)
+        if (id) affectedIds.push(id)
+        break
+      }
+      case 'add_door': {
+        const id = createGhostDoor(op)
+        if (id) affectedIds.push(id)
+        break
+      }
+      case 'add_window': {
+        const id = createGhostWindow(op)
+        if (id) affectedIds.push(id)
+        break
+      }
       case 'remove_item': {
         markForRemoval(op, nodes)
+        affectedIds.push(op.nodeId)
+        break
+      }
+      case 'remove_node': {
+        markNodeForRemoval(op, nodes)
         affectedIds.push(op.nodeId)
         break
       }
@@ -117,7 +144,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
   // Step 2: Resume Zundo — everything from here is tracked
   useScene.temporal.getState().resume()
 
-  // Step 3: Create final nodes for add_item operations
+  // Step 3: Create final nodes for all operations
   for (const op of operations) {
     if (op.status === 'invalid') continue
 
@@ -133,14 +160,56 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         affectedNodeIds.push(finalNode.id as AnyNodeId)
         break
       }
-      case 'remove_item': {
+      case 'add_wall': {
+        const wallCount = Object.values(nodes).filter((n) => n.type === 'wall').length
+        const wall = WallSchema.parse({
+          name: `Wall ${wallCount + 1}`,
+          start: op.start,
+          end: op.end,
+          ...(op.thickness !== 0.2 ? { thickness: op.thickness } : {}),
+          ...(op.height ? { height: op.height } : {}),
+        })
+        useScene.getState().createNode(wall, levelId as AnyNodeId)
+        affectedNodeIds.push(wall.id as AnyNodeId)
+        break
+      }
+      case 'add_door': {
+        const door = DoorNode.parse({
+          position: [op.localX, op.localY, 0],
+          rotation: [0, 0, 0],
+          side: op.side,
+          wallId: op.wallId,
+          parentId: op.wallId,
+          width: op.width,
+          height: op.height,
+          hingesSide: op.hingesSide,
+          swingDirection: op.swingDirection,
+        })
+        useScene.getState().createNode(door, op.wallId)
+        affectedNodeIds.push(door.id as AnyNodeId)
+        break
+      }
+      case 'add_window': {
+        const window = WindowNode.parse({
+          position: [op.localX, op.localY, 0],
+          rotation: [0, 0, 0],
+          side: op.side,
+          wallId: op.wallId,
+          parentId: op.wallId,
+          width: op.width,
+          height: op.height,
+        })
+        useScene.getState().createNode(window, op.wallId)
+        affectedNodeIds.push(window.id as AnyNodeId)
+        break
+      }
+      case 'remove_item':
+      case 'remove_node': {
         // Restore the node first (it was hidden during preview), then delete it
         const saved = removedNodeStates.get(op.nodeId)
         if (saved) {
-          // Node was just made invisible during preview; now actually delete it
           const currentNode = nodes[op.nodeId]
           if (currentNode) {
-            // Restore original state first
             useScene.getState().updateNode(op.nodeId, {
               visible: true,
               metadata: saved.node.metadata,
@@ -264,6 +333,75 @@ function createGhostNode(op: ValidatedAddItem, levelId: string): AnyNodeId | nul
   useScene.getState().createNode(node, levelId as AnyNodeId)
   ghostNodeIds.push(node.id as AnyNodeId)
   return node.id as AnyNodeId
+}
+
+function createGhostWall(op: ValidatedAddWall, levelId: string): AnyNodeId | null {
+  const { nodes } = useScene.getState()
+  const wallCount = Object.values(nodes).filter((n) => n.type === 'wall').length
+  const wall = WallSchema.parse({
+    name: `Wall ${wallCount + 1}`,
+    start: op.start,
+    end: op.end,
+    ...(op.thickness !== 0.2 ? { thickness: op.thickness } : {}),
+    ...(op.height ? { height: op.height } : {}),
+    metadata: { isTransient: true, isGhostPreview: true },
+  })
+  useScene.getState().createNode(wall, levelId as AnyNodeId)
+  ghostNodeIds.push(wall.id as AnyNodeId)
+  return wall.id as AnyNodeId
+}
+
+function createGhostDoor(op: ValidatedAddDoor): AnyNodeId | null {
+  const door = DoorNode.parse({
+    position: [op.localX, op.localY, 0],
+    rotation: [0, 0, 0],
+    side: op.side,
+    wallId: op.wallId,
+    parentId: op.wallId,
+    width: op.width,
+    height: op.height,
+    hingesSide: op.hingesSide,
+    swingDirection: op.swingDirection,
+    metadata: { isTransient: true, isGhostPreview: true },
+  })
+  useScene.getState().createNode(door, op.wallId)
+  ghostNodeIds.push(door.id as AnyNodeId)
+  return door.id as AnyNodeId
+}
+
+function createGhostWindow(op: ValidatedAddWindow): AnyNodeId | null {
+  const window = WindowNode.parse({
+    position: [op.localX, op.localY, 0],
+    rotation: [0, 0, 0],
+    side: op.side,
+    wallId: op.wallId,
+    parentId: op.wallId,
+    width: op.width,
+    height: op.height,
+    metadata: { isTransient: true, isGhostPreview: true },
+  })
+  useScene.getState().createNode(window, op.wallId)
+  ghostNodeIds.push(window.id as AnyNodeId)
+  return window.id as AnyNodeId
+}
+
+function markNodeForRemoval(op: ValidatedRemoveNode, nodes: Record<AnyNodeId, AnyNode>) {
+  const node = nodes[op.nodeId]
+  if (!node) return
+
+  removedNodeStates.set(op.nodeId, {
+    node: { ...node },
+    parentId: (node.parentId as string) ?? '',
+  })
+
+  useScene.getState().updateNode(op.nodeId, {
+    visible: false,
+    metadata: {
+      ...(typeof node.metadata === 'object' ? node.metadata : {}),
+      isTransient: true,
+      isGhostRemoval: true,
+    },
+  })
 }
 
 function markForRemoval(op: ValidatedRemoveItem, nodes: Record<AnyNodeId, AnyNode>) {

@@ -8,18 +8,27 @@ import {
 } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { resolveCatalogSlug } from './ai-catalog-resolver'
+import { clampToWall, hasWallChildOverlap } from '../tools/door/door-math'
 import { optimizeLayout } from './ai-layout-optimizer'
 import type {
   AIToolCall,
+  AddDoorToolCall,
   AddItemToolCall,
+  AddWallToolCall,
+  AddWindowToolCall,
   MoveItemToolCall,
   RemoveItemToolCall,
+  RemoveNodeToolCall,
   ToolResult,
   UpdateMaterialToolCall,
+  ValidatedAddDoor,
   ValidatedAddItem,
+  ValidatedAddWall,
+  ValidatedAddWindow,
   ValidatedMoveItem,
   ValidatedOperation,
   ValidatedRemoveItem,
+  ValidatedRemoveNode,
   ValidatedUpdateMaterial,
 } from './types'
 
@@ -42,6 +51,14 @@ export function validateToolCall(toolCall: AIToolCall): ValidatedOperation[] {
       return [validateMoveItem(toolCall)]
     case 'update_material':
       return [validateUpdateMaterial(toolCall)]
+    case 'add_wall':
+      return [validateAddWall(toolCall)]
+    case 'add_door':
+      return [validateAddDoor(toolCall)]
+    case 'add_window':
+      return [validateAddWindow(toolCall)]
+    case 'remove_node':
+      return [validateRemoveNode(toolCall)]
     case 'batch_operations':
       return toolCall.operations.flatMap((op) => {
         // Reconstruct full tool call with tool field
@@ -144,6 +161,24 @@ function validateAddItem(call: AddItemToolCall): ValidatedAddItem {
   let position = [...call.position] as [number, number, number]
   const rotation: [number, number, number] = [0, call.rotationY, 0]
   let adjustmentReason: string | undefined
+
+  // Reject wall-dependent items (windows, doors) if no walls exist in the scene
+  if (asset.attachTo === 'wall') {
+    const levelId = useViewer.getState().selection.levelId
+    if (levelId) {
+      const walls = getWallsForLevel(levelId)
+      if (walls.length === 0) {
+        return {
+          type: 'add_item',
+          status: 'invalid',
+          asset,
+          position,
+          rotation,
+          errorReason: `"${asset.name}" requires walls but no walls exist in the scene. The user must create walls first using the Wall tool (B key) before windows or doors can be installed.`,
+        }
+      }
+    }
+  }
 
   // Skip collision detection for wall/ceiling items
   if (!asset.attachTo) {
@@ -411,11 +446,233 @@ function tryAutoOffset(
  * Guess tool type from operation object (for batch operations).
  */
 function guessToolType(op: Record<string, unknown>): string {
+  if ('start' in op && 'end' in op) return 'add_wall'
+  if ('wallId' in op && 'positionAlongWall' in op) {
+    // Distinguish door vs window by presence of door-specific fields
+    if ('hingesSide' in op || 'swingDirection' in op) return 'add_door'
+    if ('heightFromFloor' in op) return 'add_window'
+    // Default: check for typical window height (> 0.5m from floor usually means window)
+    return 'add_door'
+  }
   if ('catalogSlug' in op) return 'add_item'
   if ('material' in op) return 'update_material'
   if ('nodeId' in op && 'position' in op) return 'move_item'
   if ('nodeId' in op) return 'remove_item'
   return 'add_item'
+}
+
+// ============================================================================
+// Wall / Door / Window Validators
+// ============================================================================
+
+/** Minimum wall length in meters */
+const MIN_WALL_LENGTH = 0.5
+
+function validateAddWall(call: AddWallToolCall): ValidatedAddWall {
+  const start = [...call.start] as [number, number]
+  const end = [...call.end] as [number, number]
+  const thickness = call.thickness ?? 0.2
+  const height = call.height
+
+  // Snap to grid (0.5m)
+  const snappedStart: [number, number] = [
+    Math.round(start[0] / 0.5) * 0.5,
+    Math.round(start[1] / 0.5) * 0.5,
+  ]
+  const snappedEnd: [number, number] = [
+    Math.round(end[0] / 0.5) * 0.5,
+    Math.round(end[1] / 0.5) * 0.5,
+  ]
+
+  // Check minimum length
+  const dx = snappedEnd[0] - snappedStart[0]
+  const dz = snappedEnd[1] - snappedStart[1]
+  const length = Math.hypot(dx, dz)
+
+  if (length < MIN_WALL_LENGTH) {
+    return {
+      type: 'add_wall',
+      status: 'invalid',
+      start: snappedStart,
+      end: snappedEnd,
+      thickness,
+      height,
+      errorReason: `Wall too short (${length.toFixed(2)}m). Minimum length is ${MIN_WALL_LENGTH}m.`,
+    }
+  }
+
+  const wasAdjusted = snappedStart[0] !== start[0] || snappedStart[1] !== start[1]
+    || snappedEnd[0] !== end[0] || snappedEnd[1] !== end[1]
+
+  return {
+    type: 'add_wall',
+    status: wasAdjusted ? 'adjusted' : 'valid',
+    start: snappedStart,
+    end: snappedEnd,
+    thickness,
+    height,
+    adjustmentReason: wasAdjusted ? 'Snapped to 0.5m grid.' : undefined,
+  }
+}
+
+function validateAddDoor(call: AddDoorToolCall): ValidatedAddDoor {
+  const { nodes } = useScene.getState()
+  const wallNode = nodes[call.wallId as AnyNodeId] as WallNode | undefined
+
+  if (!wallNode || wallNode.type !== 'wall') {
+    return {
+      type: 'add_door',
+      status: 'invalid',
+      wallId: call.wallId as AnyNodeId,
+      localX: 0,
+      localY: 0,
+      width: call.width ?? 0.9,
+      height: call.height ?? 2.1,
+      hingesSide: call.hingesSide ?? 'left',
+      swingDirection: call.swingDirection ?? 'inward',
+      side: call.side,
+      errorReason: `Wall "${call.wallId}" not found.`,
+    }
+  }
+
+  const width = call.width ?? 0.9
+  const height = call.height ?? 2.1
+
+  // Clamp position to wall bounds
+  const { clampedX, clampedY } = clampToWall(wallNode, call.positionAlongWall, width, height)
+
+  // Check overlap with existing wall children
+  if (hasWallChildOverlap(call.wallId, clampedX, clampedY, width, height)) {
+    return {
+      type: 'add_door',
+      status: 'invalid',
+      wallId: call.wallId as AnyNodeId,
+      localX: clampedX,
+      localY: clampedY,
+      width,
+      height,
+      hingesSide: call.hingesSide ?? 'left',
+      swingDirection: call.swingDirection ?? 'inward',
+      side: call.side,
+      errorReason: 'Position overlaps with existing door/window on this wall.',
+    }
+  }
+
+  const wasAdjusted = Math.abs(clampedX - call.positionAlongWall) > 0.01
+
+  return {
+    type: 'add_door',
+    status: wasAdjusted ? 'adjusted' : 'valid',
+    wallId: call.wallId as AnyNodeId,
+    localX: clampedX,
+    localY: clampedY,
+    width,
+    height,
+    side: call.side,
+    hingesSide: call.hingesSide ?? 'left',
+    swingDirection: call.swingDirection ?? 'inward',
+    adjustmentReason: wasAdjusted ? 'Position clamped to wall bounds.' : undefined,
+  }
+}
+
+function validateAddWindow(call: AddWindowToolCall): ValidatedAddWindow {
+  const { nodes } = useScene.getState()
+  const wallNode = nodes[call.wallId as AnyNodeId] as WallNode | undefined
+
+  if (!wallNode || wallNode.type !== 'wall') {
+    return {
+      type: 'add_window',
+      status: 'invalid',
+      wallId: call.wallId as AnyNodeId,
+      localX: 0,
+      localY: 0,
+      width: call.width ?? 1.5,
+      height: call.height ?? 1.5,
+      side: call.side,
+      errorReason: `Wall "${call.wallId}" not found.`,
+    }
+  }
+
+  const width = call.width ?? 1.5
+  const height = call.height ?? 1.5
+  const wallHeight = wallNode.height ?? 2.8
+
+  // Compute wall length
+  const dx = wallNode.end[0] - wallNode.start[0]
+  const dz = wallNode.end[1] - wallNode.start[1]
+  const wallLength = Math.hypot(dx, dz)
+
+  // Clamp X to wall bounds
+  const clampedX = Math.max(width / 2, Math.min(wallLength - width / 2, call.positionAlongWall))
+
+  // Default window center height: 1.2m from floor (center of standard window)
+  const defaultCenterY = call.heightFromFloor ?? 1.2
+  // Clamp Y to wall bounds
+  const clampedY = Math.max(height / 2, Math.min(wallHeight - height / 2, defaultCenterY))
+
+  // Check overlap with existing wall children
+  if (hasWallChildOverlap(call.wallId, clampedX, clampedY, width, height)) {
+    return {
+      type: 'add_window',
+      status: 'invalid',
+      wallId: call.wallId as AnyNodeId,
+      localX: clampedX,
+      localY: clampedY,
+      width,
+      height,
+      side: call.side,
+      errorReason: 'Position overlaps with existing door/window on this wall.',
+    }
+  }
+
+  const wasAdjusted = Math.abs(clampedX - call.positionAlongWall) > 0.01
+    || (call.heightFromFloor !== undefined && Math.abs(clampedY - call.heightFromFloor) > 0.01)
+
+  return {
+    type: 'add_window',
+    status: wasAdjusted ? 'adjusted' : 'valid',
+    wallId: call.wallId as AnyNodeId,
+    localX: clampedX,
+    localY: clampedY,
+    width,
+    height,
+    side: call.side,
+    adjustmentReason: wasAdjusted ? 'Position clamped to wall bounds.' : undefined,
+  }
+}
+
+function validateRemoveNode(call: RemoveNodeToolCall): ValidatedRemoveNode {
+  const { nodes } = useScene.getState()
+  const node = nodes[call.nodeId as AnyNodeId]
+
+  if (!node) {
+    return {
+      type: 'remove_node',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      nodeType: 'unknown',
+      errorReason: `Node "${call.nodeId}" not found in scene.`,
+    }
+  }
+
+  // Only allow removing walls, doors, windows, and items
+  const removableTypes = new Set(['wall', 'door', 'window', 'item'])
+  if (!removableTypes.has(node.type)) {
+    return {
+      type: 'remove_node',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      nodeType: node.type,
+      errorReason: `Cannot remove ${node.type} nodes. Only walls, doors, windows, and items can be removed.`,
+    }
+  }
+
+  return {
+    type: 'remove_node',
+    status: 'valid',
+    nodeId: call.nodeId as AnyNodeId,
+    nodeType: node.type,
+  }
 }
 
 // ============================================================================

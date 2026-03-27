@@ -29,7 +29,7 @@ import type {
 const MAX_ITERATIONS = 5
 
 /** Tool calls that skip the feedback loop (deterministic, no adjustment possible) */
-const DETERMINISTIC_TOOLS = new Set(['remove_item', 'confirm_preview', 'reject_preview'])
+const DETERMINISTIC_TOOLS = new Set(['remove_item', 'remove_node', 'confirm_preview', 'reject_preview'])
 
 /**
  * Run the agentic loop for a user message.
@@ -263,10 +263,12 @@ async function handleSpecialToolCalls(
   if (confirmCall) {
     const pendingMsg = findPendingMessage()
     if (pendingMsg?.operations) {
+      // Update UI state first so the pending operation card disappears immediately
+      useAIChat.getState().confirmOperations(pendingMsg.id)
+
       const log = confirmGhostPreview(pendingMsg.operations)
       log.messageId = pendingMsg.id
       useAIChat.getState().addOperationLog(log)
-      useAIChat.getState().confirmOperations(pendingMsg.id)
 
       // Capture after screenshot
       setTimeout(async () => {
@@ -314,10 +316,13 @@ export async function confirmOperationsFromUI(
   messageId: string,
   operations: ValidatedOperation[],
 ): Promise<void> {
+  // Update UI state first so the pending operation card disappears immediately
+  useAIChat.getState().confirmOperations(messageId)
+
+  // Then execute the scene mutations (heavier, triggers re-renders)
   const log = confirmGhostPreview(operations)
   log.messageId = messageId
   useAIChat.getState().addOperationLog(log)
-  useAIChat.getState().confirmOperations(messageId)
 
   // Capture after screenshot
   setTimeout(async () => {

@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId, WallNode, ZoneNode } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, DoorNode, WallNode, WindowNode, ZoneNode } from '@pascal-app/core'
 import { useScene } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import type { SceneContext, SceneItemSummary } from './types'
@@ -65,11 +65,44 @@ export function serializeSceneContext(): SceneContext {
       case 'wall': {
         wallCount++
         const wallNode = node as WallNode
+        // Compute wall length for context
+        const wdx = wallNode.end[0] - wallNode.start[0]
+        const wdz = wallNode.end[1] - wallNode.start[1]
+        const wallLen = Math.hypot(wdx, wdz)
+
+        // Collect wall children (doors/windows)
+        const wallChildren: { type: string; id: string; localX: number; width: number }[] = []
+        if (wallNode.children) {
+          for (const childId of wallNode.children) {
+            const child = nodes[childId as AnyNodeId]
+            if (!child) continue
+            if (child.type === 'door') {
+              const door = child as DoorNode
+              wallChildren.push({
+                type: 'door',
+                id: door.id,
+                localX: door.position[0],
+                width: door.width,
+              })
+            } else if (child.type === 'window') {
+              const win = child as WindowNode
+              wallChildren.push({
+                type: 'window',
+                id: win.id,
+                localX: win.position[0],
+                width: win.width,
+              })
+            }
+          }
+        }
+
         walls.push({
           id: wallNode.id,
           start: [...wallNode.start] as [number, number],
           end: [...wallNode.end] as [number, number],
           thickness: wallNode.thickness ?? 0.2,
+          length: wallLen,
+          children: wallChildren,
         })
         break
       }
@@ -215,6 +248,13 @@ export function formatSceneContextForPrompt(ctx: SceneContext): string {
       const { wall, length, orientation } = info
       const isLongest = info === longestWall ? ' [LONGEST]' : ''
       lines.push(`  [${wall.id}] (${wall.start[0].toFixed(2)}, ${wall.start[1].toFixed(2)}) → (${wall.end[0].toFixed(2)}, ${wall.end[1].toFixed(2)}) length=${length.toFixed(2)}m ${orientation}${isLongest}`)
+
+      // Show doors/windows on this wall
+      if (wall.children && wall.children.length > 0) {
+        for (const child of wall.children) {
+          lines.push(`    └─ ${child.type} [${child.id}] at localX=${child.localX.toFixed(2)}m width=${child.width.toFixed(2)}m`)
+        }
+      }
     }
 
     // 额外的墙体总结
