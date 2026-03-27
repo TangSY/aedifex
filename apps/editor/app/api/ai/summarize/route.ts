@@ -3,6 +3,7 @@ import OpenAI from 'openai'
 import {
   AI_API_KEY,
   AI_BASE_URL,
+  AI_SUMMARIZE_MAX_TOKENS,
   AI_SUMMARIZE_MODEL,
 } from '../config'
 
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
   try {
     const response = await openai.chat.completions.create({
       model: AI_SUMMARIZE_MODEL,
-      max_tokens: 1024,
+      max_tokens: AI_SUMMARIZE_MAX_TOKENS,
       messages: [
         { role: 'system', content: SUMMARIZE_SYSTEM_PROMPT },
         {

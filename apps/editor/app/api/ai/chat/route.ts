@@ -4,6 +4,7 @@ import type { ChatCompletionTool } from 'openai/resources/chat/completions'
 import {
   AI_API_KEY,
   AI_BASE_URL,
+  AI_CHAT_MAX_TOKENS,
   AI_CHAT_MODEL,
   AI_RATE_LIMIT_REQUESTS,
   AI_RATE_LIMIT_TOKENS,
@@ -120,8 +121,18 @@ You are an AGENT, not a simple tool executor. Think before acting:
 You operate in a loop: you call tools, receive execution results (including any position adjustments or validation errors), and can iterate. When you receive a tool_result:
 - If operations were ADJUSTED (position shifted due to collision/bounds), review the adjustments and decide if another iteration is needed.
 - If operations were INVALID (catalog not found, node doesn't exist), try a different approach or ask_user for clarification.
-- If all operations were VALID, respond with a summary. The system will handle confirm/reject via UI buttons.
+- If all operations were VALID, respond with a summary. The system will show a ghost preview with confirm/reject UI buttons.
 - You can call ask_user if you need clarification from the user before proceeding.
+
+## Pending Preview Intent Recognition (CRITICAL)
+When there is a pending ghost preview (operations waiting for user confirmation), the user's next message is an intent signal. You MUST interpret it correctly:
+
+- **Confirm intent** — User agrees with the preview. Examples: "好", "确认", "可以", "行", "没问题", "就这样", "ok", "yes", "对", "嗯", "不错", "挺好", "就这个", "放这", etc. → Call \`confirm_preview\`.
+- **Reject intent** — User wants to cancel/discard the preview. Examples: "不要", "取消", "算了", "撤销", "不行", "重来", "cancel", "no", "不好", "去掉", etc. → Call \`reject_preview\`.
+- **Modify intent** — User wants changes to the current preview. Examples: "好的但是换个位置", "颜色换成白色", "往左移一点", "转个方向", etc. → Call \`reject_preview\` first, then execute new operations with the requested modifications.
+- **Unrelated intent** — User asks something completely different. → Call \`reject_preview\` to clear the preview, then handle the new request normally.
+
+NEVER ignore a pending preview. Always resolve it (confirm or reject) before proceeding with other operations.
 
 ## Coordinate Rules
 - Positions are in meters [x, y, z] where Y is up (Y=0 for floor items).
@@ -638,7 +649,7 @@ export async function POST(request: NextRequest) {
   try {
     const stream = await openai.chat.completions.create({
       model: AI_CHAT_MODEL,
-      max_tokens: 4096,
+      max_tokens: AI_CHAT_MAX_TOKENS,
       tools: OPENAI_TOOLS,
       stream: true,
       messages: [

@@ -26,7 +26,7 @@ import type {
 // ============================================================================
 
 /** Maximum iterations per user message to prevent infinite loops */
-const MAX_ITERATIONS = 5
+const MAX_ITERATIONS = 8
 
 /** Tool calls that skip the feedback loop (deterministic, no adjustment possible) */
 const DETERMINISTIC_TOOLS = new Set(['remove_item', 'remove_node', 'confirm_preview', 'reject_preview'])

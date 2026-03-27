@@ -24,7 +24,6 @@ import {
   rejectAllProposals,
   switchToProposal,
 } from './ai-proposal-manager'
-import { isGhostPreviewActive } from './ai-preview-manager'
 import { serializeSceneContext } from './ai-scene-serializer'
 import type { ChatMessage, PlacementOption, Proposal, ProposePlacementToolCall, ValidatedOperation } from './types'
 
@@ -101,22 +100,6 @@ export function AIChatPanel() {
       answerPendingQuestion(trimmed)
       textareaRef.current?.focus()
       return
-    }
-
-    // Check if the user is confirming a pending preview via text
-    const pendingMsg = [...messages].reverse().find(
-      (m) => m.operationStatus === 'pending' && m.operations?.length,
-    )
-    if (pendingMsg && isGhostPreviewActive()) {
-      // Detect confirmation intent from user text
-      const confirmPatterns = /^(好|确认|可以|行|没问题|就这样|确定|ok|yes|对|嗯|同意|就这个|放这|就放这|不错|挺好)/i
-      if (confirmPatterns.test(trimmed)) {
-        setInput('')
-        addUserMessage(trimmed)
-        confirmOperationsFromUI(pendingMsg.id, pendingMsg.operations!)
-        textareaRef.current?.focus()
-        return
-      }
     }
 
     setInput('')
