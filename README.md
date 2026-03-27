@@ -352,10 +352,10 @@ Run the development server from the **root directory** to enable hot reload for 
 
 ```bash
 # Install dependencies
-bun install
+pnpm install
 
 # Run development server (builds packages + starts editor with watch mode)
-bun dev
+pnpm dev
 
 # This will:
 # 1. Build @pascal-app/core and @pascal-app/viewer
@@ -364,7 +364,7 @@ bun dev
 # Open http://localhost:3000
 ```
 
-**Important:** Always run `bun dev` from the root directory to ensure the package watchers are running. This enables hot reload when you edit files in `packages/core/src/` or `packages/viewer/src/`.
+**Important:** Always run `pnpm dev` from the root directory to ensure the package watchers are running. This enables hot reload when you edit files in `packages/core/src/` or `packages/viewer/src/`.
 
 ### Building for Production
 

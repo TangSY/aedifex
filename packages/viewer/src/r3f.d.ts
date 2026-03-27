@@ -3,8 +3,9 @@
  *
  * @react-three/fiber augments JSX.IntrinsicElements globally via module
  * augmentation, but the augmentation doesn't reliably propagate during
- * composite tsc --build in CI because bun resolves @react-three/fiber's
- * peer deps into variant directories where @types/three is unreachable.
+ * composite tsc --build in CI because the package manager may resolve
+ * @react-three/fiber's peer deps into variant directories where
+ * @types/three is unreachable.
  *
  * This file replicates the module augmentation pattern R3F uses, declaring
  * the subset of three.js elements we actually use.

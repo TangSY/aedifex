@@ -4,7 +4,8 @@ This guide will help you set up the Pascal Editor with authentication and databa
 
 ## Prerequisites
 
-- Node.js 18+ or Bun 1.3+
+- Node.js 18+
+- pnpm 10+ (`corepack enable && corepack prepare pnpm@latest --activate`)
 - Docker Desktop (for running Supabase locally)
 
 ## Quick Start
@@ -12,7 +13,7 @@ This guide will help you set up the Pascal Editor with authentication and databa
 ### 1. Install Dependencies
 
 ```bash
-bun install
+pnpm install
 ```
 
 This installs the Supabase CLI as a dev dependency - no need for global installation!
@@ -20,7 +21,7 @@ This installs the Supabase CLI as a dev dependency - no need for global installa
 ### 2. Start Supabase Local Development
 
 ```bash
-bun db:start
+pnpm db:start
 ```
 
 This will start a local Supabase instance. You'll see output like:
@@ -63,7 +64,7 @@ openssl rand -base64 32
 ### 5. Run Database Migrations
 
 ```bash
-bun db:reset
+pnpm db:reset
 ```
 
 This will create all necessary tables for authentication and properties.
@@ -71,7 +72,7 @@ This will create all necessary tables for authentication and properties.
 ### 6. Start the Development Server
 
 ```bash
-bun dev
+pnpm dev
 ```
 
 The editor will be available at http://localhost:3000
@@ -181,11 +182,11 @@ The editor will be available at http://localhost:3000
 After changing the database schema, regenerate TypeScript types:
 
 1. Update `packages/db/src/types.ts` to match your new schema
-2. Run `bun install` to update type checking
+2. Run `pnpm install` to update type checking
 
 ### Testing Authentication
 
-1. Start the editor: `bun dev`
+1. Start the editor: `pnpm dev`
 2. Click "Save to cloud" button
 3. Enter your email
 4. Check console for magic link (not sent via email in development)
@@ -212,8 +213,8 @@ For production deployment:
 4. Link and push migrations:
    ```bash
    cd packages/db
-   bunx supabase link --project-ref your-project-ref
-   bunx supabase db push
+   pnpm exec supabase link --project-ref your-project-ref
+   pnpm exec supabase db push
    ```
 5. Configure email provider in `packages/auth/src/server.ts`
 
@@ -227,8 +228,8 @@ Make sure you've set `POSTGRES_URL` in `apps/editor/.env.local` to your Supabase
 
 Try stopping and restarting:
 ```bash
-bun db:stop
-bun db:start
+pnpm db:stop
+pnpm db:start
 ```
 
 ### Migration errors

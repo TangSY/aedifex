@@ -10,7 +10,7 @@ set -euo pipefail
 #   bash tooling/release/release.sh 1.0          # Both platforms
 #   bash tooling/release/release.sh 1.0 ios      # iOS only
 #   bash tooling/release/release.sh "" android    # Android only (no ASC version needed)
-#   bun native:release 1.0                        # Via package.json script
+#   pnpm native:release 1.0                        # Via package.json script
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
