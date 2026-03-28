@@ -1,6 +1,6 @@
 'use client'
 
-import { Bot, Check, Loader2, MapPin, Maximize2, MessageCircleQuestion, Send, Sparkles, Trash2, X } from 'lucide-react'
+import { Bot, Check, ChevronDown, History, Loader2, MapPin, Maximize2, MessageCircleQuestion, Send, Sparkles, Trash2, Undo2, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   type KeyboardEvent,
@@ -40,9 +40,11 @@ export function AIChatPanel() {
     activeProposalId,
     iterationCount,
     pendingQuestion,
+    operationLog,
     addUserMessage,
     clearChat,
     clearError,
+    undoOperation,
   } = useAIChat()
 
   const [input, setInput] = useState('')
@@ -245,6 +247,11 @@ export function AIChatPanel() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Operation History */}
+      {operationLog.length > 0 && (
+        <OperationHistoryPanel logs={operationLog} onUndo={undoOperation} />
+      )}
 
       {/* Input Area */}
       <div className="border-border/50 border-t p-3">
@@ -678,6 +685,146 @@ function OperationSummary({
       )}
     </div>
   )
+}
+
+// ============================================================================
+// Operation History Panel (collapsible, above input)
+// ============================================================================
+
+function OperationHistoryPanel({
+  logs,
+  onUndo,
+}: {
+  logs: import('./types').AIOperationLog[]
+  onUndo: (logId: string) => void
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  // Only show logs that have real operations (not empty)
+  const visibleLogs = logs.filter((l) => l.operations.length > 0)
+  if (visibleLogs.length === 0) return null
+
+  const confirmedCount = visibleLogs.filter((l) => l.status === 'confirmed').length
+  const undoneCount = visibleLogs.filter((l) => l.status === 'undone').length
+
+  return (
+    <div className="border-border/50 border-t">
+      <button
+        className="flex w-full items-center gap-1.5 px-3 py-1.5 font-barlow text-[11px] text-muted-foreground transition-colors hover:bg-accent/30"
+        onClick={() => setIsOpen(!isOpen)}
+        type="button"
+      >
+        <History className="h-3 w-3" />
+        <span>操作历史</span>
+        <span className="text-[10px] text-muted-foreground/60">
+          ({confirmedCount} 项已确认{undoneCount > 0 ? `，${undoneCount} 项已撤销` : ''})
+        </span>
+        <ChevronDown
+          className={cn(
+            'ml-auto h-3 w-3 transition-transform',
+            !isOpen && '-rotate-90',
+          )}
+        />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            animate={{ height: 'auto', opacity: 1 }}
+            className="overflow-hidden"
+            exit={{ height: 0, opacity: 0 }}
+            initial={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <div className="max-h-[200px] overflow-y-auto px-3 pb-2">
+              {[...visibleLogs].reverse().map((log, i) => (
+                <OperationHistoryItem
+                  key={log.id}
+                  log={log}
+                  onUndo={onUndo}
+                  stepNumber={visibleLogs.length - i}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function OperationHistoryItem({
+  log,
+  onUndo,
+  stepNumber,
+}: {
+  log: import('./types').AIOperationLog
+  onUndo: (logId: string) => void
+  stepNumber: number
+}) {
+  const validOps = log.operations.filter((op) => op.status !== 'invalid')
+  const time = new Date(log.timestamp)
+  const timeStr = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}:${time.getSeconds().toString().padStart(2, '0')}`
+
+  // Summarize operation types
+  const typeCounts = new Map<string, number>()
+  for (const op of validOps) {
+    const label = getOperationTypeLabel(op.type)
+    typeCounts.set(label, (typeCounts.get(label) ?? 0) + 1)
+  }
+  const summary = Array.from(typeCounts.entries())
+    .map(([label, count]) => count > 1 ? `${label}×${count}` : label)
+    .join('、')
+
+  const isUndone = log.status === 'undone'
+  const isConfirmed = log.status === 'confirmed'
+
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-2 rounded px-1.5 py-1 font-barlow text-[11px]',
+        isUndone && 'opacity-50',
+      )}
+    >
+      <span className="w-4 shrink-0 text-center text-[10px] text-muted-foreground/50">
+        {stepNumber}
+      </span>
+      <span className="shrink-0 text-[10px] text-muted-foreground/60">{timeStr}</span>
+      <span className={cn('flex-1 truncate', isUndone && 'line-through')}>
+        {summary}
+      </span>
+      <span className="shrink-0 text-[9px] text-muted-foreground/50">
+        {validOps.length} 节点
+      </span>
+      {isConfirmed && (
+        <button
+          className="shrink-0 rounded px-1 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
+          onClick={() => onUndo(log.id)}
+          title="撤销此操作"
+          type="button"
+        >
+          <Undo2 className="h-3 w-3" />
+        </button>
+      )}
+      {isUndone && (
+        <span className="shrink-0 text-[9px] text-yellow-400/70">已撤销</span>
+      )}
+    </div>
+  )
+}
+
+function getOperationTypeLabel(type: string): string {
+  switch (type) {
+    case 'add_item': return '添加家具'
+    case 'add_wall': return '添加墙体'
+    case 'add_door': return '添加门'
+    case 'add_window': return '添加窗户'
+    case 'remove_item': return '移除家具'
+    case 'remove_node': return '移除节点'
+    case 'move_item': return '移动家具'
+    case 'update_material': return '更新材质'
+    default: return type
+  }
 }
 
 // ============================================================================
