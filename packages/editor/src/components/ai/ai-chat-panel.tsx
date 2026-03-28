@@ -561,6 +561,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         {message.operations && message.operations.length > 0 && (
           <div className="mt-2 border-border/30 border-t pt-2">
             <OperationSummary
+              messageId={message.id}
               operations={message.operations}
               status={message.operationStatus}
             />
@@ -586,9 +587,11 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 function OperationSummary({
   operations,
   status,
+  messageId,
 }: {
   operations: ValidatedOperation[]
   status?: string
+  messageId?: string
 }) {
   const validCount = operations.filter((op) => op.status !== 'invalid').length
   const invalidCount = operations.filter((op) => op.status === 'invalid').length
@@ -648,11 +651,29 @@ function OperationSummary({
       {status === 'confirmed' && (
         <div className="flex items-center gap-1 font-barlow text-[10px] text-green-400">
           <Check className="h-3 w-3" /> 已确认
+          {messageId && (
+            <button
+              className="ml-2 rounded px-1.5 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
+              onClick={() => {
+                const { operationLog, undoOperation } = useAIChat.getState()
+                const log = operationLog.find((l) => l.messageId === messageId && l.status === 'confirmed')
+                if (log) undoOperation(log.id)
+              }}
+              type="button"
+            >
+              撤销
+            </button>
+          )}
         </div>
       )}
       {status === 'rejected' && (
         <div className="flex items-center gap-1 font-barlow text-[10px] text-muted-foreground">
           <X className="h-3 w-3" /> 已拒绝
+        </div>
+      )}
+      {status === 'undone' && (
+        <div className="flex items-center gap-1 font-barlow text-[10px] text-yellow-400">
+          <X className="h-3 w-3" /> 已撤销
         </div>
       )}
     </div>

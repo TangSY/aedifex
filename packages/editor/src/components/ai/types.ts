@@ -225,8 +225,8 @@ export interface ChatMessage {
   toolCalls?: AIToolCall[]
   /** Validated operations after executor processing */
   operations?: ValidatedOperation[]
-  /** Whether operations have been confirmed/rejected */
-  operationStatus?: 'pending' | 'confirmed' | 'rejected'
+  /** Whether operations have been confirmed/rejected/undone */
+  operationStatus?: 'pending' | 'confirmed' | 'rejected' | 'undone'
   /** Before screenshot (data URL) */
   screenshotBefore?: string
   /** After screenshot (data URL) */
@@ -245,6 +245,12 @@ export interface AIOperationLog {
   status: 'previewing' | 'confirmed' | 'rejected' | 'undone'
   /** Node IDs created/modified by this operation batch */
   affectedNodeIds: AnyNodeId[]
+  /** Node IDs that were newly created (for undo: delete these) */
+  createdNodeIds: AnyNodeId[]
+  /** Snapshot of nodes that existed before the operation (for undo: restore these) */
+  previousSnapshot: Record<AnyNodeId, AnyNode>
+  /** Parent mapping for removed nodes (for undo: re-create with correct parent) */
+  removedNodes: { node: AnyNode; parentId: AnyNodeId }[]
 }
 
 // ============================================================================
@@ -329,6 +335,8 @@ export interface ToolResult {
     adjustments: string[]
     /** Specific error descriptions */
     errors: string[]
+    /** IDs of nodes created by this operation (for LLM to reference in follow-up) */
+    createdNodeIds?: string[]
   }
 }
 

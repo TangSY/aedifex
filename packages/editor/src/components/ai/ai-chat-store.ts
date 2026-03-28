@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid'
 import { create } from 'zustand'
+import { undoConfirmedOperation } from './ai-preview-manager'
 import type {
   AIChatRequest,
   AIOperationLog,
@@ -67,6 +68,7 @@ export interface AIChatActions {
   // Operation log
   addOperationLog: (log: AIOperationLog) => void
   updateLogStatus: (logId: string, status: AIOperationLog['status']) => void
+  undoOperation: (logId: string) => void
 
   // Multi-proposal
   setProposals: (proposals: Proposal[]) => void
@@ -209,6 +211,26 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
     set((state) => ({
       operationLog: state.operationLog.map((l) =>
         l.id === logId ? { ...l, status } : l,
+      ),
+    }))
+  },
+
+  undoOperation: (logId) => {
+    const { operationLog } = get()
+    const log = operationLog.find((l) => l.id === logId)
+    if (!log || log.status !== 'confirmed') return
+
+    // Restore scene to pre-operation state
+    undoConfirmedOperation(log)
+
+    // Update log status
+    set((state) => ({
+      operationLog: state.operationLog.map((l) =>
+        l.id === logId ? { ...l, status: 'undone' as const } : l,
+      ),
+      // Also update the corresponding message's operation status
+      messages: state.messages.map((m) =>
+        m.id === log.messageId ? { ...m, operationStatus: 'undone' as const } : m,
       ),
     }))
   },

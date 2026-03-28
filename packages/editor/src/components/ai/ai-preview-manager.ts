@@ -133,8 +133,34 @@ export function applyGhostPreview(operations: ValidatedOperation[]): AnyNodeId[]
 export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperationLog {
   const logId = nanoid()
   const affectedNodeIds: AnyNodeId[] = []
+  const createdNodeIds: AnyNodeId[] = []
   const { nodes } = useScene.getState()
   const levelId = useViewer.getState().selection.levelId
+
+  // Capture previous snapshot for undo — deep copy nodes that will be modified/removed
+  const previousSnapshot: Record<AnyNodeId, AnyNode> = {}
+  const removedNodesForUndo: { node: AnyNode; parentId: AnyNodeId }[] = []
+
+  for (const op of operations) {
+    if (op.status === 'invalid') continue
+    if ('nodeId' in op) {
+      const nodeId = (op as { nodeId: AnyNodeId }).nodeId
+      if (nodeId) {
+        const existingNode = nodes[nodeId]
+        if (existingNode) {
+          previousSnapshot[nodeId] = structuredClone(existingNode)
+        }
+      }
+    }
+  }
+
+  // Capture removed nodes with their parent info (for re-creation on undo)
+  removedNodeStates.forEach(({ node, parentId }, _nodeId) => {
+    removedNodesForUndo.push({
+      node: structuredClone(node),
+      parentId: parentId as AnyNodeId,
+    })
+  })
 
   // Step 1: Delete ghost nodes while still paused
   for (const ghostId of ghostNodeIds) {
@@ -158,6 +184,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         })
         useScene.getState().createNode(finalNode, levelId as AnyNodeId)
         affectedNodeIds.push(finalNode.id as AnyNodeId)
+        createdNodeIds.push(finalNode.id as AnyNodeId)
         break
       }
       case 'add_wall': {
@@ -171,6 +198,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         })
         useScene.getState().createNode(wall, levelId as AnyNodeId)
         affectedNodeIds.push(wall.id as AnyNodeId)
+        createdNodeIds.push(wall.id as AnyNodeId)
         break
       }
       case 'add_door': {
@@ -187,6 +215,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         })
         useScene.getState().createNode(door, op.wallId)
         affectedNodeIds.push(door.id as AnyNodeId)
+        createdNodeIds.push(door.id as AnyNodeId)
         break
       }
       case 'add_window': {
@@ -201,6 +230,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         })
         useScene.getState().createNode(window, op.wallId)
         affectedNodeIds.push(window.id as AnyNodeId)
+        createdNodeIds.push(window.id as AnyNodeId)
         break
       }
       case 'remove_item':
@@ -257,9 +287,6 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
     }
   }
 
-  // Step 4: Re-pause for next preview cycle
-  useScene.temporal.getState().pause()
-
   // Clean up state
   resetPreviewState()
 
@@ -270,6 +297,9 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
     operations,
     status: 'confirmed',
     affectedNodeIds,
+    createdNodeIds,
+    previousSnapshot,
+    removedNodes: removedNodesForUndo,
   }
 }
 
@@ -285,7 +315,7 @@ export function clearGhostPreview() {
   }
 
   // Restore modified nodes to original state
-  for (const [nodeId, originalState] of originalNodeStates) {
+  originalNodeStates.forEach((originalState, nodeId) => {
     if ('position' in originalState) {
       useScene.getState().updateNode(nodeId, {
         position: originalState.position as [number, number, number],
@@ -294,15 +324,15 @@ export function clearGhostPreview() {
         metadata: originalState.metadata,
       })
     }
-  }
+  })
 
   // Restore removed nodes (make them visible again)
-  for (const [nodeId, { node }] of removedNodeStates) {
+  removedNodeStates.forEach(({ node }, nodeId) => {
     useScene.getState().updateNode(nodeId, {
       visible: true,
       metadata: node.metadata,
     })
-  }
+  })
 
   // Resume Zundo (we paused at the start of preview)
   useScene.temporal.getState().resume()
@@ -315,6 +345,47 @@ export function clearGhostPreview() {
  */
 export function isGhostPreviewActive(): boolean {
   return isPreviewActive
+}
+
+/**
+ * Undo a previously confirmed operation by restoring the scene to its pre-operation state.
+ *
+ * Strategy:
+ * 1. Delete all nodes that were created by this operation (createdNodeIds)
+ * 2. Restore modified nodes to their previous state (previousSnapshot)
+ * 3. Re-create nodes that were removed (removedNodes)
+ */
+export function undoConfirmedOperation(log: AIOperationLog): void {
+  if (log.status !== 'confirmed') return
+
+  // Step 1: Delete nodes that were created by this operation
+  for (const nodeId of log.createdNodeIds) {
+    const node = useScene.getState().nodes[nodeId]
+    if (node) {
+      useScene.getState().deleteNode(nodeId)
+    }
+  }
+
+  // Step 2: Restore modified nodes to their previous snapshot
+  const snapshotEntries = Object.entries(log.previousSnapshot) as [AnyNodeId, AnyNode][]
+  for (const [nodeId, snapshot] of snapshotEntries) {
+    // Skip nodes that were removed (handled in step 3)
+    if (log.removedNodes.some((r) => (r.node as AnyNode & { id: AnyNodeId }).id === nodeId)) continue
+
+    const currentNode = useScene.getState().nodes[nodeId]
+    if (currentNode) {
+      useScene.getState().updateNode(nodeId, snapshot as Partial<AnyNode>)
+    }
+  }
+
+  // Step 3: Re-create nodes that were removed
+  for (const { node, parentId } of log.removedNodes) {
+    // Only re-create if the parent still exists
+    const parent = useScene.getState().nodes[parentId]
+    if (parent) {
+      useScene.getState().createNode(node, parentId)
+    }
+  }
 }
 
 // ============================================================================

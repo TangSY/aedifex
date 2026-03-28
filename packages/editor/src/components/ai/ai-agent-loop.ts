@@ -5,6 +5,7 @@ import {
   applyGhostPreview,
   clearGhostPreview,
   confirmGhostPreview,
+  isGhostPreviewActive,
 } from './ai-preview-manager'
 import { formatSceneContextForPrompt, serializeSceneContext } from './ai-scene-serializer'
 import { streamChat } from './ai-stream-client'
@@ -99,11 +100,20 @@ export async function runAgentLoop({
 
       // Check for special tool calls (ask_user, confirm_preview, reject_preview)
       const specialResult = await handleSpecialToolCalls(toolCalls, lastMessageId)
-      if (specialResult === 'paused') {
-        // Loop was paused for ask_user — it will be resumed externally
-        return
+      if (specialResult.type === 'answered') {
+        // User answered a question — add the exchange to conversation and continue loop
+        conversationMessages.push({
+          role: 'assistant' as const,
+          content: text || '',
+        })
+        conversationMessages.push({
+          role: 'user' as const,
+          content: specialResult.answer,
+        })
+        onIterationEnd?.(iteration, null)
+        continue
       }
-      if (specialResult === 'confirmed' || specialResult === 'rejected') {
+      if (specialResult.type === 'confirmed' || specialResult.type === 'rejected') {
         onIterationEnd?.(iteration, null)
         break
       }
@@ -128,27 +138,53 @@ export async function runAgentLoop({
 
         // Validate and apply ghost preview
         const validated = validateAllToolCalls(mutationCalls)
-        if (lastMessageId) {
-          useAIChat.getState().setOperations(lastMessageId, validated)
-        }
-
         const validOps = validated.filter((op) => op.status !== 'invalid')
-        if (validOps.length > 0) {
-          applyGhostPreview(validOps)
-        }
 
-        // Build tool result for LLM feedback
-        const toolResult = buildToolResult(
-          mutationCalls.map((tc) => tc.tool).join('+'),
-          validated,
-        )
-        onIterationEnd?.(iteration, toolResult)
+        // Only set operations on the message if there are valid ones
+        // (avoids showing empty "预览 0项操作" bar that needs manual confirm)
+        if (validOps.length > 0) {
+          if (lastMessageId) {
+            useAIChat.getState().setOperations(lastMessageId, validated)
+          }
+          applyGhostPreview(validOps)
+        } else if (lastMessageId) {
+          // All operations invalid — record them as auto-rejected
+          useAIChat.getState().setOperations(lastMessageId, validated)
+          useAIChat.getState().rejectOperations(lastMessageId)
+        }
 
         // Check if this is a deterministic operation (skip feedback)
         const isDeterministic = mutationCalls.every((tc) => DETERMINISTIC_TOOLS.has(tc.tool))
-        if (isDeterministic && toolResult.success) {
+        if (isDeterministic && validOps.length > 0) {
+          const toolResult = buildToolResult(
+            mutationCalls.map((tc) => tc.tool).join('+'),
+            validated,
+          )
+          onIterationEnd?.(iteration, toolResult)
           break
         }
+
+        // Auto-confirm current ghost preview before feeding back to LLM.
+        // This converts ghost nodes (walls, items, etc.) into real scene nodes,
+        // so the next iteration's scene context reflects the actual state.
+        // Without this, clearGhostPreview in the next applyGhostPreview would
+        // remove the ghost walls, causing doors/windows to lose their parent.
+        let createdNodeIds: string[] = []
+        if (isGhostPreviewActive()) {
+          const log = confirmGhostPreview(validOps)
+          createdNodeIds = log.affectedNodeIds.map(String)
+          if (lastMessageId) {
+            useAIChat.getState().confirmOperations(lastMessageId)
+          }
+        }
+
+        // Build tool result with created node IDs for LLM feedback
+        const toolResult = buildToolResult(
+          mutationCalls.map((tc) => tc.tool).join('+'),
+          validated,
+          createdNodeIds as never,
+        )
+        onIterationEnd?.(iteration, toolResult)
 
         // Feed result back to LLM for iteration
         // Add assistant message with tool calls to conversation
@@ -230,23 +266,27 @@ function streamLLMResponse(
 // Special Tool Call Handlers
 // ============================================================================
 
-type SpecialResult = 'none' | 'paused' | 'confirmed' | 'rejected'
+type SpecialResult =
+  | { type: 'none' }
+  | { type: 'answered'; answer: string }
+  | { type: 'confirmed' }
+  | { type: 'rejected' }
 
 /**
  * Handle special tool calls that don't go through the mutation executor.
  */
 async function handleSpecialToolCalls(
   toolCalls: AIToolCall[],
-  messageId: string,
+  _messageId: string | null,
 ): Promise<SpecialResult> {
-  // Handle ask_user — pause the loop and wait for user response
+  // Handle ask_user — pause the loop, wait for user response, then resume
   const askCall = toolCalls.find((tc) => tc.tool === 'ask_user') as AskUserToolCall | undefined
   if (askCall) {
     useAIChat.getState().setLoopState('paused')
     useAIChat.getState().setAIProcessing(false)
 
-    // Create a promise that will be resolved when the user responds
-    await new Promise<string>((resolve) => {
+    // Wait for the user to respond
+    const answer = await new Promise<string>((resolve) => {
       const question: PendingQuestion = {
         question: askCall.question,
         suggestions: askCall.suggestions,
@@ -255,7 +295,11 @@ async function handleSpecialToolCalls(
       useAIChat.getState().setPendingQuestion(question)
     })
 
-    return 'paused'
+    // User answered — resume the loop
+    useAIChat.getState().setAIProcessing(true)
+    useAIChat.getState().setLoopState('running')
+
+    return { type: 'answered', answer }
   }
 
   // Handle confirm_preview — confirm current ghost preview
@@ -278,7 +322,7 @@ async function handleSpecialToolCalls(
         }
       }, 200)
     }
-    return 'confirmed'
+    return { type: 'confirmed' }
   }
 
   // Handle reject_preview — reject current ghost preview
@@ -289,10 +333,10 @@ async function handleSpecialToolCalls(
     if (pendingMsg) {
       useAIChat.getState().rejectOperations(pendingMsg.id)
     }
-    return 'rejected'
+    return { type: 'rejected' }
   }
 
-  return 'none'
+  return { type: 'none' }
 }
 
 /**
@@ -353,4 +397,12 @@ export function answerPendingQuestion(answer: string): void {
 
   // Resume the loop
   useAIChat.getState().resolvePendingQuestion(answer)
+}
+
+/**
+ * Undo a confirmed operation by its log ID.
+ * Restores the scene to its pre-operation state using stored snapshots.
+ */
+export function undoOperationFromUI(logId: string): void {
+  useAIChat.getState().undoOperation(logId)
 }
