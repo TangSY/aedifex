@@ -174,7 +174,9 @@ export async function runAgentLoop({
           const log = confirmGhostPreview(validOps)
           createdNodeIds = log.affectedNodeIds.map(String)
           if (lastMessageId) {
+            log.messageId = lastMessageId
             useAIChat.getState().confirmOperations(lastMessageId)
+            useAIChat.getState().addOperationLog(log)
           }
         }
 
