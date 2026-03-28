@@ -89,10 +89,13 @@ export function validateAllToolCalls(toolCalls: AIToolCall[]): ValidatedOperatio
 /**
  * Build a structured ToolResult from validated operations.
  * This result is fed back to the LLM so it can iterate on its decisions.
+ * When createdNodeIds is provided, include them so the LLM can reference
+ * newly created nodes (e.g., wall IDs for adding doors/windows).
  */
 export function buildToolResult(
   toolName: string,
   operations: ValidatedOperation[],
+  createdNodeIds?: AnyNodeId[],
 ): ToolResult {
   const validCount = operations.filter((op) => op.status === 'valid').length
   const adjustedCount = operations.filter((op) => op.status === 'adjusted').length
@@ -118,18 +121,35 @@ export function buildToolResult(
   if (adjustedCount > 0) parts.push(`${adjustedCount} adjusted`)
   if (invalidCount > 0) parts.push(`${invalidCount} failed`)
 
+  // Build created nodes summary for LLM reference
+  let createdSummary = ''
+  if (createdNodeIds && createdNodeIds.length > 0) {
+    const { nodes } = useScene.getState()
+    const nodeDescriptions = createdNodeIds.map((id) => {
+      const node = nodes[id]
+      if (!node) return `${id} (unknown)`
+      if (node.type === 'wall') {
+        const w = node as WallNode
+        return `${id} (wall: [${w.start}] → [${w.end}])`
+      }
+      return `${id} (${node.type}: ${node.name})`
+    })
+    createdSummary = ` Created nodes: ${nodeDescriptions.join(', ')}.`
+  }
+
   return {
     toolName,
     success,
     summary: `Executed ${operations.length} operations: ${parts.join(', ')}.${
       adjustments.length > 0 ? ` Adjustments: ${adjustments.join('; ')}` : ''
-    }${errors.length > 0 ? ` Errors: ${errors.join('; ')}` : ''}`,
+    }${errors.length > 0 ? ` Errors: ${errors.join('; ')}` : ''}${createdSummary}`,
     details: {
       validCount,
       adjustedCount,
       invalidCount,
       adjustments,
       errors,
+      createdNodeIds: createdNodeIds ?? [],
     },
   }
 }
@@ -501,6 +521,52 @@ function validateAddWall(call: AddWallToolCall): ValidatedAddWall {
     }
   }
 
+  // Check for duplicate or overlapping walls
+  const levelId = useViewer.getState().selection.levelId
+  if (levelId) {
+    const existingWalls = getWallsForLevel(levelId)
+    const DUPLICATE_TOLERANCE = 0.3 // meters
+
+    for (const w of existingWalls) {
+      // Check 1: Exact duplicate (same start/end within tolerance, either direction)
+      const matchForward =
+        Math.hypot(w.start[0] - snappedStart[0], w.start[1] - snappedStart[1]) < DUPLICATE_TOLERANCE &&
+        Math.hypot(w.end[0] - snappedEnd[0], w.end[1] - snappedEnd[1]) < DUPLICATE_TOLERANCE
+      const matchReverse =
+        Math.hypot(w.start[0] - snappedEnd[0], w.start[1] - snappedEnd[1]) < DUPLICATE_TOLERANCE &&
+        Math.hypot(w.end[0] - snappedStart[0], w.end[1] - snappedStart[1]) < DUPLICATE_TOLERANCE
+      if (matchForward || matchReverse) {
+        return {
+          type: 'add_wall',
+          status: 'invalid',
+          start: snappedStart,
+          end: snappedEnd,
+          thickness,
+          height,
+          errorReason: `A wall already exists at this location ([${snappedStart}] → [${snappedEnd}]). Use wall ID "${w.id}" to reference it.`,
+        }
+      }
+
+      // Check 2: Collinear overlap — new wall shares significant segment with existing wall
+      const overlap = computeCollinearOverlap(
+        snappedStart, snappedEnd,
+        w.start as [number, number], w.end as [number, number],
+      )
+      if (overlap > 0.4) {
+        // >0.4m overlap on a collinear wall = redundant
+        return {
+          type: 'add_wall',
+          status: 'invalid',
+          start: snappedStart,
+          end: snappedEnd,
+          thickness,
+          height,
+          errorReason: `New wall overlaps ${overlap.toFixed(1)}m with existing wall "${w.id}" ([${w.start}] → [${w.end}]). Use the existing wall instead.`,
+        }
+      }
+    }
+  }
+
   const wasAdjusted = snappedStart[0] !== start[0] || snappedStart[1] !== start[1]
     || snappedEnd[0] !== end[0] || snappedEnd[1] !== end[1]
 
@@ -678,6 +744,56 @@ function validateRemoveNode(call: RemoveNodeToolCall): ValidatedRemoveNode {
 // ============================================================================
 // Wall & Zone Boundary Validation
 // ============================================================================
+
+/**
+ * Compute how much two wall segments overlap if they are nearly collinear.
+ * Returns overlap length in meters, or 0 if not collinear or no overlap.
+ */
+function computeCollinearOverlap(
+  a1: [number, number], a2: [number, number],
+  b1: [number, number], b2: [number, number],
+): number {
+  // Wall A direction
+  const adx = a2[0] - a1[0]
+  const adz = a2[1] - a1[1]
+  const aLen = Math.hypot(adx, adz)
+  if (aLen < 0.01) return 0
+
+  // Wall B direction
+  const bdx = b2[0] - b1[0]
+  const bdz = b2[1] - b1[1]
+  const bLen = Math.hypot(bdx, bdz)
+  if (bLen < 0.01) return 0
+
+  // Check collinearity: cross product should be ~0
+  const cross = (adx / aLen) * (bdz / bLen) - (adz / aLen) * (bdx / bLen)
+  if (Math.abs(cross) > 0.1) return 0 // Not collinear (>~6 degrees)
+
+  // Check perpendicular distance between the two lines
+  // Project b1 onto wall A's normal
+  const nx = -adz / aLen
+  const nz = adx / aLen
+  const perpDist = Math.abs((b1[0] - a1[0]) * nx + (b1[1] - a1[1]) * nz)
+  if (perpDist > 0.3) return 0 // Lines too far apart
+
+  // Project all endpoints onto wall A's direction to find overlap
+  const dax = adx / aLen
+  const daz = adz / aLen
+  const projA1 = 0
+  const projA2 = aLen
+  const projB1 = (b1[0] - a1[0]) * dax + (b1[1] - a1[1]) * daz
+  const projB2 = (b2[0] - a1[0]) * dax + (b2[1] - a1[1]) * daz
+
+  const aMin = Math.min(projA1, projA2)
+  const aMax = Math.max(projA1, projA2)
+  const bMin = Math.min(projB1, projB2)
+  const bMax = Math.max(projB1, projB2)
+
+  const overlapStart = Math.max(aMin, bMin)
+  const overlapEnd = Math.min(aMax, bMax)
+
+  return Math.max(0, overlapEnd - overlapStart)
+}
 
 /** Minimum clearance (meters) between item AABB edge and wall centerline. */
 const WALL_CLEARANCE = 0.15
