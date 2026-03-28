@@ -1,6 +1,6 @@
 import { loadAssetUrl } from '@aedifex/core'
 
-export const ASSETS_CDN_URL = process.env.NEXT_PUBLIC_ASSETS_CDN_URL || 'https://editor.aedifex.com'
+export const ASSETS_CDN_URL = process.env.NEXT_PUBLIC_ASSETS_CDN_URL || ''
 
 /**
  * Resolves an asset URL to the appropriate format:
