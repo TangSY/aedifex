@@ -11,14 +11,63 @@ import { SiteNode } from '../schema/nodes/site'
 import type { AnyNode, AnyNodeId } from '../schema/types'
 import * as nodeActions from './actions/node-actions'
 
+// ============================================================================
+// Schema Version & Migration Framework
+// ============================================================================
+
+/**
+ * Current schema version. Increment when node structure changes.
+ * Migration functions run sequentially: v1→v2→v3...
+ */
+export const CURRENT_SCHEMA_VERSION = 1
+
+/** Versioned scene data format for persistence (DB, file export, localStorage) */
+export type VersionedSceneData = {
+  schemaVersion: number
+  nodes: Record<string, unknown>
+  rootNodeIds: string[]
+}
+
+type MigrationFn = (nodes: Record<string, any>) => Record<string, any>
+
+/**
+ * Registry of migration functions. Key = target version.
+ * Each function transforms nodes from (version - 1) to (version).
+ * Add new migrations here when schema changes:
+ *   SCHEMA_MIGRATIONS.set(2, migrateV1ToV2)
+ */
+const SCHEMA_MIGRATIONS = new Map<number, MigrationFn>()
+
+/**
+ * Run all necessary migrations from sourceVersion to CURRENT_SCHEMA_VERSION.
+ * Pure function: returns a new nodes record without mutating input.
+ */
+function runSchemaMigrations(
+  nodes: Record<string, any>,
+  fromVersion: number,
+): Record<string, any> {
+  let result = nodes
+  for (let v = fromVersion + 1; v <= CURRENT_SCHEMA_VERSION; v++) {
+    const migrateFn = SCHEMA_MIGRATIONS.get(v)
+    if (migrateFn) {
+      result = migrateFn(result)
+    }
+  }
+  return result
+}
+
+/**
+ * Legacy per-node patches that run regardless of schema version.
+ * These handle data saved before the schemaVersion system existed.
+ */
 function migrateNodes(nodes: Record<string, any>): Record<string, AnyNode> {
   const patchedNodes = { ...nodes }
   for (const [id, node] of Object.entries(patchedNodes)) {
-    // 1. Item scale migration
+    // 1. Item scale migration (pre-schemaVersion era)
     if (node.type === 'item' && !('scale' in node)) {
       patchedNodes[id] = { ...node, scale: [1, 1, 1] }
     }
-    // 2. Old roof to new roof + segment migration
+    // 2. Old roof to new roof + segment migration (pre-schemaVersion era)
     if (node.type === 'roof' && !('children' in node)) {
       const oldRoof = node
       const suffix = id.includes('_') ? id.split('_')[1] : Math.random().toString(36).slice(2)
@@ -52,6 +101,43 @@ function migrateNodes(nodes: Record<string, any>): Record<string, AnyNode> {
     }
   }
   return patchedNodes as Record<string, AnyNode>
+}
+
+/**
+ * Parse scene data from any source (DB, localStorage, file import).
+ * Handles both versioned format and legacy bare { nodes, rootNodeIds }.
+ */
+export function parseSceneData(raw: Record<string, any>): {
+  nodes: Record<string, AnyNode>
+  rootNodeIds: string[]
+} {
+  const version = typeof raw.schemaVersion === 'number' ? raw.schemaVersion : 0
+  const nodes = raw.nodes ?? {}
+  const rootNodeIds = raw.rootNodeIds ?? []
+
+  // 1. Run versioned schema migrations (v0 = legacy, no schemaVersion field)
+  const migrated = version < CURRENT_SCHEMA_VERSION
+    ? runSchemaMigrations(nodes, version)
+    : nodes
+
+  // 2. Run legacy per-node patches (always, for safety)
+  const patched = migrateNodes(migrated)
+
+  return { nodes: patched, rootNodeIds }
+}
+
+/**
+ * Serialize current scene state into the versioned format for persistence.
+ */
+export function serializeSceneData(
+  nodes: Record<AnyNodeId, AnyNode>,
+  rootNodeIds: AnyNodeId[],
+): VersionedSceneData {
+  return {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    nodes,
+    rootNodeIds,
+  }
 }
 
 export type SceneState = {
@@ -129,16 +215,16 @@ const useScene: UseSceneStore = create<SceneState>()(
       },
 
       setScene: (nodes, rootNodeIds) => {
-        // Apply backward compatibility migrations
-        const patchedNodes = migrateNodes(nodes)
+        // Apply backward compatibility migrations + schema version migrations
+        const parsed = parseSceneData({ nodes, rootNodeIds })
 
         set({
-          nodes: patchedNodes,
-          rootNodeIds,
+          nodes: parsed.nodes,
+          rootNodeIds: parsed.rootNodeIds as AnyNodeId[],
           dirtyNodes: new Set<AnyNodeId>(),
         })
         // Mark all nodes as dirty to trigger re-validation
-        Object.values(patchedNodes).forEach((node) => {
+        Object.values(parsed.nodes).forEach((node) => {
           get().markDirty(node.id)
         })
       },

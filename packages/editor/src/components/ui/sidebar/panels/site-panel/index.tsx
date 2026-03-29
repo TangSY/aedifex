@@ -381,17 +381,11 @@ const MAX_FILE_SIZE = 200 * 1024 * 1024 // 200MB
 interface LevelReferencesProps {
   levelId: string
   isLastLevel?: boolean
-  projectId?: string
-  onUploadAsset?: (projectId: string, levelId: string, file: File, type: 'scan' | 'guide') => void
-  onDeleteAsset?: (projectId: string, url: string) => void
 }
 
 function LevelReferences({
   levelId,
   isLastLevel,
-  projectId,
-  onUploadAsset,
-  onDeleteAsset,
 }: LevelReferencesProps) {
   const nodes = useScene((s) => s.nodes)
   const deleteNode = useScene((s) => s.deleteNode)
@@ -419,12 +413,6 @@ function LevelReferences({
     if (!file) return
     e.target.value = ''
 
-    if (!projectId) {
-      useUploadStore.getState().startUpload(levelId, 'scan', file.name)
-      useUploadStore.getState().setError(levelId, 'No active project. Please open a project first.')
-      return
-    }
-
     if (file.size > MAX_FILE_SIZE) {
       useUploadStore.getState().startUpload(levelId, 'scan', file.name)
       useUploadStore
@@ -449,23 +437,24 @@ function LevelReferences({
       return
     }
 
-    const type = isScan ? 'scan' : 'guide'
-
+    // Local file loading: create object URL for the asset
     clearUpload(levelId)
-    onUploadAsset?.(projectId, levelId, file, type)
+    const url = URL.createObjectURL(file)
+    const type = isScan ? 'scan' : 'guide'
+    const createNode = useScene.getState().createNode
+    if (type === 'scan') {
+      const { ScanNode } = require('@aedifex/core')
+      const node = ScanNode.parse({ url, name: file.name, parentId: levelId })
+      createNode(node, levelId as any)
+    } else {
+      const { GuideNode } = require('@aedifex/core')
+      const node = GuideNode.parse({ url, name: file.name, parentId: levelId })
+      createNode(node, levelId as any)
+    }
   }
 
   const handleDelete = async (nodeId: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    const refNode = nodes[nodeId as AnyNodeId] as ScanNode | GuideNode | undefined
-
-    if (
-      projectId &&
-      refNode?.url &&
-      (refNode.url.startsWith('http://') || refNode.url.startsWith('https://'))
-    ) {
-      onDeleteAsset?.(projectId, refNode.url)
-    }
     deleteNode(nodeId as AnyNodeId)
   }
 
@@ -556,18 +545,12 @@ function LevelItem({
   setSelection,
   updateNode,
   isLast,
-  projectId,
-  onUploadAsset,
-  onDeleteAsset,
 }: {
   level: LevelNode
   selectedLevelId: string | null
   setSelection: (selection: any) => void
   updateNode: (id: AnyNodeId, updates: Partial<AnyNode>) => void
   isLast?: boolean
-  projectId?: string
-  onUploadAsset?: (projectId: string, levelId: string, file: File, type: 'scan' | 'guide') => void
-  onDeleteAsset?: (projectId: string, url: string) => void
 }) {
   const [cameraPopoverOpen, setCameraPopoverOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -769,9 +752,6 @@ function LevelItem({
             <LevelReferences
               isLastLevel={isLast}
               levelId={level.id}
-              onDeleteAsset={onDeleteAsset}
-              onUploadAsset={onUploadAsset}
-              projectId={projectId}
             />
           </motion.div>
         )}
@@ -780,15 +760,7 @@ function LevelItem({
   )
 }
 
-function LevelsSection({
-  projectId,
-  onUploadAsset,
-  onDeleteAsset,
-}: {
-  projectId?: string
-  onUploadAsset?: (projectId: string, levelId: string, file: File, type: 'scan' | 'guide') => void
-  onDeleteAsset?: (projectId: string, url: string) => void
-} = {}) {
+function LevelsSection() {
   const nodes = useScene((state) => state.nodes)
   const createNode = useScene((state) => state.createNode)
   const updateNode = useScene((state) => state.updateNode)
@@ -846,9 +818,6 @@ function LevelsSection({
             isLast={index === levels.length - 1}
             key={level.id}
             level={level}
-            onDeleteAsset={onDeleteAsset}
-            onUploadAsset={onUploadAsset}
-            projectId={projectId}
             selectedLevelId={selectedLevelId}
             setSelection={setSelection}
             updateNode={updateNode}
@@ -1259,17 +1228,11 @@ function BuildingItem({
   isBuildingActive,
   buildingCameraOpen,
   setBuildingCameraOpen,
-  projectId,
-  onUploadAsset,
-  onDeleteAsset,
 }: {
   building: BuildingNode
   isBuildingActive: boolean
   buildingCameraOpen: string | null
   setBuildingCameraOpen: (id: string | null) => void
-  projectId?: string
-  onUploadAsset?: (projectId: string, levelId: string, file: File, type: 'scan' | 'guide') => void
-  onDeleteAsset?: (projectId: string, url: string) => void
 }) {
   const setSelection = useViewer((state) => state.setSelection)
   const phase = useEditor((state) => state.phase)
@@ -1405,11 +1368,7 @@ function BuildingItem({
           >
             <div className="flex min-h-0 w-full flex-1 flex-col">
               <div className="flex shrink-0 flex-col">
-                <LevelsSection
-                  onDeleteAsset={onDeleteAsset}
-                  onUploadAsset={onUploadAsset}
-                  projectId={projectId}
-                />
+                <LevelsSection />
                 <LayerToggle />
               </div>
               <div className="subtle-scrollbar relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
@@ -1424,13 +1383,7 @@ function BuildingItem({
   )
 }
 
-export interface SitePanelProps {
-  projectId?: string
-  onUploadAsset?: (projectId: string, levelId: string, file: File, type: 'scan' | 'guide') => void
-  onDeleteAsset?: (projectId: string, url: string) => void
-}
-
-export function SitePanel({ projectId, onUploadAsset, onDeleteAsset }: SitePanelProps = {}) {
+export function SitePanel() {
   const nodes = useScene((state) => state.nodes)
   const rootNodeIds = useScene((state) => state.rootNodeIds)
   const updateNode = useScene((state) => state.updateNode)
@@ -1527,9 +1480,6 @@ export function SitePanel({ projectId, onUploadAsset, onDeleteAsset }: SitePanel
                     buildingCameraOpen={buildingCameraOpen}
                     isBuildingActive={isBuildingActive}
                     key={building.id}
-                    onDeleteAsset={onDeleteAsset}
-                    onUploadAsset={onUploadAsset}
-                    projectId={projectId}
                     setBuildingCameraOpen={setBuildingCameraOpen}
                   />
                 )

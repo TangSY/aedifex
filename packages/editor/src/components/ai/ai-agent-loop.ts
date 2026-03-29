@@ -1,4 +1,4 @@
-import { captureScreenshot } from '../editor/thumbnail-generator'
+import { captureScreenshot } from '@aedifex/viewer'
 import { useAIChat } from './ai-chat-store'
 import { buildToolResult, validateAllToolCalls } from './ai-mutation-executor'
 import {

@@ -34,10 +34,10 @@ export const BASE_URL = (() => {
       process.env.NEXT_PUBLIC_APP_URL ||
       (process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL
         ? `https://${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}`
-        : 'https://editor.aedifex.com')
+        : '')
     )
   }
 
-  // Fallback (should never reach here in normal operation)
-  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  // Fallback
+  return process.env.NEXT_PUBLIC_APP_URL || `http://localhost:${process.env.PORT || 3002}`
 })()

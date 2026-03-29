@@ -1,5 +1,11 @@
 export { default as Viewer } from './components/viewer'
 export { ASSETS_CDN_URL, resolveAssetUrl, resolveCdnUrl } from './lib/asset-url'
+export {
+  captureScreenshot,
+  clearScreenshotRenderer,
+  setScreenshotRenderer,
+  type CaptureScreenshotOptions,
+} from './lib/capture-screenshot'
 export { SCENE_LAYER, ZONE_LAYER } from './lib/layers'
 export { default as useViewer } from './store/use-viewer'
 export { InteractiveSystem } from './systems/interactive/interactive-system'

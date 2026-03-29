@@ -10,8 +10,7 @@ apps/
 packages/
   core/            # Scene schema, state, systems, spatial logic
   viewer/          # 3D canvas component (React Three Fiber)
-  auth/            # Authentication (better-auth + Supabase)
-  db/              # Database layer (Drizzle ORM + Supabase)
+  editor/          # Editor components (tools, panels, sidebar)
   ui/              # Shared React UI components
 ```
 
@@ -90,6 +89,5 @@ User input (pointer/keyboard)
 | Framework | Next.js 16, React 19 |
 | State | Zustand + Zundo |
 | UI | Radix UI, Tailwind CSS 4 |
-| Database | Supabase PostgreSQL + Drizzle ORM |
-| Auth | better-auth |
+| Storage | localStorage (default) |
 | Tooling | Biome, TypeScript 5.9, Turborepo |

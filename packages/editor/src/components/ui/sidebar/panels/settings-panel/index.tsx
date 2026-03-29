@@ -1,14 +1,13 @@
-import { emitter, useScene } from '@aedifex/core'
+import { useScene } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { TreeView, VisualJson } from '@visual-json/react'
-import { Camera, Download, Save, Trash2, Upload } from 'lucide-react'
+import { Download, Save, Trash2, Upload } from 'lucide-react'
 import {
   type KeyboardEvent,
   type SyntheticEvent,
   useCallback,
   useMemo,
   useRef,
-  useState,
 } from 'react'
 import { Button } from './../../../../../components/ui/primitives/button'
 import {
@@ -155,26 +154,7 @@ const buildSceneGraphValue = (
   }
 }
 
-export interface ProjectVisibility {
-  isPrivate: boolean
-  showScansPublic: boolean
-  showGuidesPublic: boolean
-}
-
-export interface SettingsPanelProps {
-  projectId?: string
-  projectVisibility?: ProjectVisibility
-  onVisibilityChange?: (
-    field: 'isPrivate' | 'showScansPublic' | 'showGuidesPublic',
-    value: boolean,
-  ) => Promise<void>
-}
-
-export function SettingsPanel({
-  projectId,
-  projectVisibility,
-  onVisibilityChange,
-}: SettingsPanelProps = {}) {
+export function SettingsPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const nodes = useScene((state) => state.nodes)
   const rootNodeIds = useScene((state) => state.rootNodeIds)
@@ -184,7 +164,6 @@ export function SettingsPanel({
   const exportScene = useViewer((state) => state.exportScene)
   const showGrid = useViewer((state) => state.showGrid)
   const setPhase = useEditor((state) => state.setPhase)
-  const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false)
   const sceneGraphValue = useMemo(
     () => buildSceneGraphValue(nodes as Record<string, SceneNode>, rootNodeIds),
     [nodes, rootNodeIds],
@@ -199,8 +178,6 @@ export function SettingsPanel({
       event.stopPropagation()
     }
   }, [])
-
-  const isLocalProject = false // Props-based; only show cloud sections when projectId provided
 
   const handleExport = async () => {
     if (exportScene) {
@@ -250,70 +227,22 @@ export function SettingsPanel({
     setPhase('site')
   }
 
-  const handleGenerateThumbnail = () => {
-    if (!projectId) return
-    setIsGeneratingThumbnail(true)
-    emitter.emit('camera-controls:generate-thumbnail', { projectId })
-    setTimeout(() => setIsGeneratingThumbnail(false), 3000)
-  }
-
-  const handleVisibilityChange = async (
-    field: 'isPrivate' | 'showScansPublic' | 'showGuidesPublic',
-    value: boolean,
-  ) => {
-    await onVisibilityChange?.(field, value)
-  }
-
   return (
     <div className="flex flex-col gap-6 p-3">
-      {/* Visibility Section (only for cloud projects) */}
-      {projectId && !isLocalProject && (
-        <div className="space-y-3">
-          <label className="font-medium text-muted-foreground text-xs uppercase">Visibility</label>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-sm">Public</div>
-              <div className="text-muted-foreground text-xs">
-                {projectVisibility?.isPrivate ? 'Only you' : 'Anyone'} can view
-              </div>
-            </div>
-            <Switch
-              checked={!(projectVisibility?.isPrivate ?? false)}
-              onCheckedChange={(checked) => handleVisibilityChange('isPrivate', !checked)}
-            />
+      {/* Display Section */}
+      <div className="space-y-3">
+        <label className="font-medium text-muted-foreground text-xs uppercase">Display</label>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="font-medium text-sm">Show Grid</div>
+            <div className="text-muted-foreground text-xs">Visible only in the editor</div>
           </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-sm">Show 3D Scans</div>
-              <div className="text-muted-foreground text-xs">Visible to public viewers</div>
-            </div>
-            <Switch
-              checked={projectVisibility?.showScansPublic ?? true}
-              onCheckedChange={(checked) => handleVisibilityChange('showScansPublic', checked)}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-sm">Show Floorplans</div>
-              <div className="text-muted-foreground text-xs">Visible to public viewers</div>
-            </div>
-            <Switch
-              checked={projectVisibility?.showGuidesPublic ?? true}
-              onCheckedChange={(checked) => handleVisibilityChange('showGuidesPublic', checked)}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-sm">Show Grid</div>
-              <div className="text-muted-foreground text-xs">Visible only in the editor</div>
-            </div>
-            <Switch
-              checked={showGrid}
-              onCheckedChange={(checked) => useViewer.getState().setShowGrid(checked)}
-            />
-          </div>
+          <Switch
+            checked={showGrid}
+            onCheckedChange={(checked) => useViewer.getState().setShowGrid(checked)}
+          />
         </div>
-      )}
+      </div>
 
       {/* Export Section */}
       <div className="space-y-2">
@@ -323,22 +252,6 @@ export function SettingsPanel({
           Export 3D Model
         </Button>
       </div>
-
-      {/* Thumbnail Section (only for cloud projects) */}
-      {projectId && !isLocalProject && (
-        <div className="space-y-2">
-          <label className="font-medium text-muted-foreground text-xs uppercase">Thumbnail</label>
-          <Button
-            className="w-full justify-start gap-2"
-            disabled={isGeneratingThumbnail}
-            onClick={handleGenerateThumbnail}
-            variant="outline"
-          >
-            <Camera className="size-4" />
-            {isGeneratingThumbnail ? 'Generating...' : 'Generate Thumbnail'}
-          </Button>
-        </div>
-      )}
 
       {/* Save/Load Section */}
       <div className="space-y-2">

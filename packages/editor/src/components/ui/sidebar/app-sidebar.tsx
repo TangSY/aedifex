@@ -12,21 +12,17 @@ import {
 } from './../../../components/ui/primitives/sidebar'
 import { cn } from './../../../lib/utils'
 import { IconRail, type PanelId } from './icon-rail'
-import { SettingsPanel, type SettingsPanelProps } from './panels/settings-panel'
-import { SitePanel, type SitePanelProps } from './panels/site-panel'
+import { SettingsPanel } from './panels/settings-panel'
+import { SitePanel } from './panels/site-panel'
 
 interface AppSidebarProps {
   appMenuButton?: ReactNode
   sidebarTop?: ReactNode
-  settingsPanelProps?: SettingsPanelProps
-  sitePanelProps?: SitePanelProps
 }
 
 export function AppSidebar({
   appMenuButton,
   sidebarTop,
-  settingsPanelProps,
-  sitePanelProps,
 }: AppSidebarProps) {
   const [activePanel, setActivePanel] = useState<PanelId>('site')
 
@@ -41,9 +37,9 @@ export function AppSidebar({
   const renderPanelContent = () => {
     switch (activePanel) {
       case 'site':
-        return <SitePanel {...sitePanelProps} />
+        return <SitePanel />
       case 'settings':
-        return <SettingsPanel {...settingsPanelProps} />
+        return <SettingsPanel />
       case 'ai':
         return <AIChatPanel />
       default:

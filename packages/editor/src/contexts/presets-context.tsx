@@ -5,13 +5,8 @@ import type { PresetData, PresetType } from '../components/ui/panels/presets/pre
 
 export type { PresetData, PresetType }
 
-export type PresetsTab = 'community' | 'mine'
-
 export interface PresetsAdapter {
-  /** Tabs to show. Default: both. Standalone passes ['mine']. */
-  tabs?: PresetsTab[]
-  isAuthenticated?: boolean
-  fetchPresets: (type: PresetType, tab: PresetsTab) => Promise<PresetData[]>
+  fetchPresets: (type: PresetType) => Promise<PresetData[]>
   savePreset: (
     type: PresetType,
     name: string,
@@ -20,18 +15,13 @@ export interface PresetsAdapter {
   overwritePreset: (type: PresetType, id: string, data: Record<string, unknown>) => Promise<void>
   renamePreset: (id: string, name: string) => Promise<void>
   deletePreset: (id: string) => Promise<void>
-  togglePresetCommunity?: (id: string, current: boolean) => Promise<void>
   uploadPresetThumbnail?: (presetId: string, blob: Blob) => Promise<string | null>
 }
 
 const PRESETS_KEY = (type: string) => `aedifex-presets-${type}`
 
 export const localStoragePresetsAdapter: PresetsAdapter = {
-  tabs: ['mine'],
-  isAuthenticated: true,
-
-  fetchPresets: async (type, tab) => {
-    if (tab === 'community') return []
+  fetchPresets: async (type) => {
     try {
       const raw = localStorage.getItem(PRESETS_KEY(type))
       return raw ? (JSON.parse(raw) as PresetData[]) : []
@@ -51,8 +41,6 @@ export const localStoragePresetsAdapter: PresetsAdapter = {
         name,
         data,
         thumbnail_url: null,
-        user_id: null,
-        is_community: false,
         created_at: new Date().toISOString(),
       })
       localStorage.setItem(PRESETS_KEY(type), JSON.stringify(presets))

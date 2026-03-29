@@ -30,8 +30,6 @@ import { SidebarProvider } from '../ui/primitives/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/primitives/tooltip'
 import { SceneLoader } from '../ui/scene-loader'
 import { AppSidebar } from '../ui/sidebar/app-sidebar'
-import type { SettingsPanelProps } from '../ui/sidebar/panels/settings-panel'
-import type { SitePanelProps } from '../ui/sidebar/panels/site-panel'
 import { CustomCameraControls } from './custom-camera-controls'
 import { ExportManager } from './export-manager'
 import { FloatingActionMenu } from './floating-action-menu'
@@ -75,10 +73,6 @@ export interface EditorProps {
 
   // Thumbnail
   onThumbnailCapture?: (blob: Blob) => void
-
-  // Panel config (passed through to sidebar panels)
-  settingsPanelProps?: SettingsPanelProps
-  sitePanelProps?: SitePanelProps
 
   // Presets storage backend (defaults to localStorage)
   presetsAdapter?: PresetsAdapter
@@ -315,8 +309,6 @@ export default function Editor({
   isVersionPreviewMode = false,
   isLoading = false,
   onThumbnailCapture,
-  settingsPanelProps,
-  sitePanelProps,
   presetsAdapter,
 }: EditorProps) {
   useKeyboard()
@@ -434,9 +426,7 @@ export default function Editor({
             <SidebarProvider className="fixed z-20">
               <AppSidebar
                 appMenuButton={appMenuButton}
-                settingsPanelProps={settingsPanelProps}
                 sidebarTop={sidebarTop}
-                sitePanelProps={sitePanelProps}
               />
             </SidebarProvider>
           </>

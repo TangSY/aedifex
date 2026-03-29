@@ -15,6 +15,7 @@ All colors use OKLch color space. Defined in `apps/editor/app/globals.css`.
 | `--accent` | `oklch(0.97 0 0)` | Hover backgrounds |
 | `--muted-foreground` | `oklch(0.556 0 0)` | Secondary text |
 | `--destructive` | `oklch(0.577 0.245 27.325)` | Error/danger |
+| `--success` | `oklch(0.60 0.18 145)` | Success/saved states |
 
 ### Dark Mode (sidebar, editor panels)
 | Token | Value | Usage |

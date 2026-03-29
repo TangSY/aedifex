@@ -4,12 +4,7 @@ export { useCommandPalette } from './components/ui/command-palette'
 export { CATALOG_ITEMS } from './components/ui/item-catalog/catalog-items'
 export { Slider } from './components/ui/primitives/slider'
 export { SceneLoader } from './components/ui/scene-loader'
-export type {
-  ProjectVisibility,
-  SettingsPanelProps,
-} from './components/ui/sidebar/panels/settings-panel'
-export type { SitePanelProps } from './components/ui/sidebar/panels/site-panel'
-export type { PresetsAdapter, PresetsTab } from './contexts/presets-context'
+export type { PresetsAdapter } from './contexts/presets-context'
 export { PresetsProvider } from './contexts/presets-context'
 export type { SaveStatus } from './hooks/use-auto-save'
 export type { SceneGraph } from './lib/scene'

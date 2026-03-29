@@ -183,15 +183,12 @@ export function DoorPanel() {
       {/* Presets strip */}
       <div className="border-border/30 border-b px-3 pt-2.5 pb-1.5">
         <PresetsPopover
-          isAuthenticated={adapter.isAuthenticated}
           onApply={handleApplyPreset}
           onDelete={(id) => adapter.deletePreset(id)}
-          onFetchPresets={(tab) => adapter.fetchPresets('door', tab)}
+          onFetchPresets={() => adapter.fetchPresets('door')}
           onOverwrite={handleOverwritePreset}
           onRename={(id, name) => adapter.renamePreset(id, name)}
           onSave={handleSavePreset}
-          onToggleCommunity={adapter.togglePresetCommunity}
-          tabs={adapter.tabs}
           type="door"
         >
           <button className="flex w-full items-center gap-2 rounded-lg border border-border/50 bg-[#2C2C2E] px-3 py-2 font-medium text-muted-foreground text-xs transition-colors hover:bg-[#3e3e3e] hover:text-foreground">

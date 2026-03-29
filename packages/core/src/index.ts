@@ -47,7 +47,14 @@ export {
   type ItemInteractiveState,
   useInteractive,
 } from './store/use-interactive'
-export { clearSceneHistory, default as useScene } from './store/use-scene'
+export {
+  clearSceneHistory,
+  CURRENT_SCHEMA_VERSION,
+  default as useScene,
+  parseSceneData,
+  serializeSceneData,
+  type VersionedSceneData,
+} from './store/use-scene'
 // Systems
 export { CeilingSystem } from './systems/ceiling/ceiling-system'
 export { DoorSystem } from './systems/door/door-system'
