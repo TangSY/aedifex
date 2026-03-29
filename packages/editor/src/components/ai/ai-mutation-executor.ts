@@ -159,6 +159,19 @@ export function buildToolResult(
 // ============================================================================
 
 function validateAddItem(call: AddItemToolCall): ValidatedAddItem {
+  // Guard against undefined catalogSlug (can happen when batch_operations
+  // guesses wrong tool type for an operation missing the 'type' field)
+  if (!call.catalogSlug) {
+    return {
+      type: 'add_item',
+      status: 'invalid',
+      asset: null as unknown as AssetInput,
+      position: call.position ?? [0, 0, 0],
+      rotation: [0, call.rotationY ?? 0, 0],
+      errorReason: 'Missing catalogSlug — cannot resolve catalog item.',
+    }
+  }
+
   // Resolve catalog slug to full asset
   const result = resolveCatalogSlug(call.catalogSlug)
 
@@ -478,7 +491,9 @@ function guessToolType(op: Record<string, unknown>): string {
   if ('material' in op) return 'update_material'
   if ('nodeId' in op && 'position' in op) return 'move_item'
   if ('nodeId' in op) return 'remove_item'
-  return 'add_item'
+  // Unknown operation type — return empty string so validateToolCall hits default branch
+  // instead of incorrectly treating as add_item
+  return ''
 }
 
 // ============================================================================

@@ -52,6 +52,11 @@ export interface CatalogResolveResult {
  * Falls back to name matching, then fuzzy matching.
  */
 export function resolveCatalogSlug(slug: string): CatalogResolveResult {
+  // Guard against undefined/null slug
+  if (!slug) {
+    return { asset: null, matchType: 'none' }
+  }
+
   // 1. Exact ID match
   const exact = catalogById.get(slug)
   if (exact) {
