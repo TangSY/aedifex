@@ -70,16 +70,20 @@ export function AIChatPanel() {
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`
   }, [input])
 
-  // Listen for placement option selections
+  // Listen for placement option selections (debounced to prevent double-fire)
+  const lastOptionSentRef = useRef('')
   useEffect(() => {
     const handler = (e: Event) => {
       const text = (e as CustomEvent).detail as string
-      if (text && !isAIProcessing) {
+      if (text && !isAIProcessing && text !== lastOptionSentRef.current) {
+        lastOptionSentRef.current = text
         addUserMessage(text)
         runAgentLoop({
           userMessage: text,
           catalogSummary: catalogSummaryRef.current!,
         })
+        // Reset after a short delay to allow same option in future
+        setTimeout(() => { lastOptionSentRef.current = '' }, 2000)
       }
     }
     window.addEventListener('ai-select-option', handler)
@@ -553,8 +557,10 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       >
         <p className="whitespace-pre-wrap break-words">{message.content}</p>
 
-        {/* Placement proposal options */}
-        {message.toolCalls?.some((tc) => tc.tool === 'propose_placement') && (
+        {/* Placement proposal options — hide after user selects one */}
+        {message.toolCalls?.some((tc) => tc.tool === 'propose_placement') &&
+          message.operationStatus !== 'confirmed' &&
+          message.operationStatus !== 'rejected' && (
           <PlacementProposalCards
             message={message}
             onSelectOption={(option) => {
