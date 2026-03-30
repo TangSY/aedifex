@@ -18,7 +18,3 @@ export const AI_SUMMARIZE_MODEL = process.env.AI_SUMMARIZE_MODEL ?? 'gpt-4o-mini
 /** Max output tokens per request */
 export const AI_CHAT_MAX_TOKENS = Number(process.env.AI_CHAT_MAX_TOKENS ?? 4096)
 export const AI_SUMMARIZE_MAX_TOKENS = Number(process.env.AI_SUMMARIZE_MAX_TOKENS ?? 4096)
-
-/** Rate limiting */
-export const AI_RATE_LIMIT_REQUESTS = Number(process.env.AI_RATE_LIMIT_REQUESTS ?? 60)
-export const AI_RATE_LIMIT_TOKENS = Number(process.env.AI_RATE_LIMIT_TOKENS ?? 2_000_000)
