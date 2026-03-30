@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { SUMMARIZE_SYSTEM_PROMPT } from '@aedifex/editor/components/ai'
 import {
   AI_API_KEY,
   AI_BASE_URL,
@@ -12,15 +13,6 @@ import {
 // Uses lightweight model for cost-efficient conversation summarization.
 // Called when conversation history exceeds threshold (~20 messages).
 // ============================================================================
-
-const SUMMARIZE_SYSTEM_PROMPT = `You are a conversation summarizer for an AI interior design assistant.
-Summarize the conversation history into a compact context that preserves:
-1. Key design decisions made (what was added, removed, moved)
-2. User preferences expressed (style, colors, layout preferences)
-3. Current scene state changes
-4. Any pending requests or follow-ups
-
-Keep the summary under 500 words. Use bullet points. Respond in the same language as the conversation.`
 
 export async function POST(request: NextRequest) {
   if (!AI_API_KEY) {
@@ -42,7 +34,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No messages to summarize.' }, { status: 400 })
   }
 
-  // Format messages for summarization
   const conversationText = messages
     .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
     .join('\n\n')
@@ -50,6 +41,7 @@ export async function POST(request: NextRequest) {
   const openai = new OpenAI({
     apiKey: AI_API_KEY,
     baseURL: AI_BASE_URL,
+    maxRetries: 0,
   })
 
   try {

@@ -1,6 +1,20 @@
 import type { ChatCompletionTool } from 'openai/resources/chat/completions'
 
 // ============================================================================
+// Summarize Prompt
+// Shared between open-source editor and SaaS — single source of truth.
+// ============================================================================
+
+export const SUMMARIZE_SYSTEM_PROMPT = `You are a conversation summarizer for an AI interior design assistant.
+Summarize the conversation history into a compact context that preserves:
+1. Key design decisions made (what was added, removed, moved)
+2. User preferences expressed (style, colors, layout preferences)
+3. Current scene state changes
+4. Any pending requests or follow-ups
+
+Keep the summary under 500 words. Use bullet points. Respond in the same language as the conversation.`
+
+// ============================================================================
 // System Prompt Builder
 // Shared between open-source editor and SaaS — single source of truth.
 // ============================================================================
