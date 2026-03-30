@@ -4,7 +4,8 @@
   "description": "Aedifex building editor component",
   "type": "module",
   "exports": {
-    ".": "./src/index.tsx"
+    ".": "./src/index.tsx",
+    "./components/ai": "./src/components/ai/index.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit"
@@ -53,6 +54,7 @@
     "@aedifex/viewer": "workspace:*",
     "@aedifex/typescript-config": "workspace:*",
     "@types/howler": "^2.2.12",
+    "openai": "^4",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
     "@types/three": "^0.183.1",

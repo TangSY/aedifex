@@ -61,11 +61,8 @@ async function processStream(
       errorMessage = `Request failed (${response.status})`
     }
 
-    if (response.status === 429) {
-      callbacks.onError('AI 请求频率超限，请稍后再试。')
-    } else {
-      callbacks.onError(errorMessage)
-    }
+    // 直接使用后端返回的错误消息，区分不同 429 来源
+    callbacks.onError(errorMessage)
     return
   }
 

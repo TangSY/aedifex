@@ -1,3 +1,4 @@
+export { buildSystemPrompt, OPENAI_TOOLS } from './ai-prompt'
 export { AIChatPanel } from './ai-chat-panel'
 export { useAIChat } from './ai-chat-store'
 export { resolveCatalogSlug, generateCatalogSummary } from './ai-catalog-resolver'
