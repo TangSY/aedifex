@@ -21,7 +21,6 @@ import { ScanSystem } from '../../systems/scan/scan-system'
 import { WallCutout } from '../../systems/wall/wall-cutout'
 import { ZoneSystem } from '../../systems/zone/zone-system'
 import { SceneRenderer } from '../renderers/scene-renderer'
-import { GroundOccluder } from './ground-occluder'
 import { Lights } from './lights'
 import { PerfMonitor } from './perf-monitor'
 import PostProcessing from './post-processing'
@@ -110,16 +109,19 @@ const Viewer: React.FC<ViewerProps> = ({
         const renderer = new THREE.WebGPURenderer(props as any)
         renderer.toneMapping = THREE.ACESFilmicToneMapping
         renderer.toneMappingExposure = 0.9
+        // renderer.init() // Only use when using <DebugRenderer />
         return renderer
       }}
       performance={{ min: 0.5 }}
+      resize={{
+        debounce: 100,
+      }}
       shadows={{
         type: THREE.PCFShadowMap,
         enabled: true,
       }}
     >
       {/* <AnimatedBackground isDark={theme === 'dark'} /> */}
-      <GroundOccluder />
       <ViewerCamera />
 
       {/* <directionalLight position={[10, 10, 5]} intensity={0.5} castShadow

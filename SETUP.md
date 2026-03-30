@@ -9,8 +9,6 @@ This guide will help you set up the Aedifex editor for local development.
 
 ## Quick Start
 
-### 1. Install Dependencies
-
 ```bash
 pnpm install
 ```
@@ -38,7 +36,6 @@ The editor will be available at http://localhost:3002
 ## Monorepo Structure
 
 ```
-.
 ├── apps/
 │   └── editor/              # Next.js editor application
 │       ├── app/             # Next.js app routes

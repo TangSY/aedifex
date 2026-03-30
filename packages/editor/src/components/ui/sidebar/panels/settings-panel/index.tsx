@@ -179,9 +179,9 @@ export function SettingsPanel() {
     }
   }, [])
 
-  const handleExport = async () => {
+  const handleExport = async (format: 'glb' | 'stl' | 'obj' = 'glb') => {
     if (exportScene) {
-      await exportScene()
+      await exportScene(format)
     }
   }
 
@@ -247,9 +247,17 @@ export function SettingsPanel() {
       {/* Export Section */}
       <div className="space-y-2">
         <label className="font-medium text-muted-foreground text-xs uppercase">Export</label>
-        <Button className="w-full justify-start gap-2" onClick={handleExport} variant="outline">
+        <Button className="w-full justify-start gap-2" onClick={() => handleExport('glb')} variant="outline">
           <Download className="size-4" />
-          Export 3D Model
+          Export as GLB
+        </Button>
+        <Button className="w-full justify-start gap-2" onClick={() => handleExport('stl')} variant="outline">
+          <Download className="size-4" />
+          Export as STL
+        </Button>
+        <Button className="w-full justify-start gap-2" onClick={() => handleExport('obj')} variant="outline">
+          <Download className="size-4" />
+          Export as OBJ
         </Button>
       </div>
 
