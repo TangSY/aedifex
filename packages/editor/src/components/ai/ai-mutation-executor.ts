@@ -810,8 +810,14 @@ function computeCollinearOverlap(
   return Math.max(0, overlapEnd - overlapStart)
 }
 
-/** Minimum clearance (meters) between item AABB edge and wall centerline. */
-const WALL_CLEARANCE = 0.15
+/**
+ * Minimum clearance (meters) between item AABB edge and wall centerline.
+ * This is halfThick + WALL_CLEARANCE from centerline, meaning the item edge
+ * will be WALL_CLEARANCE away from the wall inner surface.
+ * Keep this very small (just enough to prevent z-fighting / visual clipping).
+ * "Against wall" items should appear flush with the wall.
+ */
+const WALL_CLEARANCE = 0.02
 
 /**
  * Collect all WallNode instances belonging to a given level.
@@ -901,9 +907,62 @@ function distPointToSegment(
 }
 
 /**
+ * Minimum distance from an AABB to a line segment (in 2D XZ plane).
+ * Tests all 4 edges of the AABB against the segment, plus all 4 corners,
+ * plus the closest point on the segment to the AABB center.
+ * This is more robust than testing only discrete points, especially
+ * when the AABB edge runs parallel to and overlaps the wall segment.
+ */
+function distAABBToSegment(
+  aabb: { minX: number; maxX: number; minZ: number; maxZ: number },
+  ax: number,
+  az: number,
+  bx: number,
+  bz: number,
+): number {
+  // Sample dense points along all 4 AABB edges + corners
+  const points: [number, number][] = [
+    // Corners
+    [aabb.minX, aabb.minZ],
+    [aabb.maxX, aabb.minZ],
+    [aabb.minX, aabb.maxZ],
+    [aabb.maxX, aabb.maxZ],
+    // Edge midpoints
+    [(aabb.minX + aabb.maxX) / 2, aabb.minZ],
+    [(aabb.minX + aabb.maxX) / 2, aabb.maxZ],
+    [aabb.minX, (aabb.minZ + aabb.maxZ) / 2],
+    [aabb.maxX, (aabb.minZ + aabb.maxZ) / 2],
+    // Edge quarter points for better coverage on long edges
+    [aabb.minX + (aabb.maxX - aabb.minX) * 0.25, aabb.minZ],
+    [aabb.minX + (aabb.maxX - aabb.minX) * 0.75, aabb.minZ],
+    [aabb.minX + (aabb.maxX - aabb.minX) * 0.25, aabb.maxZ],
+    [aabb.minX + (aabb.maxX - aabb.minX) * 0.75, aabb.maxZ],
+    [aabb.minX, aabb.minZ + (aabb.maxZ - aabb.minZ) * 0.25],
+    [aabb.minX, aabb.minZ + (aabb.maxZ - aabb.minZ) * 0.75],
+    [aabb.maxX, aabb.minZ + (aabb.maxZ - aabb.minZ) * 0.25],
+    [aabb.maxX, aabb.minZ + (aabb.maxZ - aabb.minZ) * 0.75],
+  ]
+
+  // Also test closest point on the wall segment to the AABB center
+  const cx = (aabb.minX + aabb.maxX) / 2
+  const cz = (aabb.minZ + aabb.maxZ) / 2
+  points.push([cx, cz])
+
+  let minDist = Infinity
+  for (const [px, pz] of points) {
+    const d = distPointToSegment(px, pz, ax, az, bx, bz)
+    if (d < minDist) minDist = d
+  }
+  return minDist
+}
+
+/**
  * Check if an item's AABB overlaps or is too close to any wall.
  * If so, push the item away from the nearest offending wall.
  * Returns the adjusted position, or null if no adjustment needed.
+ *
+ * Uses AABB-to-segment distance (not just discrete test points)
+ * for robust detection even when the item edge runs parallel to a wall.
  */
 function adjustForWallClearance(
   position: [number, number, number],
@@ -918,58 +977,49 @@ function adjustForWallClearance(
   let adjusted = false
   const reasons: string[] = []
 
-  // Check each wall and push item away if too close
-  for (const wall of walls) {
-    const thickness = wall.thickness ?? 0.2
-    const halfThick = thickness / 2
-    const minClearance = halfThick + WALL_CLEARANCE
+  // Multiple passes to handle items near wall corners (pushed from one wall into another)
+  for (let pass = 0; pass < 3; pass++) {
+    let passAdjusted = false
 
-    const aabb = getItemAABB([px, py, pz], dimensions, rotation)
+    for (const wall of walls) {
+      const thickness = wall.thickness ?? 0.2
+      const halfThick = thickness / 2
+      const minClearance = halfThick + WALL_CLEARANCE
 
-    // Check all 4 AABB edge midpoints against the wall segment
-    const testPoints: [number, number][] = [
-      [(aabb.minX + aabb.maxX) / 2, aabb.minZ], // bottom edge center
-      [(aabb.minX + aabb.maxX) / 2, aabb.maxZ], // top edge center
-      [aabb.minX, (aabb.minZ + aabb.maxZ) / 2], // left edge center
-      [aabb.maxX, (aabb.minZ + aabb.maxZ) / 2], // right edge center
-      [aabb.minX, aabb.minZ], // corners
-      [aabb.maxX, aabb.minZ],
-      [aabb.minX, aabb.maxZ],
-      [aabb.maxX, aabb.maxZ],
-    ]
+      const aabb = getItemAABB([px, py, pz], dimensions, rotation)
 
-    // Compute wall normal direction (perpendicular to wall segment)
-    const wallDx = wall.end[0] - wall.start[0]
-    const wallDz = wall.end[1] - wall.start[1]
-    const wallLen = Math.hypot(wallDx, wallDz)
-    if (wallLen < 0.001) continue
-
-    // Normal = wall direction rotated 90 degrees
-    const normalX = -wallDz / wallLen
-    const normalZ = wallDx / wallLen
-
-    for (const [tx, tz] of testPoints) {
-      const dist = distPointToSegment(
-        tx, tz,
+      const dist = distAABBToSegment(
+        aabb,
         wall.start[0], wall.start[1],
         wall.end[0], wall.end[1],
       )
 
       if (dist < minClearance) {
+        // Compute wall normal direction (perpendicular to wall segment)
+        const wallDx = wall.end[0] - wall.start[0]
+        const wallDz = wall.end[1] - wall.start[1]
+        const wallLen = Math.hypot(wallDx, wallDz)
+        if (wallLen < 0.001) continue
+
+        const normalX = -wallDz / wallLen
+        const normalZ = wallDx / wallLen
+
         // Determine which side of the wall the item center is on
         const toCenterX = px - wall.start[0]
         const toCenterZ = pz - wall.start[1]
         const side = Math.sign(toCenterX * normalX + toCenterZ * normalZ) || 1
 
         // Push along wall normal direction (toward the item's side)
-        const pushDist = minClearance - dist + 0.05 // extra 5cm safety margin
+        const pushDist = minClearance - dist + 0.02 // 2cm safety margin
         px += normalX * side * pushDist
         pz += normalZ * side * pushDist
+        passAdjusted = true
         adjusted = true
         reasons.push(`Pushed away from wall to maintain ${WALL_CLEARANCE}m clearance`)
-        break // Re-check with updated position on next wall
       }
     }
+
+    if (!passAdjusted) break // No more adjustments needed
   }
 
   if (!adjusted) return null

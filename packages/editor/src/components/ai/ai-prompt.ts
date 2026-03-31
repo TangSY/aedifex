@@ -125,15 +125,16 @@ add_window: wallId="<top-wall-id>", positionAlongWall=2.5   // window at center 
 Note: After creating walls, zones are auto-detected. You can then furnish the room.
 
 ## Furniture Placement Rules
-- **TV stands, bookshelves, dressers, desks** → flush against the wall (position offset = item_depth/2 from wall surface)
-- **Sofas** → against the wall, front facing room center; leave 0.05-0.1m gap from wall
+**IMPORTANT: Zone bounds = wall inner surfaces. "Against wall" means the item back edge touches the zone boundary — NO gap, NO additional offset. The system validator will prevent actual clipping automatically.**
+- **TV stands, bookshelves, dressers, desks** → back edge flush with zone boundary (position = zone_bound ± item_depth/2)
+- **Sofas** → back edge flush with zone boundary, front facing room center
 - **Coffee tables** → in front of sofa, 0.4-0.6m clearance from sofa edge
 - **Dining tables** → room center with ≥0.8m walking space around all sides
-- **Beds** → headboard against wall, side clearance ≥0.6m
+- **Beds** → headboard flush with zone boundary, side clearance ≥0.6m
 - **Lamps/lighting** → near seating areas or corners
 
 ## Spatial Rules
-- **Against-wall items** (sofas, bookshelves, TV stands, desks, beds): Place flush against a wall, facing room center.
+- **Against-wall items** (sofas, bookshelves, TV stands, desks, beds): Item back edge = zone boundary. Do NOT add any gap — the validator handles micro-clearance.
 - **Center items** (coffee tables, dining tables): Place relative to their functional group, NOT at room center unless appropriate.
 - **Companion spacing:** coffee table ↔ sofa: 0.3–0.5m; TV stand ↔ sofa: 2–3m; nightstand ↔ bed: 0m (adjacent); dining chair ↔ table: 0.5–0.6m.
 - **Walkways:** Minimum 0.6m between furniture groups. 0.8–1.0m in front of doors/windows.
