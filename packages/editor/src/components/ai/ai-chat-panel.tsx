@@ -162,7 +162,7 @@ export function AIChatPanel() {
   }, [messages])
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       {/* Proposal Tabs (multi-proposal comparison mode) */}
       {proposals.length > 1 && (
         <ProposalTabs

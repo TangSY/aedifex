@@ -433,7 +433,7 @@ export default function Editor({
         )}
 
         <ErrorBoundary fallback={<EditorSceneCrashFallback />}>
-          <div className="h-full w-full">
+          <div className="relative z-0 h-full w-full">
             <SelectionPersistenceManager enabled={hasLoadedInitialScene && !showLoader} />
             <Viewer selectionManager={isPreviewMode ? 'default' : 'custom'}>
               {!isPreviewMode && <SelectionManager />}
