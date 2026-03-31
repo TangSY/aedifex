@@ -446,7 +446,7 @@ describe('clearGhostPreview', () => {
     // The last update call for this node should restore the original position
     const restoreCall = mockUpdatedNodes
       .filter((u) => u.id === existingNodeId)
-      .findLast((u) => (u.data as any).position !== undefined)
+      .findLast((u: { id: string; data: unknown }) => (u.data as any).position !== undefined)
 
     expect(restoreCall).toBeDefined()
     expect((restoreCall!.data as any).position).toEqual(originalPosition)
@@ -474,7 +474,7 @@ describe('clearGhostPreview', () => {
     // After clear, node should be restored to visible
     const restoreCall = mockUpdatedNodes
       .filter((u) => u.id === existingNodeId)
-      .findLast((u) => (u.data as any).visible === true)
+      .findLast((u: { id: string; data: unknown }) => (u.data as any).visible === true)
 
     expect(restoreCall).toBeDefined()
   })

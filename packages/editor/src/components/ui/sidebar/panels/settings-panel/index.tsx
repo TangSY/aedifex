@@ -181,7 +181,7 @@ export function SettingsPanel() {
 
   const handleExport = async (format: 'glb' | 'stl' | 'obj' = 'glb') => {
     if (exportScene) {
-      await exportScene(format)
+      await (exportScene as (format?: 'glb' | 'stl' | 'obj') => Promise<void>)(format)
     }
   }
 
