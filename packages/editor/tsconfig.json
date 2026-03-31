@@ -2,7 +2,9 @@
   "extends": "@aedifex/typescript-config/react-library.json",
   "compilerOptions": {
     "rootDir": "src",
-    "noEmit": true
+    "noEmit": true,
+    "lib": ["es2023", "DOM", "DOM.Iterable"],
+    "target": "ES2023"
   },
   "include": ["src"],
   "exclude": ["node_modules"]
