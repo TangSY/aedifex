@@ -165,6 +165,29 @@
   scrollbar-width: none; /* Firefox */
 }
 
+/* Subtle dark scrollbar for dark-themed panels */
+.subtle-scrollbar {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(255 255 255 / 0.15) transparent; /* Firefox */
+}
+
+.subtle-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.subtle-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.subtle-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255 255 255 / 0.15);
+  border-radius: 2px;
+}
+
+.subtle-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255 255 255 / 0.3);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

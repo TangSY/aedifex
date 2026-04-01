@@ -184,7 +184,7 @@ export function AIChatPanel() {
       )}
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="subtle-scrollbar flex-1 overflow-y-auto p-3">
         {messages.length === 0 && !isStreaming ? (
           <EmptyState onSuggestionClick={(text) => setInput(text)} />
         ) : (
@@ -742,7 +742,7 @@ function OperationHistoryPanel({
             initial={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
-            <div className="max-h-[200px] overflow-y-auto px-3 pb-2">
+            <div className="subtle-scrollbar max-h-[200px] overflow-y-auto px-3 pb-2">
               {[...visibleLogs].reverse().map((log, i) => (
                 <OperationHistoryItem
                   key={log.id}
