@@ -2,7 +2,9 @@ import {
   type AnyNode,
   type AnyNodeId,
   type AssetInput,
+  type DoorNode,
   type WallNode,
+  type WindowNode,
   type ZoneNode,
   pointInPolygon,
   spatialGridManager,
@@ -23,6 +25,9 @@ import type {
   RemoveNodeToolCall,
   ToolResult,
   UpdateMaterialToolCall,
+  UpdateDoorToolCall,
+  UpdateWallToolCall,
+  UpdateWindowToolCall,
   ValidatedAddDoor,
   ValidatedAddItem,
   ValidatedAddWall,
@@ -32,6 +37,9 @@ import type {
   ValidatedRemoveItem,
   ValidatedRemoveNode,
   ValidatedUpdateMaterial,
+  ValidatedUpdateDoor,
+  ValidatedUpdateWall,
+  ValidatedUpdateWindow,
 } from './types'
 
 // ============================================================================
@@ -59,6 +67,12 @@ export function validateToolCall(toolCall: AIToolCall): ValidatedOperation[] {
       return [validateAddDoor(toolCall)]
     case 'add_window':
       return [validateAddWindow(toolCall)]
+    case 'update_wall':
+      return [validateUpdateWall(toolCall)]
+    case 'update_door':
+      return [validateUpdateDoor(toolCall)]
+    case 'update_window':
+      return [validateUpdateWindow(toolCall)]
     case 'remove_node':
       return [validateRemoveNode(toolCall)]
     case 'batch_operations':
@@ -225,10 +239,17 @@ function aabbOverlap(
  * When createdNodeIds is provided, include them so the LLM can reference
  * newly created nodes (e.g., wall IDs for adding doors/windows).
  */
+/**
+ * Build a tool result for LLM feedback or UI display.
+ *
+ * When compact=true (default for LLM), caps adjustment details at 3 entries
+ * to save tokens. Inspired by Claude Code's toolResultStorage pattern.
+ */
 export function buildToolResult(
   toolName: string,
   operations: ValidatedOperation[],
   createdNodeIds?: AnyNodeId[],
+  { compact = false }: { compact?: boolean } = {},
 ): ToolResult {
   const validCount = operations.filter((op) => op.status === 'valid').length
   const adjustedCount = operations.filter((op) => op.status === 'adjusted').length
@@ -280,7 +301,8 @@ export function buildToolResult(
       validCount,
       adjustedCount,
       invalidCount,
-      adjustments,
+      // Compact mode: cap adjustments to save LLM context tokens
+      adjustments: compact ? adjustments.slice(0, 3) : adjustments,
       errors,
       createdNodeIds: createdNodeIds ?? [],
     },
@@ -928,6 +950,116 @@ function validateAddWindow(call: AddWindowToolCall): ValidatedAddWindow {
   }
 }
 
+function validateUpdateWall(call: UpdateWallToolCall): ValidatedUpdateWall {
+  const { nodes } = useScene.getState()
+  const node = nodes[call.nodeId as AnyNodeId]
+
+  if (!node) {
+    return {
+      type: 'update_wall',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      errorReason: `Wall "${call.nodeId}" not found in scene.`,
+    }
+  }
+
+  if (node.type !== 'wall') {
+    return {
+      type: 'update_wall',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      errorReason: `Node "${call.nodeId}" is a ${node.type}, not a wall.`,
+    }
+  }
+
+  if (!call.height && !call.thickness) {
+    return {
+      type: 'update_wall',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      errorReason: 'No properties to update. Provide height and/or thickness.',
+    }
+  }
+
+  return {
+    type: 'update_wall',
+    status: 'valid',
+    nodeId: call.nodeId as AnyNodeId,
+    height: call.height,
+    thickness: call.thickness,
+  }
+}
+
+function validateUpdateDoor(call: UpdateDoorToolCall): ValidatedUpdateDoor {
+  const { nodes } = useScene.getState()
+  const node = nodes[call.nodeId as AnyNodeId]
+
+  if (!node) {
+    return { type: 'update_door', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: `Door "${call.nodeId}" not found.` }
+  }
+  if (node.type !== 'door') {
+    return { type: 'update_door', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: `Node "${call.nodeId}" is a ${node.type}, not a door.` }
+  }
+
+  // If positionAlongWall is provided, clamp it to parent wall bounds
+  let localX: number | undefined
+  if (call.positionAlongWall !== undefined && node.parentId) {
+    const parentWall = nodes[node.parentId as AnyNodeId]
+    if (parentWall && parentWall.type === 'wall') {
+      const w = parentWall as WallNode
+      const wallLen = Math.hypot(w.end[0] - w.start[0], w.end[1] - w.start[1])
+      const doorWidth = call.width ?? (node as DoorNode).width ?? 0.9
+      localX = Math.max(doorWidth / 2, Math.min(wallLen - doorWidth / 2, call.positionAlongWall))
+    }
+  }
+
+  return {
+    type: 'update_door',
+    status: 'valid',
+    nodeId: call.nodeId as AnyNodeId,
+    width: call.width,
+    height: call.height,
+    localX,
+    side: call.side,
+    hingesSide: call.hingesSide,
+    swingDirection: call.swingDirection,
+  }
+}
+
+function validateUpdateWindow(call: UpdateWindowToolCall): ValidatedUpdateWindow {
+  const { nodes } = useScene.getState()
+  const node = nodes[call.nodeId as AnyNodeId]
+
+  if (!node) {
+    return { type: 'update_window', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: `Window "${call.nodeId}" not found.` }
+  }
+  if (node.type !== 'window') {
+    return { type: 'update_window', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: `Node "${call.nodeId}" is a ${node.type}, not a window.` }
+  }
+
+  let localX: number | undefined
+  if (call.positionAlongWall !== undefined && node.parentId) {
+    const parentWall = nodes[node.parentId as AnyNodeId]
+    if (parentWall && parentWall.type === 'wall') {
+      const w = parentWall as WallNode
+      const wallLen = Math.hypot(w.end[0] - w.start[0], w.end[1] - w.start[1])
+      const winWidth = call.width ?? (node as WindowNode).width ?? 1.5
+      localX = Math.max(winWidth / 2, Math.min(wallLen - winWidth / 2, call.positionAlongWall))
+    }
+  }
+
+  return {
+    type: 'update_window',
+    status: 'valid',
+    nodeId: call.nodeId as AnyNodeId,
+    width: call.width,
+    height: call.height,
+    localX,
+    localY: call.heightFromFloor,
+    side: call.side,
+  }
+}
+
 function validateRemoveNode(call: RemoveNodeToolCall): ValidatedRemoveNode {
   const { nodes } = useScene.getState()
   const node = nodes[call.nodeId as AnyNodeId]
@@ -1265,7 +1397,9 @@ function adjustForWallClearance(
         const side = Math.sign(toCenterX * normalX + toCenterZ * normalZ) || 1
 
         // Push along wall normal direction (toward the item's side)
-        const pushDist = minClearance - dist + 0.02 // 2cm safety margin
+        // Only push enough to reach minClearance — no extra margin.
+        // WALL_CLEARANCE (0.02m) already provides the anti-clipping buffer.
+        const pushDist = minClearance - dist
         px += normalX * side * pushDist
         pz += normalZ * side * pushDist
         passAdjusted = true

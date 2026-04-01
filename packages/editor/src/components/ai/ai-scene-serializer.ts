@@ -1,17 +1,43 @@
 import type { AnyNode, AnyNodeId, DoorNode, WallNode, WindowNode, ZoneNode } from '@aedifex/core'
 import { useScene } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
+import { useAIChat } from './ai-chat-store'
 import type { SceneContext, SceneItemSummary } from './types'
+
+// ============================================================================
+// Scene Context Cache
+// Inspired by Claude Code's cacheSafeParams — avoid re-serializing when
+// the scene hasn't changed between agentic loop iterations.
+// ============================================================================
+
+let cachedContext: SceneContext | null = null
+let cachedNodesVersion = -1
+
+/** Invalidate scene cache (call after ghost preview confirm or scene mutation) */
+export function invalidateSceneCache(): void {
+  cachedContext = null
+  cachedNodesVersion = -1
+}
 
 /**
  * Serialize the current scene state into a compact context object for Claude.
  * Only includes the active level's items + zone info.
  * Target: < 4000 tokens for the serialized context.
+ *
+ * Uses a version-based cache to skip re-serialization when the scene hasn't
+ * changed between agentic loop iterations.
  */
 export function serializeSceneContext(): SceneContext {
   const { nodes } = useScene.getState()
   const { selection } = useViewer.getState()
   const levelId = selection.levelId
+
+  // Cache hit: use explicit invalidation via invalidateSceneCache()
+  // The agent loop calls invalidateSceneCache() after ghost preview confirm.
+  const nodeCount = Object.keys(nodes).length
+  if (cachedContext && cachedNodesVersion === nodeCount && cachedContext.levelId === levelId) {
+    return cachedContext
+  }
 
   if (!levelId) {
     return {
@@ -171,7 +197,7 @@ export function serializeSceneContext(): SceneContext {
     }
   }
 
-  return {
+  const result: SceneContext = {
     levelId,
     items,
     walls,
@@ -180,6 +206,12 @@ export function serializeSceneContext(): SceneContext {
     zoneCount,
     activeZone,
   }
+
+  // Update cache
+  cachedContext = result
+  cachedNodesVersion = nodeCount
+
+  return result
 }
 
 /**
@@ -312,6 +344,16 @@ export function formatSceneContextForPrompt(ctx: SceneContext): string {
           lines.push(`    ${q.name}: ${status}`)
         }
       }
+    }
+  }
+
+  // Inject recent tool errors to help LLM avoid repeating mistakes (#6)
+  const recentErrors = useAIChat.getState().getRecentErrors()
+  if (recentErrors.length > 0) {
+    lines.push('')
+    lines.push('## Recent Errors (avoid repeating these)')
+    for (const { tool, reason, count } of recentErrors.slice(0, 5)) {
+      lines.push(`- ${tool}: ${reason} (failed ${count}x)`)
     }
   }
 

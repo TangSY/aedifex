@@ -17,6 +17,17 @@ export interface StreamCallbacks {
  * Send a chat request and stream the response.
  * Returns an AbortController for cancellation.
  */
+/** Maximum stream retry attempts before giving up */
+const MAX_STREAM_RETRIES = 1
+/** Delay before retrying a failed stream (ms) */
+const STREAM_RETRY_DELAY_MS = 1000
+
+/**
+ * Send a chat request and stream the response.
+ * Automatically retries once on stream failure (inspired by Claude Code's
+ * streaming → non-streaming fallback pattern).
+ * Returns an AbortController for cancellation.
+ */
 export function streamChat(
   request: {
     messages: { role: string; content: string; tool_call_id?: string }[]
@@ -27,13 +38,39 @@ export function streamChat(
 ): AbortController {
   const controller = new AbortController()
 
-  processStream(request, callbacks, controller.signal).catch((err) => {
+  processStreamWithRetry(request, callbacks, controller.signal).catch((err) => {
     if (err.name !== 'AbortError') {
       callbacks.onError(err.message ?? 'Stream connection failed.')
     }
   })
 
   return controller
+}
+
+async function processStreamWithRetry(
+  request: {
+    messages: { role: string; content: string; tool_call_id?: string }[]
+    catalogSummary: string
+    sceneContext: string
+  },
+  callbacks: StreamCallbacks,
+  signal: AbortSignal,
+): Promise<void> {
+  for (let attempt = 0; attempt <= MAX_STREAM_RETRIES; attempt++) {
+    try {
+      await processStream(request, callbacks, signal)
+      return // Success
+    } catch (err) {
+      if (signal.aborted) throw err
+
+      const isLastAttempt = attempt >= MAX_STREAM_RETRIES
+      if (isLastAttempt) throw err
+
+      // Retry after delay
+      console.warn(`[AI Stream] Attempt ${attempt + 1} failed, retrying in ${STREAM_RETRY_DELAY_MS}ms`)
+      await new Promise((resolve) => setTimeout(resolve, STREAM_RETRY_DELAY_MS))
+    }
+  }
 }
 
 async function processStream(
@@ -264,6 +301,40 @@ function parseToolCall(name: string, input: Record<string, unknown>): AIToolCall
         height: input.height as number | undefined,
         side: input.side as 'front' | 'back' | undefined,
         description: input.description as string | undefined,
+      }
+
+    case 'update_wall':
+      return {
+        tool: 'update_wall',
+        nodeId: input.nodeId as string,
+        height: input.height as number | undefined,
+        thickness: input.thickness as number | undefined,
+        reason: input.reason as string | undefined,
+      }
+
+    case 'update_door':
+      return {
+        tool: 'update_door',
+        nodeId: input.nodeId as string,
+        width: input.width as number | undefined,
+        height: input.height as number | undefined,
+        positionAlongWall: input.positionAlongWall as number | undefined,
+        side: input.side as 'front' | 'back' | undefined,
+        hingesSide: input.hingesSide as 'left' | 'right' | undefined,
+        swingDirection: input.swingDirection as 'inward' | 'outward' | undefined,
+        reason: input.reason as string | undefined,
+      }
+
+    case 'update_window':
+      return {
+        tool: 'update_window',
+        nodeId: input.nodeId as string,
+        width: input.width as number | undefined,
+        height: input.height as number | undefined,
+        positionAlongWall: input.positionAlongWall as number | undefined,
+        heightFromFloor: input.heightFromFloor as number | undefined,
+        side: input.side as 'front' | 'back' | undefined,
+        reason: input.reason as string | undefined,
       }
 
     case 'remove_node':

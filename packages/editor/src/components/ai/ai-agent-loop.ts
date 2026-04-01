@@ -7,7 +7,11 @@ import {
   confirmGhostPreview,
   isGhostPreviewActive,
 } from './ai-preview-manager'
-import { formatSceneContextForPrompt, serializeSceneContext } from './ai-scene-serializer'
+import {
+  formatSceneContextForPrompt,
+  invalidateSceneCache,
+  serializeSceneContext,
+} from './ai-scene-serializer'
 import { streamChat } from './ai-stream-client'
 import type {
   AIToolCall,
@@ -162,6 +166,13 @@ export async function runAgentLoop({
         // 2. Pure remove batches (all remove_item/remove_node) with all succeeded
         //    are also terminal — no follow-up needed, prevents LLM from repeating
         //    the same deletes and generating a noisy "all invalid" second attempt.
+        // Record tool errors for context injection (#6)
+        const invalidOps = validated.filter((op) => op.status === 'invalid')
+        for (const op of invalidOps) {
+          const reason = 'errorReason' in op ? (op.errorReason as string) : 'unknown error'
+          useAIChat.getState().recordToolError(op.type, reason)
+        }
+
         const isTerminalTool = mutationCalls.every((tc) => DETERMINISTIC_TOOLS.has(tc.tool))
         const isPureRemove = mutationCalls.every((tc) =>
           tc.tool === 'remove_item' || tc.tool === 'remove_node',
@@ -185,6 +196,8 @@ export async function runAgentLoop({
         if (isGhostPreviewActive()) {
           const log = confirmGhostPreview(validOps)
           createdNodeIds = log.affectedNodeIds.map(String)
+          // Invalidate scene cache so next iteration gets fresh context (#4)
+          invalidateSceneCache()
           if (lastMessageId) {
             log.messageId = lastMessageId
             useAIChat.getState().confirmOperations(lastMessageId)
@@ -192,11 +205,12 @@ export async function runAgentLoop({
           }
         }
 
-        // Build tool result with created node IDs for LLM feedback
+        // Build compact tool result for LLM feedback (#5)
         const toolResult = buildToolResult(
           mutationCalls.map((tc) => tc.tool).join('+'),
           validated,
           createdNodeIds as never,
+          { compact: true },
         )
         onIterationEnd?.(iteration, toolResult)
 

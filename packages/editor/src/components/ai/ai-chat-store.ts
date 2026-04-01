@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid'
 import { create } from 'zustand'
 import { undoConfirmedOperation } from './ai-preview-manager'
+import { shouldAutoCompact } from './ai-token-estimator'
 import type {
   AIChatRequest,
   AIOperationLog,
@@ -38,6 +39,11 @@ export interface AIChatState {
   // Conversation summarization
   conversationSummary: string | null
   isSummarizing: boolean
+  /** Consecutive summarization failure count (circuit breaker) */
+  summarizeFailureCount: number
+
+  // Tool error tracking (for context injection)
+  recentErrors: Map<string, { reason: string; count: number }>
 
   // Agentic loop
   loopState: AgentLoopState
@@ -87,6 +93,10 @@ export interface AIChatActions {
   // Summarization
   summarizeIfNeeded: () => Promise<void>
 
+  // Tool error tracking
+  recordToolError: (tool: string, reason: string) => void
+  getRecentErrors: () => { tool: string; reason: string; count: number }[]
+
   // Reset
   clearChat: () => void
   clearError: () => void
@@ -107,6 +117,8 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
   error: null,
   conversationSummary: null,
   isSummarizing: false,
+  summarizeFailureCount: 0,
+  recentErrors: new Map(),
   loopState: 'idle',
   iterationCount: 0,
   pendingQuestion: null,
@@ -277,19 +289,25 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
     }
   },
 
-  // Summarization
+  // Summarization (token-aware + circuit breaker)
   summarizeIfNeeded: async () => {
-    const { messages, conversationSummary, isSummarizing } = get()
-    // Trigger summarization when messages exceed threshold and no summarization in progress
-    const SUMMARIZE_THRESHOLD = 20
-    if (messages.length < SUMMARIZE_THRESHOLD || isSummarizing) return
+    const { messages, isSummarizing, summarizeFailureCount } = get()
+
+    // Circuit breaker: stop after 3 consecutive failures
+    const MAX_SUMMARIZE_FAILURES = 3
+    if (isSummarizing || summarizeFailureCount >= MAX_SUMMARIZE_FAILURES) return
+
+    // Token-aware trigger: use estimator instead of message count
+    const apiMessages = messages.map((m) => ({ role: m.role, content: m.content }))
+    if (!shouldAutoCompact(apiMessages)) {
+      // Fallback: also trigger on high message count even if token estimate is low
+      if (messages.length < 30) return
+    }
 
     set({ isSummarizing: true })
 
     try {
-      const messagesToSummarize = conversationSummary
-        ? messages.slice(0, -10) // Summarize older messages, keep last 10 fresh
-        : messages.slice(0, -10)
+      const messagesToSummarize = messages.slice(0, -10)
 
       if (messagesToSummarize.length < 5) {
         set({ isSummarizing: false })
@@ -310,14 +328,57 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
       if (response.ok) {
         const { summary } = await response.json()
         if (summary) {
-          set({ conversationSummary: summary })
+          // Success: reset failure count
+          set({ conversationSummary: summary, summarizeFailureCount: 0 })
         }
+      } else {
+        // HTTP error: increment failure count
+        const newCount = get().summarizeFailureCount + 1
+        if (newCount >= MAX_SUMMARIZE_FAILURES) {
+          console.warn(`[AI] Summarization circuit breaker tripped after ${newCount} failures`)
+        }
+        set({ summarizeFailureCount: newCount })
       }
     } catch {
-      // Summarization failure is non-critical — silently ignore
+      // Network error: increment failure count
+      const newCount = get().summarizeFailureCount + 1
+      if (newCount >= MAX_SUMMARIZE_FAILURES) {
+        console.warn(`[AI] Summarization circuit breaker tripped after ${newCount} failures`)
+      }
+      set({ summarizeFailureCount: newCount })
     } finally {
       set({ isSummarizing: false })
     }
+  },
+
+  // Tool error tracking (#6)
+  recordToolError: (tool, reason) => {
+    const key = `${tool}:${reason.slice(0, 50)}`
+    const { recentErrors } = get()
+    const existing = recentErrors.get(key)
+    const newMap = new Map(recentErrors)
+    newMap.set(key, {
+      reason,
+      count: (existing?.count ?? 0) + 1,
+    })
+    // Limit map size to prevent unbounded growth
+    if (newMap.size > 20) {
+      const firstKey = newMap.keys().next().value
+      if (firstKey) newMap.delete(firstKey)
+    }
+    set({ recentErrors: newMap })
+  },
+
+  getRecentErrors: () => {
+    const { recentErrors } = get()
+    const result: { tool: string; reason: string; count: number }[] = []
+    for (const [key, { reason, count }] of recentErrors) {
+      if (count >= 2) {
+        const tool = key.split(':')[0] ?? key
+        result.push({ tool, reason, count })
+      }
+    }
+    return result
   },
 
   // Reset
@@ -333,6 +394,8 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
       error: null,
       conversationSummary: null,
       isSummarizing: false,
+      summarizeFailureCount: 0,
+      recentErrors: new Map(),
       loopState: 'idle',
       iterationCount: 0,
       pendingQuestion: null,
