@@ -3,6 +3,8 @@ import {
   type AnyNodeId,
   type AssetInput,
   type WallNode,
+  type ZoneNode,
+  pointInPolygon,
   spatialGridManager,
   useScene,
 } from '@aedifex/core'
@@ -83,7 +85,138 @@ export function validateToolCall(toolCall: AIToolCall): ValidatedOperation[] {
  */
 export function validateAllToolCalls(toolCalls: AIToolCall[]): ValidatedOperation[] {
   const validated = toolCalls.flatMap(validateToolCall)
-  return optimizeLayout(validated)
+  // Batch intra-collision: resolve overlaps between items in the same batch
+  const deconflicted = resolveBatchCollisions(validated)
+  const optimized = optimizeLayout(deconflicted)
+  // Zone boundary re-check: optimizer (snapToNearestWall, spacing) may have
+  // pushed items outside zone boundaries. Clamp them back inside.
+  return optimized.map(enforceZoneBoundaryPostOptimize)
+}
+
+/**
+ * Post-optimization zone boundary enforcement.
+ * The optimizer (snapToNearestWall, adjustForGroupSpacing) may push items
+ * outside zone boundaries. This re-checks and clamps them back inside.
+ */
+function enforceZoneBoundaryPostOptimize(op: ValidatedOperation): ValidatedOperation {
+  if (op.status === 'invalid') return op
+  if (op.type !== 'add_item' && op.type !== 'move_item') return op
+
+  const levelId = useViewer.getState().selection.levelId
+  if (!levelId) return op
+
+  let dimensions: [number, number, number]
+
+  if (op.type === 'add_item') {
+    if (!op.asset || op.asset.attachTo) return op
+    dimensions = (op.asset.dimensions ?? [1, 1, 1]) as [number, number, number]
+  } else {
+    const { nodes } = useScene.getState()
+    const node = nodes[op.nodeId]
+    if (!node || node.type !== 'item' || node.asset.attachTo) return op
+    dimensions = node.asset.dimensions
+  }
+
+  const zoneBoundary = checkZoneBoundary(op.position, dimensions, op.rotation, levelId)
+
+  if (zoneBoundary === 'too-large') {
+    const name = op.type === 'add_item' ? (op.asset?.name ?? 'Item') : 'Item'
+    return {
+      ...op,
+      status: 'invalid',
+      errorReason: `"${name}" is too large for any room after layout optimization.`,
+    } as ValidatedOperation
+  }
+
+  if (zoneBoundary) {
+    return {
+      ...op,
+      position: zoneBoundary.position,
+      status: 'adjusted',
+      adjustmentReason: [
+        'adjustmentReason' in op ? op.adjustmentReason : undefined,
+        zoneBoundary.reason,
+      ].filter(Boolean).join(' '),
+    } as ValidatedOperation
+  }
+
+  return op
+}
+
+/**
+ * Resolve collisions between add_item operations within the same batch.
+ * Each item is validated against the scene, but not against other items
+ * in the batch. This function checks pairwise overlaps and auto-offsets
+ * colliding items.
+ */
+function resolveBatchCollisions(operations: ValidatedOperation[]): ValidatedOperation[] {
+  // Collect floor add_item operations with their indices
+  const floorItems: { index: number; op: ValidatedAddItem }[] = []
+  for (let i = 0; i < operations.length; i++) {
+    const op = operations[i]!
+    if (op.type === 'add_item' && op.status !== 'invalid' && op.asset && !op.asset.attachTo) {
+      floorItems.push({ index: i, op })
+    }
+  }
+
+  if (floorItems.length < 2) return operations
+
+  const result = [...operations]
+
+  // Track occupied footprints (AABB) from already-processed batch items
+  const occupiedAABBs: { minX: number; maxX: number; minZ: number; maxZ: number; index: number }[] = []
+
+  for (const { index, op } of floorItems) {
+    const dims = (op.asset.dimensions ?? [1, 1, 1]) as [number, number, number]
+    let position = [...op.position] as [number, number, number]
+    let wasAdjusted = false
+
+    // Check against all previously placed batch items
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const aabb = getItemAABB(position, dims, op.rotation)
+      const hasCollision = occupiedAABBs.some((other) => aabbOverlap(aabb, other))
+
+      if (!hasCollision) break
+
+      // Try offsetting in the direction away from the collision center
+      const [w, , d] = dims
+      const offsets: [number, number][] = [
+        [w + 0.1, 0], [-(w + 0.1), 0], [0, d + 0.1], [0, -(d + 0.1)],
+        [w * 0.7, d * 0.7], [-w * 0.7, d * 0.7],
+        [w * 0.7, -d * 0.7], [-w * 0.7, -d * 0.7],
+      ]
+
+      const offset = offsets[attempt]
+      if (!offset) break
+
+      position = [position[0] + offset[0], position[1], position[2] + offset[1]]
+      wasAdjusted = true
+    }
+
+    // Record this item's AABB for subsequent items to check against
+    occupiedAABBs.push({ ...getItemAABB(position, dims, op.rotation), index })
+
+    if (wasAdjusted) {
+      result[index] = {
+        ...op,
+        position,
+        status: 'adjusted',
+        adjustmentReason: [op.adjustmentReason, 'Position adjusted to avoid overlap with other items in the same batch.'].filter(Boolean).join(' '),
+      }
+    }
+  }
+
+  return result
+}
+
+/**
+ * Check if two AABBs overlap in the XZ plane.
+ */
+function aabbOverlap(
+  a: { minX: number; maxX: number; minZ: number; maxZ: number },
+  b: { minX: number; maxX: number; minZ: number; maxZ: number },
+): boolean {
+  return a.minX < b.maxX && a.maxX > b.minX && a.minZ < b.maxZ && a.maxZ > b.minZ
 }
 
 /**
@@ -195,6 +328,11 @@ function validateAddItem(call: AddItemToolCall): ValidatedAddItem {
   const rotation: [number, number, number] = [0, call.rotationY, 0]
   let adjustmentReason: string | undefined
 
+  // Shape mismatch warning — tell AI the resolved item differs from request
+  if (result.shapeWarning) {
+    adjustmentReason = result.shapeWarning
+  }
+
   // Reject wall-dependent items (windows, doors) if no walls exist in the scene
   if (asset.attachTo === 'wall') {
     const levelId = useViewer.getState().selection.levelId
@@ -272,6 +410,30 @@ function validateAddItem(call: AddItemToolCall): ValidatedAddItem {
       )
       if (elevation > 0) {
         position[1] = elevation
+      }
+
+      // Zone boundary check — ensure item stays inside a room
+      const zoneBoundary = checkZoneBoundary(
+        position,
+        asset.dimensions ?? [1, 1, 1],
+        rotation,
+        levelId,
+      )
+      if (zoneBoundary === 'too-large') {
+        return {
+          type: 'add_item',
+          status: 'invalid',
+          asset,
+          position,
+          rotation,
+          errorReason: `"${asset.name}" is too large for any room on this level. The user needs to expand the room (move/extend walls) before this item can be placed.`,
+        }
+      }
+      if (zoneBoundary) {
+        position = zoneBoundary.position
+        adjustmentReason = adjustmentReason
+          ? `${adjustmentReason} ${zoneBoundary.reason}`
+          : zoneBoundary.reason
       }
     }
   }
@@ -395,6 +557,30 @@ function validateMoveItem(call: MoveItemToolCall): ValidatedMoveItem {
       )
       if (elevation > 0) {
         position[1] = elevation
+      }
+
+      // Zone boundary check — ensure item stays inside a room
+      const zoneBoundary = checkZoneBoundary(
+        position,
+        node.asset.dimensions,
+        rotation,
+        levelId,
+      )
+      if (zoneBoundary === 'too-large') {
+        return {
+          type: 'move_item',
+          status: 'invalid',
+          nodeId: call.nodeId as AnyNodeId,
+          position,
+          rotation,
+          errorReason: `"${node.name ?? node.asset.name}" is too large for any room on this level. The user needs to expand the room before moving this item there.`,
+        }
+      }
+      if (zoneBoundary) {
+        position = zoneBoundary.position
+        adjustmentReason = adjustmentReason
+          ? `${adjustmentReason} ${zoneBoundary.reason}`
+          : zoneBoundary.reason
       }
     }
   }
@@ -579,6 +765,26 @@ function validateAddWall(call: AddWallToolCall): ValidatedAddWall {
           errorReason: `New wall overlaps ${overlap.toFixed(1)}m with existing wall "${w.id}" ([${w.start}] → [${w.end}]). Use the existing wall instead.`,
         }
       }
+
+      // Check 3: Non-collinear crossing — walls intersect at non-endpoint positions.
+      // Allowed: T-junctions (new wall endpoint touches existing wall).
+      // Blocked: walls that cross THROUGH each other mid-segment.
+      const crossing = wallsCrossThrough(
+        snappedStart, snappedEnd,
+        w.start as [number, number], w.end as [number, number],
+      )
+      if (crossing) {
+        return {
+          type: 'add_wall',
+          status: 'invalid',
+          start: snappedStart,
+          end: snappedEnd,
+          thickness,
+          height,
+          errorReason: `New wall crosses through existing wall "${w.id}" ([${w.start}] → [${w.end}]). ` +
+            `To extend a room, first remove the shared wall segment with remove_node, then add new walls that connect cleanly at endpoints.`,
+        }
+      }
     }
   }
 
@@ -754,6 +960,55 @@ function validateRemoveNode(call: RemoveNodeToolCall): ValidatedRemoveNode {
     nodeId: call.nodeId as AnyNodeId,
     nodeType: node.type,
   }
+}
+
+// ============================================================================
+// Wall Crossing Detection
+// ============================================================================
+
+/**
+ * Endpoint proximity tolerance — if a new wall's endpoint is within this
+ * distance of the existing wall segment, treat it as a T-junction (allowed).
+ */
+const ENDPOINT_TOLERANCE = 0.3
+
+/**
+ * Detect if two wall segments cross THROUGH each other (not at endpoints).
+ * Returns true only for genuine crossing — NOT for T-junctions where one
+ * wall's endpoint touches the other wall's body.
+ */
+function wallsCrossThrough(
+  a1: [number, number], a2: [number, number],
+  b1: [number, number], b2: [number, number],
+): boolean {
+  // Standard segment intersection test using cross products
+  const d1x = a2[0] - a1[0], d1z = a2[1] - a1[1]
+  const d2x = b2[0] - b1[0], d2z = b2[1] - b1[1]
+
+  const cross = d1x * d2z - d1z * d2x
+  // Nearly parallel — handled by collinear overlap check
+  if (Math.abs(cross) < 1e-6) return false
+
+  const t = ((b1[0] - a1[0]) * d2z - (b1[1] - a1[1]) * d2x) / cross
+  const u = ((b1[0] - a1[0]) * d1z - (b1[1] - a1[1]) * d1x) / cross
+
+  // No intersection if parameters outside [0, 1]
+  if (t < 0 || t > 1 || u < 0 || u > 1) return false
+
+  // Intersection exists. Now check if it's at endpoints (T-junction = allowed).
+  // If either segment's parameter is very close to 0 or 1, one wall's endpoint
+  // is touching the other wall — this is a valid T-junction or corner.
+  const ENDPOINT_T = ENDPOINT_TOLERANCE / Math.hypot(d1x, d1z)
+  const ENDPOINT_U = ENDPOINT_TOLERANCE / Math.hypot(d2x, d2z)
+
+  const aAtEndpoint = t < ENDPOINT_T || t > 1 - ENDPOINT_T
+  const bAtEndpoint = u < ENDPOINT_U || u > 1 - ENDPOINT_U
+
+  // If EITHER segment's intersection is at its endpoint, it's a T-junction → allowed
+  if (aAtEndpoint || bAtEndpoint) return false
+
+  // Both segments cross each other mid-body → genuine crossing → blocked
+  return true
 }
 
 // ============================================================================
@@ -1028,4 +1283,171 @@ function adjustForWallClearance(
     position: [px, py, pz],
     reason: reasons[0] ?? 'Position adjusted for wall clearance.',
   }
+}
+
+// ============================================================================
+// Zone Boundary Validation
+// ============================================================================
+
+/**
+ * Collect all ZoneNode instances belonging to a given level.
+ */
+function getZonesForLevel(levelId: string): ZoneNode[] {
+  const { nodes } = useScene.getState()
+  const zones: ZoneNode[] = []
+  const visited = new Set<string>()
+  const queue: string[] = [levelId]
+
+  while (queue.length > 0) {
+    const nodeId = queue.shift()!
+    if (visited.has(nodeId)) continue
+    visited.add(nodeId)
+
+    const node = nodes[nodeId as AnyNodeId] as AnyNode | undefined
+    if (!node) continue
+
+    if (node.type === 'zone') {
+      zones.push(node as ZoneNode)
+    }
+    if ('children' in node && Array.isArray(node.children)) {
+      for (const childId of node.children) {
+        queue.push(childId as string)
+      }
+    }
+  }
+  return zones
+}
+
+/**
+ * Compute the 4 XZ footprint corners of an item given its position, dimensions, and Y rotation.
+ */
+function getItemCorners(
+  position: [number, number, number],
+  dimensions: [number, number, number],
+  rotation: [number, number, number],
+): [number, number][] {
+  const [x, , z] = position
+  const [w, , d] = dimensions
+  const yRot = rotation[1]
+  const halfW = w / 2
+  const halfD = d / 2
+  const cos = Math.cos(yRot)
+  const sin = Math.sin(yRot)
+
+  return [
+    [x + (-halfW * cos + halfD * sin), z + (-halfW * sin - halfD * cos)],
+    [x + (halfW * cos + halfD * sin), z + (halfW * sin - halfD * cos)],
+    [x + (halfW * cos - halfD * sin), z + (halfW * sin + halfD * cos)],
+    [x + (-halfW * cos - halfD * sin), z + (-halfW * sin + halfD * cos)],
+  ]
+}
+
+/**
+ * Check if an item is fully inside at least one zone on the level.
+ * Returns:
+ * - null if fully inside a zone (no adjustment needed)
+ * - 'too-large' if item cannot fit in any zone
+ * - { position, reason } if the position was clamped to fit inside a zone
+ */
+function checkZoneBoundary(
+  position: [number, number, number],
+  dimensions: [number, number, number],
+  rotation: [number, number, number],
+  levelId: string,
+): { position: [number, number, number]; reason: string } | 'too-large' | null {
+  const zones = getZonesForLevel(levelId)
+  if (zones.length === 0) return null // No zones exist, skip check
+
+  // Check if item is already fully inside any zone
+  const corners = getItemCorners(position, dimensions, rotation)
+  for (const zone of zones) {
+    if (zone.polygon.length < 3) continue
+    if (corners.every(([cx, cz]) => pointInPolygon(cx, cz, zone.polygon))) {
+      return null // Fully inside this zone
+    }
+  }
+
+  // Item is outside all zones — find the nearest zone and try to clamp
+  const [x, y, z] = position
+  let bestZone: ZoneNode | null = null
+  let bestDist = Infinity
+
+  for (const zone of zones) {
+    if (zone.polygon.length < 3) continue
+    const xs = zone.polygon.map((p) => p[0])
+    const zs = zone.polygon.map((p) => p[1])
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2
+    const cz = (Math.min(...zs) + Math.max(...zs)) / 2
+    const dist = Math.hypot(x - cx, z - cz)
+    if (dist < bestDist) {
+      bestDist = dist
+      bestZone = zone
+    }
+  }
+
+  if (!bestZone) return null
+
+  // Compute zone AABB
+  const xs = bestZone.polygon.map((p) => p[0])
+  const zs = bestZone.polygon.map((p) => p[1])
+  const zoneMinX = Math.min(...xs)
+  const zoneMaxX = Math.max(...xs)
+  const zoneMinZ = Math.min(...zs)
+  const zoneMaxZ = Math.max(...zs)
+
+  // Compute item's AABB half-extents (accounts for rotation)
+  const aabb = getItemAABB(position, dimensions, rotation)
+  const halfExtentX = (aabb.maxX - aabb.minX) / 2
+  const halfExtentZ = (aabb.maxZ - aabb.minZ) / 2
+
+  // Check if item can fit in the zone at all
+  const zoneWidth = zoneMaxX - zoneMinX
+  const zoneDepth = zoneMaxZ - zoneMinZ
+  if (halfExtentX * 2 > zoneWidth || halfExtentZ * 2 > zoneDepth) {
+    return 'too-large'
+  }
+
+  // Clamp center position so the AABB fits within zone AABB
+  const clampedX = Math.max(zoneMinX + halfExtentX, Math.min(zoneMaxX - halfExtentX, x))
+  const clampedZ = Math.max(zoneMinZ + halfExtentZ, Math.min(zoneMaxZ - halfExtentZ, z))
+
+  const newPos: [number, number, number] = [clampedX, y, clampedZ]
+
+  // Verify all corners are now inside the zone polygon
+  const newCorners = getItemCorners(newPos, dimensions, rotation)
+  if (newCorners.every(([cx, cz]) => pointInPolygon(cx, cz, bestZone!.polygon))) {
+    return {
+      position: newPos,
+      reason: `Position adjusted to stay within room "${bestZone.name}". Item was outside room boundaries.`,
+    }
+  }
+
+  // AABB clamping alone didn't place all corners inside (non-rectangular zone).
+  // Try a tighter inset: shrink the zone bounds by an additional margin and retry.
+  const INSET = 0.1
+  const tightX = Math.max(zoneMinX + halfExtentX + INSET, Math.min(zoneMaxX - halfExtentX - INSET, x))
+  const tightZ = Math.max(zoneMinZ + halfExtentZ + INSET, Math.min(zoneMaxZ - halfExtentZ - INSET, z))
+  const tightPos: [number, number, number] = [tightX, y, tightZ]
+  const tightCorners = getItemCorners(tightPos, dimensions, rotation)
+  if (tightCorners.every(([cx, cz]) => pointInPolygon(cx, cz, bestZone!.polygon))) {
+    return {
+      position: tightPos,
+      reason: `Position adjusted to stay within room "${bestZone.name}". Item was outside room boundaries.`,
+    }
+  }
+
+  // Last resort: place at zone center
+  const centerX = (zoneMinX + zoneMaxX) / 2
+  const centerZ = (zoneMinZ + zoneMaxZ) / 2
+  const centerPos: [number, number, number] = [centerX, y, centerZ]
+  const centerCorners = getItemCorners(centerPos, dimensions, rotation)
+  if (centerCorners.every(([cx, cz]) => pointInPolygon(cx, cz, bestZone!.polygon))) {
+    return {
+      position: centerPos,
+      reason: `Position adjusted to room center of "${bestZone.name}". Original position was outside room boundaries.`,
+    }
+  }
+
+  // Cannot fit even at center — item is too large for this zone shape
+  return 'too-large'
 }

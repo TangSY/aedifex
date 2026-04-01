@@ -45,6 +45,8 @@ export interface CatalogResolveResult {
   asset: AssetInput | null
   matchType: 'exact' | 'name' | 'fuzzy' | 'none'
   suggestions?: AssetInput[]
+  /** When fuzzy match found but shape/variant doesn't match the request */
+  shapeWarning?: string
 }
 
 /**
@@ -102,12 +104,55 @@ export function resolveCatalogSlug(slug: string): CatalogResolveResult {
   }
 
   if (bestMatch) {
-    return { asset: bestMatch, matchType: 'fuzzy' }
+    // Shape/variant mismatch detection: if the user's slug contains shape
+    // descriptors that don't match the resolved item, warn about the difference.
+    const shapeWarning = detectShapeMismatch(slug, bestMatch)
+    return { asset: bestMatch, matchType: 'fuzzy', shapeWarning }
   }
 
   // 4. No match — suggest similar items by category/tags
   const suggestions = findSuggestions(slug)
   return { asset: null, matchType: 'none', suggestions }
+}
+
+// ============================================================================
+// Shape / Variant Mismatch Detection
+// ============================================================================
+
+/** Shape descriptors that indicate a specific variant the user wants */
+const SHAPE_DESCRIPTORS: Record<string, string[]> = {
+  round: ['round', 'circular', 'circle', '圆', '圆形', '圆桌', '圆台'],
+  square: ['square', '方', '方形', '正方'],
+  'L-shaped': ['l-shaped', 'l-shape', 'l形', 'l型'],
+  corner: ['corner', '转角', '拐角'],
+  small: ['small', 'mini', '小', '迷你'],
+  large: ['large', 'big', '大', '大号'],
+  double: ['double', 'twin', '双', '双人'],
+  single: ['single', '单', '单人'],
+}
+
+/**
+ * Detect if the user's requested slug implies a shape/variant that doesn't
+ * match the resolved catalog item. Returns a warning string or undefined.
+ */
+function detectShapeMismatch(slug: string, resolved: AssetInput): string | undefined {
+  const lower = slug.toLowerCase()
+  const itemId = resolved.id.toLowerCase()
+  const itemName = resolved.name.toLowerCase()
+
+  for (const [shape, keywords] of Object.entries(SHAPE_DESCRIPTORS)) {
+    const userWantsShape = keywords.some((kw) => lower.includes(kw))
+    if (!userWantsShape) continue
+
+    // Check if the resolved item already matches the shape
+    const itemHasShape = keywords.some((kw) => itemId.includes(kw) || itemName.includes(kw))
+    if (itemHasShape) continue
+
+    // User wants a shape that the resolved item doesn't have
+    return `User requested "${shape}" variant, but the closest available item is "${resolved.name}" (${resolved.id}). The catalog does not have a ${shape} version.`
+  }
+
+  return undefined
 }
 
 /**
