@@ -15,9 +15,15 @@ export function CompassOverlay() {
   const rafRef = useRef<number>(0)
 
   useEffect(() => {
+    let prevDeg = 0
     function tick() {
       const azimuth = getCameraAzimuth()
-      setRotation((azimuth * 180) / Math.PI)
+      const deg = (azimuth * 180) / Math.PI
+      // 只在旋转角度变化超过 0.5° 时才触发 React 重渲染
+      if (Math.abs(deg - prevDeg) > 0.5) {
+        prevDeg = deg
+        setRotation(deg)
+      }
       rafRef.current = requestAnimationFrame(tick)
     }
     rafRef.current = requestAnimationFrame(tick)

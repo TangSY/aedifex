@@ -868,7 +868,7 @@ function PlacementProposalCards({
             type="button"
           >
             <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20 font-barlow font-semibold text-[10px] text-sidebar-primary">
-              {option.id}
+              {option.id.replace(/\D/g, '') || option.id.charAt(option.id.length - 1)}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-barlow font-medium text-xs">{option.label}</p>

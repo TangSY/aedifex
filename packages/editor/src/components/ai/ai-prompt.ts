@@ -91,6 +91,7 @@ NEVER ignore a pending preview. Always resolve it (confirm or reject) before pro
 
 const COORDINATE_SYSTEM = `## Coordinate System
 - Positions are in meters [x, y, z] where Y is up (Y=0 for floor items), XZ is the floor plane.
+- **Cardinal directions: +X = East, -X = West, +Z = South, -Z = North.**
 - rotationY is in radians (0 = default, π/2 = 90°, π = 180°, -π/2 = 270°).
 - Wall coordinates use [x, z] for start/end points (2D floor plan).
 - ONLY use items from the catalog below.
@@ -100,17 +101,17 @@ The default model front faces **+Z direction** when rotationY=0.
 
 **To calculate rotationY when placing furniture against a wall:**
 1. Find the wall's inward normal (pointing INTO the room center):
-   - Wall along +X direction (e.g. [0,0]→[5,0], south side): inward normal = +Z → rotationY = 0
-   - Wall along +Z direction (e.g. [5,0]→[5,4], east side): inward normal = -X → rotationY = π/2 (1.57)
-   - Wall along -X direction (e.g. [5,4]→[0,4], north side): inward normal = -Z → rotationY = π (3.14)
-   - Wall along -Z direction (e.g. [0,4]→[0,0], west side): inward normal = +X → rotationY = -π/2 (-1.57)
+   - Wall along +X direction (e.g. [0,0]→[5,0], north side, Z=0): inward normal = +Z → rotationY = 0
+   - Wall along +Z direction (e.g. [5,0]→[5,4], east side, X=5): inward normal = -X → rotationY = π/2 (1.57)
+   - Wall along -X direction (e.g. [5,4]→[0,4], south side, Z=4): inward normal = -Z → rotationY = π (3.14)
+   - Wall along -Z direction (e.g. [0,4]→[0,0], west side, X=0): inward normal = +X → rotationY = -π/2 (-1.57)
 2. Set rotationY so the furniture front faces the inward normal (toward room center).
 3. Position the furniture flush against the wall: offset = wall_position ± item_depth/2.
 
 **Note:** The system's layout optimizer automatically corrects orientation for against-wall items. If you provide a wrong rotationY, it will be auto-corrected to face the room center.
 
-**Example:** For a sofa "against the north wall" (wall from [5,4] to [0,4]):
-- The wall is at Z=4, inward normal points -Z (toward room center)
+**Example:** For a sofa "against the south wall" (wall from [5,4] to [0,4], Z=4):
+- The wall is at Z=4 (+Z = south), inward normal points -Z (toward room center)
 - rotationY = π (3.14) — front faces -Z
 - position Z = 4.0 - sofa_depth/2 - wall_thickness/2
 
@@ -152,9 +153,9 @@ When extending an existing room or creating adjacent rooms that share a wall:
 Example — extending a room eastward by removing the east wall:
 \\\`\\\`\\\`
 remove_node: nodeId="<east-wall-id>"      // remove shared wall
-add_wall: start=[5,0], end=[8,0]           // new south extension
+add_wall: start=[5,0], end=[8,0]           // new north extension
 add_wall: start=[8,0], end=[8,4]           // new east wall
-add_wall: start=[8,4], end=[5,4]           // new north extension
+add_wall: start=[8,4], end=[5,4]           // new south extension
 \\\`\\\`\\\``
 
 const FURNITURE_RULES = `## Furniture Placement Rules
