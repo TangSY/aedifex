@@ -42,6 +42,37 @@ export interface AddWallToolCall {
   description?: string
 }
 
+export interface UpdateWallToolCall {
+  tool: 'update_wall'
+  nodeId: string
+  height?: number
+  thickness?: number
+  reason?: string
+}
+
+export interface UpdateDoorToolCall {
+  tool: 'update_door'
+  nodeId: string
+  width?: number
+  height?: number
+  positionAlongWall?: number
+  side?: 'front' | 'back'
+  hingesSide?: 'left' | 'right'
+  swingDirection?: 'inward' | 'outward'
+  reason?: string
+}
+
+export interface UpdateWindowToolCall {
+  tool: 'update_window'
+  nodeId: string
+  width?: number
+  height?: number
+  positionAlongWall?: number
+  heightFromFloor?: number
+  side?: 'front' | 'back'
+  reason?: string
+}
+
 export interface AddDoorToolCall {
   tool: 'add_door'
   wallId: string
@@ -101,6 +132,9 @@ export type AIToolCall =
   | MoveItemToolCall
   | UpdateMaterialToolCall
   | AddWallToolCall
+  | UpdateWallToolCall
+  | UpdateDoorToolCall
+  | UpdateWindowToolCall
   | AddDoorToolCall
   | AddWindowToolCall
   | RemoveNodeToolCall
@@ -162,6 +196,43 @@ export interface ValidatedAddWall {
   errorReason?: string
 }
 
+export interface ValidatedUpdateWall {
+  type: 'update_wall'
+  status: ValidatedOperationStatus
+  nodeId: AnyNodeId
+  height?: number
+  thickness?: number
+  errorReason?: string
+}
+
+export interface ValidatedUpdateDoor {
+  type: 'update_door'
+  status: ValidatedOperationStatus
+  nodeId: AnyNodeId
+  width?: number
+  height?: number
+  localX?: number
+  localY?: number
+  side?: 'front' | 'back'
+  hingesSide?: 'left' | 'right'
+  swingDirection?: 'inward' | 'outward'
+  errorReason?: string
+  adjustmentReason?: string
+}
+
+export interface ValidatedUpdateWindow {
+  type: 'update_window'
+  status: ValidatedOperationStatus
+  nodeId: AnyNodeId
+  width?: number
+  height?: number
+  localX?: number
+  localY?: number
+  side?: 'front' | 'back'
+  errorReason?: string
+  adjustmentReason?: string
+}
+
 export interface ValidatedAddDoor {
   type: 'add_door'
   status: ValidatedOperationStatus
@@ -208,6 +279,9 @@ export type ValidatedOperation =
   | ValidatedMoveItem
   | ValidatedUpdateMaterial
   | ValidatedAddWall
+  | ValidatedUpdateWall
+  | ValidatedUpdateDoor
+  | ValidatedUpdateWindow
   | ValidatedAddDoor
   | ValidatedAddWindow
   | ValidatedRemoveNode

@@ -120,6 +120,45 @@ export function applyGhostPreview(operations: ValidatedOperation[]): AnyNodeId[]
         }
         break
       }
+      case 'update_wall': {
+        const wallNode = nodes[op.nodeId]
+        if (wallNode) {
+          originalNodeStates.set(op.nodeId, { ...wallNode })
+          const updates: Record<string, unknown> = {
+            metadata: { ...(typeof wallNode.metadata === 'object' ? wallNode.metadata : {}), isTransient: true },
+          }
+          if (op.height !== undefined) updates.height = op.height
+          if (op.thickness !== undefined) updates.thickness = op.thickness
+          useScene.getState().updateNode(op.nodeId, updates)
+          affectedIds.push(op.nodeId)
+        }
+        break
+      }
+      case 'update_door':
+      case 'update_window': {
+        const dwNode = nodes[op.nodeId]
+        if (dwNode) {
+          originalNodeStates.set(op.nodeId, { ...dwNode })
+          const updates: Record<string, unknown> = {
+            metadata: { ...(typeof dwNode.metadata === 'object' ? dwNode.metadata : {}), isTransient: true },
+          }
+          if (op.width !== undefined) updates.width = op.width
+          if (op.height !== undefined) updates.height = op.height
+          if ('localX' in op && op.localX !== undefined) {
+            updates.position = [op.localX, (dwNode as { position?: number[] }).position?.[1] ?? 0, 0]
+          }
+          if ('localY' in op && op.localY !== undefined) {
+            const pos = (dwNode as { position?: number[] }).position ?? [0, 0, 0]
+            updates.position = [pos[0], op.localY, 0]
+          }
+          if ('side' in op && op.side !== undefined) updates.side = op.side
+          if ('hingesSide' in op && op.hingesSide !== undefined) updates.hingesSide = op.hingesSide
+          if ('swingDirection' in op && op.swingDirection !== undefined) updates.swingDirection = op.swingDirection
+          useScene.getState().updateNode(op.nodeId, updates)
+          affectedIds.push(op.nodeId)
+        }
+        break
+      }
     }
   }
 
@@ -281,6 +320,46 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           metadata: stripTransientMetadata(nodes[op.nodeId]?.metadata) as Record<string, never>,
           // material: op.material, // Material field depends on node schema
         })
+        affectedNodeIds.push(op.nodeId)
+        break
+      }
+      case 'update_wall': {
+        const original = originalNodeStates.get(op.nodeId)
+        if (original) {
+          useScene.getState().updateNode(op.nodeId, { metadata: original.metadata })
+        }
+        const updates: Record<string, unknown> = {
+          metadata: stripTransientMetadata(nodes[op.nodeId]?.metadata) as Record<string, never>,
+        }
+        if (op.height !== undefined) updates.height = op.height
+        if (op.thickness !== undefined) updates.thickness = op.thickness
+        useScene.getState().updateNode(op.nodeId, updates)
+        affectedNodeIds.push(op.nodeId)
+        break
+      }
+      case 'update_door':
+      case 'update_window': {
+        const original = originalNodeStates.get(op.nodeId)
+        if (original) {
+          useScene.getState().updateNode(op.nodeId, { metadata: original.metadata })
+        }
+        const dwUpdates: Record<string, unknown> = {
+          metadata: stripTransientMetadata(nodes[op.nodeId]?.metadata) as Record<string, never>,
+        }
+        if (op.width !== undefined) dwUpdates.width = op.width
+        if (op.height !== undefined) dwUpdates.height = op.height
+        if ('localX' in op && op.localX !== undefined) {
+          const pos = (nodes[op.nodeId] as { position?: number[] })?.position ?? [0, 0, 0]
+          dwUpdates.position = [op.localX, pos[1], 0]
+        }
+        if ('localY' in op && op.localY !== undefined) {
+          const pos = (nodes[op.nodeId] as { position?: number[] })?.position ?? [0, 0, 0]
+          dwUpdates.position = [pos[0], op.localY, 0]
+        }
+        if ('side' in op && op.side !== undefined) dwUpdates.side = op.side
+        if ('hingesSide' in op && op.hingesSide !== undefined) dwUpdates.hingesSide = op.hingesSide
+        if ('swingDirection' in op && op.swingDirection !== undefined) dwUpdates.swingDirection = op.swingDirection
+        useScene.getState().updateNode(op.nodeId, dwUpdates)
         affectedNodeIds.push(op.nodeId)
         break
       }
