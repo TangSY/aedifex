@@ -128,7 +128,7 @@ describe('useScene.updateNode', () => {
     const updated = useScene.getState().nodes[wall.id as AnyNodeId]!
     expect(updated.name).toBe('Updated Wall')
     // Other fields should be preserved
-    expect((updated as typeof wall).start).toEqual([0, 0])
+    expect((updated as unknown as { start: [number, number] }).start).toEqual([0, 0])
   })
 
   it('does nothing for non-existent node id', () => {

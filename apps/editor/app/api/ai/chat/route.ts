@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { buildSystemPrompt, OPENAI_TOOLS } from '@aedifex/editor/components/ai'
+import { buildSystemPrompt, OPENAI_TOOLS } from '@aedifex/editor/ai/prompt'
 import {
   AI_API_KEY,
   AI_BASE_URL,

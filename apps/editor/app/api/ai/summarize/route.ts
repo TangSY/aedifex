@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { SUMMARIZE_SYSTEM_PROMPT } from '@aedifex/editor/components/ai'
+import { SUMMARIZE_SYSTEM_PROMPT } from '@aedifex/editor/ai/prompt'
 import {
   AI_API_KEY,
   AI_BASE_URL,
