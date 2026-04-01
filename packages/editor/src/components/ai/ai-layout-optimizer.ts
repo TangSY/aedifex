@@ -105,15 +105,25 @@ function optimizeAddItem(
 
   // 1. 靠墙家具 → 墙体对齐吸附
   if (isAgainstWallItem(op.asset.id, op.asset.category)) {
-    const wallSnap = snapToNearestWall(
-      position,
-      [op.asset.dimensions?.[0] ?? 1, op.asset.dimensions?.[1] ?? 1, op.asset.dimensions?.[2] ?? 1],
-      rotation,
-    )
+    const dims: [number, number, number] = [
+      op.asset.dimensions?.[0] ?? 1,
+      op.asset.dimensions?.[1] ?? 1,
+      op.asset.dimensions?.[2] ?? 1,
+    ]
+    const wallSnap = snapToNearestWall(position, dims, rotation)
     if (wallSnap) {
       position = wallSnap.position
       rotation = wallSnap.rotation
       reasons.push('对齐到最近墙面')
+    }
+
+    // 朝向强制校正：确保靠墙家具正面朝向房间内部
+    // snapToNearestWall 阈值很小(0.3m)，大部分正确放置的靠墙家具不会触发它
+    // 这里用更大阈值单独校正朝向，不改变位置
+    const orientFix = enforceAgainstWallOrientation(position, dims, rotation)
+    if (orientFix) {
+      rotation = orientFix.rotation
+      reasons.push('朝向修正为面向房间内部')
     }
   }
 
@@ -162,6 +172,12 @@ function optimizeMoveItem(
       position = wallSnap.position
       rotation = wallSnap.rotation
       reasons.push('对齐到最近墙面')
+    }
+
+    const orientFix = enforceAgainstWallOrientation(position, node.asset.dimensions, rotation)
+    if (orientFix) {
+      rotation = orientFix.rotation
+      reasons.push('朝向修正为面向房间内部')
     }
   }
 
@@ -249,6 +265,79 @@ function snapToNearestWall(
     position: [newX, py, newZ],
     rotation: [0, faceAngle, 0],
   }
+}
+
+// ============================================================================
+// 靠墙家具朝向强制校正
+// ============================================================================
+
+/**
+ * 对靠墙家具强制校正朝向，确保正面（+Z 方向）面向房间内部。
+ * 与 snapToNearestWall 不同：
+ * - 阈值更大（物品深度 + 余量），覆盖正常靠墙放置的距离
+ * - 只校正旋转，不改变位置
+ * - 只有当朝向明显错误（面向墙壁而非房间）时才纠正
+ */
+function enforceAgainstWallOrientation(
+  position: [number, number, number],
+  dimensions: [number, number, number],
+  rotation: [number, number, number],
+): { rotation: [number, number, number] } | null {
+  const walls = getAllWalls()
+  if (walls.length === 0) return null
+
+  const [px, , pz] = position
+  const [, , depth] = dimensions
+
+  // 阈值：物品深度 + 余量，确保正常靠墙放置的家具能被检测到
+  const threshold = Math.max(depth, 1.5) + 0.5
+  let bestWall: WallNode | null = null
+  let bestDist = threshold
+  let bestClosestPoint: [number, number] = [0, 0]
+
+  for (const wall of walls) {
+    const { closestPoint, distance } = closestPointOnSegment(
+      px, pz,
+      wall.start[0], wall.start[1],
+      wall.end[0], wall.end[1],
+    )
+    if (distance < bestDist) {
+      bestDist = distance
+      bestWall = wall
+      bestClosestPoint = closestPoint
+    }
+  }
+
+  if (!bestWall) return null
+
+  // 计算墙体法线
+  const wallDx = bestWall.end[0] - bestWall.start[0]
+  const wallDz = bestWall.end[1] - bestWall.start[1]
+  const wallLen = Math.hypot(wallDx, wallDz)
+  if (wallLen < 0.01) return null
+
+  const normalX = -wallDz / wallLen
+  const normalZ = wallDx / wallLen
+
+  // 判断物品在墙的哪一侧
+  const toCenterX = px - bestClosestPoint[0]
+  const toCenterZ = pz - bestClosestPoint[1]
+  const side = Math.sign(toCenterX * normalX + toCenterZ * normalZ) || 1
+
+  // 正确朝向：正面远离墙壁，面向房间内部
+  const correctAngle = Math.atan2(side * normalX, side * normalZ)
+
+  // 检查当前朝向是否偏离正确朝向超过 90°（面向墙壁而非房间）
+  const currentAngle = rotation[1]
+  const angleDiff = Math.abs(normalizeAngle(currentAngle - correctAngle))
+
+  if (angleDiff <= Math.PI / 2) {
+    // 朝向大致正确（偏差 < 90°），不干预
+    return null
+  }
+
+  // 朝向明显错误（面向墙壁），纠正为面向房间内部
+  return { rotation: [0, correctAngle, 0] }
 }
 
 // ============================================================================

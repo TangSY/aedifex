@@ -29,8 +29,12 @@ import type {
 /** Maximum iterations per user message to prevent infinite loops */
 const MAX_ITERATIONS = 8
 
-/** Tool calls that skip the feedback loop (deterministic, no adjustment possible) */
-const DETERMINISTIC_TOOLS = new Set(['remove_item', 'remove_node', 'confirm_preview', 'reject_preview'])
+/**
+ * Tool calls that skip the feedback loop (deterministic, no adjustment possible).
+ * Only confirm/reject are truly terminal — remove operations should loop back
+ * so the LLM can follow up (e.g. remove old door → add new door at new position).
+ */
+const DETERMINISTIC_TOOLS = new Set(['confirm_preview', 'reject_preview'])
 
 /**
  * Run the agentic loop for a user message.
@@ -154,7 +158,15 @@ export async function runAgentLoop({
         }
 
         // Check if this is a deterministic operation (skip feedback)
-        const isDeterministic = mutationCalls.every((tc) => DETERMINISTIC_TOOLS.has(tc.tool))
+        // 1. confirm/reject are always terminal
+        // 2. Pure remove batches (all remove_item/remove_node) with all succeeded
+        //    are also terminal — no follow-up needed, prevents LLM from repeating
+        //    the same deletes and generating a noisy "all invalid" second attempt.
+        const isTerminalTool = mutationCalls.every((tc) => DETERMINISTIC_TOOLS.has(tc.tool))
+        const isPureRemove = mutationCalls.every((tc) =>
+          tc.tool === 'remove_item' || tc.tool === 'remove_node',
+        )
+        const isDeterministic = isTerminalTool || (isPureRemove && validOps.length > 0)
         if (isDeterministic && validOps.length > 0) {
           const toolResult = buildToolResult(
             mutationCalls.map((tc) => tc.tool).join('+'),
