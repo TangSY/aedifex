@@ -1,6 +1,7 @@
 'use client'
 
-import { Bot, Check, ChevronDown, History, Loader2, MapPin, Maximize2, MessageCircleQuestion, Send, Sparkles, Trash2, Undo2, X } from 'lucide-react'
+import { Bot, Check, ChevronDown, History, Loader2, MapPin, Maximize2, MessageCircleQuestion, Send, Trash2, Undo2, X } from 'lucide-react'
+import { AIMarkdown } from './ai-markdown'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   type KeyboardEvent,
@@ -200,7 +201,9 @@ export function AIChatPanel() {
                   <Bot className="h-3.5 w-3.5 text-sidebar-primary" />
                 </div>
                 <div className="flex-1 rounded-lg bg-accent/30 px-3 py-2 font-barlow text-sm">
-                  {streamingContent || (
+                  {streamingContent ? (
+                    <AIMarkdown content={streamingContent} />
+                  ) : (
                     <span className="flex items-center gap-1.5 text-muted-foreground">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       {iterationCount > 1 ? `迭代 ${iterationCount} — 思考中...` : '思考中...'}
@@ -319,7 +322,7 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick: (text: string) =
   return (
     <div className="flex h-full flex-col items-center justify-center px-4">
       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sidebar-primary/15">
-        <Sparkles className="h-5 w-5 text-sidebar-primary" />
+        <Bot className="h-5 w-5 text-sidebar-primary" />
       </div>
       <h3 className="mt-3 font-barlow font-semibold text-sm">AI 设计助手</h3>
       <p className="mt-1 text-center font-barlow text-muted-foreground text-xs leading-relaxed">
@@ -555,7 +558,11 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           isUser ? 'bg-sidebar-primary text-white' : 'bg-accent/30',
         )}
       >
-        <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        {isUser ? (
+          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        ) : (
+          <AIMarkdown content={message.content} />
+        )}
 
         {/* Placement proposal options — hide after user selects one */}
         {message.toolCalls?.some((tc) => tc.tool === 'propose_placement') &&

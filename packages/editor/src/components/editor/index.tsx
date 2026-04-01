@@ -30,6 +30,8 @@ import { SidebarProvider } from '../ui/primitives/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/primitives/tooltip'
 import { SceneLoader } from '../ui/scene-loader'
 import { AppSidebar } from '../ui/sidebar/app-sidebar'
+import { CameraAzimuthSync } from './compass-hud'
+import { CompassOverlay } from './compass-overlay'
 import { CustomCameraControls } from './custom-camera-controls'
 import { ExportManager } from './export-manager'
 import { FloatingActionMenu } from './floating-action-menu'
@@ -434,6 +436,7 @@ export default function Editor({
 
         <ErrorBoundary fallback={<EditorSceneCrashFallback />}>
           <div className="relative z-0 h-full w-full">
+            {!isPreviewMode && <CompassOverlay />}
             <SelectionPersistenceManager enabled={hasLoadedInitialScene && !showLoader} />
             <Viewer selectionManager={isPreviewMode ? 'default' : 'custom'}>
               {!isPreviewMode && <SelectionManager />}
@@ -446,6 +449,7 @@ export default function Editor({
               {!isPreviewMode && <Grid cellColor="#aaa" fadeDistance={500} sectionColor="#ccc" />}
               {!(isPreviewMode || isLoading) && <ToolManager />}
               <CustomCameraControls />
+              {!isPreviewMode && <CameraAzimuthSync />}
               <ThumbnailGenerator onThumbnailCapture={onThumbnailCapture} />
               <PresetThumbnailGenerator />
               {!isPreviewMode && <SiteEdgeLabels />}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useViewer } from '@aedifex/viewer'
-import { Moon, Ruler, Sparkles, Sun } from 'lucide-react'
+import { Bot, Moon, Ruler, Sun } from 'lucide-react'
 import { motion } from 'motion/react'
 import { type ReactNode, useEffect, useState } from 'react'
 import {
@@ -23,7 +23,7 @@ interface IconRailProps {
 const panels: { id: PanelId; iconSrc?: string; label: string; lucideIcon?: string }[] = [
   { id: 'site', iconSrc: '/icons/level.png', label: 'Site' },
   { id: 'settings', iconSrc: '/icons/settings.png', label: 'Settings' },
-  { id: 'ai', label: 'AI Assistant', lucideIcon: 'sparkles' },
+  { id: 'ai', label: 'AI Assistant', lucideIcon: 'bot' },
 ]
 
 export function IconRail({ activePanel, onPanelChange, appMenuButton, className }: IconRailProps) {
@@ -72,8 +72,8 @@ export function IconRail({ activePanel, onPanelChange, appMenuButton, className 
                     )}
                     src={panel.iconSrc}
                   />
-                ) : panel.lucideIcon === 'sparkles' ? (
-                  <Sparkles
+                ) : panel.lucideIcon === 'bot' ? (
+                  <Bot
                     className={cn(
                       'h-5 w-5 transition-all',
                       isActive ? 'text-sidebar-primary' : 'opacity-50 saturate-0',
