@@ -166,6 +166,9 @@ export async function runAgentLoop({
         // 2. Pure remove batches (all remove_item/remove_node) with all succeeded
         //    are also terminal — no follow-up needed, prevents LLM from repeating
         //    the same deletes and generating a noisy "all invalid" second attempt.
+        // 3. Pure structural batches (add_wall/add_door/add_window/remove_*) skip
+        //    feedback — these are precise operations that don't benefit from LLM
+        //    adjustment, and looping causes duplicate walls (Critical bug fix).
         // Record tool errors for context injection (#6)
         const invalidOps = validated.filter((op) => op.status === 'invalid')
         for (const op of invalidOps) {
@@ -177,7 +180,28 @@ export async function runAgentLoop({
         const isPureRemove = mutationCalls.every((tc) =>
           tc.tool === 'remove_item' || tc.tool === 'remove_node',
         )
-        const isDeterministic = isTerminalTool || (isPureRemove && validOps.length > 0)
+        // Pure structural batches (all add_wall / remove_node / remove_item) are
+        // deterministic — the LLM cannot improve them via feedback, and looping
+        // back causes duplicate walls/deletes until MAX_ITERATIONS.
+        const STRUCTURAL_DETERMINISTIC = new Set([
+          'add_wall',
+          'add_door',
+          'add_window',
+          'remove_item',
+          'remove_node',
+        ])
+        const isPureStructuralBatch = mutationCalls.every((tc) => {
+          if (STRUCTURAL_DETERMINISTIC.has(tc.tool)) return true
+          if (tc.tool === 'batch_operations' && Array.isArray((tc as any).operations)) {
+            return (tc as any).operations.every((op: any) => {
+              const opTool = op.type ?? op.tool
+              return STRUCTURAL_DETERMINISTIC.has(opTool)
+            })
+          }
+          return false
+        })
+        const isDeterministic =
+          isTerminalTool || (isPureRemove && validOps.length > 0) || (isPureStructuralBatch && validOps.length > 0)
         if (isDeterministic && validOps.length > 0) {
           const toolResult = buildToolResult(
             mutationCalls.map((tc) => tc.tool).join('+'),

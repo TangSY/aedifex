@@ -241,12 +241,16 @@ function snapToNearestWall(
   const toCenterZ = pz - bestClosestPoint[1]
   const side = Math.sign(toCenterX * normalX + toCenterZ * normalZ) || 1
 
-  // 计算物品的半深度（沿法线方向的尺寸）
+  // 计算物品朝向：面向法线方向（面向房间内部）
+  // 必须先计算 faceAngle，再基于最终旋转计算尺寸投影。
+  // 否则 halfDepth/halfWidth 基于原始旋转，但返回的是新旋转，导致沿墙约束不准。
+  const faceAngle = Math.atan2(side * normalX, side * normalZ)
+
   const [w, , d] = dimensions
   const wallAngle = Math.atan2(wallDz, wallDx)
-  const itemAngle = rotation[1]
-  const angleDiff = Math.abs(normalizeAngle(itemAngle - wallAngle))
-  // 根据物品朝向，选择 w 或 d 作为深度
+  // 使用最终旋转角（faceAngle）而非原始旋转角计算尺寸投影
+  const angleDiff = Math.abs(normalizeAngle(faceAngle - wallAngle))
+  // 根据物品朝向，选择 w 或 d 作为深度（垂直于墙方向）
   const halfDepth = (angleDiff < Math.PI / 4 || angleDiff > (3 * Math.PI) / 4)
     ? d / 2
     : w / 2
@@ -255,11 +259,27 @@ function snapToNearestWall(
   const offset = thickness / 2 + halfDepth + WALL_OFFSET
 
   // 新位置：沿最近点向法线方向偏移
-  const newX = bestClosestPoint[0] + normalX * side * offset
-  const newZ = bestClosestPoint[1] + normalZ * side * offset
+  let newX = bestClosestPoint[0] + normalX * side * offset
+  let newZ = bestClosestPoint[1] + normalZ * side * offset
 
-  // 计算物品朝向：面向法线方向（面向房间内部）
-  const faceAngle = Math.atan2(side * normalX, side * normalZ)
+  // 约束物品沿墙方向不超出墙体端点。
+  // 物品的半宽（平行于墙方向的尺寸）不能超过墙的两端。
+  const halfWidth = (angleDiff < Math.PI / 4 || angleDiff > (3 * Math.PI) / 4)
+    ? w / 2
+    : d / 2
+  const wallDirX = wallDx / wallLen
+  const wallDirZ = wallDz / wallLen
+  // 将物品中心投影到墙段上，用参数 t 表示沿墙的位置 (0=start, wallLen=end)
+  const t = (newX - bestWall.start[0]) * wallDirX + (newZ - bestWall.start[1]) * wallDirZ
+  const margin = halfWidth + thickness / 2
+  // 如果物品比墙还宽，跳过端点约束（交给 zone boundary check 处理）
+  if (margin * 2 > wallLen) return { position: [newX, py, newZ], rotation: [0, faceAngle, 0] }
+  const clampedT = Math.max(margin, Math.min(wallLen - margin, t))
+  if (Math.abs(clampedT - t) > 0.01) {
+    // 沿墙方向滑动物品使其不超出端点
+    newX += wallDirX * (clampedT - t)
+    newZ += wallDirZ * (clampedT - t)
+  }
 
   return {
     position: [newX, py, newZ],

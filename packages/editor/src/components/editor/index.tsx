@@ -383,12 +383,18 @@ export default function Editor({
     }
   }, [isVersionPreviewMode, previewScene])
 
+  const theme = useViewer((s) => s.theme)
+
   useEffect(() => {
-    document.body.classList.add('dark')
+    if (theme === 'dark') {
+      document.body.classList.add('dark')
+    } else {
+      document.body.classList.remove('dark')
+    }
     return () => {
       document.body.classList.remove('dark')
     }
-  }, [])
+  }, [theme])
 
   useEffect(() => {
     setIsCameraControlsHintVisible(!readCameraControlsHintDismissed())
@@ -402,7 +408,7 @@ export default function Editor({
 
   return (
     <PresetsProvider adapter={presetsAdapter}>
-      <div className="dark h-full w-full text-foreground">
+      <div className={`${theme === 'dark' ? 'dark' : ''} h-full w-full text-foreground`}>
         {showLoader && (
           <div className="fixed inset-0 z-60">
             <SceneLoader />

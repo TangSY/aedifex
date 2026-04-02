@@ -128,7 +128,7 @@ function enforceZoneBoundaryPostOptimize(op: ValidatedOperation): ValidatedOpera
     const { nodes } = useScene.getState()
     const node = nodes[op.nodeId]
     if (!node || node.type !== 'item' || node.asset.attachTo) return op
-    dimensions = node.asset.dimensions
+    dimensions = (node.asset.dimensions ?? [1, 1, 1]) as [number, number, number]
   }
 
   const zoneBoundary = checkZoneBoundary(op.position, dimensions, op.rotation, levelId)
@@ -1541,9 +1541,12 @@ function checkZoneBoundary(
     return 'too-large'
   }
 
-  // Clamp center position so the AABB fits within zone AABB
-  const clampedX = Math.max(zoneMinX + halfExtentX, Math.min(zoneMaxX - halfExtentX, x))
-  const clampedZ = Math.max(zoneMinZ + halfExtentZ, Math.min(zoneMaxZ - halfExtentZ, z))
+  // Clamp center position so the AABB fits within zone AABB.
+  // Add wall-thickness margin (WALL_INSET) to prevent visual clipping through walls,
+  // since zone polygon boundaries may coincide with wall center lines.
+  const WALL_INSET = 0.08
+  const clampedX = Math.max(zoneMinX + halfExtentX + WALL_INSET, Math.min(zoneMaxX - halfExtentX - WALL_INSET, x))
+  const clampedZ = Math.max(zoneMinZ + halfExtentZ + WALL_INSET, Math.min(zoneMaxZ - halfExtentZ - WALL_INSET, z))
 
   const newPos: [number, number, number] = [clampedX, y, clampedZ]
 
@@ -1556,9 +1559,10 @@ function checkZoneBoundary(
     }
   }
 
-  // AABB clamping alone didn't place all corners inside (non-rectangular zone).
-  // Try a tighter inset: shrink the zone bounds by an additional margin and retry.
-  const INSET = 0.1
+  // AABB clamping alone didn't place all corners inside (non-rectangular zone
+  // or corners still clipping through walls). Try a tighter inset with wall
+  // thickness margin to prevent visual clipping.
+  const INSET = 0.15
   const tightX = Math.max(zoneMinX + halfExtentX + INSET, Math.min(zoneMaxX - halfExtentX - INSET, x))
   const tightZ = Math.max(zoneMinZ + halfExtentZ + INSET, Math.min(zoneMaxZ - halfExtentZ - INSET, z))
   const tightPos: [number, number, number] = [tightX, y, tightZ]
