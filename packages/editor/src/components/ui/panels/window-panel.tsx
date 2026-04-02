@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNode, type AnyNodeId, emitter, useScene, WindowNode } from '@aedifex/core'
+import { type AnyNode, type AnyNodeId, emitter, type MaterialSchema, useScene, WindowNode } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { BookMarked, Copy, FlipHorizontal2, Move, Trash2 } from 'lucide-react'
 import { useCallback } from 'react'
@@ -8,6 +8,7 @@ import { usePresetsAdapter } from '../../../contexts/presets-context'
 import { sfxEmitter } from '../../../lib/sfx-bus'
 import useEditor from '../../../store/use-editor'
 import { ActionButton, ActionGroup } from '../controls/action-button'
+import { MaterialPicker } from '../controls/material-picker'
 import { MetricControl } from '../controls/metric-control'
 import { PanelSection } from '../controls/panel-section'
 import { SliderControl } from '../controls/slider-control'
@@ -137,6 +138,10 @@ export function WindowPanel() {
     },
     [handleUpdate],
   )
+
+  const handleMaterialChange = useCallback((material: MaterialSchema) => {
+    handleUpdate({ material })
+  }, [handleUpdate])
 
   if (!node || node.type !== 'window' || selectedIds.length !== 1) return null
 
@@ -397,6 +402,13 @@ export function WindowPanel() {
             />
           </div>
         )}
+      </PanelSection>
+
+      <PanelSection title="Material">
+        <MaterialPicker
+          onChange={handleMaterialChange}
+          value={node.material}
+        />
       </PanelSection>
 
       <PanelSection title="Actions">

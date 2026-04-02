@@ -1,24 +1,27 @@
-import { useRegistry, useScene, type WindowNode } from '@aedifex/core'
-import { useLayoutEffect, useRef } from 'react'
+import { useRegistry, type WindowNode } from '@aedifex/core'
+import { useMemo, useRef } from 'react'
 import type { Mesh } from 'three'
 import { useNodeEvents } from '../../../hooks/use-node-events'
+import { createMaterial, DEFAULT_WINDOW_MATERIAL } from '../../../lib/materials'
 
 export const WindowRenderer = ({ node }: { node: WindowNode }) => {
   const ref = useRef<Mesh>(null!)
 
   useRegistry(node.id, 'window', ref)
 
-  // Mark dirty on mount so WindowSystem rebuilds geometry when window (re)appears
-  useLayoutEffect(() => {
-    useScene.getState().markDirty(node.id)
-  }, [node.id])
-
   const handlers = useNodeEvents(node, 'window')
   const isTransient = !!(node.metadata as Record<string, unknown> | null)?.isTransient
+
+  const material = useMemo(() => {
+    const mat = node.material
+    if (!mat) return DEFAULT_WINDOW_MATERIAL
+    return createMaterial(mat)
+  }, [node.material, node.material?.preset, node.material?.properties, node.material?.texture])
 
   return (
     <mesh
       castShadow
+      material={material}
       position={node.position}
       receiveShadow
       ref={ref}
@@ -26,9 +29,7 @@ export const WindowRenderer = ({ node }: { node: WindowNode }) => {
       visible={node.visible}
       {...(isTransient ? {} : handlers)}
     >
-      {/* WindowSystem replaces this geometry each time the node is dirty */}
       <boxGeometry args={[0, 0, 0]} />
-      <meshStandardMaterial color="#d1d5db" />
     </mesh>
   )
 }

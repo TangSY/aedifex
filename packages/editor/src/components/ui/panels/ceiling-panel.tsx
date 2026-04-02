@@ -1,11 +1,12 @@
 'use client'
 
-import { type AnyNode, type CeilingNode, useScene } from '@aedifex/core'
+import { type AnyNode, type CeilingNode, type MaterialSchema, useScene } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { Edit, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect } from 'react'
 import useEditor from '../../../store/use-editor'
 import { ActionButton } from '../controls/action-button'
+import { MaterialPicker } from '../controls/material-picker'
 import { PanelSection } from '../controls/panel-section'
 import { SliderControl } from '../controls/slider-control'
 import { PanelWrapper } from './panel-wrapper'
@@ -93,6 +94,10 @@ export function CeilingPanel() {
     },
     [selectedId, node?.holes, handleUpdate, editingHole, setEditingHole],
   )
+
+  const handleMaterialChange = useCallback((material: MaterialSchema) => {
+    handleUpdate({ material })
+  }, [handleUpdate])
 
   if (!node || node.type !== 'ceiling' || selectedIds.length !== 1) return null
 
@@ -216,6 +221,13 @@ export function CeilingPanel() {
             onClick={handleAddHole}
           />
         </div>
+      </PanelSection>
+
+      <PanelSection title="Material">
+        <MaterialPicker
+          onChange={handleMaterialChange}
+          value={node.material}
+        />
       </PanelSection>
     </PanelWrapper>
   )
