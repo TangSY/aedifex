@@ -1,376 +1,173 @@
+<div align="center">
+
 # Aedifex
 
-A 3D building editor built with React Three Fiber and WebGPU.
+**Open-source 3D building editor powered by WebGPU**
+
+Create, edit, and visualize architectural spaces in your browser.
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![npm @pascal-app/core](https://img.shields.io/npm/v/@pascal-app/core?label=%40pascal-app%2Fcore)](https://www.npmjs.com/package/@pascal-app/core)
-[![npm @pascal-app/viewer](https://img.shields.io/npm/v/@pascal-app/viewer?label=%40pascal-app%2Fviewer)](https://www.npmjs.com/package/@pascal-app/viewer)
-[![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white)](https://discord.gg/SaBRA9t2)
-[![X (Twitter)](https://img.shields.io/badge/follow-%40pascal__app-black?logo=x&logoColor=white)](https://x.com/pascal_app)
+
+[**English**](./README.md) | [**中文**](./README.zh-CN.md)
 
 https://github.com/user-attachments/assets/8b50e7cf-cebe-4579-9cf3-8786b35f7b6b
 
+</div>
 
+## Features
 
-## Repository Architecture
+### Structure & Layout
 
-This is a Turborepo monorepo with three main packages:
+- **Wall System** — Draw walls with automatic mitering, adjustable thickness and height. Walls snap to a 0.5m grid for precision.
+- **Doors & Windows** — Place doors and windows on walls with configurable dimensions, swing direction, and hinge side.
+- **Zones** — Rooms are auto-detected from wall boundaries. Zones display area, shape analysis, and spatial metadata.
+- **Multi-Level** — Stack, explode, or solo levels. Each level maintains independent floor plans.
+- **Slabs, Ceilings & Roofs** — Draw floor plates, ceilings, and roof segments with polygon-based geometry.
 
-```
-editor-v2/
-├── apps/
-│   └── editor/          # Next.js application
-├── packages/
-│   ├── core/            # Schema definitions, state management, systems
-│   └── viewer/          # 3D rendering components
-```
+### Furniture & Items
 
-### Separation of Concerns
+- **Catalog** — Built-in furniture catalog with sofas, tables, chairs, beds, bookshelves, lamps, trees, and more.
+- **Smart Placement** — Collision detection, wall-snap alignment, and zone-boundary clamping ensure items stay within rooms.
+- **Interactive Items** — Toggle lights, adjust lamp brightness, and control interactive elements.
 
-| Package | Responsibility |
-|---------|---------------|
-| **@aedifex/core** | Node schemas, scene state (Zustand), systems (geometry generation), spatial queries, event bus |
-| **@aedifex/viewer** | 3D rendering via React Three Fiber, default camera/controls, post-processing |
-| **apps/editor** | UI components, tools, custom behaviors, editor-specific systems |
+### Materials
 
-The **viewer** renders the scene with sensible defaults. The **editor** extends it with interactive tools, selection management, and editing capabilities.
+- **10 Presets** — White, brick, concrete, wood, glass, metal, plaster, tile, marble, and custom.
+- **Custom Properties** — Color, roughness, metalness, opacity, transparency per node.
+- **All Node Types** — Apply materials to walls, slabs, doors, windows, ceilings, and roofs.
 
-### Stores
+### Viewing & Navigation
 
-Each package has its own Zustand store for managing state:
+- **Street View** — First-person walkthrough mode. WASD to move, mouse to look, Q/E to float. Explore your designs from inside.
+- **Dark / Light Theme** — Toggle between dark and light viewport themes.
+- **Compass HUD** — Always-visible cardinal direction indicator.
+- **Camera Controls** — Orbit, pan, zoom with mouse or trackpad. Optimized for Mac touchpad (two-finger pan + pinch zoom + right-click rotate).
 
-| Store | Package | Responsibility |
-|-------|---------|----------------|
-| `useScene` | `@aedifex/core` | Scene data: nodes, root IDs, dirty nodes, CRUD operations. Persisted to IndexedDB with undo/redo via Zundo. |
-| `useViewer` | `@aedifex/viewer` | Viewer state: current selection (building/level/zone IDs), level display mode (stacked/exploded/solo), camera mode. |
-| `useEditor` | `apps/editor` | Editor state: active tool, structure layer visibility, panel states, editor-specific preferences. |
+### Export
 
-**Access patterns:**
+- **GLB** — Standard glTF binary format for web and game engines.
+- **STL** — For 3D printing.
+- **OBJ** — Universal exchange format.
 
-```typescript
-// Subscribe to state changes (React component)
-const nodes = useScene((state) => state.nodes)
-const levelId = useViewer((state) => state.selection.levelId)
-const activeTool = useEditor((state) => state.tool)
+### AI Design Assistant
 
-// Access state outside React (callbacks, systems)
-const node = useScene.getState().nodes[id]
-useViewer.getState().setSelection({ levelId: 'level_123' })
-```
+- **Natural Language** — Describe what you want: *"Create a 5m x 4m room and furnish it as a bedroom."*
+- **16 Tools** — Add/remove/move furniture, create walls, place doors & windows, update wall height/door width/window size, batch operations, propose multiple placement options, and ask clarifying questions.
+- **Ghost Preview** — See AI suggestions as transparent previews before confirming.
+- **Agentic Loop** — AI iterates on results, auto-corrects positions for collision and zone boundaries, and asks clarifying questions when the request is ambiguous.
+- **Catalog Matching** — Fuzzy name matching with shape-variant warnings (e.g., warns if you ask for a round table but only rectangular is available).
 
 ---
 
-## Core Concepts
-
-### Nodes
-
-Nodes are the data primitives that describe the 3D scene. All nodes extend `BaseNode`:
-
-```typescript
-BaseNode {
-  id: string              // Auto-generated with type prefix (e.g., "wall_abc123")
-  type: string            // Discriminator for type-safe handling
-  parentId: string | null // Parent node reference
-  visible: boolean
-  camera?: Camera         // Optional saved camera position
-  metadata?: JSON         // Arbitrary metadata (e.g., { isTransient: true })
-}
-```
-
-**Node Hierarchy:**
-
-```
-Site
-└── Building
-    └── Level
-        ├── Wall → Item (doors, windows)
-        ├── Slab
-        ├── Ceiling → Item (lights)
-        ├── Roof
-        ├── Zone
-        ├── Scan (3D reference)
-        └── Guide (2D reference)
-```
-
-Nodes are stored in a **flat dictionary** (`Record<id, Node>`), not a nested tree. Parent-child relationships are defined via `parentId` and `children` arrays.
-
----
-
-### Scene State (Zustand Store)
-
-The scene is managed by a Zustand store in `@aedifex/core`:
-
-```typescript
-useScene.getState() = {
-  nodes: Record<id, AnyNode>,  // All nodes
-  rootNodeIds: string[],       // Top-level nodes (sites)
-  dirtyNodes: Set<string>,     // Nodes pending system updates
-
-  createNode(node, parentId),
-  updateNode(id, updates),
-  deleteNode(id),
-}
-```
-
-**Middleware:**
-- **Persist** - Saves to IndexedDB (excludes transient nodes)
-- **Temporal** (Zundo) - Undo/redo with 50-step history
-
----
-
-### Scene Registry
-
-The registry maps node IDs to their Three.js objects for fast lookup:
-
-```typescript
-sceneRegistry = {
-  nodes: Map<id, Object3D>,    // ID → 3D object
-  byType: {
-    wall: Set<id>,
-    item: Set<id>,
-    zone: Set<id>,
-    // ...
-  }
-}
-```
-
-Renderers register their refs using the `useRegistry` hook:
-
-```tsx
-const ref = useRef<Mesh>(null!)
-useRegistry(node.id, 'wall', ref)
-```
-
-This allows systems to access 3D objects directly without traversing the scene graph.
-
----
-
-### Node Renderers
-
-Renderers are React components that create Three.js objects for each node type:
-
-```
-SceneRenderer
-└── NodeRenderer (dispatches by type)
-    ├── BuildingRenderer
-    ├── LevelRenderer
-    ├── WallRenderer
-    ├── SlabRenderer
-    ├── ZoneRenderer
-    ├── ItemRenderer
-    └── ...
-```
-
-**Pattern:**
-1. Renderer creates a placeholder mesh/group
-2. Registers it with `useRegistry`
-3. Systems update geometry based on node data
-
-Example (simplified):
-```tsx
-const WallRenderer = ({ node }) => {
-  const ref = useRef<Mesh>(null!)
-  useRegistry(node.id, 'wall', ref)
-
-  return (
-    <mesh ref={ref}>
-      <boxGeometry args={[0, 0, 0]} />  {/* Replaced by WallSystem */}
-      <meshStandardMaterial />
-      {node.children.map(id => <NodeRenderer key={id} nodeId={id} />)}
-    </mesh>
-  )
-}
-```
-
----
-
-### Systems
-
-Systems are React components that run in the render loop (`useFrame`) to update geometry and transforms. They process **dirty nodes** marked by the store.
-
-**Core Systems (in `@aedifex/core`):**
-
-| System | Responsibility |
-|--------|---------------|
-| `WallSystem` | Generates wall geometry with mitering and CSG cutouts for doors/windows |
-| `SlabSystem` | Generates floor geometry from polygons |
-| `CeilingSystem` | Generates ceiling geometry |
-| `RoofSystem` | Generates roof geometry |
-| `ItemSystem` | Positions items on walls, ceilings, or floors (slab elevation) |
-
-**Viewer Systems (in `@aedifex/viewer`):**
-
-| System | Responsibility |
-|--------|---------------|
-| `LevelSystem` | Handles level visibility and vertical positioning (stacked/exploded/solo modes) |
-| `ScanSystem` | Controls 3D scan visibility |
-| `GuideSystem` | Controls guide image visibility |
-
-**Processing Pattern:**
-```typescript
-useFrame(() => {
-  for (const id of dirtyNodes) {
-    const obj = sceneRegistry.nodes.get(id)
-    const node = useScene.getState().nodes[id]
-
-    // Update geometry, transforms, etc.
-    updateGeometry(obj, node)
-
-    dirtyNodes.delete(id)
-  }
-})
-```
-
----
-
-### Dirty Nodes
-
-When a node changes, it's marked as **dirty** in `useScene.getState().dirtyNodes`. Systems check this set each frame and only recompute geometry for dirty nodes.
-
-```typescript
-// Automatic: createNode, updateNode, deleteNode mark nodes dirty
-useScene.getState().updateNode(wallId, { thickness: 0.2 })
-// → wallId added to dirtyNodes
-// → WallSystem regenerates geometry next frame
-// → wallId removed from dirtyNodes
-```
-
-**Manual marking:**
-```typescript
-useScene.getState().dirtyNodes.add(wallId)
-```
-
----
-
-### Event Bus
-
-Inter-component communication uses a typed event emitter (mitt):
-
-```typescript
-// Node events
-emitter.on('wall:click', (event) => { ... })
-emitter.on('item:enter', (event) => { ... })
-emitter.on('zone:context-menu', (event) => { ... })
-
-// Grid events (background)
-emitter.on('grid:click', (event) => { ... })
-
-// Event payload
-NodeEvent {
-  node: AnyNode
-  position: [x, y, z]
-  localPosition: [x, y, z]
-  normal?: [x, y, z]
-  stopPropagation: () => void
-}
-```
-
----
-
-### Spatial Grid Manager
-
-Handles collision detection and placement validation:
-
-```typescript
-spatialGridManager.canPlaceOnFloor(levelId, position, dimensions, rotation)
-spatialGridManager.canPlaceOnWall(wallId, t, height, dimensions)
-spatialGridManager.getSlabElevationAt(levelId, x, z)
-```
-
-Used by item placement tools to validate positions and calculate slab elevations.
-
----
-
-## Editor Architecture
-
-The editor extends the viewer with:
-
-### Tools
-
-Tools are activated via the toolbar and handle user input for specific operations:
-
-- **SelectTool** - Selection and manipulation
-- **WallTool** - Draw walls
-- **ZoneTool** - Create zones
-- **ItemTool** - Place furniture/fixtures
-- **SlabTool** - Create floor slabs
-
-### Selection Manager
-
-The editor uses a custom selection manager with hierarchical navigation:
-
-```
-Site → Building → Level → Zone → Items
-```
-
-Each depth level has its own selection strategy for hover/click behavior.
-
-### Editor-Specific Systems
-
-- `ZoneSystem` - Controls zone visibility based on level mode
-- Custom camera controls with node focusing
-
----
-
-## Data Flow
-
-```
-User Action (click, drag)
-       ↓
-Tool Handler
-       ↓
-useScene.createNode() / updateNode()
-       ↓
-Node added/updated in store
-Node marked dirty
-       ↓
-React re-renders NodeRenderer
-useRegistry() registers 3D object
-       ↓
-System detects dirty node (useFrame)
-Updates geometry via sceneRegistry
-Clears dirty flag
-```
-
----
-
-## Technology Stack
-
-- **React 19** + **Next.js 16**
-- **Three.js** (WebGPU renderer)
-- **React Three Fiber** + **Drei**
-- **Zustand** (state management)
-- **Zod** (schema validation)
-- **Zundo** (undo/redo)
-- **three-bvh-csg** (Boolean geometry operations)
-- **Turborepo** (monorepo management)
-- **Bun** (package manager)
-
----
-
-## Getting Started
-
-### Development
-
-Run the development server from the **root directory** to enable hot reload for all packages:
+## Quick Start
 
 ```bash
+# Clone
+git clone https://github.com/AedifexOrg/aedifex.git
+cd aedifex
+
 # Install dependencies
 pnpm install
 
-# Run development server (builds packages + starts editor with watch mode)
+# Start dev server (all packages + editor)
 pnpm dev
 
-# This will:
-# 1. Build @aedifex/core and @aedifex/viewer
-# 2. Start watching both packages for changes
-# 3. Start the Next.js editor dev server
 # Open http://localhost:3000
 ```
 
-**Important:** Always run `pnpm dev` from the root directory to ensure the package watchers are running. This enables hot reload when you edit files in `packages/core/src/` or `packages/viewer/src/`.
+> **Requirements:** Node.js 20+, pnpm 9+. A WebGPU-capable browser (Chrome 113+, Edge 113+, or Firefox Nightly).
 
-### Building for Production
+---
+
+## Controls
+
+### Mouse
+
+| Action | Input |
+|--------|-------|
+| Select | Left click |
+| Pan | Middle click drag, or Space + left click |
+| Rotate | Right click drag |
+| Zoom | Scroll wheel |
+
+### Trackpad (Mac)
+
+| Action | Gesture |
+|--------|---------|
+| Pan | Two-finger drag |
+| Zoom | Pinch |
+| Rotate | Right-click drag (two-finger tap + drag) |
+
+### Street View Mode
+
+| Action | Input |
+|--------|-------|
+| Move | WASD |
+| Look | Mouse |
+| Float up/down | Q / E |
+| Exit | Escape |
+
+---
+
+## Architecture
+
+Turborepo monorepo with three packages:
+
+```
+aedifex/
+├── apps/editor/       # Next.js 16 application
+├── packages/core/     # Schema, state (Zustand), systems, spatial queries
+└── packages/viewer/   # 3D rendering (React Three Fiber + WebGPU)
+```
+
+| Package | Responsibility |
+|---------|---------------|
+| **core** | Node schemas (Zod), scene store with undo/redo (Zundo), geometry systems, spatial grid, event bus |
+| **viewer** | Renderers, camera, lighting, post-processing, level/scan/guide systems |
+| **editor** | Tools, panels, selection manager, AI assistant, custom camera controls |
+
+### Scene Data Model
+
+Nodes are stored in a **flat dictionary** with `parentId` references:
+
+```
+Site → Building → Level → Wall → Door / Window
+                        → Zone
+                        → Slab / Ceiling / Roof
+                        → Item (furniture)
+```
+
+### Key Files
+
+| Path | Description |
+|------|-------------|
+| `packages/core/src/schema/` | Node type definitions (Zod schemas) |
+| `packages/core/src/schema/material.ts` | Material system (10 presets + custom properties) |
+| `packages/core/src/store/use-scene.ts` | Scene state store |
+| `packages/core/src/systems/` | Geometry generation systems |
+| `packages/viewer/src/components/renderers/` | Node renderers |
+| `packages/viewer/src/components/viewer/` | Main Viewer component |
+| `packages/editor/src/components/tools/` | Editor tools (wall, zone, item, slab) |
+| `packages/editor/src/components/ai/` | AI assistant (prompt, agent loop, validators) |
+| `packages/editor/src/components/editor/first-person-controls.tsx` | Street view mode |
+| `packages/editor/src/components/editor/export-manager.tsx` | Scene export (GLB, STL, OBJ) |
+
+### Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Rendering | Three.js (WebGPU), React Three Fiber, Drei |
+| Framework | React 19, Next.js 16 |
+| State | Zustand + Zundo (undo/redo) |
+| Schema | Zod |
+| Geometry | three-bvh-csg (Boolean operations) |
+| Tooling | TypeScript 5, Turborepo, pnpm |
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 
 ```bash
 # Build all packages
@@ -380,39 +177,8 @@ turbo build
 turbo build --filter=@aedifex/core
 ```
 
-### Publishing Packages
-
-```bash
-# Build packages
-turbo build --filter=@aedifex/core --filter=@aedifex/viewer
-
-# Publish to npm
-npm publish --workspace=@aedifex/core --access public
-npm publish --workspace=@aedifex/viewer --access public
-```
-
 ---
 
-## Key Files
+## License
 
-| Path | Description |
-|------|-------------|
-| `packages/core/src/schema/` | Node type definitions (Zod schemas) |
-| `packages/core/src/store/use-scene.ts` | Scene state store |
-| `packages/core/src/hooks/scene-registry/` | 3D object registry |
-| `packages/core/src/systems/` | Geometry generation systems |
-| `packages/viewer/src/components/renderers/` | Node renderers |
-| `packages/viewer/src/components/viewer/` | Main Viewer component |
-| `apps/editor/components/tools/` | Editor tools |
-| `apps/editor/store/` | Editor-specific state |
-
----
-
-## Contributors
-
-<a href="https://github.com/Aymericr"><img src="https://avatars.githubusercontent.com/u/4444492?v=4" width="60" height="60" alt="Aymeric Rabot" style="border-radius:50%"></a>
-<a href="https://github.com/wass08"><img src="https://avatars.githubusercontent.com/u/6551176?v=4" width="60" height="60" alt="Wassim Samad" style="border-radius:50%"></a>
-
----
-
-<a href="https://trendshift.io/repositories/23831" target="_blank"><img src="https://trendshift.io/api/badge/repositories/23831" alt="pascalorg/editor | Trendshift" width="250" height="55"/></a>
+[MIT](LICENSE)
