@@ -99,10 +99,13 @@ export const CustomCameraControls = () => {
     [isPreviewMode],
   )
 
-  // Configure mouse buttons based on control mode and camera mode
+  // Configure mouse buttons and touch gestures based on control mode and camera mode.
+  // Touch mapping follows architecture-editor best practices (Spline / Archicad style):
+  //   Two-finger drag  = Pan  (most frequent operation in floor plan editing)
+  //   Pinch            = Zoom (matches macOS native gesture)
+  //   Right-click drag = Rotate
   const cameraMode = useViewer((state) => state.cameraMode)
   const mouseButtons = useMemo(() => {
-    // Use ZOOM for orthographic camera, DOLLY for perspective camera
     const wheelAction =
       cameraMode === 'orthographic'
         ? CameraControlsImpl.ACTION.ZOOM
@@ -115,6 +118,16 @@ export const CustomCameraControls = () => {
       wheel: wheelAction,
     }
   }, [cameraMode, isPreviewMode])
+
+  const touches = useMemo(() => {
+    return {
+      one: CameraControlsImpl.ACTION.TOUCH_ROTATE,
+      two: cameraMode === 'orthographic'
+        ? CameraControlsImpl.ACTION.TOUCH_ZOOM_TRUCK
+        : CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK,
+      three: CameraControlsImpl.ACTION.TOUCH_TRUCK,
+    }
+  }, [cameraMode])
 
   useEffect(() => {
     if (isFirstPersonMode) return
@@ -379,6 +392,7 @@ export const CustomCameraControls = () => {
       mouseButtons={mouseButtons}
       onRest={onRest}
       onSleep={onRest}
+      touches={touches}
       onTransitionStart={onTransitionStart}
       ref={controls}
       restThreshold={0.01}

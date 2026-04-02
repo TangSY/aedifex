@@ -47,6 +47,8 @@ export interface UpdateWallToolCall {
   nodeId: string
   height?: number
   thickness?: number
+  start?: [number, number]
+  end?: [number, number]
   reason?: string
 }
 
@@ -105,6 +107,122 @@ export interface RemoveNodeToolCall {
   reason?: string
 }
 
+// --- New AI Tool Calls ---
+
+export interface AddLevelToolCall {
+  tool: 'add_level'
+  name?: string
+  description?: string
+}
+
+export interface AddSlabToolCall {
+  tool: 'add_slab'
+  polygon: [number, number][]
+  elevation?: number
+  holes?: [number, number][][]
+  description?: string
+}
+
+export interface UpdateSlabToolCall {
+  tool: 'update_slab'
+  nodeId: string
+  elevation?: number
+  polygon?: [number, number][]
+  reason?: string
+}
+
+export interface AddCeilingToolCall {
+  tool: 'add_ceiling'
+  polygon: [number, number][]
+  height?: number
+  material?: string
+  description?: string
+}
+
+export interface UpdateCeilingToolCall {
+  tool: 'update_ceiling'
+  nodeId: string
+  height?: number
+  material?: string
+  reason?: string
+}
+
+export interface AddRoofToolCall {
+  tool: 'add_roof'
+  position: [number, number, number]
+  width: number
+  depth: number
+  roofType: 'hip' | 'gable' | 'shed' | 'gambrel' | 'dutch' | 'mansard' | 'flat'
+  roofHeight?: number
+  wallHeight?: number
+  overhang?: number
+  description?: string
+}
+
+export interface UpdateRoofToolCall {
+  tool: 'update_roof'
+  nodeId: string
+  roofType?: 'hip' | 'gable' | 'shed' | 'gambrel' | 'dutch' | 'mansard' | 'flat'
+  roofHeight?: number
+  wallHeight?: number
+  width?: number
+  depth?: number
+  reason?: string
+}
+
+export interface AddZoneToolCall {
+  tool: 'add_zone'
+  polygon: [number, number][]
+  name?: string
+  description?: string
+}
+
+export interface UpdateZoneToolCall {
+  tool: 'update_zone'
+  nodeId: string
+  polygon?: [number, number][]
+  name?: string
+  reason?: string
+}
+
+export interface AddBuildingToolCall {
+  tool: 'add_building'
+  position?: [number, number, number]
+  name?: string
+  description?: string
+}
+
+export interface UpdateSiteToolCall {
+  tool: 'update_site'
+  polygon?: [number, number][]
+  reason?: string
+}
+
+export interface AddScanToolCall {
+  tool: 'add_scan'
+  url: string
+  position?: [number, number, number]
+  scale?: number
+  opacity?: number
+  description?: string
+}
+
+export interface AddGuideToolCall {
+  tool: 'add_guide'
+  url: string
+  position?: [number, number, number]
+  scale?: number
+  opacity?: number
+  description?: string
+}
+
+export interface UpdateItemToolCall {
+  tool: 'update_item'
+  nodeId: string
+  scale?: [number, number, number]
+  reason?: string
+}
+
 export interface BatchOperationsToolCall {
   tool: 'batch_operations'
   operations: Omit<AIToolCall, 'tool' | 'operations'>[]
@@ -138,6 +256,20 @@ export type AIToolCall =
   | AddDoorToolCall
   | AddWindowToolCall
   | RemoveNodeToolCall
+  | AddLevelToolCall
+  | AddSlabToolCall
+  | UpdateSlabToolCall
+  | AddCeilingToolCall
+  | UpdateCeilingToolCall
+  | AddRoofToolCall
+  | UpdateRoofToolCall
+  | AddZoneToolCall
+  | UpdateZoneToolCall
+  | AddBuildingToolCall
+  | UpdateSiteToolCall
+  | AddScanToolCall
+  | AddGuideToolCall
+  | UpdateItemToolCall
   | BatchOperationsToolCall
   | ProposePlacementToolCall
   | AskUserToolCall
@@ -202,6 +334,9 @@ export interface ValidatedUpdateWall {
   nodeId: AnyNodeId
   height?: number
   thickness?: number
+  start?: [number, number]
+  end?: [number, number]
+  adjustmentReason?: string
   errorReason?: string
 }
 
@@ -273,6 +408,147 @@ export interface ValidatedRemoveNode {
   errorReason?: string
 }
 
+// --- New Validated Operations ---
+
+export interface ValidatedAddLevel {
+  type: 'add_level'
+  status: ValidatedOperationStatus
+  level: number
+  name?: string
+  buildingId: AnyNodeId
+  adjustmentReason?: string
+  errorReason?: string
+}
+
+export interface ValidatedAddSlab {
+  type: 'add_slab'
+  status: ValidatedOperationStatus
+  polygon: [number, number][]
+  elevation: number
+  holes: [number, number][][]
+  adjustmentReason?: string
+  errorReason?: string
+}
+
+export interface ValidatedUpdateSlab {
+  type: 'update_slab'
+  status: ValidatedOperationStatus
+  nodeId: AnyNodeId
+  elevation?: number
+  polygon?: [number, number][]
+  errorReason?: string
+}
+
+export interface ValidatedAddCeiling {
+  type: 'add_ceiling'
+  status: ValidatedOperationStatus
+  polygon: [number, number][]
+  height: number
+  material?: string
+  adjustmentReason?: string
+  errorReason?: string
+}
+
+export interface ValidatedUpdateCeiling {
+  type: 'update_ceiling'
+  status: ValidatedOperationStatus
+  nodeId: AnyNodeId
+  height?: number
+  material?: string
+  errorReason?: string
+}
+
+export interface ValidatedAddRoof {
+  type: 'add_roof'
+  status: ValidatedOperationStatus
+  position: [number, number, number]
+  width: number
+  depth: number
+  roofType: 'hip' | 'gable' | 'shed' | 'gambrel' | 'dutch' | 'mansard' | 'flat'
+  roofHeight: number
+  wallHeight: number
+  overhang: number
+  adjustmentReason?: string
+  errorReason?: string
+}
+
+export interface ValidatedUpdateRoof {
+  type: 'update_roof'
+  status: ValidatedOperationStatus
+  nodeId: AnyNodeId
+  roofType?: 'hip' | 'gable' | 'shed' | 'gambrel' | 'dutch' | 'mansard' | 'flat'
+  roofHeight?: number
+  wallHeight?: number
+  width?: number
+  depth?: number
+  errorReason?: string
+}
+
+export interface ValidatedAddZone {
+  type: 'add_zone'
+  status: ValidatedOperationStatus
+  polygon: [number, number][]
+  name?: string
+  adjustmentReason?: string
+  errorReason?: string
+}
+
+export interface ValidatedUpdateZone {
+  type: 'update_zone'
+  status: ValidatedOperationStatus
+  nodeId: AnyNodeId
+  polygon?: [number, number][]
+  name?: string
+  errorReason?: string
+}
+
+export interface ValidatedAddBuilding {
+  type: 'add_building'
+  status: ValidatedOperationStatus
+  position: [number, number, number]
+  name?: string
+  adjustmentReason?: string
+  errorReason?: string
+}
+
+export interface ValidatedUpdateSite {
+  type: 'update_site'
+  status: ValidatedOperationStatus
+  nodeId: AnyNodeId
+  polygon?: [number, number][]
+  errorReason?: string
+}
+
+export interface ValidatedAddScan {
+  type: 'add_scan'
+  status: ValidatedOperationStatus
+  url: string
+  position: [number, number, number]
+  scale: number
+  opacity: number
+  adjustmentReason?: string
+  errorReason?: string
+}
+
+export interface ValidatedAddGuide {
+  type: 'add_guide'
+  status: ValidatedOperationStatus
+  url: string
+  position: [number, number, number]
+  scale: number
+  opacity: number
+  adjustmentReason?: string
+  errorReason?: string
+}
+
+export interface ValidatedUpdateItem {
+  type: 'update_item'
+  status: ValidatedOperationStatus
+  nodeId: AnyNodeId
+  scale?: [number, number, number]
+  errorReason?: string
+}
+
 export type ValidatedOperation =
   | ValidatedAddItem
   | ValidatedRemoveItem
@@ -285,6 +561,20 @@ export type ValidatedOperation =
   | ValidatedAddDoor
   | ValidatedAddWindow
   | ValidatedRemoveNode
+  | ValidatedAddLevel
+  | ValidatedAddSlab
+  | ValidatedUpdateSlab
+  | ValidatedAddCeiling
+  | ValidatedUpdateCeiling
+  | ValidatedAddRoof
+  | ValidatedUpdateRoof
+  | ValidatedAddZone
+  | ValidatedUpdateZone
+  | ValidatedAddBuilding
+  | ValidatedUpdateSite
+  | ValidatedAddScan
+  | ValidatedAddGuide
+  | ValidatedUpdateItem
 
 // ============================================================================
 // Chat Message Types
@@ -361,6 +651,30 @@ export interface SceneZoneSummary {
   bounds: { min: [number, number]; max: [number, number] }
 }
 
+export interface SceneLevelSummary {
+  id: string
+  level: number
+  name?: string
+  childCount: number
+}
+
+export interface SceneCeilingSummary {
+  id: string
+  height: number
+  area: number
+}
+
+export interface SceneRoofSummary {
+  id: string
+  segments: { id: string; roofType: string; width: number; depth: number }[]
+}
+
+export interface SceneSlabSummary {
+  id: string
+  elevation: number
+  area: number
+}
+
 export interface SceneContext {
   activeZone?: {
     id: string
@@ -371,6 +685,10 @@ export interface SceneContext {
   items: SceneItemSummary[]
   walls: SceneWallSummary[]
   zones: SceneZoneSummary[]
+  levels: SceneLevelSummary[]
+  ceilings: SceneCeilingSummary[]
+  roofs: SceneRoofSummary[]
+  slabs: SceneSlabSummary[]
   wallCount: number
   zoneCount: number
 }
