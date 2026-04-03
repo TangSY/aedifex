@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "dev": "set -a && . ./.env 2>/dev/null; set +a; turbo run dev --env-mode=loose",
+    "dev": "if [ -f .env ]; then set -a && . ./.env && set +a; fi; turbo run dev --env-mode=loose",
     "lint": "biome lint",
     "lint:fix": "biome lint --write",
     "format": "biome format --write",
