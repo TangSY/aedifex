@@ -26,7 +26,7 @@ type WallMode = 'up' | 'cutaway' | 'down'
 
 const wallModeConfig: Record<
   WallMode,
-  { icon: React.FC<React.ComponentProps<'img'>>; label: string }
+  { icon: React.FC<Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src'> & { src?: string }>; label: string }
 > = {
   up: {
     icon: (props) => (

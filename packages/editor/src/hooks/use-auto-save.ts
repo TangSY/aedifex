@@ -62,7 +62,7 @@ export function useAutoSave({
 
   // Stable subscription to scene changes
   useEffect(() => {
-    let lastNodesSnapshot = JSON.stringify(useScene.getState().nodes)
+    let lastNodesVersion = useScene.getState().nodesVersion
 
     async function executeSave() {
       if (isLoadingSceneRef.current || isVersionPreviewModeRef.current) {
@@ -106,20 +106,20 @@ export function useAutoSave({
 
     const unsubscribe = useScene.subscribe((state) => {
       if (isLoadingSceneRef.current) {
-        lastNodesSnapshot = JSON.stringify(state.nodes)
+        lastNodesVersion = state.nodesVersion
         return
       }
 
       if (isVersionPreviewModeRef.current) {
         setSaveStatus('paused')
-        lastNodesSnapshot = JSON.stringify(state.nodes)
+        lastNodesVersion = state.nodesVersion
         return
       }
 
-      const currentNodesSnapshot = JSON.stringify(state.nodes)
-      if (currentNodesSnapshot === lastNodesSnapshot) return
+      const currentVersion = state.nodesVersion
+      if (currentVersion === lastNodesVersion) return
 
-      lastNodesSnapshot = currentNodesSnapshot
+      lastNodesVersion = currentVersion
       hasDirtyChangesRef.current = true
       onDirtyRef.current?.()
       setSaveStatus('pending')

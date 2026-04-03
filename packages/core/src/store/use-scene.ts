@@ -153,6 +153,9 @@ export type SceneState = {
   // 4. Relational metadata — not nodes
   collections: Record<CollectionId, Collection>
 
+  // 5. Monotonic counter incremented on every node mutation (used for O(1) change detection)
+  nodesVersion: number
+
   // Actions
   loadScene: () => void
   clearScene: () => void
@@ -200,6 +203,9 @@ const useScene: UseSceneStore = create<SceneState>()(
       // 4. Collections
       collections: {} as Record<CollectionId, Collection>,
 
+      // 5. Monotonic version counter for O(1) change detection
+      nodesVersion: 0,
+
       unloadScene: () => {
         // Clear temporal tracking to prevent memory leaks from stale node references
         prevPastLength = 0
@@ -211,6 +217,7 @@ const useScene: UseSceneStore = create<SceneState>()(
           rootNodeIds: [],
           dirtyNodes: new Set<AnyNodeId>(),
           collections: {},
+          nodesVersion: get().nodesVersion + 1,
         })
       },
 
@@ -228,6 +235,7 @@ const useScene: UseSceneStore = create<SceneState>()(
           rootNodeIds: parsed.rootNodeIds as AnyNodeId[],
           dirtyNodes: new Set<AnyNodeId>(),
           collections: {},
+          nodesVersion: get().nodesVersion + 1,
         })
         // Mark all nodes as dirty to trigger re-validation
         Object.values(parsed.nodes).forEach((node) => {
@@ -268,7 +276,7 @@ const useScene: UseSceneStore = create<SceneState>()(
         // Site is the root
         const rootNodeIds = [site.id]
 
-        set({ nodes, rootNodeIds })
+        set({ nodes, rootNodeIds, nodesVersion: get().nodesVersion + 1 })
       },
 
       markDirty: (id) => {
@@ -307,7 +315,7 @@ const useScene: UseSceneStore = create<SceneState>()(
               ('collectionIds' in node ? (node.collectionIds as CollectionId[]) : undefined) ?? []
             nextNodes[nodeId] = { ...node, collectionIds: [...existing, id] } as AnyNode
           }
-          return { collections: nextCollections, nodes: nextNodes }
+          return { collections: nextCollections, nodes: nextNodes, nodesVersion: state.nodesVersion + 1 }
         })
         return id
       },
@@ -327,7 +335,7 @@ const useScene: UseSceneStore = create<SceneState>()(
               collectionIds: (node.collectionIds as CollectionId[]).filter((cid) => cid !== id),
             } as AnyNode
           }
-          return { collections: nextCollections, nodes: nextNodes }
+          return { collections: nextCollections, nodes: nextNodes, nodesVersion: state.nodesVersion + 1 }
         })
       },
 
@@ -355,7 +363,7 @@ const useScene: UseSceneStore = create<SceneState>()(
             ...state.nodes,
             [nodeId]: { ...node, collectionIds: [...existing, id] } as AnyNode,
           }
-          return { collections: nextCollections, nodes: nextNodes }
+          return { collections: nextCollections, nodes: nextNodes, nodesVersion: state.nodesVersion + 1 }
         })
       },
 
@@ -376,7 +384,7 @@ const useScene: UseSceneStore = create<SceneState>()(
               collectionIds: (node.collectionIds as CollectionId[]).filter((cid) => cid !== id),
             } as AnyNode,
           }
-          return { collections: nextCollections, nodes: nextNodes }
+          return { collections: nextCollections, nodes: nextNodes, nodesVersion: state.nodesVersion + 1 }
         })
       },
     }),

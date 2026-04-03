@@ -46,7 +46,7 @@ export const createNodesAction = (
       }
     }
 
-    return { nodes: nextNodes, rootNodeIds: nextRootIds }
+    return { nodes: nextNodes, rootNodeIds: nextRootIds, nodesVersion: state.nodesVersion + 1 }
   })
 
   // 4. System Sync
@@ -100,7 +100,7 @@ export const updateNodesAction = (
       nextNodes[id] = { ...nextNodes[id], ...data } as AnyNode
     }
 
-    return { nodes: nextNodes }
+    return { nodes: nextNodes, nodesVersion: state.nodesVersion + 1 }
   })
 
   // Collect all IDs that need to be marked dirty
@@ -196,7 +196,7 @@ export const deleteNodesAction = (
       delete nextNodes[id]
     }
 
-    return { nodes: nextNodes, rootNodeIds: nextRootIds, collections: nextCollections }
+    return { nodes: nextNodes, rootNodeIds: nextRootIds, collections: nextCollections, nodesVersion: state.nodesVersion + 1 }
   })
 
   // Mark affected nodes dirty: parents of deleted nodes and their remaining children
