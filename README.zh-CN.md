@@ -61,6 +61,14 @@ https://github.com/user-attachments/assets/8b50e7cf-cebe-4579-9cf3-8786b35f7b6b
 
 ## 快速开始
 
+### 环境要求
+
+- **Node.js** 20+
+- **pnpm** 9+（`npm install -g pnpm`）
+- 支持 **WebGPU** 的浏览器：Chrome 113+、Edge 113+、或 Firefox Nightly
+
+### 安装与启动
+
 ```bash
 # 克隆
 git clone https://github.com/AedifexOrg/aedifex.git
@@ -75,7 +83,31 @@ pnpm dev
 # 打开 http://localhost:3002
 ```
 
-> **环境要求：** Node.js 20+，pnpm 9+。需要支持 WebGPU 的浏览器（Chrome 113+、Edge 113+、或 Firefox Nightly）。
+### AI 设计助手配置（可选）
+
+AI 设计助手需要 OpenAI 兼容的 API 密钥。未配置时编辑器正常使用，但 AI 面板不可用。
+
+1. 复制示例配置：
+
+```bash
+cp .env.example apps/editor/.env.local
+```
+
+2. 编辑 `apps/editor/.env.local`，填入你的 API 密钥：
+
+```env
+# 必填 — OpenAI API 密钥（或任何 OpenAI 兼容服务商）
+AI_API_KEY=sk-your-api-key-here
+
+# 可选 — 更换 API 地址以使用兼容服务商（如 Azure、本地 LLM）
+AI_BASE_URL=https://api.openai.com/v1
+
+# 可选 — 模型选择（以下为默认值）
+AI_CHAT_MODEL=gpt-4o
+AI_SUMMARIZE_MODEL=gpt-4o-mini
+```
+
+> **说明：** AI 助手在服务端调用 OpenAI 兼容 API，密钥不会暴露到浏览器。支持所有实现了 OpenAI Chat Completions API 的服务商（OpenAI、Azure OpenAI、Anthropic 代理、本地 Ollama 等）。
 
 ---
 

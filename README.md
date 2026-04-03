@@ -61,6 +61,14 @@ https://github.com/user-attachments/assets/8b50e7cf-cebe-4579-9cf3-8786b35f7b6b
 
 ## Quick Start
 
+### Requirements
+
+- **Node.js** 20+
+- **pnpm** 9+ (`npm install -g pnpm`)
+- A **WebGPU-capable browser**: Chrome 113+, Edge 113+, or Firefox Nightly
+
+### Setup
+
 ```bash
 # Clone
 git clone https://github.com/AedifexOrg/aedifex.git
@@ -75,7 +83,31 @@ pnpm dev
 # Open http://localhost:3002
 ```
 
-> **Requirements:** Node.js 20+, pnpm 9+. A WebGPU-capable browser (Chrome 113+, Edge 113+, or Firefox Nightly).
+### AI Assistant Configuration (Optional)
+
+The AI design assistant requires an OpenAI-compatible API key. Without it, the editor works normally but the AI panel will be disabled.
+
+1. Copy the example config:
+
+```bash
+cp .env.example apps/editor/.env.local
+```
+
+2. Edit `apps/editor/.env.local` and fill in your API key:
+
+```env
+# Required — your OpenAI API key (or any OpenAI-compatible provider)
+AI_API_KEY=sk-your-api-key-here
+
+# Optional — change the base URL for compatible providers (e.g., Azure, local LLM)
+AI_BASE_URL=https://api.openai.com/v1
+
+# Optional — model selection (defaults shown)
+AI_CHAT_MODEL=gpt-4o
+AI_SUMMARIZE_MODEL=gpt-4o-mini
+```
+
+> **Note:** The AI assistant calls OpenAI-compatible APIs directly from the server. Your API key is never exposed to the browser. Any provider that implements the OpenAI chat completions API is supported (OpenAI, Azure OpenAI, Anthropic via proxy, local Ollama, etc.).
 
 ---
 
