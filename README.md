@@ -2,9 +2,9 @@
 
 # Aedifex
 
-**Open-source 3D building editor powered by WebGPU**
+**Open-source 3D architectural editor with AI design assistant**
 
-Create, edit, and visualize architectural spaces in your browser.
+Design buildings with natural language — AI creates walls, places doors & windows, arranges furniture, and previews changes in real-time. Powered by WebGPU.
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 

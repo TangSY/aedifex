@@ -2,9 +2,9 @@
 
 # Aedifex
 
-**基于 WebGPU 的开源 3D 建筑编辑器**
+**内置 AI 设计助手的开源 3D 建筑编辑器**
 
-在浏览器中创建、编辑和可视化建筑空间。
+用自然语言设计建筑 — AI 自动创建墙体、放置门窗、布局家具，实时预览变更。基于 WebGPU 驱动。
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
