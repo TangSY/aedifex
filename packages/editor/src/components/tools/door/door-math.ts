@@ -74,6 +74,8 @@ export function hasWallChildOverlap(
     if (childId === ignoreId) continue
     const child = nodes[childId as AnyNodeId]
     if (!child) continue
+    // Skip nodes pending ghost removal (soft-deleted in current preview round)
+    if ((child.metadata as Record<string, unknown> | undefined)?.isGhostRemoval) continue
 
     let childLeft: number, childRight: number, childBottom: number, childTop: number
 
