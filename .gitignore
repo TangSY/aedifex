@@ -19,9 +19,8 @@ coverage
 # Turbo
 .turbo
 
-# Supabase local state
-supabase/.branches/
-supabase/.temp/
+# AI configuration (local only, never publish)
+.claude/
 
 # Vercel
 .vercel

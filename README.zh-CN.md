@@ -72,7 +72,7 @@ pnpm install
 # 启动开发服务器（所有包 + 编辑器）
 pnpm dev
 
-# 打开 http://localhost:3000
+# 打开 http://localhost:3002
 ```
 
 > **环境要求：** Node.js 20+，pnpm 9+。需要支持 WebGPU 的浏览器（Chrome 113+、Edge 113+、或 Firefox Nightly）。
@@ -176,6 +176,12 @@ turbo build
 # 构建指定包
 turbo build --filter=@aedifex/core
 ```
+
+---
+
+## 致谢
+
+Aedifex 基于 Pascal Group Inc. 的开源项目 [Pascal Editor](https://github.com/pascalorg/editor) 构建，采用 MIT 协议。感谢原作者在 3D 建筑编辑器核心方面的出色工作。
 
 ---
 

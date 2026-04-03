@@ -1,5 +1,5 @@
 {
-  "name": "editor",
+  "name": "aedifex",
   "private": true,
   "scripts": {
     "build": "turbo run build",

@@ -1,5 +1,5 @@
 {
-  "name": "editor",
+  "name": "@aedifex/app-editor",
   "version": "0.1.0",
   "type": "module",
   "private": true,

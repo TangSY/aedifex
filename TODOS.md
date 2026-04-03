@@ -4,8 +4,8 @@
 
 ### [RESOLVED] 部署前确认 serverless 超时限制
 - **What:** 确认托管环境的 serverless 函数执行时间限制，必要时切换到 Edge Runtime
-- **Resolution:** 确认使用自托管 Docker 部署（OneDev CI/CD），无 serverless 超时限制。不再适用。
-- **Resolved:** 2026-03-29 via /plan-eng-review (确认自托管 Docker 部署)
+- **Resolution:** 确认使用自托管 Docker 部署，无 serverless 超时限制。不再适用。
+- **Resolved:** 2026-03-29
 
 ---
 

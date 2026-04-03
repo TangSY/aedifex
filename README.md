@@ -72,7 +72,7 @@ pnpm install
 # Start dev server (all packages + editor)
 pnpm dev
 
-# Open http://localhost:3000
+# Open http://localhost:3002
 ```
 
 > **Requirements:** Node.js 20+, pnpm 9+. A WebGPU-capable browser (Chrome 113+, Edge 113+, or Firefox Nightly).
@@ -176,6 +176,12 @@ turbo build
 # Build specific package
 turbo build --filter=@aedifex/core
 ```
+
+---
+
+## Acknowledgments
+
+Aedifex is built upon [Pascal Editor](https://github.com/pascalorg/editor) by Pascal Group Inc., licensed under MIT. We extend our gratitude to the original authors for their excellent work on the 3D architectural editor core.
 
 ---
 
