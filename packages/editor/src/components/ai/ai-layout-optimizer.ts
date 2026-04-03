@@ -110,7 +110,9 @@ function optimizeAddItem(
       op.asset.dimensions?.[1] ?? 1,
       op.asset.dimensions?.[2] ?? 1,
     ]
-    const wallSnap = snapToNearestWall(position, dims, rotation)
+    // Fetch walls once and reuse for both snap and orientation checks
+    const walls = getAllWalls()
+    const wallSnap = snapToNearestWall(position, dims, rotation, walls)
     if (wallSnap) {
       position = wallSnap.position
       rotation = wallSnap.rotation
@@ -120,7 +122,7 @@ function optimizeAddItem(
     // 朝向强制校正：确保靠墙家具正面朝向房间内部
     // snapToNearestWall 阈值很小(0.3m)，大部分正确放置的靠墙家具不会触发它
     // 这里用更大阈值单独校正朝向，不改变位置
-    const orientFix = enforceAgainstWallOrientation(position, dims, rotation)
+    const orientFix = enforceAgainstWallOrientation(position, dims, rotation, walls)
     if (orientFix) {
       rotation = orientFix.rotation
       reasons.push('朝向修正为面向房间内部')
@@ -167,14 +169,16 @@ function optimizeMoveItem(
   const reasons: string[] = []
 
   if (isAgainstWallItem(node.asset.id, node.asset.category)) {
-    const wallSnap = snapToNearestWall(position, node.asset.dimensions, rotation)
+    // Fetch walls once and reuse for both snap and orientation checks
+    const walls = getAllWalls()
+    const wallSnap = snapToNearestWall(position, node.asset.dimensions, rotation, walls)
     if (wallSnap) {
       position = wallSnap.position
       rotation = wallSnap.rotation
       reasons.push('对齐到最近墙面')
     }
 
-    const orientFix = enforceAgainstWallOrientation(position, node.asset.dimensions, rotation)
+    const orientFix = enforceAgainstWallOrientation(position, node.asset.dimensions, rotation, walls)
     if (orientFix) {
       rotation = orientFix.rotation
       reasons.push('朝向修正为面向房间内部')
@@ -200,16 +204,17 @@ function snapToNearestWall(
   position: [number, number, number],
   dimensions: [number, number, number],
   rotation: [number, number, number],
+  walls?: WallNode[],
 ): { position: [number, number, number]; rotation: [number, number, number] } | null {
-  const walls = getAllWalls()
-  if (walls.length === 0) return null
+  const resolvedWalls = walls ?? getAllWalls()
+  if (resolvedWalls.length === 0) return null
 
   const [px, py, pz] = position
   let bestWall: WallNode | null = null
   let bestDist = WALL_SNAP_THRESHOLD
   let bestClosestPoint: [number, number] = [0, 0]
 
-  for (const wall of walls) {
+  for (const wall of resolvedWalls) {
     // 计算物品中心到墙段的最近距离
     const { closestPoint, distance } = closestPointOnSegment(
       px, pz,
@@ -302,9 +307,10 @@ function enforceAgainstWallOrientation(
   position: [number, number, number],
   dimensions: [number, number, number],
   rotation: [number, number, number],
+  walls?: WallNode[],
 ): { rotation: [number, number, number] } | null {
-  const walls = getAllWalls()
-  if (walls.length === 0) return null
+  const resolvedWalls = walls ?? getAllWalls()
+  if (resolvedWalls.length === 0) return null
 
   const [px, , pz] = position
   const [, , depth] = dimensions
@@ -315,7 +321,7 @@ function enforceAgainstWallOrientation(
   let bestDist = threshold
   let bestClosestPoint: [number, number] = [0, 0]
 
-  for (const wall of walls) {
+  for (const wall of resolvedWalls) {
     const { closestPoint, distance } = closestPointOnSegment(
       px, pz,
       wall.start[0], wall.start[1],

@@ -199,6 +199,17 @@ export function isProposalModeActive(): boolean {
   return baselineSnapshot !== null
 }
 
+/**
+ * Reset all module-level proposal state.
+ * Call this when the AI chat panel unmounts or the scene is fully reset.
+ */
+export function cleanupProposalManager(): void {
+  baselineSnapshot = null
+  proposalCreatedNodes.clear()
+  proposalModifiedNodes.clear()
+  proposalRemovedNodes.clear()
+}
+
 // ============================================================================
 // Internal Helpers
 // ============================================================================

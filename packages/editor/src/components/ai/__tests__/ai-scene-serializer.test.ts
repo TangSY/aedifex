@@ -367,6 +367,10 @@ describe('formatSceneContextForPrompt', () => {
       zones: [],
       wallCount: 0,
       zoneCount: 0,
+      levels: [],
+      ceilings: [],
+      roofs: [],
+      slabs: [],
     }
     const output = formatSceneContextForPrompt(ctx)
     expect(output).toContain('0 walls')
@@ -380,6 +384,10 @@ describe('formatSceneContextForPrompt', () => {
       zones: [],
       wallCount: 2,
       zoneCount: 0,
+      levels: [],
+      ceilings: [],
+      roofs: [],
+      slabs: [],
       walls: [
         { id: 'wall_short', start: [0, 0] as [number, number], end: [2, 0] as [number, number], thickness: 0.2, length: 2 },
         { id: 'wall_long', start: [0, 0] as [number, number], end: [6, 0] as [number, number], thickness: 0.2, length: 6 },
@@ -409,6 +417,10 @@ describe('formatSceneContextForPrompt', () => {
       ],
       wallCount: 0,
       zoneCount: 1,
+      levels: [],
+      ceilings: [],
+      roofs: [],
+      slabs: [],
     }
     const output = formatSceneContextForPrompt(ctx)
     expect(output).toContain('Living Room')
@@ -423,6 +435,10 @@ describe('formatSceneContextForPrompt', () => {
       walls: [],
       wallCount: 0,
       zoneCount: 1,
+      levels: [],
+      ceilings: [],
+      roofs: [],
+      slabs: [],
       zones: [
         {
           id: 'zone_1',
@@ -455,6 +471,10 @@ describe('formatSceneContextForPrompt', () => {
       zones: [],
       wallCount: 1,
       zoneCount: 0,
+      levels: [],
+      ceilings: [],
+      roofs: [],
+      slabs: [],
       walls: [
         {
           id: 'wall_h',
@@ -477,6 +497,10 @@ describe('formatSceneContextForPrompt', () => {
       zones: [],
       wallCount: 0,
       zoneCount: 0,
+      levels: [],
+      ceilings: [],
+      roofs: [],
+      slabs: [],
     }
     const output = formatSceneContextForPrompt(ctx)
     expect(output).toContain('empty')

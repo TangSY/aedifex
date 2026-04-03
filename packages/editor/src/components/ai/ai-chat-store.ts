@@ -3,7 +3,6 @@ import { create } from 'zustand'
 import { undoConfirmedOperation } from './ai-preview-manager'
 import { shouldAutoCompact } from './ai-token-estimator'
 import type {
-  AIChatRequest,
   AIOperationLog,
   AIToolCall,
   AgentLoopState,
@@ -214,9 +213,12 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
 
   // Operation log
   addOperationLog: (log) => {
-    set((state) => ({
-      operationLog: [...state.operationLog, log],
-    }))
+    set((state) => {
+      const updated = [...state.operationLog, log]
+      // Keep only the most recent 30 entries to prevent memory growth
+      const trimmed = updated.length > 30 ? updated.slice(-30) : updated
+      return { operationLog: trimmed }
+    })
   },
 
   updateLogStatus: (logId, status) => {
@@ -291,11 +293,17 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
 
   // Summarization (token-aware + circuit breaker)
   summarizeIfNeeded: async () => {
-    const { messages, isSummarizing, summarizeFailureCount } = get()
+    // A-7: Optimistic locking — read state once and immediately set the flag
+    // before any async work to eliminate the race window between the check
+    // and the set (both isSummarizing check and set are in the same tick).
+    const state = get()
+    if (state.isSummarizing) return
+
+    const { messages, summarizeFailureCount } = state
 
     // Circuit breaker: stop after 3 consecutive failures
     const MAX_SUMMARIZE_FAILURES = 3
-    if (isSummarizing || summarizeFailureCount >= MAX_SUMMARIZE_FAILURES) return
+    if (summarizeFailureCount >= MAX_SUMMARIZE_FAILURES) return
 
     // Token-aware trigger: use estimator instead of message count
     const apiMessages = messages.map((m) => ({ role: m.role, content: m.content }))
@@ -304,6 +312,7 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
       if (messages.length < 30) return
     }
 
+    // Immediately set the flag before any async work (synchronous in Zustand)
     set({ isSummarizing: true })
 
     try {
@@ -330,6 +339,19 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
         if (summary) {
           // Success: reset failure count
           set({ conversationSummary: summary, summarizeFailureCount: 0 })
+          // Release screenshots from summarized messages to free memory.
+          // summarizeIfNeeded keeps the last 10 messages (slice(0, -10) was
+          // summarized), so null out screenshots on all but the most recent 10.
+          const currentMessages = get().messages
+          if (currentMessages.length > 10) {
+            set({
+              messages: currentMessages.map((m, i) =>
+                i < currentMessages.length - 10
+                  ? { ...m, screenshotBefore: undefined, screenshotAfter: undefined }
+                  : m,
+              ),
+            })
+          }
         }
       } else {
         // HTTP error: increment failure count

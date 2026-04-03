@@ -5,6 +5,7 @@ import { AIMarkdown } from './ai-markdown'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   type KeyboardEvent,
+  memo,
   useCallback,
   useEffect,
   useRef,
@@ -31,22 +32,22 @@ import type { ChatMessage, PlacementOption, Proposal, ProposePlacementToolCall, 
 // ============================================================================
 
 export function AIChatPanel() {
-  const {
-    messages,
-    isStreaming,
-    streamingContent,
-    isAIProcessing,
-    error,
-    proposals,
-    activeProposalId,
-    iterationCount,
-    pendingQuestion,
-    operationLog,
-    addUserMessage,
-    clearChat,
-    clearError,
-    undoOperation,
-  } = useAIChat()
+  // A-P1: Fine-grained selectors — each selector only re-renders when its
+  // specific slice changes. streamingContent updates dozens of times per second
+  // during streaming; isolating it in StreamingIndicator prevents the entire
+  // panel (message list, input area, etc.) from re-rendering on every chunk.
+  const messages = useAIChat((s) => s.messages)
+  const isStreaming = useAIChat((s) => s.isStreaming)
+  const isAIProcessing = useAIChat((s) => s.isAIProcessing)
+  const error = useAIChat((s) => s.error)
+  const proposals = useAIChat((s) => s.proposals)
+  const activeProposalId = useAIChat((s) => s.activeProposalId)
+  const pendingQuestion = useAIChat((s) => s.pendingQuestion)
+  const operationLog = useAIChat((s) => s.operationLog)
+  const addUserMessage = useAIChat((s) => s.addUserMessage)
+  const clearChat = useAIChat((s) => s.clearChat)
+  const clearError = useAIChat((s) => s.clearError)
+  const undoOperation = useAIChat((s) => s.undoOperation)
 
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -61,7 +62,7 @@ export function AIChatPanel() {
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, streamingContent])
+  }, [messages, isStreaming])
 
   // Auto-resize textarea
   useEffect(() => {
@@ -114,7 +115,7 @@ export function AIChatPanel() {
 
     // Keep textarea focused after sending
     textareaRef.current?.focus()
-  }, [input, isStreaming, isAIProcessing, pendingQuestion, addUserMessage, messages])
+  }, [input, isStreaming, isAIProcessing, pendingQuestion, addUserMessage])
 
   const handleConfirm = useCallback(
     (messageId: string, operations: ValidatedOperation[]) => {
@@ -190,28 +191,13 @@ export function AIChatPanel() {
           <EmptyState onSuggestionClick={(text) => setInput(text)} />
         ) : (
           <div className="flex flex-col gap-3">
-            {messages.map((msg) => (
-              <MessageBubble key={msg.id} message={msg} />
-            ))}
+            {/* A-P1: MessageList renders only when messages array changes */}
+            <MessageList messages={messages} />
 
-            {/* Streaming indicator */}
-            {isStreaming && (
-              <div className="flex gap-2">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20">
-                  <Bot className="h-3.5 w-3.5 text-sidebar-primary" />
-                </div>
-                <div className="flex-1 rounded-lg bg-accent/30 px-3 py-2 font-barlow text-sm">
-                  {streamingContent ? (
-                    <AIMarkdown content={streamingContent} />
-                  ) : (
-                    <span className="flex items-center gap-1.5 text-muted-foreground">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      {iterationCount > 1 ? `迭代 ${iterationCount} — 思考中...` : '思考中...'}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
+            {/* A-P1: StreamingIndicator has its own subscription to
+                streamingContent and isStreaming, so high-frequency chunk
+                updates only re-render this small component. */}
+            <StreamingIndicator messagesEndRef={messagesEndRef} />
 
             {/* Pending Question from AI */}
             {pendingQuestion && (
@@ -306,6 +292,63 @@ export function AIChatPanel() {
     </div>
   )
 }
+
+// ============================================================================
+// A-P1: MessageList — only re-renders when messages array reference changes
+// ============================================================================
+
+const MessageList = memo(function MessageList({ messages }: { messages: ChatMessage[] }) {
+  return (
+    <>
+      {messages.map((msg) => (
+        <MessageBubble key={msg.id} message={msg} />
+      ))}
+    </>
+  )
+})
+
+// ============================================================================
+// A-P1: StreamingIndicator — subscribes only to streamingContent + isStreaming
+// High-frequency streaming updates (dozens/sec) are isolated here so the rest
+// of the panel does not re-render on every incoming chunk.
+// ============================================================================
+
+const StreamingIndicator = memo(function StreamingIndicator({
+  messagesEndRef,
+}: {
+  messagesEndRef: React.RefObject<HTMLDivElement | null>
+}) {
+  const isStreaming = useAIChat((s) => s.isStreaming)
+  const streamingContent = useAIChat((s) => s.streamingContent)
+  const iterationCount = useAIChat((s) => s.iterationCount)
+
+  // Scroll to bottom whenever streaming content updates
+  useEffect(() => {
+    if (isStreaming) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [streamingContent, isStreaming, messagesEndRef])
+
+  if (!isStreaming) return null
+
+  return (
+    <div className="flex gap-2">
+      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20">
+        <Bot className="h-3.5 w-3.5 text-sidebar-primary" />
+      </div>
+      <div className="flex-1 rounded-lg bg-accent/30 px-3 py-2 font-barlow text-sm">
+        {streamingContent ? (
+          <AIMarkdown content={streamingContent} />
+        ) : (
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            {iterationCount > 1 ? `迭代 ${iterationCount} — 思考中...` : '思考中...'}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+})
 
 // ============================================================================
 // Empty State
@@ -542,7 +585,7 @@ function BeforeAfterComparison({ before, after }: { before: string; after: strin
 // Message Bubble
 // ============================================================================
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+const MessageBubble = memo(function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'user'
 
   return (
@@ -598,7 +641,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       </div>
     </div>
   )
-}
+})
 
 // ============================================================================
 // Operation Summary

@@ -1,8 +1,8 @@
-import type { AnyNode, AnyNodeId, DoorNode, WallNode, WindowNode, ZoneNode } from '@aedifex/core'
+import type { AnyNode, AnyNodeId, CeilingNode, DoorNode, SlabNode, WallNode, WindowNode, ZoneNode } from '@aedifex/core'
 import { useScene } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { useAIChat } from './ai-chat-store'
-import type { SceneContext, SceneItemSummary } from './types'
+import type { SceneContext, SceneCeilingSummary, SceneLevelSummary, SceneRoofSummary, SceneSlabSummary, SceneItemSummary } from './types'
 
 // ============================================================================
 // Scene Context Cache
@@ -11,12 +11,29 @@ import type { SceneContext, SceneItemSummary } from './types'
 // ============================================================================
 
 let cachedContext: SceneContext | null = null
-let cachedNodesVersion = -1
+let cachedNodesHash = ''
+
+/** Compute a content hash from node IDs to detect additions/deletions/swaps */
+function computeNodesHash(nodes: Record<string, unknown>): string {
+  const ids = Object.keys(nodes).sort()
+  return `${ids.length}:${ids.join(',')}`
+}
+
+/** Compute polygon area using the Shoelace formula */
+function computePolygonArea(polygon: [number, number][]): number {
+  let area = 0
+  for (let i = 0; i < polygon.length; i++) {
+    const j = (i + 1) % polygon.length
+    area += polygon[i]![0] * polygon[j]![1]
+    area -= polygon[j]![0] * polygon[i]![1]
+  }
+  return Math.abs(area) / 2
+}
 
 /** Invalidate scene cache (call after ghost preview confirm or scene mutation) */
 export function invalidateSceneCache(): void {
   cachedContext = null
-  cachedNodesVersion = -1
+  cachedNodesHash = ''
 }
 
 /**
@@ -34,8 +51,8 @@ export function serializeSceneContext(): SceneContext {
 
   // Cache hit: use explicit invalidation via invalidateSceneCache()
   // The agent loop calls invalidateSceneCache() after ghost preview confirm.
-  const nodeCount = Object.keys(nodes).length
-  if (cachedContext && cachedNodesVersion === nodeCount && cachedContext.levelId === levelId) {
+  const nodesHash = computeNodesHash(nodes)
+  if (cachedContext && cachedNodesHash === nodesHash && cachedContext.levelId === levelId) {
     return cachedContext
   }
 
@@ -45,6 +62,10 @@ export function serializeSceneContext(): SceneContext {
       items: [],
       walls: [],
       zones: [],
+      levels: [],
+      ceilings: [],
+      roofs: [],
+      slabs: [],
       wallCount: 0,
       zoneCount: 0,
     }
@@ -53,6 +74,9 @@ export function serializeSceneContext(): SceneContext {
   const items: SceneItemSummary[] = []
   const walls: SceneContext['walls'] = []
   const zones: SceneContext['zones'] = []
+  const ceilings: SceneCeilingSummary[] = []
+  const roofs: SceneRoofSummary[] = []
+  const slabs: SceneSlabSummary[] = []
   let wallCount = 0
   let zoneCount = 0
   let activeZone: SceneContext['activeZone'] | undefined
@@ -60,7 +84,7 @@ export function serializeSceneContext(): SceneContext {
   // Collect all nodes belonging to this level
   const levelNode = nodes[levelId]
   if (!levelNode || !('children' in levelNode)) {
-    return { levelId, items: [], walls: [], zones: [], wallCount: 0, zoneCount: 0 }
+    return { levelId, items: [], walls: [], zones: [], levels: [], ceilings: [], roofs: [], slabs: [], wallCount: 0, zoneCount: 0 }
   }
 
   // Walk through all nodes to find items, walls, and zones on this level
@@ -96,7 +120,7 @@ export function serializeSceneContext(): SceneContext {
         const wdz = wallNode.end[1] - wallNode.start[1]
         const wallLen = Math.hypot(wdx, wdz)
 
-        // Collect wall children (doors/windows)
+        // Collect wall children (doors/windows/items)
         const wallChildren: { type: string; id: string; localX: number; width: number }[] = []
         if (wallNode.children) {
           for (const childId of wallNode.children) {
@@ -118,6 +142,19 @@ export function serializeSceneContext(): SceneContext {
                 localX: win.position[0],
                 width: win.width,
               })
+            } else if (child.type === 'item') {
+              // Collect wall-attached items during BFS instead of a second full scan
+              const wallItem = child as AnyNode & { asset: { name: string; id: string; dimensions: [number, number, number]; category: string }; position: [number, number, number]; rotation: [number, number, number]; name?: string }
+              items.push({
+                id: wallItem.id,
+                name: wallItem.name ?? wallItem.asset.name,
+                catalogSlug: wallItem.asset.id,
+                position: [...wallItem.position] as [number, number, number],
+                rotationY: wallItem.rotation[1],
+                dimensions: [...wallItem.asset.dimensions] as [number, number, number],
+                category: wallItem.asset.category,
+              })
+              visited.add(wallItem.id)
             }
           }
         }
@@ -164,6 +201,33 @@ export function serializeSceneContext(): SceneContext {
         }
         break
       }
+      case 'ceiling': {
+        const cNode = node as CeilingNode
+        const cPoly = cNode.polygon as [number, number][]
+        ceilings.push({ id: cNode.id, height: cNode.height ?? 2.5, area: computePolygonArea(cPoly) })
+        break
+      }
+      case 'slab': {
+        const sNode = node as SlabNode
+        const sPoly = sNode.polygon as [number, number][]
+        slabs.push({ id: sNode.id, elevation: sNode.elevation ?? 0.05, area: computePolygonArea(sPoly) })
+        break
+      }
+      case 'roof': {
+        const rChildren = ('children' in node && Array.isArray(node.children))
+          ? (node.children as string[]).map((cid) => nodes[cid as AnyNodeId]).filter(Boolean)
+          : []
+        const segments = rChildren
+          .filter((c): c is AnyNode => !!c && c.type === 'roof-segment')
+          .map((seg) => ({
+            id: seg.id,
+            roofType: (seg as { roofType?: string }).roofType ?? 'gable',
+            width: (seg as { width?: number }).width ?? 0,
+            depth: (seg as { depth?: number }).depth ?? 0,
+          }))
+        roofs.push({ id: node.id, segments })
+        break
+      }
     }
 
     // Traverse children
@@ -174,23 +238,21 @@ export function serializeSceneContext(): SceneContext {
     }
   }
 
-  // Also traverse walls' children (items attached to walls)
-  for (const nodeEntry of Object.values(nodes)) {
-    const n = nodeEntry as AnyNode
-    if (n.type === 'item' && n.parentId && !visited.has(n.id)) {
-      const parent = nodes[n.parentId as AnyNodeId]
-      if (parent?.type === 'wall') {
-        // Check if this wall belongs to our level
-        const wallParent = nodes[parent.parentId as AnyNodeId]
-        if (wallParent && visited.has(wallParent.id)) {
-          items.push({
-            id: n.id,
-            name: n.name ?? n.asset.name,
-            catalogSlug: n.asset.id,
-            position: [...n.position] as [number, number, number],
-            rotationY: n.rotation[1],
-            dimensions: [...n.asset.dimensions] as [number, number, number],
-            category: n.asset.category,
+  // Collect level information from building
+  const levels: SceneLevelSummary[] = []
+  const currentLevel = nodes[levelId]
+  if (currentLevel?.parentId) {
+    const building = nodes[currentLevel.parentId as AnyNodeId]
+    if (building && building.type === 'building' && 'children' in building && Array.isArray(building.children)) {
+      for (const childId of building.children) {
+        const child = nodes[childId as AnyNodeId]
+        if (child && child.type === 'level') {
+          const lvl = child as { id: string; level?: number; name?: string; children?: unknown[] }
+          levels.push({
+            id: lvl.id,
+            level: lvl.level ?? 0,
+            name: lvl.name,
+            childCount: Array.isArray(lvl.children) ? lvl.children.length : 0,
           })
         }
       }
@@ -202,6 +264,10 @@ export function serializeSceneContext(): SceneContext {
     items,
     walls,
     zones,
+    levels,
+    ceilings,
+    roofs,
+    slabs,
     wallCount,
     zoneCount,
     activeZone,
@@ -209,7 +275,7 @@ export function serializeSceneContext(): SceneContext {
 
   // Update cache
   cachedContext = result
-  cachedNodesVersion = nodeCount
+  cachedNodesHash = nodesHash
 
   return result
 }
@@ -224,8 +290,42 @@ export function serializeSceneContext(): SceneContext {
 export function formatSceneContextForPrompt(ctx: SceneContext): string {
   const lines: string[] = [
     `Current scene (level: ${ctx.levelId}):`,
-    `- ${ctx.wallCount} walls, ${ctx.zoneCount} zones`,
+    `- ${ctx.wallCount} walls, ${ctx.zoneCount} zones, ${ctx.ceilings.length} ceilings, ${ctx.roofs.length} roofs, ${ctx.slabs.length} slabs`,
   ]
+
+  // Level info
+  if (ctx.levels.length > 0) {
+    lines.push(`\nLevels (${ctx.levels.length}):`)
+    for (const lv of ctx.levels) {
+      const current = lv.id === ctx.levelId ? ' ← current' : ''
+      lines.push(`  - ${lv.id} (Level ${lv.level}${lv.name ? `: ${lv.name}` : ''}, ${lv.childCount} children${current})`)
+    }
+  }
+
+  // Ceiling info
+  if (ctx.ceilings.length > 0) {
+    lines.push(`\nCeilings (${ctx.ceilings.length}):`)
+    for (const c of ctx.ceilings) {
+      lines.push(`  - ${c.id}: height=${c.height}m, area=${c.area.toFixed(1)}m²`)
+    }
+  }
+
+  // Roof info
+  if (ctx.roofs.length > 0) {
+    lines.push(`\nRoofs (${ctx.roofs.length}):`)
+    for (const r of ctx.roofs) {
+      const segDescs = r.segments.map((s) => `${s.roofType} ${s.width}×${s.depth}m`).join(', ')
+      lines.push(`  - ${r.id}: ${r.segments.length} segment(s) — ${segDescs}`)
+    }
+  }
+
+  // Slab info
+  if (ctx.slabs.length > 0) {
+    lines.push(`\nSlabs (${ctx.slabs.length}):`)
+    for (const s of ctx.slabs) {
+      lines.push(`  - ${s.id}: elevation=${s.elevation}m, area=${s.area.toFixed(1)}m²`)
+    }
+  }
 
   // Zone spatial data with semantic descriptions
   if (ctx.zones.length > 0) {
@@ -314,34 +414,39 @@ export function formatSceneContextForPrompt(ctx: SceneContext): string {
     }
 
     // 空闲区域分析（简化：基于 zone bounds 和已有物品位置）
+    // Pre-compute item positions once, then assign to zone quadrants via lookup
     if (ctx.zones.length > 0) {
       lines.push('- Available areas (approximate, avoiding existing items):')
-      for (const zone of ctx.zones) {
-        const occupied = ctx.items.map((item) => ({
-          cx: item.position[0],
-          cz: item.position[2],
-          hw: item.dimensions[0] / 2,
-          hd: item.dimensions[2] / 2,
-        }))
 
-        // 将 zone 分为 4 象限，标注每个象限的占用情况
+      // Build a spatial index: for each zone, classify items into quadrants in a single pass
+      for (const zone of ctx.zones) {
         const midX = (zone.bounds.min[0] + zone.bounds.max[0]) / 2
         const midZ = (zone.bounds.min[1] + zone.bounds.max[1]) / 2
-        const quadrants = [
-          { name: 'top-left (min X, min Z)', minX: zone.bounds.min[0], maxX: midX, minZ: zone.bounds.min[1], maxZ: midZ },
-          { name: 'top-right (max X, min Z)', minX: midX, maxX: zone.bounds.max[0], minZ: zone.bounds.min[1], maxZ: midZ },
-          { name: 'bottom-left (min X, max Z)', minX: zone.bounds.min[0], maxX: midX, minZ: midZ, maxZ: zone.bounds.max[1] },
-          { name: 'bottom-right (max X, max Z)', minX: midX, maxX: zone.bounds.max[0], minZ: midZ, maxZ: zone.bounds.max[1] },
+
+        // Count items per quadrant in a single pass over items
+        const quadrantCounts = [0, 0, 0, 0] // TL, TR, BL, BR
+        const quadrantNames = [
+          'top-left (min X, min Z)',
+          'top-right (max X, min Z)',
+          'bottom-left (min X, max Z)',
+          'bottom-right (max X, max Z)',
         ]
 
-        for (const q of quadrants) {
-          const itemsInQuadrant = occupied.filter(
-            (o) => o.cx >= q.minX && o.cx <= q.maxX && o.cz >= q.minZ && o.cz <= q.maxZ,
-          )
-          const status = itemsInQuadrant.length === 0
+        for (const item of ctx.items) {
+          const cx = item.position[0]
+          const cz = item.position[2]
+          // Skip items outside this zone's bounds entirely
+          if (cx < zone.bounds.min[0] || cx > zone.bounds.max[0] || cz < zone.bounds.min[1] || cz > zone.bounds.max[1]) continue
+          // Assign to quadrant: bit 0 = right half (X >= midX), bit 1 = bottom half (Z >= midZ)
+          const qi = (cx >= midX ? 1 : 0) + (cz >= midZ ? 2 : 0)
+          quadrantCounts[qi] = (quadrantCounts[qi] ?? 0) + 1
+        }
+
+        for (let qi = 0; qi < 4; qi++) {
+          const status = quadrantCounts[qi] === 0
             ? 'EMPTY (available)'
-            : `${itemsInQuadrant.length} items`
-          lines.push(`    ${q.name}: ${status}`)
+            : `${quadrantCounts[qi]} items`
+          lines.push(`    ${quadrantNames[qi]}: ${status}`)
         }
       }
     }

@@ -30,6 +30,9 @@ import type {
 // Replaces the single-pass model in ai-chat-panel.tsx.
 // ============================================================================
 
+// A-M5: Track pending screenshot timers so they can be cancelled on cleanup
+const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
+
 /** Maximum iterations per user message to prevent infinite loops */
 const MAX_ITERATIONS = 8
 
@@ -315,6 +318,43 @@ function streamLLMResponse(
 }
 
 // ============================================================================
+// Shared Confirmation Logic
+// ============================================================================
+
+/**
+ * A-D4: Extracted shared confirm logic used by both confirmOperationsFromUI
+ * and the confirm_preview branch inside handleSpecialToolCalls.
+ *
+ * Sequence:
+ * 1. confirmOperations(messageId) — update UI state
+ * 2. confirmGhostPreview(operations) — execute scene mutations
+ * 3. addOperationLog(log) — record in history
+ * 4. setTimeout (tracked) — capture after-screenshot
+ */
+async function executeConfirmation(
+  messageId: string,
+  operations: ValidatedOperation[],
+): Promise<void> {
+  // Update UI state first so the pending card disappears immediately
+  useAIChat.getState().confirmOperations(messageId)
+
+  // Execute the scene mutations
+  const log = confirmGhostPreview(operations)
+  log.messageId = messageId
+  useAIChat.getState().addOperationLog(log)
+
+  // A-M5: Capture after-screenshot with tracked timer
+  const timerId = setTimeout(async () => {
+    pendingTimers.delete(timerId)
+    const afterScreenshot = await captureScreenshot()
+    if (afterScreenshot) {
+      useAIChat.getState().setScreenshotAfter(messageId, afterScreenshot)
+    }
+  }, 200)
+  pendingTimers.add(timerId)
+}
+
+// ============================================================================
 // Special Tool Call Handlers
 // ============================================================================
 
@@ -359,20 +399,8 @@ async function handleSpecialToolCalls(
   if (confirmCall) {
     const pendingMsg = findPendingMessage()
     if (pendingMsg?.operations) {
-      // Update UI state first so the pending operation card disappears immediately
-      useAIChat.getState().confirmOperations(pendingMsg.id)
-
-      const log = confirmGhostPreview(pendingMsg.operations)
-      log.messageId = pendingMsg.id
-      useAIChat.getState().addOperationLog(log)
-
-      // Capture after screenshot
-      setTimeout(async () => {
-        const afterScreenshot = await captureScreenshot()
-        if (afterScreenshot) {
-          useAIChat.getState().setScreenshotAfter(pendingMsg.id, afterScreenshot)
-        }
-      }, 200)
+      // A-D4: delegate to shared confirmation logic
+      await executeConfirmation(pendingMsg.id, pendingMsg.operations)
     }
     return { type: 'confirmed' }
   }
@@ -407,26 +435,13 @@ function findPendingMessage() {
 
 /**
  * Confirm operations from UI button click.
+ * A-D4: delegates to shared executeConfirmation.
  */
 export async function confirmOperationsFromUI(
   messageId: string,
   operations: ValidatedOperation[],
 ): Promise<void> {
-  // Update UI state first so the pending operation card disappears immediately
-  useAIChat.getState().confirmOperations(messageId)
-
-  // Then execute the scene mutations (heavier, triggers re-renders)
-  const log = confirmGhostPreview(operations)
-  log.messageId = messageId
-  useAIChat.getState().addOperationLog(log)
-
-  // Capture after screenshot
-  setTimeout(async () => {
-    const afterScreenshot = await captureScreenshot()
-    if (afterScreenshot) {
-      useAIChat.getState().setScreenshotAfter(messageId, afterScreenshot)
-    }
-  }, 200)
+  await executeConfirmation(messageId, operations)
 }
 
 /**

@@ -1,24 +1,47 @@
 import {
   type AnyNode,
   type AnyNodeId,
+  BuildingNode,
+  CeilingNode,
   DoorNode,
+  GuideNode,
   ItemNode,
+  LevelNode,
+  RoofNode,
+  RoofSegmentNode,
+  ScanNode,
+  SlabNode,
   WallNode as WallSchema,
   WindowNode,
+  ZoneNode,
   useScene,
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { nanoid } from 'nanoid'
 import type {
   AIOperationLog,
+  ValidatedAddBuilding,
+  ValidatedAddCeiling,
   ValidatedAddDoor,
+  ValidatedAddGuide,
   ValidatedAddItem,
+  ValidatedAddLevel,
+  ValidatedAddRoof,
+  ValidatedAddScan,
+  ValidatedAddSlab,
   ValidatedAddWall,
   ValidatedAddWindow,
+  ValidatedAddZone,
   ValidatedMoveItem,
   ValidatedOperation,
   ValidatedRemoveItem,
   ValidatedRemoveNode,
+  ValidatedUpdateCeiling,
+  ValidatedUpdateItem,
+  ValidatedUpdateRoof,
+  ValidatedUpdateSite,
+  ValidatedUpdateSlab,
+  ValidatedUpdateZone,
 } from './types'
 
 // ============================================================================
@@ -90,12 +113,12 @@ export function applyGhostPreview(operations: ValidatedOperation[]): AnyNodeId[]
         break
       }
       case 'remove_item': {
-        markForRemoval(op, nodes)
+        markForGhostRemoval(op, nodes)
         affectedIds.push(op.nodeId)
         break
       }
       case 'remove_node': {
-        markNodeForRemoval(op, nodes)
+        markForGhostRemoval(op, nodes)
         affectedIds.push(op.nodeId)
         break
       }
@@ -111,8 +134,7 @@ export function applyGhostPreview(operations: ValidatedOperation[]): AnyNodeId[]
           originalNodeStates.set(op.nodeId, { ...node })
           useScene.getState().updateNode(op.nodeId, {
             metadata: {
-              ...(typeof node.metadata === 'object' ? node.metadata : {}),
-              isTransient: true,
+              ...buildGhostMetadata(node.metadata, { isGhostPreview: true }),
               previewMaterial: op.material,
             },
           })
@@ -125,7 +147,7 @@ export function applyGhostPreview(operations: ValidatedOperation[]): AnyNodeId[]
         if (wallNode) {
           originalNodeStates.set(op.nodeId, { ...wallNode })
           const updates: Record<string, unknown> = {
-            metadata: { ...(typeof wallNode.metadata === 'object' ? wallNode.metadata : {}), isTransient: true },
+            metadata: buildGhostMetadata(wallNode.metadata, {}),
           }
           if (op.height !== undefined) updates.height = op.height
           if (op.thickness !== undefined) updates.thickness = op.thickness
@@ -140,7 +162,7 @@ export function applyGhostPreview(operations: ValidatedOperation[]): AnyNodeId[]
         if (dwNode) {
           originalNodeStates.set(op.nodeId, { ...dwNode })
           const updates: Record<string, unknown> = {
-            metadata: { ...(typeof dwNode.metadata === 'object' ? dwNode.metadata : {}), isTransient: true },
+            metadata: buildGhostMetadata(dwNode.metadata, {}),
           }
           if (op.width !== undefined) updates.width = op.width
           if (op.height !== undefined) updates.height = op.height
@@ -159,6 +181,30 @@ export function applyGhostPreview(operations: ValidatedOperation[]): AnyNodeId[]
         }
         break
       }
+      case 'add_level':
+      case 'add_slab':
+      case 'add_ceiling':
+      case 'add_zone':
+      case 'add_scan':
+      case 'add_guide':
+      case 'add_building': {
+        // Structure creation tools — no visual ghost preview needed,
+        // these create non-visual or flat geometry nodes
+        break
+      }
+      case 'add_roof': {
+        // Roof creates both container + segment — no ghost preview needed
+        break
+      }
+      case 'update_slab':
+      case 'update_ceiling':
+      case 'update_roof':
+      case 'update_zone':
+      case 'update_site':
+      case 'update_item': {
+        // Update operations — handled at confirm time
+        break
+      }
     }
   }
 
@@ -175,6 +221,17 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
   const createdNodeIds: AnyNodeId[] = []
   const { nodes } = useScene.getState()
   const levelId = useViewer.getState().selection.levelId
+
+  // Pre-compute type counts once for all operations (A-P5: avoid repeated O(N) scans)
+  const typeCountCache = new Map<string, number>()
+  function getCachedTypeCount(type: string): number {
+    let count = typeCountCache.get(type)
+    if (count === undefined) {
+      count = countNodesByType(nodes, type)
+      typeCountCache.set(type, count)
+    }
+    return count
+  }
 
   // Capture previous snapshot for undo — deep copy nodes that will be modified/removed
   const previousSnapshot: Record<AnyNodeId, AnyNode> = {}
@@ -227,7 +284,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         break
       }
       case 'add_wall': {
-        const wallCount = Object.values(nodes).filter((n) => n.type === 'wall').length
+        const wallCount = getCachedTypeCount('wall')
         const wall = WallSchema.parse({
           name: `Wall ${wallCount + 1}`,
           start: op.start,
@@ -333,6 +390,8 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         }
         if (op.height !== undefined) updates.height = op.height
         if (op.thickness !== undefined) updates.thickness = op.thickness
+        if (op.start) updates.start = op.start
+        if (op.end) updates.end = op.end
         useScene.getState().updateNode(op.nodeId, updates)
         affectedNodeIds.push(op.nodeId)
         break
@@ -361,6 +420,189 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         if ('swingDirection' in op && op.swingDirection !== undefined) dwUpdates.swingDirection = op.swingDirection
         useScene.getState().updateNode(op.nodeId, dwUpdates)
         affectedNodeIds.push(op.nodeId)
+        break
+      }
+      case 'add_level': {
+        const levelOp = op as ValidatedAddLevel
+        const levelNode = LevelNode.parse({
+          name: levelOp.name ?? `Level ${levelOp.level}`,
+          level: levelOp.level,
+        })
+        useScene.getState().createNode(levelNode, levelOp.buildingId)
+        affectedNodeIds.push(levelNode.id as AnyNodeId)
+        createdNodeIds.push(levelNode.id as AnyNodeId)
+        // Auto-switch to the new level
+        useViewer.getState().setSelection({ levelId: levelNode.id })
+        break
+      }
+      case 'add_slab': {
+        const slabOp = op as ValidatedAddSlab
+        const slabNode = SlabNode.parse({
+          name: `Slab ${getCachedTypeCount('slab') + 1}`,
+          polygon: slabOp.polygon,
+          elevation: slabOp.elevation,
+          holes: slabOp.holes,
+        })
+        useScene.getState().createNode(slabNode, levelId as AnyNodeId)
+        affectedNodeIds.push(slabNode.id as AnyNodeId)
+        createdNodeIds.push(slabNode.id as AnyNodeId)
+        break
+      }
+      case 'update_slab': {
+        const uSlabOp = op as ValidatedUpdateSlab
+        const updates: Record<string, unknown> = {}
+        if (uSlabOp.elevation !== undefined) updates.elevation = uSlabOp.elevation
+        if (uSlabOp.polygon) updates.polygon = uSlabOp.polygon
+        useScene.getState().updateNode(uSlabOp.nodeId, updates)
+        affectedNodeIds.push(uSlabOp.nodeId)
+        break
+      }
+      case 'add_ceiling': {
+        const ceilOp = op as ValidatedAddCeiling
+        const ceilNode = CeilingNode.parse({
+          name: `Ceiling ${getCachedTypeCount('ceiling') + 1}`,
+          polygon: ceilOp.polygon,
+          height: ceilOp.height,
+          ...(ceilOp.material ? { material: ceilOp.material } : {}),
+        })
+        useScene.getState().createNode(ceilNode, levelId as AnyNodeId)
+        affectedNodeIds.push(ceilNode.id as AnyNodeId)
+        createdNodeIds.push(ceilNode.id as AnyNodeId)
+        break
+      }
+      case 'update_ceiling': {
+        const uCeilOp = op as ValidatedUpdateCeiling
+        const updates: Record<string, unknown> = {}
+        if (uCeilOp.height !== undefined) updates.height = uCeilOp.height
+        if (uCeilOp.material) updates.material = uCeilOp.material
+        useScene.getState().updateNode(uCeilOp.nodeId, updates)
+        affectedNodeIds.push(uCeilOp.nodeId)
+        break
+      }
+      case 'add_roof': {
+        const roofOp = op as ValidatedAddRoof
+        const roofCount = getCachedTypeCount('roof')
+        const segment = RoofSegmentNode.parse({
+          width: roofOp.width,
+          depth: roofOp.depth,
+          roofType: roofOp.roofType,
+          roofHeight: roofOp.roofHeight,
+          wallHeight: roofOp.wallHeight,
+          overhang: roofOp.overhang,
+          position: [0, 0, 0],
+        })
+        const roof = RoofNode.parse({
+          name: `Roof ${roofCount + 1}`,
+          position: roofOp.position,
+          children: [segment.id],
+        })
+        const { createNodes } = useScene.getState()
+        createNodes([
+          { node: roof, parentId: levelId as AnyNodeId },
+          { node: segment, parentId: roof.id as AnyNodeId },
+        ])
+        affectedNodeIds.push(roof.id as AnyNodeId, segment.id as AnyNodeId)
+        createdNodeIds.push(roof.id as AnyNodeId, segment.id as AnyNodeId)
+        break
+      }
+      case 'update_roof': {
+        const uRoofOp = op as ValidatedUpdateRoof
+        const updates: Record<string, unknown> = {}
+        if (uRoofOp.roofType) updates.roofType = uRoofOp.roofType
+        if (uRoofOp.roofHeight !== undefined) updates.roofHeight = uRoofOp.roofHeight
+        if (uRoofOp.wallHeight !== undefined) updates.wallHeight = uRoofOp.wallHeight
+        if (uRoofOp.width !== undefined) updates.width = uRoofOp.width
+        if (uRoofOp.depth !== undefined) updates.depth = uRoofOp.depth
+        useScene.getState().updateNode(uRoofOp.nodeId, updates)
+        affectedNodeIds.push(uRoofOp.nodeId)
+        break
+      }
+      case 'add_zone': {
+        const zoneOp = op as ValidatedAddZone
+        const zoneNode = ZoneNode.parse({
+          name: zoneOp.name ?? `Zone ${getCachedTypeCount('zone') + 1}`,
+          polygon: zoneOp.polygon,
+        })
+        useScene.getState().createNode(zoneNode, levelId as AnyNodeId)
+        affectedNodeIds.push(zoneNode.id as AnyNodeId)
+        createdNodeIds.push(zoneNode.id as AnyNodeId)
+        break
+      }
+      case 'update_zone': {
+        const uZoneOp = op as ValidatedUpdateZone
+        const updates: Record<string, unknown> = {}
+        if (uZoneOp.polygon) updates.polygon = uZoneOp.polygon
+        if (uZoneOp.name) updates.name = uZoneOp.name
+        useScene.getState().updateNode(uZoneOp.nodeId, updates)
+        affectedNodeIds.push(uZoneOp.nodeId)
+        break
+      }
+      case 'add_building': {
+        const bldOp = op as ValidatedAddBuilding
+        // Find site node
+        const site = Object.values(nodes).find(n => n.type === 'site')
+        const bldCount = getCachedTypeCount('building')
+        // Create building with initial Level 0
+        const initialLevel = LevelNode.parse({ level: 0, name: 'Level 0' })
+        const building = BuildingNode.parse({
+          name: bldOp.name ?? `Building ${bldCount + 1}`,
+          position: bldOp.position,
+          children: [initialLevel.id],
+        })
+        const parentId = site ? site.id as AnyNodeId : levelId as AnyNodeId
+        const { createNodes } = useScene.getState()
+        createNodes([
+          { node: building, parentId },
+          { node: initialLevel, parentId: building.id as AnyNodeId },
+        ])
+        affectedNodeIds.push(building.id as AnyNodeId, initialLevel.id as AnyNodeId)
+        createdNodeIds.push(building.id as AnyNodeId, initialLevel.id as AnyNodeId)
+        // Switch to the new building's Level 0
+        useViewer.getState().setSelection({ levelId: initialLevel.id })
+        break
+      }
+      case 'update_site': {
+        const uSiteOp = op as ValidatedUpdateSite
+        if (uSiteOp.polygon) {
+          useScene.getState().updateNode(uSiteOp.nodeId, { polygon: uSiteOp.polygon })
+          affectedNodeIds.push(uSiteOp.nodeId)
+        }
+        break
+      }
+      case 'add_scan': {
+        const scanOp = op as ValidatedAddScan
+        const scanNode = ScanNode.parse({
+          name: `Scan ${getCachedTypeCount('scan') + 1}`,
+          url: scanOp.url,
+          position: scanOp.position,
+          scale: [scanOp.scale, scanOp.scale, scanOp.scale],
+          opacity: scanOp.opacity,
+        })
+        useScene.getState().createNode(scanNode, levelId as AnyNodeId)
+        affectedNodeIds.push(scanNode.id as AnyNodeId)
+        createdNodeIds.push(scanNode.id as AnyNodeId)
+        break
+      }
+      case 'add_guide': {
+        const guideOp = op as ValidatedAddGuide
+        const guideNode = GuideNode.parse({
+          name: `Guide ${getCachedTypeCount('guide') + 1}`,
+          url: guideOp.url,
+          position: guideOp.position,
+          scale: [guideOp.scale, guideOp.scale, guideOp.scale],
+          opacity: guideOp.opacity,
+        })
+        useScene.getState().createNode(guideNode, levelId as AnyNodeId)
+        affectedNodeIds.push(guideNode.id as AnyNodeId)
+        createdNodeIds.push(guideNode.id as AnyNodeId)
+        break
+      }
+      case 'update_item': {
+        const uItemOp = op as ValidatedUpdateItem
+        const updates: Record<string, unknown> = {}
+        if (uItemOp.scale) updates.scale = uItemOp.scale
+        useScene.getState().updateNode(uItemOp.nodeId, updates)
+        affectedNodeIds.push(uItemOp.nodeId)
         break
       }
     }
@@ -427,6 +669,20 @@ export function isGhostPreviewActive(): boolean {
 }
 
 /**
+ * Reset all module-level preview state.
+ * Call this when the AI chat panel unmounts or the scene is fully reset.
+ */
+export function cleanupPreviewManager(): void {
+  if (isPreviewActive) {
+    clearGhostPreview()
+  }
+  ghostNodeIds = []
+  originalNodeStates = new Map()
+  removedNodeStates = new Map()
+  isPreviewActive = false
+}
+
+/**
  * Undo a previously confirmed operation by restoring the scene to its pre-operation state.
  *
  * Strategy:
@@ -471,6 +727,21 @@ export function undoConfirmedOperation(log: AIOperationLog): void {
 // Internal Helpers
 // ============================================================================
 
+function buildGhostMetadata(
+  existing: unknown,
+  flags: { isGhostPreview?: boolean; isGhostRemoval?: boolean },
+): Record<string, unknown> {
+  return {
+    ...(typeof existing === 'object' && existing !== null ? existing : {}),
+    isTransient: true,
+    ...flags,
+  }
+}
+
+function countNodesByType(nodes: Record<AnyNodeId, AnyNode>, type: string): number {
+  return Object.values(nodes).filter((n) => n.type === type).length
+}
+
 function createGhostNode(op: ValidatedAddItem, levelId: string): AnyNodeId | null {
   const node = ItemNode.parse({
     name: op.asset.name,
@@ -487,7 +758,7 @@ function createGhostNode(op: ValidatedAddItem, levelId: string): AnyNodeId | nul
 
 function createGhostWall(op: ValidatedAddWall, levelId: string): AnyNodeId | null {
   const { nodes } = useScene.getState()
-  const wallCount = Object.values(nodes).filter((n) => n.type === 'wall').length
+  const wallCount = countNodesByType(nodes, 'wall')
   const wall = WallSchema.parse({
     name: `Wall ${wallCount + 1}`,
     start: op.start,
@@ -535,26 +806,7 @@ function createGhostWindow(op: ValidatedAddWindow): AnyNodeId | null {
   return window.id as AnyNodeId
 }
 
-function markNodeForRemoval(op: ValidatedRemoveNode, nodes: Record<AnyNodeId, AnyNode>) {
-  const node = nodes[op.nodeId]
-  if (!node) return
-
-  removedNodeStates.set(op.nodeId, {
-    node: { ...node },
-    parentId: (node.parentId as string) ?? '',
-  })
-
-  useScene.getState().updateNode(op.nodeId, {
-    visible: false,
-    metadata: {
-      ...(typeof node.metadata === 'object' ? node.metadata : {}),
-      isTransient: true,
-      isGhostRemoval: true,
-    },
-  })
-}
-
-function markForRemoval(op: ValidatedRemoveItem, nodes: Record<AnyNodeId, AnyNode>) {
+function markForGhostRemoval(op: { nodeId: AnyNodeId }, nodes: Record<AnyNodeId, AnyNode>): void {
   const node = nodes[op.nodeId]
   if (!node) return
 
@@ -566,11 +818,7 @@ function markForRemoval(op: ValidatedRemoveItem, nodes: Record<AnyNodeId, AnyNod
   // Hide the node (don't delete — we need to restore on reject)
   useScene.getState().updateNode(op.nodeId, {
     visible: false,
-    metadata: {
-      ...(typeof node.metadata === 'object' ? node.metadata : {}),
-      isTransient: true,
-      isGhostRemoval: true,
-    },
+    metadata: buildGhostMetadata(node.metadata, { isGhostRemoval: true }) as never,
   })
 }
 
@@ -585,11 +833,7 @@ function applyMovePreview(op: ValidatedMoveItem, nodes: Record<AnyNodeId, AnyNod
   useScene.getState().updateNode(op.nodeId, {
     position: op.position,
     rotation: op.rotation,
-    metadata: {
-      ...(typeof node.metadata === 'object' ? node.metadata : {}),
-      isTransient: true,
-      isGhostPreview: true,
-    },
+    metadata: buildGhostMetadata(node.metadata, { isGhostPreview: true }) as never,
   })
 }
 
