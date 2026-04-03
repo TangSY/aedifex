@@ -293,7 +293,8 @@ function resolveBatchCollisions(operations: ValidatedOperation[]): ValidatedOper
   const occupiedAABBs: { minX: number; maxX: number; minZ: number; maxZ: number }[] = []
 
   for (const { index, op } of floorItems) {
-    const dims = (op.asset.dimensions ?? [1, 1, 1]) as [number, number, number]
+    // op.asset is guaranteed non-null: floorItems is filtered by `op.asset && !op.asset.attachTo`
+    const dims = (op.asset!.dimensions ?? [1, 1, 1]) as [number, number, number]
     let position = [...op.position] as [number, number, number]
     const aabb = getItemAABB(position, dims, op.rotation)
 
@@ -423,7 +424,6 @@ function validateAddItem(call: AddItemToolCall, _wallCache?: Map<string, WallNod
     return {
       type: 'add_item',
       status: 'invalid',
-      asset: null as unknown as AssetInput,
       position: call.position ?? [0, 0, 0],
       rotation: [0, call.rotationY ?? 0, 0],
       errorReason: 'Missing catalogSlug — cannot resolve catalog item.',
@@ -437,7 +437,6 @@ function validateAddItem(call: AddItemToolCall, _wallCache?: Map<string, WallNod
     return {
       type: 'add_item',
       status: 'invalid',
-      asset: null as unknown as AssetInput,
       position: call.position,
       rotation: [0, call.rotationY, 0],
       errorReason: `Catalog item "${call.catalogSlug}" not found.${

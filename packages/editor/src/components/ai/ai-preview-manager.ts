@@ -1,6 +1,7 @@
 import {
   type AnyNode,
   type AnyNodeId,
+  type JSONType,
   BuildingNode,
   CeilingNode,
   DoorNode,
@@ -272,6 +273,8 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
 
     switch (op.type) {
       case 'add_item': {
+        // op.asset is always set when status is 'valid' or 'adjusted'
+        if (!op.asset) break
         const finalNode = ItemNode.parse({
           name: op.asset.name,
           asset: op.asset,
@@ -730,9 +733,11 @@ export function undoConfirmedOperation(log: AIOperationLog): void {
 function buildGhostMetadata(
   existing: unknown,
   flags: { isGhostPreview?: boolean; isGhostRemoval?: boolean },
-): Record<string, unknown> {
+): { [key: string]: JSONType } {
+  const base =
+    typeof existing === 'object' && existing !== null ? (existing as { [key: string]: JSONType }) : {}
   return {
-    ...(typeof existing === 'object' && existing !== null ? existing : {}),
+    ...base,
     isTransient: true,
     ...flags,
   }
@@ -743,6 +748,8 @@ function countNodesByType(nodes: Record<AnyNodeId, AnyNode>, type: string): numb
 }
 
 function createGhostNode(op: ValidatedAddItem, levelId: string): AnyNodeId | null {
+  // asset is always set for valid/adjusted operations (callers must filter out invalid)
+  if (!op.asset) return null
   const node = ItemNode.parse({
     name: op.asset.name,
     asset: op.asset,
@@ -818,7 +825,7 @@ function markForGhostRemoval(op: { nodeId: AnyNodeId }, nodes: Record<AnyNodeId,
   // Hide the node (don't delete — we need to restore on reject)
   useScene.getState().updateNode(op.nodeId, {
     visible: false,
-    metadata: buildGhostMetadata(node.metadata, { isGhostRemoval: true }) as never,
+    metadata: buildGhostMetadata(node.metadata, { isGhostRemoval: true }),
   })
 }
 
@@ -833,7 +840,7 @@ function applyMovePreview(op: ValidatedMoveItem, nodes: Record<AnyNodeId, AnyNod
   useScene.getState().updateNode(op.nodeId, {
     position: op.position,
     rotation: op.rotation,
-    metadata: buildGhostMetadata(node.metadata, { isGhostPreview: true }) as never,
+    metadata: buildGhostMetadata(node.metadata, { isGhostPreview: true }),
   })
 }
 

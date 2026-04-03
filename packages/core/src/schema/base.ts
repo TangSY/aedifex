@@ -2,6 +2,12 @@ import { customAlphabet } from 'nanoid'
 import { z } from 'zod'
 import { CameraSchema } from './camera'
 
+/**
+ * Recursive JSON-compatible value type, matching the output of `z.json()`.
+ * Use this type for `metadata` fields and any JSON-serializable data.
+ */
+export type JSONType = string | number | boolean | null | JSONType[] | { [key: string]: JSONType }
+
 const customId = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 16)
 
 /**

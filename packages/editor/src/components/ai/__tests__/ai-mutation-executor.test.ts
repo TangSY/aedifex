@@ -96,7 +96,7 @@ describe('validateToolCall — add_item', () => {
     expect(op.status).toBe('valid')
 
     const addOp = op as ValidatedAddItem
-    expect(addOp.asset.id).toBe('sofa-modern')
+    expect(addOp.asset?.id).toBe('sofa-modern')
     expect(addOp.position).toEqual([2, 0, 3])
   })
 

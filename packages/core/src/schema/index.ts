@@ -1,5 +1,5 @@
 // Base
-export { BaseNode, generateId, nodeType, objectId } from './base'
+export { BaseNode, generateId, nodeType, objectId, type JSONType } from './base'
 // Camera
 export { CameraSchema } from './camera'
 // Collections

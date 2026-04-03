@@ -285,7 +285,8 @@ export type ValidatedOperationStatus = 'valid' | 'adjusted' | 'invalid'
 export interface ValidatedAddItem {
   type: 'add_item'
   status: ValidatedOperationStatus
-  asset: AssetInput
+  /** Resolved catalog asset. May be undefined when status is 'invalid' (e.g. missing catalogSlug). */
+  asset?: AssetInput
   position: [number, number, number]
   rotation: [number, number, number]
   adjustmentReason?: string

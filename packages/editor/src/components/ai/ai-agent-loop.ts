@@ -13,10 +13,12 @@ import {
   serializeSceneContext,
 } from './ai-scene-serializer'
 import { streamChat } from './ai-stream-client'
+import type { AnyNodeId } from '@aedifex/core'
 import type {
   AIToolCall,
   AgentMessage,
   AskUserToolCall,
+  BatchOperationsToolCall,
   ConfirmPreviewToolCall,
   PendingQuestion,
   RejectPreviewToolCall,
@@ -193,12 +195,14 @@ export async function runAgentLoop({
           'remove_item',
           'remove_node',
         ])
-        const isPureStructuralBatch = mutationCalls.every((tc) => {
+        const isPureStructuralBatch = mutationCalls.every((tc: AIToolCall) => {
           if (STRUCTURAL_DETERMINISTIC.has(tc.tool)) return true
-          if (tc.tool === 'batch_operations' && Array.isArray((tc as any).operations)) {
-            return (tc as any).operations.every((op: any) => {
-              const opTool = op.type ?? op.tool
-              return STRUCTURAL_DETERMINISTIC.has(opTool)
+          if (tc.tool === 'batch_operations') {
+            // tc is narrowed to BatchOperationsToolCall by discriminated union
+            return tc.operations.every((op) => {
+              // op.type comes from the original operation object embedded in the batch
+              const opTool = (op as { type?: string }).type
+              return opTool !== undefined && STRUCTURAL_DETERMINISTIC.has(opTool)
             })
           }
           return false
@@ -219,10 +223,10 @@ export async function runAgentLoop({
         // so the next iteration's scene context reflects the actual state.
         // Without this, clearGhostPreview in the next applyGhostPreview would
         // remove the ghost walls, causing doors/windows to lose their parent.
-        let createdNodeIds: string[] = []
+        let createdNodeIds: AnyNodeId[] = []
         if (isGhostPreviewActive()) {
           const log = confirmGhostPreview(validOps)
-          createdNodeIds = log.affectedNodeIds.map(String)
+          createdNodeIds = log.affectedNodeIds
           // Invalidate scene cache so next iteration gets fresh context (#4)
           invalidateSceneCache()
           if (lastMessageId) {
@@ -236,7 +240,7 @@ export async function runAgentLoop({
         const toolResult = buildToolResult(
           mutationCalls.map((tc) => tc.tool).join('+'),
           validated,
-          createdNodeIds as never,
+          createdNodeIds,
           { compact: true },
         )
         onIterationEnd?.(iteration, toolResult)

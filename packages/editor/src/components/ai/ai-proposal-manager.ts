@@ -141,6 +141,8 @@ export function confirmActiveProposal(): ValidatedOperation[] | null {
 
     switch (op.type) {
       case 'add_item': {
+        // asset is always set when status is 'valid' or 'adjusted'
+        if (!op.asset) break
         const node = ItemNode.parse({
           name: op.asset.name,
           asset: op.asset,
@@ -228,6 +230,8 @@ function applyProposal(proposal: Proposal): void {
 
     switch (op.type) {
       case 'add_item': {
+        // asset is always set when status is 'valid' or 'adjusted'
+        if (!op.asset) break
         const node = ItemNode.parse({
           name: op.asset.name,
           asset: op.asset,
