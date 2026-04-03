@@ -1,11 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
 import { buildSystemPrompt, OPENAI_TOOLS } from '@aedifex/editor/ai/prompt'
 import {
   AI_API_KEY,
-  AI_BASE_URL,
   AI_CHAT_MAX_TOKENS,
   AI_CHAT_MODEL,
+  createAIClient,
 } from '../config'
 
 // ============================================================================
@@ -32,13 +31,46 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 })
   }
 
+  // BUG FIX A-4: Input length limits
+  const MAX_MESSAGES = 100
+  const MAX_MESSAGE_CONTENT_LENGTH = 64 * 1024 // 64K chars per message
+
+  if (messages.length > MAX_MESSAGES) {
+    return NextResponse.json(
+      { error: `Message count exceeds limit of ${MAX_MESSAGES}.` },
+      { status: 400 },
+    )
+  }
+
+  const oversizedMessage = messages.find((m) => m.content && m.content.length > MAX_MESSAGE_CONTENT_LENGTH)
+  if (oversizedMessage) {
+    return NextResponse.json(
+      { error: 'A message exceeds the maximum content length of 64K characters.' },
+      { status: 400 },
+    )
+  }
+
+  if (catalogSummary.length > 8000) {
+    return NextResponse.json({ error: 'catalogSummary exceeds maximum length of 8000 characters.' }, { status: 400 })
+  }
+  if (sceneContext.length > 16000) {
+    return NextResponse.json({ error: 'sceneContext exceeds maximum length of 16000 characters.' }, { status: 400 })
+  }
+
+  // BUG FIX A-1: Role whitelist — reject messages with role "system" to prevent prompt injection
+  const ALLOWED_ROLES = new Set(['user', 'assistant', 'tool'])
+  const invalidMessage = messages.find((m) => !ALLOWED_ROLES.has(m.role))
+  if (invalidMessage) {
+    return NextResponse.json(
+      { error: `Invalid message role: "${invalidMessage.role}". Allowed roles: user, assistant, tool.` },
+      { status: 400 },
+    )
+  }
+
   const systemPrompt = buildSystemPrompt(catalogSummary, sceneContext)
 
-  const openai = new OpenAI({
-    apiKey: AI_API_KEY,
-    baseURL: AI_BASE_URL,
-    maxRetries: 0,
-  })
+  // DRY A-D5: Use shared factory function
+  const openai = createAIClient()
 
   try {
     const stream = await openai.chat.completions.create({

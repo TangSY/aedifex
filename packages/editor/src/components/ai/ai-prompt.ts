@@ -39,14 +39,17 @@ You can create and manage both **architectural structures** and **furniture**:
 
 const LIMITATIONS = `## What You CANNOT Do (AI Tool Limitations)
 
-The following elements exist in the editor but have no AI tool — they must be created via the UI:
-- **Zones/Rooms** — Auto-detected from wall boundaries (no manual creation needed)
-- **Slabs/Floors** — Created manually via the Slab Tool in the toolbar (draw a polygon to define the floor plate)
-- **Ceilings/Roofs** — Created manually via UI tools
-- **Levels/Buildings/Sites** — Top-level scene hierarchy, managed via UI
+The AI can operate on most scene elements. The following are the remaining limitations:
+- **Zones/Rooms** can be manually created with \`add_zone\`, but zones are also auto-detected from wall boundaries.
+- **Scans and Guides** require a URL to a 3D model or reference image — the AI cannot generate these assets, only place them.
 
-When the user asks to create rooms: explain that you can create the walls, and zones will be automatically generated from the wall boundaries.
-When the user asks to create a **mezzanine (夹层), second floor, multi-story structure, or any vertical spatial element**: you MUST clearly state that **this is beyond the current AI tool capabilities**. The AI can only operate on a single level's XZ plane — it cannot create floor slabs, ceilings, staircases, or vertical spatial divisions. Tell the user: "夹层/楼板需要使用工具栏中的 Slab Tool 手动绘制，AI 目前无法操作多层结构。" Do NOT use \`ask_user\` to stall — give a direct, clear refusal with explanation.`
+### Multi-Level Building Workflow
+To create a multi-story building:
+1. Use \`add_building\` to create a building (comes with Level 0 automatically)
+2. Use \`add_level\` to add additional floors
+3. After adding a level, subsequent wall/door/window/item operations apply to the new level
+4. Use \`add_slab\` to create floor plates between levels
+5. Use \`add_ceiling\` for ceiling panels and \`add_roof\` for roof structures`
 
 const AGENT_BEHAVIOR = `## Agent Behavior (CRITICAL)
 
@@ -92,6 +95,7 @@ NEVER ignore a pending preview. Always resolve it (confirm or reject) before pro
 const COORDINATE_SYSTEM = `## Coordinate System
 - Positions are in meters [x, y, z] where Y is up (Y=0 for floor items), XZ is the floor plane.
 - **Cardinal directions: +X = East, -X = West, +Z = South, -Z = North.**
+- **IMPORTANT: Z=0 is NORTH (not south). Larger Z values = more south. Smaller Z values = more north. Do NOT confuse this.**
 - rotationY is in radians (0 = default, π/2 = 90°, π = 180°, -π/2 = 270°).
 - Wall coordinates use [x, z] for start/end points (2D floor plan).
 - ONLY use items from the catalog below.
@@ -119,6 +123,7 @@ The default model front faces **+Z direction** when rotationY=0.
 
 ### Wall Coordinates
 - Walls are defined by \\\`start: [x, z]\\\` and \\\`end: [x, z]\\\` in world coordinates.
+- Walls can be at **any angle** — horizontal, vertical, or diagonal. Use this for triangular rooms, hexagonal rooms, angled corridors, etc.
 - Walls snap to a 0.5m grid. Minimum wall length is 0.5m.
 - Default wall thickness is 0.2m, default height is 2.8m.
 - When creating rooms, create walls that form a closed loop (end of one wall = start of next).
@@ -173,7 +178,32 @@ const FURNITURE_RULES = `## Furniture Placement Rules
 - **Companion spacing:** coffee table ↔ sofa: 0.3–0.5m; TV stand ↔ sofa: 2–3m; nightstand ↔ bed: 0m (adjacent); dining chair ↔ table: 0.5–0.6m.
 - **Walkways:** Minimum 0.6m between furniture groups. 0.8–1.0m in front of doors/windows.`
 
+// ============================================================================
+// Prompt Injection Sanitizer
+// BUG FIX A-10: Strip common injection markers from user-supplied context strings
+// before embedding them in the system prompt.
+// ============================================================================
+
+/**
+ * Sanitize a string that will be embedded inside the system prompt.
+ * Escapes/strips sequences that could be used to inject new instructions:
+ * - Markdown heading prefixes (## / ###) that could introduce fake sections
+ * - Common role-marker keywords at the start of a line (SYSTEM:, INSTRUCTIONS:, etc.)
+ * - Bare "---" horizontal rules used to delimit new prompt blocks
+ */
+function sanitizePromptInjection(text: string): string {
+  return text
+    // Strip leading ## / ### headings (would create fake prompt sections)
+    .replace(/^#{1,6}\s+/gm, '')
+    // Strip SYSTEM: / INSTRUCTIONS: / ASSISTANT: / USER: at line start (case-insensitive)
+    .replace(/^(SYSTEM|INSTRUCTIONS|ASSISTANT|USER)\s*:/gim, (match) => match.replace(':', '(colon)'))
+    // Strip bare horizontal rules used as section delimiters
+    .replace(/^---+\s*$/gm, '')
+}
+
 export function buildSystemPrompt(catalogSummary: string, sceneContext: string): string {
+  const sanitizedSceneContext = sanitizePromptInjection(sceneContext)
+
   const sections = [
     CORE_IDENTITY,
     CAPABILITIES,
@@ -183,7 +213,7 @@ export function buildSystemPrompt(catalogSummary: string, sceneContext: string):
     COORDINATE_SYSTEM,
     FURNITURE_RULES,
     `## Catalog\n${catalogSummary}`,
-    `## Current Scene\n${sceneContext}`,
+    `## Current Scene\n${sanitizedSceneContext}`,
   ]
 
   return sections.join('\n\n')
@@ -323,13 +353,15 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'update_wall',
-      description: 'Update properties of an existing wall (height, thickness). Preserves all doors and windows on the wall.',
+      description: 'Update properties of an existing wall (height, thickness, start/end points). Preserves all doors and windows on the wall.',
       parameters: {
         type: 'object',
         properties: {
           nodeId: { type: 'string', description: 'The node ID of the wall to update.' },
           height: { type: 'number', description: 'New wall height in meters.' },
           thickness: { type: 'number', description: 'New wall thickness in meters.' },
+          start: { type: 'array', items: { type: 'number' }, description: 'New start point [x, z] in meters.' },
+          end: { type: 'array', items: { type: 'number' }, description: 'New end point [x, z] in meters.' },
           reason: { type: 'string', description: 'Brief reason for the change.' },
         },
         required: ['nodeId'],
@@ -395,6 +427,246 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'add_level',
+      description: 'Create a new level (floor) in the current building. The level number is auto-incremented. After creation, subsequent operations apply to this new level.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Optional name for the level (e.g., "Second Floor").' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_slab',
+      description: 'Create a floor slab (horizontal plate) from a polygon. Used for multi-level buildings to define floor plates.',
+      parameters: {
+        type: 'object',
+        properties: {
+          polygon: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'Boundary polygon as array of [x, z] points in meters.' },
+          elevation: { type: 'number', description: 'Slab elevation (Y position) in meters (default: 0.05).' },
+          holes: { type: 'array', items: { type: 'array', items: { type: 'array', items: { type: 'number' } } }, description: 'Optional holes in the slab as arrays of [x, z] polygons.' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['polygon'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_slab',
+      description: 'Update properties of an existing slab (elevation, polygon).',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the slab to update.' },
+          elevation: { type: 'number', description: 'New slab elevation in meters.' },
+          polygon: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'New boundary polygon as array of [x, z] points.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_ceiling',
+      description: "Create a flat ceiling panel from a polygon. Typically covers a room or zone boundary. polygon is optional — if omitted, the system will automatically use the active zone's boundary.",
+      parameters: {
+        type: 'object',
+        properties: {
+          polygon: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'Ceiling boundary polygon as array of [x, z] points in meters. Optional — if omitted, the system auto-detects from the active zone boundary.' },
+          height: { type: 'number', description: 'Ceiling height in meters (default: 2.5).' },
+          material: { type: 'string', description: 'Material identifier or color value.' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_ceiling',
+      description: 'Update properties of an existing ceiling (height, material).',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the ceiling to update.' },
+          height: { type: 'number', description: 'New ceiling height in meters.' },
+          material: { type: 'string', description: 'New material identifier or color value.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_roof',
+      description: 'Create a roof structure. Supports 7 types: hip, gable, shed, gambrel, dutch, mansard, flat. Creates a RoofNode container with one RoofSegment inside.',
+      parameters: {
+        type: 'object',
+        properties: {
+          position: { type: 'array', items: { type: 'number' }, description: 'Center position [x, y, z] in meters.' },
+          width: { type: 'number', description: 'Roof width in meters.' },
+          depth: { type: 'number', description: 'Roof depth in meters.' },
+          roofType: { type: 'string', enum: ['hip', 'gable', 'shed', 'gambrel', 'dutch', 'mansard', 'flat'], description: 'Type of roof.' },
+          roofHeight: { type: 'number', description: 'Roof peak height in meters (default: 2.5).' },
+          wallHeight: { type: 'number', description: 'Wall height below roof in meters (default: 0.5).' },
+          overhang: { type: 'number', description: 'Eave overhang in meters (default: 0.3).' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['position', 'width', 'depth', 'roofType'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_roof',
+      description: 'Update properties of an existing roof segment (type, dimensions).',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the roof segment to update.' },
+          roofType: { type: 'string', enum: ['hip', 'gable', 'shed', 'gambrel', 'dutch', 'mansard', 'flat'], description: 'New roof type.' },
+          roofHeight: { type: 'number', description: 'New roof peak height in meters.' },
+          wallHeight: { type: 'number', description: 'New wall height in meters.' },
+          width: { type: 'number', description: 'New width in meters.' },
+          depth: { type: 'number', description: 'New depth in meters.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_zone',
+      description: 'Manually create a room/zone from a polygon. Zones are usually auto-detected from walls, but this allows manual zone creation.',
+      parameters: {
+        type: 'object',
+        properties: {
+          polygon: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'Zone boundary polygon as array of [x, z] points in meters.' },
+          name: { type: 'string', description: 'Zone name (e.g., "Living Room", "Kitchen").' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['polygon'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_zone',
+      description: 'Update properties of an existing zone (polygon, name).',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the zone to update.' },
+          polygon: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'New boundary polygon as array of [x, z] points.' },
+          name: { type: 'string', description: 'New zone name.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_building',
+      description: 'Create a new building in the scene. Automatically includes Level 0. Use when the scene needs multiple separate buildings.',
+      parameters: {
+        type: 'object',
+        properties: {
+          position: { type: 'array', items: { type: 'number' }, description: 'Building position [x, y, z] in meters (default: [0, 0, 0]).' },
+          name: { type: 'string', description: 'Building name.' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_site',
+      description: 'Update the site boundary polygon.',
+      parameters: {
+        type: 'object',
+        properties: {
+          polygon: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'New site boundary polygon as array of [x, z] points in meters.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['polygon'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_scan',
+      description: 'Add a 3D scan or reference model to the scene.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'URL to the 3D model file.' },
+          position: { type: 'array', items: { type: 'number' }, description: 'Position [x, y, z] in meters (default: [0, 0, 0]).' },
+          scale: { type: 'number', description: 'Uniform scale factor (default: 1).' },
+          opacity: { type: 'number', description: 'Opacity 0-1 (default: 0.5).' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['url'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_guide',
+      description: 'Add a reference guide (floor plan image or guide overlay) to the scene.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'URL to the guide image or model file.' },
+          position: { type: 'array', items: { type: 'number' }, description: 'Position [x, y, z] in meters (default: [0, 0, 0]).' },
+          scale: { type: 'number', description: 'Uniform scale factor (default: 1).' },
+          opacity: { type: 'number', description: 'Opacity 0-1 (default: 0.5).' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['url'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_item',
+      description: 'Update properties of an existing furniture item (scale). Use move_item for position changes.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the item to update.' },
+          scale: { type: 'array', items: { type: 'number' }, description: 'New scale [x, y, z] (e.g., [1.5, 1.5, 1.5] for 150%).' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'batch_operations',
       description: 'Execute multiple operations at once. Use for room creation, room setups, or any multi-step operation.',
       parameters: {
@@ -405,7 +677,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
             items: {
               type: 'object',
               properties: {
-                type: { type: 'string', enum: ['add_item', 'remove_item', 'move_item', 'update_material', 'add_wall', 'update_wall', 'add_door', 'update_door', 'add_window', 'update_window', 'remove_node'] },
+                type: { type: 'string', enum: ['add_item', 'remove_item', 'move_item', 'update_material', 'update_item', 'add_wall', 'update_wall', 'add_door', 'update_door', 'add_window', 'update_window', 'remove_node', 'add_level', 'add_slab', 'update_slab', 'add_ceiling', 'update_ceiling', 'add_roof', 'update_roof', 'add_zone', 'update_zone', 'add_building', 'update_site', 'add_scan', 'add_guide'] },
                 catalogSlug: { type: 'string' }, nodeId: { type: 'string' },
                 position: { type: 'array', items: { type: 'number' } }, rotationY: { type: 'number' },
                 material: { type: 'string' },

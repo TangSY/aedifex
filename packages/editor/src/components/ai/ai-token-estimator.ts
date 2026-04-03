@@ -23,7 +23,7 @@ export function estimateTokens(text: string): number {
   for (let i = 0; i < text.length; i++) {
     const code = text.charCodeAt(i)
 
-    if (code > 0x4e00 && code < 0x9fff) {
+    if (code >= 0x4e00 && code <= 0x9fff) {
       // CJK 统一汉字：每个字符约 0.6 tokens
       tokenCount += 0.6
     } else if (code > 0x3000 && code < 0x4dbf) {

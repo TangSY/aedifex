@@ -113,6 +113,8 @@ async function processStream(
   let buffer = ''
   let fullText = ''
   const toolCalls: AIToolCall[] = []
+  // BUG FIX A-8: Guard against onComplete being called twice (once on finish_reason, once after loop)
+  let completed = false
 
   // State for tracking OpenAI tool_calls across streaming chunks.
   // OpenAI streams tool calls by index — each chunk carries an index and
@@ -200,30 +202,33 @@ async function processStream(
             }
           }
 
+          completed = true
           callbacks.onComplete(fullText, toolCalls, toolCallIds)
           return
         }
       }
     }
 
-    // Stream ended without finish_reason — flush pending tools
-    const toolCallIds: string[] = []
-    for (const [, pending] of pendingTools) {
-      if (!pending.name) continue
-      try {
-        const input = JSON.parse(pending.arguments)
-        const toolCall = parseToolCall(pending.name, input)
-        if (toolCall) {
-          toolCalls.push(toolCall)
-          toolCallIds.push(pending.id)
-          callbacks.onToolCall(toolCall)
+    // Stream ended without finish_reason — flush pending tools (only if not already completed)
+    if (!completed) {
+      const toolCallIds: string[] = []
+      for (const [, pending] of pendingTools) {
+        if (!pending.name) continue
+        try {
+          const input = JSON.parse(pending.arguments)
+          const toolCall = parseToolCall(pending.name, input)
+          if (toolCall) {
+            toolCalls.push(toolCall)
+            toolCallIds.push(pending.id)
+            callbacks.onToolCall(toolCall)
+          }
+        } catch {
+          // Failed to parse tool arguments — skip
         }
-      } catch {
-        // Failed to parse tool arguments — skip
       }
-    }
 
-    callbacks.onComplete(fullText, toolCalls, toolCallIds)
+      callbacks.onComplete(fullText, toolCalls, toolCallIds)
+    }
   } finally {
     reader.releaseLock()
   }

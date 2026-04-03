@@ -1,11 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
 import { SUMMARIZE_SYSTEM_PROMPT } from '@aedifex/editor/ai/prompt'
 import {
   AI_API_KEY,
-  AI_BASE_URL,
   AI_SUMMARIZE_MAX_TOKENS,
   AI_SUMMARIZE_MODEL,
+  createAIClient,
 } from '../config'
 
 // ============================================================================
@@ -38,11 +37,8 @@ export async function POST(request: NextRequest) {
     .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
     .join('\n\n')
 
-  const openai = new OpenAI({
-    apiKey: AI_API_KEY,
-    baseURL: AI_BASE_URL,
-    maxRetries: 0,
-  })
+  // DRY A-D5: Use shared factory function
+  const openai = createAIClient()
 
   try {
     const response = await openai.chat.completions.create({
