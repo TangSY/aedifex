@@ -192,6 +192,8 @@ export async function runAgentLoop({
           'add_wall',
           'add_door',
           'add_window',
+          'add_item',
+          'move_item',
           'remove_item',
           'remove_node',
         ])
