@@ -64,13 +64,11 @@ export function AIChatPanel() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isStreaming])
 
-  // Keep focus on textarea after React re-renders (streaming, operations, etc.)
+  // Keep focus on textarea after React re-renders (message sent, streaming, operations, etc.)
   useEffect(() => {
-    if (!isStreaming && !isAIProcessing) return
-    // Delay to run after React commit phase
     const timer = setTimeout(() => textareaRef.current?.focus(), 0)
     return () => clearTimeout(timer)
-  }, [messages, isStreaming, isAIProcessing])
+  }, [messages])
 
   // Auto-resize textarea
   useEffect(() => {
@@ -212,11 +210,9 @@ export function AIChatPanel() {
               <PendingQuestionCard
                 question={pendingQuestion.question}
                 suggestions={pendingQuestion.suggestions}
-                onAnswer={(answer) => {
-                  answerPendingQuestion(answer)
-                }}
                 onSuggestionClick={(suggestion) => {
-                  setInput(suggestion)
+                  answerPendingQuestion(suggestion)
+                  textareaRef.current?.focus()
                 }}
               />
             )}
@@ -408,12 +404,10 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick: (text: string) =
 function PendingQuestionCard({
   question,
   suggestions,
-  onAnswer,
   onSuggestionClick,
 }: {
   question: string
   suggestions?: string[]
-  onAnswer: (answer: string) => void
   onSuggestionClick: (suggestion: string) => void
 }) {
   return (
@@ -605,10 +599,14 @@ const MessageBubble = memo(function MessageBubble({ message }: { message: ChatMe
   const askUserCall = message.toolCalls?.find((tc) => tc.tool === 'ask_user') as
     | { tool: 'ask_user'; question: string; suggestions?: string[] }
     | undefined
+  // Only show ask_user history card when the question has been answered
+  // (pendingQuestion is null). While pending, PendingQuestionCard handles it.
+  const pendingQuestion = useAIChat((s) => s.pendingQuestion)
+  const showAskUserHistory = askUserCall && !pendingQuestion
   const hasScreenshots = message.screenshotBefore && message.screenshotAfter
 
   // Skip rendering truly empty assistant bubbles (no content, no tool calls, nothing)
-  if (!isUser && !hasContent && !hasOperations && !hasProposal && !askUserCall && !hasScreenshots) {
+  if (!isUser && !hasContent && !hasOperations && !hasProposal && !showAskUserHistory && !hasScreenshots) {
     return null
   }
 
@@ -632,7 +630,7 @@ const MessageBubble = memo(function MessageBubble({ message }: { message: ChatMe
         ) : null}
 
         {/* ask_user question preserved in message history (read-only, already answered) */}
-        {askUserCall && (
+        {showAskUserHistory && (
           <div className={cn('rounded-lg border border-yellow-500/20 bg-yellow-500/5 px-3 py-2', hasContent && 'mt-2')}>
             <p className="font-barlow text-sm">{askUserCall.question}</p>
             {askUserCall.suggestions && askUserCall.suggestions.length > 0 && (

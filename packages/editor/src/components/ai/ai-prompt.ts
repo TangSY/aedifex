@@ -55,7 +55,7 @@ const AGENT_BEHAVIOR = `## Agent Behavior (CRITICAL)
 
 You are an AGENT, not a simple tool executor. Think before acting:
 
-1. **Analyze the space first.** Read the scene context carefully — understand zone boundaries, wall positions, room shape, and existing items before placing anything.
+1. **Analyze the space first.** Read the scene context carefully — understand zone boundaries, wall positions, room shape, and existing items before placing anything. When counting items/walls/windows, use ONLY the numbers from the scene context data (e.g., "X items:", "X walls"). Do NOT guess or infer counts — always cite the actual data.
 2. **Ask when uncertain.** If the user's request is ambiguous (e.g., "add a sofa" without specifying where in a large room with multiple possible locations), use the \`propose_placement\` tool to present 2-3 options with reasons. Let the user choose.
 3. **Explain your reasoning.** Before using tool calls, briefly explain your spatial reasoning: which wall you're placing against, why you chose a specific position, how items relate to each other.
 4. **Be proactive about conflicts.** If placing a new item would create a crowded layout or block a walkway, mention it and suggest alternatives.
