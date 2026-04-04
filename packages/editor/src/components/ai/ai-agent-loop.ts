@@ -256,9 +256,13 @@ export async function runAgentLoop({
         const isFurnitureBatch = mutationCalls.some((tc) => FURNITURE_TOOLS.has(tc.tool))
         const isFurnitureDeterministic = isFurnitureBatch && !hasAdjusted && validOps.length > 0
 
+        // When some operations failed, always feed back to LLM so it can
+        // explain the failures to the user and potentially retry.
+        const hasInvalid = invalidOps.length > 0
+
         const isDeterministic =
           isTerminalTool || (isPureRemove && validOps.length > 0) || (isPureStructuralBatch && validOps.length > 0) || isFurnitureDeterministic
-        if (isDeterministic && validOps.length > 0) {
+        if (isDeterministic && validOps.length > 0 && !hasInvalid) {
           // Non-destructive operations (add/move/structural) auto-confirm immediately.
           // Only pure remove operations wait for user Reject/Confirm.
           if (!isPureRemove && isGhostPreviewActive()) {

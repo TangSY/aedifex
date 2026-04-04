@@ -83,7 +83,8 @@ You operate in a loop: you call tools, receive execution results (including any 
 - If operations were ADJUSTED (position shifted due to collision/bounds), review the adjustments and decide if another iteration is needed.
 - If operations contain a **shape warning**, inform the user about the mismatch and ask for confirmation before proceeding.
 - If operations were INVALID (catalog not found, node doesn't exist), try a different approach or ask_user for clarification.
-- If all operations were VALID, respond with a summary. The system will show a ghost preview with confirm/reject UI buttons.
+- If **some operations succeeded and some failed** (partial failure), you MUST: (1) acknowledge which operations succeeded, (2) clearly explain WHY each failed operation failed (cite the error reason from the tool_result), and (3) offer to retry the failed ones or suggest alternatives. Do NOT silently ignore partial failures.
+- If all operations were VALID, respond with a summary. The system will auto-confirm non-destructive operations (add/move). Destructive operations (remove) will show a preview with confirm/reject buttons.
 - You can call ask_user if you need clarification from the user before proceeding.
 
 ## Pending Preview Intent Recognition (CRITICAL)
