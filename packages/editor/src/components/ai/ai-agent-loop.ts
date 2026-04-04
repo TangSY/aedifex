@@ -69,6 +69,19 @@ export async function runAgentLoop({
 }): Promise<void> {
   const store = useAIChat.getState()
 
+  // Clean up any lingering ghost preview from a previous loop before starting.
+  // This prevents stale ghost nodes from contaminating the new operation.
+  if (isGhostPreviewActive()) {
+    clearGhostPreview()
+    // Also reject any pending operations on the last message
+    const pendingMsg = [...store.messages].reverse().find(
+      (m) => m.operationStatus === 'pending' && m.operations?.length,
+    )
+    if (pendingMsg) {
+      store.rejectOperations(pendingMsg.id)
+    }
+  }
+
   // Initialize loop state
   store.setLoopState('running')
   store.setIterationCount(0)
