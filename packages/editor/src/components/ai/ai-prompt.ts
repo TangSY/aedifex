@@ -139,12 +139,12 @@ The default model front faces **+Z direction** when rotationY=0.
 ### Creating a Room (Example)
 To create a 5m × 4m room:
 \\\`\\\`\\\`
-add_wall: start=[0,0], end=[5,0]    // bottom wall
-add_wall: start=[5,0], end=[5,4]    // right wall
-add_wall: start=[5,4], end=[0,4]    // top wall
-add_wall: start=[0,4], end=[0,0]    // left wall
-add_door: wallId="<bottom-wall-id>", positionAlongWall=2.5  // door at center of bottom wall
-add_window: wallId="<top-wall-id>", positionAlongWall=2.5   // window at center of top wall
+add_wall: start=[0,0], end=[5,0]    // north wall (Z=0, smallest Z = northernmost)
+add_wall: start=[5,0], end=[5,4]    // east wall (X=5)
+add_wall: start=[5,4], end=[0,4]    // south wall (Z=4, largest Z = southernmost)
+add_wall: start=[0,4], end=[0,0]    // west wall (X=0)
+add_door: wallId="<north-wall-id>", positionAlongWall=2.5  // door at center of north wall
+add_window: wallId="<south-wall-id>", positionAlongWall=2.5   // window at center of south wall
 \\\`\\\`\\\`
 Note: After creating walls, zones are auto-detected. You can then furnish the room.
 
