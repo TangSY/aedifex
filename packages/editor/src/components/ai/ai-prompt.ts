@@ -149,8 +149,11 @@ add_window: wallId="<south-wall-id>", positionAlongWall=2.5   // window at cente
 \\\`\\\`\\\`
 Note: After creating walls, zones are auto-detected. You can then furnish the room.
 
-### Extending / Reshaping Rooms (CRITICAL)
-When extending an existing room or creating adjacent rooms that share a wall:
+### Adding a New Room vs Extending (CRITICAL)
+When the user says "add a room/bedroom/kitchen", do NOT automatically extend the existing room by removing walls. Use \`ask_user\` to clarify: create a **separate new room** (4 new walls, no shared wall removal) or **extend the existing room** (remove shared wall + add new walls). Default to creating a separate room if the user doesn't specify.
+
+### Extending / Reshaping Rooms
+When the user explicitly asks to extend or merge rooms:
 1. **First remove the shared wall** using \\\`remove_node\\\` — otherwise old and new walls will cross through each other.
 2. **Then add new walls** that connect cleanly at endpoints.
 3. **Migrate doors/windows** — if the removed wall had doors/windows, re-add them on the appropriate new wall.

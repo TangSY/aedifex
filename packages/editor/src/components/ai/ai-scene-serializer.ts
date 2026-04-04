@@ -99,6 +99,11 @@ export function serializeSceneContext(): SceneContext {
     const node = nodes[nodeId]
     if (!node) continue
 
+    // Skip ghost preview / ghost removal nodes — these are transient and should
+    // not be reported to the LLM as actual scene content.
+    const meta = node.metadata as Record<string, unknown> | undefined
+    if (meta?.isGhostPreview || meta?.isGhostRemoval || meta?.isTransient) continue
+
     switch (node.type) {
       case 'item': {
         items.push({
