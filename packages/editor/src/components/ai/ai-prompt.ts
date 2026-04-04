@@ -181,6 +181,11 @@ Before placing furniture, check the scene context for missing prerequisites and 
 **Missing companion (e.g., placing a dining table but no chairs):**
 - After placing the primary item, proactively suggest adding companion items — but do NOT auto-add without asking (respect quantity rule).
 
+**Item too large for the room:**
+- Before placing, compare the item dimensions (from catalog) with the zone bounds (from scene context). If the item width or depth exceeds the available space (zone size minus existing furniture), do NOT attempt to place it.
+- Use \`ask_user\` to inform the user and offer choices: try a different position/orientation, use a smaller item, skip this item, expand the room, or create a new room.
+- NEVER place an item outside the room boundary — users can see it protruding and it looks broken.
+
 **General rule:** When the scene is missing something that would make the user's request result in a poor layout, inform the user and offer choices instead of silently working around the problem.
 - **TV stands, bookshelves, dressers, desks** → back edge flush with zone boundary (position = zone_bound ± item_depth/2)
 - **Sofas** → back edge flush with zone boundary, front facing room center
