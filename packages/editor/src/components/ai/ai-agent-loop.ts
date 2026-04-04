@@ -18,7 +18,6 @@ import type {
   AIToolCall,
   AgentMessage,
   AskUserToolCall,
-  BatchOperationsToolCall,
   ConfirmPreviewToolCall,
   PendingQuestion,
   RejectPreviewToolCall,
@@ -129,13 +128,21 @@ export async function runAgentLoop({
       useAIChat.getState().setIterationCount(iteration)
 
       // Get fresh scene context each iteration (scene may have changed)
-      const sceneCtx = serializeSceneContext()
+      let scenePrompt: string
+      try {
+        const sceneCtx = serializeSceneContext()
+        scenePrompt = formatSceneContextForPrompt(sceneCtx)
+      } catch (serializeError) {
+        // Fallback: provide minimal context so the LLM can still respond
+        console.warn('[AI Agent] Scene serialization failed, using fallback:', serializeError)
+        scenePrompt = 'Current scene (level: unknown):\n- Scene data unavailable due to serialization error. Ask user to describe the current scene.'
+      }
 
       // Stream LLM response
       const { text, toolCalls, toolCallIds } = await streamLLMResponse(
         conversationMessages,
         catalogSummary,
-        formatSceneContextForPrompt(sceneCtx),
+        scenePrompt,
       )
 
       // Save assistant message
@@ -226,6 +233,10 @@ export async function runAgentLoop({
         const isPureRemove = mutationCalls.every((tc) =>
           tc.tool === 'remove_item' || tc.tool === 'remove_node',
         )
+        // Single remove should loop back so LLM can follow up with replacement
+        // (e.g. remove old wall → add two new wall segments for "open a gap").
+        // Only batch removes (≥2) are terminal to avoid repeated delete attempts.
+        const isBulkRemove = isPureRemove && mutationCalls.length >= 2
         // Pure structural batches (all add_wall / remove_node / remove_item) are
         // deterministic — the LLM cannot improve them via feedback, and looping
         // back causes duplicate walls/deletes until MAX_ITERATIONS.
@@ -260,8 +271,11 @@ export async function runAgentLoop({
         // explain the failures to the user and potentially retry.
         const hasInvalid = invalidOps.length > 0
 
+        // Single remove operations should loop back for follow-up (e.g. add replacement walls),
+        // but structural batches (add_wall etc.) and bulk removes are terminal.
+        const isSingleRemove = isPureRemove && mutationCalls.length === 1
         const isDeterministic =
-          isTerminalTool || (isPureRemove && validOps.length > 0) || (isPureStructuralBatch && validOps.length > 0) || isFurnitureDeterministic
+          isTerminalTool || (isBulkRemove && validOps.length > 0) || (isPureStructuralBatch && !isSingleRemove && validOps.length > 0) || isFurnitureDeterministic
         if (isDeterministic && validOps.length > 0 && !hasInvalid) {
           // Non-destructive operations (add/move/structural) auto-confirm immediately.
           // Only pure remove operations wait for user Reject/Confirm.

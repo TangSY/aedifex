@@ -474,5 +474,20 @@ export function formatSceneContextForPrompt(ctx: SceneContext): string {
     }
   }
 
-  return lines.join('\n')
+  const result = lines.join('\n')
+
+  // Guard: truncate if exceeds API limit (MAX_SCENE_CONTEXT_LENGTH = 16000)
+  // Prioritize keeping the header + walls + zones and truncate item details
+  const MAX_CONTEXT_LENGTH = 15000 // Leave margin below 16000 API limit
+  if (result.length > MAX_CONTEXT_LENGTH) {
+    // Rebuild with truncated item list
+    const truncatedLines = lines.filter((l) => !l.startsWith('  [item_') && !l.includes('quadrant'))
+    const truncated = truncatedLines.join('\n')
+    if (truncated.length > MAX_CONTEXT_LENGTH) {
+      return truncated.slice(0, MAX_CONTEXT_LENGTH) + '\n[... truncated due to scene complexity]'
+    }
+    return truncated + `\n[... ${ctx.items.length} items truncated for brevity]`
+  }
+
+  return result
 }
