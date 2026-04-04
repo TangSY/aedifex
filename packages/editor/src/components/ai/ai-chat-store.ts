@@ -344,6 +344,12 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
           // summarized), so null out screenshots on all but the most recent 10.
           const currentMessages = get().messages
           if (currentMessages.length > 10) {
+            // Revoke Object URLs before clearing references
+            for (let i = 0; i < currentMessages.length - 10; i++) {
+              const m = currentMessages[i]!
+              if (m.screenshotBefore) URL.revokeObjectURL(m.screenshotBefore)
+              if (m.screenshotAfter) URL.revokeObjectURL(m.screenshotAfter)
+            }
             set({
               messages: currentMessages.map((m, i) =>
                 i < currentMessages.length - 10
@@ -405,6 +411,11 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
 
   // Reset
   clearChat: () => {
+    // Revoke all screenshot Object URLs to free blob memory
+    for (const msg of get().messages) {
+      if (msg.screenshotBefore) URL.revokeObjectURL(msg.screenshotBefore)
+      if (msg.screenshotAfter) URL.revokeObjectURL(msg.screenshotAfter)
+    }
     set({
       messages: [],
       isStreaming: false,

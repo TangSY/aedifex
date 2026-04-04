@@ -83,6 +83,7 @@ export async function runAgentLoop({
 
   let iteration = 0
   let lastMessageId: string | null = null
+  let beforeScreenshotUrl: string | null = null // P0-2: capture once on first mutation
 
   try {
     while (iteration < MAX_ITERATIONS) {
@@ -143,10 +144,13 @@ export async function runAgentLoop({
       )
 
       if (mutationCalls.length > 0) {
-        // Capture before screenshot
-        const beforeScreenshot = await captureScreenshot()
-        if (beforeScreenshot && lastMessageId) {
-          useAIChat.getState().setScreenshotBefore(lastMessageId, beforeScreenshot)
+        // P0-2: Capture before screenshot only on the first mutation iteration.
+        // Intermediate iterations skip capture to avoid blocking the main thread.
+        if (!beforeScreenshotUrl) {
+          beforeScreenshotUrl = await captureScreenshot()
+        }
+        if (beforeScreenshotUrl && lastMessageId) {
+          useAIChat.getState().setScreenshotBefore(lastMessageId, beforeScreenshotUrl)
         }
 
         // Validate and apply ghost preview

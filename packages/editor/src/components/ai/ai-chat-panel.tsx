@@ -330,11 +330,15 @@ const StreamingIndicator = memo(function StreamingIndicator({
   const streamingContent = useAIChat((s) => s.streamingContent)
   const iterationCount = useAIChat((s) => s.iterationCount)
 
-  // Scroll to bottom whenever streaming content updates
+  // Scroll to bottom whenever streaming content updates (throttled via rAF)
+  const scrollRafRef = useRef(0)
   useEffect(() => {
-    if (isStreaming) {
+    if (!isStreaming) return
+    if (scrollRafRef.current) return // already scheduled
+    scrollRafRef.current = requestAnimationFrame(() => {
+      scrollRafRef.current = 0
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }
+    })
   }, [streamingContent, isStreaming, messagesEndRef])
 
   if (!isStreaming) return null
@@ -488,11 +492,11 @@ function BeforeAfterComparison({ before, after }: { before: string; after: strin
       <div className="mt-2 grid grid-cols-2 gap-1.5">
         <div>
           <p className="mb-0.5 font-barlow text-[10px] text-muted-foreground">Before</p>
-          <img alt="Before" className="rounded border border-border/30" src={before} />
+          <img alt="Before" className="rounded border border-border/30" loading="lazy" src={before} />
         </div>
         <div>
           <p className="mb-0.5 font-barlow text-[10px] text-muted-foreground">After</p>
-          <img alt="After" className="rounded border border-border/30" src={after} />
+          <img alt="After" className="rounded border border-border/30" loading="lazy" src={after} />
         </div>
       </div>
       {/* Click-to-compare button */}

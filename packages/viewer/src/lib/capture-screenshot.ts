@@ -23,6 +23,31 @@ export function clearScreenshotRenderer() {
 }
 
 // ============================================================================
+// Reusable capture resources (P0-3: avoid GC pressure from per-call allocations)
+// ============================================================================
+
+let _captureCamera: THREE.PerspectiveCamera | null = null
+let _offscreenCanvas: HTMLCanvasElement | null = null
+
+function getCaptureCamera(aspect: number): THREE.PerspectiveCamera {
+  if (!_captureCamera) {
+    _captureCamera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000)
+  }
+  _captureCamera.aspect = aspect
+  _captureCamera.layers.enableAll()
+  return _captureCamera
+}
+
+function getOffscreenCanvas(width: number, height: number): HTMLCanvasElement {
+  if (!_offscreenCanvas) {
+    _offscreenCanvas = document.createElement('canvas')
+  }
+  _offscreenCanvas.width = width
+  _offscreenCanvas.height = height
+  return _offscreenCanvas
+}
+
+// ============================================================================
 // Screenshot API
 // ============================================================================
 
@@ -34,8 +59,12 @@ export interface CaptureScreenshotOptions {
 }
 
 /**
- * Capture a screenshot of the current 3D scene as a JPEG data URL.
+ * Capture a screenshot of the current 3D scene as a Blob Object URL.
  * Returns null if the renderer is not available.
+ *
+ * P0-1: Returns Object URL (blob:...) instead of base64 data URL to avoid
+ * storing large strings in memory. Callers must call URL.revokeObjectURL()
+ * when the URL is no longer needed.
  */
 export function captureScreenshot(
   options: CaptureScreenshotOptions = {},
@@ -48,7 +77,7 @@ export function captureScreenshot(
 
   return new Promise((resolve) => {
     try {
-      const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000)
+      const camera = getCaptureCamera(width / height)
 
       const nodes = useScene.getState().nodes
       const siteNode = Object.values(nodes).find((n) => n.type === 'site')
@@ -73,8 +102,6 @@ export function captureScreenshot(
       const restoreLevels = snapLevelsToTruePositions()
 
       // Ensure scene has a background color for the screenshot.
-      // AnimatedBackground sets scene.background via useFrame, but it may not
-      // have executed yet (empty scene, first frame). Fall back to white if unset.
       const prevBackground = scene.background
       if (!scene.background) {
         scene.background = new THREE.Color('#ffffff')
@@ -118,13 +145,23 @@ export function captureScreenshot(
         sy = Math.round((canvasH - sHeight) / 2)
       }
 
-      const offscreen = document.createElement('canvas')
-      offscreen.width = width
-      offscreen.height = height
+      const offscreen = getOffscreenCanvas(width, height)
       const ctx2d = offscreen.getContext('2d')!
       ctx2d.drawImage(gl.domElement, sx, sy, sWidth, sHeight, 0, 0, width, height)
 
-      resolve(offscreen.toDataURL('image/jpeg', 0.8))
+      // P0-1: Convert to Blob Object URL instead of base64 string.
+      // Blob URLs are lightweight references (~60 bytes) vs base64 strings (~100KB+).
+      offscreen.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(URL.createObjectURL(blob))
+          } else {
+            resolve(null)
+          }
+        },
+        'image/jpeg',
+        0.8,
+      )
     } catch {
       resolve(null)
     }

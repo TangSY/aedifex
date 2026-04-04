@@ -4,7 +4,7 @@ import { useScene } from '@aedifex/core'
 import { type MutableRefObject, useCallback, useEffect, useRef, useState } from 'react'
 import { type SceneGraph, saveSceneToLocalStorage } from '../lib/scene'
 
-const AUTOSAVE_DEBOUNCE_MS = 1000
+const AUTOSAVE_DEBOUNCE_MS = 2000
 
 export type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'paused' | 'error'
 
