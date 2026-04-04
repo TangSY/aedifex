@@ -95,6 +95,7 @@ function isValidModelUrl(url: string): boolean {
 export function validateToolCall(
   toolCall: AIToolCall,
   wallCache?: Map<string, WallNode[]>,
+  pendingRemovalIds?: Set<string>,
 ): ValidatedOperation[] {
   switch (toolCall.tool) {
     case 'add_item':
@@ -108,9 +109,9 @@ export function validateToolCall(
     case 'add_wall':
       return [validateAddWall(toolCall, wallCache)]
     case 'add_door':
-      return [validateAddDoor(toolCall, wallCache)]
+      return [validateAddDoor(toolCall, wallCache, pendingRemovalIds)]
     case 'add_window':
-      return [validateAddWindow(toolCall, wallCache)]
+      return [validateAddWindow(toolCall, wallCache, pendingRemovalIds)]
     case 'update_wall':
       return [validateUpdateWall(toolCall, wallCache)]
     case 'update_door':
@@ -147,9 +148,30 @@ export function validateToolCall(
       return [validateAddGuide(toolCall)]
     case 'update_item':
       return [validateUpdateItem(toolCall)]
-    case 'batch_operations':
+    case 'batch_operations': {
+      // Collect nodeIds from remove operations so add_door/add_window validators
+      // can skip overlap checks against nodes that will be removed in this batch.
+      const batchRemovalIds = new Set<string>()
+      const { nodes } = useScene.getState()
+      for (const op of toolCall.operations) {
+        const opRecord = op as Record<string, unknown>
+        const opType = (opRecord.type as string) ?? guessToolType(opRecord)
+        if (opType === 'remove_node' || opType === 'remove_item') {
+          const nodeId = (opRecord.nodeId as string) ?? ''
+          if (nodeId) {
+            batchRemovalIds.add(nodeId)
+            // If removing a wall, also mark its children (doors/windows) as pending removal
+            const node = nodes[nodeId as AnyNodeId]
+            if (node && 'children' in node && Array.isArray((node as WallNode).children)) {
+              for (const childId of (node as WallNode).children) {
+                batchRemovalIds.add(childId)
+              }
+            }
+          }
+        }
+      }
+
       return toolCall.operations.flatMap((op) => {
-        // Reconstruct full tool call with tool field
         const opRecord = op as Record<string, unknown>
         const toolType = (opRecord.type as string) ?? guessToolType(opRecord)
         if (toolType === 'unknown') {
@@ -161,8 +183,9 @@ export function validateToolCall(
           }] satisfies ValidatedOperation[]
         }
         const fullOp = { ...opRecord, tool: toolType } as AIToolCall
-        return validateToolCall(fullOp, wallCache)
+        return validateToolCall(fullOp, wallCache, batchRemovalIds.size > 0 ? batchRemovalIds : undefined)
       })
+    }
     case 'propose_placement':
     case 'ask_user':
     case 'confirm_preview':
@@ -1194,7 +1217,7 @@ function avoidJunctions(
   }
 }
 
-function validateAddDoor(call: AddDoorToolCall, _wallCache?: Map<string, WallNode[]>): ValidatedAddDoor {
+function validateAddDoor(call: AddDoorToolCall, _wallCache?: Map<string, WallNode[]>, pendingRemovalIds?: Set<string>): ValidatedAddDoor {
   const { nodes } = useScene.getState()
   const wallNode = nodes[call.wallId as AnyNodeId] as WallNode | undefined
 
@@ -1236,8 +1259,8 @@ function validateAddDoor(call: AddDoorToolCall, _wallCache?: Map<string, WallNod
     junctionReason = result.reason
   }
 
-  // Check overlap with existing wall children
-  if (hasWallChildOverlap(call.wallId, finalX, clampedY, width, height)) {
+  // Check overlap with existing wall children (skip nodes pending removal in this batch)
+  if (hasWallChildOverlap(call.wallId, finalX, clampedY, width, height, undefined, pendingRemovalIds)) {
     return {
       type: 'add_door',
       status: 'invalid',
@@ -1274,7 +1297,7 @@ function validateAddDoor(call: AddDoorToolCall, _wallCache?: Map<string, WallNod
   }
 }
 
-function validateAddWindow(call: AddWindowToolCall, _wallCache?: Map<string, WallNode[]>): ValidatedAddWindow {
+function validateAddWindow(call: AddWindowToolCall, _wallCache?: Map<string, WallNode[]>, pendingRemovalIds?: Set<string>): ValidatedAddWindow {
   const { nodes } = useScene.getState()
   const wallNode = nodes[call.wallId as AnyNodeId] as WallNode | undefined
 
@@ -1322,8 +1345,8 @@ function validateAddWindow(call: AddWindowToolCall, _wallCache?: Map<string, Wal
     winJunctionReason = jResult.reason
   }
 
-  // Check overlap with existing wall children
-  if (hasWallChildOverlap(call.wallId, finalWinX, clampedY, width, height)) {
+  // Check overlap with existing wall children (skip nodes pending removal in this batch)
+  if (hasWallChildOverlap(call.wallId, finalWinX, clampedY, width, height, undefined, pendingRemovalIds)) {
     return {
       type: 'add_window',
       status: 'invalid',
