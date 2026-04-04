@@ -192,8 +192,6 @@ export async function runAgentLoop({
           'add_wall',
           'add_door',
           'add_window',
-          'add_item',
-          'move_item',
           'remove_item',
           'remove_node',
         ])
@@ -209,8 +207,16 @@ export async function runAgentLoop({
           }
           return false
         })
+        // add_item/move_item are deterministic only when ALL operations succeeded
+        // without adjustment. If any operation was adjusted (position clamped, etc.),
+        // feed back to LLM so it can review the adjustment and decide next steps.
+        const hasAdjusted = validated.some((op) => op.status === 'adjusted')
+        const FURNITURE_TOOLS = new Set(['add_item', 'move_item'])
+        const isFurnitureBatch = mutationCalls.some((tc) => FURNITURE_TOOLS.has(tc.tool))
+        const isFurnitureDeterministic = isFurnitureBatch && !hasAdjusted && validOps.length > 0
+
         const isDeterministic =
-          isTerminalTool || (isPureRemove && validOps.length > 0) || (isPureStructuralBatch && validOps.length > 0)
+          isTerminalTool || (isPureRemove && validOps.length > 0) || (isPureStructuralBatch && validOps.length > 0) || isFurnitureDeterministic
         if (isDeterministic && validOps.length > 0) {
           const toolResult = buildToolResult(
             mutationCalls.map((tc) => tc.tool).join('+'),
