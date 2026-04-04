@@ -598,10 +598,13 @@ const MessageBubble = memo(function MessageBubble({ message }: { message: ChatMe
   const hasContent = message.content.trim().length > 0
   const hasOperations = message.operations && message.operations.length > 0
   const hasProposal = message.toolCalls?.some((tc) => tc.tool === 'propose_placement')
+  const askUserCall = message.toolCalls?.find((tc) => tc.tool === 'ask_user') as
+    | { tool: 'ask_user'; question: string; suggestions?: string[] }
+    | undefined
   const hasScreenshots = message.screenshotBefore && message.screenshotAfter
 
-  // Skip rendering empty assistant bubbles (e.g., ask_user with no text output)
-  if (!isUser && !hasContent && !hasOperations && !hasProposal && !hasScreenshots) {
+  // Skip rendering truly empty assistant bubbles (no content, no tool calls, nothing)
+  if (!isUser && !hasContent && !hasOperations && !hasProposal && !askUserCall && !hasScreenshots) {
     return null
   }
 
@@ -624,8 +627,27 @@ const MessageBubble = memo(function MessageBubble({ message }: { message: ChatMe
           <AIMarkdown content={message.content} />
         ) : null}
 
+        {/* ask_user question preserved in message history (read-only, already answered) */}
+        {askUserCall && (
+          <div className={cn('rounded-lg border border-yellow-500/20 bg-yellow-500/5 px-3 py-2', hasContent && 'mt-2')}>
+            <p className="font-barlow text-sm">{askUserCall.question}</p>
+            {askUserCall.suggestions && askUserCall.suggestions.length > 0 && (
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {askUserCall.suggestions.map((s) => (
+                  <span
+                    className="rounded-md border border-border/30 bg-accent/20 px-2 py-0.5 font-barlow text-[11px] text-muted-foreground"
+                    key={s}
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Placement proposal options — hide after user selects one */}
-        {message.toolCalls?.some((tc) => tc.tool === 'propose_placement') &&
+        {hasProposal &&
           message.operationStatus !== 'confirmed' &&
           message.operationStatus !== 'rejected' && (
           <PlacementProposalCards
