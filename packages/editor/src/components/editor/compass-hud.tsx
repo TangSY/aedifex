@@ -4,13 +4,13 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useRef } from 'react'
 
 /**
- * 相机方位角同步器（R3F 内部组件）
+ * Camera Azimuth Synchronizer (R3F internal component)
  *
- * 每 3 帧将相机 azimuth 写入模块级变量，
- * 供 Canvas 外部的 CompassOverlay 读取。
+ * Writes camera azimuth to a module-level variable every 3 frames,
+ * for CompassOverlay (outside Canvas) to read.
  */
 
-/** 模块级共享：相机水平方位角（弧度） */
+/** Module-level shared: camera horizontal azimuth (radians) */
 let _cameraAzimuth = 0
 export function getCameraAzimuth(): number {
   return _cameraAzimuth

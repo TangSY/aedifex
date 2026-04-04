@@ -3,9 +3,9 @@
 import { type ReactNode, useMemo } from 'react'
 
 /**
- * 轻量 Markdown 渲染器 — 零依赖
- * 支持：heading、bold、italic、inline code、code block、
- *       unordered list、ordered list、段落、换行
+ * Lightweight Markdown renderer — zero dependencies.
+ * Supports: heading, bold, italic, inline code, code block,
+ *           unordered list, ordered list, paragraph, line break.
  */
 export function AIMarkdown({ content }: { content: string }) {
   const elements = useMemo(() => parseMarkdown(content), [content])
@@ -24,13 +24,13 @@ function parseMarkdown(text: string): ReactNode[] {
   while (i < lines.length) {
     const line = lines[i]!
 
-    // 空行
+    // Empty line
     if (line.trim() === '') {
       i++
       continue
     }
 
-    // 代码块 ```
+    // Code block ```
     if (line.trim().startsWith('```')) {
       const codeLines: string[] = []
       i++ // skip opening ```
@@ -69,7 +69,7 @@ function parseMarkdown(text: string): ReactNode[] {
       continue
     }
 
-    // 无序列表
+    // Unordered list
     if (/^\s*[-*]\s/.test(line)) {
       const listItems: ReactNode[] = []
       while (i < lines.length && /^\s*[-*]\s/.test(lines[i]!)) {
@@ -90,7 +90,7 @@ function parseMarkdown(text: string): ReactNode[] {
       continue
     }
 
-    // 有序列表
+    // Ordered list
     if (/^\s*\d+[.)]\s/.test(line)) {
       const listItems: ReactNode[] = []
       let num = 1
@@ -113,7 +113,7 @@ function parseMarkdown(text: string): ReactNode[] {
       continue
     }
 
-    // 普通段落（合并连续的非特殊行）
+    // Regular paragraph (merge consecutive non-special lines)
     const paraLines: string[] = []
     while (
       i < lines.length &&
@@ -142,7 +142,7 @@ function parseMarkdown(text: string): ReactNode[] {
 // Inline Rendering
 // ============================================================================
 
-/** 渲染多行段落（保留行内换行） */
+/** Render multiline paragraph (preserving inline line breaks) */
 function renderInlineMultiline(lines: string[]): ReactNode[] {
   const result: ReactNode[] = []
   for (let i = 0; i < lines.length; i++) {
@@ -152,14 +152,14 @@ function renderInlineMultiline(lines: string[]): ReactNode[] {
   return result
 }
 
-/** 渲染内联 markdown（bold、italic、code） */
+/** Render inline markdown (bold, italic, code) */
 function renderInline(text: string): ReactNode {
   const fragments = renderInlineFragments(text, 'r')
   return fragments.length === 1 ? fragments[0] : <>{fragments}</>
 }
 
 function renderInlineFragments(text: string, keyPrefix: string): ReactNode[] {
-  // 正则匹配 **bold**、*italic*、`code`、→ 箭头
+  // Regex to match **bold**, *italic*, `code`
   const regex = /(\*\*(.+?)\*\*)|(\*(.+?)\*)|(`(.+?)`)/g
   const parts: ReactNode[] = []
   let lastIndex = 0
@@ -167,7 +167,7 @@ function renderInlineFragments(text: string, keyPrefix: string): ReactNode[] {
   let idx = 0
 
   while ((match = regex.exec(text)) !== null) {
-    // 前缀文本
+    // Prefix text
     if (match.index > lastIndex) {
       parts.push(text.slice(lastIndex, match.index))
     }
@@ -202,7 +202,7 @@ function renderInlineFragments(text: string, keyPrefix: string): ReactNode[] {
     idx++
   }
 
-  // 尾部文本
+  // Trailing text
   if (lastIndex < text.length) {
     parts.push(text.slice(lastIndex))
   }

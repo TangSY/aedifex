@@ -154,7 +154,7 @@ export async function runAgentLoop({
         const validOps = validated.filter((op) => op.status !== 'invalid')
 
         // Only set operations on the message if there are valid ones
-        // (avoids showing empty "预览 0项操作" bar that needs manual confirm)
+        // (avoids showing empty "Preview 0 operations" bar that needs manual confirm)
         if (validOps.length > 0) {
           if (lastMessageId) {
             useAIChat.getState().setOperations(lastMessageId, validated)

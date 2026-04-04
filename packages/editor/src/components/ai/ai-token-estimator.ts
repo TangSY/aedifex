@@ -5,15 +5,15 @@
 // ============================================================================
 
 /**
- * 估算文本的 token 数（无需外部 tokenizer）
+ * Estimate token count for a text string (no external tokenizer needed).
  *
- * 精度约 ±20%，足以用于压缩触发阈值判断。
- * 如需精确值，应使用 API 返回的 usage.prompt_tokens。
+ * Accuracy is approximately ±20%, sufficient for compression trigger thresholds.
+ * For precise values, use the API-returned usage.prompt_tokens.
  *
- * 估算规则（基于 GPT-4 tokenizer 统计）：
- * - 中文：约 0.6 tokens/字符（UTF-8 多字节编码）
- * - 英文：约 0.25 tokens/字符（≈ 1.3 tokens/word）
- * - JSON/代码：约 0.4 tokens/字符
+ * Estimation rules (based on GPT-4 tokenizer statistics):
+ * - CJK characters: ~0.6 tokens/char (UTF-8 multi-byte encoding)
+ * - Latin/English: ~0.25 tokens/char (~1.3 tokens/word)
+ * - JSON/code: ~0.4 tokens/char
  */
 export function estimateTokens(text: string): number {
   if (!text) return 0
@@ -24,13 +24,13 @@ export function estimateTokens(text: string): number {
     const code = text.charCodeAt(i)
 
     if (code >= 0x4e00 && code <= 0x9fff) {
-      // CJK 统一汉字：每个字符约 0.6 tokens
+      // CJK Unified Ideographs: ~0.6 tokens per character
       tokenCount += 0.6
     } else if (code > 0x3000 && code < 0x4dbf) {
-      // CJK 标点和假名：每个字符约 0.5 tokens
+      // CJK punctuation and kana: ~0.5 tokens per character
       tokenCount += 0.5
     } else {
-      // Latin/ASCII：每 4 字符约 1 token
+      // Latin/ASCII: ~1 token per 4 characters
       tokenCount += 0.25
     }
   }
@@ -39,13 +39,13 @@ export function estimateTokens(text: string): number {
 }
 
 /**
- * 估算消息数组的总 token 数
- * 包含每条消息的结构开销（role 标记 ~4 tokens）
+ * Estimate total token count for a message array.
+ * Includes structural overhead per message (role markers ~4 tokens).
  */
 export function estimateMessagesTokens(
   messages: { role: string; content: string }[],
 ): number {
-  const MESSAGE_OVERHEAD = 4 // 每条消息的 role/separator 开销
+  const MESSAGE_OVERHEAD = 4 // role/separator overhead per message
   let total = 0
 
   for (const msg of messages) {
@@ -59,7 +59,7 @@ export function estimateMessagesTokens(
 // Context Budget
 // ============================================================================
 
-/** 不同模型的上下文窗口大小（tokens） */
+/** Context window sizes for different models (tokens) */
 const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
   'gpt-4o': 128_000,
   'gpt-4o-mini': 128_000,
@@ -68,7 +68,7 @@ const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
   'gpt-3.5-turbo': 16_385,
 }
 
-/** 预留 token 分配 */
+/** Reserved token allocation */
 const RESERVED_TOKENS = {
   systemPrompt: 4_000,
   toolDefinitions: 2_000,
@@ -78,12 +78,12 @@ const RESERVED_TOKENS = {
 
 const TOTAL_RESERVED = Object.values(RESERVED_TOKENS).reduce((a, b) => a + b, 0)
 
-/** 自动压缩触发阈值：可用空间的 85% */
+/** Auto-compact trigger threshold: 85% of available space */
 const AUTO_COMPACT_THRESHOLD_RATIO = 0.85
 
 /**
- * 获取自动压缩的 token 阈值
- * 当对话 token 数超过此值时应触发压缩
+ * Get the token threshold for auto-compaction.
+ * Compaction should be triggered when conversation tokens exceed this value.
  */
 export function getAutoCompactThreshold(model = 'gpt-4o'): number {
   const contextWindow = MODEL_CONTEXT_WINDOWS[model] ?? 128_000
@@ -92,7 +92,7 @@ export function getAutoCompactThreshold(model = 'gpt-4o'): number {
 }
 
 /**
- * 判断是否应触发自动压缩
+ * Determine whether auto-compaction should be triggered.
  */
 export function shouldAutoCompact(
   messages: { role: string; content: string }[],

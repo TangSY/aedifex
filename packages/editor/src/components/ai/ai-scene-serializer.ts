@@ -327,6 +327,11 @@ export function formatSceneContextForPrompt(ctx: SceneContext): string {
     }
   }
 
+  // Missing prerequisites: flag what the scene is missing so AI can guide user
+  if (ctx.wallCount === 0) {
+    lines.push('- ⚠️ NO WALLS in this scene. Ask user whether to create walls/room first before placing against-wall furniture.')
+  }
+
   // Zone spatial data with semantic descriptions
   if (ctx.zones.length > 0) {
     lines.push('- Zones:')
@@ -349,14 +354,14 @@ export function formatSceneContextForPrompt(ctx: SceneContext): string {
   if (ctx.walls.length > 0) {
     lines.push('- Walls (with semantic info):')
 
-    // 分析墙体并添加语义标注
+    // Analyze walls and annotate with semantic info
     const wallInfos = ctx.walls.map((wall) => {
       const dx = wall.end[0] - wall.start[0]
       const dz = wall.end[1] - wall.start[1]
       const length = Math.hypot(dx, dz)
       const angle = Math.atan2(dz, dx)
 
-      // 判断墙体朝向
+      // Determine wall orientation
       let orientation: string
       const absDx = Math.abs(dx)
       const absDz = Math.abs(dz)
@@ -368,14 +373,14 @@ export function formatSceneContextForPrompt(ctx: SceneContext): string {
         orientation = `diagonal (${(angle * 180 / Math.PI).toFixed(0)}°)`
       }
 
-      // 计算墙面内侧法线方向
+      // Compute wall inward normal direction
       const normalX = -dz / length
       const normalZ = dx / length
 
       return { wall, length, orientation, normalX, normalZ, dx, dz }
     })
 
-    // 找出最长墙
+    // Find the longest wall
     const longestWall = wallInfos.reduce((a, b) => a.length > b.length ? a : b)
 
     for (const info of wallInfos) {
@@ -391,7 +396,7 @@ export function formatSceneContextForPrompt(ctx: SceneContext): string {
       }
     }
 
-    // 额外的墙体总结
+    // Wall summary
     lines.push(`  Summary: longest wall is ${longestWall.length.toFixed(2)}m (${longestWall.orientation})`)
   }
 
@@ -413,7 +418,7 @@ export function formatSceneContextForPrompt(ctx: SceneContext): string {
       lines.push(`  [${item.id}] ${item.name} (${item.catalogSlug}) at (${pos}) rot=${item.rotationY.toFixed(2)} size=${dim}m`)
     }
 
-    // 空闲区域分析（简化：基于 zone bounds 和已有物品位置）
+    // Available area analysis (simplified: based on zone bounds and existing item positions)
     // Pre-compute item positions once, then assign to zone quadrants via lookup
     if (ctx.zones.length > 0) {
       lines.push('- Available areas (approximate, avoiding existing items):')

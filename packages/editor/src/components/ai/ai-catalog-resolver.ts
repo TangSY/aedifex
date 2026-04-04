@@ -119,16 +119,21 @@ export function resolveCatalogSlug(slug: string): CatalogResolveResult {
 // Shape / Variant Mismatch Detection
 // ============================================================================
 
-/** Shape descriptors that indicate a specific variant the user wants */
+/**
+ * Shape descriptors that indicate a specific variant the user wants.
+ * English-only: the LLM is instructed to always use English in tool parameters
+ * (catalogSlug, description), so non-English keywords are unnecessary here.
+ * Multi-language user input is translated by the LLM before reaching this layer.
+ */
 const SHAPE_DESCRIPTORS: Record<string, string[]> = {
-  round: ['round', 'circular', 'circle', '圆', '圆形', '圆桌', '圆台'],
-  square: ['square', '方', '方形', '正方'],
-  'L-shaped': ['l-shaped', 'l-shape', 'l形', 'l型'],
-  corner: ['corner', '转角', '拐角'],
-  small: ['small', 'mini', '小', '迷你'],
-  large: ['large', 'big', '大', '大号'],
-  double: ['double', 'twin', '双', '双人'],
-  single: ['single', '单', '单人'],
+  round: ['round', 'circular', 'circle'],
+  square: ['square', 'rectangular'],
+  'L-shaped': ['l-shaped', 'l-shape'],
+  corner: ['corner'],
+  small: ['small', 'mini', 'compact'],
+  large: ['large', 'big', 'oversized'],
+  double: ['double', 'twin'],
+  single: ['single'],
 }
 
 /**

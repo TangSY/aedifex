@@ -255,7 +255,7 @@ export function AIChatPanel() {
             disabled={isStreaming || (isAIProcessing && !pendingQuestion)}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={pendingQuestion ? '回答 AI 的问题...' : '描述你想要的设计变更...'}
+            placeholder={pendingQuestion ? 'Answer AI question...' : 'Describe your design changes...'}
             rows={1}
             value={input}
           />
@@ -275,7 +275,7 @@ export function AIChatPanel() {
         </div>
         <div className="mt-1.5 flex items-center justify-between">
           <p className="font-barlow text-[10px] text-muted-foreground/50">
-            Enter 发送 · Shift+Enter 换行
+            Enter to send · Shift+Enter for new line
           </p>
           {messages.length > 0 && (
             <button
@@ -284,7 +284,7 @@ export function AIChatPanel() {
               type="button"
             >
               <Trash2 className="h-3 w-3" />
-              清空对话
+              Clear chat
             </button>
           )}
         </div>
@@ -342,7 +342,7 @@ const StreamingIndicator = memo(function StreamingIndicator({
         ) : (
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            {iterationCount > 1 ? `迭代 ${iterationCount} — 思考中...` : '思考中...'}
+            {iterationCount > 1 ? `Iteration ${iterationCount} — Thinking...` : 'Thinking...'}
           </span>
         )}
       </div>
@@ -355,10 +355,10 @@ const StreamingIndicator = memo(function StreamingIndicator({
 // ============================================================================
 
 const SUGGESTION_CHIPS = [
-  '在客厅放一张沙发和茶几',
-  '帮我布置一个卧室',
-  '添加照明设备',
-  '把家具重新排列',
+  'Place a sofa and coffee table in the living room',
+  'Help me furnish a bedroom',
+  'Add lighting fixtures',
+  'Rearrange the furniture',
 ]
 
 function EmptyState({ onSuggestionClick }: { onSuggestionClick: (text: string) => void }) {
@@ -367,11 +367,11 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick: (text: string) =
       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sidebar-primary/15">
         <Bot className="h-5 w-5 text-sidebar-primary" />
       </div>
-      <h3 className="mt-3 font-barlow font-semibold text-sm">AI 设计助手</h3>
+      <h3 className="mt-3 font-barlow font-semibold text-sm">AI Design Assistant</h3>
       <p className="mt-1 text-center font-barlow text-muted-foreground text-xs leading-relaxed">
-        用自然语言描述你想要的设计变更，
+        Describe your design changes in natural language,
         <br />
-        AI 会帮你在场景中预览和执行。
+        AI will preview and execute them in the scene.
       </p>
       <div className="mt-4 grid w-full grid-cols-1 gap-1.5">
         {SUGGESTION_CHIPS.map((text) => (
@@ -494,7 +494,7 @@ function BeforeAfterComparison({ before, after }: { before: string; after: strin
         type="button"
       >
         <Maximize2 className="h-3 w-3" />
-        滑动对比
+        Slide to compare
       </button>
 
       {/* Fullscreen slider comparison overlay */}
@@ -614,7 +614,7 @@ const MessageBubble = memo(function MessageBubble({ message }: { message: ChatMe
           <PlacementProposalCards
             message={message}
             onSelectOption={(option) => {
-              const text = `我选择方案 ${option.id}：${option.label}`
+              const text = `I choose option ${option.id}: ${option.label}`
               window.dispatchEvent(new CustomEvent('ai-select-option', { detail: text }))
             }}
           />
@@ -664,16 +664,16 @@ function OperationSummary({
     <div className="space-y-1">
       <div className="flex items-center gap-1.5">
         <span className="font-barlow font-medium text-xs">
-          {validCount} 项操作
+          {validCount} operation{validCount !== 1 ? 's' : ''}
         </span>
         {adjustedCount > 0 && (
           <span className="font-barlow text-[10px] text-yellow-400">
-            ({adjustedCount} 项已调整)
+            ({adjustedCount} adjusted)
           </span>
         )}
         {invalidCount > 0 && (
           <span className="font-barlow text-[10px] text-destructive">
-            ({invalidCount} 项无效)
+            ({invalidCount} invalid)
           </span>
         )}
       </div>
@@ -695,17 +695,17 @@ function OperationSummary({
               {op.type === 'update_material' && '* '}
             </span>
             <span className="truncate">
-              {op.type === 'add_item' && `添加 ${op.asset?.name ?? 'item'}`}
-              {op.type === 'add_wall' && `添加墙体`}
-              {op.type === 'add_door' && `添加门`}
-              {op.type === 'add_window' && `添加窗户`}
-              {op.type === 'remove_item' && `移除 ${op.nodeId}`}
-              {op.type === 'remove_node' && `移除${op.nodeType === 'wall' ? '墙体' : op.nodeType === 'door' ? '门' : op.nodeType === 'window' ? '窗户' : '节点'} ${op.nodeId}`}
-              {op.type === 'move_item' && `移动 ${op.nodeId}`}
-              {op.type === 'update_material' && `更新材质 ${op.nodeId}`}
+              {op.type === 'add_item' && `Add ${op.asset?.name ?? 'item'}`}
+              {op.type === 'add_wall' && 'Add wall'}
+              {op.type === 'add_door' && 'Add door'}
+              {op.type === 'add_window' && 'Add window'}
+              {op.type === 'remove_item' && `Remove ${op.nodeId}`}
+              {op.type === 'remove_node' && `Remove ${op.nodeType ?? 'node'} ${op.nodeId}`}
+              {op.type === 'move_item' && `Move ${op.nodeId}`}
+              {op.type === 'update_material' && `Update material ${op.nodeId}`}
             </span>
             {op.status === 'adjusted' && (
-              <span className="shrink-0 text-[9px] text-yellow-400">调整</span>
+              <span className="shrink-0 text-[9px] text-yellow-400">adjusted</span>
             )}
           </div>
         ))}
@@ -713,7 +713,7 @@ function OperationSummary({
 
       {status === 'confirmed' && (
         <div className="flex items-center gap-1 font-barlow text-[10px] text-green-400">
-          <Check className="h-3 w-3" /> 已确认
+          <Check className="h-3 w-3" /> Confirmed
           {messageId && (
             <button
               className="ml-2 rounded px-1.5 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
@@ -724,19 +724,19 @@ function OperationSummary({
               }}
               type="button"
             >
-              撤销
+              Undo
             </button>
           )}
         </div>
       )}
       {status === 'rejected' && (
         <div className="flex items-center gap-1 font-barlow text-[10px] text-muted-foreground">
-          <X className="h-3 w-3" /> 已拒绝
+          <X className="h-3 w-3" /> Rejected
         </div>
       )}
       {status === 'undone' && (
         <div className="flex items-center gap-1 font-barlow text-[10px] text-yellow-400">
-          <X className="h-3 w-3" /> 已撤销
+          <X className="h-3 w-3" /> Undone
         </div>
       )}
     </div>
@@ -771,9 +771,9 @@ function OperationHistoryPanel({
         type="button"
       >
         <History className="h-3 w-3" />
-        <span>操作历史</span>
+        <span>Operation History</span>
         <span className="text-[10px] text-muted-foreground/60">
-          ({confirmedCount} 项已确认{undoneCount > 0 ? `，${undoneCount} 项已撤销` : ''})
+          ({confirmedCount} confirmed{undoneCount > 0 ? `, ${undoneCount} undone` : ''})
         </span>
         <ChevronDown
           className={cn(
@@ -830,7 +830,7 @@ function OperationHistoryItem({
   }
   const summary = Array.from(typeCounts.entries())
     .map(([label, count]) => count > 1 ? `${label}×${count}` : label)
-    .join('、')
+    .join(', ')
 
   const isUndone = log.status === 'undone'
   const isConfirmed = log.status === 'confirmed'
@@ -850,20 +850,20 @@ function OperationHistoryItem({
         {summary}
       </span>
       <span className="shrink-0 text-[9px] text-muted-foreground/50">
-        {validOps.length} 节点
+        {validOps.length} node{validOps.length !== 1 ? 's' : ''}
       </span>
       {isConfirmed && (
         <button
           className="shrink-0 rounded px-1 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
           onClick={() => onUndo(log.id)}
-          title="撤销此操作"
+          title="Undo this operation"
           type="button"
         >
           <Undo2 className="h-3 w-3" />
         </button>
       )}
       {isUndone && (
-        <span className="shrink-0 text-[9px] text-yellow-400/70">已撤销</span>
+        <span className="shrink-0 text-[9px] text-yellow-400/70">undone</span>
       )}
     </div>
   )
@@ -871,14 +871,14 @@ function OperationHistoryItem({
 
 function getOperationTypeLabel(type: string): string {
   switch (type) {
-    case 'add_item': return '添加家具'
-    case 'add_wall': return '添加墙体'
-    case 'add_door': return '添加门'
-    case 'add_window': return '添加窗户'
-    case 'remove_item': return '移除家具'
-    case 'remove_node': return '移除节点'
-    case 'move_item': return '移动家具'
-    case 'update_material': return '更新材质'
+    case 'add_item': return 'Add furniture'
+    case 'add_wall': return 'Add wall'
+    case 'add_door': return 'Add door'
+    case 'add_window': return 'Add window'
+    case 'remove_item': return 'Remove furniture'
+    case 'remove_node': return 'Remove node'
+    case 'move_item': return 'Move furniture'
+    case 'update_material': return 'Update material'
     default: return type
   }
 }
@@ -986,7 +986,7 @@ function ProposalTabs({
                 const validOps = p.operations.filter((op) => op.status !== 'invalid')
                 return (
                   <span className="font-barlow text-[11px] text-muted-foreground" key={p.id}>
-                    {validOps.length} 项操作 · 切换标签预览不同方案
+                    {validOps.length} operation{validOps.length !== 1 ? 's' : ''} · Switch tabs to preview different options
                   </span>
                 )
               })}
@@ -1001,7 +1001,7 @@ function ProposalTabs({
             type="button"
           >
             <X className="h-3.5 w-3.5" />
-            全部拒绝
+            Reject all
           </button>
           <button
             className="flex h-7 items-center gap-1 rounded-md bg-sidebar-primary px-2.5 font-barlow text-white text-xs transition-colors hover:bg-sidebar-primary/90"
@@ -1009,7 +1009,7 @@ function ProposalTabs({
             type="button"
           >
             <Check className="h-3.5 w-3.5" />
-            确认当前方案
+            Confirm selection
           </button>
         </div>
       </div>
@@ -1049,7 +1049,7 @@ function PendingOperationCard({
       <div className="px-3 py-2.5">
         <div className="flex items-center justify-between">
           <span className="font-barlow font-medium text-xs">
-            预览 {validOps.length} 项操作
+            Preview {validOps.length} operation{validOps.length !== 1 ? 's' : ''}
           </span>
           <div className="flex items-center gap-1.5">
             <button
@@ -1058,7 +1058,7 @@ function PendingOperationCard({
               type="button"
             >
               <X className="h-3.5 w-3.5" />
-              拒绝
+              Reject
             </button>
             <button
               className="flex h-7 items-center gap-1 rounded-md bg-sidebar-primary px-2.5 font-barlow text-white text-xs transition-colors hover:bg-sidebar-primary/90"
@@ -1066,7 +1066,7 @@ function PendingOperationCard({
               type="button"
             >
               <Check className="h-3.5 w-3.5" />
-              确认
+              Confirm
             </button>
           </div>
         </div>

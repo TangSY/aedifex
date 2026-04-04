@@ -98,7 +98,7 @@ async function processStream(
       errorMessage = `Request failed (${response.status})`
     }
 
-    // 直接使用后端返回的错误消息，区分不同 429 来源
+    // Use backend error message directly to distinguish different 429 sources
     callbacks.onError(errorMessage)
     return
   }

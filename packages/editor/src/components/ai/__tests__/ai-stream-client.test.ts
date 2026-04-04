@@ -370,7 +370,7 @@ describe('streamChat — network errors', () => {
     await new Promise((resolve) => setTimeout(resolve, 10))
 
     expect(cbs.errors).toHaveLength(1)
-    expect(cbs.errors[0]).toContain('频率超限')
+    expect(cbs.errors[0]).toContain('Too Many Requests')
     controller.abort()
   })
 

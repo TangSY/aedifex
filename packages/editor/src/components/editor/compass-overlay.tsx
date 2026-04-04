@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from 'react'
 import { getCameraAzimuth } from './compass-hud'
 
 /**
- * Compass Overlay — 视口右上角的方向指示器（Canvas 外部渲染）
+ * Compass Overlay — direction indicator at viewport top-right (rendered outside Canvas)
  *
- * 坐标系映射（与 AI prompt 一致）：
- *   +X = 东 (E)    -X = 西 (W)
- *   +Z = 南 (S)    -Z = 北 (N)
+ * Coordinate system mapping (consistent with AI prompt):
+ *   +X = East (E)    -X = West (W)
+ *   +Z = South (S)   -Z = North (N)
  */
 export function CompassOverlay() {
   const [rotation, setRotation] = useState(0)
@@ -19,7 +19,7 @@ export function CompassOverlay() {
     function tick() {
       const azimuth = getCameraAzimuth()
       const deg = (azimuth * 180) / Math.PI
-      // 只在旋转角度变化超过 0.5° 时才触发 React 重渲染
+      // Only trigger React re-render when rotation changes by more than 0.5 degrees
       if (Math.abs(deg - prevDeg) > 0.5) {
         prevDeg = deg
         setRotation(deg)
@@ -35,7 +35,7 @@ export function CompassOverlay() {
       className="pointer-events-none absolute top-4 right-4 z-20"
       style={{ width: 64, height: 64 }}
     >
-      {/* 外圈 */}
+      {/* Outer ring */}
       <div
         className="absolute inset-0 rounded-full border border-white/15"
         style={{
@@ -44,7 +44,7 @@ export function CompassOverlay() {
         }}
       />
 
-      {/* 旋转层 */}
+      {/* Rotation layer */}
       <div
         className="absolute inset-0"
         style={{
@@ -52,7 +52,7 @@ export function CompassOverlay() {
           transition: 'transform 0.1s ease-out',
         }}
       >
-        {/* N 标签（红色） */}
+        {/* N label (red) */}
         <span
           className="absolute top-1 left-1/2 -translate-x-1/2 font-bold text-red-500"
           style={{ fontSize: 11, fontFamily: 'system-ui, sans-serif', lineHeight: 1 }}
@@ -60,7 +60,7 @@ export function CompassOverlay() {
           N
         </span>
 
-        {/* S 标签 */}
+        {/* S label */}
         <span
           className="absolute bottom-1 left-1/2 -translate-x-1/2 font-semibold text-white/45"
           style={{ fontSize: 10, fontFamily: 'system-ui, sans-serif', lineHeight: 1 }}
@@ -68,7 +68,7 @@ export function CompassOverlay() {
           S
         </span>
 
-        {/* E 标签 */}
+        {/* E label */}
         <span
           className="absolute top-1/2 right-1 -translate-y-1/2 font-semibold text-white/45"
           style={{ fontSize: 10, fontFamily: 'system-ui, sans-serif', lineHeight: 1 }}
@@ -76,7 +76,7 @@ export function CompassOverlay() {
           E
         </span>
 
-        {/* W 标签 */}
+        {/* W label */}
         <span
           className="absolute top-1/2 left-1.5 -translate-y-1/2 font-semibold text-white/45"
           style={{ fontSize: 10, fontFamily: 'system-ui, sans-serif', lineHeight: 1 }}
@@ -84,7 +84,7 @@ export function CompassOverlay() {
           W
         </span>
 
-        {/* 指北针（红色三角） */}
+        {/* North needle (red triangle) */}
         <div
           className="absolute top-3.5 left-1/2 -translate-x-1/2"
           style={{
@@ -96,7 +96,7 @@ export function CompassOverlay() {
           }}
         />
 
-        {/* 指南针底部（灰色三角） */}
+        {/* South needle (gray triangle) */}
         <div
           className="absolute bottom-3.5 left-1/2 -translate-x-1/2"
           style={{
@@ -108,7 +108,7 @@ export function CompassOverlay() {
           }}
         />
 
-        {/* 中心圆点 */}
+        {/* Center dot */}
         <div
           className="absolute top-1/2 left-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/50"
         />

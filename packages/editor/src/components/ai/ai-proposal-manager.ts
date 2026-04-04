@@ -57,7 +57,7 @@ export function createProposals(
 
   const proposals: Proposal[] = operationSets.map((set, index) => {
     const id = nanoid()
-    const label = set.label || `方案 ${String.fromCharCode(65 + index)}`
+    const label = set.label || `Option ${String.fromCharCode(65 + index)}`
 
     proposalCreatedNodes.set(id, [])
     proposalModifiedNodes.set(id, new Map())

@@ -4,29 +4,28 @@ import type { ValidatedAddItem, ValidatedMoveItem, ValidatedOperation } from './
 
 // ============================================================================
 // Layout Optimizer
-// 对 AI 生成的放置操作进行后验优化：墙体对齐、功能分组间距、通道保障、对称修正。
-// 在 mutation executor 验证后、ghost preview 之前执行。
+// Post-validation optimizer for AI-generated placement operations:
+// wall snapping, functional group spacing, walkway clearance, symmetry correction.
+// Runs after mutation executor validation, before ghost preview.
 // ============================================================================
 
-/** 墙体对齐吸附阈值（米） */
+/** Wall snap threshold in meters */
 const WALL_SNAP_THRESHOLD = 0.3
-/** 物品到墙面的标准间距（米），贴墙放置时使用 */
+/** Standard gap between item and wall surface (meters), used for flush placement */
 const WALL_OFFSET = 0.05
-/** 最小通道宽度（米） */
-const MIN_WALKWAY = 0.6
 
 // ============================================================================
-// 功能分组间距规则
+// Functional Group Spacing Rules
 // ============================================================================
 
 interface SpacingRule {
-  /** 主物品的 category 或 catalogSlug 关键字 */
+  /** Primary item's category or catalogSlug keywords */
   primary: string[]
-  /** 伴随物品的 category 或 catalogSlug 关键字 */
+  /** Companion item's category or catalogSlug keywords */
   companion: string[]
-  /** 理想间距（米） */
+  /** Ideal edge-to-edge gap in meters */
   idealDistance: number
-  /** 允许偏差（米） */
+  /** Allowed deviation in meters */
   tolerance: number
 }
 
@@ -58,7 +57,7 @@ const SPACING_RULES: SpacingRule[] = [
 ]
 
 // ============================================================================
-// 靠墙家具类别
+// Against-Wall Item Categories
 // ============================================================================
 
 const AGAINST_WALL_CATEGORIES = [
@@ -72,8 +71,8 @@ const AGAINST_WALL_CATEGORIES = [
 // ============================================================================
 
 /**
- * 对一组已验证的操作进行布局优化。
- * 仅调整 add_item 和 move_item 类型的有效/调整后操作。
+ * Optimize a set of validated operations for better layout.
+ * Only adjusts valid/adjusted add_item and move_item operations.
  */
 export function optimizeLayout(operations: ValidatedOperation[]): ValidatedOperation[] {
   return operations.map((op) => {
@@ -90,7 +89,7 @@ export function optimizeLayout(operations: ValidatedOperation[]): ValidatedOpera
 }
 
 // ============================================================================
-// 单项优化
+// Per-Item Optimization
 // ============================================================================
 
 function optimizeAddItem(
@@ -103,7 +102,7 @@ function optimizeAddItem(
   let rotation = [...op.rotation] as [number, number, number]
   const reasons: string[] = []
 
-  // 1. 靠墙家具 → 墙体对齐吸附
+  // 1. Against-wall items -> wall snap alignment
   if (isAgainstWallItem(op.asset.id, op.asset.category)) {
     const dims: [number, number, number] = [
       op.asset.dimensions?.[0] ?? 1,
@@ -116,20 +115,20 @@ function optimizeAddItem(
     if (wallSnap) {
       position = wallSnap.position
       rotation = wallSnap.rotation
-      reasons.push('对齐到最近墙面')
+      reasons.push('snapped to nearest wall')
     }
 
-    // 朝向强制校正：确保靠墙家具正面朝向房间内部
-    // snapToNearestWall 阈值很小(0.3m)，大部分正确放置的靠墙家具不会触发它
-    // 这里用更大阈值单独校正朝向，不改变位置
+    // Orientation enforcement: ensure against-wall items face room interior.
+    // snapToNearestWall has a small threshold (0.3m) — most correctly placed items won't trigger it.
+    // This uses a larger threshold to correct orientation only, without changing position.
     const orientFix = enforceAgainstWallOrientation(position, dims, rotation, walls)
     if (orientFix) {
       rotation = orientFix.rotation
-      reasons.push('朝向修正为面向房间内部')
+      reasons.push('orientation corrected to face room interior')
     }
   }
 
-  // 2. 功能分组间距检查（与同批次其他物品的关系）
+  // 2. Functional group spacing check (relative to other items in the same batch)
   const spacingAdj = adjustForGroupSpacing(
     op.asset.id,
     op.asset.category,
@@ -155,11 +154,11 @@ function optimizeAddItem(
 
 function optimizeMoveItem(
   op: ValidatedMoveItem,
-  allOps: ValidatedOperation[],
+  _allOps: ValidatedOperation[],
 ): ValidatedMoveItem {
   if (op.status === 'invalid') return op
 
-  // move_item 优化相对保守 — 仅做墙体吸附
+  // move_item optimization is conservative — wall snapping only
   const { nodes } = useScene.getState()
   const node = nodes[op.nodeId]
   if (!node || node.type !== 'item') return op
@@ -175,13 +174,13 @@ function optimizeMoveItem(
     if (wallSnap) {
       position = wallSnap.position
       rotation = wallSnap.rotation
-      reasons.push('对齐到最近墙面')
+      reasons.push('snapped to nearest wall')
     }
 
     const orientFix = enforceAgainstWallOrientation(position, node.asset.dimensions, rotation, walls)
     if (orientFix) {
       rotation = orientFix.rotation
-      reasons.push('朝向修正为面向房间内部')
+      reasons.push('orientation corrected to face room interior')
     }
   }
 
@@ -197,13 +196,13 @@ function optimizeMoveItem(
 }
 
 // ============================================================================
-// 墙体对齐吸附
+// Wall Snap Alignment
 // ============================================================================
 
 function snapToNearestWall(
   position: [number, number, number],
   dimensions: [number, number, number],
-  rotation: [number, number, number],
+  _rotation: [number, number, number],
   walls?: WallNode[],
 ): { position: [number, number, number]; rotation: [number, number, number] } | null {
   const resolvedWalls = walls ?? getAllWalls()
@@ -215,7 +214,7 @@ function snapToNearestWall(
   let bestClosestPoint: [number, number] = [0, 0]
 
   for (const wall of resolvedWalls) {
-    // 计算物品中心到墙段的最近距离
+    // Find closest point on wall segment to item center
     const { closestPoint, distance } = closestPointOnSegment(
       px, pz,
       wall.start[0], wall.start[1],
@@ -231,31 +230,31 @@ function snapToNearestWall(
 
   if (!bestWall) return null
 
-  // 计算墙体法线方向
+  // Compute wall normal direction
   const wallDx = bestWall.end[0] - bestWall.start[0]
   const wallDz = bestWall.end[1] - bestWall.start[1]
   const wallLen = Math.hypot(wallDx, wallDz)
   if (wallLen < 0.01) return null
 
-  // 法线 = 墙体方向旋转 90 度
+  // Normal = wall direction rotated 90 degrees
   const normalX = -wallDz / wallLen
   const normalZ = wallDx / wallLen
 
-  // 判断物品应在法线的哪一侧（选择物品当前所在的一侧）
+  // Determine which side of the normal the item is on (keep item on its current side)
   const toCenterX = px - bestClosestPoint[0]
   const toCenterZ = pz - bestClosestPoint[1]
   const side = Math.sign(toCenterX * normalX + toCenterZ * normalZ) || 1
 
-  // 计算物品朝向：面向法线方向（面向房间内部）
-  // 必须先计算 faceAngle，再基于最终旋转计算尺寸投影。
-  // 否则 halfDepth/halfWidth 基于原始旋转，但返回的是新旋转，导致沿墙约束不准。
+  // Compute item facing direction: face along normal (toward room interior).
+  // Must compute faceAngle first, then use final rotation for dimension projection.
+  // Otherwise halfDepth/halfWidth use original rotation but we return a new one, causing wall-clamping inaccuracy.
   const faceAngle = Math.atan2(side * normalX, side * normalZ)
 
   const [w, , d] = dimensions
   const wallAngle = Math.atan2(wallDz, wallDx)
-  // 使用最终旋转角（faceAngle）而非原始旋转角计算尺寸投影
+  // Use final rotation angle (faceAngle) instead of original for dimension projection
   const angleDiff = Math.abs(normalizeAngle(faceAngle - wallAngle))
-  // 根据物品朝向，选择 w 或 d 作为深度（垂直于墙方向）
+  // Pick w or d as depth (perpendicular to wall) based on item orientation
   const halfDepth = (angleDiff < Math.PI / 4 || angleDiff > (3 * Math.PI) / 4)
     ? d / 2
     : w / 2
@@ -263,25 +262,25 @@ function snapToNearestWall(
   const thickness = bestWall.thickness ?? 0.2
   const offset = thickness / 2 + halfDepth + WALL_OFFSET
 
-  // 新位置：沿最近点向法线方向偏移
+  // New position: offset from closest point along normal direction
   let newX = bestClosestPoint[0] + normalX * side * offset
   let newZ = bestClosestPoint[1] + normalZ * side * offset
 
-  // 约束物品沿墙方向不超出墙体端点。
-  // 物品的半宽（平行于墙方向的尺寸）不能超过墙的两端。
+  // Clamp item along wall direction so it doesn't overshoot wall endpoints.
+  // Item half-width (parallel to wall) must not exceed wall bounds.
   const halfWidth = (angleDiff < Math.PI / 4 || angleDiff > (3 * Math.PI) / 4)
     ? w / 2
     : d / 2
   const wallDirX = wallDx / wallLen
   const wallDirZ = wallDz / wallLen
-  // 将物品中心投影到墙段上，用参数 t 表示沿墙的位置 (0=start, wallLen=end)
+  // Project item center onto wall segment; t = position along wall (0=start, wallLen=end)
   const t = (newX - bestWall.start[0]) * wallDirX + (newZ - bestWall.start[1]) * wallDirZ
   const margin = halfWidth + thickness / 2
-  // 如果物品比墙还宽，跳过端点约束（交给 zone boundary check 处理）
+  // If item is wider than wall, skip endpoint clamping (zone boundary check handles this)
   if (margin * 2 > wallLen) return { position: [newX, py, newZ], rotation: [0, faceAngle, 0] }
   const clampedT = Math.max(margin, Math.min(wallLen - margin, t))
   if (Math.abs(clampedT - t) > 0.01) {
-    // 沿墙方向滑动物品使其不超出端点
+    // Slide item along wall to stay within endpoints
     newX += wallDirX * (clampedT - t)
     newZ += wallDirZ * (clampedT - t)
   }
@@ -293,15 +292,15 @@ function snapToNearestWall(
 }
 
 // ============================================================================
-// 靠墙家具朝向强制校正
+// Against-Wall Item Orientation Enforcement
 // ============================================================================
 
 /**
- * 对靠墙家具强制校正朝向，确保正面（+Z 方向）面向房间内部。
- * 与 snapToNearestWall 不同：
- * - 阈值更大（物品深度 + 余量），覆盖正常靠墙放置的距离
- * - 只校正旋转，不改变位置
- * - 只有当朝向明显错误（面向墙壁而非房间）时才纠正
+ * Enforce correct orientation for against-wall items, ensuring front (+Z) faces room interior.
+ * Unlike snapToNearestWall:
+ * - Uses a larger threshold (item depth + margin) to cover normally placed items
+ * - Only corrects rotation, does not change position
+ * - Only corrects when facing is clearly wrong (toward wall instead of room)
  */
 function enforceAgainstWallOrientation(
   position: [number, number, number],
@@ -315,7 +314,7 @@ function enforceAgainstWallOrientation(
   const [px, , pz] = position
   const [, , depth] = dimensions
 
-  // 阈值：物品深度 + 余量，确保正常靠墙放置的家具能被检测到
+  // Threshold: item depth + margin, ensuring normally placed against-wall items are detected
   const threshold = Math.max(depth, 1.5) + 0.5
   let bestWall: WallNode | null = null
   let bestDist = threshold
@@ -336,7 +335,7 @@ function enforceAgainstWallOrientation(
 
   if (!bestWall) return null
 
-  // 计算墙体法线
+  // Compute wall normal
   const wallDx = bestWall.end[0] - bestWall.start[0]
   const wallDz = bestWall.end[1] - bestWall.start[1]
   const wallLen = Math.hypot(wallDx, wallDz)
@@ -345,30 +344,54 @@ function enforceAgainstWallOrientation(
   const normalX = -wallDz / wallLen
   const normalZ = wallDx / wallLen
 
-  // 判断物品在墙的哪一侧
+  // Determine which side of the wall the item is on
   const toCenterX = px - bestClosestPoint[0]
   const toCenterZ = pz - bestClosestPoint[1]
   const side = Math.sign(toCenterX * normalX + toCenterZ * normalZ) || 1
 
-  // 正确朝向：正面远离墙壁，面向房间内部
+  // Correct orientation: front faces away from wall, toward room interior
   const correctAngle = Math.atan2(side * normalX, side * normalZ)
 
-  // 检查当前朝向是否偏离正确朝向超过 90°（面向墙壁而非房间）
+  // Check if current facing deviates more than 90 degrees (facing wall instead of room)
   const currentAngle = rotation[1]
   const angleDiff = Math.abs(normalizeAngle(currentAngle - correctAngle))
 
   if (angleDiff <= Math.PI / 2) {
-    // 朝向大致正确（偏差 < 90°），不干预
+    // Orientation is roughly correct (deviation < 90 degrees), no intervention needed
     return null
   }
 
-  // 朝向明显错误（面向墙壁），纠正为面向房间内部
+  // Orientation is clearly wrong (facing wall), correct to face room interior
   return { rotation: [0, correctAngle, 0] }
 }
 
 // ============================================================================
-// 功能分组间距
+// Functional Group Spacing
 // ============================================================================
+
+/**
+ * Compute item half-extent along a given axis direction, accounting for rotation.
+ * rotationY affects how width(X) and depth(Z) project onto world axes.
+ */
+function halfExtentAlongAxis(
+  dimensions: [number, number, number],
+  rotationY: number,
+  axisX: number,
+  axisZ: number,
+): number {
+  const [w, , d] = dimensions
+  const cosR = Math.abs(Math.cos(rotationY))
+  const sinR = Math.abs(Math.sin(rotationY))
+  // Item projection onto world X/Z axes
+  const worldHalfX = (w * cosR + d * sinR) / 2
+  const worldHalfZ = (w * sinR + d * cosR) / 2
+  // Project onto the specified axis direction
+  const axisLen = Math.hypot(axisX, axisZ)
+  if (axisLen < 0.001) return Math.max(worldHalfX, worldHalfZ)
+  const nx = Math.abs(axisX / axisLen)
+  const nz = Math.abs(axisZ / axisLen)
+  return worldHalfX * nx + worldHalfZ * nz
+}
 
 function adjustForGroupSpacing(
   assetId: string,
@@ -381,11 +404,11 @@ function adjustForGroupSpacing(
   const cat = category.toLowerCase()
 
   for (const rule of SPACING_RULES) {
-    // 检查当前物品是否是 companion
+    // Check if current item is a companion
     const isCompanion = rule.companion.some((k) => slug.includes(k) || cat.includes(k))
     if (!isCompanion) continue
 
-    // 在同批次操作中找 primary 物品
+    // Find primary item in the same batch
     for (const op of allOps) {
       if (op.type !== 'add_item' || op.status === 'invalid' || !op.asset) continue
       const opSlug = op.asset.id.toLowerCase()
@@ -393,24 +416,46 @@ function adjustForGroupSpacing(
       const isPrimary = rule.primary.some((k) => opSlug.includes(k) || opCat.includes(k))
       if (!isPrimary) continue
 
-      // 计算当前间距
+      // Compute along primary item's facing direction (front = +Z after rotation)
+      const primaryRotY = op.rotation[1]
+      // Facing axis: at rotationY=0 front faces +Z, after rotation faces (sin(rotY), cos(rotY))
+      const facingX = Math.sin(primaryRotY)
+      const facingZ = Math.cos(primaryRotY)
+
+      // Project companion-to-primary offset onto facing axis
       const dx = position[0] - op.position[0]
       const dz = position[2] - op.position[2]
-      const currentDist = Math.hypot(dx, dz)
-      const diff = currentDist - rule.idealDistance
+      const projectedDist = dx * facingX + dz * facingZ // signed distance along facing axis
+
+      // Compute half-extents of both items along facing axis
+      const primaryHalf = halfExtentAlongAxis(
+        [op.asset.dimensions?.[0] ?? 1, op.asset.dimensions?.[1] ?? 1, op.asset.dimensions?.[2] ?? 1],
+        primaryRotY, facingX, facingZ,
+      )
+      const companionRotY = 0 // companion has not been rotation-corrected yet, use default
+      const companionHalf = halfExtentAlongAxis(dimensions, companionRotY, facingX, facingZ)
+
+      // Edge-to-edge gap = center distance - both half-extents
+      const absDist = Math.abs(projectedDist)
+      const edgeGap = absDist - primaryHalf - companionHalf
+      const diff = edgeGap - rule.idealDistance
 
       if (Math.abs(diff) <= rule.tolerance) continue
+      if (absDist < 0.01) continue // overlapping, skip
 
-      // 需要调整：沿当前方向缩放到理想距离
-      if (currentDist < 0.01) continue // 重合时不处理
-
-      const scale = rule.idealDistance / currentDist
-      const newX = op.position[0] + dx * scale
-      const newZ = op.position[2] + dz * scale
+      // Target center distance = both half-extents + ideal edge gap
+      const targetCenterDist = primaryHalf + rule.idealDistance + companionHalf
+      // Keep companion on the same side of primary (preserve sign)
+      const sign = projectedDist >= 0 ? 1 : -1
+      // Adjust only along facing axis, preserve lateral offset
+      const lateralX = dx - projectedDist * facingX
+      const lateralZ = dz - projectedDist * facingZ
+      const newX = op.position[0] + lateralX + facingX * sign * targetCenterDist
+      const newZ = op.position[2] + lateralZ + facingZ * sign * targetCenterDist
 
       return {
         position: [newX, position[1], newZ],
-        reason: `调整与${rule.primary[0]}的间距至${rule.idealDistance}m`,
+        reason: `adjusted edge gap to ${rule.primary[0]} to ${rule.idealDistance}m`,
       }
     }
   }
@@ -419,7 +464,7 @@ function adjustForGroupSpacing(
 }
 
 // ============================================================================
-// 工具函数
+// Utility Functions
 // ============================================================================
 
 function isAgainstWallItem(assetId: string, category: string): boolean {
@@ -461,7 +506,7 @@ function closestPointOnSegment(
   return { closestPoint: [cx, cz], distance: Math.hypot(px - cx, pz - cz) }
 }
 
-/** 将角度归一化到 [-PI, PI] */
+/** Normalize angle to [-PI, PI] range */
 function normalizeAngle(angle: number): number {
   while (angle > Math.PI) angle -= 2 * Math.PI
   while (angle < -Math.PI) angle += 2 * Math.PI
