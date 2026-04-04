@@ -64,6 +64,14 @@ export function AIChatPanel() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isStreaming])
 
+  // Keep focus on textarea after React re-renders (streaming, operations, etc.)
+  useEffect(() => {
+    if (!isStreaming && !isAIProcessing) return
+    // Delay to run after React commit phase
+    const timer = setTimeout(() => textareaRef.current?.focus(), 0)
+    return () => clearTimeout(timer)
+  }, [messages, isStreaming, isAIProcessing])
+
   // Auto-resize textarea
   useEffect(() => {
     const el = textareaRef.current
@@ -587,6 +595,15 @@ function BeforeAfterComparison({ before, after }: { before: string; after: strin
 
 const MessageBubble = memo(function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'user'
+  const hasContent = message.content.trim().length > 0
+  const hasOperations = message.operations && message.operations.length > 0
+  const hasProposal = message.toolCalls?.some((tc) => tc.tool === 'propose_placement')
+  const hasScreenshots = message.screenshotBefore && message.screenshotAfter
+
+  // Skip rendering empty assistant bubbles (e.g., ask_user with no text output)
+  if (!isUser && !hasContent && !hasOperations && !hasProposal && !hasScreenshots) {
+    return null
+  }
 
   return (
     <div className={cn('flex gap-2', isUser && 'flex-row-reverse')}>
@@ -603,9 +620,9 @@ const MessageBubble = memo(function MessageBubble({ message }: { message: ChatMe
       >
         {isUser ? (
           <p className="whitespace-pre-wrap break-words">{message.content}</p>
-        ) : (
+        ) : hasContent ? (
           <AIMarkdown content={message.content} />
-        )}
+        ) : null}
 
         {/* Placement proposal options — hide after user selects one */}
         {message.toolCalls?.some((tc) => tc.tool === 'propose_placement') &&
