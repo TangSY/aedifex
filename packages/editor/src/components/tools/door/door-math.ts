@@ -59,6 +59,7 @@ export function hasWallChildOverlap(
   width: number,
   height: number,
   ignoreId?: string,
+  ignoreIds?: Set<string>,
 ): boolean {
   const nodes = useScene.getState().nodes
   const wallNode = nodes[wallId as AnyNodeId] as WallNode | undefined
@@ -72,6 +73,8 @@ export function hasWallChildOverlap(
 
   for (const childId of wallNode.children) {
     if (childId === ignoreId) continue
+    // Skip nodes pending removal in the same batch (remove+add mixed batch)
+    if (ignoreIds?.has(childId)) continue
     const child = nodes[childId as AnyNodeId]
     if (!child) continue
     // Skip nodes pending ghost removal (soft-deleted in current preview round)
