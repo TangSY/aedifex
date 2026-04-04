@@ -222,6 +222,25 @@ export async function runAgentLoop({
         const isDeterministic =
           isTerminalTool || (isPureRemove && validOps.length > 0) || (isPureStructuralBatch && validOps.length > 0) || isFurnitureDeterministic
         if (isDeterministic && validOps.length > 0) {
+          // Non-destructive operations (add/move/structural) auto-confirm immediately.
+          // Only pure remove operations wait for user Reject/Confirm.
+          if (!isPureRemove && isGhostPreviewActive()) {
+            const log = confirmGhostPreview(validOps)
+            invalidateSceneCache()
+            if (lastMessageId) {
+              log.messageId = lastMessageId
+              useAIChat.getState().confirmOperations(lastMessageId)
+              useAIChat.getState().addOperationLog(log)
+            }
+            // Capture after screenshot (async, non-blocking)
+            if (lastMessageId) {
+              const msgId = lastMessageId
+              setTimeout(async () => {
+                const afterUrl = await captureScreenshot()
+                if (afterUrl) useAIChat.getState().setScreenshotAfter(msgId, afterUrl)
+              }, 200)
+            }
+          }
           const toolResult = buildToolResult(
             mutationCalls.map((tc) => tc.tool).join('+'),
             validated,
