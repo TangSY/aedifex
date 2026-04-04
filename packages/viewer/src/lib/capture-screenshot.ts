@@ -72,6 +72,14 @@ export function captureScreenshot(
 
       const restoreLevels = snapLevelsToTruePositions()
 
+      // Ensure scene has a background color for the screenshot.
+      // AnimatedBackground sets scene.background via useFrame, but it may not
+      // have executed yet (empty scene, first frame). Fall back to white if unset.
+      const prevBackground = scene.background
+      if (!scene.background) {
+        scene.background = new THREE.Color('#ffffff')
+      }
+
       // Hide scan/guide nodes
       const visibilitySnapshot = new Map<string, boolean>()
       for (const type of ['scan', 'guide'] as const) {
@@ -85,6 +93,9 @@ export function captureScreenshot(
       }
 
       gl.render(scene, camera)
+
+      // Restore original background
+      scene.background = prevBackground
 
       restoreLevels()
       visibilitySnapshot.forEach((wasVisible, id) => {
