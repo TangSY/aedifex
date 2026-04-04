@@ -69,17 +69,41 @@ export async function runAgentLoop({
 }): Promise<void> {
   const store = useAIChat.getState()
 
-  // Clean up any lingering ghost preview from a previous loop before starting.
-  // This prevents stale ghost nodes from contaminating the new operation.
+  // If there are lingering ghost preview nodes from a previous loop,
+  // pause and ask the user to confirm or discard them before proceeding.
   if (isGhostPreviewActive()) {
-    clearGhostPreview()
-    // Also reject any pending operations on the last message
     const pendingMsg = [...store.messages].reverse().find(
       (m) => m.operationStatus === 'pending' && m.operations?.length,
     )
-    if (pendingMsg) {
-      store.rejectOperations(pendingMsg.id)
+
+    store.setAIProcessing(false)
+
+    const answer = await new Promise<string>((resolve) => {
+      store.setPendingQuestion({
+        question: 'There are unconfirmed changes from the previous operation. Would you like to keep or discard them before continuing?',
+        suggestions: ['Keep changes', 'Discard changes'],
+        resolve,
+      })
+    })
+
+    const shouldKeep = answer.toLowerCase().includes('keep') ||
+      answer.toLowerCase().includes('confirm') ||
+      answer.toLowerCase().includes('保留') ||
+      answer.toLowerCase().includes('确认')
+
+    if (shouldKeep && pendingMsg?.operations) {
+      // Confirm ghost preview as real nodes
+      await executeConfirmation(pendingMsg.id, pendingMsg.operations)
+    } else {
+      // Discard ghost preview
+      clearGhostPreview()
+      if (pendingMsg) {
+        store.rejectOperations(pendingMsg.id)
+      }
     }
+
+    // Add the user's choice as a message
+    store.addUserMessage(answer)
   }
 
   // Initialize loop state
