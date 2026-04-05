@@ -152,6 +152,12 @@ export async function runAgentLoop({
 
       // No tool calls → LLM is done, exit loop
       if (toolCalls.length === 0) {
+        // Empty response fallback: if LLM returned no text AND no tools,
+        // show a helpful message instead of leaving the chat silent.
+        if (!text?.trim() && lastMessageId) {
+          const fallback = 'Sorry, I was unable to process that request. Please try rephrasing or providing more details.'
+          useAIChat.getState().appendStreamContent(fallback)
+        }
         onIterationEnd?.(iteration, null)
         break
       }
@@ -246,6 +252,13 @@ export async function runAgentLoop({
           'add_window',
           'remove_item',
           'remove_node',
+          'update_wall',
+          'update_item',
+          'update_slab',
+          'update_ceiling',
+          'update_roof',
+          'update_zone',
+          'update_site',
         ])
         const isPureStructuralBatch = mutationCalls.every((tc: AIToolCall) => {
           if (STRUCTURAL_DETERMINISTIC.has(tc.tool)) return true
@@ -276,7 +289,10 @@ export async function runAgentLoop({
         const isSingleRemove = isPureRemove && mutationCalls.length === 1
         const isDeterministic =
           isTerminalTool || (isBulkRemove && validOps.length > 0) || (isPureStructuralBatch && !isSingleRemove && validOps.length > 0) || isFurnitureDeterministic
-        if (isDeterministic && validOps.length > 0 && !hasInvalid) {
+        // Structural operations are deterministic — repeating them won't change the
+        // outcome. Break even on partial failure to avoid wasting iterations
+        // (e.g. batch update_wall ×4 where some fail due to missing wallId).
+        if (isDeterministic && validOps.length > 0 && (!hasInvalid || isPureStructuralBatch)) {
           // Non-destructive operations (add/move/structural) auto-confirm immediately.
           // Only pure remove operations wait for user Reject/Confirm.
           if (!isPureRemove && isGhostPreviewActive()) {
