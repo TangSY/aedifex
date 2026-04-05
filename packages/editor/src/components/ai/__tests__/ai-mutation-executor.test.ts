@@ -140,7 +140,7 @@ describe('validateToolCall — add_item', () => {
     expect(op.status).toBe('adjusted')
 
     const addOp = op as ValidatedAddItem
-    expect(addOp.adjustmentReason).toContain('collision')
+    expect(addOp.adjustmentReason?.toLowerCase()).toContain('collision')
   })
 })
 

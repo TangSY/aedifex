@@ -5,6 +5,7 @@ vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
   cb(0)
   return 0
 })
+vi.stubGlobal('cancelAnimationFrame', () => {})
 
 import { WallNode } from '../schema/nodes/wall'
 import { ItemNode } from '../schema/nodes/item'

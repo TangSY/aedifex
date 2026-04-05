@@ -19,7 +19,7 @@ vi.mock('@aedifex/viewer', () => ({
   },
 }))
 
-import { serializeSceneContext, formatSceneContextForPrompt } from '../ai-scene-serializer'
+import { serializeSceneContext, formatSceneContextForPrompt, invalidateSceneCache } from '../ai-scene-serializer'
 
 // ============================================================================
 // Helpers
@@ -148,6 +148,7 @@ beforeEach(() => {
   mockSelection.levelId = ''
   mockSelection.zoneId = null
   mockSelection.selectedIds = []
+  invalidateSceneCache()
 })
 
 // ============================================================================

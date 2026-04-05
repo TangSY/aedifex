@@ -213,8 +213,9 @@ describe('optimizeLayout — functional group spacing', () => {
     setNodes({})
 
     const sofaOp = makeAddItemOp('sofa-classic', 'sofa', [0, 0, 0], [0, 0, 0], [2, 0.9, 0.9])
-    // Ideal distance for coffee-table to sofa is 0.4m, tolerance 0.15
-    const coffeeOp = makeAddItemOp('coffee-table', 'coffee-table', [0, 0, 0.4], [0, 0, 0], [1, 0.45, 0.6])
+    // idealDistance is edge-to-edge = 0.4m, tolerance = 0.15
+    // center-to-center = sofaHalfD(0.45) + ideal(0.4) + coffeeHalfD(0.3) = 1.15
+    const coffeeOp = makeAddItemOp('coffee-table', 'coffee-table', [0, 0, 1.15], [0, 0, 0], [1, 0.45, 0.6])
 
     const result = optimizeLayout([sofaOp, coffeeOp])
 
@@ -224,7 +225,7 @@ describe('optimizeLayout — functional group spacing', () => {
 
     // Within tolerance → no adjustment
     expect(coffeeResult.status).toBe('valid')
-    expect(coffeeResult.position).toEqual([0, 0, 0.4])
+    expect(coffeeResult.position).toEqual([0, 0, 1.15])
   })
 })
 

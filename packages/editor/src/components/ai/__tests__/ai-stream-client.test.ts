@@ -375,16 +375,24 @@ describe('streamChat — network errors', () => {
   })
 
   it('calls onError when fetch throws a network error', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('Network failure'))
+    vi.useFakeTimers()
+    // Reject for both the initial attempt and the retry
+    mockFetch.mockRejectedValue(new Error('Network failure'))
 
     const cbs = makeCallbacks()
     const controller = streamChat(baseRequest, cbs)
 
-    await new Promise((resolve) => setTimeout(resolve, 10))
+    // Flush the first attempt (microtask)
+    await vi.advanceTimersByTimeAsync(0)
+    // Advance past the retry delay (STREAM_RETRY_DELAY_MS = 1000)
+    await vi.advanceTimersByTimeAsync(1100)
+    // Flush the retry attempt
+    await vi.advanceTimersByTimeAsync(0)
 
     expect(cbs.errors).toHaveLength(1)
     expect(cbs.errors[0]).toContain('Network failure')
     controller.abort()
+    vi.useRealTimers()
   })
 })
 
