@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="./assets/logo-200.png" alt="Aedifex Logo" width="200" />
+
 # Aedifex
 
 **内置 AI 设计助手的开源 3D 建筑编辑器**
