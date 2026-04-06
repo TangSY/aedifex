@@ -284,14 +284,33 @@ export async function runAgentLoop({
         // explain the failures to the user and potentially retry.
         const hasInvalid = invalidOps.length > 0
 
+        // Detect wall-dependency failures: doors/windows fail with "not found"
+        // because walls in the same batch haven't been created yet.
+        // In this case, DON'T treat as deterministic — let the loop continue
+        // so walls get confirmed first, then LLM retries doors/windows with
+        // the real wallIds from createdNodeIds.
+        const hasWallCreations = validated.some(
+          (op) => op.type === 'add_wall' && op.status !== 'invalid',
+        )
+        const hasWallDependencyFailures = invalidOps.some(
+          (op) =>
+            (op.type === 'add_door' || op.type === 'add_window') &&
+            'errorReason' in op &&
+            typeof op.errorReason === 'string' &&
+            op.errorReason.includes('not found'),
+        )
+        const hasDeferrableDependencies = hasWallCreations && hasWallDependencyFailures
+
         // Single remove operations should loop back for follow-up (e.g. add replacement walls),
         // but structural batches (add_wall etc.) and bulk removes are terminal.
         const isSingleRemove = isPureRemove && mutationCalls.length === 1
         const isDeterministic =
-          isTerminalTool || (isBulkRemove && validOps.length > 0) || (isPureStructuralBatch && !isSingleRemove && validOps.length > 0) || isFurnitureDeterministic
+          isTerminalTool || (isBulkRemove && validOps.length > 0) || (isPureStructuralBatch && !isSingleRemove && validOps.length > 0 && !hasDeferrableDependencies) || isFurnitureDeterministic
         // Structural operations are deterministic — repeating them won't change the
         // outcome. Break even on partial failure to avoid wasting iterations
         // (e.g. batch update_wall ×4 where some fail due to missing wallId).
+        // Exception: wall + door/window batches with dependency failures should
+        // loop back so LLM can retry with real wall IDs.
         if (isDeterministic && validOps.length > 0 && (!hasInvalid || isPureStructuralBatch)) {
           // Non-destructive operations (add/move/structural) auto-confirm immediately.
           // Only pure remove operations wait for user Reject/Confirm.

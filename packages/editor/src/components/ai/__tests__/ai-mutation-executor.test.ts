@@ -118,12 +118,12 @@ describe('validateToolCall — add_item', () => {
     expect(addOp.errorReason).toContain('not found')
   })
 
-  it('adjusts position on collision', () => {
-    // First call: collision detected
+  it('treats transient collision as valid (false positive)', () => {
+    // First call: collision detected, but subsequent checks find no collision
+    // (e.g., stale spatial grid) — should be treated as valid, not adjusted
     const canPlaceMock = vi.mocked(spatialGridManager.canPlaceOnFloor)
     canPlaceMock
       .mockReturnValueOnce({ valid: false, conflictIds: ['existing-item'] })
-      // Auto-offset attempts — first succeeds
       .mockReturnValue({ valid: true, conflictIds: [] })
 
     const call: AddItemToolCall = {
@@ -137,10 +137,43 @@ describe('validateToolCall — add_item', () => {
     expect(results).toHaveLength(1)
 
     const op = results[0]!
-    expect(op.status).toBe('adjusted')
+    // Re-check finds no collision → false positive → valid
+    expect(op.status).toBe('valid')
+  })
+
+  it('returns invalid when collision cannot be resolved', () => {
+    // All checks return collision — auto-offset fails, re-check confirms collision
+    // Use mockReturnValueOnce (×6 to cover all calls) to avoid leaking mock state
+    const canPlaceMock = vi.mocked(spatialGridManager.canPlaceOnFloor)
+    for (let i = 0; i < 6; i++) {
+      canPlaceMock.mockReturnValueOnce({ valid: false, conflictIds: ['existing-item'] })
+    }
+
+    // Mock an existing item for tryAutoOffset to push against
+    mockNodes['existing-item'] = {
+      id: 'existing-item',
+      type: 'item',
+      name: 'Existing',
+      position: [2, 0, 3],
+      rotation: [0, 0, 0],
+      asset: { dimensions: [1, 1, 1] },
+    }
+
+    const call: AddItemToolCall = {
+      tool: 'add_item',
+      catalogSlug: 'sofa-modern',
+      position: [2, 0, 3],
+      rotationY: 0,
+    }
+
+    const results = validateToolCall(call)
+    expect(results).toHaveLength(1)
+
+    const op = results[0]!
+    expect(op.status).toBe('invalid')
 
     const addOp = op as ValidatedAddItem
-    expect(addOp.adjustmentReason?.toLowerCase()).toContain('collision')
+    expect(addOp.errorReason?.toLowerCase()).toContain('collides')
   })
 })
 

@@ -214,7 +214,10 @@ export function validateAllToolCalls(toolCalls: AIToolCall[]): ValidatedOperatio
   const optimized = optimizeLayout(deconflicted)
   // Zone boundary re-check: optimizer (snapToNearestWall, spacing) may have
   // pushed items outside zone boundaries. Clamp them back inside.
-  return optimized.map((op) => enforceZoneBoundaryPostOptimize(op, wallCache))
+  const bounded = optimized.map((op) => enforceZoneBoundaryPostOptimize(op, wallCache))
+  // Post-optimization batch collision re-check: optimizer may have moved items
+  // (wall snap, group spacing) causing new overlaps between batch items.
+  return resolveBatchCollisions(bounded)
 }
 
 /**
@@ -346,6 +349,27 @@ function resolveBatchCollisions(operations: ValidatedOperation[]): ValidatedOper
 
     if (hasCollision) {
       position = [position[0] + pushX, position[1], position[2] + pushZ]
+
+      // Re-check wall collision after batch push — items pushed to avoid
+      // overlapping siblings may have been pushed into walls.
+      const levelId = useViewer.getState().selection.levelId
+      if (levelId) {
+        const wallCollision = checkWallCollision(position, dims, op.rotation, levelId)
+        if (wallCollision === 'no-space') {
+          result[index] = {
+            ...op,
+            position,
+            status: 'invalid',
+            errorReason: `"${op.asset!.name}" was pushed into walls while resolving batch collision — no valid position available.`,
+          } as ValidatedAddItem
+          // Don't add to occupiedAABBs — this item is rejected
+          continue
+        }
+        if (wallCollision) {
+          position = wallCollision.position
+        }
+      }
+
       result[index] = {
         ...op,
         position,
@@ -542,14 +566,46 @@ function validateAddItem(call: AddItemToolCall, _wallCache?: Map<string, WallNod
           position = adjusted
           adjustmentReason = 'Position adjusted to avoid collision with existing items.'
         } else {
-          return {
-            type: 'add_item',
-            status: 'adjusted',
-            asset,
+          // tryAutoOffset returned null — two cases:
+          // 1. Internal re-check found no collision (false positive / stale grid) → item is fine
+          // 2. Push was negligible but collision remains → invalid
+          // Re-verify to distinguish:
+          const recheck = spatialGridManager.canPlaceOnFloor(
+            levelId,
             position,
+            asset.dimensions ?? [1, 1, 1],
             rotation,
-            adjustmentReason: 'Collision detected but could not auto-resolve. Placed at requested position.',
+          )
+          if (!recheck.valid && recheck.conflictIds.length > 0) {
+            // Collision confirmed — item cannot be placed without clipping.
+            // Search for nearby valid positions to include in the error feedback.
+            const alternatives = findAlternativePositions(
+              position,
+              asset.dimensions ?? [1, 1, 1],
+              rotation,
+              levelId,
+            )
+
+            let errorMsg = `"${asset.name}" collides with existing items at [${position.map((v) => v.toFixed(1)).join(', ')}].`
+            if (alternatives.length > 0) {
+              const altStr = alternatives
+                .map((p) => `[${p.map((v) => v.toFixed(1)).join(', ')}]`)
+                .join(' or ')
+              errorMsg += ` Suggested valid positions: ${altStr}. You can retry with one of these positions, or use propose_placement to let the user choose, or use ask_user to let the user specify a custom position.`
+            } else {
+              errorMsg += ` No valid nearby positions found. The area may be too crowded. Use ask_user to suggest the user remove some items or specify a different area.`
+            }
+
+            return {
+              type: 'add_item',
+              status: 'invalid',
+              asset,
+              position,
+              rotation,
+              errorReason: errorMsg,
+            }
           }
+          // No collision on re-check — false positive, item is fine at this position
         }
       }
 
@@ -831,8 +887,62 @@ function validateUpdateMaterial(call: UpdateMaterialToolCall): ValidatedUpdateMa
 // ============================================================================
 
 /**
- * Try to find a nearby valid position by offsetting in cardinal directions.
+ * Search for valid nearby positions when auto-offset fails.
+ * Probes 8 directions (cardinal + diagonal) with increasing distances.
+ * Returns up to `maxResults` positions that pass floor collision,
+ * wall collision, and zone boundary checks.
+ *
+ * Used to provide actionable suggestions in the error feedback to the LLM,
+ * so it can retry or present options to the user via propose_placement.
  */
+function findAlternativePositions(
+  position: [number, number, number],
+  dimensions: [number, number, number],
+  rotation: [number, number, number],
+  levelId: string,
+  maxResults: number = 2,
+): [number, number, number][] {
+  // 8 directions: cardinal + diagonal (normalized diagonal distance)
+  const directions: [number, number][] = [
+    [1, 0], [-1, 0], [0, 1], [0, -1],
+    [0.707, 0.707], [-0.707, 0.707], [0.707, -0.707], [-0.707, -0.707],
+  ]
+  // Step sizes in meters — small increments first for closest valid spot
+  const stepSizes = [0.5, 1.0, 1.5, 2.0, 3.0]
+  const results: [number, number, number][] = []
+
+  for (const step of stepSizes) {
+    for (const [dx, dz] of directions) {
+      const candidate: [number, number, number] = [
+        Math.round((position[0] + dx * step) * 10) / 10,
+        position[1],
+        Math.round((position[2] + dz * step) * 10) / 10,
+      ]
+
+      // Check floor collision
+      const floorCheck = spatialGridManager.canPlaceOnFloor(
+        levelId, candidate, dimensions, rotation,
+      )
+      if (!floorCheck.valid) continue
+
+      // Check wall collision
+      const wallCheck = checkWallCollision(candidate, dimensions, rotation, levelId)
+      if (wallCheck === 'no-space') continue
+      const finalPos = wallCheck ? wallCheck.position : candidate
+
+      // Check zone boundary
+      const zoneCheck = checkZoneBoundary(finalPos, dimensions, rotation, levelId)
+      if (zoneCheck === 'too-large') continue
+      const boundedPos = zoneCheck ? zoneCheck.position : finalPos
+
+      results.push(boundedPos)
+      if (results.length >= maxResults) return results
+    }
+  }
+
+  return results
+}
+
 /**
  * Find a valid position for an item that collides with existing items.
  * Uses the collision AABBs to compute a minimum separation vector,
@@ -892,8 +1002,10 @@ function tryAutoOffset(
   const verify = spatialGridManager.canPlaceOnFloor(levelId, candidate, dimensions, rotation, ignoreIds)
   if (verify.valid) return candidate
 
-  // Push didn't fully resolve — return the pushed position anyway (best effort)
-  return candidate
+  // Push didn't fully resolve — return null to indicate failure.
+  // The caller should mark the item as invalid rather than placing it
+  // at a position with known collisions (causes clipping/penetration).
+  return null
 }
 
 /**
