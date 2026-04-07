@@ -603,6 +603,27 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'update_stair',
+      description: 'Update properties of an existing staircase (position, rotation, dimensions, step count). Changes apply to the stair container and its first segment.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the stair to update.' },
+          position: { type: 'array', items: { type: 'number' }, description: 'New position [x, y, z] in meters.' },
+          rotationY: { type: 'number', description: 'New rotation around Y axis in radians.' },
+          width: { type: 'number', description: 'New stair width in meters (0.5-5.0).' },
+          length: { type: 'number', description: 'New horizontal run in meters (0.5-10.0).' },
+          height: { type: 'number', description: 'New vertical rise in meters (0.5-10.0).' },
+          stepCount: { type: 'integer', description: 'New number of steps (2-30).' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'add_zone',
       description: 'Manually create a room/zone from a polygon. Zones are usually auto-detected from walls, but this allows manual zone creation.',
       parameters: {

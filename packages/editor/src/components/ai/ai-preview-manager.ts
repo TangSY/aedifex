@@ -31,6 +31,7 @@ import type {
   ValidatedAddLevel,
   ValidatedAddRoof,
   ValidatedAddStair,
+  ValidatedUpdateStair,
   ValidatedAddScan,
   ValidatedAddSlab,
   ValidatedAddWall,
@@ -537,6 +538,32 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         ])
         affectedNodeIds.push(stair.id as AnyNodeId, segment.id as AnyNodeId)
         createdNodeIds.push(stair.id as AnyNodeId, segment.id as AnyNodeId)
+        break
+      }
+      case 'update_stair': {
+        const uStairOp = op as ValidatedUpdateStair
+        // Update stair container (position, rotation)
+        const stairUpdates: Record<string, unknown> = {}
+        if (uStairOp.position) stairUpdates.position = uStairOp.position
+        if (uStairOp.rotation !== undefined) stairUpdates.rotation = uStairOp.rotation
+        if (Object.keys(stairUpdates).length > 0) {
+          useScene.getState().updateNode(uStairOp.nodeId, stairUpdates)
+        }
+        // Update first child segment (width, length, height, stepCount)
+        const stairNode = nodes[uStairOp.nodeId]
+        if (stairNode && 'children' in stairNode && Array.isArray(stairNode.children) && stairNode.children.length > 0) {
+          const firstSegId = stairNode.children[0] as AnyNodeId
+          const segUpdates: Record<string, unknown> = {}
+          if (uStairOp.width !== undefined) segUpdates.width = uStairOp.width
+          if (uStairOp.length !== undefined) segUpdates.length = uStairOp.length
+          if (uStairOp.height !== undefined) segUpdates.height = uStairOp.height
+          if (uStairOp.stepCount !== undefined) segUpdates.stepCount = uStairOp.stepCount
+          if (Object.keys(segUpdates).length > 0) {
+            useScene.getState().updateNode(firstSegId, segUpdates)
+            affectedNodeIds.push(firstSegId)
+          }
+        }
+        affectedNodeIds.push(uStairOp.nodeId)
         break
       }
       case 'update_roof': {

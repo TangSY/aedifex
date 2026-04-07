@@ -28,6 +28,7 @@ import type {
   AddRoofToolCall,
   UpdateRoofToolCall,
   AddStairToolCall,
+  UpdateStairToolCall,
   AddZoneToolCall,
   UpdateZoneToolCall,
   AddBuildingToolCall,
@@ -55,6 +56,7 @@ import type {
   ValidatedAddRoof,
   ValidatedUpdateRoof,
   ValidatedAddStair,
+  ValidatedUpdateStair,
   ValidatedAddZone,
   ValidatedUpdateZone,
   ValidatedAddBuilding,
@@ -138,6 +140,8 @@ export function validateToolCall(
       return [validateUpdateRoof(toolCall)]
     case 'add_stair':
       return [validateAddStair(toolCall)]
+    case 'update_stair':
+      return [validateUpdateStair(toolCall)]
     case 'add_zone':
       return [validateAddZone(toolCall)]
     case 'update_zone':
@@ -2077,6 +2081,58 @@ function validateAddStair(call: AddStairToolCall): ValidatedAddStair {
     length,
     height,
     stepCount,
+  }
+}
+
+function validateUpdateStair(call: UpdateStairToolCall): ValidatedUpdateStair {
+  const { nodes } = useScene.getState()
+  const node = nodes[call.nodeId as AnyNodeId]
+
+  if (!node || node.type !== 'stair') {
+    return {
+      type: 'update_stair',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      errorReason: `Stair "${call.nodeId}" not found.`,
+    }
+  }
+
+  // Validate ranges if provided
+  if (call.width !== undefined && (call.width < 0.5 || call.width > 5.0)) {
+    return {
+      type: 'update_stair', status: 'invalid', nodeId: call.nodeId as AnyNodeId,
+      errorReason: `Stair width ${call.width}m is out of range. Must be 0.5-5.0m.`,
+    }
+  }
+  if (call.length !== undefined && (call.length < 0.5 || call.length > 10.0)) {
+    return {
+      type: 'update_stair', status: 'invalid', nodeId: call.nodeId as AnyNodeId,
+      errorReason: `Stair length ${call.length}m is out of range. Must be 0.5-10.0m.`,
+    }
+  }
+  if (call.height !== undefined && (call.height < 0.5 || call.height > 10.0)) {
+    return {
+      type: 'update_stair', status: 'invalid', nodeId: call.nodeId as AnyNodeId,
+      errorReason: `Stair height ${call.height}m is out of range. Must be 0.5-10.0m.`,
+    }
+  }
+  if (call.stepCount !== undefined && (call.stepCount < 2 || call.stepCount > 30)) {
+    return {
+      type: 'update_stair', status: 'invalid', nodeId: call.nodeId as AnyNodeId,
+      errorReason: `Step count ${call.stepCount} is out of range. Must be 2-30.`,
+    }
+  }
+
+  return {
+    type: 'update_stair',
+    status: 'valid',
+    nodeId: call.nodeId as AnyNodeId,
+    position: call.position,
+    rotation: call.rotationY,
+    width: call.width,
+    length: call.length,
+    height: call.height,
+    stepCount: call.stepCount,
   }
 }
 

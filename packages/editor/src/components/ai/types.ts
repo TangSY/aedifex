@@ -181,6 +181,18 @@ export interface AddStairToolCall {
   description?: string
 }
 
+export interface UpdateStairToolCall {
+  tool: 'update_stair'
+  nodeId: string
+  position?: [number, number, number]
+  rotationY?: number
+  width?: number
+  length?: number
+  height?: number
+  stepCount?: number
+  reason?: string
+}
+
 export interface AddZoneToolCall {
   tool: 'add_zone'
   polygon: [number, number][]
@@ -275,6 +287,7 @@ export type AIToolCall =
   | AddRoofToolCall
   | UpdateRoofToolCall
   | AddStairToolCall
+  | UpdateStairToolCall
   | AddZoneToolCall
   | UpdateZoneToolCall
   | AddBuildingToolCall
@@ -498,6 +511,20 @@ export interface ValidatedAddStair {
   errorReason?: string
 }
 
+export interface ValidatedUpdateStair {
+  type: 'update_stair'
+  status: ValidatedOperationStatus
+  nodeId: AnyNodeId
+  position?: [number, number, number]
+  rotation?: number
+  width?: number
+  length?: number
+  height?: number
+  stepCount?: number
+  adjustmentReason?: string
+  errorReason?: string
+}
+
 export interface ValidatedUpdateRoof {
   type: 'update_roof'
   status: ValidatedOperationStatus
@@ -595,6 +622,7 @@ export type ValidatedOperation =
   | ValidatedAddRoof
   | ValidatedUpdateRoof
   | ValidatedAddStair
+  | ValidatedUpdateStair
   | ValidatedAddZone
   | ValidatedUpdateZone
   | ValidatedAddBuilding
