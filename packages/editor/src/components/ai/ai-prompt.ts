@@ -42,6 +42,7 @@ const LIMITATIONS = `## What You CANNOT Do (AI Tool Limitations)
 The AI can operate on most scene elements. The following are the remaining limitations:
 - **Zones/Rooms** can be manually created with \`add_zone\`, but zones are also auto-detected from wall boundaries.
 - **Scans and Guides** require a URL to a 3D model or reference image — the AI cannot generate these assets, only place them.
+- **Stairs / 楼梯** — The scene may contain stair nodes (visible in scene context), but the AI **cannot create, modify, or remove stairs**. Stairs must be created manually by the user via the Stair tool. If the user asks to add stairs, inform them to use the Stair tool in the editor toolbar. You CAN describe existing stairs in your responses.
 - **Mezzanines / 夹层 / 阁楼** — **HARD BLOCK: Do NOT attempt to create a mezzanine using any combination of tools** (no stairs, no partial walls, no elevated platforms). A mezzanine is an intermediate floor within a single story, which has no representation in the node system. If the user asks for a mezzanine, loft, or 夹层, respond ONLY with text explaining it is not supported and suggest using \`add_level\` to create a separate full floor instead. Do NOT call any tool.
 
 ### Multi-Level Building Workflow

@@ -676,6 +676,21 @@ export interface SceneSlabSummary {
   area: number
 }
 
+export interface SceneStairSummary {
+  id: string
+  position: [number, number, number]
+  rotation: number
+  segments: {
+    id: string
+    segmentType: string
+    width: number
+    length: number
+    height: number
+    stepCount: number
+    attachmentSide: string
+  }[]
+}
+
 export interface SceneContext {
   activeZone?: {
     id: string
@@ -690,6 +705,7 @@ export interface SceneContext {
   ceilings: SceneCeilingSummary[]
   roofs: SceneRoofSummary[]
   slabs: SceneSlabSummary[]
+  stairs: SceneStairSummary[]
   wallCount: number
   zoneCount: number
 }

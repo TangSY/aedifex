@@ -2,7 +2,7 @@ import type { AnyNode, AnyNodeId, CeilingNode, DoorNode, SlabNode, WallNode, Win
 import { useScene } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { useAIChat } from './ai-chat-store'
-import type { SceneContext, SceneCeilingSummary, SceneLevelSummary, SceneRoofSummary, SceneSlabSummary, SceneItemSummary } from './types'
+import type { SceneContext, SceneCeilingSummary, SceneLevelSummary, SceneRoofSummary, SceneSlabSummary, SceneStairSummary, SceneItemSummary } from './types'
 
 // ============================================================================
 // Scene Context Cache
@@ -66,6 +66,7 @@ export function serializeSceneContext(): SceneContext {
       ceilings: [],
       roofs: [],
       slabs: [],
+      stairs: [],
       wallCount: 0,
       zoneCount: 0,
     }
@@ -77,6 +78,7 @@ export function serializeSceneContext(): SceneContext {
   const ceilings: SceneCeilingSummary[] = []
   const roofs: SceneRoofSummary[] = []
   const slabs: SceneSlabSummary[] = []
+  const stairs: SceneStairSummary[] = []
   let wallCount = 0
   let zoneCount = 0
   let activeZone: SceneContext['activeZone'] | undefined
@@ -84,7 +86,7 @@ export function serializeSceneContext(): SceneContext {
   // Collect all nodes belonging to this level
   const levelNode = nodes[levelId]
   if (!levelNode || !('children' in levelNode)) {
-    return { levelId, items: [], walls: [], zones: [], levels: [], ceilings: [], roofs: [], slabs: [], wallCount: 0, zoneCount: 0 }
+    return { levelId, items: [], walls: [], zones: [], levels: [], ceilings: [], roofs: [], slabs: [], stairs: [], wallCount: 0, zoneCount: 0 }
   }
 
   // Walk through all nodes to find items, walls, and zones on this level
@@ -245,6 +247,29 @@ export function serializeSceneContext(): SceneContext {
         roofs.push({ id: node.id, segments })
         break
       }
+      case 'stair': {
+        const sChildren = ('children' in node && Array.isArray(node.children))
+          ? (node.children as string[]).map((cid) => nodes[cid as AnyNodeId]).filter(Boolean)
+          : []
+        const stairSegments = sChildren
+          .filter((c): c is AnyNode => !!c && c.type === 'stair-segment')
+          .map((seg) => ({
+            id: seg.id,
+            segmentType: (seg as { segmentType?: string }).segmentType ?? 'stair',
+            width: (seg as { width?: number }).width ?? 1.0,
+            length: (seg as { length?: number }).length ?? 3.0,
+            height: (seg as { height?: number }).height ?? 2.5,
+            stepCount: (seg as { stepCount?: number }).stepCount ?? 10,
+            attachmentSide: (seg as { attachmentSide?: string }).attachmentSide ?? 'front',
+          }))
+        stairs.push({
+          id: node.id,
+          position: (node as { position: [number, number, number] }).position,
+          rotation: (node as { rotation: number }).rotation,
+          segments: stairSegments,
+        })
+        break
+      }
     }
 
     // Traverse children
@@ -285,6 +310,7 @@ export function serializeSceneContext(): SceneContext {
     ceilings,
     roofs,
     slabs,
+    stairs,
     wallCount,
     zoneCount,
     activeZone,
@@ -307,7 +333,7 @@ export function serializeSceneContext(): SceneContext {
 export function formatSceneContextForPrompt(ctx: SceneContext): string {
   const lines: string[] = [
     `Current scene (level: ${ctx.levelId}):`,
-    `- ${ctx.wallCount} walls, ${ctx.zoneCount} zones, ${ctx.ceilings.length} ceilings, ${ctx.roofs.length} roofs, ${ctx.slabs.length} slabs`,
+    `- ${ctx.wallCount} walls, ${ctx.zoneCount} zones, ${ctx.ceilings.length} ceilings, ${ctx.roofs.length} roofs, ${ctx.slabs.length} slabs, ${ctx.stairs.length} stairs`,
   ]
 
   // Level info
@@ -341,6 +367,17 @@ export function formatSceneContextForPrompt(ctx: SceneContext): string {
     lines.push(`\nSlabs (${ctx.slabs.length}):`)
     for (const s of ctx.slabs) {
       lines.push(`  - ${s.id}: elevation=${s.elevation}m, area=${s.area.toFixed(1)}m²`)
+    }
+  }
+
+  // Stair info
+  if (ctx.stairs.length > 0) {
+    lines.push(`\nStairs (${ctx.stairs.length}):`)
+    for (const st of ctx.stairs) {
+      const segDescs = st.segments.map((s) =>
+        `${s.segmentType} ${s.width}×${s.length}m h=${s.height}m (${s.stepCount} steps, ${s.attachmentSide})`,
+      ).join(', ')
+      lines.push(`  - ${st.id}: pos=[${st.position.map((v) => v.toFixed(1)).join(',')}] rot=${st.rotation.toFixed(2)}rad, ${st.segments.length} segment(s) — ${segDescs}`)
     }
   }
 
