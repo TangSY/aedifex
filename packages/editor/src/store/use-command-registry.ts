@@ -7,8 +7,8 @@ export type CommandAction = {
   label: string | (() => string)
   group: string
   icon?: ReactNode
-  keywords?: string[]
-  shortcut?: string[]
+  keywords?: readonly string[]
+  shortcut?: readonly string[]
   /** Static string or a function evaluated at render time (for reactive badges). */
   badge?: string | (() => string)
   /** Show a chevron to indicate this action navigates to a sub-page. */

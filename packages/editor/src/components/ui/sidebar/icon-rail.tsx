@@ -13,6 +13,16 @@ import { cn } from './../../../lib/utils'
 
 export type PanelId = 'site' | 'settings' | 'ai'
 
+/**
+ * Descriptor for an additional sidebar panel injected by the host application.
+ */
+export interface ExtraPanel {
+  id: string
+  label: string
+  icon?: React.ReactNode
+  component: React.ComponentType
+}
+
 interface IconRailProps {
   activePanel: PanelId
   onPanelChange: (panel: PanelId) => void

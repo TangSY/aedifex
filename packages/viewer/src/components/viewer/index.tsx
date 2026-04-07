@@ -6,6 +6,7 @@ import {
   ItemSystem,
   RoofSystem,
   SlabSystem,
+  StairSystem,
   WallSystem,
   WindowSystem,
 } from '@aedifex/core'
@@ -143,6 +144,7 @@ const Viewer: React.FC<ViewerProps> = ({
       <ItemSystem />
       <RoofSystem />
       <SlabSystem />
+      <StairSystem />
       <WallSystem />
       <WindowSystem />
       <ZoneSystem />

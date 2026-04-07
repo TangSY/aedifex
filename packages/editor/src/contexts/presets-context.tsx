@@ -5,6 +5,16 @@ import type { PresetData, PresetType } from '../components/ui/panels/presets/pre
 
 export type { PresetData, PresetType }
 
+/**
+ * Descriptor for a tab rendered inside the Presets panel.
+ * Host applications can register additional preset tabs alongside the built-in door/window tabs.
+ */
+export interface PresetsTab {
+  id: string
+  label: string
+  type: PresetType
+}
+
 export interface PresetsAdapter {
   fetchPresets: (type: PresetType) => Promise<PresetData[]>
   savePreset: (

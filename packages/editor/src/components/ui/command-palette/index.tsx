@@ -86,9 +86,9 @@ function Item({
   icon: React.ReactNode
   label: string | (() => string)
   onSelect: () => void
-  shortcut?: string[]
+  shortcut?: readonly string[]
   disabled?: boolean
-  keywords?: string[]
+  keywords?: readonly string[]
   badge?: string | (() => string)
   navigate?: boolean
 }) {
@@ -99,7 +99,7 @@ function Item({
     <Command.Item
       className="flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-foreground text-sm transition-colors data-[disabled=true]:cursor-not-allowed data-[selected=true]:bg-accent data-[disabled=true]:opacity-40"
       disabled={disabled}
-      keywords={keywords}
+      keywords={keywords ? [...keywords] : undefined}
       onSelect={onSelect}
       value={resolvedLabel}
     >
@@ -112,7 +112,7 @@ function Item({
           {resolvedBadge}
         </span>
       )}
-      {shortcut && <Shortcut keys={shortcut} />}
+      {shortcut && <Shortcut keys={[...shortcut]} />}
       {(resolvedBadge || navigate) && (
         <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
       )}
@@ -163,7 +163,15 @@ const PAGE_LABEL: Record<string, string> = {
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
-export function CommandPalette() {
+/**
+ * Optional fallback action displayed in the command palette when no commands match the query.
+ */
+export interface CommandPaletteEmptyAction {
+  label: string
+  onSelect: () => void
+}
+
+export function CommandPalette({ emptyAction: _emptyAction }: { emptyAction?: CommandPaletteEmptyAction } = {}) {
   const {
     open,
     setOpen,

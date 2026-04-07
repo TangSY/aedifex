@@ -2,7 +2,7 @@
 
 import { type ReactNode, useEffect, useState } from 'react'
 import { AIChatPanel } from './../../../components/ai/ai-chat-panel'
-import { CommandPalette } from './../../../components/ui/command-palette'
+import { CommandPalette, type CommandPaletteEmptyAction } from './../../../components/ui/command-palette'
 import { EditorCommands } from './../../../components/ui/command-palette/editor-commands'
 import {
   Sidebar,
@@ -11,15 +11,17 @@ import {
   useSidebarStore,
 } from './../../../components/ui/primitives/sidebar'
 import { cn } from './../../../lib/utils'
-import { IconRail, type PanelId } from './icon-rail'
+import { IconRail, type ExtraPanel, type PanelId } from './icon-rail'
 import { SettingsPanel, type SettingsPanelProps } from './panels/settings-panel'
 import { SitePanel, type SitePanelProps } from './panels/site-panel'
 
-interface AppSidebarProps {
+export interface AppSidebarProps {
   appMenuButton?: ReactNode
   sidebarTop?: ReactNode
   settingsPanelProps?: SettingsPanelProps
   sitePanelProps?: SitePanelProps
+  extraPanels?: ExtraPanel[]
+  commandPaletteEmptyAction?: CommandPaletteEmptyAction
 }
 
 export function AppSidebar({
@@ -27,6 +29,8 @@ export function AppSidebar({
   sidebarTop,
   settingsPanelProps,
   sitePanelProps,
+  extraPanels: _extraPanels,
+  commandPaletteEmptyAction,
 }: AppSidebarProps) {
   const [activePanel, setActivePanel] = useState<PanelId>('site')
 
@@ -77,7 +81,7 @@ export function AppSidebar({
         </div>
       </Sidebar>
       <EditorCommands />
-      <CommandPalette />
+      <CommandPalette emptyAction={commandPaletteEmptyAction} />
     </>
   )
 }
