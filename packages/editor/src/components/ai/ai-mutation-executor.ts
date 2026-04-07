@@ -27,6 +27,7 @@ import type {
   UpdateCeilingToolCall,
   AddRoofToolCall,
   UpdateRoofToolCall,
+  AddStairToolCall,
   AddZoneToolCall,
   UpdateZoneToolCall,
   AddBuildingToolCall,
@@ -53,6 +54,7 @@ import type {
   ValidatedUpdateCeiling,
   ValidatedAddRoof,
   ValidatedUpdateRoof,
+  ValidatedAddStair,
   ValidatedAddZone,
   ValidatedUpdateZone,
   ValidatedAddBuilding,
@@ -134,6 +136,8 @@ export function validateToolCall(
       return [validateAddRoof(toolCall)]
     case 'update_roof':
       return [validateUpdateRoof(toolCall)]
+    case 'add_stair':
+      return [validateAddStair(toolCall)]
     case 'add_zone':
       return [validateAddZone(toolCall)]
     case 'update_zone':
@@ -1062,6 +1066,11 @@ function guessToolType(op: Record<string, unknown>): string {
   // add_roof: requires roofType or (width + depth + roofHeight)
   if ('roofType' in op || ('width' in op && 'depth' in op && 'roofHeight' in op)) {
     return 'add_roof'
+  }
+
+  // add_stair: requires stepCount or (width + length + height without roofType)
+  if ('stepCount' in op && 'position' in op && Array.isArray(op.position)) {
+    return 'add_stair'
   }
 
   // No confident match — return 'unknown' so caller marks it invalid
@@ -2005,6 +2014,69 @@ function validateAddRoof(call: AddRoofToolCall): ValidatedAddRoof {
     roofHeight: call.roofHeight ?? 2.5,
     wallHeight: call.wallHeight ?? 0.5,
     overhang: call.overhang ?? 0.3,
+  }
+}
+
+function validateAddStair(call: AddStairToolCall): ValidatedAddStair {
+  const width = call.width ?? 1.0
+  const length = call.length ?? 3.0
+  const height = call.height ?? 2.5
+  const stepCount = call.stepCount ?? 10
+  const rotation = call.rotationY ?? 0
+
+  if (width < 0.5 || width > 5.0) {
+    return {
+      type: 'add_stair',
+      status: 'invalid',
+      position: call.position ?? [0, 0, 0],
+      rotation,
+      width, length, height, stepCount,
+      errorReason: `Stair width ${width}m is out of range. Must be 0.5-5.0m.`,
+    }
+  }
+
+  if (length < 0.5 || length > 10.0) {
+    return {
+      type: 'add_stair',
+      status: 'invalid',
+      position: call.position ?? [0, 0, 0],
+      rotation,
+      width, length, height, stepCount,
+      errorReason: `Stair length ${length}m is out of range. Must be 0.5-10.0m.`,
+    }
+  }
+
+  if (height < 0.5 || height > 10.0) {
+    return {
+      type: 'add_stair',
+      status: 'invalid',
+      position: call.position ?? [0, 0, 0],
+      rotation,
+      width, length, height, stepCount,
+      errorReason: `Stair height ${height}m is out of range. Must be 0.5-10.0m.`,
+    }
+  }
+
+  if (stepCount < 2 || stepCount > 30) {
+    return {
+      type: 'add_stair',
+      status: 'invalid',
+      position: call.position ?? [0, 0, 0],
+      rotation,
+      width, length, height, stepCount,
+      errorReason: `Step count ${stepCount} is out of range. Must be 2-30.`,
+    }
+  }
+
+  return {
+    type: 'add_stair',
+    status: 'valid',
+    position: call.position ?? [0, 0, 0],
+    rotation,
+    width,
+    length,
+    height,
+    stepCount,
   }
 }
 

@@ -12,6 +12,8 @@ import {
   RoofSegmentNode,
   ScanNode,
   SlabNode,
+  StairNode,
+  StairSegmentNode,
   WallNode as WallSchema,
   WindowNode,
   ZoneNode,
@@ -28,6 +30,7 @@ import type {
   ValidatedAddItem,
   ValidatedAddLevel,
   ValidatedAddRoof,
+  ValidatedAddStair,
   ValidatedAddScan,
   ValidatedAddSlab,
   ValidatedAddWall,
@@ -506,6 +509,34 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         ])
         affectedNodeIds.push(roof.id as AnyNodeId, segment.id as AnyNodeId)
         createdNodeIds.push(roof.id as AnyNodeId, segment.id as AnyNodeId)
+        break
+      }
+      case 'add_stair': {
+        const stairOp = op as ValidatedAddStair
+        const stairCount = getCachedTypeCount('stair')
+        const segment = StairSegmentNode.parse({
+          segmentType: 'stair',
+          width: stairOp.width,
+          length: stairOp.length,
+          height: stairOp.height,
+          stepCount: stairOp.stepCount,
+          attachmentSide: 'front',
+          fillToFloor: true,
+          position: [0, 0, 0],
+        })
+        const stair = StairNode.parse({
+          name: `Staircase ${stairCount + 1}`,
+          position: stairOp.position,
+          rotation: stairOp.rotation,
+          children: [segment.id],
+        })
+        const { createNodes } = useScene.getState()
+        createNodes([
+          { node: stair, parentId: levelId as AnyNodeId },
+          { node: segment, parentId: stair.id as AnyNodeId },
+        ])
+        affectedNodeIds.push(stair.id as AnyNodeId, segment.id as AnyNodeId)
+        createdNodeIds.push(stair.id as AnyNodeId, segment.id as AnyNodeId)
         break
       }
       case 'update_roof': {

@@ -250,6 +250,7 @@ export async function runAgentLoop({
           'add_wall',
           'add_door',
           'add_window',
+          'add_stair',
           'remove_item',
           'remove_node',
           'update_wall',

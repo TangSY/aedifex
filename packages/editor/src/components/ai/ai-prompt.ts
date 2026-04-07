@@ -42,7 +42,6 @@ const LIMITATIONS = `## What You CANNOT Do (AI Tool Limitations)
 The AI can operate on most scene elements. The following are the remaining limitations:
 - **Zones/Rooms** can be manually created with \`add_zone\`, but zones are also auto-detected from wall boundaries.
 - **Scans and Guides** require a URL to a 3D model or reference image — the AI cannot generate these assets, only place them.
-- **Stairs / 楼梯** — The scene may contain stair nodes (visible in scene context), but the AI **cannot create, modify, or remove stairs**. Stairs must be created manually by the user via the Stair tool. If the user asks to add stairs, inform them to use the Stair tool in the editor toolbar. You CAN describe existing stairs in your responses.
 - **Mezzanines / 夹层 / 阁楼** — **HARD BLOCK: Do NOT attempt to create a mezzanine using any combination of tools** (no stairs, no partial walls, no elevated platforms). A mezzanine is an intermediate floor within a single story, which has no representation in the node system. If the user asks for a mezzanine, loft, or 夹层, respond ONLY with text explaining it is not supported and suggest using \`add_level\` to create a separate full floor instead. Do NOT call any tool.
 
 ### Multi-Level Building Workflow
@@ -578,6 +577,26 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
           reason: { type: 'string', description: 'Brief reason for the change.' },
         },
         required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_stair',
+      description: 'Create a staircase with one stair flight. The stair is placed at the given position and connects the current level to the one above. Creates a StairNode container with one StairSegment inside.',
+      parameters: {
+        type: 'object',
+        properties: {
+          position: { type: 'array', items: { type: 'number' }, description: 'Position [x, y, z] in meters where the stair starts.' },
+          rotationY: { type: 'number', description: 'Rotation around Y axis in radians (default: 0). 0 = stairs go toward +Z.' },
+          width: { type: 'number', description: 'Stair width in meters (default: 1.0). Range: 0.5-5.0.' },
+          length: { type: 'number', description: 'Horizontal run distance in meters (default: 3.0). Range: 0.5-10.0.' },
+          height: { type: 'number', description: 'Vertical rise in meters (default: 2.5). Should match floor-to-floor height. Range: 0.5-10.0.' },
+          stepCount: { type: 'integer', description: 'Number of steps (default: 10). Range: 2-30.' },
+          description: { type: 'string', description: 'Brief description of this staircase.' },
+        },
+        required: ['position'],
       },
     },
   },

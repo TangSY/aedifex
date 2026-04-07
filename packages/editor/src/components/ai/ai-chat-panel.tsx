@@ -730,7 +730,7 @@ function OperationSummary({
             key={i}
           >
             <span className="shrink-0">
-              {(op.type === 'add_item' || op.type === 'add_wall' || op.type === 'add_door' || op.type === 'add_window') && '+ '}
+              {(op.type === 'add_item' || op.type === 'add_wall' || op.type === 'add_door' || op.type === 'add_window' || op.type === 'add_stair') && '+ '}
               {(op.type === 'remove_item' || op.type === 'remove_node') && '- '}
               {op.type === 'move_item' && '~ '}
               {op.type === 'update_material' && '* '}
@@ -740,6 +740,7 @@ function OperationSummary({
               {op.type === 'add_wall' && 'Add wall'}
               {op.type === 'add_door' && 'Add door'}
               {op.type === 'add_window' && 'Add window'}
+              {op.type === 'add_stair' && 'Add staircase'}
               {op.type === 'remove_item' && `Remove ${op.nodeId}`}
               {op.type === 'remove_node' && `Remove ${op.nodeType ?? 'node'} ${op.nodeId}`}
               {op.type === 'move_item' && `Move ${op.nodeId}`}
