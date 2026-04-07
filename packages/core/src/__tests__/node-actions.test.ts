@@ -120,6 +120,8 @@ function makeStore(initial: Partial<SceneState> = {}): {
     dirtyNodes: new Set(),
     collections: {} as Record<CollectionId, Collection>,
     nodesVersion: 0,
+    readOnly: false,
+    setReadOnly: vi.fn(),
     markDirty,
     clearDirty: vi.fn(),
     loadScene: vi.fn(),

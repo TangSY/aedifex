@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  AIChatPanel,
   Editor,
   type SidebarTab,
   ViewerToolbarLeft,
@@ -12,6 +13,11 @@ const SIDEBAR_TABS: (SidebarTab & { component: React.ComponentType })[] = [
     id: 'site',
     label: 'Scene',
     component: () => null, // Built-in SitePanel handles this
+  },
+  {
+    id: 'ai',
+    label: 'AI',
+    component: AIChatPanel,
   },
 ]
 
