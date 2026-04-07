@@ -16,7 +16,7 @@ const SIDEBAR_TABS: (SidebarTab & { component: React.ComponentType })[] = [
   },
   {
     id: 'ai',
-    label: 'AI',
+    label: 'AI Chat',
     component: AIChatPanel,
   },
 ]
