@@ -746,11 +746,35 @@ function OperationSummary({
               {op.type === 'update_material' && `Update material ${op.nodeId}`}
             </span>
             {op.status === 'adjusted' && (
-              <span className="shrink-0 text-[9px] text-yellow-400">adjusted</span>
+              <span
+                className="shrink-0 cursor-help text-[9px] text-yellow-400"
+                title={'adjustmentReason' in op && op.adjustmentReason ? String(op.adjustmentReason) : 'Position was adjusted'}
+              >
+                adjusted
+              </span>
             )}
           </div>
         ))}
       </div>
+
+      {/* Adjustment summary — show reasons when items were auto-adjusted */}
+      {adjustedCount > 0 && (() => {
+        const reasons = operations
+          .filter((op) => op.status === 'adjusted' && 'adjustmentReason' in op && op.adjustmentReason)
+          .map((op) => String(('adjustmentReason' in op && op.adjustmentReason) || ''))
+          .filter(Boolean)
+        if (reasons.length === 0) return null
+        return (
+          <div className="mt-1 rounded bg-yellow-400/5 px-2 py-1">
+            <p className="font-barlow text-[10px] text-yellow-400/80">
+              {reasons.length === 1
+                ? reasons[0]
+                : reasons.map((r, i) => <span key={i}>{i > 0 && ' · '}{r}</span>)
+              }
+            </p>
+          </div>
+        )
+      })()}
 
       {status === 'confirmed' && (
         <div className="flex items-center gap-1 font-barlow text-[10px] text-green-400">
