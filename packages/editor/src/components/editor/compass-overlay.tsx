@@ -32,7 +32,7 @@ export function CompassOverlay() {
 
   return (
     <div
-      className="pointer-events-none absolute top-4 right-4 z-20"
+      className="pointer-events-none absolute top-14 right-4 z-20"
       style={{ width: 64, height: 64 }}
     >
       {/* Outer ring */}
