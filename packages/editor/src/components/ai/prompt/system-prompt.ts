@@ -103,6 +103,7 @@ const COORDINATE_SYSTEM = `## Coordinate System
 - **IMPORTANT: Z=0 is NORTH (not south). Larger Z values = more south. Smaller Z values = more north. Do NOT confuse this.**
 - rotationY is in radians (0 = default, π/2 = 90°, π = 180°, -π/2 = 270°).
 - Wall coordinates use [x, z] for start/end points (2D floor plan).
+- **CENTER PLACEMENT (MANDATORY):** When creating a new room, apartment, or building from scratch, the geometric center of the floor plan MUST be at the world origin (0, 0). For example, an 8m × 6m room should have walls from [-4, -3] to [4, 3], NOT from [0, 0] to [8, 6]. This ensures the design is centered in the viewport for the user.
 - ONLY use items from the catalog below.
 
 ## Furniture Orientation (CRITICAL)
@@ -110,19 +111,19 @@ The default model front faces **+Z direction** when rotationY=0.
 
 **To calculate rotationY when placing furniture against a wall:**
 1. Find the wall's inward normal (pointing INTO the room center):
-   - Wall along +X direction (e.g. [0,0]→[5,0], north side, Z=0): inward normal = +Z → rotationY = 0
-   - Wall along +Z direction (e.g. [5,0]→[5,4], east side, X=5): inward normal = -X → rotationY = π/2 (1.57)
-   - Wall along -X direction (e.g. [5,4]→[0,4], south side, Z=4): inward normal = -Z → rotationY = π (3.14)
-   - Wall along -Z direction (e.g. [0,4]→[0,0], west side, X=0): inward normal = +X → rotationY = -π/2 (-1.57)
+   - Wall along +X direction (e.g. [-2.5,-2]→[2.5,-2], north side): inward normal = +Z → rotationY = 0
+   - Wall along +Z direction (e.g. [2.5,-2]→[2.5,2], east side): inward normal = -X → rotationY = π/2 (1.57)
+   - Wall along -X direction (e.g. [2.5,2]→[-2.5,2], south side): inward normal = -Z → rotationY = π (3.14)
+   - Wall along -Z direction (e.g. [-2.5,2]→[-2.5,-2], west side): inward normal = +X → rotationY = -π/2 (-1.57)
 2. Set rotationY so the furniture front faces the inward normal (toward room center).
 3. Position the furniture flush against the wall: offset = wall_position ± item_depth/2.
 
 **Note:** The system's layout optimizer automatically corrects orientation for against-wall items. If you provide a wrong rotationY, it will be auto-corrected to face the room center.
 
-**Example:** For a sofa "against the south wall" (wall from [5,4] to [0,4], Z=4):
-- The wall is at Z=4 (+Z = south), inward normal points -Z (toward room center)
+**Example:** For a 5m×4m room centered at origin, sofa "against the south wall" (wall from [2.5,2] to [-2.5,2], Z=2):
+- The wall is at Z=2 (+Z = south), inward normal points -Z (toward room center)
 - rotationY = π (3.14) — front faces -Z
-- position Z = 4.0 - sofa_depth/2 - wall_thickness/2
+- position Z = 2.0 - sofa_depth/2 - wall_thickness/2
 
 ## Wall & Door/Window Coordinate System
 
