@@ -47,6 +47,8 @@ import type { SidebarTab } from '../ui/sidebar/tab-bar'
 import { CustomCameraControls } from './custom-camera-controls'
 import { EditorLayoutV2 } from './editor-layout-v2'
 import { ExportManager } from './export-manager'
+import { CameraAzimuthSync } from './compass-hud'
+import { CompassOverlay } from './compass-overlay'
 import { FirstPersonControls, FirstPersonOverlay } from './first-person-controls'
 import { FloatingActionMenu } from './floating-action-menu'
 import { FloorplanPanel } from './floorplan-panel'
@@ -647,6 +649,7 @@ export default function Editor({
       <PresetThumbnailGenerator />
       {!isFirstPersonMode && <SiteEdgeLabels />}
       {isFirstPersonMode && <InteractiveSystem />}
+      {!isFirstPersonMode && <CameraAzimuthSync />}
     </>
   )
 
@@ -762,6 +765,7 @@ export default function Editor({
               overlays={
                 <>
                   <FloatingLevelSelector />
+                  <CompassOverlay />
                   <div className="pointer-events-auto">
                     <ActionMenu />
                   </div>
@@ -825,6 +829,9 @@ export default function Editor({
             <div className="relative flex-1 overflow-hidden rounded-xl" ref={viewerAreaRef}>
               {viewerCanvas}
             </div>
+
+            {/* Compass overlay — direction indicator */}
+            <CompassOverlay />
 
             {/* Fixed UI overlays scoped to the viewer area */}
             <ViewerOverlays left={overlayLeft}>
