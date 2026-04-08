@@ -12,7 +12,7 @@ Design buildings with natural language — AI creates walls, places doors & wind
 
 [**English**](./README.md) | [**中文**](./README.zh-CN.md)
 
-https://github.com/user-attachments/assets/8b50e7cf-cebe-4579-9cf3-8786b35f7b6b
+https://github.com/user-attachments/assets/6c819726-65f4-45c6-903e-fa5c364a6340
 
 </div>
 
