@@ -108,7 +108,11 @@ export async function POST(request: NextRequest) {
         } catch (err) {
           console.error('Stream error:', err)
         } finally {
-          controller.close()
+          try {
+            controller.close()
+          } catch {
+            // Controller may already be closed — safe to ignore
+          }
         }
       },
     })

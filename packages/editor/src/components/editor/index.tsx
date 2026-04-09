@@ -7,7 +7,7 @@ import {
   spatialGridManager,
   useScene,
 } from '@aedifex/core'
-import { InteractiveSystem, useViewer, Viewer } from '@aedifex/viewer'
+import { clearMaterialCache, InteractiveSystem, useViewer, Viewer } from '@aedifex/viewer'
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { ViewerOverlay } from '../../components/viewer-overlay'
 import { ViewerZoneSystem } from '../../components/viewer-zone-system'
@@ -91,6 +91,10 @@ function initializeEditorRuntime(): () => void {
     const outliner = useViewer.getState().outliner
     outliner.selectedObjects.length = 0
     outliner.hoveredObjects.length = 0
+
+    // Release cached Three.js materials to prevent GPU VRAM leaks
+    // across editor sessions (e.g. navigating between projects).
+    clearMaterialCache()
   }
 }
 export interface EditorProps {

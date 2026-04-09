@@ -1,6 +1,6 @@
 import { useRegistry, type ZoneNode } from '@aedifex/core'
 import { Html } from '@react-three/drei'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { BufferGeometry, Color, DoubleSide, Float32BufferAttribute, type Group, Shape } from 'three'
 import { color, float, uniform, uv } from 'three/tsl'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
@@ -127,11 +127,17 @@ export const ZoneRenderer = ({ node }: { node: ZoneNode }) => {
     return shape
   }, [node?.polygon])
 
-  // Create wall geometry from polygon
+  // Create wall geometry from polygon (dispose previous on change)
   const wallGeometry = useMemo(() => {
     if (!node?.polygon || node.polygon.length < 2) return null
     return createWallGeometry(node.polygon)
   }, [node?.polygon])
+
+  useEffect(() => {
+    return () => {
+      wallGeometry?.dispose()
+    }
+  }, [wallGeometry])
 
   // Calculate polygon centroid for label positioning using the geometric centroid formula
   // This correctly handles polygons regardless of vertex distribution along edges
@@ -160,16 +166,28 @@ export const ZoneRenderer = ({ node }: { node: ZoneNode }) => {
     return [cx * factor, cz * factor] as [number, number]
   }, [node?.polygon])
 
-  // Create materials
+  // Create materials (dispose previous on change)
   const floorMaterial = useMemo(() => {
     if (!node?.color) return null
     return createFloorMaterial(node.color)
   }, [node?.color])
 
+  useEffect(() => {
+    return () => {
+      floorMaterial?.dispose()
+    }
+  }, [floorMaterial])
+
   const wallMaterial = useMemo(() => {
     if (!node?.color) return null
     return createWallGradientMaterial(node.color)
   }, [node?.color])
+
+  useEffect(() => {
+    return () => {
+      wallMaterial?.dispose()
+    }
+  }, [wallMaterial])
 
   const handlers = useNodeEvents(node, 'zone')
 

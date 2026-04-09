@@ -1,5 +1,5 @@
 import { type SiteNode, useRegistry } from '@aedifex/core'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { BufferGeometry, Float32BufferAttribute, type Group, Shape } from 'three'
 import { useNodeEvents } from '../../../hooks/use-node-events'
 import { NodeRenderer } from '../node-renderer'
@@ -53,11 +53,17 @@ export const SiteRenderer = ({ node }: { node: SiteNode }) => {
     return shape
   }, [node?.polygon?.points])
 
-  // Create boundary line geometry
+  // Create boundary line geometry (dispose previous on change)
   const lineGeometry = useMemo(() => {
     if (!node?.polygon?.points || node.polygon.points.length < 2) return null
     return createBoundaryLineGeometry(node.polygon.points)
   }, [node?.polygon?.points])
+
+  useEffect(() => {
+    return () => {
+      lineGeometry?.dispose()
+    }
+  }, [lineGeometry])
 
   const handlers = useNodeEvents(node, 'site')
 
