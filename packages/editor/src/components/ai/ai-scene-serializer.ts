@@ -2,6 +2,7 @@ import type { AnyNode, AnyNodeId, CeilingNode, DoorNode, SlabNode, WallNode, Win
 import { useScene } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { useAIChat } from './ai-chat-store'
+import { analyzeRoom, formatRoomAnalysis } from './room-analyzer'
 import type { SceneContext, SceneCeilingSummary, SceneLevelSummary, SceneRoofSummary, SceneSlabSummary, SceneStairSummary, SceneItemSummary } from './types'
 
 // ============================================================================
@@ -401,6 +402,20 @@ export function formatSceneContextForPrompt(ctx: SceneContext): string {
       lines.push(`    Size: ${sizeX.toFixed(2)}m × ${sizeZ.toFixed(2)}m (${area.toFixed(1)}m²), Shape: ${shape}`)
       lines.push(`    Bounds: min=(${zone.bounds.min[0].toFixed(2)}, ${zone.bounds.min[1].toFixed(2)}) max=(${zone.bounds.max[0].toFixed(2)}, ${zone.bounds.max[1].toFixed(2)})`)
       lines.push(`    Center: (${((zone.bounds.min[0] + zone.bounds.max[0]) / 2).toFixed(2)}, ${((zone.bounds.min[1] + zone.bounds.max[1]) / 2).toFixed(2)})`)
+
+      // Room type analysis based on existing items in this zone
+      const zoneItems = ctx.items.filter((item) => {
+        const [ix, , iz] = item.position
+        return ix >= zone.bounds.min[0] && ix <= zone.bounds.max[0]
+          && iz >= zone.bounds.min[1] && iz <= zone.bounds.max[1]
+      })
+      if (zoneItems.length > 0) {
+        const analysis = analyzeRoom(zoneItems.map((i) => ({ catalogSlug: i.catalogSlug, category: i.category })))
+        const analysisStr = formatRoomAnalysis(analysis)
+        if (analysisStr) {
+          lines.push(`    ${analysisStr}`)
+        }
+      }
     }
   }
 

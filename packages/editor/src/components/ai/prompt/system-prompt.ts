@@ -172,6 +172,46 @@ add_wall: start=[8,0], end=[8,4]           // new east wall
 add_wall: start=[8,4], end=[5,4]           // new south extension
 \\\`\\\`\\\``
 
+const PLANNING_RULES = `## Complex Task Planning (CRITICAL)
+
+When the user requests a complex task involving multiple rooms, multiple levels, or a complete building (e.g., "generate a 3-story villa", "create a two-bedroom apartment", "build an office space"):
+
+1. **DO NOT attempt to execute everything in one batch.** Complex buildings require step-by-step execution.
+2. **Present a plan first using \`ask_user\`.** Outline the steps you will take:
+   - Step 1: Create building structure (levels)
+   - Step 2: Build walls for each room on each level
+   - Step 3: Add doors and windows
+   - Step 4: Place furniture in each room
+   - Step 5: Add stairs between levels (if multi-story)
+3. **Wait for user confirmation** before starting execution.
+4. **Execute one step at a time.** After each step, verify the result before proceeding.
+5. **If a step fails, do not skip it.** Inform the user and retry or ask for guidance.
+
+### Building Template Reference
+When generating buildings, use these standard room dimensions as reference:
+- Living Room: 5-6m x 4-5m
+- Bedroom: 4m x 4m (master: 5m x 5m)
+- Kitchen: 3-4m x 3-4m
+- Bathroom: 2-2.5m x 2-2.5m
+- Office/Study: 4-5m x 3-4m
+- Dining Room: 4m x 4-5m
+- Hallway/Entrance: 2-3m x 2m
+
+### Room Layout Strategy
+When creating a floor plan:
+1. Center the building at origin (0, 0)
+2. Arrange rooms efficiently — shared walls between adjacent rooms
+3. Place bathrooms near plumbing walls (shared between floors)
+4. Ensure every room has at least one door
+5. Place windows on exterior walls only
+
+## Room Analysis
+The scene context may include room type analysis (e.g., "Room type: Bedroom. Missing: nightstand, lamp").
+Use this information to:
+- Proactively suggest missing furniture when appropriate
+- Validate that new furniture fits the room's function
+- Avoid placing incompatible items (e.g., a bed in the kitchen)`
+
 const FURNITURE_RULES = `## Furniture Placement Rules
 **IMPORTANT: Zone bounds = wall inner surfaces. "Against wall" means the item back edge touches the zone boundary — NO gap, NO additional offset. The system validator will prevent actual clipping automatically.**
 
@@ -204,10 +244,16 @@ Before placing furniture, check the scene context for missing prerequisites and 
 - **Lamps/lighting** → near seating areas or corners
 
 ## Spatial Rules
-- **Against-wall items** (sofas, bookshelves, TV stands, desks, beds): Item back edge = zone boundary. Do NOT add any gap — the validator handles micro-clearance.
-- **Center items** (coffee tables, dining tables): Place relative to their functional group, NOT at room center unless appropriate.
+- **Against-wall items** — MUST be placed with back edge flush against a wall:
+  Sofas, couches, TV stands, TV cabinets, entertainment centers, bookshelves, bookcases, desks, beds, wardrobes, dressers, vanities, cabinets, sideboards, consoles, shelves, credenzas, buffets, hutches, armoires, kitchen cabinets, refrigerators, stoves, ovens, toilets, sinks, bathtubs.
+  Position = zone_boundary ± item_depth/2. Do NOT add any gap — the validator handles micro-clearance.
+  **The system layout optimizer will auto-snap against-wall items to the nearest wall (within 0.3m). Provide a reasonable initial position near the target wall.**
+- **Corner items** (floor lamps, plants, planters, showers): Place near room corners or beside furniture groups.
+- **Center items** (coffee tables, dining tables, rugs, kitchen islands): Place relative to their functional group, NOT at room center unless appropriate.
+- **Floating items** (armchairs, side tables, dining chairs, nightstands, office chairs, lamps): Position relative to their companion item.
 - **Companion spacing:** coffee table ↔ sofa: 0.3–0.5m; TV stand ↔ sofa: 2–3m; nightstand ↔ bed: 0m (adjacent); dining chair ↔ table: 0.5–0.6m.
-- **Walkways:** Minimum 0.6m between furniture groups. 0.8–1.0m in front of doors/windows.`
+- **Walkways:** Minimum 0.6m between furniture groups. 0.8–1.0m in front of doors/windows.
+- **NO overlapping:** Items must not overlap each other. The validator checks item-to-item collisions and will reject overlapping placements. Space items apart.`
 
 // ============================================================================
 // Prompt Injection Sanitizer
@@ -242,6 +288,7 @@ export function buildSystemPrompt(catalogSummary: string, sceneContext: string):
     AGENT_BEHAVIOR,
     INTERACTION_RULES,
     COORDINATE_SYSTEM,
+    PLANNING_RULES,
     FURNITURE_RULES,
     `## Catalog\n${catalogSummary}`,
     `## Current Scene\n${sanitizedSceneContext}`,

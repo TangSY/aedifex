@@ -1,5 +1,6 @@
 import type { WallNode } from '@aedifex/core'
 import { useScene } from '@aedifex/core'
+import { getPlacementMeta, isAgainstWall, isCornerItem } from './furniture-placement-metadata'
 import type { ValidatedAddItem, ValidatedMoveItem, ValidatedOperation } from './types'
 
 // ============================================================================
@@ -58,13 +59,8 @@ const SPACING_RULES: SpacingRule[] = [
 
 // ============================================================================
 // Against-Wall Item Categories
+// Now driven by furniture-placement-metadata.ts for richer semantics.
 // ============================================================================
-
-const AGAINST_WALL_CATEGORIES = [
-  'sofa', 'couch', 'bookshelf', 'bookcase', 'tv-stand', 'tv-cabinet',
-  'desk', 'bed', 'wardrobe', 'cabinet', 'sideboard', 'console',
-  'shelf', 'dresser',
-]
 
 // ============================================================================
 // Public API
@@ -102,8 +98,12 @@ function optimizeAddItem(
   let rotation = [...op.rotation] as [number, number, number]
   const reasons: string[] = []
 
-  // 1. Against-wall items -> wall snap alignment
-  if (isAgainstWallItem(op.asset.id, op.asset.category)) {
+  // Retrieve metadata for future minClearance usage
+  const _meta = getPlacementMeta(op.asset.id, op.asset.category)
+  void _meta
+
+  // 1. Against-wall / corner items -> wall snap alignment
+  if (isAgainstWallItem(op.asset.id, op.asset.category) || isCornerPlacement(op.asset.id, op.asset.category)) {
     const dims: [number, number, number] = [
       op.asset.dimensions?.[0] ?? 1,
       op.asset.dimensions?.[1] ?? 1,
@@ -167,7 +167,7 @@ function optimizeMoveItem(
   let rotation = [...op.rotation] as [number, number, number]
   const reasons: string[] = []
 
-  if (isAgainstWallItem(node.asset.id, node.asset.category)) {
+  if (isAgainstWallItem(node.asset.id, node.asset.category) || isCornerPlacement(node.asset.id, node.asset.category)) {
     // Fetch walls once and reuse for both snap and orientation checks
     const walls = getAllWalls()
     const wallSnap = snapToNearestWall(position, node.asset.dimensions, rotation, walls)
@@ -468,9 +468,11 @@ function adjustForGroupSpacing(
 // ============================================================================
 
 function isAgainstWallItem(assetId: string, category: string): boolean {
-  const slug = assetId.toLowerCase()
-  const cat = category.toLowerCase()
-  return AGAINST_WALL_CATEGORIES.some((k) => slug.includes(k) || cat.includes(k))
+  return isAgainstWall(assetId, category)
+}
+
+function isCornerPlacement(assetId: string, category: string): boolean {
+  return isCornerItem(assetId, category)
 }
 
 function getAllWalls(): WallNode[] {

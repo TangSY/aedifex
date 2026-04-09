@@ -23,6 +23,9 @@ export {
   rejectAllProposals,
   isProposalModeActive,
 } from './ai-proposal-manager'
+export { getPlacementMeta, isAgainstWall, getAgainstWallCategories } from './furniture-placement-metadata'
+export { findTemplate, detectBuildingRequest, generatePlanFromTemplate, getAvailableTemplates } from './building-templates'
+export { analyzeRoom, formatRoomAnalysis } from './room-analyzer'
 export type {
   AIToolCall,
   ChatMessage,
@@ -30,3 +33,6 @@ export type {
   SceneContext,
   Proposal,
 } from './types'
+export type { FurniturePlacementMeta, PlacementType } from './furniture-placement-metadata'
+export type { BuildingTemplate, RoomTemplate } from './building-templates'
+export type { RoomAnalysis, RoomType } from './room-analyzer'
