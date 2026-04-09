@@ -1,7 +1,7 @@
 'use client'
 
 import { Icon as IconifyIcon } from '@iconify/react'
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 import { ChevronsLeft, ChevronsRight, Columns2, Eye, Footprints, Moon, Sun } from 'lucide-react'
 import { useCallback } from 'react'
 import { cn } from '../../lib/utils'

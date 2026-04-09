@@ -52,6 +52,7 @@ const PostProcessingPasses = () => {
   const renderPipelineRef = useRef<RenderPipeline | null>(null)
   const hasPipelineErrorRef = useRef(false)
   const retryCountRef = useRef(0)
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
   const [isWebGPU, setIsWebGPU] = useState<boolean | null>(null)
 
@@ -120,9 +121,12 @@ const PostProcessingPasses = () => {
     }
   }, [renderer])
 
-  // Reset retry count when project changes
+  // Reset retry count when project changes & clean up retry timer on unmount
   useEffect(() => {
     retryCountRef.current = 0
+    return () => {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
+    }
   }, [])
 
   // Build / rebuild the post-processing pipeline — WebGPU only
@@ -328,7 +332,11 @@ const PostProcessingPasses = () => {
         console.warn(
           `[viewer] Scheduling post-processing rebuild (attempt ${retryCountRef.current}/${MAX_PIPELINE_RETRIES})`,
         )
-        setTimeout(requestPipelineRebuild, RETRY_DELAY_MS)
+        if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
+        retryTimerRef.current = setTimeout(() => {
+          retryTimerRef.current = null
+          requestPipelineRebuild()
+        }, RETRY_DELAY_MS)
       } else {
         console.error(
           '[viewer] Post-processing retries exhausted. Rendering without post FX for this session.',

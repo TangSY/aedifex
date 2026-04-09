@@ -1,5 +1,5 @@
-import { type AnyNodeId, type StairNode, sceneRegistry, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, type StairNode, sceneRegistry, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useRef } from 'react'
 
 /**

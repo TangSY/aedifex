@@ -1,4 +1,4 @@
-import { type StairNode, useRegistry, useScene } from '@pascal-app/core'
+import { type StairNode, useRegistry, useScene } from '@aedifex/core'
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import type * as THREE from 'three'
 import { useNodeEvents } from '../../../hooks/use-node-events'

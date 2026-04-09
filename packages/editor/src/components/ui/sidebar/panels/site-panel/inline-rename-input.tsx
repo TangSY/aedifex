@@ -26,15 +26,19 @@ export function InlineRenameInput({
   const inputSize = Math.max((value || defaultName).length, 1)
 
   useEffect(() => {
+    let focusTimer: ReturnType<typeof setTimeout> | null = null
     if (isEditing) {
       setValue(node.name || '')
       // Focus and select all text after a short delay
-      setTimeout(() => {
+      focusTimer = setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus()
           inputRef.current.select()
         }
       }, 0)
+    }
+    return () => {
+      if (focusTimer) clearTimeout(focusTimer)
     }
   }, [isEditing, node.name])
 

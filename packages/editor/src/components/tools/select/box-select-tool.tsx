@@ -11,8 +11,8 @@ import {
   useScene,
   type WallNode,
   type ZoneNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import {
@@ -38,6 +38,7 @@ import { CursorSphere } from '../shared/cursor-sphere'
  * on the grid:click that fires right after a box-select drag completes.
  */
 export let boxSelectHandled = false
+let boxSelectHandledTimer: ReturnType<typeof setTimeout> | null = null
 
 // ── Geometry helpers ────────────────────────────────────────────────────────
 
@@ -455,8 +456,10 @@ const BoxSelectToolInner: React.FC = () => {
 
         // Prevent the subsequent grid:click from deselecting
         boxSelectHandled = true
-        setTimeout(() => {
+        if (boxSelectHandledTimer) clearTimeout(boxSelectHandledTimer)
+        boxSelectHandledTimer = setTimeout(() => {
           boxSelectHandled = false
+          boxSelectHandledTimer = null
         }, 50)
       }
       // NOTE: Short clicks (no drag) fall through to the SelectionManager's

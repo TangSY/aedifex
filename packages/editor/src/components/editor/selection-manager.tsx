@@ -238,8 +238,16 @@ export const SelectionManager = () => {
     ctrl: false,
   })
   const clickHandledRef = useRef(false)
+  const clickHandledTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const movingNode = useEditor((s) => s.movingNode)
+
+  // Clean up click-handled timer on unmount
+  useEffect(() => {
+    return () => {
+      if (clickHandledTimerRef.current) clearTimeout(clickHandledTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -318,8 +326,10 @@ export const SelectionManager = () => {
         activeStrategy.handleSelect(nodeToSelect, event.nativeEvent, modifierKeysRef.current)
 
         // Reset the handled flag after a short delay to allow grid:click to be ignored
-        setTimeout(() => {
+        if (clickHandledTimerRef.current) clearTimeout(clickHandledTimerRef.current)
+        clickHandledTimerRef.current = setTimeout(() => {
           clickHandledRef.current = false
+          clickHandledTimerRef.current = null
         }, 50)
       }
     }
