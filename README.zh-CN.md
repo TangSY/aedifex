@@ -222,3 +222,9 @@ Aedifex 基于 Pascal Group Inc. 的开源项目 [Pascal Editor](https://github.
 ## 许可证
 
 [MIT](LICENSE)
+
+---
+
+## 友情链接
+
+- [LINUX DO](https://linux.do/) — 真正的开发者社区

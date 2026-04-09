@@ -222,3 +222,9 @@ Aedifex is built upon [Pascal Editor](https://github.com/pascalorg/editor) by Pa
 ## License
 
 [MIT](LICENSE)
+
+---
+
+## Links
+
+- [LINUX DO](https://linux.do/) — Where the best developers gather
