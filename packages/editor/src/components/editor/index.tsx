@@ -7,7 +7,7 @@ import {
   spatialGridManager,
   useScene,
 } from '@aedifex/core'
-import { InteractiveSystem, useViewer, Viewer } from '@aedifex/viewer'
+import { clearMaterialCache, InteractiveSystem, useViewer, Viewer } from '@aedifex/viewer'
 import {
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
@@ -64,6 +64,8 @@ import { SiteEdgeLabels } from './site-edge-labels'
 import { ThumbnailGenerator } from './thumbnail-generator'
 import { WallMeasurementLabel } from './wall-measurement-label'
 import { FirstPersonControls, FirstPersonOverlay } from './first-person-controls'
+import { CameraAzimuthSync } from './compass-hud'
+import { CompassOverlay } from './compass-overlay'
 
 const CAMERA_CONTROLS_HINT_DISMISSED_STORAGE_KEY = 'editor-camera-controls-hint-dismissed:v1'
 const DELETE_CURSOR_BADGE_COLOR = '#ef4444'
@@ -552,6 +554,7 @@ export default function Editor({
   const [isCameraControlsHintVisible, setIsCameraControlsHintVisible] = useState<boolean | null>(
     null,
   )
+  const theme = useViewer((s) => s.theme)
   const isPreviewMode = useEditor((s) => s.isPreviewMode)
   const mode = useEditor((s) => s.mode)
   const isFirstPersonMode = useEditor((s) => s.isFirstPersonMode)

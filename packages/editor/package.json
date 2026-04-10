@@ -1,11 +1,13 @@
 {
   "name": "@aedifex/editor",
   "version": "0.4.0",
-  "description": "Pascal building editor component",
+  "description": "Aedifex building editor component",
   "type": "module",
   "exports": {
     ".": "./src/index.tsx",
-    "./catalog": "./src/components/ui/item-catalog/catalog-items.tsx"
+    "./catalog": "./src/components/ui/item-catalog/catalog-items.tsx",
+    "./components/ai": "./src/components/ai/index.ts",
+    "./ai/prompt": "./src/components/ai/ai-prompt.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit"

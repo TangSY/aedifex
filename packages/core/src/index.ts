@@ -44,7 +44,7 @@ export {
   useInteractive,
 } from './store/use-interactive'
 export { default as useLiveTransforms, type LiveTransform } from './store/use-live-transforms'
-export { clearSceneHistory, default as useScene } from './store/use-scene'
+export { clearSceneHistory, CURRENT_SCHEMA_VERSION, default as useScene, parseSceneData, serializeSceneData, type VersionedSceneData } from './store/use-scene'
 export { CeilingSystem } from './systems/ceiling/ceiling-system'
 export { DoorSystem } from './systems/door/door-system'
 export { ItemSystem } from './systems/item/item-system'

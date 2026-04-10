@@ -68,23 +68,14 @@ export function IconRail({
                 onClick={() => onPanelChange(panel.id)}
                 type="button"
               >
-                {panel.iconSrc ? (
-                  <img
-                    alt={panel.label}
-                    className={cn(
-                      'h-6 w-6 object-contain transition-all',
-                      !isActive && 'opacity-50 saturate-0',
-                    )}
-                    src={panel.iconSrc}
-                  />
-                ) : panel.lucideIcon === 'bot' ? (
-                  <Bot
-                    className={cn(
-                      'h-5 w-5 transition-all',
-                      isActive ? 'text-sidebar-primary' : 'opacity-50 saturate-0',
-                    )}
-                  />
-                ) : null}
+                <img
+                  alt={panel.label}
+                  className={cn(
+                    'h-6 w-6 object-contain transition-all',
+                    !isActive && 'opacity-50 saturate-0',
+                  )}
+                  src={panel.iconSrc}
+                />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">{panel.label}</TooltipContent>
