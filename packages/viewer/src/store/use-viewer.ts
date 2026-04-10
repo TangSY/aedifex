@@ -71,15 +71,12 @@ type ViewerState = {
   debugColors: boolean
   setDebugColors: (enabled: boolean) => void
 
-  walkthroughMode: boolean
-  setWalkthroughMode: (mode: boolean) => void
-
-  cameraDragging: boolean
-  setCameraDragging: (dragging: boolean) => void
-
   /** Whether the viewer is in first-person walkthrough mode. */
   walkthroughMode: boolean
   setWalkthroughMode: (enabled: boolean) => void
+
+  cameraDragging: boolean
+  setCameraDragging: (dragging: boolean) => void
 }
 
 const useViewer = create<ViewerState>()(
@@ -202,13 +199,10 @@ const useViewer = create<ViewerState>()(
       setDebugColors: (enabled) => set({ debugColors: enabled }),
 
       walkthroughMode: false,
-      setWalkthroughMode: (mode) => set({ walkthroughMode: mode }),
+      setWalkthroughMode: (enabled) => set({ walkthroughMode: enabled }),
 
       cameraDragging: false,
       setCameraDragging: (dragging) => set({ cameraDragging: dragging }),
-
-      walkthroughMode: false,
-      setWalkthroughMode: (enabled) => set({ walkthroughMode: enabled }),
     }),
     {
       name: 'viewer-preferences',
