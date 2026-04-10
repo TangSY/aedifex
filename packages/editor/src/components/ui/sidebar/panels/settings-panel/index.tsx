@@ -245,8 +245,6 @@ export function SettingsPanel({
     selectDefaultBuildingAndLevel()
   }
 
-  const isLocalProject = false // Props-based; only show cloud sections when projectId provided
-
   const handleGenerateThumbnail = () => {
     if (!projectId) return
     setIsGeneratingThumbnail(true)
