@@ -54,7 +54,7 @@ const COMPRESS_KEEP_RECENT = 6
  * Only confirm/reject are truly terminal — remove operations should loop back
  * so the LLM can follow up (e.g. remove old door → add new door at new position).
  */
-const DETERMINISTIC_TOOLS = new Set(['confirm_preview', 'reject_preview'])
+const DETERMINISTIC_TOOLS = new Set(['confirm_preview', 'reject_preview', 'enter_walkthrough'])
 
 /**
  * Run the agentic loop for a user message.

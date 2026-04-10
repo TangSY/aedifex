@@ -1,7 +1,6 @@
 import {
   type AnyNode,
   type AnyNodeId,
-  cloneLevelSubtree,
   useScene,
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
@@ -712,15 +711,16 @@ export function validateCloneLevel(call: CloneLevelToolCall): ValidatedCloneLeve
     return { type: 'clone_level', status: 'invalid', levelId: call.levelId as AnyNodeId, errorReason: `Node "${call.levelId}" is a ${levelNode.type}, not a level.` }
   }
 
-  // Perform the clone to get the new level ID
-  const { newLevelId } = cloneLevelSubtree(nodes, call.levelId as AnyNodeId)
+  if (!levelNode.parentId) {
+    return { type: 'clone_level', status: 'invalid', levelId: call.levelId as AnyNodeId, errorReason: `Level "${call.levelId}" has no parent building. Cannot clone an orphaned level.` }
+  }
 
+  // Validation only — actual cloning happens in confirm-operations.ts
   return {
     type: 'clone_level',
     status: 'valid',
     levelId: call.levelId as AnyNodeId,
     name: call.name,
-    newLevelId: newLevelId as AnyNodeId,
   }
 }
 

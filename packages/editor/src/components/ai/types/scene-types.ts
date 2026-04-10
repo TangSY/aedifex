@@ -67,6 +67,14 @@ export interface SceneItemSummary {
   category: string
 }
 
+export interface SceneBuildingSummary {
+  id: string
+  name?: string
+  position: [number, number, number]
+  rotation: [number, number, number]
+  levelCount: number
+}
+
 export interface SceneContext {
   activeZone?: {
     id: string
@@ -78,6 +86,7 @@ export interface SceneContext {
   walls: SceneWallSummary[]
   zones: SceneZoneSummary[]
   levels: SceneLevelSummary[]
+  buildings: SceneBuildingSummary[]
   ceilings: SceneCeilingSummary[]
   roofs: SceneRoofSummary[]
   slabs: SceneSlabSummary[]

@@ -64,6 +64,7 @@ export function serializeSceneContext(): SceneContext {
       walls: [],
       zones: [],
       levels: [],
+      buildings: [],
       ceilings: [],
       roofs: [],
       slabs: [],
@@ -87,7 +88,7 @@ export function serializeSceneContext(): SceneContext {
   // Collect all nodes belonging to this level
   const levelNode = nodes[levelId]
   if (!levelNode || !('children' in levelNode)) {
-    return { levelId, items: [], walls: [], zones: [], levels: [], ceilings: [], roofs: [], slabs: [], stairs: [], wallCount: 0, zoneCount: 0 }
+    return { levelId, items: [], walls: [], zones: [], levels: [], buildings: [], ceilings: [], roofs: [], slabs: [], stairs: [], wallCount: 0, zoneCount: 0 }
   }
 
   // Walk through all nodes to find items, walls, and zones on this level
@@ -302,12 +303,32 @@ export function serializeSceneContext(): SceneContext {
     }
   }
 
+  // Collect all buildings on the site
+  const buildings: SceneContext['buildings'] = []
+  for (const node of Object.values(nodes)) {
+    if (node.type === 'building') {
+      const bld = node as { id: string; name?: string; position?: [number, number, number]; rotation?: [number, number, number]; children?: string[] }
+      const levelChildren = (bld.children ?? []).filter(childId => {
+        const child = nodes[childId as AnyNodeId]
+        return child?.type === 'level'
+      })
+      buildings.push({
+        id: bld.id,
+        name: bld.name,
+        position: bld.position ?? [0, 0, 0],
+        rotation: bld.rotation ?? [0, 0, 0],
+        levelCount: levelChildren.length,
+      })
+    }
+  }
+
   const result: SceneContext = {
     levelId,
     items,
     walls,
     zones,
     levels,
+    buildings,
     ceilings,
     roofs,
     slabs,
@@ -336,6 +357,16 @@ export function formatSceneContextForPrompt(ctx: SceneContext): string {
     `Current scene (level: ${ctx.levelId}):`,
     `- ${ctx.wallCount} walls, ${ctx.zoneCount} zones, ${ctx.ceilings.length} ceilings, ${ctx.roofs.length} roofs, ${ctx.slabs.length} slabs, ${ctx.stairs.length} stairs`,
   ]
+
+  // Building info (site-level)
+  if (ctx.buildings.length > 0) {
+    lines.push(`\nBuildings on site (${ctx.buildings.length}):`)
+    for (const bld of ctx.buildings) {
+      const pos = bld.position.map((v) => v.toFixed(1)).join(', ')
+      const rotY = (bld.rotation[1] * 180 / Math.PI).toFixed(0)
+      lines.push(`  - ${bld.id}${bld.name ? ` "${bld.name}"` : ''}: pos=[${pos}], rotY=${rotY}°, ${bld.levelCount} level(s)`)
+    }
+  }
 
   // Level info
   if (ctx.levels.length > 0) {
