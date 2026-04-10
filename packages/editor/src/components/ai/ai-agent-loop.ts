@@ -1,4 +1,5 @@
 import { captureScreenshot } from '@aedifex/viewer'
+import { generateExecutionPlan, buildPlanningContext } from './ai-planner'
 import { useAIChat } from './ai-chat-store'
 import { buildToolResult, validateAllToolCalls } from './ai-mutation-executor'
 import {
@@ -112,9 +113,19 @@ export async function runAgentLoop({
 
   // Build conversation history + new user message
   const history = store.getConversationHistory()
+
+  // Planner: detect complex instructions and inject planning context
+  // This makes the LLM present a step-by-step plan via ask_user before executing.
+  const plan = generateExecutionPlan(userMessage)
+  let effectiveMessage = userMessage
+  if (plan.isComplex) {
+    const planContext = buildPlanningContext(plan)
+    effectiveMessage = `${planContext}\n\nUser request: ${userMessage}`
+  }
+
   const conversationMessages: AgentMessage[] = [
     ...history.map((m) => ({ role: m.role, content: m.content }) as AgentMessage),
-    { role: 'user' as const, content: userMessage },
+    { role: 'user' as const, content: effectiveMessage },
   ]
 
   let iteration = 0
