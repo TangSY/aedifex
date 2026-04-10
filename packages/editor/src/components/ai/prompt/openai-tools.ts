@@ -551,7 +551,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
                 material: { type: 'string' },
                 start: { type: 'array', items: { type: 'number' } }, end: { type: 'array', items: { type: 'number' } },
                 thickness: { type: 'number' }, height: { type: 'number' },
-                wallId: { type: 'string' }, positionAlongWall: { type: 'number' }, heightFromFloor: { type: 'number' },
+                wallId: { type: 'string' }, levelId: { type: 'string' }, positionAlongWall: { type: 'number' }, heightFromFloor: { type: 'number' },
                 width: { type: 'number' }, side: { type: 'string' }, hingesSide: { type: 'string' }, swingDirection: { type: 'string' },
                 description: { type: 'string' }, reason: { type: 'string' },
               },

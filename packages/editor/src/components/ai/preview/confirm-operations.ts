@@ -35,7 +35,6 @@ import type {
   ValidatedOperation,
   ValidatedUpdateCeiling,
   ValidatedCloneLevel,
-  ValidatedEnterWalkthrough,
   ValidatedMoveBuilding,
   ValidatedUpdateItem,
   ValidatedUpdateRoof,
@@ -507,7 +506,14 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         const mbOp = op as ValidatedMoveBuilding
         const updates: Record<string, unknown> = {}
         if (mbOp.position) updates.position = mbOp.position
-        if (mbOp.rotationY !== undefined) updates.rotation = [0, mbOp.rotationY, 0]
+        if (mbOp.rotationY !== undefined) {
+          // Preserve existing X/Z rotation, only update Y
+          const existing = nodes[mbOp.nodeId]
+          const currentRotation = (existing && 'rotation' in existing)
+            ? (existing as { rotation: [number, number, number] }).rotation
+            : [0, 0, 0]
+          updates.rotation = [currentRotation[0], mbOp.rotationY, currentRotation[2]]
+        }
         useScene.getState().updateNode(mbOp.nodeId, updates)
         affectedNodeIds.push(mbOp.nodeId)
         break
@@ -544,11 +550,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         }
         break
       }
-      case 'enter_walkthrough': {
-        const _ewOp = op as ValidatedEnterWalkthrough
-        useViewer.getState().setWalkthroughMode(true)
-        break
-      }
+      // enter_walkthrough is handled in ai-agent-loop.ts before reaching confirm path
     }
   }
 

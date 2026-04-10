@@ -152,9 +152,8 @@ export function applyGhostPreview(operations: ValidatedOperation[]): AnyNodeId[]
       case 'add_guide':
       case 'add_building':
       case 'move_building':
-      case 'clone_level':
-      case 'enter_walkthrough': {
-        // Structure/navigation tools — no visual ghost preview needed
+      case 'clone_level': {
+        // Structure tools — no visual ghost preview needed
         break
       }
       case 'add_roof': {

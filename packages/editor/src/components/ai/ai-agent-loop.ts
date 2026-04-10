@@ -1,4 +1,4 @@
-import { captureScreenshot } from '@aedifex/viewer'
+import { captureScreenshot, useViewer } from '@aedifex/viewer'
 import { generateExecutionPlan, buildPlanningContext } from './ai-planner'
 import { useAIChat } from './ai-chat-store'
 import { buildToolResult, validateAllToolCalls } from './ai-mutation-executor'
@@ -236,7 +236,6 @@ export async function runAgentLoop({
 
       // Check for enter_walkthrough (side-effect action, not a scene mutation)
       if (toolCalls.some((tc) => tc.tool === 'enter_walkthrough')) {
-        const { useViewer } = await import('@aedifex/viewer')
         useViewer.getState().setWalkthroughMode(true)
         onIterationEnd?.(iteration, null)
         break

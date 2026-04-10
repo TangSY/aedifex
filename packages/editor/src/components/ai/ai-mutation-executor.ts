@@ -32,7 +32,6 @@ import {
   validateAddStair,
   validateAddZone,
   validateCloneLevel,
-  validateEnterWalkthrough,
   validateMoveBuilding,
   validateUpdateCeiling,
   validateUpdateRoof,
@@ -132,8 +131,8 @@ export function validateToolCall(
       return [validateMoveBuilding(toolCall)]
     case 'clone_level':
       return [validateCloneLevel(toolCall)]
-    case 'enter_walkthrough':
-      return [validateEnterWalkthrough(toolCall)]
+    // enter_walkthrough is handled as a special tool in ai-agent-loop.ts
+    // before reaching the mutation path, so no validation case needed here.
     case 'batch_operations': {
       // Collect nodeIds from remove operations so add_door/add_window validators
       // can skip overlap checks against nodes that will be removed in this batch.

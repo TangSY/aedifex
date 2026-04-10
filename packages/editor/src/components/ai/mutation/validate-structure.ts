@@ -15,7 +15,6 @@ import type {
   AddStairToolCall,
   AddZoneToolCall,
   CloneLevelToolCall,
-  EnterWalkthroughToolCall,
   MoveBuildingToolCall,
   UpdateCeilingToolCall,
   UpdateRoofToolCall,
@@ -33,7 +32,6 @@ import type {
   ValidatedAddStair,
   ValidatedAddZone,
   ValidatedCloneLevel,
-  ValidatedEnterWalkthrough,
   ValidatedMoveBuilding,
   ValidatedUpdateCeiling,
   ValidatedUpdateRoof,
@@ -724,10 +722,5 @@ export function validateCloneLevel(call: CloneLevelToolCall): ValidatedCloneLeve
   }
 }
 
-// ============================================================================
-// Enter Walkthrough Validator
-// ============================================================================
-
-export function validateEnterWalkthrough(_call: EnterWalkthroughToolCall): ValidatedEnterWalkthrough {
-  return { type: 'enter_walkthrough', status: 'valid' }
-}
+// enter_walkthrough is handled as a special tool in ai-agent-loop.ts
+// No validator needed here.
