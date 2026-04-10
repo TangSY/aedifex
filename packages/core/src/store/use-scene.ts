@@ -222,6 +222,10 @@ const useScene: UseSceneStore = create<SceneState>()(
           collections: {},
           nodesVersion: get().nodesVersion + 1,
         })
+        // Clear temporal tracking to prevent memory leaks from stale node references
+        prevPastLength = 0
+        prevFutureLength = 0
+        prevNodesSnapshot = null
       },
 
       clearScene: () => {

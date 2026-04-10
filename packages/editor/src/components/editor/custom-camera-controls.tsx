@@ -95,8 +95,19 @@ export const CustomCameraControls = () => {
     [isPreviewMode],
   )
 
-  // Configure mouse buttons based on control mode and camera mode
+  // Configure touch gestures for mobile/tablet
   const cameraMode = useViewer((state) => state.cameraMode)
+  const touches = useMemo(() => {
+    return {
+      one: CameraControlsImpl.ACTION.TOUCH_ROTATE,
+      two: cameraMode === 'orthographic'
+        ? CameraControlsImpl.ACTION.TOUCH_ZOOM_TRUCK
+        : CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK,
+      three: CameraControlsImpl.ACTION.TOUCH_TRUCK,
+    }
+  }, [cameraMode])
+
+  // Configure mouse buttons based on control mode and camera mode
   const mouseButtons = useMemo(() => {
     // Use ZOOM for orthographic camera, DOLLY for perspective camera
     const wheelAction =
@@ -377,6 +388,7 @@ export const CustomCameraControls = () => {
       minDistance={10}
       minPolarAngle={0}
       mouseButtons={mouseButtons}
+      touches={touches}
       onRest={onRest}
       onSleep={onRest}
       onTransitionStart={onTransitionStart}

@@ -869,6 +869,8 @@ export default function Editor({
               viewerToolbarLeft={viewerToolbarLeft}
               viewerToolbarRight={viewerToolbarRight}
             />
+            {/* Compass overlay — direction indicator */}
+            <CompassOverlay />
             {/* First-person overlay — rendered on top of normal layout */}
             {isFirstPersonMode && (
               <div className="fixed inset-0 z-50 pointer-events-none">
