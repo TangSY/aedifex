@@ -6,10 +6,16 @@ import type { AIToolCall } from './types'
 // Parses text content + tool_call blocks from the event stream.
 // ============================================================================
 
+export interface StreamUsage {
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+}
+
 export interface StreamCallbacks {
   onTextChunk: (text: string) => void
   onToolCall: (toolCall: AIToolCall) => void
-  onComplete: (fullText: string, toolCalls: AIToolCall[], toolCallIds: string[]) => void
+  onComplete: (fullText: string, toolCalls: AIToolCall[], toolCallIds: string[], usage?: StreamUsage) => void
   onError: (error: string) => void
 }
 
@@ -115,6 +121,8 @@ async function processStream(
   const toolCalls: AIToolCall[] = []
   // BUG FIX A-8: Guard against onComplete being called twice (once on finish_reason, once after loop)
   let completed = false
+  // Track token usage from stream_options: { include_usage: true }
+  let streamUsage: StreamUsage | undefined
 
   // State for tracking OpenAI tool_calls across streaming chunks.
   // OpenAI streams tool calls by index — each chunk carries an index and
@@ -141,6 +149,16 @@ async function processStream(
           chunk = JSON.parse(data)
         } catch {
           continue
+        }
+
+        // Capture usage from the final chunk (stream_options: { include_usage: true })
+        const chunkUsage = chunk.usage as { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | undefined
+        if (chunkUsage) {
+          streamUsage = {
+            promptTokens: chunkUsage.prompt_tokens ?? 0,
+            completionTokens: chunkUsage.completion_tokens ?? 0,
+            totalTokens: chunkUsage.total_tokens ?? 0,
+          }
         }
 
         const choices = chunk.choices as Array<Record<string, unknown>> | undefined
@@ -203,7 +221,7 @@ async function processStream(
           }
 
           completed = true
-          callbacks.onComplete(fullText, toolCalls, toolCallIds)
+          callbacks.onComplete(fullText, toolCalls, toolCallIds, streamUsage)
           return
         }
       }
@@ -227,7 +245,7 @@ async function processStream(
         }
       }
 
-      callbacks.onComplete(fullText, toolCalls, toolCallIds)
+      callbacks.onComplete(fullText, toolCalls, toolCallIds, streamUsage)
     }
   } finally {
     reader.releaseLock()

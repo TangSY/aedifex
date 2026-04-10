@@ -59,36 +59,18 @@ export function estimateMessagesTokens(
 // Context Budget
 // ============================================================================
 
-/** Context window sizes for different models (tokens) */
-const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
-  'gpt-4o': 128_000,
-  'gpt-4o-mini': 128_000,
-  'gpt-4-turbo': 128_000,
-  'gpt-4': 8_192,
-  'gpt-3.5-turbo': 16_385,
-}
-
-/** Reserved token allocation */
-const RESERVED_TOKENS = {
-  systemPrompt: 4_000,
-  toolDefinitions: 2_000,
-  outputBuffer: 4_000,
-  safetyMargin: 2_000,
-}
-
-const TOTAL_RESERVED = Object.values(RESERVED_TOKENS).reduce((a, b) => a + b, 0)
-
-/** Auto-compact trigger threshold: 85% of available space */
-const AUTO_COMPACT_THRESHOLD_RATIO = 0.85
+/**
+ * Fixed auto-compact threshold at 100K tokens.
+ * Aligned with agent loop's CONTEXT_COMPRESS_THRESHOLD.
+ */
+const AUTO_COMPACT_THRESHOLD = 100_000
 
 /**
  * Get the token threshold for auto-compaction.
  * Compaction should be triggered when conversation tokens exceed this value.
  */
-export function getAutoCompactThreshold(model = 'gpt-4o'): number {
-  const contextWindow = MODEL_CONTEXT_WINDOWS[model] ?? 128_000
-  const available = contextWindow - TOTAL_RESERVED
-  return Math.floor(available * AUTO_COMPACT_THRESHOLD_RATIO)
+export function getAutoCompactThreshold(_model = 'gpt-4o'): number {
+  return AUTO_COMPACT_THRESHOLD
 }
 
 /**

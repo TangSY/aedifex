@@ -48,6 +48,8 @@ export interface AIChatState {
   loopState: AgentLoopState
   iterationCount: number
   pendingQuestion: PendingQuestion | null
+  /** Accumulated token usage across all iterations in current agent loop */
+  totalTokensUsed: number
 
   // Feature flag
   isEnabled: boolean
@@ -88,8 +90,11 @@ export interface AIChatActions {
   setIterationCount: (count: number) => void
   setPendingQuestion: (question: PendingQuestion | null) => void
   resolvePendingQuestion: (answer: string) => void
+  addTokensUsed: (tokens: number) => void
+  resetTokensUsed: () => void
 
   // Summarization
+  setConversationSummary: (summary: string) => void
   summarizeIfNeeded: () => Promise<void>
 
   // Tool error tracking
@@ -121,6 +126,7 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
   loopState: 'idle',
   iterationCount: 0,
   pendingQuestion: null,
+  totalTokensUsed: 0,
   isEnabled: true,
 
   // Message actions
@@ -291,6 +297,19 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
     }
   },
 
+  addTokensUsed: (tokens) => {
+    set((state) => ({ totalTokensUsed: state.totalTokensUsed + tokens }))
+  },
+
+  resetTokensUsed: () => {
+    set({ totalTokensUsed: 0 })
+  },
+
+  // Summarization
+  setConversationSummary: (summary) => {
+    set({ conversationSummary: summary })
+  },
+
   // Summarization (token-aware + circuit breaker)
   summarizeIfNeeded: async () => {
     // A-7: Optimistic locking — read state once and immediately set the flag
@@ -432,6 +451,7 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
       loopState: 'idle',
       iterationCount: 0,
       pendingQuestion: null,
+      totalTokensUsed: 0,
     })
   },
 

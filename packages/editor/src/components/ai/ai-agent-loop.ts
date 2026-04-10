@@ -14,6 +14,7 @@ import {
   serializeSceneContext,
 } from './ai-scene-serializer'
 import { streamChat } from './ai-stream-client'
+import { estimateMessagesTokens } from './ai-token-estimator'
 import type { AnyNodeId } from '@aedifex/core'
 import type {
   AIToolCall,
@@ -29,14 +30,24 @@ import type {
 // ============================================================================
 // Agentic Loop
 // Core orchestrator: LLM → tool_call → execute → tool_result → LLM → ...
-// Replaces the single-pass model in ai-chat-panel.tsx.
+// Token-budget driven: loops until the model stops or budget exhausted.
+// Auto-compresses conversation context at CONTEXT_COMPRESS_THRESHOLD.
 // ============================================================================
 
 // A-M5: Track pending screenshot timers so they can be cancelled on cleanup
 const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
 
-/** Maximum iterations per user message to prevent infinite loops */
-const MAX_ITERATIONS = 8
+/** Total token budget per agent loop run (prompt + completion summed) */
+const TOKEN_BUDGET = 10_000_000
+
+/** When conversation context exceeds this threshold, auto-compress */
+const CONTEXT_COMPRESS_THRESHOLD = 100_000
+
+/** Safety cap to prevent truly infinite loops (bugs, runaway LLM) */
+const MAX_ITERATIONS = 200
+
+/** Number of recent messages to keep when compressing */
+const COMPRESS_KEEP_RECENT = 6
 
 /**
  * Tool calls that skip the feedback loop (deterministic, no adjustment possible).
@@ -109,6 +120,7 @@ export async function runAgentLoop({
   // Initialize loop state
   store.setLoopState('running')
   store.setIterationCount(0)
+  store.resetTokensUsed()
   store.setAIProcessing(true)
 
   // Build conversation history + new user message
@@ -123,20 +135,30 @@ export async function runAgentLoop({
     effectiveMessage = `${planContext}\n\nUser request: ${userMessage}`
   }
 
-  const conversationMessages: AgentMessage[] = [
+  let conversationMessages: AgentMessage[] = [
     ...history.map((m) => ({ role: m.role, content: m.content }) as AgentMessage),
     { role: 'user' as const, content: effectiveMessage },
   ]
 
   let iteration = 0
+  let totalTokensUsed = 0
   let lastMessageId: string | null = null
   let beforeScreenshotUrl: string | null = null // P0-2: capture once on first mutation
 
   try {
-    while (iteration < MAX_ITERATIONS) {
+    while (iteration < MAX_ITERATIONS && totalTokensUsed < TOKEN_BUDGET) {
       iteration++
       onIterationStart?.(iteration)
       useAIChat.getState().setIterationCount(iteration)
+
+      // Auto-compress: when conversation context exceeds threshold, summarize
+      // older messages to free up context window for continued execution.
+      const contextTokens = estimateMessagesTokens(
+        conversationMessages.map((m) => ({ role: m.role, content: m.content })),
+      )
+      if (contextTokens >= CONTEXT_COMPRESS_THRESHOLD) {
+        conversationMessages = await compressConversation(conversationMessages)
+      }
 
       // Get fresh scene context each iteration (scene may have changed)
       let scenePrompt: string
@@ -150,11 +172,24 @@ export async function runAgentLoop({
       }
 
       // Stream LLM response
-      const { text, toolCalls, toolCallIds } = await streamLLMResponse(
+      const { text, toolCalls, toolCallIds, usage } = await streamLLMResponse(
         conversationMessages,
         catalogSummary,
         scenePrompt,
       )
+
+      // Track token usage (use API-reported values, fallback to estimate)
+      if (usage) {
+        totalTokensUsed += usage.totalTokens
+        useAIChat.getState().addTokensUsed(usage.totalTokens)
+      } else {
+        // Fallback: estimate based on conversation + response length
+        const estimatedTokens = estimateMessagesTokens([
+          { role: 'assistant', content: text || '' },
+        ])
+        totalTokensUsed += estimatedTokens
+        useAIChat.getState().addTokensUsed(estimatedTokens)
+      }
 
       // Save assistant message
       lastMessageId = useAIChat.getState().finishStreaming(
@@ -231,14 +266,6 @@ export async function runAgentLoop({
           useAIChat.getState().rejectOperations(lastMessageId)
         }
 
-        // Check if this is a deterministic operation (skip feedback)
-        // 1. confirm/reject are always terminal
-        // 2. Pure remove batches (all remove_item/remove_node) with all succeeded
-        //    are also terminal — no follow-up needed, prevents LLM from repeating
-        //    the same deletes and generating a noisy "all invalid" second attempt.
-        // 3. Pure structural batches (add_wall/add_door/add_window/remove_*) skip
-        //    feedback — these are precise operations that don't benefit from LLM
-        //    adjustment, and looping causes duplicate walls (Critical bug fix).
         // Record tool errors for context injection (#6)
         const invalidOps = validated.filter((op) => op.status === 'invalid')
         for (const op of invalidOps) {
@@ -246,87 +273,16 @@ export async function runAgentLoop({
           useAIChat.getState().recordToolError(op.type, reason)
         }
 
+        // Terminal check: only confirm_preview/reject_preview are truly terminal.
+        // Pure bulk removes (≥2) also break to let the user review.
         const isTerminalTool = mutationCalls.every((tc) => DETERMINISTIC_TOOLS.has(tc.tool))
         const isPureRemove = mutationCalls.every((tc) =>
           tc.tool === 'remove_item' || tc.tool === 'remove_node',
         )
-        // Single remove should loop back so LLM can follow up with replacement
-        // (e.g. remove old wall → add two new wall segments for "open a gap").
-        // Only batch removes (≥2) are terminal to avoid repeated delete attempts.
         const isBulkRemove = isPureRemove && mutationCalls.length >= 2
-        // Pure structural batches (all add_wall / remove_node / remove_item) are
-        // deterministic — the LLM cannot improve them via feedback, and looping
-        // back causes duplicate walls/deletes until MAX_ITERATIONS.
-        const STRUCTURAL_DETERMINISTIC = new Set([
-          'add_wall',
-          'add_door',
-          'add_window',
-          'add_stair',
-          'update_stair',
-          'remove_item',
-          'remove_node',
-          'update_wall',
-          'update_item',
-          'update_slab',
-          'update_ceiling',
-          'update_roof',
-          'update_zone',
-          'update_site',
-        ])
-        const isPureStructuralBatch = mutationCalls.every((tc: AIToolCall) => {
-          if (STRUCTURAL_DETERMINISTIC.has(tc.tool)) return true
-          if (tc.tool === 'batch_operations') {
-            // tc is narrowed to BatchOperationsToolCall by discriminated union
-            return tc.operations.every((op) => {
-              // op.type comes from the original operation object embedded in the batch
-              const opTool = (op as { type?: string }).type
-              return opTool !== undefined && STRUCTURAL_DETERMINISTIC.has(opTool)
-            })
-          }
-          return false
-        })
-        // add_item/move_item are deterministic only when ALL operations succeeded
-        // without adjustment. If any operation was adjusted (position clamped, etc.),
-        // feed back to LLM so it can review the adjustment and decide next steps.
-        const hasAdjusted = validated.some((op) => op.status === 'adjusted')
-        const FURNITURE_TOOLS = new Set(['add_item', 'move_item'])
-        const isFurnitureBatch = mutationCalls.some((tc) => FURNITURE_TOOLS.has(tc.tool))
-        const isFurnitureDeterministic = isFurnitureBatch && !hasAdjusted && validOps.length > 0
 
-        // When some operations failed, always feed back to LLM so it can
-        // explain the failures to the user and potentially retry.
-        const hasInvalid = invalidOps.length > 0
-
-        // Detect wall-dependency failures: doors/windows fail with "not found"
-        // because walls in the same batch haven't been created yet.
-        // In this case, DON'T treat as deterministic — let the loop continue
-        // so walls get confirmed first, then LLM retries doors/windows with
-        // the real wallIds from createdNodeIds.
-        const hasWallCreations = validated.some(
-          (op) => op.type === 'add_wall' && op.status !== 'invalid',
-        )
-        const hasWallDependencyFailures = invalidOps.some(
-          (op) =>
-            (op.type === 'add_door' || op.type === 'add_window') &&
-            'errorReason' in op &&
-            typeof op.errorReason === 'string' &&
-            op.errorReason.includes('not found'),
-        )
-        const hasDeferrableDependencies = hasWallCreations && hasWallDependencyFailures
-
-        // Single remove operations should loop back for follow-up (e.g. add replacement walls),
-        // but structural batches (add_wall etc.) and bulk removes are terminal.
-        const isSingleRemove = isPureRemove && mutationCalls.length === 1
-        const isDeterministic =
-          isTerminalTool || (isBulkRemove && validOps.length > 0) || (isPureStructuralBatch && !isSingleRemove && validOps.length > 0 && !hasDeferrableDependencies) || isFurnitureDeterministic
-        // Structural operations are deterministic — repeating them won't change the
-        // outcome. Break even on partial failure to avoid wasting iterations
-        // (e.g. batch update_wall ×4 where some fail due to missing wallId).
-        // Exception: wall + door/window batches with dependency failures should
-        // loop back so LLM can retry with real wall IDs.
-        if (isDeterministic && validOps.length > 0 && (!hasInvalid || isPureStructuralBatch)) {
-          // Non-destructive operations (add/move/structural) auto-confirm immediately.
-          // Only pure remove operations wait for user Reject/Confirm.
+        if (isTerminalTool || (isBulkRemove && validOps.length > 0)) {
+          // Terminal: auto-confirm non-remove ops, then exit loop
           if (!isPureRemove && isGhostPreviewActive()) {
             const log = confirmGhostPreview(validOps)
             invalidateSceneCache()
@@ -334,14 +290,6 @@ export async function runAgentLoop({
               log.messageId = lastMessageId
               useAIChat.getState().confirmOperations(lastMessageId)
               useAIChat.getState().addOperationLog(log)
-            }
-            // Capture after screenshot (async, non-blocking)
-            if (lastMessageId) {
-              const msgId = lastMessageId
-              setTimeout(async () => {
-                const afterUrl = await captureScreenshot()
-                if (afterUrl) useAIChat.getState().setScreenshotAfter(msgId, afterUrl)
-              }, 200)
             }
           }
           const toolResult = buildToolResult(
@@ -352,25 +300,31 @@ export async function runAgentLoop({
           break
         }
 
-        // Auto-confirm current ghost preview before feeding back to LLM.
-        // This converts ghost nodes (walls, items, etc.) into real scene nodes,
-        // so the next iteration's scene context reflects the actual state.
-        // Without this, clearGhostPreview in the next applyGhostPreview would
-        // remove the ghost walls, causing doors/windows to lose their parent.
+        // Non-terminal: auto-confirm and feed result back to LLM for next step.
+        // This allows the agent to continue building (e.g. walls → doors → furniture).
         let createdNodeIds: AnyNodeId[] = []
         if (isGhostPreviewActive()) {
           const log = confirmGhostPreview(validOps)
           createdNodeIds = log.affectedNodeIds
-          // Invalidate scene cache so next iteration gets fresh context (#4)
           invalidateSceneCache()
           if (lastMessageId) {
             log.messageId = lastMessageId
             useAIChat.getState().confirmOperations(lastMessageId)
             useAIChat.getState().addOperationLog(log)
           }
+          // Capture after screenshot (async, non-blocking)
+          if (lastMessageId) {
+            const msgId = lastMessageId
+            const timerId = setTimeout(async () => {
+              pendingTimers.delete(timerId)
+              const afterUrl = await captureScreenshot()
+              if (afterUrl) useAIChat.getState().setScreenshotAfter(msgId, afterUrl)
+            }, 200)
+            pendingTimers.add(timerId)
+          }
         }
 
-        // Build compact tool result for LLM feedback (#5)
+        // Build compact tool result for LLM feedback
         const toolResult = buildToolResult(
           mutationCalls.map((tc) => tc.tool).join('+'),
           validated,
@@ -379,14 +333,12 @@ export async function runAgentLoop({
         )
         onIterationEnd?.(iteration, toolResult)
 
-        // Feed result back to LLM for iteration
-        // Add assistant message with tool calls to conversation
+        // Feed result back to LLM for next iteration
         conversationMessages.push({
           role: 'assistant',
           content: text || '',
         })
 
-        // Add tool results — one per tool call
         for (let i = 0; i < mutationCalls.length; i++) {
           const callId = toolCallIds?.[i] ?? `call_${i}`
           conversationMessages.push({
@@ -416,13 +368,13 @@ export async function runAgentLoop({
 
 /**
  * Send messages to LLM and stream the response.
- * Returns the accumulated text, parsed tool calls, and tool call IDs.
+ * Returns the accumulated text, parsed tool calls, tool call IDs, and token usage.
  */
 function streamLLMResponse(
   messages: AgentMessage[],
   catalogSummary: string,
   sceneContext: string,
-): Promise<{ text: string; toolCalls: AIToolCall[]; toolCallIds: string[] }> {
+): Promise<{ text: string; toolCalls: AIToolCall[]; toolCallIds: string[]; usage?: { promptTokens: number; completionTokens: number; totalTokens: number } }> {
   return new Promise((resolve, reject) => {
     const store = useAIChat.getState()
     store.startStreaming()
@@ -444,8 +396,8 @@ function streamLLMResponse(
         onToolCall: () => {
           // Tool calls are accumulated in onComplete
         },
-        onComplete: (fullText, toolCalls, toolCallIds) => {
-          resolve({ text: fullText, toolCalls, toolCallIds: toolCallIds ?? [] })
+        onComplete: (fullText, toolCalls, toolCallIds, usage) => {
+          resolve({ text: fullText, toolCalls, toolCallIds: toolCallIds ?? [], usage })
         },
         onError: (err) => {
           reject(new Error(err))
@@ -453,6 +405,56 @@ function streamLLMResponse(
       },
     )
   })
+}
+
+// ============================================================================
+// Context Compression
+// ============================================================================
+
+/**
+ * Compress conversation messages when context exceeds threshold.
+ * Calls /api/ai/summarize to condense older messages, keeping recent ones intact.
+ * Falls back to simple truncation if summarize API fails.
+ */
+async function compressConversation(
+  messages: AgentMessage[],
+): Promise<AgentMessage[]> {
+  const toKeep = messages.slice(-COMPRESS_KEEP_RECENT)
+  const toSummarize = messages.slice(0, -COMPRESS_KEEP_RECENT)
+
+  if (toSummarize.length < 2) return messages // Nothing worth compressing
+
+  try {
+    const response = await fetch('/api/ai/summarize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: toSummarize.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+      }),
+    })
+
+    if (response.ok) {
+      const { summary } = await response.json()
+      if (summary) {
+        // Also update the store's conversation summary
+        useAIChat.getState().setConversationSummary(summary)
+
+        return [
+          { role: 'user' as const, content: `[Previous conversation summary: ${summary}]` },
+          { role: 'assistant' as const, content: 'Understood. I have the context from our previous conversation and will continue executing the plan.' },
+          ...toKeep,
+        ]
+      }
+    }
+  } catch {
+    console.warn('[AI Agent] Context compression failed, using simple truncation')
+  }
+
+  // Fallback: simple truncation without summary
+  return toKeep
 }
 
 // ============================================================================
