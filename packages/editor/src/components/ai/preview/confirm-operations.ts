@@ -522,7 +522,9 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           const { createNodes } = useScene.getState()
           // Set name and level number on the cloned level
           const existingLevels = Object.values(nodes).filter(n => n.type === 'level' && n.parentId === parentBuildingId)
-          const newLevelNum = existingLevels.length
+          const newLevelNum = existingLevels.length > 0
+            ? Math.max(...existingLevels.map(n => ('level' in n ? (n as { level: number }).level : 0))) + 1
+            : 0
           const clonedLevelNode = clonedNodes.find(n => n.id === newLevelId)
           if (clonedLevelNode && 'level' in clonedLevelNode) {
             (clonedLevelNode as any).level = newLevelNum

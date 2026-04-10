@@ -511,7 +511,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
       parameters: {
         type: 'object',
         properties: {
-          levelId: { type: 'string', description: 'The level node ID to clone.' },
+          levelId: { type: 'string', description: 'The level node ID to clone (from scene context, e.g., "level_abc123").' },
           name: { type: 'string', description: 'Name for the new cloned level (e.g., "Level 2").' },
           description: { type: 'string', description: 'Brief description of why this level is being cloned.' },
         },

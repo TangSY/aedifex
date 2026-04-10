@@ -315,7 +315,6 @@ export interface ValidatedCloneLevel {
   status: ValidatedOperationStatus
   levelId: AnyNodeId
   name?: string
-  newLevelId?: AnyNodeId
   errorReason?: string
 }
 

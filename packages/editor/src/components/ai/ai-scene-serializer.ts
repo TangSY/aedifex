@@ -364,7 +364,7 @@ export function formatSceneContextForPrompt(ctx: SceneContext): string {
     for (const bld of ctx.buildings) {
       const pos = bld.position.map((v) => v.toFixed(1)).join(', ')
       const rotY = (bld.rotation[1] * 180 / Math.PI).toFixed(0)
-      lines.push(`  - ${bld.id}${bld.name ? ` "${bld.name}"` : ''}: pos=[${pos}], rotY=${rotY}°, ${bld.levelCount} level(s)`)
+      lines.push(`  - ${bld.id}${bld.name ? ` "${bld.name}"` : ''}: pos=[${pos}], rotY=${rotY}° (use radians in tools: ${bld.rotation[1].toFixed(2)}rad), ${bld.levelCount} level(s)`)
     }
   }
 

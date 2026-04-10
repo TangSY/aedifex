@@ -54,7 +54,7 @@ const COMPRESS_KEEP_RECENT = 6
  * Only confirm/reject are truly terminal — remove operations should loop back
  * so the LLM can follow up (e.g. remove old door → add new door at new position).
  */
-const DETERMINISTIC_TOOLS = new Set(['confirm_preview', 'reject_preview', 'enter_walkthrough'])
+const DETERMINISTIC_TOOLS = new Set(['confirm_preview', 'reject_preview'])
 
 /**
  * Run the agentic loop for a user message.
@@ -230,6 +230,14 @@ export async function runAgentLoop({
 
       // Check for propose_placement (handled as UI, not mutation)
       if (toolCalls.some((tc) => tc.tool === 'propose_placement')) {
+        onIterationEnd?.(iteration, null)
+        break
+      }
+
+      // Check for enter_walkthrough (side-effect action, not a scene mutation)
+      if (toolCalls.some((tc) => tc.tool === 'enter_walkthrough')) {
+        const { useViewer } = await import('@aedifex/viewer')
+        useViewer.getState().setWalkthroughMode(true)
         onIterationEnd?.(iteration, null)
         break
       }
