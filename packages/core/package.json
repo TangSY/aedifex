@@ -1,7 +1,7 @@
 {
   "name": "@aedifex/core",
-  "version": "0.3.3",
-  "description": "Core library for Aedifex 3D building editor",
+  "version": "0.5.0",
+  "description": "Core library for Pascal 3D building editor",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -10,6 +10,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./clone-scene-graph": {
+      "types": "./dist/utils/clone-scene-graph.d.ts",
+      "import": "./dist/utils/clone-scene-graph.js",
+      "default": "./dist/utils/clone-scene-graph.js"
     }
   },
   "files": [

@@ -1,7 +1,7 @@
 'use client'
 
 import { type CameraControlEvent, emitter, sceneRegistry, useScene } from '@aedifex/core'
-import { useViewer, ZONE_LAYER } from '@aedifex/viewer'
+import { useViewer, WalkthroughControls, ZONE_LAYER } from '@aedifex/viewer'
 import { CameraControls, CameraControlsImpl } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
@@ -22,7 +22,7 @@ const DEBUG_MAX_POLAR_ANGLE = Math.PI - 0.05
 export const CustomCameraControls = () => {
   const controls = useRef<CameraControlsImpl>(null!)
   const isPreviewMode = useEditor((s) => s.isPreviewMode)
-  const isFirstPersonMode = useEditor((s) => s.isFirstPersonMode)
+  const walkthroughMode = useViewer((s) => s.walkthroughMode)
   const allowUndergroundCamera = useEditor((s) => s.allowUndergroundCamera)
   const selection = useViewer((s) => s.selection)
   const currentLevelId = selection.levelId
@@ -39,7 +39,7 @@ export const CustomCameraControls = () => {
   }, [camera, raycaster])
 
   useEffect(() => {
-    if (isPreviewMode || isFirstPersonMode) return
+    if (isPreviewMode) return // Preview mode uses auto-navigate instead
     let targetY = 0
     if (currentLevelId) {
       const levelMesh = sceneRegistry.nodes.get(currentLevelId)
@@ -47,21 +47,17 @@ export const CustomCameraControls = () => {
         targetY = levelMesh.position.y
       }
     }
+    if (!controls.current) return
     if (firstLoad.current) {
       firstLoad.current = false
-      ;(controls.current as CameraControlsImpl).setLookAt(20, 20, 20, 0, 0, 0, true)
+      controls.current.setLookAt(20, 20, 20, 0, 0, 0, true)
     }
-    ;(controls.current as CameraControlsImpl).getTarget(currentTarget)
-    ;(controls.current as CameraControlsImpl).moveTo(
-      currentTarget.x,
-      targetY,
-      currentTarget.z,
-      true,
-    )
-  }, [currentLevelId, isPreviewMode, isFirstPersonMode])
+    controls.current.getTarget(currentTarget)
+    controls.current.moveTo(currentTarget.x, targetY, currentTarget.z, true)
+  }, [currentLevelId, isPreviewMode])
 
   useEffect(() => {
-    if (!controls.current || isFirstPersonMode) return
+    if (!controls.current) return
 
     controls.current.maxPolarAngle = maxPolarAngle
     controls.current.minPolarAngle = 0
@@ -69,7 +65,7 @@ export const CustomCameraControls = () => {
     if (controls.current.polarAngle > maxPolarAngle) {
       controls.current.rotateTo(controls.current.azimuthAngle, maxPolarAngle, true)
     }
-  }, [maxPolarAngle, isFirstPersonMode])
+  }, [maxPolarAngle])
 
   const focusNode = useCallback(
     (nodeId: string) => {
@@ -99,13 +95,10 @@ export const CustomCameraControls = () => {
     [isPreviewMode],
   )
 
-  // Configure mouse buttons and touch gestures based on control mode and camera mode.
-  // Touch mapping follows architecture-editor best practices (Spline / Archicad style):
-  //   Two-finger drag  = Pan  (most frequent operation in floor plan editing)
-  //   Pinch            = Zoom (matches macOS native gesture)
-  //   Right-click drag = Rotate
+  // Configure mouse buttons based on control mode and camera mode
   const cameraMode = useViewer((state) => state.cameraMode)
   const mouseButtons = useMemo(() => {
+    // Use ZOOM for orthographic camera, DOLLY for perspective camera
     const wheelAction =
       cameraMode === 'orthographic'
         ? CameraControlsImpl.ACTION.ZOOM
@@ -119,19 +112,7 @@ export const CustomCameraControls = () => {
     }
   }, [cameraMode, isPreviewMode])
 
-  const touches = useMemo(() => {
-    return {
-      one: CameraControlsImpl.ACTION.TOUCH_ROTATE,
-      two: cameraMode === 'orthographic'
-        ? CameraControlsImpl.ACTION.TOUCH_ZOOM_TRUCK
-        : CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK,
-      three: CameraControlsImpl.ACTION.TOUCH_TRUCK,
-    }
-  }, [cameraMode])
-
   useEffect(() => {
-    if (isFirstPersonMode) return
-
     const keyState = {
       shiftRight: false,
       shiftLeft: false,
@@ -212,7 +193,7 @@ export const CustomCameraControls = () => {
       document.removeEventListener('keydown', onKeyDown)
       document.removeEventListener('keyup', onKeyUp)
     }
-  }, [cameraMode, isPreviewMode, isFirstPersonMode])
+  }, [cameraMode, isPreviewMode])
 
   // Preview mode: auto-navigate camera to selected node (viewer behavior)
   const previewTargetNodeId = isPreviewMode
@@ -234,18 +215,27 @@ export const CustomCameraControls = () => {
     // Check if node has a saved camera
     if (node.camera) {
       const { position, target } = node.camera
-      requestAnimationFrame(() => {
-        if (!controls.current) return
-        controls.current.setLookAt(
-          position[0],
-          position[1],
-          position[2],
-          target[0],
-          target[1],
-          target[2],
-          true,
-        )
-      })
+      if (
+        position &&
+        target &&
+        position.length >= 3 &&
+        target.length >= 3 &&
+        position.every((v) => v !== null && v !== undefined) &&
+        target.every((v) => v !== null && v !== undefined)
+      ) {
+        requestAnimationFrame(() => {
+          if (!controls.current) return
+          controls.current.setLookAt(
+            position[0],
+            position[1],
+            position[2],
+            target[0],
+            target[1],
+            target[2],
+            true,
+          )
+        })
+      }
       return
     }
 
@@ -274,8 +264,6 @@ export const CustomCameraControls = () => {
   }, [isPreviewMode, previewTargetNodeId])
 
   useEffect(() => {
-    if (isFirstPersonMode) return
-
     const handleNodeCapture = ({ nodeId }: CameraControlEvent) => {
       if (!controls.current) return
 
@@ -367,7 +355,7 @@ export const CustomCameraControls = () => {
       emitter.off('camera-controls:orbit-cw', handleOrbitCW)
       emitter.off('camera-controls:orbit-ccw', handleOrbitCCW)
     }
-  }, [focusNode, isFirstPersonMode])
+  }, [focusNode])
 
   const onTransitionStart = useCallback(() => {
     useViewer.getState().setCameraDragging(true)
@@ -377,9 +365,8 @@ export const CustomCameraControls = () => {
     useViewer.getState().setCameraDragging(false)
   }, [])
 
-  // In first-person mode, don't render orbit controls — FirstPersonControls takes over
-  if (isFirstPersonMode) {
-    return null
+  if (walkthroughMode) {
+    return <WalkthroughControls />
   }
 
   return (
@@ -392,7 +379,6 @@ export const CustomCameraControls = () => {
       mouseButtons={mouseButtons}
       onRest={onRest}
       onSleep={onRest}
-      touches={touches}
       onTransitionStart={onTransitionStart}
       ref={controls}
       restThreshold={0.01}

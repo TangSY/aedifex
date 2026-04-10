@@ -1,4 +1,4 @@
-import { type AssetInput, ItemNode } from '@aedifex/core'
+import type { AssetInput } from '@aedifex/core'
 export const CATALOG_ITEMS: AssetInput[] = [
   {
     id: 'tesla',

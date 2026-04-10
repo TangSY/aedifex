@@ -2,7 +2,6 @@ import { emitter, type GridEvent, type LevelNode, useScene, ZoneNode } from '@ae
 import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BufferGeometry, DoubleSide, type Group, type Line, Shape, Vector3 } from 'three'
-import { PALETTE_COLORS } from './../../../components/ui/primitives/color-dot'
 import { EDITOR_LAYER } from './../../../lib/constants'
 import useEditor from './../../../store/use-editor'
 import { CursorSphere } from '../shared/cursor-sphere'
@@ -55,8 +54,8 @@ const commitZoneDrawing = (levelId: LevelNode['id'], points: Array<[number, numb
   const zoneCount = Object.values(nodes).filter((n) => n.type === 'zone').length
   const name = `Zone ${zoneCount + 1}`
 
-  // Cycle through colors
-  const color = PALETTE_COLORS[zoneCount % PALETTE_COLORS.length]
+  // Default to blue, cycle through palette for subsequent zones
+  const color = '#3b82f6'
 
   const zone = ZoneNode.parse({
     name,
@@ -175,18 +174,18 @@ export const ZoneTool: React.FC = () => {
       if (!cursorRef.current) return
 
       // Snap to 0.5 grid
-      const gridX = Math.round(event.position[0] * 2) / 2
-      const gridZ = Math.round(event.position[2] * 2) / 2
+      const gridX = Math.round(event.localPosition[0] * 2) / 2
+      const gridZ = Math.round(event.localPosition[2] * 2) / 2
       cursorPosition = [gridX, gridZ]
-      levelYRef.current = event.position[1]
+      levelYRef.current = event.localPosition[1]
 
       // If we have points, snap to axis from last point
       const lastPoint = pointsRef.current[pointsRef.current.length - 1]
       if (lastPoint) {
         const snapped = calculateSnapPoint(lastPoint, cursorPosition)
-        cursorRef.current.position.set(snapped[0], event.position[1], snapped[1])
+        cursorRef.current.position.set(snapped[0], event.localPosition[1], snapped[1])
       } else {
-        cursorRef.current.position.set(gridX, event.position[1], gridZ)
+        cursorRef.current.position.set(gridX, event.localPosition[1], gridZ)
       }
 
       updatePreview()
@@ -195,8 +194,8 @@ export const ZoneTool: React.FC = () => {
     const onGridClick = (event: GridEvent) => {
       if (!currentLevelId) return
 
-      const gridX = Math.round(event.position[0] * 2) / 2
-      const gridZ = Math.round(event.position[2] * 2) / 2
+      const gridX = Math.round(event.localPosition[0] * 2) / 2
+      const gridZ = Math.round(event.localPosition[2] * 2) / 2
       let clickPoint: [number, number] = [gridX, gridZ]
 
       // Snap to axis from last point

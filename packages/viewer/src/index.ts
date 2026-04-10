@@ -1,4 +1,5 @@
 export { default as Viewer } from './components/viewer'
+export { WalkthroughControls } from './components/viewer/walkthrough-controls'
 export { ASSETS_CDN_URL, resolveAssetUrl, resolveCdnUrl } from './lib/asset-url'
 export {
   captureScreenshot,
@@ -19,7 +20,7 @@ export {
   DEFAULT_WINDOW_MATERIAL,
   disposeMaterial,
 } from './lib/materials'
+export { mergedOutline } from './lib/merged-outline-node'
 export { default as useViewer } from './store/use-viewer'
-export { ExportSystem } from './systems/export/export-system'
 export { InteractiveSystem } from './systems/interactive/interactive-system'
 export { snapLevelsToTruePositions } from './systems/level/level-utils'

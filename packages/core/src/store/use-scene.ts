@@ -215,11 +215,6 @@ const useScene: UseSceneStore = create<SceneState>()(
       setReadOnly: (readOnly: boolean) => set({ readOnly }),
 
       unloadScene: () => {
-        // Clear temporal tracking to prevent memory leaks from stale node references
-        prevPastLength = 0
-        prevFutureLength = 0
-        prevNodesSnapshot = null
-
         set({
           nodes: {},
           rootNodeIds: [],
@@ -238,15 +233,30 @@ const useScene: UseSceneStore = create<SceneState>()(
         // Apply backward compatibility migrations + schema version migrations
         const parsed = parseSceneData({ nodes, rootNodeIds })
 
+        // Remove orphans: nodes whose parentId points to a non-existent node
+        const cleanedNodes = { ...patchedNodes }
+        for (const node of Object.values(cleanedNodes)) {
+          if (node.parentId && !cleanedNodes[node.parentId]) {
+            console.warn(
+              '[Scene] Removing orphan node',
+              node.id,
+              '(parentId',
+              node.parentId,
+              'not found)',
+            )
+            delete cleanedNodes[node.id]
+          }
+        }
+
         set({
-          nodes: parsed.nodes,
-          rootNodeIds: parsed.rootNodeIds as AnyNodeId[],
+          nodes: cleanedNodes,
+          rootNodeIds,
           dirtyNodes: new Set<AnyNodeId>(),
           collections: {},
           nodesVersion: get().nodesVersion + 1,
         })
         // Mark all nodes as dirty to trigger re-validation
-        Object.values(parsed.nodes).forEach((node) => {
+        Object.values(cleanedNodes).forEach((node) => {
           get().markDirty(node.id)
         })
       },
@@ -386,7 +396,7 @@ const useScene: UseSceneStore = create<SceneState>()(
           if (!col) return state
           const nextCollections = {
             ...state.collections,
-            [id]: { ...col, nodeIds: col.nodeIds.filter((n: AnyNodeId) => n !== nodeId) },
+            [id]: { ...col, nodeIds: col.nodeIds.filter((n) => n !== nodeId) },
           }
           const node = state.nodes[nodeId]
           if (!(node && 'collectionIds' in node)) return { collections: nextCollections }
@@ -418,19 +428,11 @@ let prevPastLength = 0
 let prevFutureLength = 0
 let prevNodesSnapshot: Record<AnyNodeId, AnyNode> | null = null
 
-/**
- * Clears temporal history tracking variables to prevent memory leaks.
- * Should be called when unloading a scene to release node references.
- */
-export function clearTemporalTracking() {
+export function clearSceneHistory() {
+  useScene.temporal.getState().clear()
   prevPastLength = 0
   prevFutureLength = 0
   prevNodesSnapshot = null
-}
-
-export function clearSceneHistory() {
-  useScene.temporal.getState().clear()
-  clearTemporalTracking()
 }
 
 // Subscribe to the temporal store (Undo/Redo events)

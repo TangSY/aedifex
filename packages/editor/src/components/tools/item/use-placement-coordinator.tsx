@@ -9,6 +9,7 @@ import {
   resolveLevelId,
   sceneRegistry,
   spatialGridManager,
+  useLiveTransforms,
   useScene,
   useSpatialQuery,
   type WallEvent,
@@ -40,6 +41,7 @@ import {
   wallStrategy,
 } from './placement-strategies'
 import type { PlacementState, TransitionResult } from './placement-types'
+import { snapToGrid } from './placement-math'
 import type { DraftNodeHandle } from './use-draft-node'
 
 const DEFAULT_DIMENSIONS: [number, number, number] = [1, 1, 1]
@@ -82,6 +84,7 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
   const edgesRef = useRef<LineSegments>(null!)
   const basePlaneRef = useRef<Mesh>(null!)
   const gridPosition = useRef(new Vector3(0, 0, 0))
+  const lastRawPos = useRef(new Vector3(0, 0, 0))
   const placementState = useRef<PlacementState>(
     config.initialState ?? { surface: 'floor', wallId: null, ceilingId: null, surfaceItemId: null },
   )
@@ -134,11 +137,21 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
       return placeable
     }
 
+    // Tool visuals are rendered inside the building-local ToolManager group, so all cursor
+    // positions must be in building-local space. Wall/ceiling/item-surface strategies return
+    // world-space cursor positions (from their event.position); convert them here.
+    const worldToBuildingLocal = (x: number, y: number, z: number): Vector3 => {
+      const buildingId = useViewer.getState().selection.buildingId
+      const buildingMesh = buildingId ? sceneRegistry.nodes.get(buildingId as AnyNodeId) : null
+      return buildingMesh ? buildingMesh.worldToLocal(new Vector3(x, y, z)) : new Vector3(x, y, z)
+    }
+
     const applyTransition = (result: TransitionResult) => {
       Object.assign(placementState.current, result.stateUpdate)
       gridPosition.current.set(...result.gridPosition)
 
-      cursorGroupRef.current.position.set(...result.cursorPosition)
+      const c = worldToBuildingLocal(...result.cursorPosition)
+      cursorGroupRef.current.position.set(c.x, c.y, c.z)
       cursorGroupRef.current.rotation.y = result.cursorRotationY
 
       const draft = draftNode.current
@@ -151,7 +164,8 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
 
     const ensureDraft = (result: TransitionResult) => {
       gridPosition.current.set(...result.gridPosition)
-      cursorGroupRef.current.position.set(...result.cursorPosition)
+      const c = worldToBuildingLocal(...result.cursorPosition)
+      cursorGroupRef.current.position.set(c.x, c.y, c.z)
       cursorGroupRef.current.rotation.y = result.cursorRotationY
 
       draftNode.create(
@@ -180,7 +194,10 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
     if (draftNode.current) {
       const mesh = sceneRegistry.nodes.get(draftNode.current.id)
       if (mesh) {
-        mesh.getWorldPosition(cursorGroupRef.current.position)
+        const worldPos = new Vector3()
+        mesh.getWorldPosition(worldPos)
+        const localPos = worldToBuildingLocal(worldPos.x, worldPos.y, worldPos.z)
+        cursorGroupRef.current.position.copy(localPos)
         // Extract world Y rotation (handles wall-parented items correctly)
         const q = new Quaternion()
         mesh.getWorldQuaternion(q)
@@ -215,9 +232,18 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
       // Only update X and Z for cursor - useFrame will handle Y (slab elevation)
       cursorGroupRef.current.position.x = result.cursorPosition[0]
       cursorGroupRef.current.position.z = result.cursorPosition[2]
+      lastRawPos.current.set(event.localPosition[0], event.localPosition[1], event.localPosition[2])
 
       const draft = draftNode.current
       if (draft) draft.position = result.gridPosition
+
+      // Publish live transform for 2D floorplan
+      if (draft) {
+        useLiveTransforms.getState().set(draft.id, {
+          position: result.gridPosition,
+          rotation: cursorGroupRef.current.rotation.y,
+        })
+      }
 
       revalidate()
     }
@@ -228,6 +254,11 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
 
       // Preserve cursor rotation for the next draft
       const currentRotation: [number, number, number] = [0, cursorGroupRef.current.rotation.y, 0]
+
+      // Clear live transform before commit
+      if (draftNode.current) {
+        useLiveTransforms.getState().clear(draftNode.current.id)
+      }
 
       draftNode.commit(result.nodeUpdate)
       if (configRef.current.onCommitted()) {
@@ -320,7 +351,8 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
       }
 
       gridPosition.current.set(...result.gridPosition)
-      cursorGroupRef.current.position.set(...result.cursorPosition)
+      const wc = worldToBuildingLocal(...result.cursorPosition)
+      cursorGroupRef.current.position.set(wc.x, wc.y, wc.z)
       cursorGroupRef.current.rotation.y = result.cursorRotationY
 
       const draft = draftNode.current
@@ -353,6 +385,12 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
         if (result.dirtyNodeId && posChanged) {
           useScene.getState().dirtyNodes.add(result.dirtyNodeId)
         }
+
+        // Publish live transform for 2D floorplan
+        useLiveTransforms.getState().set(draft.id, {
+          position: result.cursorPosition,
+          rotation: result.cursorRotationY,
+        })
       }
     }
 
@@ -361,6 +399,10 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
       if (!result) return
 
       event.stopPropagation()
+      // Clear live transform before commit
+      if (draftNode.current) {
+        useLiveTransforms.getState().clear(draftNode.current.id)
+      }
       draftNode.commit(result.nodeUpdate)
       if (result.dirtyNodeId) {
         useScene.getState().dirtyNodes.add(result.dirtyNodeId)
@@ -462,7 +504,9 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
       event.stopPropagation()
 
       gridPosition.current.set(...result.gridPosition)
-      cursorGroupRef.current.position.set(...result.cursorPosition)
+      lastRawPos.current.set(event.position[0], event.position[1], event.position[2])
+      const ic = worldToBuildingLocal(...result.cursorPosition)
+      cursorGroupRef.current.position.set(ic.x, ic.y, ic.z)
       cursorGroupRef.current.rotation.y = result.cursorRotationY
 
       const draft = draftNode.current
@@ -470,6 +514,12 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
         draft.position = result.gridPosition
         const mesh = sceneRegistry.nodes.get(draft.id)
         if (mesh) mesh.position.set(...result.gridPosition)
+
+        // Publish live transform for 2D floorplan
+        useLiveTransforms.getState().set(draft.id, {
+          position: result.cursorPosition,
+          rotation: result.cursorRotationY,
+        })
       }
 
       revalidate()
@@ -481,14 +531,15 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
 
       event.stopPropagation()
 
-      // Transition back to floor using event world position
-      const wx = Math.round(event.position[0] * 2) / 2
-      const wz = Math.round(event.position[2] * 2) / 2
+      // Transition back to floor using building-local position
+      const wx = Math.round(event.localPosition[0] * 2) / 2
+      const wz = Math.round(event.localPosition[2] * 2) / 2
       const floorPos: [number, number, number] = [wx, 0, wz]
 
       Object.assign(placementState.current, { surface: 'floor', surfaceItemId: null })
       gridPosition.current.set(wx, 0, wz)
-      cursorGroupRef.current.position.set(wx, event.position[1], wz)
+      cursorGroupRef.current.position.x = wx
+      cursorGroupRef.current.position.z = wz
 
       const draft = draftNode.current
       if (draft) {
@@ -508,6 +559,10 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
       if (!result) return
 
       event.stopPropagation()
+      // Clear live transform before commit
+      if (draftNode.current) {
+        useLiveTransforms.getState().clear(draftNode.current.id)
+      }
       draftNode.commit(result.nodeUpdate)
 
       if (configRef.current.onCommitted()) {
@@ -569,7 +624,9 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
       }
 
       gridPosition.current.set(...result.gridPosition)
-      cursorGroupRef.current.position.set(...result.cursorPosition)
+      lastRawPos.current.set(event.position[0], event.position[1], event.position[2])
+      const cc = worldToBuildingLocal(...result.cursorPosition)
+      cursorGroupRef.current.position.set(cc.x, cc.y, cc.z)
 
       revalidate()
 
@@ -578,6 +635,12 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
         draft.position = result.gridPosition
         const mesh = sceneRegistry.nodes.get(draft.id)
         if (mesh) mesh.position.copy(gridPosition.current)
+
+        // Publish live transform for 2D floorplan
+        useLiveTransforms.getState().set(draft.id, {
+          position: result.cursorPosition,
+          rotation: cursorGroupRef.current.rotation.y,
+        })
       }
     }
 
@@ -586,6 +649,10 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
       if (!result) return
 
       event.stopPropagation()
+      // Clear live transform before commit
+      if (draftNode.current) {
+        useLiveTransforms.getState().clear(draftNode.current.id)
+      }
       draftNode.commit(result.nodeUpdate)
 
       if (configRef.current.onCommitted()) {
@@ -633,6 +700,11 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
 
     const ROTATION_STEP = Math.PI / 2
     const onKeyDown = (event: KeyboardEvent) => {
+      // Don't intercept keys when focus is inside a text input
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
       if (event.key === 'Shift') {
         shiftFreeRef.current = true
         revalidate()
@@ -657,6 +729,60 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
         cursorGroupRef.current.rotation.y = newRotationY
         const mesh = sceneRegistry.nodes.get(draft.id)
         if (mesh) mesh.rotation.y = newRotationY
+
+        // Re-snap position immediately with updated rotation (dimX/dimZ may swap at 90°)
+        const surface = placementState.current.surface
+        if (surface === 'floor' || surface === 'ceiling') {
+          const dims = getScaledDimensions(draft)
+          const [dimX, , dimZ] = dims
+          const swapDims = Math.abs(Math.sin(newRotationY)) > 0.9
+          const x = snapToGrid(lastRawPos.current.x, swapDims ? dimZ : dimX)
+          const z = snapToGrid(lastRawPos.current.z, swapDims ? dimX : dimZ)
+          gridPosition.current.set(x, gridPosition.current.y, z)
+          draft.position = [x, gridPosition.current.y, z]
+          cursorGroupRef.current.position.x = x
+          cursorGroupRef.current.position.z = z
+          if (mesh) {
+            mesh.position.x = x
+            mesh.position.z = z
+          }
+        } else if (surface === 'item-surface' && placementState.current.surfaceItemId) {
+          const surfaceMesh = sceneRegistry.nodes.get(placementState.current.surfaceItemId)
+          if (surfaceMesh) {
+            const localPos = surfaceMesh.worldToLocal(lastRawPos.current.clone())
+            const dims = getScaledDimensions(draft)
+            const [dimX, , dimZ] = dims
+            const swapDims = Math.abs(Math.sin(newRotationY)) > 0.9
+            const x = snapToGrid(localPos.x, swapDims ? dimZ : dimX)
+            const z = snapToGrid(localPos.z, swapDims ? dimX : dimZ)
+            const y = gridPosition.current.y
+            gridPosition.current.set(x, y, z)
+            draft.position = [x, y, z]
+            const worldSnapped = surfaceMesh.localToWorld(new Vector3(x, y, z))
+            const localSnapped = worldToBuildingLocal(
+              worldSnapped.x,
+              worldSnapped.y,
+              worldSnapped.z,
+            )
+            cursorGroupRef.current.position.set(localSnapped.x, localSnapped.y, localSnapped.z)
+            if (mesh) mesh.position.set(x, y, z)
+          }
+        }
+
+        // Update live transform for 2D floorplan with post-snap position
+        const currentLive = useLiveTransforms.getState().get(draft.id)
+        if (currentLive) {
+          useLiveTransforms.getState().set(draft.id, {
+            ...currentLive,
+            position: [
+              cursorGroupRef.current.position.x,
+              cursorGroupRef.current.position.y,
+              cursorGroupRef.current.position.z,
+            ] as [number, number, number],
+            rotation: newRotationY,
+          })
+        }
+
         revalidate()
       }
     }
@@ -693,7 +819,8 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
     const draft = draftNode.current
     const dims = draft ? getScaledDimensions(draft) : (asset.dimensions ?? DEFAULT_DIMENSIONS)
     const boxGeometry = new BoxGeometry(dims[0], dims[1], dims[2])
-    boxGeometry.translate(0, dims[1] / 2, 0)
+    const wallSideZOffset = asset.attachTo === 'wall-side' ? -dims[2] / 2 : 0
+    boxGeometry.translate(0, dims[1] / 2, wallSideZOffset)
     const edgesGeometry = new EdgesGeometry(boxGeometry)
     edgesRef.current.geometry = edgesGeometry
 
@@ -715,6 +842,10 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
     emitter.on('ceiling:leave', onCeilingLeave)
 
     return () => {
+      // Clear live transform for any remaining draft
+      if (draftNode.current) {
+        useLiveTransforms.getState().clear(draftNode.current.id)
+      }
       draftNode.destroy()
       useScene.temporal.getState().resume()
       emitter.off('grid:move', onGridMove)
@@ -791,18 +922,19 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
   const initialDraft = draftNode.current
   const dims = initialDraft
     ? getScaledDimensions(initialDraft)
-    : (config.asset.dimensions ?? DEFAULT_DIMENSIONS)
+    : (config.asset?.dimensions ?? DEFAULT_DIMENSIONS)
   const initialBoxGeometry = new BoxGeometry(dims[0], dims[1], dims[2])
-  initialBoxGeometry.translate(0, dims[1] / 2, 0)
+  const wallSideZOffset = config.asset?.attachTo === 'wall-side' ? -dims[2] / 2 : 0
+  initialBoxGeometry.translate(0, dims[1] / 2, wallSideZOffset)
 
   // Base plane geometry (colored rectangle on the ground)
   const basePlaneGeometry = new PlaneGeometry(dims[0], dims[2])
   basePlaneGeometry.rotateX(-Math.PI / 2) // Make it horizontal
-  basePlaneGeometry.translate(0, 0.01, 0) // Slightly above ground to avoid z-fighting
+  basePlaneGeometry.translate(0, 0.01, wallSideZOffset) // Slightly above ground to avoid z-fighting
 
   return (
     <group ref={cursorGroupRef}>
-      <lineSegments layers={EDITOR_LAYER} material={edgeMaterial} ref={edgesRef}>
+      <lineSegments layers={EDITOR_LAYER} material={edgeMaterial} ref={edgesRef} renderOrder={999}>
         <edgesGeometry args={[initialBoxGeometry]} />
       </lineSegments>
       <mesh
@@ -810,6 +942,7 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
         layers={EDITOR_LAYER}
         material={basePlaneMaterial}
         ref={basePlaneRef}
+        renderOrder={999}
       />
     </group>
   )

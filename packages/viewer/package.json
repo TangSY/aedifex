@@ -1,7 +1,7 @@
 {
   "name": "@aedifex/viewer",
-  "version": "0.3.3",
-  "description": "3D viewer component for Aedifex building editor",
+  "version": "0.5.0",
+  "description": "3D viewer component for Pascal building editor",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
