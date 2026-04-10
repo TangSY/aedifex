@@ -1,6 +1,6 @@
 import type { WallNode } from '@aedifex/core'
 import { useScene } from '@aedifex/core'
-import { getPlacementMeta, isAgainstWall, isCornerItem } from './furniture-placement-metadata'
+import { getPlacementMeta } from './furniture-placement-metadata'
 import type { ValidatedAddItem, ValidatedMoveItem, ValidatedOperation } from './types'
 
 // ============================================================================
@@ -98,12 +98,10 @@ function optimizeAddItem(
   let rotation = [...op.rotation] as [number, number, number]
   const reasons: string[] = []
 
-  // Retrieve metadata for future minClearance usage
-  const _meta = getPlacementMeta(op.asset.id, op.asset.category)
-  void _meta
+  const meta = getPlacementMeta(op.asset.id, op.asset.category)
 
   // 1. Against-wall / corner items -> wall snap alignment
-  if (isAgainstWallItem(op.asset.id, op.asset.category) || isCornerPlacement(op.asset.id, op.asset.category)) {
+  if (meta.placementType === 'against-wall' || meta.placementType === 'corner') {
     const dims: [number, number, number] = [
       op.asset.dimensions?.[0] ?? 1,
       op.asset.dimensions?.[1] ?? 1,
@@ -167,7 +165,8 @@ function optimizeMoveItem(
   let rotation = [...op.rotation] as [number, number, number]
   const reasons: string[] = []
 
-  if (isAgainstWallItem(node.asset.id, node.asset.category) || isCornerPlacement(node.asset.id, node.asset.category)) {
+  const moveMeta = getPlacementMeta(node.asset.id, node.asset.category)
+  if (moveMeta.placementType === 'against-wall' || moveMeta.placementType === 'corner') {
     // Fetch walls once and reuse for both snap and orientation checks
     const walls = getAllWalls()
     const wallSnap = snapToNearestWall(position, node.asset.dimensions, rotation, walls)
@@ -467,13 +466,8 @@ function adjustForGroupSpacing(
 // Utility Functions
 // ============================================================================
 
-function isAgainstWallItem(assetId: string, category: string): boolean {
-  return isAgainstWall(assetId, category)
-}
-
-function isCornerPlacement(assetId: string, category: string): boolean {
-  return isCornerItem(assetId, category)
-}
+// isAgainstWall / isCornerItem are now used directly via metadata.placementType
+// in optimizeAddItem and optimizeMoveItem — no wrapper functions needed.
 
 function getAllWalls(): WallNode[] {
   const { nodes } = useScene.getState()

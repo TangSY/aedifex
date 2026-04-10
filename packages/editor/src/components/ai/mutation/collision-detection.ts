@@ -319,80 +319,10 @@ export function checkZoneBoundary(
   return 'too-large'
 }
 
-// ============================================================================
-// Batch-Internal Item Collision Detection
-// When AI places multiple items in one batch, earlier items are not yet in the
-// spatial grid. This function checks for overlaps within the same batch.
-// ============================================================================
-
-/**
- * Check if a new item overlaps with any previously validated items in the same batch.
- * Uses rotated AABB overlap detection.
- *
- * @param position New item position
- * @param dimensions New item dimensions [w, h, d]
- * @param rotation New item rotation [rx, ry, rz]
- * @param batchItems Previously validated items in the same batch (position + dimensions + rotation)
- * @returns Push vector if overlap detected, null if no overlap, 'no-space' if unresolvable
- */
-export function checkBatchItemCollision(
-  position: [number, number, number],
-  dimensions: [number, number, number],
-  rotation: [number, number, number],
-  batchItems: { position: [number, number, number]; dimensions: [number, number, number]; rotation: [number, number, number] }[],
-): { position: [number, number, number]; reason: string } | 'no-space' | null {
-  if (batchItems.length === 0) return null
-
-  const itemAABB = getItemAABB(position, dimensions, rotation)
-  let pushX = 0
-  let pushZ = 0
-  let hasCollision = false
-
-  for (const other of batchItems) {
-    const otherAABB = getItemAABB(other.position, other.dimensions, other.rotation)
-
-    // Check AABB overlap
-    const overlapX = Math.min(itemAABB.maxX, otherAABB.maxX) - Math.max(itemAABB.minX, otherAABB.minX)
-    const overlapZ = Math.min(itemAABB.maxZ, otherAABB.maxZ) - Math.max(itemAABB.minZ, otherAABB.minZ)
-
-    if (overlapX <= 0 || overlapZ <= 0) continue // No overlap
-
-    hasCollision = true
-
-    // Push along axis of minimum overlap (minimum separation vector)
-    if (overlapX < overlapZ) {
-      const dir = position[0] >= (otherAABB.minX + otherAABB.maxX) / 2 ? 1 : -1
-      pushX += dir * (overlapX + 0.05) // 5cm extra clearance
-    } else {
-      const dir = position[2] >= (otherAABB.minZ + otherAABB.maxZ) / 2 ? 1 : -1
-      pushZ += dir * (overlapZ + 0.05)
-    }
-  }
-
-  if (!hasCollision) return null
-
-  if (Math.abs(pushX) < 0.01 && Math.abs(pushZ) < 0.01) return null
-
-  const newPos: [number, number, number] = [
-    position[0] + pushX,
-    position[1],
-    position[2] + pushZ,
-  ]
-
-  // Verify pushed position doesn't still overlap
-  const newAABB = getItemAABB(newPos, dimensions, rotation)
-  for (const other of batchItems) {
-    const otherAABB = getItemAABB(other.position, other.dimensions, other.rotation)
-    const ox = Math.min(newAABB.maxX, otherAABB.maxX) - Math.max(newAABB.minX, otherAABB.minX)
-    const oz = Math.min(newAABB.maxZ, otherAABB.maxZ) - Math.max(newAABB.minZ, otherAABB.minZ)
-    if (ox > 0 && oz > 0) return 'no-space'
-  }
-
-  return {
-    position: newPos,
-    reason: 'Position adjusted to avoid overlapping with other items in the same batch.',
-  }
-}
+// NOTE: Batch-internal item collision detection is handled by
+// resolveBatchCollisions() in ai-mutation-executor.ts, which runs
+// twice: once after validation (pre-optimization) and once after
+// layout optimization (post-optimization). No separate function needed here.
 
 /**
  * Detect if two wall segments cross THROUGH each other (not at endpoints).

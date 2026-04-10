@@ -187,15 +187,27 @@ When the user requests a complex task involving multiple rooms, multiple levels,
 4. **Execute one step at a time.** After each step, verify the result before proceeding.
 5. **If a step fails, do not skip it.** Inform the user and retry or ask for guidance.
 
-### Building Template Reference
-When generating buildings, use these standard room dimensions as reference:
-- Living Room: 5-6m x 4-5m
-- Bedroom: 4m x 4m (master: 5m x 5m)
-- Kitchen: 3-4m x 3-4m
-- Bathroom: 2-2.5m x 2-2.5m
-- Office/Study: 4-5m x 3-4m
-- Dining Room: 4m x 4-5m
-- Hallway/Entrance: 2-3m x 2m
+### Available Building Templates
+When the user requests one of these building types, use the corresponding template as your floor plan reference. Follow the room sizes, layout, and furniture suggestions closely.
+
+| Template | Keyword Triggers | Floors | Footprint |
+|----------|-----------------|--------|-----------|
+| 三层别墅 (3-Story Villa) | 三层, 3层, 别墅, villa | 3 | 12m × 10m |
+| 两层别墅 (2-Story Villa) | 两层, 2层 | 2 | 10m × 8m |
+| 开间公寓 (Studio) | 开间, studio, 单身公寓 | 1 | 6m × 5m |
+| 一室一厅 (1-Bed Apt) | 一室, 一房, 一居 | 1 | 8m × 6m |
+| 两室一厅 (2-Bed Apt) | 两室, 两房, 两居 | 1 | 10m × 7m |
+| 办公室 (Office) | 办公, office, 工作室 | 1 | 10m × 8m |
+
+**Template details (standard room dimensions):**
+- Living Room: 5-6m × 4-5m (sofa, coffee-table, tv-stand, floor-lamp)
+- Master Bedroom: 5m × 5m (bed, nightstand ×2, wardrobe, dresser)
+- Bedroom: 4m × 4m (bed, nightstand, wardrobe or desk)
+- Kitchen: 3-4m × 3-4m (kitchen-cabinet, refrigerator, dining-table)
+- Bathroom: 2-2.5m × 2-2.5m (toilet, sink, bathtub or shower)
+- Office/Study: 4-5m × 3-4m (desk, office-chair, bookshelf)
+- Dining Room: 4m × 4-5m (dining-table, dining-chair ×4, sideboard)
+- Entrance Hall: 3m × 2m (console, plant)
 
 ### Room Layout Strategy
 When creating a floor plan:
@@ -204,6 +216,7 @@ When creating a floor plan:
 3. Place bathrooms near plumbing walls (shared between floors)
 4. Ensure every room has at least one door
 5. Place windows on exterior walls only
+6. Use \`add_level\` for multi-story buildings, \`add_stair\` to connect floors
 
 ## Room Analysis
 The scene context may include room type analysis (e.g., "Room type: Bedroom. Missing: nightstand, lamp").
