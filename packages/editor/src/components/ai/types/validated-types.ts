@@ -301,6 +301,30 @@ export interface ValidatedUpdateItem {
   errorReason?: string
 }
 
+export interface ValidatedMoveBuilding {
+  type: 'move_building'
+  status: ValidatedOperationStatus
+  nodeId: AnyNodeId
+  position?: [number, number, number]
+  rotationY?: number
+  errorReason?: string
+}
+
+export interface ValidatedCloneLevel {
+  type: 'clone_level'
+  status: ValidatedOperationStatus
+  levelId: AnyNodeId
+  name?: string
+  newLevelId?: AnyNodeId
+  errorReason?: string
+}
+
+export interface ValidatedEnterWalkthrough {
+  type: 'enter_walkthrough'
+  status: ValidatedOperationStatus
+  errorReason?: string
+}
+
 export type ValidatedOperation =
   | ValidatedAddItem
   | ValidatedRemoveItem
@@ -329,3 +353,6 @@ export type ValidatedOperation =
   | ValidatedAddScan
   | ValidatedAddGuide
   | ValidatedUpdateItem
+  | ValidatedMoveBuilding
+  | ValidatedCloneLevel
+  | ValidatedEnterWalkthrough

@@ -269,6 +269,29 @@ export interface ProposePlacementToolCall {
 // Agentic Loop — Additional Tool Call Types
 // ============================================================================
 
+/** Move/rotate an entire building on the site */
+export interface MoveBuildingToolCall {
+  tool: 'move_building'
+  nodeId: string
+  position?: [number, number, number]
+  rotationY?: number
+  reason?: string
+}
+
+/** Clone an entire floor level with all descendants */
+export interface CloneLevelToolCall {
+  tool: 'clone_level'
+  levelId: string
+  name?: string
+  description?: string
+}
+
+/** Enter first-person walkthrough mode */
+export interface EnterWalkthroughToolCall {
+  tool: 'enter_walkthrough'
+  reason?: string
+}
+
 /** LLM asks the user a question and waits for response */
 export interface AskUserToolCall {
   tool: 'ask_user'
@@ -319,6 +342,9 @@ export type AIToolCall =
   | UpdateItemToolCall
   | BatchOperationsToolCall
   | ProposePlacementToolCall
+  | MoveBuildingToolCall
+  | CloneLevelToolCall
+  | EnterWalkthroughToolCall
   | AskUserToolCall
   | ConfirmPreviewToolCall
   | RejectPreviewToolCall

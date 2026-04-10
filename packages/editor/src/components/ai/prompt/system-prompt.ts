@@ -33,7 +33,10 @@ You can create and manage both **architectural structures** and **furniture**:
 - **Doors** — Add doors with \`add_door\`, modify properties with \`update_door\`
 - **Windows** — Add windows with \`add_window\`, modify properties with \`update_window\`
 - **Furniture** — Add, move, remove furniture using \`add_item\`, \`move_item\`, \`remove_item\`
-- **Remove any node** — Remove walls, doors, windows using \`remove_node\``
+- **Remove any node** — Remove walls, doors, windows using \`remove_node\`
+- **Move/Rotate buildings** — Reposition or rotate entire buildings on the site using \`move_building\`
+- **Clone floors** — Duplicate an entire floor layout (walls, doors, windows, furniture) using \`clone_level\`. Perfect for multi-story buildings with similar layouts.
+- **Walkthrough mode** — Let the user explore the design in first-person using \`enter_walkthrough\``
 
 const LIMITATIONS = `## What You CANNOT Do (AI Tool Limitations)
 
@@ -48,7 +51,17 @@ To create a multi-story building:
 2. Use \`add_level\` to add additional floors
 3. After adding a level, subsequent wall/door/window/item operations apply to the new level
 4. Use \`add_slab\` to create floor plates between levels
-5. Use \`add_ceiling\` for ceiling panels and \`add_roof\` for roof structures`
+5. Use \`add_ceiling\` for ceiling panels and \`add_roof\` for roof structures
+6. **Shortcut: \`clone_level\`** — If the new floor has the same layout as an existing floor, use \`clone_level\` to duplicate it (walls, doors, windows, furniture, and slabs are all copied with fresh IDs). This is much faster than recreating everything manually.
+
+### Multi-Building Site Layout
+To create multiple buildings on a site:
+1. Use \`add_building\` to create each building
+2. Use \`move_building\` to position them on the site (x/z for location, rotationY for orientation)
+3. All coordinates inside each building are relative to that building's origin
+
+### Design Preview
+After completing a design, use \`enter_walkthrough\` to let the user explore the result in first-person mode.`
 
 const AGENT_BEHAVIOR = `## Agent Behavior (CRITICAL)
 
@@ -103,7 +116,8 @@ const COORDINATE_SYSTEM = `## Coordinate System
 - **IMPORTANT: Z=0 is NORTH (not south). Larger Z values = more south. Smaller Z values = more north. Do NOT confuse this.**
 - rotationY is in radians (0 = default, π/2 = 90°, π = 180°, -π/2 = 270°).
 - Wall coordinates use [x, z] for start/end points (2D floor plan).
-- **CENTER PLACEMENT (MANDATORY):** When creating a new room, apartment, or building from scratch, the geometric center of the floor plan MUST be at the world origin (0, 0). For example, an 8m × 6m room should have walls from [-4, -3] to [4, 3], NOT from [0, 0] to [8, 6]. This ensures the design is centered in the viewport for the user.
+- **Building-relative coordinates:** All wall, door, window, and item coordinates are relative to the currently selected building. When a building is moved/rotated, all internal elements move with it automatically. You do NOT need to recalculate positions after moving a building.
+- **CENTER PLACEMENT (MANDATORY):** When creating a new room, apartment, or building from scratch, the geometric center of the floor plan MUST be at the building origin (0, 0). For example, an 8m × 6m room should have walls from [-4, -3] to [4, 3], NOT from [0, 0] to [8, 6]. This ensures the design is centered in the viewport for the user.
 - ONLY use items from the catalog below.
 
 ## Furniture Orientation (CRITICAL)

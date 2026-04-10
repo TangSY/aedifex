@@ -489,6 +489,52 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'move_building',
+      description: 'Move and/or rotate an entire building on the site. All internal elements (walls, doors, furniture) move with it.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The building node ID to move.' },
+          position: { type: 'array', items: { type: 'number' }, description: 'New site position [x, y, z] in meters.' },
+          rotationY: { type: 'number', description: 'New Y-axis rotation in radians (e.g., Math.PI/2 for 90°).' },
+          reason: { type: 'string', description: 'Brief reason for moving.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'clone_level',
+      description: 'Clone an entire floor (level) including all walls, doors, windows, furniture, and slabs. Creates a new level with fresh IDs. Use for duplicating floor layouts in multi-story buildings.',
+      parameters: {
+        type: 'object',
+        properties: {
+          levelId: { type: 'string', description: 'The level node ID to clone.' },
+          name: { type: 'string', description: 'Name for the new cloned level (e.g., "Level 2").' },
+          description: { type: 'string', description: 'Brief description of why this level is being cloned.' },
+        },
+        required: ['levelId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'enter_walkthrough',
+      description: 'Enter first-person walkthrough mode so the user can explore the building from ground level. Use after completing a design to let the user preview it.',
+      parameters: {
+        type: 'object',
+        properties: {
+          reason: { type: 'string', description: 'Brief reason for entering walkthrough mode.' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'batch_operations',
       description: 'Execute multiple operations at once. Use for room creation, room setups, or any multi-step operation.',
       parameters: {
@@ -499,7 +545,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
             items: {
               type: 'object',
               properties: {
-                type: { type: 'string', enum: ['add_item', 'remove_item', 'move_item', 'update_material', 'update_item', 'add_wall', 'update_wall', 'add_door', 'update_door', 'add_window', 'update_window', 'remove_node', 'add_level', 'add_slab', 'update_slab', 'add_ceiling', 'update_ceiling', 'add_roof', 'update_roof', 'add_zone', 'update_zone', 'add_building', 'update_site', 'add_scan', 'add_guide'] },
+                type: { type: 'string', enum: ['add_item', 'remove_item', 'move_item', 'update_material', 'update_item', 'add_wall', 'update_wall', 'add_door', 'update_door', 'add_window', 'update_window', 'remove_node', 'add_level', 'add_slab', 'update_slab', 'add_ceiling', 'update_ceiling', 'add_roof', 'update_roof', 'add_zone', 'update_zone', 'add_building', 'update_site', 'add_scan', 'add_guide', 'move_building', 'clone_level'] },
                 catalogSlug: { type: 'string' }, nodeId: { type: 'string' },
                 position: { type: 'array', items: { type: 'number' } }, rotationY: { type: 'number' },
                 material: { type: 'string' },

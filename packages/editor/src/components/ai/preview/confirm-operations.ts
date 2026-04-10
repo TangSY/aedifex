@@ -3,6 +3,7 @@ import {
   type AnyNodeId,
   BuildingNode,
   CeilingNode,
+  cloneLevelSubtree,
   DoorNode,
   GuideNode,
   ItemNode,
@@ -33,6 +34,9 @@ import type {
   ValidatedAddZone,
   ValidatedOperation,
   ValidatedUpdateCeiling,
+  ValidatedCloneLevel,
+  ValidatedEnterWalkthrough,
+  ValidatedMoveBuilding,
   ValidatedUpdateItem,
   ValidatedUpdateRoof,
   ValidatedUpdateSite,
@@ -497,6 +501,50 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         if (uItemOp.scale) updates.scale = uItemOp.scale
         useScene.getState().updateNode(uItemOp.nodeId, updates)
         affectedNodeIds.push(uItemOp.nodeId)
+        break
+      }
+      case 'move_building': {
+        const mbOp = op as ValidatedMoveBuilding
+        const updates: Record<string, unknown> = {}
+        if (mbOp.position) updates.position = mbOp.position
+        if (mbOp.rotationY !== undefined) updates.rotation = [0, mbOp.rotationY, 0]
+        useScene.getState().updateNode(mbOp.nodeId, updates)
+        affectedNodeIds.push(mbOp.nodeId)
+        break
+      }
+      case 'clone_level': {
+        const clOp = op as ValidatedCloneLevel
+        const { clonedNodes, newLevelId } = cloneLevelSubtree(nodes, clOp.levelId)
+        // Find the parent building of the source level
+        const sourceLevel = nodes[clOp.levelId]
+        const parentBuildingId = sourceLevel?.parentId as AnyNodeId | undefined
+        if (parentBuildingId) {
+          const { createNodes } = useScene.getState()
+          // Set name and level number on the cloned level
+          const existingLevels = Object.values(nodes).filter(n => n.type === 'level' && n.parentId === parentBuildingId)
+          const newLevelNum = existingLevels.length
+          const clonedLevelNode = clonedNodes.find(n => n.id === newLevelId)
+          if (clonedLevelNode && 'level' in clonedLevelNode) {
+            (clonedLevelNode as any).level = newLevelNum
+            if (clOp.name) (clonedLevelNode as any).name = clOp.name
+          }
+          // Create all cloned nodes, first the level under the building, then children
+          const levelNode = clonedNodes.find(n => n.id === newLevelId)!
+          const childNodes = clonedNodes.filter(n => n.id !== newLevelId)
+          createNodes([
+            { node: levelNode, parentId: parentBuildingId },
+            ...childNodes.map(n => ({ node: n, parentId: (n.parentId ?? newLevelId) as AnyNodeId })),
+          ])
+          affectedNodeIds.push(newLevelId as AnyNodeId)
+          createdNodeIds.push(...clonedNodes.map(n => n.id as AnyNodeId))
+          // Switch to the new level
+          useViewer.getState().setSelection({ levelId: newLevelId as `level_${string}` })
+        }
+        break
+      }
+      case 'enter_walkthrough': {
+        const _ewOp = op as ValidatedEnterWalkthrough
+        useViewer.getState().setWalkthroughMode(true)
         break
       }
     }

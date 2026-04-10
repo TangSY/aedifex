@@ -31,6 +31,9 @@ import {
   validateAddSlab,
   validateAddStair,
   validateAddZone,
+  validateCloneLevel,
+  validateEnterWalkthrough,
+  validateMoveBuilding,
   validateUpdateCeiling,
   validateUpdateRoof,
   validateUpdateSite,
@@ -125,6 +128,12 @@ export function validateToolCall(
       return [validateAddGuide(toolCall)]
     case 'update_item':
       return [validateUpdateItem(toolCall)]
+    case 'move_building':
+      return [validateMoveBuilding(toolCall)]
+    case 'clone_level':
+      return [validateCloneLevel(toolCall)]
+    case 'enter_walkthrough':
+      return [validateEnterWalkthrough(toolCall)]
     case 'batch_operations': {
       // Collect nodeIds from remove operations so add_door/add_window validators
       // can skip overlap checks against nodes that will be removed in this batch.

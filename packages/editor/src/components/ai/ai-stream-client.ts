@@ -388,6 +388,29 @@ function parseToolCall(name: string, input: Record<string, unknown>): AIToolCall
         })),
       }
 
+    case 'move_building':
+      return {
+        tool: 'move_building',
+        nodeId: input.nodeId as string,
+        position: input.position as [number, number, number] | undefined,
+        rotationY: input.rotationY as number | undefined,
+        reason: input.reason as string | undefined,
+      }
+
+    case 'clone_level':
+      return {
+        tool: 'clone_level',
+        levelId: input.levelId as string,
+        name: input.name as string | undefined,
+        description: input.description as string | undefined,
+      }
+
+    case 'enter_walkthrough':
+      return {
+        tool: 'enter_walkthrough',
+        reason: input.reason as string | undefined,
+      }
+
     case 'ask_user':
       return {
         tool: 'ask_user',

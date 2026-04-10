@@ -1,6 +1,7 @@
 import {
   type AnyNode,
   type AnyNodeId,
+  cloneLevelSubtree,
   useScene,
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
@@ -14,6 +15,9 @@ import type {
   AddSlabToolCall,
   AddStairToolCall,
   AddZoneToolCall,
+  CloneLevelToolCall,
+  EnterWalkthroughToolCall,
+  MoveBuildingToolCall,
   UpdateCeilingToolCall,
   UpdateRoofToolCall,
   UpdateSiteToolCall,
@@ -29,6 +33,9 @@ import type {
   ValidatedAddSlab,
   ValidatedAddStair,
   ValidatedAddZone,
+  ValidatedCloneLevel,
+  ValidatedEnterWalkthrough,
+  ValidatedMoveBuilding,
   ValidatedUpdateCeiling,
   ValidatedUpdateRoof,
   ValidatedUpdateSite,
@@ -658,4 +665,69 @@ export function validateAddGuide(call: AddGuideToolCall): ValidatedAddGuide {
     scale: call.scale ?? 1,
     opacity: call.opacity ?? 0.5,
   }
+}
+
+// ============================================================================
+// Building Move/Rotate Validator
+// ============================================================================
+
+export function validateMoveBuilding(call: MoveBuildingToolCall): ValidatedMoveBuilding {
+  const { nodes } = useScene.getState()
+  const node = nodes[call.nodeId as AnyNodeId]
+
+  if (!node) {
+    return { type: 'move_building', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: `Building node "${call.nodeId}" not found.` }
+  }
+
+  if (node.type !== 'building') {
+    return { type: 'move_building', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: `Node "${call.nodeId}" is a ${node.type}, not a building.` }
+  }
+
+  if (!call.position && call.rotationY === undefined) {
+    return { type: 'move_building', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: 'Must specify position and/or rotationY.' }
+  }
+
+  return {
+    type: 'move_building',
+    status: 'valid',
+    nodeId: call.nodeId as AnyNodeId,
+    position: call.position,
+    rotationY: call.rotationY,
+  }
+}
+
+// ============================================================================
+// Clone Level Validator
+// ============================================================================
+
+export function validateCloneLevel(call: CloneLevelToolCall): ValidatedCloneLevel {
+  const { nodes } = useScene.getState()
+  const levelNode = nodes[call.levelId as AnyNodeId]
+
+  if (!levelNode) {
+    return { type: 'clone_level', status: 'invalid', levelId: call.levelId as AnyNodeId, errorReason: `Level node "${call.levelId}" not found.` }
+  }
+
+  if (levelNode.type !== 'level') {
+    return { type: 'clone_level', status: 'invalid', levelId: call.levelId as AnyNodeId, errorReason: `Node "${call.levelId}" is a ${levelNode.type}, not a level.` }
+  }
+
+  // Perform the clone to get the new level ID
+  const { newLevelId } = cloneLevelSubtree(nodes, call.levelId as AnyNodeId)
+
+  return {
+    type: 'clone_level',
+    status: 'valid',
+    levelId: call.levelId as AnyNodeId,
+    name: call.name,
+    newLevelId: newLevelId as AnyNodeId,
+  }
+}
+
+// ============================================================================
+// Enter Walkthrough Validator
+// ============================================================================
+
+export function validateEnterWalkthrough(_call: EnterWalkthroughToolCall): ValidatedEnterWalkthrough {
+  return { type: 'enter_walkthrough', status: 'valid' }
 }

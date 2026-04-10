@@ -150,9 +150,11 @@ export function applyGhostPreview(operations: ValidatedOperation[]): AnyNodeId[]
       case 'add_zone':
       case 'add_scan':
       case 'add_guide':
-      case 'add_building': {
-        // Structure creation tools — no visual ghost preview needed,
-        // these create non-visual or flat geometry nodes
+      case 'add_building':
+      case 'move_building':
+      case 'clone_level':
+      case 'enter_walkthrough': {
+        // Structure/navigation tools — no visual ghost preview needed
         break
       }
       case 'add_roof': {
