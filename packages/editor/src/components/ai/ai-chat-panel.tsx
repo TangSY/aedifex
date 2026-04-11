@@ -35,7 +35,7 @@ import { ProposalTabs } from './chat-ui/proposal-cards'
 // ============================================================================
 
 export function AIChatPanel() {
-  // A-P1: Fine-grained selectors — each selector only re-renders when its
+  // Fine-grained selectors — each selector only re-renders when its
   // specific slice changes. streamingContent updates dozens of times per second
   // during streaming; isolating it in StreamingIndicator prevents the entire
   // panel (message list, input area, etc.) from re-rendering on every chunk.
@@ -200,10 +200,10 @@ export function AIChatPanel() {
           <EmptyState onSuggestionClick={(text) => setInput(text)} />
         ) : (
           <div className="flex flex-col gap-3">
-            {/* A-P1: MessageList renders only when messages array changes */}
+            {/* MessageList renders only when messages array changes */}
             <MessageList messages={messages} />
 
-            {/* A-P1: StreamingIndicator has its own subscription to
+            {/* StreamingIndicator has its own subscription to
                 streamingContent and isStreaming, so high-frequency chunk
                 updates only re-render this small component. */}
             <StreamingIndicator messagesEndRef={messagesEndRef} />
@@ -301,7 +301,7 @@ export function AIChatPanel() {
 }
 
 // ============================================================================
-// A-P1: MessageList — only re-renders when messages array reference changes
+// MessageList — only re-renders when messages array reference changes
 // ============================================================================
 
 const MessageList = memo(function MessageList({ messages }: { messages: ChatMessage[] }) {

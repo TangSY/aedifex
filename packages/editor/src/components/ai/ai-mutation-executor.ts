@@ -11,7 +11,7 @@ import type {
   ValidatedAddItem,
   ValidatedOperation,
 } from './types'
-import { checkWallCollision, checkZoneBoundary, getItemAABB } from './mutation/collision-detection'
+import { checkWallCollision, checkZoneBoundary, getItemAABB, getItemCorners, obbOverlap } from './mutation/collision-detection'
 import {
   guessToolType,
   validateAddItem,
@@ -295,7 +295,13 @@ function resolveBatchCollisions(operations: ValidatedOperation[]): ValidatedOper
   if (floorItems.length < 2) return operations
 
   const result = [...operations]
-  const occupiedAABBs: { minX: number; maxX: number; minZ: number; maxZ: number }[] = []
+  // Track placed items: AABB for fast broad-phase, plus position/dims/rotation for OBB refinement
+  const placedItems: {
+    aabb: { minX: number; maxX: number; minZ: number; maxZ: number }
+    position: [number, number, number]
+    dimensions: [number, number, number]
+    rotation: [number, number, number]
+  }[] = []
 
   for (const { index, op } of floorItems) {
     // op.asset is guaranteed non-null: floorItems is filtered by `op.asset && !op.asset.attachTo`
@@ -308,15 +314,26 @@ function resolveBatchCollisions(operations: ValidatedOperation[]): ValidatedOper
     let pushZ = 0
     let hasCollision = false
 
-    for (const other of occupiedAABBs) {
-      const overlapX = Math.min(aabb.maxX, other.maxX) - Math.max(aabb.minX, other.minX)
-      const overlapZ = Math.min(aabb.maxZ, other.maxZ) - Math.max(aabb.minZ, other.minZ)
+    for (const placed of placedItems) {
+      const overlapX = Math.min(aabb.maxX, placed.aabb.maxX) - Math.max(aabb.minX, placed.aabb.minX)
+      const overlapZ = Math.min(aabb.maxZ, placed.aabb.maxZ) - Math.max(aabb.minZ, placed.aabb.minZ)
 
       if (overlapX <= 0 || overlapZ <= 0) continue
+
+      // AABB overlap detected — refine with OBB check for rotated items
+      // to eliminate false positives from axis-aligned bounding box expansion.
+      const itemRotY = Math.abs(op.rotation[1])
+      const placedRotY = Math.abs(placed.rotation[1])
+      if (itemRotY > 0.01 || placedRotY > 0.01) {
+        const cornersA = getItemCorners(position, dims, op.rotation)
+        const cornersB = getItemCorners(placed.position, placed.dimensions, placed.rotation)
+        if (!obbOverlap(cornersA, cornersB)) continue // No real collision
+      }
+
       hasCollision = true
 
-      const otherCx = (other.minX + other.maxX) / 2
-      const otherCz = (other.minZ + other.maxZ) / 2
+      const otherCx = (placed.aabb.minX + placed.aabb.maxX) / 2
+      const otherCz = (placed.aabb.minZ + placed.aabb.maxZ) / 2
 
       // Push along axis of least overlap
       if (overlapX < overlapZ) {
@@ -357,7 +374,12 @@ function resolveBatchCollisions(operations: ValidatedOperation[]): ValidatedOper
       }
     }
 
-    occupiedAABBs.push(getItemAABB(position, dims, op.rotation))
+    placedItems.push({
+      aabb: getItemAABB(position, dims, op.rotation),
+      position,
+      dimensions: dims,
+      rotation: op.rotation,
+    })
   }
 
   return result

@@ -151,6 +151,12 @@ async function processStream(
           continue
         }
 
+        // Check for server-side error signal in the SSE chunk
+        if (chunk.error) {
+          callbacks.onError(chunk.error as string)
+          return
+        }
+
         // Capture usage from the final chunk (stream_options: { include_usage: true })
         const chunkUsage = chunk.usage as { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | undefined
         if (chunkUsage) {
@@ -215,8 +221,10 @@ async function processStream(
                 toolCallIds.push(pending.id)
                 callbacks.onToolCall(toolCall)
               }
-            } catch {
-              // Failed to parse tool arguments — skip
+            } catch (parseError) {
+              console.error(`Failed to parse tool call arguments for ${pending.name}:`, parseError)
+              callbacks.onError?.(`Tool call "${pending.name}" had invalid arguments`)
+              continue
             }
           }
 
@@ -240,8 +248,10 @@ async function processStream(
             toolCallIds.push(pending.id)
             callbacks.onToolCall(toolCall)
           }
-        } catch {
-          // Failed to parse tool arguments — skip
+        } catch (parseError) {
+          console.error(`Failed to parse tool call arguments for ${pending.name}:`, parseError)
+          callbacks.onError?.(`Tool call "${pending.name}" had invalid arguments`)
+          continue
         }
       }
 
@@ -330,6 +340,8 @@ function parseToolCall(name: string, input: Record<string, unknown>): AIToolCall
       return {
         tool: 'update_wall',
         nodeId: input.nodeId as string,
+        start: input.start as [number, number] | undefined,
+        end: input.end as [number, number] | undefined,
         height: input.height as number | undefined,
         thickness: input.thickness as number | undefined,
         reason: input.reason as string | undefined,

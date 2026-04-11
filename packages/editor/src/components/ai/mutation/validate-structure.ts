@@ -397,7 +397,9 @@ export function validateAddStair(call: AddStairToolCall): ValidatedAddStair {
   const width = call.width ?? 1.0
   const length = call.length ?? 3.0
   const height = call.height ?? 2.5
-  const stepCount = call.stepCount ?? 10
+  // OpenAI may send stepCount as a float (schema uses 'number' for compatibility);
+  // round to nearest integer to ensure valid step count.
+  const stepCount = Math.round(call.stepCount ?? 10)
   const rotation = call.rotationY ?? 0
 
   if (width < 0.5 || width > 5.0) {
@@ -488,10 +490,12 @@ export function validateUpdateStair(call: UpdateStairToolCall): ValidatedUpdateS
       errorReason: `Stair height ${call.height}m is out of range. Must be 0.5-10.0m.`,
     }
   }
-  if (call.stepCount !== undefined && (call.stepCount < 2 || call.stepCount > 30)) {
+  // Round stepCount to integer (OpenAI schema uses 'number' for compatibility)
+  const roundedStepCount = call.stepCount !== undefined ? Math.round(call.stepCount) : undefined
+  if (roundedStepCount !== undefined && (roundedStepCount < 2 || roundedStepCount > 30)) {
     return {
       type: 'update_stair', status: 'invalid', nodeId: call.nodeId as AnyNodeId,
-      errorReason: `Step count ${call.stepCount} is out of range. Must be 2-30.`,
+      errorReason: `Step count ${roundedStepCount} is out of range. Must be 2-30.`,
     }
   }
 
@@ -504,7 +508,7 @@ export function validateUpdateStair(call: UpdateStairToolCall): ValidatedUpdateS
     width: call.width,
     length: call.length,
     height: call.height,
-    stepCount: call.stepCount,
+    stepCount: roundedStepCount,
   }
 }
 

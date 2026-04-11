@@ -6,7 +6,7 @@ import { memo, useEffect, useRef } from 'react'
 import { useAIChat } from '../ai-chat-store'
 
 // ============================================================================
-// A-P1: StreamingIndicator — subscribes only to streamingContent + isStreaming
+// StreamingIndicator — subscribes only to streamingContent + isStreaming
 // High-frequency streaming updates (dozens/sec) are isolated here so the rest
 // of the panel does not re-render on every incoming chunk.
 // ============================================================================

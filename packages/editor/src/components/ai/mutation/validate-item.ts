@@ -614,8 +614,8 @@ export function guessToolType(op: Record<string, unknown>): string {
     return 'add_item'
   }
 
-  // update_material: requires nodeId + material object
-  if ('nodeId' in op && 'material' in op && typeof op.nodeId === 'string' && typeof op.material === 'object') {
+  // update_material: requires nodeId + material (string or object)
+  if ('nodeId' in op && 'material' in op && typeof op.nodeId === 'string' && (typeof op.material === 'string' || typeof op.material === 'object')) {
     return 'update_material'
   }
 

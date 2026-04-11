@@ -373,6 +373,7 @@ describe('formatSceneContextForPrompt', () => {
       roofs: [],
       slabs: [],
       stairs: [],
+      buildings: [],
     }
     const output = formatSceneContextForPrompt(ctx)
     expect(output).toContain('0 walls')
@@ -395,6 +396,7 @@ describe('formatSceneContextForPrompt', () => {
         { id: 'wall_long', start: [0, 0] as [number, number], end: [6, 0] as [number, number], thickness: 0.2, length: 6 },
       ],
       stairs: [],
+      buildings: [],
     }
     const output = formatSceneContextForPrompt(ctx)
     expect(output).toContain('[LONGEST]')
@@ -425,6 +427,7 @@ describe('formatSceneContextForPrompt', () => {
       roofs: [],
       slabs: [],
       stairs: [],
+      buildings: [],
     }
     const output = formatSceneContextForPrompt(ctx)
     expect(output).toContain('Living Room')
@@ -463,6 +466,7 @@ describe('formatSceneContextForPrompt', () => {
         },
       ],
       stairs: [],
+      buildings: [],
     }
     const output = formatSceneContextForPrompt(ctx)
     expect(output).toContain('top-left')
@@ -490,6 +494,7 @@ describe('formatSceneContextForPrompt', () => {
         },
       ],
       stairs: [],
+      buildings: [],
     }
     const output = formatSceneContextForPrompt(ctx)
     expect(output).toContain('horizontal')
@@ -508,6 +513,7 @@ describe('formatSceneContextForPrompt', () => {
       roofs: [],
       slabs: [],
       stairs: [],
+      buildings: [],
     }
     const output = formatSceneContextForPrompt(ctx)
     expect(output).toContain('empty')

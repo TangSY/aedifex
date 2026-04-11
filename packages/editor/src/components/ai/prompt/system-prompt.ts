@@ -317,7 +317,7 @@ export function buildSystemPrompt(catalogSummary: string, sceneContext: string):
     COORDINATE_SYSTEM,
     PLANNING_RULES,
     FURNITURE_RULES,
-    `## Catalog\n${catalogSummary}`,
+    `## Catalog\n${sanitizePromptInjection(catalogSummary)}`,
     `## Current Scene\n${sanitizedSceneContext}`,
   ]
 

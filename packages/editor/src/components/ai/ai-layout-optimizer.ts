@@ -1,6 +1,6 @@
-import type { WallNode } from '@aedifex/core'
+import type { ItemNode, WallNode } from '@aedifex/core'
 import { useScene } from '@aedifex/core'
-import { getPlacementMeta } from './furniture-placement-metadata'
+import { getPlacementMeta, PLACEMENT_METADATA } from './furniture-placement-metadata'
 import type { ValidatedAddItem, ValidatedMoveItem, ValidatedOperation } from './types'
 
 // ============================================================================
@@ -198,6 +198,46 @@ function optimizeMoveItem(
 // Wall Snap Alignment
 // ============================================================================
 
+/**
+ * Check if an item position along a wall overlaps with any door or window on that wall.
+ * Returns true if the item would be blocked by an opening.
+ */
+function isBlockedByOpening(
+  wall: WallNode,
+  itemPositionAlongWall: number,
+  itemHalfWidth: number,
+): boolean {
+  if (!wall.children || wall.children.length === 0) return false
+
+  const { nodes } = useScene.getState()
+  const wallDx = wall.end[0] - wall.start[0]
+  const wallDz = wall.end[1] - wall.start[1]
+  const wallLen = Math.hypot(wallDx, wallDz)
+  if (wallLen < 0.01) return false
+
+  for (const childId of wall.children) {
+    const child = nodes[childId as import('@aedifex/core').AnyNodeId]
+    if (!child) continue
+    if (child.type !== 'door' && child.type !== 'window') continue
+
+    const opening = child as { position: [number, number, number]; width: number }
+    const openingLocalX = opening.position[0]
+    const openingHalfWidth = (opening.width ?? 0.9) / 2
+
+    // Check overlap between item extent and opening extent along wall
+    const itemMin = itemPositionAlongWall - itemHalfWidth
+    const itemMax = itemPositionAlongWall + itemHalfWidth
+    const openingMin = openingLocalX - openingHalfWidth
+    const openingMax = openingLocalX + openingHalfWidth
+
+    if (itemMax > openingMin && itemMin < openingMax) {
+      return true // Overlap with door/window
+    }
+  }
+
+  return false
+}
+
 function snapToNearestWall(
   position: [number, number, number],
   dimensions: [number, number, number],
@@ -208,23 +248,60 @@ function snapToNearestWall(
   if (resolvedWalls.length === 0) return null
 
   const [px, py, pz] = position
-  let bestWall: WallNode | null = null
-  let bestDist = WALL_SNAP_THRESHOLD
-  let bestClosestPoint: [number, number] = [0, 0]
+
+  // Collect all candidate walls sorted by distance, then pick the first
+  // that is not blocked by a door/window at the snap position.
+  const candidates: { wall: WallNode; closestPoint: [number, number]; distance: number }[] = []
 
   for (const wall of resolvedWalls) {
-    // Find closest point on wall segment to item center
     const { closestPoint, distance } = closestPointOnSegment(
       px, pz,
       wall.start[0], wall.start[1],
       wall.end[0], wall.end[1],
     )
 
-    if (distance < bestDist) {
-      bestDist = distance
-      bestWall = wall
-      bestClosestPoint = closestPoint
+    if (distance < WALL_SNAP_THRESHOLD) {
+      candidates.push({ wall, closestPoint, distance })
     }
+  }
+
+  // Sort by distance (closest first)
+  candidates.sort((a, b) => a.distance - b.distance)
+
+  let bestWall: WallNode | null = null
+  let bestClosestPoint: [number, number] = [0, 0]
+
+  for (const candidate of candidates) {
+    const wallDx = candidate.wall.end[0] - candidate.wall.start[0]
+    const wallDz = candidate.wall.end[1] - candidate.wall.start[1]
+    const wallLen = Math.hypot(wallDx, wallDz)
+    if (wallLen < 0.01) continue
+
+    // Compute item's position along the wall
+    const wallDirX = wallDx / wallLen
+    const wallDirZ = wallDz / wallLen
+    const t = (px - candidate.wall.start[0]) * wallDirX + (pz - candidate.wall.start[1]) * wallDirZ
+
+    // Estimate item half-width along wall
+    const [w, , d] = dimensions
+    const wallAngle = Math.atan2(wallDz, wallDx)
+    const normalX = -wallDz / wallLen
+    const normalZ = wallDx / wallLen
+    const toCenterX = px - candidate.closestPoint[0]
+    const toCenterZ = pz - candidate.closestPoint[1]
+    const side = Math.sign(toCenterX * normalX + toCenterZ * normalZ) || 1
+    const faceAngle = Math.atan2(side * normalX, side * normalZ)
+    const angleDiff = Math.abs(normalizeAngle(faceAngle - wallAngle))
+    const halfWidth = (angleDiff < Math.PI / 4 || angleDiff > (3 * Math.PI) / 4) ? w / 2 : d / 2
+
+    // Check if blocked by a door/window
+    if (isBlockedByOpening(candidate.wall, t, halfWidth)) {
+      continue // Skip this wall, try the next closest
+    }
+
+    bestWall = candidate.wall
+    bestClosestPoint = candidate.closestPoint
+    break
   }
 
   if (!bestWall) return null
@@ -392,6 +469,52 @@ function halfExtentAlongAxis(
   return worldHalfX * nx + worldHalfZ * nz
 }
 
+/**
+ * Represents a candidate primary item for spacing adjustment.
+ */
+interface SpacingCandidate {
+  slug: string
+  category: string
+  position: [number, number, number]
+  rotation: [number, number, number]
+  dimensions: [number, number, number]
+}
+
+/**
+ * Build dynamic spacing rules from companionOf metadata.
+ * This supplements the hardcoded SPACING_RULES with relationships
+ * defined in PLACEMENT_METADATA, ensuring companionOf is actually used.
+ */
+function buildDynamicSpacingRules(): SpacingRule[] {
+  const dynamicRules: SpacingRule[] = []
+  for (const [keyword, meta] of Object.entries(PLACEMENT_METADATA)) {
+    if (!meta.companionOf) continue
+    // Check if this relationship is already covered by a hardcoded rule
+    const alreadyCovered = SPACING_RULES.some((rule) =>
+      rule.companion.some((c) => keyword.includes(c) || c.includes(keyword)) &&
+      rule.primary.some((p) => meta.companionOf!.some((co) => p.includes(co) || co.includes(p)))
+    )
+    if (alreadyCovered) continue
+    // Generate a rule: this item is a companion of its companionOf targets
+    dynamicRules.push({
+      primary: meta.companionOf,
+      companion: [keyword],
+      idealDistance: meta.minClearance.front > 0 ? meta.minClearance.front : 0.3,
+      tolerance: 0.2,
+    })
+  }
+  return dynamicRules
+}
+
+/** Cached combined rules (hardcoded + dynamic from companionOf metadata) */
+let _allSpacingRules: SpacingRule[] | null = null
+function getAllSpacingRules(): SpacingRule[] {
+  if (!_allSpacingRules) {
+    _allSpacingRules = [...SPACING_RULES, ...buildDynamicSpacingRules()]
+  }
+  return _allSpacingRules
+}
+
 function adjustForGroupSpacing(
   assetId: string,
   category: string,
@@ -402,36 +525,63 @@ function adjustForGroupSpacing(
   const slug = assetId.toLowerCase()
   const cat = category.toLowerCase()
 
-  for (const rule of SPACING_RULES) {
+  // Collect candidates from both the current batch AND existing scene items
+  const candidates: SpacingCandidate[] = []
+
+  // Candidates from the current batch
+  for (const op of allOps) {
+    if (op.type !== 'add_item' || op.status === 'invalid' || !op.asset) continue
+    candidates.push({
+      slug: op.asset.id.toLowerCase(),
+      category: op.asset.category.toLowerCase(),
+      position: op.position,
+      rotation: op.rotation,
+      dimensions: [op.asset.dimensions?.[0] ?? 1, op.asset.dimensions?.[1] ?? 1, op.asset.dimensions?.[2] ?? 1],
+    })
+  }
+
+  // Candidates from existing scene items
+  const existingNodes = Object.values(useScene.getState().nodes)
+  for (const node of existingNodes) {
+    if (node.type !== 'item') continue
+    const itemNode = node as unknown as ItemNode
+    candidates.push({
+      slug: itemNode.asset.id.toLowerCase(),
+      category: itemNode.asset.category.toLowerCase(),
+      position: [...itemNode.position] as [number, number, number],
+      rotation: [...itemNode.rotation] as [number, number, number],
+      dimensions: [...itemNode.asset.dimensions] as [number, number, number],
+    })
+  }
+
+  const allRules = getAllSpacingRules()
+
+  for (const rule of allRules) {
     // Check if current item is a companion
     const isCompanion = rule.companion.some((k) => slug.includes(k) || cat.includes(k))
     if (!isCompanion) continue
 
-    // Find primary item in the same batch
-    for (const op of allOps) {
-      if (op.type !== 'add_item' || op.status === 'invalid' || !op.asset) continue
-      const opSlug = op.asset.id.toLowerCase()
-      const opCat = op.asset.category.toLowerCase()
-      const isPrimary = rule.primary.some((k) => opSlug.includes(k) || opCat.includes(k))
+    // Find primary item in candidates
+    for (const candidate of candidates) {
+      const isPrimary = rule.primary.some((k) => candidate.slug.includes(k) || candidate.category.includes(k))
       if (!isPrimary) continue
 
       // Compute along primary item's facing direction (front = +Z after rotation)
-      const primaryRotY = op.rotation[1]
-      // Facing axis: at rotationY=0 front faces +Z, after rotation faces (sin(rotY), cos(rotY))
+      const primaryRotY = candidate.rotation[1]
       const facingX = Math.sin(primaryRotY)
       const facingZ = Math.cos(primaryRotY)
 
       // Project companion-to-primary offset onto facing axis
-      const dx = position[0] - op.position[0]
-      const dz = position[2] - op.position[2]
-      const projectedDist = dx * facingX + dz * facingZ // signed distance along facing axis
+      const dx = position[0] - candidate.position[0]
+      const dz = position[2] - candidate.position[2]
+      const projectedDist = dx * facingX + dz * facingZ
 
       // Compute half-extents of both items along facing axis
       const primaryHalf = halfExtentAlongAxis(
-        [op.asset.dimensions?.[0] ?? 1, op.asset.dimensions?.[1] ?? 1, op.asset.dimensions?.[2] ?? 1],
+        candidate.dimensions,
         primaryRotY, facingX, facingZ,
       )
-      const companionRotY = 0 // companion has not been rotation-corrected yet, use default
+      const companionRotY = 0
       const companionHalf = halfExtentAlongAxis(dimensions, companionRotY, facingX, facingZ)
 
       // Edge-to-edge gap = center distance - both half-extents
@@ -444,13 +594,11 @@ function adjustForGroupSpacing(
 
       // Target center distance = both half-extents + ideal edge gap
       const targetCenterDist = primaryHalf + rule.idealDistance + companionHalf
-      // Keep companion on the same side of primary (preserve sign)
       const sign = projectedDist >= 0 ? 1 : -1
-      // Adjust only along facing axis, preserve lateral offset
       const lateralX = dx - projectedDist * facingX
       const lateralZ = dz - projectedDist * facingZ
-      const newX = op.position[0] + lateralX + facingX * sign * targetCenterDist
-      const newZ = op.position[2] + lateralZ + facingZ * sign * targetCenterDist
+      const newX = candidate.position[0] + lateralX + facingX * sign * targetCenterDist
+      const newZ = candidate.position[2] + lateralZ + facingZ * sign * targetCenterDist
 
       return {
         position: [newX, position[1], newZ],

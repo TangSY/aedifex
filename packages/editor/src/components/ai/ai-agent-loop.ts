@@ -34,7 +34,7 @@ import type {
 // Auto-compresses conversation context at CONTEXT_COMPRESS_THRESHOLD.
 // ============================================================================
 
-// A-M5: Track pending screenshot timers so they can be cancelled on cleanup
+// Track pending screenshot timers so they can be cancelled on cleanup
 const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
 
 /** Total token budget per agent loop run (prompt + completion summed) */
@@ -143,7 +143,7 @@ export async function runAgentLoop({
   let iteration = 0
   let totalTokensUsed = 0
   let lastMessageId: string | null = null
-  let beforeScreenshotUrl: string | null = null // P0-2: capture once on first mutation
+  let beforeScreenshotUrl: string | null = null // capture once on first mutation
 
   try {
     while (iteration < MAX_ITERATIONS && totalTokensUsed < TOKEN_BUDGET) {
@@ -247,7 +247,7 @@ export async function runAgentLoop({
       )
 
       if (mutationCalls.length > 0) {
-        // P0-2: Capture before screenshot only on the first mutation iteration.
+        // Capture before screenshot only on the first mutation iteration.
         // Intermediate iterations skip capture to avoid blocking the main thread.
         if (!beforeScreenshotUrl) {
           beforeScreenshotUrl = await captureScreenshot()
@@ -273,7 +273,7 @@ export async function runAgentLoop({
           useAIChat.getState().rejectOperations(lastMessageId)
         }
 
-        // Record tool errors for context injection (#6)
+        // Record tool errors for context injection
         const invalidOps = validated.filter((op) => op.status === 'invalid')
         for (const op of invalidOps) {
           const reason = 'errorReason' in op ? (op.errorReason as string) : 'unknown error'
@@ -469,7 +469,7 @@ async function compressConversation(
 // ============================================================================
 
 /**
- * A-D4: Extracted shared confirm logic used by both confirmOperationsFromUI
+ * Extracted shared confirm logic used by both confirmOperationsFromUI
  * and the confirm_preview branch inside handleSpecialToolCalls.
  *
  * Sequence:
@@ -490,7 +490,7 @@ async function executeConfirmation(
   log.messageId = messageId
   useAIChat.getState().addOperationLog(log)
 
-  // A-M5: Capture after-screenshot with tracked timer
+  // Capture after-screenshot with tracked timer
   const timerId = setTimeout(async () => {
     pendingTimers.delete(timerId)
     const afterScreenshot = await captureScreenshot()
@@ -546,7 +546,7 @@ async function handleSpecialToolCalls(
   if (confirmCall) {
     const pendingMsg = findPendingMessage()
     if (pendingMsg?.operations) {
-      // A-D4: delegate to shared confirmation logic
+      // Delegate to shared confirmation logic
       await executeConfirmation(pendingMsg.id, pendingMsg.operations)
     }
     return { type: 'confirmed' }
@@ -582,7 +582,7 @@ function findPendingMessage() {
 
 /**
  * Confirm operations from UI button click.
- * A-D4: delegates to shared executeConfirmation.
+ * Delegates to shared executeConfirmation.
  */
 export async function confirmOperationsFromUI(
   messageId: string,

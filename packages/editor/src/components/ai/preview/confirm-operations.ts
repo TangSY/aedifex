@@ -63,7 +63,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
   const { nodes } = useScene.getState()
   const levelId = useViewer.getState().selection.levelId
 
-  // Pre-compute type counts once for all operations (A-P5: avoid repeated O(N) scans)
+  // Pre-compute type counts once for all operations (avoid repeated O(N) scans)
   const typeCountCache = new Map<string, number>()
   function getCachedTypeCount(type: string): number {
     let count = typeCountCache.get(type)
@@ -104,16 +104,17 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
     useScene.getState().deleteNode(ghostId)
   }
 
-  // Step 2: Resume Zundo — everything from here is tracked
+  // Step 2: Resume Zundo — everything from here is tracked as a single undo batch
   useScene.temporal.getState().resume()
 
-  // Step 3: Create final nodes for all operations
+  // Step 3: Collect all node creations for batch execution (single undo record)
+  const batchCreates: { node: import('@aedifex/core').AnyNode; parentId: AnyNodeId }[] = []
+
   for (const op of operations) {
     if (op.status === 'invalid') continue
 
     switch (op.type) {
       case 'add_item': {
-        // op.asset is always set when status is 'valid' or 'adjusted'
         if (!op.asset) break
         const finalNode = ItemNode.parse({
           name: op.asset.name,
@@ -121,7 +122,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           position: op.position,
           rotation: op.rotation,
         })
-        useScene.getState().createNode(finalNode, levelId as AnyNodeId)
+        batchCreates.push({ node: finalNode, parentId: levelId as AnyNodeId })
         affectedNodeIds.push(finalNode.id as AnyNodeId)
         createdNodeIds.push(finalNode.id as AnyNodeId)
         break
@@ -135,7 +136,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           ...(op.thickness !== 0.2 ? { thickness: op.thickness } : {}),
           ...(op.height ? { height: op.height } : {}),
         })
-        useScene.getState().createNode(wall, levelId as AnyNodeId)
+        batchCreates.push({ node: wall, parentId: levelId as AnyNodeId })
         affectedNodeIds.push(wall.id as AnyNodeId)
         createdNodeIds.push(wall.id as AnyNodeId)
         break
@@ -152,7 +153,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           hingesSide: op.hingesSide,
           swingDirection: op.swingDirection,
         })
-        useScene.getState().createNode(door, op.wallId)
+        batchCreates.push({ node: door, parentId: op.wallId })
         affectedNodeIds.push(door.id as AnyNodeId)
         createdNodeIds.push(door.id as AnyNodeId)
         break
@@ -167,7 +168,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           width: op.width,
           height: op.height,
         })
-        useScene.getState().createNode(window, op.wallId)
+        batchCreates.push({ node: window, parentId: op.wallId })
         affectedNodeIds.push(window.id as AnyNodeId)
         createdNodeIds.push(window.id as AnyNodeId)
         break
@@ -552,6 +553,11 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
       }
       // enter_walkthrough is handled in ai-agent-loop.ts before reaching confirm path
     }
+  }
+
+  // Execute batched node creations in a single call (single undo record)
+  if (batchCreates.length > 0) {
+    useScene.getState().createNodes(batchCreates)
   }
 
   // Clean up state

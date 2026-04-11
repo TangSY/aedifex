@@ -2,39 +2,210 @@ import type { AnyNode, AnyNodeId, CeilingNode, DoorNode, SlabNode, WallNode, Win
 import { useScene } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { useAIChat } from './ai-chat-store'
+import { polygonArea } from './mutation/validate-structure'
 import { analyzeRoom, formatRoomAnalysis } from './room-analyzer'
 import type { SceneContext, SceneCeilingSummary, SceneLevelSummary, SceneRoofSummary, SceneSlabSummary, SceneStairSummary, SceneItemSummary } from './types'
 
 // ============================================================================
 // Scene Context Cache
-// Inspired by Claude Code's cacheSafeParams — avoid re-serializing when
-// the scene hasn't changed between agentic loop iterations.
+// Encapsulates cache state to avoid module-level mutable variables.
 // ============================================================================
 
-let cachedContext: SceneContext | null = null
-let cachedNodesHash = ''
+class SceneContextCache {
+  private context: SceneContext | null = null
+  private nodesHash = ''
 
-/** Compute a content hash from node IDs to detect additions/deletions/swaps */
-function computeNodesHash(nodes: Record<string, unknown>): string {
-  const ids = Object.keys(nodes).sort()
-  return `${ids.length}:${ids.join(',')}`
+  /** Compute a content hash from node IDs to detect additions/deletions/swaps */
+  private computeHash(nodes: Record<string, unknown>): string {
+    const ids = Object.keys(nodes).sort()
+    return `${ids.length}:${ids.join(',')}`
+  }
+
+  /** Get cached context if the scene hasn't changed */
+  get(nodes: Record<string, unknown>, levelId: string): SceneContext | null {
+    const hash = this.computeHash(nodes)
+    if (this.context && this.nodesHash === hash && this.context.levelId === levelId) {
+      return this.context
+    }
+    return null
+  }
+
+  /** Update cached context */
+  set(context: SceneContext, nodes: Record<string, unknown>): void {
+    this.context = context
+    this.nodesHash = this.computeHash(nodes)
+  }
+
+  /** Invalidate the cache */
+  invalidate(): void {
+    this.context = null
+    this.nodesHash = ''
+  }
 }
 
-/** Compute polygon area using the Shoelace formula */
-function computePolygonArea(polygon: [number, number][]): number {
-  let area = 0
-  for (let i = 0; i < polygon.length; i++) {
-    const j = (i + 1) % polygon.length
-    area += polygon[i]![0] * polygon[j]![1]
-    area -= polygon[j]![0] * polygon[i]![1]
+const sceneContextCache = new SceneContextCache()
+
+// ============================================================================
+// Per-Node-Type Serializers
+// Extracted from serializeSceneContext for readability and testability.
+// ============================================================================
+
+function serializeItemNode(
+  node: AnyNode & { asset: { name: string; id: string; dimensions: [number, number, number]; category: string }; position: [number, number, number]; rotation: [number, number, number]; name?: string },
+  items: SceneItemSummary[],
+): void {
+  items.push({
+    id: node.id,
+    name: node.name ?? node.asset.name,
+    catalogSlug: node.asset.id,
+    position: [...node.position] as [number, number, number],
+    rotationY: node.rotation[1],
+    dimensions: [...node.asset.dimensions] as [number, number, number],
+    category: node.asset.category,
+  })
+}
+
+function serializeWallNode(
+  wallNode: WallNode,
+  nodes: Record<string, AnyNode>,
+  walls: SceneContext['walls'],
+  items: SceneItemSummary[],
+  visited: Set<string>,
+): void {
+  const wdx = wallNode.end[0] - wallNode.start[0]
+  const wdz = wallNode.end[1] - wallNode.start[1]
+  const wallLen = Math.hypot(wdx, wdz)
+
+  const wallChildren: { type: string; id: string; localX: number; width: number }[] = []
+  if (wallNode.children) {
+    for (const childId of wallNode.children) {
+      const child = nodes[childId as AnyNodeId]
+      if (!child) continue
+      if (child.type === 'door') {
+        const door = child as DoorNode
+        wallChildren.push({ type: 'door', id: door.id, localX: door.position[0], width: door.width })
+      } else if (child.type === 'window') {
+        const win = child as WindowNode
+        wallChildren.push({ type: 'window', id: win.id, localX: win.position[0], width: win.width })
+      } else if (child.type === 'item') {
+        const wallItem = child as AnyNode & { asset: { name: string; id: string; dimensions: [number, number, number]; category: string }; position: [number, number, number]; rotation: [number, number, number]; name?: string }
+        serializeItemNode(wallItem, items)
+        visited.add(wallItem.id)
+      }
+    }
   }
-  return Math.abs(area) / 2
+
+  walls.push({
+    id: wallNode.id,
+    start: [...wallNode.start] as [number, number],
+    end: [...wallNode.end] as [number, number],
+    thickness: wallNode.thickness ?? 0.2,
+    length: wallLen,
+    children: wallChildren,
+  })
+}
+
+function serializeZoneNode(
+  zoneNode: ZoneNode,
+  selection: { zoneId?: string | null; selectedIds?: string[] | null },
+  zones: SceneContext['zones'],
+  activeZoneRef: { value?: SceneContext['activeZone'] },
+): boolean {
+  const polygon = zoneNode.polygon as [number, number][] | undefined | null
+  if (!polygon || !Array.isArray(polygon) || polygon.length < 3) return false
+
+  const xs = polygon.map((p) => p[0])
+  const zs = polygon.map((p) => p[1])
+  const zoneBounds = {
+    min: [Math.min(...xs), Math.min(...zs)] as [number, number],
+    max: [Math.max(...xs), Math.max(...zs)] as [number, number],
+  }
+
+  zones.push({
+    id: zoneNode.id,
+    name: zoneNode.name ?? 'Zone',
+    polygon,
+    bounds: zoneBounds,
+  })
+
+  if (selection.zoneId === zoneNode.id || selection.selectedIds?.includes(zoneNode.id)) {
+    activeZoneRef.value = {
+      id: zoneNode.id,
+      name: zoneNode.name ?? 'Zone',
+      bounds: zoneBounds,
+    }
+  }
+
+  return true
+}
+
+function serializeCeilingNode(
+  cNode: CeilingNode,
+  ceilings: SceneCeilingSummary[],
+): void {
+  const cPoly = cNode.polygon as [number, number][] | undefined | null
+  if (!cPoly || !Array.isArray(cPoly) || cPoly.length < 3) return
+  ceilings.push({ id: cNode.id, height: cNode.height ?? 2.5, area: polygonArea(cPoly) })
+}
+
+function serializeSlabNode(
+  sNode: SlabNode,
+  slabs: SceneSlabSummary[],
+): void {
+  const sPoly = sNode.polygon as [number, number][] | undefined | null
+  if (!sPoly || !Array.isArray(sPoly) || sPoly.length < 3) return
+  slabs.push({ id: sNode.id, elevation: sNode.elevation ?? 0.05, area: polygonArea(sPoly) })
+}
+
+function serializeRoofNode(
+  node: AnyNode,
+  nodes: Record<string, AnyNode>,
+  roofs: SceneRoofSummary[],
+): void {
+  const rChildren = ('children' in node && Array.isArray(node.children))
+    ? (node.children as string[]).map((cid) => nodes[cid as AnyNodeId]).filter(Boolean)
+    : []
+  const segments = rChildren
+    .filter((c): c is AnyNode => !!c && c.type === 'roof-segment')
+    .map((seg) => ({
+      id: seg.id,
+      roofType: (seg as { roofType?: string }).roofType ?? 'gable',
+      width: (seg as { width?: number }).width ?? 0,
+      depth: (seg as { depth?: number }).depth ?? 0,
+    }))
+  roofs.push({ id: node.id, segments })
+}
+
+function serializeStairNode(
+  node: AnyNode,
+  nodes: Record<string, AnyNode>,
+  stairs: SceneStairSummary[],
+): void {
+  const sChildren = ('children' in node && Array.isArray(node.children))
+    ? (node.children as string[]).map((cid) => nodes[cid as AnyNodeId]).filter(Boolean)
+    : []
+  const stairSegments = sChildren
+    .filter((c): c is AnyNode => !!c && c.type === 'stair-segment')
+    .map((seg) => ({
+      id: seg.id,
+      segmentType: (seg as { segmentType?: string }).segmentType ?? 'stair',
+      width: (seg as { width?: number }).width ?? 1.0,
+      length: (seg as { length?: number }).length ?? 3.0,
+      height: (seg as { height?: number }).height ?? 2.5,
+      stepCount: (seg as { stepCount?: number }).stepCount ?? 10,
+      attachmentSide: (seg as { attachmentSide?: string }).attachmentSide ?? 'front',
+    }))
+  stairs.push({
+    id: node.id,
+    position: (node as { position: [number, number, number] }).position,
+    rotation: (node as { rotation: number }).rotation,
+    segments: stairSegments,
+  })
 }
 
 /** Invalidate scene cache (call after ghost preview confirm or scene mutation) */
 export function invalidateSceneCache(): void {
-  cachedContext = null
-  cachedNodesHash = ''
+  sceneContextCache.invalidate()
 }
 
 /**
@@ -52,9 +223,9 @@ export function serializeSceneContext(): SceneContext {
 
   // Cache hit: use explicit invalidation via invalidateSceneCache()
   // The agent loop calls invalidateSceneCache() after ghost preview confirm.
-  const nodesHash = computeNodesHash(nodes)
-  if (cachedContext && cachedNodesHash === nodesHash && cachedContext.levelId === levelId) {
-    return cachedContext
+  if (levelId) {
+    const cached = sceneContextCache.get(nodes, levelId)
+    if (cached) return cached
   }
 
   if (!levelId) {
@@ -94,6 +265,7 @@ export function serializeSceneContext(): SceneContext {
   // Walk through all nodes to find items, walls, and zones on this level
   const visited = new Set<string>()
   const queue: AnyNodeId[] = [levelId]
+  const activeZoneRef: { value?: SceneContext['activeZone'] } = {}
 
   while (queue.length > 0) {
     const nodeId = queue.shift()!
@@ -111,167 +283,34 @@ export function serializeSceneContext(): SceneContext {
     if (meta?.isGhostPreview === true) continue
 
     switch (node.type) {
-      case 'item': {
-        items.push({
-          id: node.id,
-          name: node.name ?? node.asset.name,
-          catalogSlug: node.asset.id,
-          position: [...node.position] as [number, number, number],
-          rotationY: node.rotation[1],
-          dimensions: [...node.asset.dimensions] as [number, number, number],
-          category: node.asset.category,
-        })
+      case 'item':
+        serializeItemNode(node, items)
         break
-      }
-      case 'wall': {
+      case 'wall':
         wallCount++
-        const wallNode = node as WallNode
-        // Compute wall length for context
-        const wdx = wallNode.end[0] - wallNode.start[0]
-        const wdz = wallNode.end[1] - wallNode.start[1]
-        const wallLen = Math.hypot(wdx, wdz)
-
-        // Collect wall children (doors/windows/items)
-        const wallChildren: { type: string; id: string; localX: number; width: number }[] = []
-        if (wallNode.children) {
-          for (const childId of wallNode.children) {
-            const child = nodes[childId as AnyNodeId]
-            if (!child) continue
-            if (child.type === 'door') {
-              const door = child as DoorNode
-              wallChildren.push({
-                type: 'door',
-                id: door.id,
-                localX: door.position[0],
-                width: door.width,
-              })
-            } else if (child.type === 'window') {
-              const win = child as WindowNode
-              wallChildren.push({
-                type: 'window',
-                id: win.id,
-                localX: win.position[0],
-                width: win.width,
-              })
-            } else if (child.type === 'item') {
-              // Collect wall-attached items during BFS instead of a second full scan
-              const wallItem = child as AnyNode & { asset: { name: string; id: string; dimensions: [number, number, number]; category: string }; position: [number, number, number]; rotation: [number, number, number]; name?: string }
-              items.push({
-                id: wallItem.id,
-                name: wallItem.name ?? wallItem.asset.name,
-                catalogSlug: wallItem.asset.id,
-                position: [...wallItem.position] as [number, number, number],
-                rotationY: wallItem.rotation[1],
-                dimensions: [...wallItem.asset.dimensions] as [number, number, number],
-                category: wallItem.asset.category,
-              })
-              visited.add(wallItem.id)
-            }
-          }
-        }
-
-        walls.push({
-          id: wallNode.id,
-          start: [...wallNode.start] as [number, number],
-          end: [...wallNode.end] as [number, number],
-          thickness: wallNode.thickness ?? 0.2,
-          length: wallLen,
-          children: wallChildren,
-        })
+        serializeWallNode(node as WallNode, nodes, walls, items, visited)
         break
-      }
-      case 'zone': {
-        const zoneNode = node as ZoneNode
-        const polygon = zoneNode.polygon as [number, number][] | undefined | null
-
-        // Guard: skip zones with missing or degenerate polygons.
-        // This can happen when walls are deleted and the zone auto-detection
-        // produces an invalid polygon (e.g., broken closure, empty array).
-        if (!polygon || !Array.isArray(polygon) || polygon.length < 3) break
-
-        zoneCount++
-
-        // Compute AABB bounds from polygon.
-        // Zone polygon is generated by flood-fill which already excludes wall cells,
-        // so bounds already approximate the usable interior space — no extra inset needed.
-        const xs = polygon.map((p) => p[0])
-        const zs = polygon.map((p) => p[1])
-        const zoneBounds = {
-          min: [Math.min(...xs), Math.min(...zs)] as [number, number],
-          max: [Math.max(...xs), Math.max(...zs)] as [number, number],
+      case 'zone':
+        if (serializeZoneNode(node as ZoneNode, selection, zones, activeZoneRef)) {
+          zoneCount++
         }
-
-        zones.push({
-          id: zoneNode.id,
-          name: zoneNode.name ?? 'Zone',
-          polygon,
-          bounds: zoneBounds,
-        })
-
-        // Use the selected zone if available
-        if (selection.zoneId === node.id || selection.selectedIds?.includes(node.id)) {
-          activeZone = {
-            id: node.id,
-            name: zoneNode.name ?? 'Zone',
-            bounds: zoneBounds,
-          }
+        if (activeZoneRef.value) {
+          activeZone = activeZoneRef.value
+          activeZoneRef.value = undefined
         }
         break
-      }
-      case 'ceiling': {
-        const cNode = node as CeilingNode
-        const cPoly = cNode.polygon as [number, number][] | undefined | null
-        // Guard: skip ceilings with missing or degenerate polygons
-        if (!cPoly || !Array.isArray(cPoly) || cPoly.length < 3) break
-        ceilings.push({ id: cNode.id, height: cNode.height ?? 2.5, area: computePolygonArea(cPoly) })
+      case 'ceiling':
+        serializeCeilingNode(node as CeilingNode, ceilings)
         break
-      }
-      case 'slab': {
-        const sNode = node as SlabNode
-        const sPoly = sNode.polygon as [number, number][] | undefined | null
-        // Guard: skip slabs with missing or degenerate polygons
-        if (!sPoly || !Array.isArray(sPoly) || sPoly.length < 3) break
-        slabs.push({ id: sNode.id, elevation: sNode.elevation ?? 0.05, area: computePolygonArea(sPoly) })
+      case 'slab':
+        serializeSlabNode(node as SlabNode, slabs)
         break
-      }
-      case 'roof': {
-        const rChildren = ('children' in node && Array.isArray(node.children))
-          ? (node.children as string[]).map((cid) => nodes[cid as AnyNodeId]).filter(Boolean)
-          : []
-        const segments = rChildren
-          .filter((c): c is AnyNode => !!c && c.type === 'roof-segment')
-          .map((seg) => ({
-            id: seg.id,
-            roofType: (seg as { roofType?: string }).roofType ?? 'gable',
-            width: (seg as { width?: number }).width ?? 0,
-            depth: (seg as { depth?: number }).depth ?? 0,
-          }))
-        roofs.push({ id: node.id, segments })
+      case 'roof':
+        serializeRoofNode(node, nodes, roofs)
         break
-      }
-      case 'stair': {
-        const sChildren = ('children' in node && Array.isArray(node.children))
-          ? (node.children as string[]).map((cid) => nodes[cid as AnyNodeId]).filter(Boolean)
-          : []
-        const stairSegments = sChildren
-          .filter((c): c is AnyNode => !!c && c.type === 'stair-segment')
-          .map((seg) => ({
-            id: seg.id,
-            segmentType: (seg as { segmentType?: string }).segmentType ?? 'stair',
-            width: (seg as { width?: number }).width ?? 1.0,
-            length: (seg as { length?: number }).length ?? 3.0,
-            height: (seg as { height?: number }).height ?? 2.5,
-            stepCount: (seg as { stepCount?: number }).stepCount ?? 10,
-            attachmentSide: (seg as { attachmentSide?: string }).attachmentSide ?? 'front',
-          }))
-        stairs.push({
-          id: node.id,
-          position: (node as { position: [number, number, number] }).position,
-          rotation: (node as { rotation: number }).rotation,
-          segments: stairSegments,
-        })
+      case 'stair':
+        serializeStairNode(node, nodes, stairs)
         break
-      }
     }
 
     // Traverse children
@@ -339,8 +378,7 @@ export function serializeSceneContext(): SceneContext {
   }
 
   // Update cache
-  cachedContext = result
-  cachedNodesHash = nodesHash
+  sceneContextCache.set(result, nodes)
 
   return result
 }

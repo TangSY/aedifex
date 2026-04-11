@@ -312,27 +312,38 @@ export const useAIChat = create<AIChatState & AIChatActions>((set, get) => ({
 
   // Summarization (token-aware + circuit breaker)
   summarizeIfNeeded: async () => {
-    // A-7: Optimistic locking — read state once and immediately set the flag
-    // before any async work to eliminate the race window between the check
-    // and the set (both isSummarizing check and set are in the same tick).
-    const state = get()
-    if (state.isSummarizing) return
+    // A-7: Atomic check-and-set — use a single set() call to both check and
+    // acquire the lock, eliminating the race window between get() and set().
+    let shouldProceed = false
+    let messages: ChatMessage[] = []
+    let summarizeFailureCount = 0
 
-    const { messages, summarizeFailureCount } = state
+    set((state) => {
+      if (state.isSummarizing) return state // Already in progress, no-op
+      shouldProceed = true
+      messages = state.messages
+      summarizeFailureCount = state.summarizeFailureCount
+      return { ...state, isSummarizing: true }
+    })
+
+    if (!shouldProceed) return
 
     // Circuit breaker: stop after 3 consecutive failures
     const MAX_SUMMARIZE_FAILURES = 3
-    if (summarizeFailureCount >= MAX_SUMMARIZE_FAILURES) return
+    if (summarizeFailureCount >= MAX_SUMMARIZE_FAILURES) {
+      set({ isSummarizing: false })
+      return
+    }
 
     // Token-aware trigger: use estimator instead of message count
     const apiMessages = messages.map((m) => ({ role: m.role, content: m.content }))
     if (!shouldAutoCompact(apiMessages)) {
       // Fallback: also trigger on high message count even if token estimate is low
-      if (messages.length < 30) return
+      if (messages.length < 30) {
+        set({ isSummarizing: false })
+        return
+      }
     }
-
-    // Immediately set the flag before any async work (synchronous in Zustand)
-    set({ isSummarizing: true })
 
     try {
       const messagesToSummarize = messages.slice(0, -10)

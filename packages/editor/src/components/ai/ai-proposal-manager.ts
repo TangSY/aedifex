@@ -121,12 +121,9 @@ export function confirmActiveProposal(): ValidatedOperation[] | null {
   const proposal = proposals.find((p) => p.id === activeProposalId)
   if (!proposal) return null
 
-  // Resume undo tracking — changes from here are tracked
-  useScene.temporal.getState().resume()
-
   // The current scene state already has the proposal applied.
   // We need to create a proper undoable batch:
-  // 1. Revert to baseline (paused)
+  // 1. Revert to baseline (paused — temporal is already paused from switchToProposal)
   // 2. Resume undo
   // 3. Apply proposal operations as tracked changes
 

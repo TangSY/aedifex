@@ -25,7 +25,7 @@ export interface FurniturePlacementMeta {
 // Key: category keyword matched against catalogSlug or asset.category
 // ============================================================================
 
-const PLACEMENT_METADATA: Record<string, FurniturePlacementMeta> = {
+export const PLACEMENT_METADATA: Record<string, FurniturePlacementMeta> = {
   // === Living Room — Seating ===
   'sofa': {
     placementType: 'against-wall',

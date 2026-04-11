@@ -319,6 +319,52 @@ export function checkZoneBoundary(
   return 'too-large'
 }
 
+// ============================================================================
+// OBB Overlap (Separating Axis Theorem)
+// Used as a precision check after AABB detects a potential overlap.
+// Eliminates false positives from rotated items whose AABBs overlap
+// but whose actual oriented footprints do not.
+// ============================================================================
+
+/**
+ * Check if two oriented bounding boxes (defined by their 4 XZ corners) overlap
+ * using the Separating Axis Theorem (SAT).
+ * Returns true if the two OBBs overlap.
+ */
+export function obbOverlap(cornersA: [number, number][], cornersB: [number, number][]): boolean {
+  // SAT for 2D convex polygons: test edges of both polygons as separating axes
+  const polygons = [cornersA, cornersB]
+  for (const polygon of polygons) {
+    for (let i = 0; i < polygon.length; i++) {
+      const j = (i + 1) % polygon.length
+      const edgeX = polygon[j]![0] - polygon[i]![0]
+      const edgeZ = polygon[j]![1] - polygon[i]![1]
+      // Normal to edge (perpendicular)
+      const axisX = -edgeZ
+      const axisZ = edgeX
+
+      // Project both polygons onto this axis
+      let minA = Infinity, maxA = -Infinity
+      for (const [cx, cz] of cornersA) {
+        const proj = cx * axisX + cz * axisZ
+        if (proj < minA) minA = proj
+        if (proj > maxA) maxA = proj
+      }
+      let minB = Infinity, maxB = -Infinity
+      for (const [cx, cz] of cornersB) {
+        const proj = cx * axisX + cz * axisZ
+        if (proj < minB) minB = proj
+        if (proj > maxB) maxB = proj
+      }
+
+      // If projections don't overlap, we found a separating axis
+      if (maxA <= minB || maxB <= minA) return false
+    }
+  }
+
+  return true // No separating axis found — polygons overlap
+}
+
 // NOTE: Batch-internal item collision detection is handled by
 // resolveBatchCollisions() in ai-mutation-executor.ts, which runs
 // twice: once after validation (pre-optimization) and once after
