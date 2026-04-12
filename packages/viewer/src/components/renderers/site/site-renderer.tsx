@@ -1,6 +1,6 @@
 import { type SiteNode, type SlabNode, useRegistry, useScene } from '@aedifex/core'
 import polygonClipping from 'polygon-clipping'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { BufferGeometry, Float32BufferAttribute, type Group, Path, Shape } from 'three'
 import { useNodeEvents } from '../../../hooks/use-node-events'
 import useViewer from '../../../store/use-viewer'
