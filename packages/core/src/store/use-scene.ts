@@ -597,7 +597,7 @@ const useScene: UseSceneStore = create<SceneState>()(
         const patchedNodes = migrateNodes(nodes)
 
         // Remove orphans: nodes whose parentId points to a non-existent node
-        const cleanedNodes = { ...patchedNodes }
+        const cleanedNodes = { ...parsed.nodes }
         for (const node of Object.values(cleanedNodes)) {
           if (node.parentId && !cleanedNodes[node.parentId]) {
             console.warn(
