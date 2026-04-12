@@ -319,6 +319,8 @@ export function buildSystemPrompt(catalogSummary: string, sceneContext: string):
     FURNITURE_RULES,
     `## Catalog\n${sanitizePromptInjection(catalogSummary)}`,
     `## Current Scene\n${sanitizedSceneContext}`,
+    // Final reminder placed last so it has highest recency weight in attention
+    `## FINAL REMINDER\nRespond in the SAME language as the user's last message. Chinese input → Chinese output. English input → English output. No mixing. Tool parameters (catalogSlug, reason, description) are the ONLY exception — those stay English.`,
   ]
 
   return sections.join('\n\n')

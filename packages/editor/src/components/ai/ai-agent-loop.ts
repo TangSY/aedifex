@@ -46,6 +46,9 @@ const CONTEXT_COMPRESS_THRESHOLD = 100_000
 /** Safety cap to prevent truly infinite loops (bugs, runaway LLM) */
 const MAX_ITERATIONS = 200
 
+/** After this many consecutive all-invalid iterations, force the LLM to stop retrying */
+const MAX_CONSECUTIVE_FAILURES = 3
+
 /** Number of recent messages to keep when compressing */
 const COMPRESS_KEEP_RECENT = 6
 
@@ -144,6 +147,7 @@ export async function runAgentLoop({
   let totalTokensUsed = 0
   let lastMessageId: string | null = null
   let beforeScreenshotUrl: string | null = null // capture once on first mutation
+  let consecutiveFailures = 0 // track all-invalid iterations to break collision loops
 
   try {
     while (iteration < MAX_ITERATIONS && totalTokensUsed < TOKEN_BUDGET) {
@@ -278,6 +282,40 @@ export async function runAgentLoop({
         for (const op of invalidOps) {
           const reason = 'errorReason' in op ? (op.errorReason as string) : 'unknown error'
           useAIChat.getState().recordToolError(op.type, reason)
+        }
+
+        // Track consecutive all-invalid iterations to break collision loops.
+        // When the LLM keeps suggesting positions that all fail, force it to
+        // stop retrying and inform the user instead.
+        if (validOps.length === 0 && invalidOps.length > 0) {
+          consecutiveFailures++
+          if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+            // Inject a system hint so the LLM stops retrying placements
+            conversationMessages.push({
+              role: 'assistant',
+              content: text || '',
+            })
+            for (let i = 0; i < mutationCalls.length; i++) {
+              const callId = toolCallIds?.[i] ?? `call_${i}`
+              const toolResult = buildToolResult(
+                mutationCalls.map((tc) => tc.tool).join('+'),
+                validated,
+              )
+              conversationMessages.push({
+                role: 'tool',
+                content: JSON.stringify(toolResult),
+                tool_call_id: callId,
+              })
+            }
+            conversationMessages.push({
+              role: 'user',
+              content: `[System: ${consecutiveFailures} consecutive placement attempts have all failed due to collisions or space constraints. STOP retrying placements. Instead, inform the user that the space is too crowded and suggest they remove some items first or choose a different location. Use ask_user to present options.]`,
+            })
+            onIterationEnd?.(iteration, null)
+            continue // let LLM respond with ask_user instead of more collisions
+          }
+        } else {
+          consecutiveFailures = 0 // reset on any successful operation
         }
 
         // Terminal check: only confirm_preview/reject_preview are truly terminal.
