@@ -199,3 +199,11 @@ export {
   validateBuildJson,
 } from './validation/validate-build-json'
 export type { AssetInput } from './schema/nodes/item'
+
+/**
+ * Public mirror of zod's internal v4 `JSONType`. zod does not export this type
+ * publicly, so we duplicate the structural definition here for any code that
+ * needs to interact with `metadata` (`z.json()`) values without falling back
+ * to `unknown`. Keep in sync with zod's `src/v4/core/util.ts`.
+ */
+export type JSONType = string | number | boolean | null | JSONType[] | { [key: string]: JSONType }

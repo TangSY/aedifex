@@ -534,6 +534,14 @@ export type SceneState = {
   updateNode: (id: AnyNodeId, data: Partial<AnyNode>) => void
   updateNodes: (updates: { id: AnyNodeId; data: Partial<AnyNode> }[]) => void
 
+  /**
+   * Replace a node entirely (no spread merge). Use this when you need to
+   * restore a node to a snapshot — `updateNode` cannot clear fields that the
+   * snapshot doesn't carry, since spread only overwrites present keys.
+   * Used by AI undo paths that must roll back material/curveOffset writes.
+   */
+  setNode: (id: AnyNodeId, node: AnyNode) => void
+
   deleteNode: (id: AnyNodeId) => void
   deleteNodes: (ids: AnyNodeId[]) => void
 
@@ -682,6 +690,7 @@ const useScene: UseSceneStore = create<SceneState>()(
 
       updateNodes: (updates) => nodeActions.updateNodesAction(set, get, updates),
       updateNode: (id, data) => nodeActions.updateNodesAction(set, get, [{ id, data }]),
+      setNode: (id, node) => nodeActions.setNodeAction(set, get, id, node),
 
       // --- DELETE ---
 

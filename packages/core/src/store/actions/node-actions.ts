@@ -507,6 +507,33 @@ export const updateNodesAction = (
   })
 }
 
+/**
+ * Replace a node entirely with the provided value (no spread merge). Used for
+ * snapshot restore — `updateNodesAction` cannot clear fields the snapshot
+ * doesn't carry. Preserves invariants: rejects if node id mismatches or the
+ * id doesn't already exist (no implicit creation).
+ */
+export const setNodeAction = (
+  set: (fn: (state: SceneState) => Partial<SceneState>) => void,
+  get: () => SceneState,
+  id: AnyNodeId,
+  node: AnyNode,
+) => {
+  if (get().readOnly) return
+  if (node.id !== id) return // refuse silent id mismatch
+  // Pre-check existence so we can skip both the set() and the markDirty call
+  // when the node is absent — marking a non-existent node would be a lie.
+  if (!get().nodes[id]) return
+  set((state) => {
+    if (!state.nodes[id]) return {} // race-safe: another action may have removed it
+    const nextNodes = { ...state.nodes }
+    nextNodes[id] = node
+    return { nodes: nextNodes }
+  })
+  // Mark dirty synchronously — snapshot restore is rare, no need to batch RAF.
+  get().markDirty(id)
+}
+
 export const deleteNodesAction = (
   set: (fn: (state: SceneState) => Partial<SceneState>) => void,
   get: () => SceneState,
