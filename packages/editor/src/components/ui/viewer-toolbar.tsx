@@ -1,7 +1,7 @@
 'use client'
 
 import { Icon as IconifyIcon } from '@iconify/react'
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 import {
   Check,
   ChevronsLeft,

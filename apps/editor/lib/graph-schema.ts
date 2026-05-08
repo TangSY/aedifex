@@ -1,4 +1,4 @@
-import { AnyNode } from '@pascal-app/core/schema'
+import { AnyNode } from '@aedifex/core/schema'
 import { z } from 'zod'
 
 /**

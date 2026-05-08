@@ -1,7 +1,7 @@
 'use client'
 
-import { type AnyNode, type SpawnNode, useLiveTransforms, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNode, type SpawnNode, useLiveTransforms, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Move, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { sfxEmitter } from '../../../lib/sfx-bus'

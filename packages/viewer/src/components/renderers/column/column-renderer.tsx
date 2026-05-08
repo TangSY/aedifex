@@ -1,4 +1,4 @@
-import { type ColumnNode, useLiveTransforms, useRegistry } from '@pascal-app/core'
+import { type ColumnNode, useLiveTransforms, useRegistry } from '@aedifex/core'
 import { createContext, useContext, useMemo, useRef } from 'react'
 import type { Group, Material } from 'three'
 import { useNodeEvents } from '../../../hooks/use-node-events'

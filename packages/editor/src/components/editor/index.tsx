@@ -6,8 +6,8 @@ import {
   initSpatialGridSync,
   spatialGridManager,
   useScene,
-} from '@pascal-app/core'
-import { type HoverStyles, InteractiveSystem, useViewer, Viewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { type HoverStyles, InteractiveSystem, useViewer, Viewer } from '@aedifex/viewer'
 import {
   memo,
   type ReactNode,

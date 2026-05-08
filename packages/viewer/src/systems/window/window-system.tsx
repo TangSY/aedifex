@@ -4,7 +4,7 @@ import {
   useInteractive,
   useScene,
   type WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { baseMaterial, glassMaterial } from '../../lib/materials'

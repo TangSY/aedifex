@@ -89,7 +89,26 @@ export function findBuildingAndLevels(): {
 }
 
 export function validateAddLevel(call: AddLevelToolCall): ValidatedAddLevel {
-  const { buildingId, levels } = findBuildingAndLevels()
+  let { buildingId, levels } = findBuildingAndLevels()
+
+  // Fallback: when no level is currently selected (or selection has no parent
+  // building), pick the first building in the scene. Mirrors the runtime
+  // fallback in confirm-operations.ts (Bug 3) so add_level succeeds even when
+  // viewer selection is empty.
+  if (!buildingId) {
+    const { nodes } = useScene.getState()
+    const firstBuilding = Object.values(nodes).find(
+      (n): n is AnyNode => !!n && n.type === 'building',
+    )
+    if (firstBuilding && firstBuilding.type === 'building') {
+      buildingId = firstBuilding.id as AnyNodeId
+      const buildingChildren = (firstBuilding as { children: string[] }).children ?? []
+      levels = buildingChildren
+        .map((id) => nodes[id as AnyNodeId])
+        .filter((n): n is AnyNode => !!n && n.type === 'level')
+        .map((n) => ({ id: n.id, level: (n as { level: number }).level ?? 0 }))
+    }
+  }
 
   if (!buildingId) {
     return {

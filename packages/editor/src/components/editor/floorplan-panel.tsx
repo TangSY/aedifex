@@ -43,8 +43,8 @@ import {
   WindowNode,
   ZoneNode as ZoneNodeSchema,
   type ZoneNode as ZoneNodeType,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Command, Ruler } from 'lucide-react'
 import {
   memo,
@@ -4047,7 +4047,7 @@ const FloorplanGeometryLayer = memo(function FloorplanGeometryLayer({
               ? FLOORPLAN_TRACE_STRUCTURE_SELECTED_FILL_OPACITY
               : FLOORPLAN_TRACE_STRUCTURE_FILL_OPACITY
             : 1
-        let slabLabel = null
+        let slabLabel: React.ReactNode = null
 
         if (isSelected) {
           const { area, centroid } = getSlabArea(visualPolygon, visualHoles)

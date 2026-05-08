@@ -322,9 +322,14 @@ function snapToNearestWall(
   const side = Math.sign(toCenterX * normalX + toCenterZ * normalZ) || 1
 
   // Compute item facing direction: face along normal (toward room interior).
+  // Renderer convention: at rotY=0 the item's forward vector is -Z (Three.js default
+  // camera forward; ItemRenderer wraps the GLB Clone in a group whose rotation is the
+  // node's rotation, and asset.rotation has already normalized the GLB itself). To make
+  // forward = (side*normalX, side*normalZ), solve -(sin θ, cos θ) = side*normal →
+  // θ = atan2(-side*normalX, -side*normalZ).
   // Must compute faceAngle first, then use final rotation for dimension projection.
   // Otherwise halfDepth/halfWidth use original rotation but we return a new one, causing wall-clamping inaccuracy.
-  const faceAngle = Math.atan2(side * normalX, side * normalZ)
+  const faceAngle = Math.atan2(-side * normalX, -side * normalZ)
 
   const [w, , d] = dimensions
   const wallAngle = Math.atan2(wallDz, wallDx)
@@ -425,19 +430,22 @@ function enforceAgainstWallOrientation(
   const toCenterZ = pz - bestClosestPoint[1]
   const side = Math.sign(toCenterX * normalX + toCenterZ * normalZ) || 1
 
-  // Correct orientation: front faces away from wall, toward room interior
-  const correctAngle = Math.atan2(side * normalX, side * normalZ)
+  // Correct orientation: front faces away from wall, toward room interior.
+  // See faceAngle in snapToNearestWall for the -Z forward convention rationale.
+  const correctAngle = Math.atan2(-side * normalX, -side * normalZ)
 
-  // Check if current facing deviates more than 90 degrees (facing wall instead of room)
+  // For against-wall items the front must face the room interior, not along the wall.
+  // Tolerance: 45° — anything beyond that is corrected. The previous 90° tolerance let
+  // "along the wall" orientations slip through (regression caught by QA-AI 2026-05-01 v3).
   const currentAngle = rotation[1]
   const angleDiff = Math.abs(normalizeAngle(currentAngle - correctAngle))
 
-  if (angleDiff <= Math.PI / 2) {
-    // Orientation is roughly correct (deviation < 90 degrees), no intervention needed
+  if (angleDiff <= Math.PI / 4) {
+    // Within 45° of correct — assume intentional / good enough
     return null
   }
 
-  // Orientation is clearly wrong (facing wall), correct to face room interior
+  // Orientation deviates ≥ 45° from "face room interior", correct it
   return { rotation: [0, correctAngle, 0] }
 }
 

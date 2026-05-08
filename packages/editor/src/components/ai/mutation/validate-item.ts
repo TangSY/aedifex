@@ -198,12 +198,13 @@ export function validateAddItem(call: AddItemToolCall, _wallCache?: Map<string, 
         }
       }
 
-      // Zone boundary check — ensure item stays inside a room
+      // Zone boundary check — ensure item stays inside a room (unless outdoor=true)
       const zoneBoundary = checkZoneBoundary(
         position,
         asset.dimensions ?? [1, 1, 1],
         rotation,
         levelId,
+        call.outdoor === true,
       )
       if (zoneBoundary === 'too-large') {
         return {
@@ -371,12 +372,13 @@ export function validateMoveItem(call: MoveItemToolCall, _wallCache?: Map<string
         }
       }
 
-      // Zone boundary check — ensure item stays inside a room
+      // Zone boundary check — ensure item stays inside a room (unless outdoor=true)
       const zoneBoundary = checkZoneBoundary(
         position,
         node.asset.dimensions,
         rotation,
         levelId,
+        call.outdoor === true,
       )
       if (zoneBoundary === 'too-large') {
         return {

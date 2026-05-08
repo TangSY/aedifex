@@ -9,6 +9,13 @@ export interface AddItemToolCall {
   rotationY: number
   /** Target level ID. When omitted, uses the currently selected level in the viewer. */
   levelId?: string
+  /**
+   * Explicit outdoor placement flag. Default false — items must stay inside a
+   * zone polygon (will be clamped if AI gives an out-of-zone position). Set true
+   * ONLY when the user clearly asks for an outdoor placement ("在房子外面",
+   * "在院子里", "outdoor", landscape items like trees on the site).
+   */
+  outdoor?: boolean
   description?: string
 }
 
@@ -25,6 +32,12 @@ export interface MoveItemToolCall {
   rotationY?: number
   /** Target level ID. When omitted, uses the currently selected level in the viewer. */
   levelId?: string
+  /**
+   * Explicit outdoor placement flag. Default false — moving outside the zone
+   * polygon clamps the position back inside. Set true only when user clearly
+   * asks for an outdoor destination.
+   */
+  outdoor?: boolean
   reason?: string
 }
 

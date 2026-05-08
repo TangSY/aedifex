@@ -7,7 +7,7 @@ import {
   type SidebarTab,
   ViewerToolbarLeft,
   ViewerToolbarRight,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'

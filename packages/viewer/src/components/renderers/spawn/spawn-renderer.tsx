@@ -1,4 +1,4 @@
-import { type SpawnNode, useLiveTransforms, useRegistry } from '@pascal-app/core'
+import { type SpawnNode, useLiveTransforms, useRegistry } from '@aedifex/core'
 import { useMemo, useRef } from 'react'
 import type { Group } from 'three'
 import { Color, Shape } from 'three'

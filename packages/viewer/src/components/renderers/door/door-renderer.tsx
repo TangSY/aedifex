@@ -1,4 +1,4 @@
-import { type DoorNode, useRegistry, useScene } from '@pascal-app/core'
+import { type DoorNode, useRegistry, useScene } from '@aedifex/core'
 import { useLayoutEffect, useRef } from 'react'
 import { MeshBasicMaterial, type Mesh } from 'three'
 import { useNodeEvents } from '../../../hooks/use-node-events'

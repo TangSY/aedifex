@@ -18,7 +18,7 @@ import {
   type StairSurfaceMaterialRole,
   type WallNode,
   type WallSurfaceSide,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export type PaintableMaterialTarget = Extract<
   MaterialTarget,

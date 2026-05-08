@@ -3,7 +3,7 @@ import {
   GuideNode,
   type GuideNode as GuideNodeType,
   saveAsset,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export function getGuideImageName(filename: string) {
   const trimmed = filename.trim()
@@ -25,7 +25,7 @@ export async function createLocalGuideImage({
   file: File
   levelId: string
   position?: [number, number, number]
-}) {
+}): Promise<GuideNodeType> {
   const assetUrl = await saveAsset(file)
   const guide = GuideNode.parse({
     name: getGuideImageName(file.name),

@@ -5,7 +5,7 @@ import {
   useInteractive,
   useScene,
   type WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import {
   AWNING_WINDOW_SASH_NAME,

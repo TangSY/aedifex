@@ -5,8 +5,8 @@ import {
   emitter,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { useViewer, ZONE_LAYER } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer, ZONE_LAYER } from '@aedifex/viewer'
 import { CameraControls, CameraControlsImpl } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef } from 'react'

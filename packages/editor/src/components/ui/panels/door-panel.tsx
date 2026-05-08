@@ -7,8 +7,8 @@ import {
   emitter,
   useInteractive,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { BookMarked, Copy, DoorOpen, FlipHorizontal2, Move, Trash2 } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 import { usePresetsAdapter } from '../../../contexts/presets-context'

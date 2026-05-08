@@ -5,8 +5,8 @@ import {
   type LevelNode,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useEffect, useRef, useState } from 'react'
 import { DoubleSide, type Group, type Mesh, Shape, ShapeGeometry, Vector3 } from 'three'

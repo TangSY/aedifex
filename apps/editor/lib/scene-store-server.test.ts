@@ -2,13 +2,13 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test'
 
 describe('getSceneStore', () => {
   beforeEach(() => {
-    mock.module('@pascal-app/mcp/operations', () => ({
+    mock.module('@aedifex/mcp/operations', () => ({
       createSceneOperations: ({ store }: { store: unknown }) => ({
         __store: store,
         hasStore: true,
       }),
     }))
-    mock.module('@pascal-app/mcp/storage', () => {
+    mock.module('@aedifex/mcp/storage', () => {
       let callCount = 0
       return {
         createSceneStore: async (_env?: NodeJS.ProcessEnv) => {

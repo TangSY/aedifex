@@ -1,6 +1,6 @@
 'use client'
 
-import type { Point2D, RoofNode, RoofSegmentNode } from '@pascal-app/core'
+import type { Point2D, RoofNode, RoofSegmentNode } from '@aedifex/core'
 import { memo } from 'react'
 import { toSvgX, toSvgY } from '../svg-paths'
 

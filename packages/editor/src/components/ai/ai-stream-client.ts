@@ -226,7 +226,13 @@ async function processStream(
               }
             } catch (parseError) {
               console.error(`Failed to parse tool call arguments for ${pending.name}:`, parseError)
-              callbacks.onError?.(`Tool call "${pending.name}" had invalid arguments`)
+              const reason = parseError instanceof Error ? parseError.message : String(parseError)
+              const preview = pending.arguments.length > 200
+                ? `${pending.arguments.slice(0, 200)}…`
+                : pending.arguments
+              callbacks.onError?.(
+                `Tool call "${pending.name}" had invalid arguments: ${reason}. Raw: ${preview}`,
+              )
               continue
             }
           }
@@ -253,7 +259,13 @@ async function processStream(
           }
         } catch (parseError) {
           console.error(`Failed to parse tool call arguments for ${pending.name}:`, parseError)
-          callbacks.onError?.(`Tool call "${pending.name}" had invalid arguments`)
+          const reason = parseError instanceof Error ? parseError.message : String(parseError)
+          const preview = pending.arguments.length > 200
+            ? `${pending.arguments.slice(0, 200)}…`
+            : pending.arguments
+          callbacks.onError?.(
+            `Tool call "${pending.name}" had invalid arguments: ${reason}. Raw: ${preview}`,
+          )
           continue
         }
       }
@@ -277,6 +289,7 @@ function parseToolCall(name: string, input: Record<string, unknown>): AIToolCall
         catalogSlug: input.catalogSlug as string,
         position: input.position as [number, number, number],
         rotationY: (input.rotationY as number) ?? 0,
+        outdoor: input.outdoor === true ? true : undefined,
         description: input.description as string | undefined,
       }
 
@@ -293,6 +306,7 @@ function parseToolCall(name: string, input: Record<string, unknown>): AIToolCall
         nodeId: input.nodeId as string,
         position: input.position as [number, number, number],
         rotationY: input.rotationY as number | undefined,
+        outdoor: input.outdoor === true ? true : undefined,
         reason: input.reason as string | undefined,
       }
 

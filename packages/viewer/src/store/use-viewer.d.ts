@@ -4,7 +4,7 @@ import type {
   BuildingNode,
   LevelNode,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { Object3D } from 'three'
 type SelectionPath = {
   buildingId: BuildingNode['id'] | null

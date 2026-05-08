@@ -30,6 +30,16 @@ interface ThreeJSXElements {
   bufferGeometry: any
   edgesGeometry: any
   ringGeometry: any
+  capsuleGeometry: any
+  octahedronGeometry: any
+  tubeGeometry: any
+  torusGeometry: any
+  coneGeometry: any
+  latheGeometry: any
+  polyhedronGeometry: any
+  tetrahedronGeometry: any
+  icosahedronGeometry: any
+  dodecahedronGeometry: any
   // Meshes & lines
   mesh: any
   instancedMesh: any
@@ -68,6 +78,15 @@ interface ThreeJSXElements {
   gridHelper: any
   axesHelper: any
   arrowHelper: any
+  box3Helper: any
+  boxHelper: any
+  cameraHelper: any
+  directionalLightHelper: any
+  hemisphereLightHelper: any
+  pointLightHelper: any
+  spotLightHelper: any
+  skeletonHelper: any
+  planeHelper: any
   // Misc
   sprite: any
   lOD: any

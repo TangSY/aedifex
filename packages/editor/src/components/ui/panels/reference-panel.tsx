@@ -7,7 +7,7 @@ import {
   saveAsset,
   type ScanNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Eye, EyeOff, LocateFixed, Lock, RotateCcw, Ruler, Trash2, Unlock, Upload } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { guideEmitter } from '../../../lib/guide-events'

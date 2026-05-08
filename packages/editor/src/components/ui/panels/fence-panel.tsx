@@ -11,9 +11,9 @@ import {
   type MaterialSchema,
   normalizeWallCurveOffset,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 import { Move, Spline } from 'lucide-react'
 import { useCallback } from 'react'
 

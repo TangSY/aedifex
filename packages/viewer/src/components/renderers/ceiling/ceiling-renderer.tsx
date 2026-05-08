@@ -3,7 +3,7 @@ import {
   getMaterialPresetByRef,
   resolveMaterial,
   useRegistry,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useMemo, useRef } from 'react'
 import { float, mix, positionWorld, smoothstep } from 'three/tsl'
 import { BackSide, FrontSide, type Mesh, MeshBasicNodeMaterial } from 'three/webgpu'

@@ -8,7 +8,7 @@ import {
   spatialGridManager,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type * as THREE from 'three'
 
 // ============================================================================

@@ -1,5 +1,5 @@
-import { cloneLevelSubtree } from '@pascal-app/core/clone-scene-graph'
-import type { AnyNode, AnyNodeId, LevelNode } from '@pascal-app/core/schema'
+import { cloneLevelSubtree } from '@aedifex/core/clone-scene-graph'
+import type { AnyNode, AnyNodeId, LevelNode } from '@aedifex/core/schema'
 
 export type LevelDuplicatePreset =
   | 'everything'
@@ -104,7 +104,11 @@ export function buildLevelDuplicateCreateOps({
   level: LevelNode
   levels: LevelNode[]
   preset: LevelDuplicatePreset
-}) {
+}): {
+  createOps: { node: AnyNode; parentId?: AnyNodeId }[]
+  newLevelId: AnyNodeId
+  shiftedLevels: { id: LevelNode['id']; level: number }[]
+} {
   const { clonedNodes, newLevelId } = cloneLevelSubtree(nodes, level.id)
   const parentBuildingId =
     (level.parentId as AnyNodeId | null) ?? findLevelBuildingId(nodes, level.id)

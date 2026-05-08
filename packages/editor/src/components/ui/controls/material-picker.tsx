@@ -7,7 +7,7 @@ import {
   MATERIAL_CATEGORIES,
   toLibraryMaterialRef,
   type MaterialSchema,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useEffect, useRef, useState } from 'react'
 import useEditor from '../../../store/use-editor'
 

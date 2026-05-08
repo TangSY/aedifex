@@ -6,8 +6,8 @@ import {
   type ColumnNode,
   type ColumnPresetId,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Move, Trash2 } from 'lucide-react'
 import { useCallback } from 'react'
 import { sfxEmitter } from '../../../lib/sfx-bus'

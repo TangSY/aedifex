@@ -1,4 +1,4 @@
-import { emitter, type GridEvent, sceneRegistry } from '@pascal-app/core'
+import { emitter, type GridEvent, sceneRegistry } from '@aedifex/core'
 import { createPortal } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BufferGeometry, Float32BufferAttribute, type Line, type Object3D } from 'three'
@@ -392,18 +392,18 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             castShadow
             key={`vertex-${index}`}
             layers={EDITOR_LAYER}
-            onClick={(e) => {
+            onClick={(e: any) => {
               if (e.button !== 0) return
               e.stopPropagation()
             }}
-            onDoubleClick={(e) => {
+            onDoubleClick={(e: any) => {
               if (e.button !== 0) return
               e.stopPropagation()
               if (canDelete) {
                 handleDeleteVertex(index)
               }
             }}
-            onPointerDown={(e) => {
+            onPointerDown={(e: any) => {
               if (e.button !== 0) return
               e.stopPropagation()
               setHoveredEdge(null)
@@ -416,11 +416,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                 pointerId: e.pointerId,
               })
             }}
-            onPointerEnter={(e) => {
+            onPointerEnter={(e: any) => {
               e.stopPropagation()
               setHoveredVertex(index)
             }}
-            onPointerLeave={(e) => {
+            onPointerLeave={(e: any) => {
               e.stopPropagation()
               setHoveredVertex(null)
             }}
@@ -438,11 +438,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         <mesh
           castShadow
           layers={EDITOR_LAYER}
-          onClick={(e) => {
+          onClick={(e: any) => {
             if (e.button !== 0) return
             e.stopPropagation()
           }}
-          onPointerDown={(e) => {
+          onPointerDown={(e: any) => {
             if (e.button !== 0) return
             e.stopPropagation()
             setHoveredEdge(null)
@@ -471,11 +471,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             <mesh
               key={`edge-${index}`}
               layers={EDITOR_LAYER}
-              onClick={(e) => {
+              onClick={(e: any) => {
                 if (e.button !== 0) return
                 e.stopPropagation()
               }}
-              onPointerDown={(e) => {
+              onPointerDown={(e: any) => {
                 if (e.button !== 0) return
                 e.stopPropagation()
                 const start = displayPolygon[index]
@@ -497,11 +497,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   pointerId: e.pointerId,
                 })
               }}
-              onPointerEnter={(e) => {
+              onPointerEnter={(e: any) => {
                 e.stopPropagation()
                 setHoveredEdge(index)
               }}
-              onPointerLeave={(e) => {
+              onPointerLeave={(e: any) => {
                 e.stopPropagation()
                 setHoveredEdge(null)
               }}
@@ -529,11 +529,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             <mesh
               key={`midpoint-${index}`}
               layers={EDITOR_LAYER}
-              onClick={(e) => {
+              onClick={(e: any) => {
                 if (e.button !== 0) return
                 e.stopPropagation()
               }}
-              onPointerDown={(e) => {
+              onPointerDown={(e: any) => {
                 if (e.button !== 0) return
                 e.stopPropagation()
                 const insertedVertex = handleAddVertex(index, [x!, z!])
@@ -549,11 +549,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   setHoveredMidpoint(null)
                 }
               }}
-              onPointerEnter={(e) => {
+              onPointerEnter={(e: any) => {
                 e.stopPropagation()
                 setHoveredMidpoint(index)
               }}
-              onPointerLeave={(e) => {
+              onPointerLeave={(e: any) => {
                 e.stopPropagation()
                 setHoveredMidpoint(null)
               }}

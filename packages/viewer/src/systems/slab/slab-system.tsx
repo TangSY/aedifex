@@ -5,7 +5,7 @@ import {
   sceneRegistry,
   type SlabNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 
 function ensureUv2Attribute(geometry: THREE.BufferGeometry) {

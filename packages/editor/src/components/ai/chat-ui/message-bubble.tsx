@@ -77,7 +77,12 @@ export const MessageBubble = memo(function MessageBubble({ message }: { message:
           <PlacementProposalCards
             message={message}
             onSelectOption={(option) => {
-              const text = `I choose option ${option.id}: ${option.label}`
+              // Explicit, non-destructive instruction. Without exact parameters
+              // and a clear "do not remove" guard, the LLM may regenerate the
+              // whole layout — which previously caused all existing furniture
+              // to be cleared (Bug 1, QA report 2026-04-30).
+              const pos = option.position
+              const text = `Apply placement option "${option.id}: ${option.label}" using a single add_item call: catalogSlug="${option.catalogSlug}", position=[${pos[0]}, ${pos[1]}, ${pos[2]}], rotationY=${option.rotationY}. Do NOT remove, move, or modify any existing items in the scene — only add this one item.`
               window.dispatchEvent(new CustomEvent('ai-select-option', { detail: text }))
             }}
           />

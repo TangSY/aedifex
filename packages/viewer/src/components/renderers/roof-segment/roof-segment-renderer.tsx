@@ -4,7 +4,7 @@ import {
   type RoofSegmentNode,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useNodeEvents } from '../../../hooks/use-node-events'

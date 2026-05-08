@@ -10,8 +10,8 @@ import {
   useLiveTransforms,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type * as THREE from 'three'
 import { markToolCancelConsumed } from '../../../hooks/use-keyboard'

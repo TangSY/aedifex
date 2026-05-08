@@ -1,6 +1,6 @@
 'use client'
 
-import { Editor, type SidebarTab, ViewerToolbarLeft, ViewerToolbarRight } from '@pascal-app/editor'
+import { Editor, type SidebarTab, ViewerToolbarLeft, ViewerToolbarRight } from '@aedifex/editor'
 import Link from 'next/link'
 
 const SIDEBAR_TABS: (SidebarTab & { component: React.ComponentType })[] = [

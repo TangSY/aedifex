@@ -1,9 +1,9 @@
 'use client'
 
-import { useScene } from '@pascal-app/core'
+import { useScene } from '@aedifex/core'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo } from 'react'
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 import { useReducedMotion } from './../../../hooks/use-reduced-motion'
 import { useIsMobile } from './../../../hooks/use-mobile'
 import { TooltipProvider } from './../../../components/ui/primitives/tooltip'

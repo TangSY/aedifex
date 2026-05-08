@@ -13,7 +13,7 @@ import type {
   StairSegmentNode,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useCallback } from 'react'
 import {
   getFloorplanHitNodeId,

@@ -16,13 +16,32 @@ import {
   type WallNode,
   type WindowNode,
   type ZoneNode as ZoneNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useShallow } from 'zustand/react/shallow'
 import { collectLevelDescendants } from '../../lib/floorplan'
 
 type OpeningNode = WindowNode | DoorNode
 
-const DEFAULT_BUILDING_POSITION = [0, 0, 0] as const satisfies [number, number, number]
+interface FloorplanSceneData {
+  buildingPosition: [number, number, number]
+  buildingRotationY: number
+  currentBuildingId: BuildingNode['id'] | null
+  ceilings: CeilingNode[]
+  fences: FenceNode[]
+  floorplanLevels: LevelNode[]
+  levelDescendantNodes: AnyNode[]
+  levelGuides: GuideNode[]
+  levelNode: LevelNode | undefined
+  openings: OpeningNode[]
+  roofs: RoofNode[]
+  site: SiteNode | null
+  slabs: SlabNode[]
+  spawns: SpawnNode[]
+  walls: WallNode[]
+  zones: ZoneNodeType[]
+}
+
+const DEFAULT_BUILDING_POSITION: [number, number, number] = [0, 0, 0]
 
 function useLevelChildren<TNode extends AnyNode>(
   levelId: LevelNode['id'] | null,
@@ -50,7 +69,7 @@ export function useFloorplanSceneData({
 }: {
   buildingId: BuildingNode['id'] | null
   levelId: LevelNode['id'] | null
-}) {
+}): FloorplanSceneData {
   const levelNode = useScene((state) =>
     levelId ? (state.nodes[levelId] as LevelNode | undefined) : undefined,
   )

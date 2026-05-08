@@ -7,7 +7,7 @@ import {
   sceneRegistry,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useCallback, useEffect, useState } from 'react'
 import { Vector3 } from 'three'
 import { sfxEmitter } from '../../../lib/sfx-bus'

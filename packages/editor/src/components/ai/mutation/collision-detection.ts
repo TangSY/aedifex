@@ -1,7 +1,43 @@
-import { pointInPolygon } from '@aedifex/core'
+import { pointInPolygon, useScene, type AnyNode, type AnyNodeId } from '@aedifex/core'
 import { getWallsForLevel, getZonesForLevel, getMaxWallThickness } from './spatial-queries'
 
 export { getMaxWallThickness }
+
+// Treat slab/ceiling polygons as implicit zones when no explicit zone node exists
+// for the level. Returns objects shaped like ZoneNode for downstream code.
+function getEffectiveZonesForLevel(
+  levelId: string,
+): { polygon: [number, number][]; name: string }[] {
+  const explicit = getZonesForLevel(levelId)
+  if (explicit.length > 0) {
+    return explicit.map((z) => ({
+      polygon: z.polygon as [number, number][],
+      name: z.name ?? 'room',
+    }))
+  }
+  // Fallback: collect every slab/ceiling under this level (BFS through children)
+  const { nodes } = useScene.getState()
+  const out: { polygon: [number, number][]; name: string }[] = []
+  const visited = new Set<string>()
+  const queue: string[] = [levelId]
+  while (queue.length > 0) {
+    const id = queue.shift()!
+    if (visited.has(id)) continue
+    visited.add(id)
+    const node = nodes[id as AnyNodeId] as AnyNode | undefined
+    if (!node) continue
+    if ((node.type === 'slab' || node.type === 'ceiling') && Array.isArray((node as { polygon?: unknown }).polygon)) {
+      const poly = (node as { polygon: [number, number][] }).polygon
+      if (poly.length >= 3) {
+        out.push({ polygon: poly, name: (node as { name?: string }).name ?? node.type })
+      }
+    }
+    if ('children' in node && Array.isArray(node.children)) {
+      for (const childId of node.children) queue.push(childId as string)
+    }
+  }
+  return out
+}
 
 // ============================================================================
 // Collision Detection
@@ -189,31 +225,72 @@ export function checkWallCollision(
 /**
  * Check if an item's position violates any zone boundary on the level.
  * Returns:
- * - null if fully inside a zone (no adjustment needed)
+ * - null if fully inside a zone (no adjustment needed) or outdoor=true
  * - 'too-large' if item cannot fit in any zone
  * - { position, reason } if the position was clamped to fit inside a zone
+ *
+ * @param outdoor When true, the caller explicitly opts the item out of
+ *  zone-boundary enforcement (e.g. landscape items on the site). When false
+ *  (default), an item whose center falls outside every zone is pulled into
+ *  the nearest zone instead of silently drifting to the user-given coords.
  */
 export function checkZoneBoundary(
   position: [number, number, number],
   dimensions: [number, number, number],
   rotation: [number, number, number],
   levelId: string,
+  outdoor: boolean = false,
 ): { position: [number, number, number]; reason: string } | 'too-large' | null {
-  const zones = getZonesForLevel(levelId)
-  if (zones.length === 0) return null // No zones exist, skip check
+  // Use explicit zone nodes when present; otherwise fall back to slab/ceiling
+  // polygons (auto-derived from wall enclosures). Without this fallback most
+  // AI-built rooms — which have slabs+ceilings but no `zone` node — would
+  // bypass zone-boundary enforcement entirely (Issue-E, QA-AI 2026-05-01 v3).
+  const zones = getEffectiveZonesForLevel(levelId)
+  if (zones.length === 0) return null // No zones, slabs, or ceilings — skip check
 
-  // Determine placement intent from item CENTER position:
-  // - Center inside a zone → indoor placement → enforce wall inset
-  // - Center outside all zones → outdoor placement → don't interfere
   const [x, y, z] = position
   const centerInZone = zones.find(
-    (zone) => zone.polygon.length >= 3 && pointInPolygon(x, z, zone.polygon)
+    (zone: { polygon: [number, number][]; name: string }) =>
+      zone.polygon.length >= 3 && pointInPolygon(x, z, zone.polygon),
   )
 
   if (!centerInZone) {
-    // Item center is outside all zones — outdoor placement, skip zone boundary check.
-    // Wall collision is handled separately by checkWallCollision (below).
-    return null
+    if (outdoor) {
+      // Caller opted into outdoor placement — leave the item where the AI put it.
+      // Wall collision is still handled by checkWallCollision separately.
+      return null
+    }
+    // Indoor intent (default) but the AI gave a position outside every zone.
+    // Pick the nearest zone (by centroid distance) and redirect the item there.
+    let nearestZone: typeof zones[number] | null = null
+    let nearestDist = Infinity
+    let cX = 0
+    let cZ = 0
+    for (const zone of zones) {
+      if (zone.polygon.length < 3) continue
+      let zx = 0, zz = 0
+      for (const [px, pz] of zone.polygon) { zx += px; zz += pz }
+      zx /= zone.polygon.length
+      zz /= zone.polygon.length
+      const dist = Math.hypot(x - zx, z - zz)
+      if (dist < nearestDist) {
+        nearestDist = dist
+        nearestZone = zone
+        cX = zx
+        cZ = zz
+      }
+    }
+    if (!nearestZone) return null
+    // Recurse with outdoor=true so we skip this branch on the next call;
+    // the centroid lies inside the zone so the indoor inset/clamp logic
+    // produces the final position.
+    const inner = checkZoneBoundary([cX, y, cZ], dimensions, rotation, levelId, true)
+    if (inner === 'too-large') return inner
+    const finalPos: [number, number, number] = inner ? inner.position : [cX, y, cZ]
+    return {
+      position: finalPos,
+      reason: `Position pulled inside room "${nearestZone.name}" — no zone contained the original coordinates. If you meant an outdoor placement, set outdoor=true.`,
+    }
   }
 
   // Indoor placement — check if item fits properly inside the zone.
@@ -252,11 +329,11 @@ export function checkZoneBoundary(
   }
 
   // Indoor item with corners outside zone or in wall area — clamp to wall inner surface
-  const bestZone = centerInZone
+  const bestZone = centerInZone as { polygon: [number, number][]; name: string }
 
   // Compute zone AABB
-  const xs = bestZone.polygon.map((p) => p[0])
-  const zs = bestZone.polygon.map((p) => p[1])
+  const xs = bestZone.polygon.map((p: [number, number]) => p[0])
+  const zs = bestZone.polygon.map((p: [number, number]) => p[1])
   const zoneMinX = Math.min(...xs)
   const zoneMaxX = Math.max(...xs)
   const zoneMinZ = Math.min(...zs)

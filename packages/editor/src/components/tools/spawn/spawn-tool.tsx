@@ -8,7 +8,7 @@ import {
   type SpawnNode as SpawnNodeType,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useEffect, useRef, useState } from 'react'
 import type { Group } from 'three'
 import { Vector3 } from 'three'

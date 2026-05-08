@@ -9,7 +9,7 @@ import {
   sceneRegistry,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useCallback, useEffect, useState } from 'react'
 import { markToolCancelConsumed } from '../../../hooks/use-keyboard'
 import { sfxEmitter } from '../../../lib/sfx-bus'

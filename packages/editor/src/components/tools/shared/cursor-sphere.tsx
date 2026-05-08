@@ -26,12 +26,12 @@ export const CursorSphere = forwardRef<Group, CursorSphereProps>(function Cursor
   const isFloorplanHovered = useEditor((s) => s.isFloorplanHovered)
 
   // Find the icon for the current tool
-  let activeToolConfig = null
+  let activeToolConfig: { label?: string; iconSrc?: string } | null = null
   if (mode === 'build' && tool) {
     if (tool === 'item' && catalogCategory) {
-      activeToolConfig = furnishTools.find((t) => t.catalogCategory === catalogCategory)
+      activeToolConfig = furnishTools.find((t) => t.catalogCategory === catalogCategory) ?? null
     } else {
-      activeToolConfig = tools.find((t) => t.id === tool)
+      activeToolConfig = tools.find((t) => t.id === tool) ?? null
     }
   }
 

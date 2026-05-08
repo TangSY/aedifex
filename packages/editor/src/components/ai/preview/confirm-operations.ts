@@ -321,6 +321,25 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         if (op.curveOffset !== undefined) updates.curveOffset = op.curveOffset
         useScene.getState().updateNode(op.nodeId, updates)
         affectedNodeIds.push(op.nodeId)
+
+        // Symmetric to validateAddCeiling's R3 rule ("ceiling height matches wall height"):
+        // when a wall's height changes, propagate to every ceiling on the same level so
+        // the room volume stays consistent. Caught by QA-AI 2026-05-01 v3 Issue-C.
+        if (op.height !== undefined) {
+          const wallNode = nodes[op.nodeId] as { parentId?: string } | undefined
+          const levelId = wallNode?.parentId
+          if (levelId) {
+            for (const [id, n] of Object.entries(nodes)) {
+              if (n && (n as { type?: string }).type === 'ceiling' && (n as { parentId?: string }).parentId === levelId) {
+                const currentHeight = (n as { height?: number }).height
+                if (currentHeight !== op.height) {
+                  useScene.getState().updateNode(id as AnyNodeId, { height: op.height })
+                  affectedNodeIds.push(id as AnyNodeId)
+                }
+              }
+            }
+          }
+        }
         break
       }
       case 'update_door':
