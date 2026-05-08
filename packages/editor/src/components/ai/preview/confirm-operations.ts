@@ -22,6 +22,7 @@ import {
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { nanoid } from 'nanoid'
+import { getSceneOperations } from '../scene-operations-adapter'
 import type {
   AIOperationLog,
   ValidatedAddBuilding,
@@ -58,6 +59,17 @@ import {
   resetPreviewState,
   stripTransientMetadata,
 } from './ghost-node-helpers'
+
+/**
+ * SceneOperations 抽象层 — 所有 createNode/deleteNode/setNode/applyPatch
+ * 调用都通过 ops().* 走 SceneBridge，与远程 MCP（mcp-tool-router.ts）共享
+ * 同一执行路径。
+ *
+ * 注：updateNode 暂保留 useScene.getState().updateNode，因 bridge.updateNode
+ * 在 race condition（节点已被删除）会抛错，破坏 ghost 清理路径。后续可在
+ * SceneBridge 中加入 silent variant 后再迁移。
+ */
+const ops = () => getSceneOperations()
 
 /**
  * Build a partial scene node update that sets either a material catalog preset
@@ -170,7 +182,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
 
   // Step 1: Delete ghost nodes while still paused
   for (const ghostId of ghostNodeIds) {
-    useScene.getState().deleteNode(ghostId)
+    ops().deleteNode(ghostId)
   }
 
   // Step 2: Resume Zundo — everything from here is tracked as a single undo batch
@@ -256,7 +268,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
             })
           }
         }
-        useScene.getState().deleteNode(op.nodeId)
+        ops().deleteNode(op.nodeId)
         affectedNodeIds.push(op.nodeId)
         break
       }
@@ -395,7 +407,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           name: levelOp.name ?? `Level ${levelOp.level}`,
           level: levelOp.level,
         })
-        useScene.getState().createNode(levelNode, targetBuildingId)
+        ops().createNode(levelNode, targetBuildingId)
         affectedNodeIds.push(levelNode.id as AnyNodeId)
         createdNodeIds.push(levelNode.id as AnyNodeId)
         // Auto-switch to the new level
@@ -410,7 +422,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           elevation: slabOp.elevation,
           holes: slabOp.holes,
         })
-        useScene.getState().createNode(slabNode, (slabOp.levelId ?? levelId) as AnyNodeId)
+        ops().createNode(slabNode, (slabOp.levelId ?? levelId) as AnyNodeId)
         affectedNodeIds.push(slabNode.id as AnyNodeId)
         createdNodeIds.push(slabNode.id as AnyNodeId)
         break
@@ -432,7 +444,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           height: ceilOp.height,
           ...(ceilOp.material ? { material: ceilOp.material } : {}),
         })
-        useScene.getState().createNode(ceilNode, (ceilOp.levelId ?? levelId) as AnyNodeId)
+        ops().createNode(ceilNode, (ceilOp.levelId ?? levelId) as AnyNodeId)
         affectedNodeIds.push(ceilNode.id as AnyNodeId)
         createdNodeIds.push(ceilNode.id as AnyNodeId)
         break
@@ -592,7 +604,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           name: zoneOp.name ?? `Zone ${getCachedTypeCount('zone') + 1}`,
           polygon: zoneOp.polygon,
         })
-        useScene.getState().createNode(zoneNode, (zoneOp.levelId ?? levelId) as AnyNodeId)
+        ops().createNode(zoneNode, (zoneOp.levelId ?? levelId) as AnyNodeId)
         affectedNodeIds.push(zoneNode.id as AnyNodeId)
         createdNodeIds.push(zoneNode.id as AnyNodeId)
         break
@@ -672,7 +684,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           scale: [scanOp.scale, scanOp.scale, scanOp.scale],
           opacity: scanOp.opacity,
         })
-        useScene.getState().createNode(scanNode, levelId as AnyNodeId)
+        ops().createNode(scanNode, levelId as AnyNodeId)
         affectedNodeIds.push(scanNode.id as AnyNodeId)
         createdNodeIds.push(scanNode.id as AnyNodeId)
         break
@@ -686,7 +698,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           scale: [guideOp.scale, guideOp.scale, guideOp.scale],
           opacity: guideOp.opacity,
         })
-        useScene.getState().createNode(guideNode, levelId as AnyNodeId)
+        ops().createNode(guideNode, levelId as AnyNodeId)
         affectedNodeIds.push(guideNode.id as AnyNodeId)
         createdNodeIds.push(guideNode.id as AnyNodeId)
         break
@@ -866,8 +878,12 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
   }
 
   // Execute batched node creations in a single call (single undo record)
+  // SceneOperations exposes only single createNode; use applyPatch for batch
+  // to keep all creations in one Zundo entry.
   if (batchCreates.length > 0) {
-    useScene.getState().createNodes(batchCreates)
+    ops().applyPatch(
+      batchCreates.map(({ node, parentId }) => ({ op: 'create' as const, node, parentId })),
+    )
   }
 
   // Clean up state
@@ -901,7 +917,7 @@ export function undoConfirmedOperation(log: AIOperationLog): void {
   for (const nodeId of log.createdNodeIds) {
     const node = useScene.getState().nodes[nodeId]
     if (node) {
-      useScene.getState().deleteNode(nodeId)
+      ops().deleteNode(nodeId)
     }
   }
 
@@ -957,7 +973,7 @@ export function undoConfirmedOperation(log: AIOperationLog): void {
       return
     }
 
-    useScene.getState().createNode(entry.node, parentId as AnyNodeId)
+    ops().createNode(entry.node, parentId as AnyNodeId)
     created.add(id)
     visiting.delete(id)
   }

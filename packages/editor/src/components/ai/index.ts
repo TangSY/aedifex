@@ -28,6 +28,16 @@ export {
   isProposalModeActive,
 } from './ai-proposal-manager'
 export { getPlacementMeta, isAgainstWall, getAgainstWallCategories } from './furniture-placement-metadata'
+export {
+  getSceneOperations,
+  resetSceneOperationsForTesting,
+  type SceneOperations,
+} from './scene-operations-adapter'
+export {
+  executeRemoteMcpToolCall,
+  type RemoteMcpToolCall,
+  type RemoteMcpToolResult,
+} from './mcp-tool-router'
 export { isComplexInstruction, generateExecutionPlan, buildPlanningContext } from './ai-planner'
 export { findTemplate, detectBuildingRequest, generatePlanFromTemplate, getAvailableTemplates } from './building-templates'
 export { analyzeRoom, formatRoomAnalysis } from './room-analyzer'
