@@ -14,6 +14,7 @@
   },
   "peerDependencies": {
     "@aedifex/core": "^0.6.0",
+    "@aedifex/mcp": "^0.6.0",
     "@aedifex/viewer": "^0.6.0",
     "@react-three/drei": "^10",
     "@react-three/fiber": "^9",
@@ -53,6 +54,7 @@
   },
   "devDependencies": {
     "@aedifex/core": "^0.6.0",
+    "@aedifex/mcp": "^0.6.0",
     "@aedifex/viewer": "^0.6.0",
     "@pascal/typescript-config": "*",
     "@types/howler": "^2.2.12",

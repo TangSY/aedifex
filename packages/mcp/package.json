@@ -1,0 +1,71 @@
+{
+  "name": "@aedifex/mcp",
+  "version": "0.6.0",
+  "description": "Model Context Protocol server for Aedifex 3D building editor",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./storage": {
+      "types": "./dist/storage/index.d.ts",
+      "import": "./dist/storage/index.js",
+      "default": "./dist/storage/index.js"
+    },
+    "./operations": {
+      "types": "./dist/operations/index.d.ts",
+      "import": "./dist/operations/index.js",
+      "default": "./dist/operations/index.js"
+    }
+  },
+  "bin": {
+    "aedifex-mcp": "./dist/bin/aedifex-mcp.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc --build --watch",
+    "start": "bun dist/bin/aedifex-mcp.js",
+    "test": "bun test",
+    "smoke": "bun run scripts/smoke.ts",
+    "prepublishOnly": "bun run build && bun test"
+  },
+  "peerDependencies": {
+    "@aedifex/core": "workspace:*"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@aedifex/core": "workspace:*",
+    "@pascal/typescript-config": "*",
+    "@types/node": "^25.5.0",
+    "typescript": "5.9.3"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "aedifex",
+    "3d",
+    "building",
+    "editor",
+    "ai"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pascalorg/editor.git",
+    "directory": "packages/mcp"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/pascalorg/editor/tree/main/packages/mcp#readme",
+  "bugs": "https://github.com/pascalorg/editor/issues"
+}
