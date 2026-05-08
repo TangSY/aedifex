@@ -1,5 +1,5 @@
-import { type AnyNodeId, type BuildingNode, LevelNode, useScene } from '@aedifex/core'
-import { useViewer } from '@aedifex/viewer'
+import { type BuildingNode, LevelNode, useScene } from '@pascal-app/core'
+import { useViewer } from '@pascal-app/viewer'
 import { Building2, Plus } from 'lucide-react'
 import { memo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -12,7 +12,7 @@ import { focusTreeNode, TreeNode, TreeNodeWrapper } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
 
 interface BuildingTreeNodeProps {
-  nodeId: AnyNodeId
+  nodeId: BuildingNode['id']
   depth: number
   isLast?: boolean
 }
@@ -34,7 +34,7 @@ export const BuildingTreeNode = memo(function BuildingTreeNode({
   const setSelection = useViewer((state) => state.setSelection)
 
   const handleClick = () => {
-    setSelection({ buildingId: nodeId as BuildingNode['id'] })
+    setSelection({ buildingId: nodeId })
   }
 
   const handleAddLevel = (e: React.MouseEvent) => {

@@ -1,8 +1,10 @@
 import { type AnyNodeId, emitter, useScene } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
+import { closeDoorOpenState, toggleDoorOpenState } from '../lib/door-interaction'
 import { runRedo, runUndo } from '../lib/history'
 import { sfxEmitter } from '../lib/sfx-bus'
+import { closeWindowOpenState, toggleWindowOpenState } from '../lib/window-interaction'
 import useEditor from '../store/use-editor'
 
 // Tools call this in their onCancel handler when they have an active mid-action to cancel,
@@ -12,8 +14,18 @@ export const markToolCancelConsumed = () => {
   _toolCancelConsumed = true
 }
 
-export const useKeyboard = ({ isVersionPreviewMode = false } = {}) => {
+export const useKeyboard = ({
+  isVersionPreviewMode = false,
+  disabled = false,
+}: {
+  isVersionPreviewMode?: boolean
+  disabled?: boolean
+} = {}) => {
   useEffect(() => {
+    if (disabled) {
+      return
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't handle shortcuts if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
@@ -21,9 +33,6 @@ export const useKeyboard = ({ isVersionPreviewMode = false } = {}) => {
       }
 
       if (e.key === 'Escape') {
-        // If in walkthrough mode, let WalkthroughControls handle ESC
-        if (useViewer.getState().walkthroughMode) return
-
         e.preventDefault()
         _toolCancelConsumed = false
         emitter.emit('tool:cancel')
@@ -89,6 +98,13 @@ export const useKeyboard = ({ isVersionPreviewMode = false } = {}) => {
         if (isVersionPreviewMode) return
         e.preventDefault()
         useEditor.getState().setMode('delete')
+      } else if (e.key === 'p' && !e.metaKey && !e.ctrlKey) {
+        if (isVersionPreviewMode) return
+        e.preventDefault()
+        useEditor.getState().primeMaterialPaintFromSelection()
+        useEditor.getState().setPhase('structure')
+        useEditor.getState().setStructureLayer('elements')
+        useEditor.getState().setMode('material-paint')
       } else if (e.key === 'z' && (e.metaKey || e.ctrlKey)) {
         if (isVersionPreviewMode) return
         e.preventDefault()
@@ -131,10 +147,31 @@ export const useKeyboard = ({ isVersionPreviewMode = false } = {}) => {
         }
       } else if ((e.key === 'r' || e.key === 'R') && !isVersionPreviewMode) {
         // Rotate selected node clockwise if it supports rotation (items, roofs, etc.)
+        // Operable doors/windows use R to toggle their open/closed state.
         const selectedNodeIds = useViewer.getState().selection.selectedIds as AnyNodeId[]
         if (selectedNodeIds.length === 1) {
           const node = useScene.getState().nodes[selectedNodeIds[0]!]
-          if (node && 'rotation' in node) {
+          if (node?.type === 'door') {
+            e.preventDefault()
+            if (node.openingKind !== 'opening') {
+              toggleDoorOpenState(node.id)
+              sfxEmitter.emit('sfx:item-rotate')
+            }
+          } else if (
+            node?.type === 'window' &&
+            node.openingKind !== 'opening' &&
+            (node.windowType === 'sliding' ||
+              node.windowType === 'casement' ||
+              node.windowType === 'awning' ||
+              node.windowType === 'hopper' ||
+              node.windowType === 'single-hung' ||
+              node.windowType === 'double-hung' ||
+              node.windowType === 'louvered')
+          ) {
+            e.preventDefault()
+            toggleWindowOpenState(node.id)
+            sfxEmitter.emit('sfx:item-rotate')
+          } else if (node && 'rotation' in node) {
             e.preventDefault()
             const ROTATION_STEP = Math.PI / 4
 
@@ -154,7 +191,27 @@ export const useKeyboard = ({ isVersionPreviewMode = false } = {}) => {
         const selectedNodeIds = useViewer.getState().selection.selectedIds as AnyNodeId[]
         if (selectedNodeIds.length === 1) {
           const node = useScene.getState().nodes[selectedNodeIds[0]!]
-          if (node && 'rotation' in node) {
+          if (node?.type === 'door') {
+            e.preventDefault()
+            if (node.openingKind !== 'opening') {
+              closeDoorOpenState(node.id)
+              sfxEmitter.emit('sfx:item-rotate')
+            }
+          } else if (
+            node?.type === 'window' &&
+            node.openingKind !== 'opening' &&
+            (node.windowType === 'sliding' ||
+              node.windowType === 'casement' ||
+              node.windowType === 'awning' ||
+              node.windowType === 'hopper' ||
+              node.windowType === 'single-hung' ||
+              node.windowType === 'double-hung' ||
+              node.windowType === 'louvered')
+          ) {
+            e.preventDefault()
+            closeWindowOpenState(node.id)
+            sfxEmitter.emit('sfx:item-rotate')
+          } else if (node && 'rotation' in node) {
             e.preventDefault()
             const ROTATION_STEP = Math.PI / 4
 
@@ -213,7 +270,7 @@ export const useKeyboard = ({ isVersionPreviewMode = false } = {}) => {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isVersionPreviewMode])
+  }, [disabled, isVersionPreviewMode])
 
   return null
 }

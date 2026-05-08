@@ -1,0 +1,1185 @@
+[2026-03-29T03:54:15.110Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T03:54:15.196Z] [log] [HMR] connected
+[2026-03-29T03:54:32.533Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T03:54:32.721Z] [log] [Fast Refresh] done in 288ms
+[2026-03-29T03:54:37.919Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T03:54:37.929Z] [log] [HMR] connected
+[2026-03-29T03:54:56.521Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T03:54:57.899Z] [log] [Fast Refresh] done in 1482ms
+[2026-03-29T03:54:58.824Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-03-29T03:55:54.583Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=2XoGSG7EjUVwRV8p-2fXC' failed: 
+[2026-03-29T03:55:55.587Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=2XoGSG7EjUVwRV8p-2fXC' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-03-29T03:55:56.589Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=2XoGSG7EjUVwRV8p-2fXC' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-03-29T03:55:57.592Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=2XoGSG7EjUVwRV8p-2fXC' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-03-29T03:55:58.593Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=2XoGSG7EjUVwRV8p-2fXC' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-03-29T03:55:59.596Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=2XoGSG7EjUVwRV8p-2fXC' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-03-29T03:56:04.612Z] [log] [HMR] connected
+[2026-03-29T03:56:05.083Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T03:56:05.117Z] [log] [HMR] connected
+[2026-03-29T03:56:10.008Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T03:56:10.051Z] [log] [Fast Refresh] done in 145ms
+[2026-03-29T03:56:30.264Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T03:56:30.366Z] [log] [Fast Refresh] done in 12ms
+[2026-03-29T03:56:35.087Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=NEU2W_6ccpXjbosBkXyFd' failed: 
+[2026-03-29T03:56:36.089Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=NEU2W_6ccpXjbosBkXyFd' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-03-29T03:56:37.091Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=NEU2W_6ccpXjbosBkXyFd' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-03-29T03:56:38.096Z] [log] [HMR] connected
+[2026-03-29T03:56:38.553Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T03:56:38.582Z] [log] [HMR] connected
+[2026-03-29T03:56:46.900Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T03:56:46.965Z] [log] [Fast Refresh] done in 168ms
+[2026-03-29T03:56:54.901Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T03:56:54.918Z] [log] [HMR] connected
+[2026-03-29T03:57:00.483Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T03:57:00.547Z] [log] [Fast Refresh] done in 168ms
+[2026-03-29T03:57:00.679Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T03:57:02.291Z] [log] [Fast Refresh] done in 1712ms
+[2026-03-29T03:57:19.630Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T03:57:20.264Z] [log] [Fast Refresh] done in 734ms
+[2026-03-29T03:57:20.424Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T03:57:25.548Z] [log] [Fast Refresh] done in 5226ms
+[2026-03-29T03:57:31.382Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T03:57:31.421Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T03:57:31.493Z] [warning] No available adapters.
+[2026-03-29T03:57:31.494Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T03:57:31.510Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T03:57:31.884Z] [log] [Fast Refresh] done in 743ms
+[2026-03-29T03:57:32.059Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:32.061Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:32.064Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:32.066Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:32.070Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:32.074Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:32.471Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:32.472Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:32.474Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:32.477Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:32.524Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:32.579Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T03:57:34.276Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:34.374Z] [log] [Fast Refresh] done in 1894ms
+[2026-03-29T03:57:34.392Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:34.409Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:34.525Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T03:57:34.600Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:34.615Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:34.823Z] [log] [Fast Refresh] done in 307ms
+[2026-03-29T03:57:36.095Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T03:57:36.099Z] [log] [Fast Refresh] done in 105ms
+[2026-03-29T03:57:36.200Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:36.200Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:36.202Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:36.202Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:36.216Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:36.216Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:36.319Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:36.324Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:36.348Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T03:57:36.356Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:36.366Z] [log] [Fast Refresh] done in 120ms
+[2026-03-29T03:57:36.377Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:36.382Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:36.386Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:36.412Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:36.421Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:45.729Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T03:57:46.032Z] [log] [HMR] connected
+[2026-03-29T03:57:48.569Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:48.570Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:48.570Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:48.753Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:48.753Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:48.753Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:48.772Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:48.773Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:48.774Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:48.786Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:48.797Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T03:57:48.805Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:48.846Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:48.846Z] [warning] No available adapters.
+[2026-03-29T03:57:48.847Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T03:57:48.849Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T03:57:48.893Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:49.004Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:49.028Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:49.034Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:49.035Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:49.047Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:49.128Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:49.131Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:49.132Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:49.137Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:49.144Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T03:57:49.211Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:49.607Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:49.609Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:49.610Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:49.612Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:49.612Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:57:49.615Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T03:58:15.088Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T03:58:15.113Z] [log] [HMR] connected
+[2026-03-29T04:02:00.576Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:00.577Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:00.577Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:00.577Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:00.577Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:00.577Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:00.615Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:02:00.662Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:00.662Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:00.670Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:00.671Z] [warning] No available adapters.
+[2026-03-29T04:02:00.671Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:02:00.674Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:02:00.674Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:00.674Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:00.786Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:00.790Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:00.796Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:00.810Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:00.927Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:00.930Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:00.936Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:00.936Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:00.960Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:00.969Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:01.010Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:01.029Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:01.029Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:01.274Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:01.275Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:01.275Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:01.276Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:01.276Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:01.277Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:46.459Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:02:46.832Z] [log] [Fast Refresh] done in 481ms
+[2026-03-29T04:02:52.767Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:02:53.061Z] [log] [Fast Refresh] done in 183ms
+[2026-03-29T04:02:53.114Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:02:53.149Z] [warning] No available adapters.
+[2026-03-29T04:02:53.151Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:02:53.151Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:02:53.169Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:02:53.232Z] [log] [Fast Refresh] done in 167ms
+[2026-03-29T04:02:53.366Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:53.367Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:53.369Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:53.374Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:53.396Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:53.621Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:02:53.630Z] [log] [Fast Refresh] done in 109ms
+[2026-03-29T04:02:53.633Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:53.695Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:53.696Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:53.721Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:53.724Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:53.829Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:02:53.835Z] [log] [Fast Refresh] done in 106ms
+[2026-03-29T04:02:53.846Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:53.879Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:53.879Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:53.896Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:53.908Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:02:53.945Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:02:53.945Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:53.988Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:54.018Z] [log] [Fast Refresh] done in 179ms
+[2026-03-29T04:02:54.026Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:54.027Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:54.027Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:54.049Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:54.087Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:02:54.096Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:03:08.164Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:03:08.185Z] [log] [Fast Refresh] done in 56ms
+[2026-03-29T04:03:55.369Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:03:55.420Z] [log] [HMR] connected
+[2026-03-29T04:04:12.151Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.151Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.151Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.151Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.151Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.152Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.152Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.347Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.347Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.347Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.347Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.350Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.350Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.351Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:04:12.351Z] [log] [Fast Refresh] done in 153ms
+[2026-03-29T04:04:12.391Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:04:12.436Z] [warning] No available adapters.
+[2026-03-29T04:04:12.436Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:04:12.436Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:04:12.451Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:04:12.455Z] [log] [Fast Refresh] done in 104ms
+[2026-03-29T04:04:12.469Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:04:12.492Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:04:12.493Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:04:12.498Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:04:12.516Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:04:12.605Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:04:12.611Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:04:12.612Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:04:12.619Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:04:12.623Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:04:12.688Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.930Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.930Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.931Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.932Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.933Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:12.939Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:04:32.123Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:04:32.579Z] [log] [Fast Refresh] done in 557ms
+[2026-03-29T04:04:58.462Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:04:59.703Z] [log] [Fast Refresh] done in 1342ms
+[2026-03-29T04:05:00.464Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:00.534Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:00.534Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:00.551Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:00.559Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:00.562Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:00.645Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:05:00.654Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:05:00.655Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:05:00.661Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:05:00.695Z] [log] [HMR] connected
+[2026-03-29T04:05:01.211Z] [warning] Image with src "/icons/select.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[2026-03-29T04:05:01.211Z] [warning] Image with src "/icons/rotate.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[2026-03-29T04:05:01.211Z] [warning] Image with src "/icons/topview.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[2026-03-29T04:05:01.215Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:01.216Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:01.216Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:01.216Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:01.216Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:01.217Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:01.217Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:01.269Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:05:01.329Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:01.330Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:01.330Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:01.330Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:01.330Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:01.330Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:01.334Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:05:01.334Z] [warning] No available adapters.
+[2026-03-29T04:05:01.336Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:05:01.339Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:05:01.340Z] [log] [Fast Refresh] done in 114ms
+[2026-03-29T04:05:01.427Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:05:01.431Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:05:01.448Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:05:01.448Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:05:01.464Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:05:01.465Z] [log] [Fast Refresh] done in 119ms
+[2026-03-29T04:05:01.474Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:05:01.476Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:05:01.507Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:05:01.510Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:05:16.944Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:05:17.000Z] [log] [HMR] connected
+[2026-03-29T04:05:27.544Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:05:27.546Z] [log] [Fast Refresh] done in 103ms
+[2026-03-29T04:05:38.511Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:05:38.565Z] [log] [HMR] connected
+[2026-03-29T04:05:49.206Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:05:49.259Z] [error] Failed to load resource: the server responded with a status of 401 (UNAUTHORIZED)
+[2026-03-29T04:05:49.260Z] [log] [Fast Refresh] done in 155ms
+[2026-03-29T04:06:24.103Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:06:24.116Z] [error] Failed to load resource: the server responded with a status of 401 (UNAUTHORIZED)
+[2026-03-29T04:06:24.117Z] [log] [Fast Refresh] done in 115ms
+[2026-03-29T04:06:32.680Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:06:32.718Z] [log] [HMR] connected
+[2026-03-29T04:06:38.956Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:06:38.981Z] [log] [Fast Refresh] done in 125ms
+[2026-03-29T04:07:12.772Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:07:12.800Z] [log] [Fast Refresh] done in 126ms
+[2026-03-29T04:07:27.409Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:27.409Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:27.409Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:27.409Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:27.409Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:27.409Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:27.457Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:07:27.547Z] [warning] No available adapters.
+[2026-03-29T04:07:27.548Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:07:27.548Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:07:27.596Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:27.597Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:27.598Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:27.603Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:27.604Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:27.710Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:07:27.723Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:07:27.724Z] [log] [Fast Refresh] done in 114ms
+[2026-03-29T04:07:27.729Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:07:27.738Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:07:27.740Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:07:27.835Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:07:27.836Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:07:27.836Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:07:27.886Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:07:27.896Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:07:27.898Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:07:27.945Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:27.957Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:27.961Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:28.334Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:28.336Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:28.338Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:28.338Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:28.339Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:28.346Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:07:34.321Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:07:34.380Z] [log] [HMR] connected
+[2026-03-29T04:08:03.535Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:08:03.535Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:08:03.535Z] [warning] No available adapters.
+[2026-03-29T04:08:03.535Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:08:03.535Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:08:03.583Z] [log] [Fast Refresh] done in 170ms
+[2026-03-29T04:08:03.662Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:03.662Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:03.665Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:03.666Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:03.668Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:03.678Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:03.880Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:08:04.028Z] [log] [Fast Refresh] done in 327ms
+[2026-03-29T04:08:04.067Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:04.068Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:04.068Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:04.069Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:04.069Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:04.168Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:08:04.171Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:08:04.171Z] [log] [Fast Refresh] done in 105ms
+[2026-03-29T04:08:04.176Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:08:04.185Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:08:04.186Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:08:04.266Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:08:04.273Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:08:04.274Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:08:04.308Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:08:04.320Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:08:04.322Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:08:04.353Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:04.408Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:04.413Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:04.803Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:04.803Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:04.804Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:04.805Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:04.806Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:04.807Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:08:11.251Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:08:11.960Z] [log] [Fast Refresh] done in 813ms
+[2026-03-29T04:08:12.512Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:40.446Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:11:40.802Z] [log] [Fast Refresh] done in 203ms
+[2026-03-29T04:11:41.240Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:11:41.304Z] [log] [Fast Refresh] done in 165ms
+[2026-03-29T04:11:41.450Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:11:41.465Z] [log] [Fast Refresh] done in 114ms
+[2026-03-29T04:11:41.467Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:41.502Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:41.561Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:41.561Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:41.578Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:44.978Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:11:45.146Z] [log] [Fast Refresh] done in 78ms
+[2026-03-29T04:11:45.229Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:11:45.294Z] [warning] No available adapters.
+[2026-03-29T04:11:45.294Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:11:45.294Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:11:45.520Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:45.593Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:45.595Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:45.601Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:11:45.656Z] [log] [Fast Refresh] done in 149ms
+[2026-03-29T04:11:45.724Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:45.745Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:45.778Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:46.009Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:46.022Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:46.084Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:46.118Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:11:46.120Z] [log] [Fast Refresh] done in 106ms
+[2026-03-29T04:11:46.204Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:46.225Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:46.236Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:46.533Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:46.544Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:46.574Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:46.584Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:46.591Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:46.626Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:46.676Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:11:46.696Z] [log] [Fast Refresh] done in 121ms
+[2026-03-29T04:11:46.697Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:46.735Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:46.736Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:54.325Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:11:54.907Z] [log] [Fast Refresh] done in 546ms
+[2026-03-29T04:11:54.961Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:11:55.019Z] [warning] No available adapters.
+[2026-03-29T04:11:55.019Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:11:55.019Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:11:55.020Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:11:55.322Z] [log] [Fast Refresh] done in 419ms
+[2026-03-29T04:11:55.936Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:55.959Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:55.969Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:55.973Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:56.047Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:56.072Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:56.085Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:56.092Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:56.159Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:56.193Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:56.195Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:11:56.278Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:56.278Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:56.286Z] [log] [Fast Refresh] done in 191ms
+[2026-03-29T04:11:56.319Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:56.326Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:56.328Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:11:56.386Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:56.446Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:56.468Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:56.511Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:56.550Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:56.588Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:11:56.605Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:12:01.391Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:12:02.027Z] [log] [Fast Refresh] done in 471ms
+[2026-03-29T04:12:02.245Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:12:02.372Z] [log] [Fast Refresh] done in 226ms
+[2026-03-29T04:12:03.253Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:12:03.254Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:12:03.255Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:12:03.256Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:12:03.257Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:12:18.154Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:12:18.508Z] [log] [Fast Refresh] done in 451ms
+[2026-03-29T04:12:22.306Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:12:22.310Z] [log] [Fast Refresh] done in 107ms
+[2026-03-29T04:14:26.489Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:14:26.911Z] [log] [Fast Refresh] done in 525ms
+[2026-03-29T04:14:40.007Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:14:40.117Z] [log] [HMR] connected
+[2026-03-29T04:15:01.997Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:01.998Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:01.998Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:01.998Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:01.998Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:01.998Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:02.215Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:15:02.257Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:02.258Z] [warning] No available adapters.
+[2026-03-29T04:15:02.258Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:15:02.261Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:15:02.292Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:02.292Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:02.293Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:02.297Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:02.297Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:02.394Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:15:02.399Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:15:02.405Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:15:02.434Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:15:02.442Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:15:02.500Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:15:02.500Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:15:02.525Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:15:02.530Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:15:02.562Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:15:02.564Z] [log] [Fast Refresh] done in 164ms
+[2026-03-29T04:15:02.564Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:02.571Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:15:02.610Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:02.839Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:02.839Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:02.839Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:02.840Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:02.841Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:15:02.844Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:06.016Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:06.017Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:06.023Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:06.125Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:06.136Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:06.143Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:06.236Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:18:06.237Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:18:06.237Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:18:06.343Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:18:06.406Z] [log] [HMR] connected
+[2026-03-29T04:18:06.868Z] [warning] Image with src "/icons/select.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[2026-03-29T04:18:06.868Z] [warning] Image with src "/icons/rotate.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[2026-03-29T04:18:06.868Z] [warning] Image with src "/icons/topview.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[2026-03-29T04:18:06.872Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:18:06.872Z] [log] [Fast Refresh] done in 139ms
+[2026-03-29T04:18:06.890Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:06.891Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:06.891Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:06.892Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:06.903Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:06.903Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:06.923Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:18:06.973Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:06.980Z] [warning] No available adapters.
+[2026-03-29T04:18:06.981Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:18:06.986Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:18:07.006Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:18:07.032Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:18:07.133Z] [log] [Fast Refresh] done in 228ms
+[2026-03-29T04:18:07.247Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:07.248Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:07.250Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:07.250Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:07.260Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:18:07.260Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:19:37.119Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:19:37.222Z] [log] [Fast Refresh] done in 197ms
+[2026-03-29T04:19:51.437Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:19:51.672Z] [log] [Fast Refresh] done in 345ms
+[2026-03-29T04:19:51.773Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:19:51.848Z] [log] [Fast Refresh] done in 176ms
+[2026-03-29T04:20:07.470Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:20:08.965Z] [log] [Fast Refresh] done in 1566ms
+[2026-03-29T04:20:09.234Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:20:09.992Z] [log] [Fast Refresh] done in 856ms
+[2026-03-29T04:20:10.090Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:20:10.564Z] [log] [Fast Refresh] done in 574ms
+[2026-03-29T04:20:10.571Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-03-29T04:20:10.591Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-03-29T04:20:10.706Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:20:10.760Z] [log] [HMR] connected
+[2026-03-29T04:20:14.408Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: 
+[2026-03-29T04:20:15.397Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-03-29T04:20:16.399Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-03-29T04:20:17.401Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-03-29T04:20:18.450Z] [log] [HMR] connected
+[2026-03-29T04:20:18.989Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-03-29T04:20:19.013Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:20:19.025Z] [log] [HMR] connected
+[2026-03-29T04:22:46.434Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: 
+[2026-03-29T04:22:47.424Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-03-29T04:22:48.426Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-03-29T04:22:49.740Z] [log] [HMR] connected
+[2026-03-29T04:22:52.184Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:22:52.310Z] [log] [HMR] connected
+[2026-03-29T04:23:22.311Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:23:23.802Z] [log] [Fast Refresh] done in 1521ms
+[2026-03-29T04:23:24.147Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:23:24.329Z] [log] [HMR] connected
+[2026-03-29T04:23:44.822Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:23:45.310Z] [log] [Fast Refresh] done in 586ms
+[2026-03-29T04:23:45.501Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:23:45.515Z] [log] [Fast Refresh] done in 119ms
+[2026-03-29T04:23:59.161Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:23:59.265Z] [log] [Fast Refresh] done in 206ms
+[2026-03-29T04:24:00.357Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:24:02.090Z] [log] [Fast Refresh] done in 1833ms
+[2026-03-29T04:24:03.327Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:24:03.379Z] [log] [Fast Refresh] done in 234ms
+[2026-03-29T04:24:03.921Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:24:03.921Z] [log] [Fast Refresh] done in 191ms
+[2026-03-29T04:24:17.706Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:24:17.753Z] [log] [Fast Refresh] done in 147ms
+[2026-03-29T04:24:18.021Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:24:19.455Z] [log] [Fast Refresh] done in 1534ms
+[2026-03-29T04:24:19.895Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:24:19.904Z] [log] [Fast Refresh] done in 110ms
+[2026-03-29T04:24:21.990Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:24:21.994Z] [log] [Fast Refresh] done in 133ms
+[2026-03-29T04:24:23.288Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:24:23.496Z] [log] [Fast Refresh] done in 344ms
+[2026-03-29T04:24:23.769Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:24:23.816Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:24:23.886Z] [warning] No available adapters.
+[2026-03-29T04:24:23.886Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:24:23.891Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:24:24.154Z] [log] [Fast Refresh] done in 477ms
+[2026-03-29T04:24:24.250Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:24.252Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:24.254Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:24.256Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:24.257Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:24.258Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:24.401Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:24:24.410Z] [log] [Fast Refresh] done in 111ms
+[2026-03-29T04:24:24.525Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:24.528Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:24.530Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:24.535Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:24.536Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:24.548Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:24.705Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:24:24.778Z] [log] [Fast Refresh] done in 174ms
+[2026-03-29T04:24:24.822Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:25.174Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:24:25.192Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:24:25.223Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:24:25.335Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:24:25.440Z] [log] [Fast Refresh] done in 212ms
+[2026-03-29T04:24:25.483Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:24:26.348Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:26.348Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:26.349Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:26.349Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:26.350Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:26.357Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:24:50.141Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:24:50.168Z] [log] [Fast Refresh] done in 122ms
+[2026-03-29T04:25:57.002Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:25:58.278Z] [log] [Fast Refresh] done in 1321ms
+[2026-03-29T04:26:00.335Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:00.391Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:00.444Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:00.502Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:00.596Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:26:00.600Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:26:00.601Z] [log] [Fast Refresh] done in 107ms
+[2026-03-29T04:26:00.607Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:26:00.623Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:00.694Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:26:00.715Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:00.755Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:26:00.875Z] [log] [HMR] connected
+[2026-03-29T04:26:00.959Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:26:00.974Z] [log] [Fast Refresh] done in 117ms
+[2026-03-29T04:26:01.441Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:01.451Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:01.452Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:01.459Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:01.460Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:01.460Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:01.461Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:01.483Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:26:01.537Z] [warning] No available adapters.
+[2026-03-29T04:26:01.539Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:26:01.544Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:26:01.592Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:01.592Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:01.593Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:01.593Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:01.594Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:01.595Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:26:01.630Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:27:26.106Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:27:26.106Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:27:26.212Z] [log] [Fast Refresh] done in 207ms
+[2026-03-29T04:27:26.212Z] [log] [Fast Refresh] done in 207ms
+[2026-03-29T04:27:42.631Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:27:42.638Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:27:43.769Z] [log] [Fast Refresh] done in 1231ms
+[2026-03-29T04:27:43.769Z] [log] [Fast Refresh] done in 1239ms
+[2026-03-29T04:30:24.262Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:30:24.339Z] [log] [HMR] connected
+[2026-03-29T04:31:19.987Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:31:20.020Z] [log] [Fast Refresh] done in 139ms
+[2026-03-29T04:31:20.197Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:31:20.197Z] [log] [Fast Refresh] done in 213ms
+[2026-03-29T04:31:20.198Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:31:20.249Z] [warning] No available adapters.
+[2026-03-29T04:31:20.249Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:31:20.252Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:31:20.334Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:20.335Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:20.338Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:20.342Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:20.342Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:20.343Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:20.482Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:20.483Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:20.484Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:20.503Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:20.506Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:20.509Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:20.552Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:20.641Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:31:20.642Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:31:20.654Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:31:20.747Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:31:21.056Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:21.056Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:21.057Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:21.061Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:21.062Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:31:21.063Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:32:32.983Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:32:32.989Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:32:34.110Z] [error] Failed to load resource: the server responded with a status of 401 (UNAUTHORIZED)
+[2026-03-29T04:32:34.111Z] [log] [Fast Refresh] done in 1223ms
+[2026-03-29T04:32:34.111Z] [log] [Fast Refresh] done in 1229ms
+[2026-03-29T04:32:41.862Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:32:41.872Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:32:42.969Z] [error] Failed to load resource: the server responded with a status of 401 (UNAUTHORIZED)
+[2026-03-29T04:32:42.972Z] [log] [Fast Refresh] done in 1210ms
+[2026-03-29T04:32:42.972Z] [log] [Fast Refresh] done in 1200ms
+[2026-03-29T04:32:51.149Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:32:51.225Z] [log] [HMR] connected
+[2026-03-29T04:32:59.398Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:32:59.405Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:33:00.547Z] [error] Failed to load resource: the server responded with a status of 401 (UNAUTHORIZED)
+[2026-03-29T04:33:00.549Z] [log] [Fast Refresh] done in 1251ms
+[2026-03-29T04:33:00.549Z] [log] [Fast Refresh] done in 1244ms
+[2026-03-29T04:33:22.245Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:33:22.253Z] [log] [HMR] connected
+[2026-03-29T04:33:32.714Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:33:32.714Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:33:33.838Z] [log] [Fast Refresh] done in 1226ms
+[2026-03-29T04:33:33.838Z] [log] [Fast Refresh] done in 1226ms
+[2026-03-29T04:33:39.515Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:33:39.532Z] [log] [HMR] connected
+[2026-03-29T04:33:50.751Z] [error] Failed to load resource: the server responded with a status of 422 (UNPROCESSABLE_ENTITY)
+[2026-03-29T04:34:07.224Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:34:07.247Z] [log] [HMR] connected
+[2026-03-29T04:34:25.526Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:34:25.532Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:34:26.753Z] [log] [Fast Refresh] done in 1321ms
+[2026-03-29T04:34:26.753Z] [log] [Fast Refresh] done in 1330ms
+[2026-03-29T04:35:05.338Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:35:05.339Z] [log] [Fast Refresh] done in 103ms
+[2026-03-29T04:35:05.467Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:05.467Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:05.467Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:05.467Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:05.467Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:05.467Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:05.467Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:35:05.467Z] [log] [Fast Refresh] done in 187ms
+[2026-03-29T04:35:05.505Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:35:05.544Z] [warning] No available adapters.
+[2026-03-29T04:35:05.544Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:35:05.544Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:35:05.572Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:05.572Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:05.573Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:05.609Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:05.632Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:05.633Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:05.749Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:05.832Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:35:05.833Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:35:05.841Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:35:05.894Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:35:06.203Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:06.203Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:06.219Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:06.219Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:06.219Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:06.219Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:42.064Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:42.064Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:42.065Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:42.083Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:42.092Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:42.096Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:42.146Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:42.163Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:42.170Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:42.175Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:52.374Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:52.394Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:35:52.394Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:35:52.405Z] [log] [Fast Refresh] done in 114ms
+[2026-03-29T04:35:52.406Z] [log] [Fast Refresh] done in 114ms
+[2026-03-29T04:35:52.421Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:52.456Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:52.459Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:52.481Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:52.487Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:52.674Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:35:52.712Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:35:52.751Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:35:52.751Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:35:52.771Z] [log] [HMR] connected
+[2026-03-29T04:35:53.282Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:53.284Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:53.284Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:53.284Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:53.287Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:53.287Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:53.287Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:53.335Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:35:53.379Z] [warning] No available adapters.
+[2026-03-29T04:35:53.382Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:35:53.383Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:35:53.418Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:53.418Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:53.419Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:53.419Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:53.420Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:53.426Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:53.457Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:35:59.324Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:59.342Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:59.353Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:59.373Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:59.395Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:59.395Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:59.450Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:59.480Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:59.498Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:35:59.511Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:36:48.286Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:36:48.287Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:36:48.288Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:36:48.289Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:36:48.290Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:36:48.297Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:36:48.355Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:36:48.370Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:36:48.378Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:36:48.383Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:37:04.212Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:37:04.213Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:37:06.030Z] [log] [Fast Refresh] done in 1917ms
+[2026-03-29T04:37:06.030Z] [log] [Fast Refresh] done in 1917ms
+[2026-03-29T04:37:11.489Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:37:11.502Z] [log] [HMR] connected
+[2026-03-29T04:37:25.786Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:37:25.786Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:37:25.915Z] [log] [Fast Refresh] done in 231ms
+[2026-03-29T04:37:25.915Z] [log] [Fast Refresh] done in 231ms
+[2026-03-29T04:37:36.417Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:37:36.417Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:37:36.822Z] [log] [Fast Refresh] done in 507ms
+[2026-03-29T04:37:36.822Z] [log] [Fast Refresh] done in 507ms
+[2026-03-29T04:37:55.816Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:37:55.816Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:37:55.877Z] [log] [Fast Refresh] done in 163ms
+[2026-03-29T04:37:55.877Z] [log] [Fast Refresh] done in 164ms
+[2026-03-29T04:38:16.865Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:38:16.865Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:38:16.868Z] [log] [Fast Refresh] done in 106ms
+[2026-03-29T04:38:16.868Z] [log] [Fast Refresh] done in 105ms
+[2026-03-29T04:38:28.825Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:38:28.825Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:38:28.922Z] [log] [Fast Refresh] done in 198ms
+[2026-03-29T04:38:28.922Z] [log] [Fast Refresh] done in 198ms
+[2026-03-29T04:39:11.956Z] [error] Failed to load resource: the server responded with a status of 405 (Method Not Allowed)
+[2026-03-29T04:41:50.932Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:41:51.006Z] [log] [Fast Refresh] done in 176ms
+[2026-03-29T04:41:51.143Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:41:51.537Z] [log] [Fast Refresh] done in 496ms
+[2026-03-29T04:41:51.665Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:41:51.707Z] [log] [Fast Refresh] done in 141ms
+[2026-03-29T04:42:57.561Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:42:57.626Z] [log] [HMR] connected
+[2026-03-29T04:43:31.873Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:43:31.904Z] [log] [HMR] connected
+[2026-03-29T04:43:54.354Z] [error] Failed to load resource: the server responded with a status of 415 (415)
+[2026-03-29T04:43:55.496Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:43:55.507Z] [log] [HMR] connected
+[2026-03-29T04:44:02.957Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:44:03.011Z] [log] [HMR] connected
+[2026-03-29T04:44:09.873Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:44:09.881Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:44:10.984Z] [log] [Fast Refresh] done in 1202ms
+[2026-03-29T04:44:10.984Z] [log] [Fast Refresh] done in 1212ms
+[2026-03-29T04:44:59.722Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:44:59.776Z] [log] [HMR] connected
+[2026-03-29T04:45:01.114Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:45:01.114Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:45:02.229Z] [log] [Fast Refresh] done in 1217ms
+[2026-03-29T04:45:02.229Z] [log] [Fast Refresh] done in 1214ms
+[2026-03-29T04:45:09.426Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:45:09.439Z] [log] [HMR] connected
+[2026-03-29T04:45:10.791Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:45:10.798Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:45:11.902Z] [log] [Fast Refresh] done in 1213ms
+[2026-03-29T04:45:11.902Z] [log] [Fast Refresh] done in 1204ms
+[2026-03-29T04:45:27.171Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:45:27.179Z] [log] [HMR] connected
+[2026-03-29T04:46:37.560Z] [error] Failed to load resource: the server responded with a status of 403 (Forbidden)
+[2026-03-29T04:47:06.942Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:47:07.000Z] [log] [HMR] connected
+[2026-03-29T04:47:08.275Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:47:08.282Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:47:09.404Z] [log] [Fast Refresh] done in 1221ms
+[2026-03-29T04:47:09.404Z] [log] [Fast Refresh] done in 1230ms
+[2026-03-29T04:47:15.058Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:47:22.326Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:47:22.390Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:47:30.559Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:48:01.717Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:48:01.773Z] [log] [HMR] connected
+[2026-03-29T04:48:03.047Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:48:03.048Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:48:04.156Z] [log] [Fast Refresh] done in 1208ms
+[2026-03-29T04:48:04.156Z] [log] [Fast Refresh] done in 1210ms
+[2026-03-29T04:48:13.203Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:48:13.213Z] [log] [HMR] connected
+[2026-03-29T04:48:14.540Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:48:14.549Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:48:15.640Z] [log] [Fast Refresh] done in 1201ms
+[2026-03-29T04:48:15.640Z] [log] [Fast Refresh] done in 1191ms
+[2026-03-29T04:48:22.886Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-03-29T04:48:30.321Z] [error] Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[2026-03-29T04:48:37.194Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:48:37.252Z] [error] Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[2026-03-29T04:48:37.317Z] [error] Failed to load resource: the server responded with a status of 422 (UNPROCESSABLE_ENTITY)
+[2026-03-29T04:49:26.818Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:49:26.879Z] [log] [HMR] connected
+[2026-03-29T04:49:28.158Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:49:28.166Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:49:29.286Z] [log] [Fast Refresh] done in 1221ms
+[2026-03-29T04:49:29.286Z] [log] [Fast Refresh] done in 1231ms
+[2026-03-29T04:49:43.622Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:43.679Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:43.693Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:49:43.699Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:43.709Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:43.731Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:43.757Z] [log] [Fast Refresh] done in 164ms
+[2026-03-29T04:49:43.762Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:43.914Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:49:43.914Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:49:43.918Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:49:43.926Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:49:43.968Z] [log] [HMR] connected
+[2026-03-29T04:49:44.358Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:44.358Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:44.358Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:44.358Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:44.358Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:44.358Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:44.393Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:44.571Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:49:44.581Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:49:44.645Z] [warning] No available adapters.
+[2026-03-29T04:49:44.645Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:49:44.646Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:49:44.711Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:44.711Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:44.712Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:44.713Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:44.716Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:44.716Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:49:57.031Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:49:57.068Z] [log] [HMR] connected
+[2026-03-29T04:50:05.413Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:50:05.471Z] [log] [HMR] connected
+[2026-03-29T04:50:06.742Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:50:06.749Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:50:07.858Z] [log] [Fast Refresh] done in 1217ms
+[2026-03-29T04:50:07.858Z] [log] [Fast Refresh] done in 1209ms
+[2026-03-29T04:50:19.637Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:19.659Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:19.669Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:19.669Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:19.675Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:19.751Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:19.782Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:50:19.786Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:50:19.791Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:50:19.800Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:50:19.857Z] [log] [HMR] connected
+[2026-03-29T04:50:20.272Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:20.272Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:20.272Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:20.275Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:20.275Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:20.277Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:20.277Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:20.331Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:50:20.338Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:50:20.363Z] [warning] No available adapters.
+[2026-03-29T04:50:20.363Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:50:20.363Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:50:20.476Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:20.477Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:20.477Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:20.489Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:20.489Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:20.495Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:50:22.448Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-03-29T04:50:22.516Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:50:57.202Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:50:57.235Z] [log] [HMR] connected
+[2026-03-29T04:50:58.509Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:50:58.517Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:50:59.632Z] [log] [Fast Refresh] done in 1215ms
+[2026-03-29T04:50:59.632Z] [log] [Fast Refresh] done in 1223ms
+[2026-03-29T04:51:11.612Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:11.632Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:11.683Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:11.696Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:11.704Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:11.765Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:11.834Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:51:11.842Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:51:11.845Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:51:11.854Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:51:11.901Z] [log] [HMR] connected
+[2026-03-29T04:51:12.231Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:12.232Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:12.232Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:12.232Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:12.236Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:12.242Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:12.336Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:12.398Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:51:12.420Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:51:12.441Z] [warning] No available adapters.
+[2026-03-29T04:51:12.441Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:51:12.441Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:51:12.540Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:12.540Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:12.540Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:12.541Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:12.541Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:12.551Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:14.324Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-03-29T04:51:14.517Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-03-29T04:51:14.588Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:23.191Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:51:23.239Z] [log] [HMR] connected
+[2026-03-29T04:51:24.574Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:51:24.582Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:51:25.678Z] [log] [Fast Refresh] done in 1204ms
+[2026-03-29T04:51:25.678Z] [log] [Fast Refresh] done in 1196ms
+[2026-03-29T04:51:40.393Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:40.394Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:40.395Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:40.430Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:40.434Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:40.505Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:40.585Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:51:40.585Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:51:40.597Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:51:40.597Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:51:40.655Z] [log] [HMR] connected
+[2026-03-29T04:51:41.080Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:41.081Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:41.081Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:41.082Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:41.082Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:41.082Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:41.139Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:51:41.163Z] [warning] No available adapters.
+[2026-03-29T04:51:41.164Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:51:41.164Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:51:41.219Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:41.281Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:51:41.547Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:41.547Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:41.548Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:41.549Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:41.564Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:41.567Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:43.005Z] [error] Failed to load resource: the server responded with a status of 403 (Forbidden)
+[2026-03-29T04:51:43.341Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:43.417Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:51:51.019Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:51:51.036Z] [log] [HMR] connected
+[2026-03-29T04:51:52.329Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:51:52.334Z] [log] [Fast Refresh] rebuilding
+[2026-03-29T04:51:53.521Z] [log] [Fast Refresh] done in 1293ms
+[2026-03-29T04:51:53.521Z] [log] [Fast Refresh] done in 1288ms
+[2026-03-29T04:52:06.185Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:06.190Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:06.214Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:06.234Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:06.256Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:06.377Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:06.422Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:52:06.427Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:52:06.430Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:52:06.437Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-03-29T04:52:06.476Z] [log] [HMR] connected
+[2026-03-29T04:52:06.791Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:06.796Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:06.796Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:06.796Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:06.879Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:06.879Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:06.900Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:06.946Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-03-29T04:52:06.959Z] [warning] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[2026-03-29T04:52:06.979Z] [warning] No available adapters.
+[2026-03-29T04:52:06.979Z] [warning] THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.
+[2026-03-29T04:52:06.979Z] [error] [viewer] Failed to initialize renderer for post-processing. TypeError: Cannot read properties of null (reading 'getSupportedExtensions')
+    at new WebGLExtensions (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47199:42)
+    at WebGLBackend.init (http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:47879:27)
+    at http://localhost:3000/_next/static/chunks/node_modules_three_build_three_webgpu_01.b56z.js:40946:39
+[2026-03-29T04:52:07.108Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:07.108Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:07.108Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:07.109Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:07.111Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:07.118Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-29T04:52:08.739Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)

@@ -1,7 +1,9 @@
 export type {
   BuildingEvent,
   CameraControlEvent,
+  CameraControlFitSceneEvent,
   CeilingEvent,
+  ColumnEvent,
   DoorEvent,
   EventSuffix,
   FenceEvent,
@@ -13,6 +15,7 @@ export type {
   RoofSegmentEvent,
   SiteEvent,
   SlabEvent,
+  SpawnEvent,
   StairEvent,
   StairSegmentEvent,
   WallEvent,
@@ -32,49 +35,50 @@ export {
 export { useSpatialQuery } from './hooks/spatial-grid/use-spatial-query'
 export { loadAssetUrl, saveAsset } from './lib/asset-storage'
 export {
+  clampDoorOperationState,
+  getDoorRenderOpenAmount,
+  getGarageVisibleOpeningRatio,
+  isOperationDoorType,
+  SECTIONAL_GARAGE_RENDER_OPEN_SCALE,
+} from './lib/door-operation'
+export { getRenderableSlabPolygon } from './lib/slab-polygon'
+export {
   detectSpacesForLevel,
   initSpaceDetectionSync,
   type Space,
   wallTouchesOthers,
 } from './lib/space-detection'
-export { baseMaterial, glassMaterial } from './materials'
 export {
   getCatalogMaterialById,
   getLibraryMaterialIdFromRef,
   getMaterialPresetByRef,
-  getMaterialsForTarget,
+  getMaterialsForCategory,
   LIBRARY_MATERIAL_REF_PREFIX,
   MATERIAL_CATALOG,
+  MATERIAL_CATEGORIES,
   type MaterialCatalogItem,
+  type MaterialCategory,
   toLibraryMaterialRef,
 } from './material-library'
 export * from './schema'
-export {
-  type ControlValue,
-  type ItemInteractiveState,
-  useInteractive,
-} from './store/use-interactive'
 export {
   getSceneHistoryPauseDepth,
   pauseSceneHistory,
   resetSceneHistoryPauseDepth,
   resumeSceneHistory,
 } from './store/history-control'
-export { default as useLiveTransforms, type LiveTransform } from './store/use-live-transforms'
-export { FenceSystem } from './systems/fence/fence-system'
-export { clearSceneHistory, default as useScene } from './store/use-scene'
-export { CeilingSystem } from './systems/ceiling/ceiling-system'
-export { DoorSystem } from './systems/door/door-system'
-export { ItemSystem } from './systems/item/item-system'
-export { RoofSystem } from './systems/roof/roof-system'
-export { SlabSystem } from './systems/slab/slab-system'
-export { StairSystem } from './systems/stair/stair-system'
 export {
-  DEFAULT_WALL_HEIGHT,
-  DEFAULT_WALL_THICKNESS,
-  getWallPlanFootprint,
-  getWallThickness,
-} from './systems/wall/wall-footprint'
+  type ControlValue,
+  type DoorAnimationState,
+  type DoorInteractiveState,
+  type ItemInteractiveState,
+  useInteractive,
+  type WindowAnimationState,
+  type WindowInteractiveState,
+} from './store/use-interactive'
+export { default as useLiveTransforms, type LiveTransform } from './store/use-live-transforms'
+export { clearSceneHistory, default as useScene } from './store/use-scene'
+export { syncAutoStairOpenings } from './systems/stair/stair-opening-sync'
 export {
   getClampedWallCurveOffset,
   getMaxWallCurveOffset,
@@ -89,15 +93,20 @@ export {
   sampleWallCenterline,
 } from './systems/wall/wall-curve'
 export {
+  DEFAULT_WALL_HEIGHT,
+  DEFAULT_WALL_THICKNESS,
+  getWallPlanFootprint,
+  getWallThickness,
+} from './systems/wall/wall-footprint'
+export {
   calculateLevelMiters,
+  getAdjacentWallIds,
   getWallMiterBoundaryPoints,
   type Point2D,
-  type WallMiterBoundaryPoints,
   pointToKey,
+  type WallMiterBoundaryPoints,
   type WallMiterData,
 } from './systems/wall/wall-mitering'
-export { WallSystem } from './systems/wall/wall-system'
-export { WindowSystem } from './systems/window/window-system'
 export type { SceneGraph } from './utils/clone-scene-graph'
 export { cloneLevelSubtree, cloneSceneGraph, forkSceneGraph } from './utils/clone-scene-graph'
 export { isObject } from './utils/types'

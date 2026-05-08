@@ -1,0 +1,22 @@
+{
+  "date": "2026-03-28",
+  "url": "http://localhost:3002",
+  "healthScore": 88,
+  "issues": [
+    { "id": "ISSUE-001", "title": "WebGPU depth texture sample count mismatch warnings", "severity": "medium", "category": "console" },
+    { "id": "ISSUE-002", "title": "AI chat send button requires Enter key", "severity": "medium", "category": "functional" },
+    { "id": "ISSUE-003", "title": "TSConfig JSX diagnostic warnings in ai-chat-panel", "severity": "medium", "category": "visual" },
+    { "id": "ISSUE-004", "title": "Third-party extension UI overlay", "severity": "low", "category": "visual" },
+    { "id": "ISSUE-005", "title": "THREE.Clock deprecation warning", "severity": "low", "category": "console" }
+  ],
+  "categoryScores": {
+    "console": 85,
+    "links": 100,
+    "visual": 90,
+    "functional": 90,
+    "ux": 85,
+    "performance": 90,
+    "content": 95,
+    "accessibility": 80
+  }
+}

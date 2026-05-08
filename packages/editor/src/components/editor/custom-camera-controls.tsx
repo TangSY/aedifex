@@ -1,7 +1,12 @@
 'use client'
-
-import { type CameraControlEvent, emitter, sceneRegistry, useScene } from '@aedifex/core'
-import { useViewer, WalkthroughControls, ZONE_LAYER } from '@aedifex/viewer'
+import {
+  type CameraControlEvent,
+  type CameraControlFitSceneEvent,
+  emitter,
+  sceneRegistry,
+  useScene,
+} from '@pascal-app/core'
+import { useViewer, ZONE_LAYER } from '@pascal-app/viewer'
 import { CameraControls, CameraControlsImpl } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
@@ -22,7 +27,7 @@ const DEBUG_MAX_POLAR_ANGLE = Math.PI - 0.05
 export const CustomCameraControls = () => {
   const controls = useRef<CameraControlsImpl>(null!)
   const isPreviewMode = useEditor((s) => s.isPreviewMode)
-  const walkthroughMode = useViewer((s) => s.walkthroughMode)
+  const isFirstPersonMode = useEditor((s) => s.isFirstPersonMode)
   const allowUndergroundCamera = useEditor((s) => s.allowUndergroundCamera)
   const selection = useViewer((s) => s.selection)
   const currentLevelId = selection.levelId
@@ -111,6 +116,49 @@ export const CustomCameraControls = () => {
       wheel: wheelAction,
     }
   }, [cameraMode, isPreviewMode])
+
+  // Touch gestures (mobile / trackpad).
+  // - One finger drag    → rotate by default (much easier on a phone), but
+  //                        falls back to NONE while the user is actively
+  //                        placing/moving something OR in box-select mode,
+  //                        so the editor's pointer handlers (place tool,
+  //                        drag-to-move endpoint, marquee selection drag)
+  //                        keep priority over the camera.
+  //                        In preview mode it's TOUCH_TRUCK (pan), matching
+  //                        preview's left = SCREEN_PAN.
+  // - Two finger pinch   → zoom + pan together (TOUCH_DOLLY_TRUCK for
+  //                        perspective, TOUCH_ZOOM_TRUCK for orthographic).
+  // - Three finger drag  → rotate, so the camera is always orbitable even
+  //                        when one-finger is suppressed by an active
+  //                        editor action.
+  const tool = useEditor((s) => s.tool)
+  const mode = useEditor((s) => s.mode)
+  const selectionTool = useEditor((s) => s.floorplanSelectionTool)
+  const movingNode = useEditor((s) => s.movingNode)
+  const movingWallEndpoint = useEditor((s) => s.movingWallEndpoint)
+  const movingFenceEndpoint = useEditor((s) => s.movingFenceEndpoint)
+  const isBoxSelectActive = mode === 'select' && selectionTool === 'marquee'
+  const isInteracting = Boolean(
+    tool || movingNode || movingWallEndpoint || movingFenceEndpoint || isBoxSelectActive,
+  )
+  const touches = useMemo(() => {
+    const twoFingerAction =
+      cameraMode === 'orthographic'
+        ? CameraControlsImpl.ACTION.TOUCH_ZOOM_TRUCK
+        : CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK
+
+    const oneFingerAction = isPreviewMode
+      ? CameraControlsImpl.ACTION.TOUCH_TRUCK
+      : isInteracting
+        ? CameraControlsImpl.ACTION.NONE
+        : CameraControlsImpl.ACTION.TOUCH_ROTATE
+
+    return {
+      one: oneFingerAction,
+      two: twoFingerAction,
+      three: CameraControlsImpl.ACTION.TOUCH_ROTATE,
+    }
+  }, [cameraMode, isPreviewMode, isInteracting])
 
   useEffect(() => {
     const keyState = {
@@ -340,12 +388,30 @@ export const CustomCameraControls = () => {
       focusNode(nodeId)
     }
 
+    const handleFitScene = ({ bounds }: CameraControlFitSceneEvent) => {
+      if (!controls.current || isPreviewMode) return
+      if (!bounds) {
+        // Restore default framing pose when no bounds were computed.
+        controls.current.setLookAt(20, 20, 20, 0, 0, 0, true)
+        return
+      }
+      const [cx, cz] = bounds.center
+      const [w, d] = bounds.size
+      // Use the longer horizontal extent to size the orbit radius so the whole
+      // footprint sits in view regardless of aspect ratio.
+      const maxExtent = Math.max(w, d)
+      const distance = Math.max(maxExtent * 1.4, 15)
+      const height = Math.max(maxExtent * 0.8, 10)
+      controls.current.setLookAt(cx + distance * 0.7, height, cz + distance * 0.7, cx, 0, cz, true)
+    }
+
     emitter.on('camera-controls:capture', handleNodeCapture)
     emitter.on('camera-controls:focus', handleNodeFocus)
     emitter.on('camera-controls:view', handleNodeView)
     emitter.on('camera-controls:top-view', handleTopView)
     emitter.on('camera-controls:orbit-cw', handleOrbitCW)
     emitter.on('camera-controls:orbit-ccw', handleOrbitCCW)
+    emitter.on('camera-controls:fit-scene', handleFitScene)
 
     return () => {
       emitter.off('camera-controls:capture', handleNodeCapture)
@@ -354,8 +420,9 @@ export const CustomCameraControls = () => {
       emitter.off('camera-controls:top-view', handleTopView)
       emitter.off('camera-controls:orbit-cw', handleOrbitCW)
       emitter.off('camera-controls:orbit-ccw', handleOrbitCCW)
+      emitter.off('camera-controls:fit-scene', handleFitScene)
     }
-  }, [focusNode])
+  }, [focusNode, isPreviewMode])
 
   const onTransitionStart = useCallback(() => {
     useViewer.getState().setCameraDragging(true)
@@ -365,8 +432,8 @@ export const CustomCameraControls = () => {
     useViewer.getState().setCameraDragging(false)
   }, [])
 
-  if (walkthroughMode) {
-    return <WalkthroughControls />
+  if (isFirstPersonMode) {
+    return null
   }
 
   return (
@@ -382,6 +449,7 @@ export const CustomCameraControls = () => {
       onTransitionStart={onTransitionStart}
       ref={controls}
       restThreshold={0.01}
+      touches={touches}
     />
   )
 }

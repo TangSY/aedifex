@@ -46,10 +46,5 @@ yarn-error.log*
 og-test
 .env*.local
 
-# AI assistant local config (not for repo)
-.claude/
-.cursor/
-.gstack/
-CLAUDE.md
-AGENTS.md
-CHANGELOG.md
+# Worktrees
+.worktrees

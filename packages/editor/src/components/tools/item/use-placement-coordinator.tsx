@@ -1,4 +1,4 @@
-import type { AssetInput } from '@aedifex/core'
+import type { AssetInput } from '@pascal-app/core'
 import {
   type AnyNodeId,
   type CeilingEvent,
@@ -14,17 +14,21 @@ import {
   useSpatialQuery,
   type WallEvent,
   type WallNode,
-} from '@aedifex/core'
-import { useViewer } from '@aedifex/viewer'
+} from '@pascal-app/core'
+import { useViewer } from '@pascal-app/viewer'
+import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  BoxGeometry,
-  EdgesGeometry,
+  Box3,
+  BufferGeometry,
   Euler,
+  Float32BufferAttribute,
   type Group,
   type LineSegments,
+  Matrix4,
   type Mesh,
+  type Object3D,
   PlaneGeometry,
   Quaternion,
   Vector3,
@@ -33,7 +37,8 @@ import { distance, smoothstep, uv, vec2 } from 'three/tsl'
 import { LineBasicNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu'
 import { EDITOR_LAYER } from '../../../lib/constants'
 import { sfxEmitter } from '../../../lib/sfx-bus'
-import { snapToGrid } from './placement-math'
+import useEditor from '../../../store/use-editor'
+import { getGridAlignedDimensions, snapToGrid, snapUpToGridStep } from './placement-math'
 import {
   ceilingStrategy,
   checkCanPlace,
@@ -46,11 +51,279 @@ import type { DraftNodeHandle } from './use-draft-node'
 
 const DEFAULT_DIMENSIONS: [number, number, number] = [1, 1, 1]
 
+function formatMeasurement(value: number, unit: 'metric' | 'imperial') {
+  if (unit === 'imperial') {
+    const feet = value * 3.280_84
+    const wholeFeet = Math.floor(feet)
+    const inches = Math.round((feet - wholeFeet) * 12)
+    if (inches === 12) return `${wholeFeet + 1}'0"`
+    return `${wholeFeet}'${inches}"`
+  }
+  return `${Number.parseFloat(value.toFixed(2))}m`
+}
+
+type PreviewBounds = {
+  min: [number, number, number]
+  max: [number, number, number]
+  dimensions: [number, number, number]
+  center: [number, number, number]
+}
+
+/**
+ * Expand `bounds` outward so each axis is rounded up to the active grid step.
+ * The wireframe stays centered on the original bounds centre on each axis we
+ * expand, so an off-centre mesh bbox stays off-centre. Wall-side items keep
+ * `max.z = 0` (flush with the wall plane); the bottom (`min.y`) is preserved
+ * so the box still sits on the floor / attachment plane.
+ *
+ * Floor / ceiling / item-surface: X and Z expand; Y stays exact.
+ * Wall / wall-side: X and Y expand; Z stays exact.
+ */
+function expandBoundsToGrid(
+  bounds: PreviewBounds,
+  attachTo: AssetInput['attachTo'] | null | undefined,
+  step: number,
+): PreviewBounds {
+  const [w, h, d] = bounds.dimensions
+  const [cx, , cz] = bounds.center
+  const onWall = attachTo === 'wall' || attachTo === 'wall-side'
+  const expandedW = snapUpToGridStep(w, step)
+  const expandedH = onWall ? snapUpToGridStep(h, step) : h
+  const expandedD = onWall ? d : snapUpToGridStep(d, step)
+
+  const minX = cx - expandedW / 2
+  const maxX = cx + expandedW / 2
+  const minY = bounds.min[1]
+  const maxY = minY + expandedH
+
+  let minZ: number
+  let maxZ: number
+  let newCz: number
+  if (attachTo === 'wall-side') {
+    maxZ = 0
+    minZ = -expandedD
+    newCz = -expandedD / 2
+  } else {
+    minZ = cz - expandedD / 2
+    maxZ = cz + expandedD / 2
+    newCz = cz
+  }
+
+  return {
+    min: [minX, minY, minZ],
+    max: [maxX, maxY, maxZ],
+    dimensions: [expandedW, expandedH, expandedD],
+    center: [cx, (minY + maxY) / 2, newCz],
+  }
+}
+
+function getPreviewBoundsFromObject(object: Object3D | null): PreviewBounds | null {
+  if (!object) return null
+
+  object.updateWorldMatrix(true, true)
+
+  const inverseRootMatrix = new Matrix4().copy(object.matrixWorld).invert()
+  const localMatrix = new Matrix4()
+  const localBounds = new Box3()
+  const scratchBounds = new Box3()
+  const hasBounds = { current: false }
+  const registeredNodeObjects = new Set(sceneRegistry.nodes.values())
+
+  const expandBounds = (child: Object3D) => {
+    if (child !== object && registeredNodeObjects.has(child)) {
+      return
+    }
+
+    const mesh = child as Object3D & {
+      isMesh?: boolean
+      name?: string
+      geometry?: {
+        boundingBox: Box3 | null
+        computeBoundingBox?: () => void
+      }
+    }
+
+    if (mesh.isMesh && mesh.name !== 'cutout' && mesh.geometry) {
+      if (!mesh.geometry.boundingBox && mesh.geometry.computeBoundingBox) {
+        mesh.geometry.computeBoundingBox()
+      }
+
+      if (mesh.geometry.boundingBox) {
+        localMatrix.copy(inverseRootMatrix).multiply(mesh.matrixWorld)
+        scratchBounds.copy(mesh.geometry.boundingBox).applyMatrix4(localMatrix)
+        if (Number.isFinite(scratchBounds.min.x) && Number.isFinite(scratchBounds.max.x)) {
+          if (!hasBounds.current) {
+            localBounds.copy(scratchBounds)
+            hasBounds.current = true
+          } else {
+            localBounds.union(scratchBounds)
+          }
+        }
+      }
+    }
+
+    for (const grandchild of child.children) {
+      expandBounds(grandchild)
+    }
+  }
+
+  for (const child of object.children) {
+    expandBounds(child)
+  }
+
+  if (!hasBounds.current) return null
+
+  const size = new Vector3()
+  const center = new Vector3()
+  localBounds.getSize(size)
+  localBounds.getCenter(center)
+
+  if (size.x <= 0 || size.y <= 0 || size.z <= 0) {
+    return null
+  }
+
+  return {
+    min: [localBounds.min.x, localBounds.min.y, localBounds.min.z],
+    max: [localBounds.max.x, localBounds.max.y, localBounds.max.z],
+    dimensions: [size.x, size.y, size.z],
+    center: [center.x, center.y, center.z],
+  }
+}
+
+function getFallbackPreviewBounds(
+  item: import('@pascal-app/core').ItemNode | null,
+  asset: AssetInput,
+  attachTo: AssetInput['attachTo'],
+): PreviewBounds {
+  const dims = item ? getScaledDimensions(item) : (asset.dimensions ?? DEFAULT_DIMENSIONS)
+  return {
+    min: [-dims[0] / 2, 0, attachTo === 'wall-side' ? -dims[2] : -dims[2] / 2],
+    max: [dims[0] / 2, dims[1], attachTo === 'wall-side' ? 0 : dims[2] / 2],
+    dimensions: dims,
+    center: [0, dims[1] / 2, attachTo === 'wall-side' ? -dims[2] / 2 : 0],
+  }
+}
+
+function createLineGeometry(points: number[] = [0, 0, 0, 0, 0, 0]): BufferGeometry {
+  const geometry = new BufferGeometry()
+  geometry.setAttribute('position', new Float32BufferAttribute(points, 3))
+  return geometry
+}
+
+function getBoxEdgePoints(bounds: PreviewBounds): number[] {
+  const [width, height, depth] = bounds.dimensions
+  const [centerX, centerY, centerZ] = bounds.center
+  const minX = centerX - width / 2
+  const maxX = centerX + width / 2
+  const minY = centerY - height / 2
+  const maxY = centerY + height / 2
+  const minZ = centerZ - depth / 2
+  const maxZ = centerZ + depth / 2
+
+  return [
+    minX,
+    minY,
+    minZ,
+    maxX,
+    minY,
+    minZ,
+    maxX,
+    minY,
+    minZ,
+    maxX,
+    minY,
+    maxZ,
+    maxX,
+    minY,
+    maxZ,
+    minX,
+    minY,
+    maxZ,
+    minX,
+    minY,
+    maxZ,
+    minX,
+    minY,
+    minZ,
+
+    minX,
+    maxY,
+    minZ,
+    maxX,
+    maxY,
+    minZ,
+    maxX,
+    maxY,
+    minZ,
+    maxX,
+    maxY,
+    maxZ,
+    maxX,
+    maxY,
+    maxZ,
+    minX,
+    maxY,
+    maxZ,
+    minX,
+    maxY,
+    maxZ,
+    minX,
+    maxY,
+    minZ,
+
+    minX,
+    minY,
+    minZ,
+    minX,
+    maxY,
+    minZ,
+    maxX,
+    minY,
+    minZ,
+    maxX,
+    maxY,
+    minZ,
+    maxX,
+    minY,
+    maxZ,
+    maxX,
+    maxY,
+    maxZ,
+    minX,
+    minY,
+    maxZ,
+    minX,
+    maxY,
+    maxZ,
+  ]
+}
+
+function updateLineGeometry(ref: React.RefObject<LineSegments>, points: number[]) {
+  const geometry = ref.current?.geometry
+  if (!geometry) return
+
+  const attribute = geometry.getAttribute('position') as Float32BufferAttribute | undefined
+  if (!attribute || attribute.array.length !== points.length) {
+    geometry.setAttribute('position', new Float32BufferAttribute(points, 3))
+  } else {
+    attribute.set(points)
+    attribute.needsUpdate = true
+  }
+  geometry.computeBoundingSphere()
+}
+
 // Shared materials for placement cursor - we just change colors, not swap materials
 // Note: EdgesGeometry doesn't work with dashed lines, so using solid lines
 const edgeMaterial = new LineBasicNodeMaterial({
   color: 0xef_44_44, // red-500 (invalid)
   linewidth: 3,
+  depthTest: false,
+  depthWrite: false,
+})
+
+const measurementMaterial = new LineBasicNodeMaterial({
+  color: 0x0f_17_2a,
+  linewidth: 2,
   depthTest: false,
   depthWrite: false,
 })
@@ -82,6 +355,9 @@ export interface PlacementCoordinatorConfig {
 export function usePlacementCoordinator(config: PlacementCoordinatorConfig): React.ReactNode {
   const cursorGroupRef = useRef<Group>(null!)
   const edgesRef = useRef<LineSegments>(null!)
+  const measurementWidthRef = useRef<LineSegments>(null!)
+  const measurementDepthRef = useRef<LineSegments>(null!)
+  const measurementHeightRef = useRef<LineSegments>(null!)
   const basePlaneRef = useRef<Mesh>(null!)
   const gridPosition = useRef(new Vector3(0, 0, 0))
   const lastRawPos = useRef(new Vector3(0, 0, 0))
@@ -89,6 +365,9 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
     config.initialState ?? { surface: 'floor', wallId: null, ceilingId: null, surfaceItemId: null },
   )
   const shiftFreeRef = useRef(false)
+  const previewBoundsSignatureRef = useRef<string | null>(null)
+  const meshPreviewAppliedRef = useRef(false)
+  const [dimensionBounds, setDimensionBounds] = useState<PreviewBounds | null>(null)
 
   // Store config callbacks in refs to avoid re-running effect when they change
   const configRef = useRef(config)
@@ -96,10 +375,135 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
 
   const { canPlaceOnFloor, canPlaceOnWall, canPlaceOnCeiling } = useSpatialQuery()
   const { asset, draftNode } = config
+  const unit = useViewer((state) => state.unit)
+  const gridSnapStep = useEditor((s) => s.gridSnapStep)
+  const updatePreviewGeometry = (bounds: PreviewBounds) => {
+    const [width, height, depth] = bounds.dimensions
+    const [centerX, centerY, centerZ] = bounds.center
+    const signature = `${width.toFixed(4)}:${height.toFixed(4)}:${depth.toFixed(4)}:${centerX.toFixed(4)}:${centerY.toFixed(4)}:${centerZ.toFixed(4)}`
+
+    if (previewBoundsSignatureRef.current === signature) return
+    previewBoundsSignatureRef.current = signature
+
+    const nextBasePlaneGeometry = new PlaneGeometry(width, depth)
+    nextBasePlaneGeometry.rotateX(-Math.PI / 2)
+    nextBasePlaneGeometry.translate(centerX, 0.01, centerZ)
+
+    updateLineGeometry(edgesRef, getBoxEdgePoints(bounds))
+
+    const oldBasePlaneGeometry = basePlaneRef.current.geometry
+    basePlaneRef.current.geometry = nextBasePlaneGeometry
+    oldBasePlaneGeometry.dispose()
+  }
+
+  const updateDimensionGuides = (bounds: PreviewBounds) => {
+    setDimensionBounds((current) => {
+      if (
+        current &&
+        current.dimensions[0] === bounds.dimensions[0] &&
+        current.dimensions[1] === bounds.dimensions[1] &&
+        current.dimensions[2] === bounds.dimensions[2] &&
+        current.center[0] === bounds.center[0] &&
+        current.center[1] === bounds.center[1] &&
+        current.center[2] === bounds.center[2]
+      ) {
+        return current
+      }
+      return bounds
+    })
+
+    const [width, , depth] = bounds.dimensions
+    const [centerX, , centerZ] = bounds.center
+    const minX = centerX - width / 2
+    const maxX = centerX + width / 2
+    const minZ = centerZ - depth / 2
+    const maxZ = centerZ + depth / 2
+    const guideOffset = 0.18
+    const tick = 0.08
+    const y = 0.02
+
+    const widthPoints = [
+      minX,
+      y,
+      maxZ + guideOffset,
+      maxX,
+      y,
+      maxZ + guideOffset,
+
+      minX,
+      y,
+      maxZ + guideOffset - tick,
+      minX,
+      y,
+      maxZ + guideOffset + tick,
+
+      maxX,
+      y,
+      maxZ + guideOffset - tick,
+      maxX,
+      y,
+      maxZ + guideOffset + tick,
+    ]
+
+    const depthPoints = [
+      maxX + guideOffset,
+      y,
+      minZ,
+      maxX + guideOffset,
+      y,
+      maxZ,
+
+      maxX + guideOffset - tick,
+      y,
+      minZ,
+      maxX + guideOffset + tick,
+      y,
+      minZ,
+
+      maxX + guideOffset - tick,
+      y,
+      maxZ,
+      maxX + guideOffset + tick,
+      y,
+      maxZ,
+    ]
+
+    const heightPoints = [
+      minX - guideOffset,
+      0,
+      minZ,
+      minX - guideOffset,
+      bounds.dimensions[1],
+      minZ,
+
+      minX - guideOffset - tick,
+      0,
+      minZ,
+      minX - guideOffset + tick,
+      0,
+      minZ,
+
+      minX - guideOffset - tick,
+      bounds.dimensions[1],
+      minZ,
+      minX - guideOffset + tick,
+      bounds.dimensions[1],
+      minZ,
+    ]
+
+    const applyPoints = (ref: React.RefObject<LineSegments>, points: number[]) => {
+      updateLineGeometry(ref, points)
+    }
+
+    applyPoints(measurementWidthRef, widthPoints)
+    applyPoints(measurementDepthRef, depthPoints)
+    applyPoints(measurementHeightRef, heightPoints)
+  }
 
   useEffect(() => {
     if (!asset) return
     useScene.temporal.getState().pause()
+    meshPreviewAppliedRef.current = false
 
     const validators = { canPlaceOnFloor, canPlaceOnWall, canPlaceOnCeiling }
 
@@ -110,6 +514,10 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
       ceilingId: null,
       surfaceItemId: null,
     }
+    if (!asset.attachTo && placementState.current.surface === 'floor') {
+      gridPosition.current.y = 0
+      cursorGroupRef.current.position.y = 0
+    }
 
     // ---- Helpers ----
 
@@ -119,6 +527,7 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
       draftItem: draftNode.current,
       gridPosition: gridPosition.current,
       state: { ...placementState.current },
+      currentCursorRotationY: cursorGroupRef.current.rotation.y,
     })
 
     const getActiveValidators = () =>
@@ -236,9 +645,11 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
 
       previousGridPos = [...result.gridPosition]
       gridPosition.current.set(...result.gridPosition)
-      // Only update X and Z for cursor - useFrame will handle Y (slab elevation)
-      cursorGroupRef.current.position.x = result.cursorPosition[0]
-      cursorGroupRef.current.position.z = result.cursorPosition[2]
+      cursorGroupRef.current.position.set(
+        result.cursorPosition[0],
+        result.cursorPosition[1],
+        result.cursorPosition[2],
+      )
 
       const draft = draftNode.current
       if (draft) draft.position = result.gridPosition
@@ -463,6 +874,32 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
 
     // ---- Item Surface Handlers ----
 
+    const detachItemSurfaceToFloor = (event: ItemEvent) => {
+      const buildingLocalPoint = worldToBuildingLocal(
+        event.position[0],
+        event.position[1],
+        event.position[2],
+      )
+      const wx = Math.round(buildingLocalPoint.x * 2) / 2
+      const wz = Math.round(buildingLocalPoint.z * 2) / 2
+      const floorPos: [number, number, number] = [wx, 0, wz]
+
+      Object.assign(placementState.current, { surface: 'floor', surfaceItemId: null })
+      gridPosition.current.set(wx, 0, wz)
+      cursorGroupRef.current.position.set(wx, 0, wz)
+
+      const draft = draftNode.current
+      if (draft) {
+        draft.position = floorPos
+        useScene.getState().updateNode(draft.id, {
+          parentId: useViewer.getState().selection.levelId as string,
+          position: floorPos,
+        })
+      }
+
+      revalidate()
+    }
+
     const onItemEnter = (event: ItemEvent) => {
       if (event.node.id === draftNode.current?.id) return
       const result = itemSurfaceStrategy.enter(getContext(), event)
@@ -492,6 +929,24 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
         applyTransition(enterResult)
         if (draftNode.current && enterResult.nodeUpdate.parentId) {
           useScene.getState().updateNode(draftNode.current.id, enterResult.nodeUpdate)
+        }
+        return
+      }
+
+      if (ctx.state.surface === 'item-surface' && event.node.id !== ctx.state.surfaceItemId) {
+        const enterResult = itemSurfaceStrategy.enter(
+          { ...ctx, state: { ...ctx.state, surface: 'floor', surfaceItemId: null } },
+          event,
+        )
+
+        event.stopPropagation()
+        if (enterResult) {
+          applyTransition(enterResult)
+          if (draftNode.current && enterResult.nodeUpdate.parentId) {
+            useScene.getState().updateNode(draftNode.current.id, enterResult.nodeUpdate)
+          }
+        } else {
+          detachItemSurfaceToFloor(event)
         }
         return
       }
@@ -537,26 +992,12 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
 
       event.stopPropagation()
 
-      // Transition back to floor using building-local position
-      const wx = Math.round(event.localPosition[0] * 2) / 2
-      const wz = Math.round(event.localPosition[2] * 2) / 2
-      const floorPos: [number, number, number] = [wx, 0, wz]
-
-      Object.assign(placementState.current, { surface: 'floor', surfaceItemId: null })
-      gridPosition.current.set(wx, 0, wz)
-      cursorGroupRef.current.position.x = wx
-      cursorGroupRef.current.position.z = wz
-
-      const draft = draftNode.current
-      if (draft) {
-        draft.position = floorPos
-        useScene.getState().updateNode(draft.id, {
-          parentId: useViewer.getState().selection.levelId as string,
-          position: floorPos,
-        })
-      }
-
-      revalidate()
+      // `event.localPosition` from useNodeEvents is in the LEAVING item's
+      // local space (the sofa/table the draft is detaching from), not
+      // building-local. Convert from world via worldToBuildingLocal instead,
+      // otherwise the wireframe jumps to a surface-local-coordinate ghost
+      // position until the next mouse move.
+      detachItemSurfaceToFloor(event)
     }
 
     const onItemClick = (event: ItemEvent) => {
@@ -614,7 +1055,7 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
         return
       }
 
-      lastRawPos.current.set(event.position[0], event.position[1], event.position[2])
+      lastRawPos.current.set(event.localPosition[0], event.localPosition[1], event.localPosition[2])
       const result = ceilingStrategy.move(getContext(), event)
       if (!result) return
 
@@ -825,12 +1266,21 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
     // ---- Bounding box geometry ----
 
     const draft = draftNode.current
-    const dims = draft ? getScaledDimensions(draft) : (asset.dimensions ?? DEFAULT_DIMENSIONS)
-    const boxGeometry = new BoxGeometry(dims[0], dims[1], dims[2])
-    const wallSideZOffset = asset.attachTo === 'wall-side' ? -dims[2] / 2 : 0
-    boxGeometry.translate(0, dims[1] / 2, wallSideZOffset)
-    const edgesGeometry = new EdgesGeometry(boxGeometry)
-    edgesRef.current.geometry = edgesGeometry
+    const fallbackBounds = expandBoundsToGrid(
+      getFallbackPreviewBounds(draft, asset, asset.attachTo),
+      asset.attachTo,
+      gridSnapStep,
+    )
+    const previewBounds = draft
+      ? expandBoundsToGrid(
+          getPreviewBoundsFromObject(sceneRegistry.nodes.get(draft.id) ?? null) ??
+            getFallbackPreviewBounds(draft, asset, asset.attachTo),
+          asset.attachTo,
+          gridSnapStep,
+        )
+      : fallbackBounds
+    updatePreviewGeometry(previewBounds)
+    updateDimensionGuides(previewBounds)
 
     // ---- Undo protection ----
     // Undo replaces the entire `nodes` object with a previous snapshot, which doesn't
@@ -874,6 +1324,7 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
 
     return () => {
       tearingDown = true
+      meshPreviewAppliedRef.current = false
       unsubDraftWatch()
       // Clear live transform for any remaining draft
       if (draftNode.current) {
@@ -902,7 +1353,25 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
     }
   }, [asset, canPlaceOnFloor, canPlaceOnWall, canPlaceOnCeiling, draftNode])
 
-  // Reparent floor draft to the new level when the user switches levels mid-placement.
+  // Refresh wireframe when the grid step changes mid-placement so the green/red
+  // box snaps to the new cell size right away.
+  useEffect(() => {
+    if (!asset) return
+    const draft = draftNode.current
+    const fallbackBounds = expandBoundsToGrid(
+      getFallbackPreviewBounds(draft, asset, asset.attachTo),
+      asset.attachTo,
+      gridSnapStep,
+    )
+    const meshBounds = draft
+      ? getPreviewBoundsFromObject(sceneRegistry.nodes.get(draft.id) ?? null)
+      : null
+    const previewBounds = meshBounds
+      ? expandBoundsToGrid(meshBounds, asset.attachTo, gridSnapStep)
+      : fallbackBounds
+    updatePreviewGeometry(previewBounds)
+    updateDimensionGuides(previewBounds)
+  }, [gridSnapStep, asset, draftNode])
   // Wall/ceiling items are managed by their own surface entry events (ensureDraft / reparent).
   const viewerLevelId = useViewer((s) => s.selection.levelId)
   useEffect(() => {
@@ -919,6 +1388,19 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
     if (!draftNode.current) return
     const mesh = sceneRegistry.nodes.get(draftNode.current.id)
     if (!mesh) return
+    if (!meshPreviewAppliedRef.current) {
+      const previewBounds = getPreviewBoundsFromObject(mesh)
+      if (previewBounds) {
+        const expandedBounds = expandBoundsToGrid(
+          previewBounds,
+          asset.attachTo,
+          useEditor.getState().gridSnapStep,
+        )
+        updatePreviewGeometry(expandedBounds)
+        updateDimensionGuides(expandedBounds)
+        meshPreviewAppliedRef.current = true
+      }
+    }
 
     // Hide wall/ceiling-attached items when between surfaces (only cursor visible)
     if (asset.attachTo && placementState.current.surface === 'floor') {
@@ -942,36 +1424,162 @@ export function usePlacementCoordinator(config: PlacementCoordinatorConfig): Rea
         const slabElevation = spatialGridManager.getSlabElevationForItem(
           levelId,
           [gridPosition.current.x, gridPosition.current.y, gridPosition.current.z],
-          getScaledDimensions(draftNode.current),
+          getGridAlignedDimensions(
+            getScaledDimensions(draftNode.current),
+            draftNode.current.asset.attachTo,
+          ),
           draftNode.current.rotation,
         )
         mesh.position.y = slabElevation
-        // Cursor group is at the world root (not inside a level group), so add the
-        // level group's current world Y to convert from level-local to world space.
-        const levelGroup = sceneRegistry.nodes.get(levelId as AnyNodeId)
-        cursorGroupRef.current.position.y = slabElevation + (levelGroup?.position.y ?? 0)
       }
     }
   })
 
   const initialDraft = draftNode.current
-  const dims = initialDraft
+  const initialAttachTo = config.asset?.attachTo
+  const rawDims = initialDraft
     ? getScaledDimensions(initialDraft)
     : (config.asset?.dimensions ?? DEFAULT_DIMENSIONS)
-  const initialBoxGeometry = new BoxGeometry(dims[0], dims[1], dims[2])
-  const wallSideZOffset = config.asset?.attachTo === 'wall-side' ? -dims[2] / 2 : 0
-  initialBoxGeometry.translate(0, dims[1] / 2, wallSideZOffset)
+  const dims = getGridAlignedDimensions(rawDims, initialAttachTo, gridSnapStep)
+  const wallSideZOffset = initialAttachTo === 'wall-side' ? -dims[2] / 2 : 0
+  const initialDimensionBounds = expandBoundsToGrid(
+    getFallbackPreviewBounds(initialDraft, config.asset!, initialAttachTo),
+    initialAttachTo,
+    gridSnapStep,
+  )
+  const initialEdgeGeometry = useMemo(
+    () => createLineGeometry(getBoxEdgePoints(initialDimensionBounds)),
+    [
+      initialDimensionBounds.center[0],
+      initialDimensionBounds.center[1],
+      initialDimensionBounds.center[2],
+      initialDimensionBounds.dimensions[0],
+      initialDimensionBounds.dimensions[1],
+      initialDimensionBounds.dimensions[2],
+    ],
+  )
+  const basePlaneGeometry = useMemo(() => {
+    const geometry = new PlaneGeometry(dims[0], dims[2])
+    geometry.rotateX(-Math.PI / 2)
+    geometry.translate(0, 0.01, wallSideZOffset)
+    return geometry
+  }, [dims[0], dims[2], wallSideZOffset])
+  const initialWidthGuideGeometry = useMemo(() => createLineGeometry(), [])
+  const initialDepthGuideGeometry = useMemo(() => createLineGeometry(), [])
+  const initialHeightGuideGeometry = useMemo(() => createLineGeometry(), [])
+  const currentDimensionBounds = dimensionBounds ?? initialDimensionBounds
+  const widthLabel = formatMeasurement(currentDimensionBounds.dimensions[0], unit)
+  const depthLabel = formatMeasurement(currentDimensionBounds.dimensions[2], unit)
+  const heightLabel = formatMeasurement(currentDimensionBounds.dimensions[1], unit)
+  const widthLabelPosition: [number, number, number] = [
+    currentDimensionBounds.center[0],
+    0.04,
+    currentDimensionBounds.center[2] + currentDimensionBounds.dimensions[2] / 2 + 0.24,
+  ]
+  const depthLabelPosition: [number, number, number] = [
+    currentDimensionBounds.center[0] + currentDimensionBounds.dimensions[0] / 2 + 0.24,
+    0.04,
+    currentDimensionBounds.center[2],
+  ]
+  const heightLabelPosition: [number, number, number] = [
+    currentDimensionBounds.center[0] - currentDimensionBounds.dimensions[0] / 2 - 0.24,
+    currentDimensionBounds.dimensions[1] / 2,
+    currentDimensionBounds.center[2] - currentDimensionBounds.dimensions[2] / 2,
+  ]
 
-  // Base plane geometry (colored rectangle on the ground)
-  const basePlaneGeometry = new PlaneGeometry(dims[0], dims[2])
-  basePlaneGeometry.rotateX(-Math.PI / 2) // Make it horizontal
-  basePlaneGeometry.translate(0, 0.01, wallSideZOffset) // Slightly above ground to avoid z-fighting
+  const measurementContent = (
+    <>
+      <lineSegments
+        layers={EDITOR_LAYER}
+        geometry={initialWidthGuideGeometry}
+        material={measurementMaterial}
+        ref={measurementWidthRef}
+        renderOrder={998}
+      />
+      <lineSegments
+        layers={EDITOR_LAYER}
+        geometry={initialDepthGuideGeometry}
+        material={measurementMaterial}
+        ref={measurementDepthRef}
+        renderOrder={998}
+      />
+      <lineSegments
+        layers={EDITOR_LAYER}
+        geometry={initialHeightGuideGeometry}
+        material={measurementMaterial}
+        ref={measurementHeightRef}
+        renderOrder={998}
+      />
+      <Html center position={widthLabelPosition} style={{ pointerEvents: 'none' }}>
+        <div
+          style={{
+            background: 'rgba(15, 23, 42, 0.86)',
+            border: '1px solid rgba(15, 23, 42, 0.65)',
+            borderRadius: '999px',
+            color: '#f8fafc',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+            fontSize: '11px',
+            fontWeight: 600,
+            lineHeight: 1,
+            padding: '4px 8px',
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {widthLabel}
+        </div>
+      </Html>
+      <Html center position={depthLabelPosition} style={{ pointerEvents: 'none' }}>
+        <div
+          style={{
+            background: 'rgba(15, 23, 42, 0.86)',
+            border: '1px solid rgba(15, 23, 42, 0.65)',
+            borderRadius: '999px',
+            color: '#f8fafc',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+            fontSize: '11px',
+            fontWeight: 600,
+            lineHeight: 1,
+            padding: '4px 8px',
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {depthLabel}
+        </div>
+      </Html>
+      <Html center position={heightLabelPosition} style={{ pointerEvents: 'none' }}>
+        <div
+          style={{
+            background: 'rgba(15, 23, 42, 0.86)',
+            border: '1px solid rgba(15, 23, 42, 0.65)',
+            borderRadius: '999px',
+            color: '#f8fafc',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+            fontSize: '11px',
+            fontWeight: 600,
+            lineHeight: 1,
+            padding: '4px 8px',
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {heightLabel}
+        </div>
+      </Html>
+    </>
+  )
 
   return (
     <group ref={cursorGroupRef}>
-      <lineSegments layers={EDITOR_LAYER} material={edgeMaterial} ref={edgesRef} renderOrder={999}>
-        <edgesGeometry args={[initialBoxGeometry]} />
-      </lineSegments>
+      <lineSegments
+        geometry={initialEdgeGeometry}
+        layers={EDITOR_LAYER}
+        material={edgeMaterial}
+        ref={edgesRef}
+        renderOrder={999}
+      />
+      {measurementContent}
       <mesh
         geometry={basePlaneGeometry}
         layers={EDITOR_LAYER}

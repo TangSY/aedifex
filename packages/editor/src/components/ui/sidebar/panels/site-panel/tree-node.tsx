@@ -56,12 +56,14 @@ export function focusTreeNode(nodeId: AnyNodeId) {
 import { cn } from '../../../../../lib/utils'
 import { BuildingTreeNode } from './building-tree-node'
 import { CeilingTreeNode } from './ceiling-tree-node'
+import { ColumnTreeNode } from './column-tree-node'
 import { DoorTreeNode } from './door-tree-node'
 import { FenceTreeNode } from './fence-tree-node'
 import { ItemTreeNode } from './item-tree-node'
 import { LevelTreeNode } from './level-tree-node'
 import { RoofTreeNode } from './roof-tree-node'
 import { SlabTreeNode } from './slab-tree-node'
+import { SpawnTreeNode } from './spawn-tree-node'
 import { StairTreeNode } from './stair-tree-node'
 import { WallTreeNode } from './wall-tree-node'
 import { WindowTreeNode } from './window-tree-node'
@@ -80,13 +82,17 @@ export const TreeNode = memo(function TreeNode({ nodeId, depth = 0, isLast }: Tr
 
   switch (nodeType) {
     case 'building':
-      return <BuildingTreeNode depth={depth} isLast={isLast} nodeId={nodeId} />
+      return <BuildingTreeNode depth={depth} isLast={isLast} nodeId={nodeId as `building_${string}`} />
     case 'ceiling':
       return <CeilingTreeNode depth={depth} isLast={isLast} nodeId={nodeId} />
+    case 'column':
+      return <ColumnTreeNode depth={depth} isLast={isLast} nodeId={nodeId} />
     case 'level':
-      return <LevelTreeNode depth={depth} isLast={isLast} nodeId={nodeId} />
+      return <LevelTreeNode depth={depth} isLast={isLast} nodeId={nodeId as `level_${string}`} />
     case 'slab':
       return <SlabTreeNode depth={depth} isLast={isLast} nodeId={nodeId} />
+    case 'spawn':
+      return <SpawnTreeNode depth={depth} isLast={isLast} nodeId={nodeId as `spawn_${string}`} />
     case 'wall':
       return <WallTreeNode depth={depth} isLast={isLast} nodeId={nodeId} />
     case 'fence':
@@ -102,7 +108,7 @@ export const TreeNode = memo(function TreeNode({ nodeId, depth = 0, isLast }: Tr
     case 'window':
       return <WindowTreeNode depth={depth} isLast={isLast} nodeId={nodeId} />
     case 'zone':
-      return <ZoneTreeNode depth={depth} isLast={isLast} nodeId={nodeId} />
+      return <ZoneTreeNode depth={depth} isLast={isLast} nodeId={nodeId as `zone_${string}`} />
     default:
       return null
   }

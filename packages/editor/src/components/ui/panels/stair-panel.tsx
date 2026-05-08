@@ -3,16 +3,12 @@
 import {
   type AnyNode,
   type AnyNodeId,
-  getEffectiveStairSurfaceMaterial,
   type LevelNode,
-  type MaterialSchema,
   type StairNode,
   type StairRailingMode,
-  type StairSurfaceMaterialRole,
   type StairSlabOpeningMode,
   type StairTopLandingMode,
   type StairType,
-  StairNode as StairNodeSchema,
   type StairSegmentNode,
   StairSegmentNode as StairSegmentNodeSchema,
   useScene,
@@ -20,44 +16,18 @@ import {
 import { useViewer } from '@aedifex/viewer'
 import { Copy, Move, Plus, Trash2 } from 'lucide-react'
 import { useCallback } from 'react'
+import { duplicateStairSubtree } from '../../../lib/stair-duplication'
 import { useShallow } from 'zustand/react/shallow'
 import { sfxEmitter } from '../../../lib/sfx-bus'
 import useEditor from '../../../store/use-editor'
 import { DEFAULT_SPIRAL_STAIR_SWEEP_ANGLE } from '../../tools/stair/stair-defaults'
 import { ActionButton, ActionGroup } from '../controls/action-button'
-import { MaterialPicker } from '../controls/material-picker'
 import { MetricControl } from '../controls/metric-control'
 import { PanelSection } from '../controls/panel-section'
 import { SegmentedControl } from '../controls/segmented-control'
 import { SliderControl } from '../controls/slider-control'
 import { ToggleControl } from '../controls/toggle-control'
 import { PanelWrapper } from './panel-wrapper'
-
-function buildStairSurfaceMaterialPatch(
-  node: StairNode,
-  targetRole: StairSurfaceMaterialRole,
-  material: MaterialSchema | undefined,
-  materialPreset: string | undefined,
-): Partial<StairNode> {
-  const nextSurfaceMaterial = { material, materialPreset }
-  const nextRailing =
-    targetRole === 'railing' ? nextSurfaceMaterial : getEffectiveStairSurfaceMaterial(node, 'railing')
-  const nextTread =
-    targetRole === 'tread' ? nextSurfaceMaterial : getEffectiveStairSurfaceMaterial(node, 'tread')
-  const nextSide =
-    targetRole === 'side' ? nextSurfaceMaterial : getEffectiveStairSurfaceMaterial(node, 'side')
-
-  return {
-    railingMaterial: nextRailing.material,
-    railingMaterialPreset: nextRailing.materialPreset,
-    treadMaterial: nextTread.material,
-    treadMaterialPreset: nextTread.materialPreset,
-    sideMaterial: nextSide.material,
-    sideMaterialPreset: nextSide.materialPreset,
-    material: undefined,
-    materialPreset: undefined,
-  }
-}
 
 const RAILING_MODE_OPTIONS: { label: string; value: StairRailingMode }[] = [
   { label: 'None', value: 'none' },
@@ -88,9 +58,7 @@ export function StairPanel() {
   const setSelection = useViewer((s) => s.setSelection)
   const updateNode = useScene((s) => s.updateNode)
   const createNode = useScene((s) => s.createNode)
-  const createNodes = useScene((s) => s.createNodes)
   const setMovingNode = useEditor((s) => s.setMovingNode)
-  const selectedMaterialTarget = useEditor((s) => s.selectedMaterialTarget)
 
   const node = useScene((s) =>
     selectedId ? (s.nodes[selectedId as AnyNode['id']] as StairNode | undefined) : undefined,
@@ -119,33 +87,6 @@ export function StairPanel() {
       updateNode(selectedId as AnyNode['id'], updates)
     },
     [selectedId, updateNode],
-  )
-
-  const materialTargetRole =
-    selectedMaterialTarget &&
-    selectedMaterialTarget.nodeId === node?.id &&
-    (selectedMaterialTarget.role === 'railing' ||
-      selectedMaterialTarget.role === 'tread' ||
-      selectedMaterialTarget.role === 'side')
-      ? selectedMaterialTarget.role
-      : null
-  const materialPickerValue =
-    node && materialTargetRole ? getEffectiveStairSurfaceMaterial(node, materialTargetRole) : {}
-
-  const handleTargetedMaterialChange = useCallback(
-    (material: MaterialSchema) => {
-      if (!node || !materialTargetRole) return
-      handleUpdate(buildStairSurfaceMaterialPatch(node, materialTargetRole, material, undefined))
-    },
-    [handleUpdate, materialTargetRole, node],
-  )
-
-  const handleTargetedMaterialPresetChange = useCallback(
-    (materialPreset: string) => {
-      if (!node || !materialTargetRole) return
-      handleUpdate(buildStairSurfaceMaterialPatch(node, materialTargetRole, undefined, materialPreset))
-    },
-    [handleUpdate, materialTargetRole, node],
   )
 
   const handleClose = useCallback(() => {
@@ -209,46 +150,15 @@ export function StairPanel() {
   )
 
   const handleDuplicate = useCallback(() => {
-    if (!node?.parentId) return
+    if (!node) return
     sfxEmitter.emit('sfx:item-pick')
 
-    let duplicateInfo = structuredClone(node) as any
-    delete duplicateInfo.id
-    duplicateInfo.metadata = { ...duplicateInfo.metadata }
-    duplicateInfo.children = []
-    duplicateInfo.position = [
-      duplicateInfo.position[0] + 1,
-      duplicateInfo.position[1],
-      duplicateInfo.position[2] + 1,
-    ]
-
     try {
-      const duplicate = StairNodeSchema.parse(duplicateInfo)
-
-      const nodesState = useScene.getState().nodes
-      const children = node.children || []
-      const createOps: { node: AnyNode; parentId?: AnyNodeId }[] = [
-        { node: duplicate, parentId: duplicate.parentId as AnyNodeId },
-      ]
-
-      for (const childId of children) {
-        const childNode = nodesState[childId]
-        if (childNode && childNode.type === 'stair-segment') {
-          let childDuplicateInfo = structuredClone(childNode) as any
-          delete childDuplicateInfo.id
-          childDuplicateInfo.metadata = { ...childDuplicateInfo.metadata }
-          const childDuplicate = StairSegmentNodeSchema.parse(childDuplicateInfo)
-          createOps.push({ node: childDuplicate, parentId: duplicate.id as AnyNodeId })
-        }
-      }
-
-      createNodes(createOps)
-
-      setSelection({ selectedIds: [duplicate.id as AnyNode['id']] })
+      duplicateStairSubtree(node.id as AnyNodeId, { mode: 'move' })
     } catch (e) {
       console.error('Failed to duplicate stair', e)
     }
-  }, [createNodes, node, setSelection])
+  }, [node])
 
   const handleMove = useCallback(() => {
     if (node) {
@@ -352,7 +262,7 @@ export function StairPanel() {
           />
 
           {(node.slabOpeningMode ?? 'none') === 'destination' ? (
-            <MetricControl
+            <SliderControl
               label="Opening Offset"
               max={0.5}
               min={0}
@@ -398,7 +308,7 @@ export function StairPanel() {
 
       {(node.stairType === 'curved' || node.stairType === 'spiral') && (
         <PanelSection title="Geometry">
-          <MetricControl
+          <SliderControl
             label="Width"
             max={10}
             min={0.4}
@@ -408,7 +318,7 @@ export function StairPanel() {
             unit="m"
             value={Math.round((node.width ?? 1) * 100) / 100}
           />
-          <MetricControl
+          <SliderControl
             label="Rise"
             max={10}
             min={0.2}
@@ -418,7 +328,7 @@ export function StairPanel() {
             unit="m"
             value={Math.round((node.totalRise ?? 2.5) * 100) / 100}
           />
-          <MetricControl
+          <SliderControl
             label="Steps"
             max={32}
             min={2}
@@ -436,7 +346,7 @@ export function StairPanel() {
             />
           )}
           {(node.stairType === 'spiral' || !(node.fillToFloor ?? true)) && (
-            <MetricControl
+            <SliderControl
               label="Thickness"
               max={1}
               min={0.02}
@@ -447,7 +357,7 @@ export function StairPanel() {
               value={Math.round((node.thickness ?? 0.25) * 100) / 100}
             />
           )}
-          <MetricControl
+          <SliderControl
             label="Inner Radius"
             max={10}
             min={node.stairType === 'spiral' ? 0.05 : 0.2}
@@ -475,7 +385,7 @@ export function StairPanel() {
                 value={node.topLandingMode ?? 'none'}
               />
               {(node.topLandingMode ?? 'none') === 'integrated' && (
-                <MetricControl
+                <SliderControl
                   label="Top Landing"
                   max={5}
                   min={0.3}
@@ -609,22 +519,6 @@ export function StairPanel() {
             onClick={handleDelete}
           />
         </ActionGroup>
-      </PanelSection>
-      <PanelSection title="Material">
-        {!materialTargetRole ? (
-          <div className="mb-3 rounded-lg border border-border/50 bg-[#2C2C2E] px-3 py-2 text-[11px] text-muted-foreground">
-            Click the stair surface you want to edit. Materials apply to one target at a time.
-          </div>
-        ) : null}
-        <MaterialPicker
-          disabled={!materialTargetRole}
-          hideSideControl
-          nodeType="stair"
-          onChange={handleTargetedMaterialChange}
-          onSelectMaterialPreset={handleTargetedMaterialPresetChange}
-          selectedMaterialPreset={materialPickerValue.materialPreset}
-          value={materialPickerValue.material}
-        />
       </PanelSection>
     </PanelWrapper>
   )

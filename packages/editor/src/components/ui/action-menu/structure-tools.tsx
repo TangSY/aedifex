@@ -24,12 +24,14 @@ export const tools: ToolConfig[] = [
   // { id: 'custom-room', iconSrc: '/icons/custom-room.png', label: 'Custom Room' },
   { id: 'slab', iconSrc: '/icons/floor.png', label: 'Slab' },
   { id: 'ceiling', iconSrc: '/icons/ceiling.png', label: 'Ceiling' },
+  { id: 'column', iconSrc: '/icons/column.png', label: 'Column' },
   { id: 'roof', iconSrc: '/icons/roof.png', label: 'Gable Roof' },
   { id: 'stair', iconSrc: '/icons/stairs.png', label: 'Stairs' },
   { id: 'door', iconSrc: '/icons/door.png', label: 'Door' },
   { id: 'window', iconSrc: '/icons/window.png', label: 'Window' },
   { id: 'fence', iconSrc: '/icons/fence.png', label: 'Fence' },
   { id: 'zone', iconSrc: '/icons/zone.png', label: 'Zone' },
+  { id: 'spawn', iconSrc: '/icons/site.png', label: 'Spawn Point' },
 ]
 
 export function StructureTools() {

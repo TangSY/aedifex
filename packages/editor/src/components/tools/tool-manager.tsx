@@ -10,6 +10,7 @@ import useEditor, { type Phase, type Tool } from '../../store/use-editor'
 import { CeilingBoundaryEditor } from './ceiling/ceiling-boundary-editor'
 import { CeilingHoleEditor } from './ceiling/ceiling-hole-editor'
 import { CeilingTool } from './ceiling/ceiling-tool'
+import { ColumnTool } from './column/column-tool'
 import { DoorTool } from './door/door-tool'
 import { CurveFenceTool } from './fence/curve-fence-tool'
 import { FenceTool } from './fence/fence-tool'
@@ -21,6 +22,7 @@ import { SiteBoundaryEditor } from './site/site-boundary-editor'
 import { SlabBoundaryEditor } from './slab/slab-boundary-editor'
 import { SlabHoleEditor } from './slab/slab-hole-editor'
 import { SlabTool } from './slab/slab-tool'
+import { SpawnTool } from './spawn/spawn-tool'
 import { StairTool } from './stair/stair-tool'
 import { CurveWallTool } from './wall/curve-wall-tool'
 import { MoveWallEndpointTool } from './wall/move-wall-endpoint-tool'
@@ -61,8 +63,10 @@ export const ToolManager: React.FC = () => {
   const curvingFence = useEditor((state) => state.curvingFence)
   const editingHole = useEditor((state) => state.editingHole)
   const selectedZoneId = useViewer((state) => state.selection.zoneId)
+  const selectedLevelId = useViewer((state) => state.selection.levelId)
   const buildingId = useViewer((state) => state.selection.buildingId)
   const selectedIds = useViewer((state) => state.selection.selectedIds)
+  const setSelection = useViewer((state) => state.setSelection)
   const nodes = useScene((state) => state.nodes)
 
   // Building transform for the local group — all building-relative tools live inside this group
@@ -123,12 +127,15 @@ export const ToolManager: React.FC = () => {
   const showBuildTool = mode === 'build' && tool !== null
 
   const BuildToolComponent = showBuildTool ? tools[phase]?.[tool] : null
+  const handlePlacedNodeSelected = (nodeId: AnyNodeId) => {
+    setSelection({ selectedIds: [nodeId] })
+  }
 
   return (
     <>
       {showSiteBoundaryEditor && <SiteBoundaryEditor />}
       {/* World-space tools: site boundary and building movement operate in world coordinates */}
-      {movingNode?.type === 'building' && <MoveTool />}
+      {movingNode?.type === 'building' && <MoveTool onSpawnMoved={handlePlacedNodeSelected} />}
 
       {/* Building-local group: all other tools are relative to the selected building.
           Cursor visuals set positions in building-local space; this group applies the
@@ -152,8 +159,16 @@ export const ToolManager: React.FC = () => {
         {movingFenceEndpoint && <MoveFenceEndpointTool target={movingFenceEndpoint} />}
         {curvingWall && <CurveWallTool node={curvingWall} />}
         {curvingFence && <CurveFenceTool node={curvingFence} />}
-        {movingNode && movingNode.type !== 'building' && <MoveTool />}
-        {!movingNode && BuildToolComponent && <BuildToolComponent />}
+        {movingNode && movingNode.type !== 'building' && (
+          <MoveTool onSpawnMoved={handlePlacedNodeSelected} />
+        )}
+        {!movingNode && showBuildTool && tool === 'spawn' && (
+          <SpawnTool currentLevelId={selectedLevelId} onPlaced={handlePlacedNodeSelected} />
+        )}
+        {!movingNode && showBuildTool && tool === 'column' && (
+          <ColumnTool currentLevelId={selectedLevelId} onPlaced={handlePlacedNodeSelected} />
+        )}
+        {!movingNode && BuildToolComponent && tool !== 'column' && <BuildToolComponent />}
       </group>
     </>
   )

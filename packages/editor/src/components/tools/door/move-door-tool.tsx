@@ -5,6 +5,7 @@ import {
   isCurvedWall,
   sceneRegistry,
   spatialGridManager,
+  useLiveTransforms,
   useScene,
   type WallEvent,
 } from '@aedifex/core'
@@ -98,6 +99,18 @@ export const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNod
       edgeMaterial.color.setHex(valid ? 0x22_c5_5e : 0xef_44_44)
     }
 
+    const getPlacementOrientation = (event: WallEvent) => {
+      const faceSide = getSideFromNormal(event.normal)
+      const side = movingDoorNode.side ?? faceSide
+      const rotationOffset = side !== faceSide ? Math.PI : 0
+      return {
+        side,
+        itemRotation: calculateItemRotation(event.normal) + rotationOffset,
+        cursorRotation:
+          calculateCursorRotation(event.normal, event.node.start, event.node.end) + rotationOffset,
+      }
+    }
+
     const onWallEnter = (event: WallEvent) => {
       if (!isValidWallSideFace(event.normal)) return
       if (isCurvedWall(event.node)) {
@@ -106,9 +119,7 @@ export const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNod
       }
       if (event.node.parentId !== getLevelId()) return
 
-      const side = getSideFromNormal(event.normal)
-      const itemRotation = calculateItemRotation(event.normal)
-      const cursorRotation = calculateCursorRotation(event.normal, event.node.start, event.node.end)
+      const { side, itemRotation, cursorRotation } = getPlacementOrientation(event)
 
       const localX = snapToHalf(event.localPosition[0])
       const { clampedX, clampedY } = clampToWall(
@@ -127,6 +138,10 @@ export const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNod
         side,
         parentId: event.node.id,
         wallId: event.node.id,
+      })
+      useLiveTransforms.getState().set(movingDoorNode.id, {
+        position: [clampedX, clampedY, 0],
+        rotation: itemRotation,
       })
 
       if (prevWallId && prevWallId !== event.node.id) markWallDirty(prevWallId)
@@ -164,9 +179,7 @@ export const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNod
       }
       if (event.node.parentId !== getLevelId()) return
 
-      const side = getSideFromNormal(event.normal)
-      const itemRotation = calculateItemRotation(event.normal)
-      const cursorRotation = calculateCursorRotation(event.normal, event.node.start, event.node.end)
+      const { side, itemRotation, cursorRotation } = getPlacementOrientation(event)
 
       const localX = snapToHalf(event.localPosition[0])
       const { clampedX, clampedY } = clampToWall(
@@ -197,6 +210,10 @@ export const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNod
           doorMesh.updateMatrixWorld(true)
         }
       }
+      useLiveTransforms.getState().set(movingDoorNode.id, {
+        position: [clampedX, clampedY, 0],
+        rotation: itemRotation,
+      })
       markWallDirty(event.node.id)
 
       const valid = !hasWallChildOverlap(
@@ -228,8 +245,7 @@ export const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNod
       if (isCurvedWall(event.node)) return
       if (event.node.parentId !== getLevelId()) return
 
-      const side = getSideFromNormal(event.normal)
-      const itemRotation = calculateItemRotation(event.normal)
+      const { side, itemRotation } = getPlacementOrientation(event)
 
       const localX = snapToHalf(event.localPosition[0])
       const { clampedX, clampedY } = clampToWall(
@@ -295,6 +311,7 @@ export const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNod
       }
 
       markWallDirty(event.node.id)
+      useLiveTransforms.getState().clear(movingDoorNode.id)
       useScene.temporal.getState().pause()
 
       sfxEmitter.emit('sfx:item-place')
@@ -306,6 +323,7 @@ export const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNod
 
     const onWallLeave = () => {
       hideCursor()
+      useLiveTransforms.getState().clear(movingDoorNode.id)
       if (isNew) return
       if (currentWallId && currentWallId !== original.parentId) {
         markWallDirty(currentWallId)
@@ -322,6 +340,7 @@ export const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNod
     }
 
     const onCancel = () => {
+      useLiveTransforms.getState().clear(movingDoorNode.id)
       if (isNew) {
         useScene.getState().deleteNode(movingDoorNode.id)
         if (currentWallId) markWallDirty(currentWallId)
@@ -368,6 +387,7 @@ export const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNod
           if (original.parentId) markWallDirty(original.parentId)
         }
       }
+      useLiveTransforms.getState().clear(movingDoorNode.id)
       useScene.temporal.getState().resume()
       emitter.off('wall:enter', onWallEnter)
       emitter.off('wall:move', onWallMove)

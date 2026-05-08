@@ -6,9 +6,17 @@ import {
   initSpatialGridSync,
   spatialGridManager,
   useScene,
-} from '@aedifex/core'
-import { InteractiveSystem, useViewer, Viewer } from '@aedifex/viewer'
-import { memo, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+} from '@pascal-app/core'
+import { type HoverStyles, InteractiveSystem, useViewer, Viewer } from '@pascal-app/viewer'
+import {
+  memo,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import { ViewerOverlay } from '../../components/viewer-overlay'
 import { ViewerZoneSystem } from '../../components/viewer-zone-system'
 import { type PresetsAdapter, PresetsProvider } from '../../contexts/presets-context'
@@ -22,8 +30,8 @@ import {
 } from '../../lib/scene'
 import { initSFXBus } from '../../lib/sfx-bus'
 import useEditor from '../../store/use-editor'
-import { CeilingSystem } from '../systems/ceiling/ceiling-system'
 import { CeilingSelectionAffordanceSystem } from '../systems/ceiling/ceiling-selection-affordance-system'
+import { CeilingSystem } from '../systems/ceiling/ceiling-system'
 import { RoofEditSystem } from '../systems/roof/roof-edit-system'
 import { StairEditSystem } from '../systems/stair/stair-edit-system'
 import { ZoneLabelEditorSystem } from '../systems/zone/zone-label-editor-system'
@@ -63,6 +71,21 @@ const CAMERA_CONTROLS_HINT_DISMISSED_STORAGE_KEY = 'editor-camera-controls-hint-
 const DELETE_CURSOR_BADGE_COLOR = '#ef4444'
 const DELETE_CURSOR_BADGE_OFFSET_X = 14
 const DELETE_CURSOR_BADGE_OFFSET_Y = 14
+const PAINT_CURSOR_BADGE_COLOR = '#f59e0b'
+const PAINT_CURSOR_BADGE_DISABLED_COLOR = '#94a3b8'
+const PAINT_CURSOR_BADGE_OFFSET_X = 14
+const PAINT_CURSOR_BADGE_OFFSET_Y = 14
+const EDITOR_HOVER_STYLES: HoverStyles = {
+  default: { visibleColor: 0x00_aaff, hiddenColor: 0xf3_ff47, strength: 5, pulse: true },
+  delete: { visibleColor: 0xef_4444, hiddenColor: 0x99_1b1b, strength: 6, pulse: false },
+  'paint-ready': { visibleColor: 0xf5_9e0b, hiddenColor: 0xfd_e068, strength: 5, pulse: true },
+  'paint-disabled': {
+    visibleColor: 0x94_a3b8,
+    hiddenColor: 0x47_5569,
+    strength: 4,
+    pulse: false,
+  },
+}
 
 /**
  * Wire up module-level singletons (spatial grid, space detection, SFX) for
@@ -501,6 +524,50 @@ function DeleteCursorBadge({ position }: { position: { x: number; y: number } })
   )
 }
 
+function PaintCursorBadge({
+  position,
+  label,
+  disabled,
+  icon,
+}: {
+  position: { x: number; y: number }
+  label: string
+  disabled: boolean
+  icon: string
+}) {
+  const accentColor = disabled ? PAINT_CURSOR_BADGE_DISABLED_COLOR : PAINT_CURSOR_BADGE_COLOR
+
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute z-40"
+      style={{
+        left: position.x + PAINT_CURSOR_BADGE_OFFSET_X,
+        top: position.y + PAINT_CURSOR_BADGE_OFFSET_Y,
+      }}
+    >
+      <div
+        className="flex items-center gap-2 rounded-xl border border-white/5 bg-zinc-900/95 px-3 py-2 shadow-[0_8px_16px_-4px_rgba(0,0,0,0.3),0_4px_8px_-4px_rgba(0,0,0,0.2)]"
+        style={{
+          boxShadow: `0 8px 16px -4px rgba(0,0,0,0.3), 0 4px 8px -4px rgba(0,0,0,0.2), 0 0 18px ${accentColor}22`,
+        }}
+      >
+        <Icon
+          aria-hidden="true"
+          className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+          color={accentColor}
+          height={16}
+          icon={icon}
+          width={16}
+        />
+        <span className="font-medium text-[11px]" style={{ color: accentColor }}>
+          {label}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 // ── Viewer scene content: memoized so <Viewer> doesn't re-render on mode/viewMode changes ──
 
 const ViewerSceneContent = memo(function ViewerSceneContent({
@@ -517,9 +584,9 @@ const ViewerSceneContent = memo(function ViewerSceneContent({
   return (
     <>
       {!isFirstPersonMode && <SelectionManager />}
-      {!isVersionPreviewMode && !isFirstPersonMode && <BoxSelectTool />}
-      {!isVersionPreviewMode && !isFirstPersonMode && <FloatingActionMenu />}
-      {!isVersionPreviewMode && !isFirstPersonMode && <FloatingBuildingActionMenu />}
+      {!(isVersionPreviewMode || isFirstPersonMode) && <BoxSelectTool />}
+      {!(isVersionPreviewMode || isFirstPersonMode) && <FloatingActionMenu />}
+      {!(isVersionPreviewMode || isFirstPersonMode) && <FloatingBuildingActionMenu />}
       {!isFirstPersonMode && <WallMeasurementLabel />}
       <ExportManager />
       {isFirstPersonMode ? <ViewerZoneSystem /> : <ZoneSystem />}
@@ -527,10 +594,10 @@ const ViewerSceneContent = memo(function ViewerSceneContent({
       <CeilingSelectionAffordanceSystem />
       <RoofEditSystem />
       <StairEditSystem />
-      {!isLoading && !isFirstPersonMode && (
+      {!(isLoading || isFirstPersonMode) && (
         <Grid cellColor="#aaa" fadeDistance={500} sectionColor="#ccc" />
       )}
-      {!(isLoading || isVersionPreviewMode) && !isFirstPersonMode && <ToolManager />}
+      {!(isLoading || isVersionPreviewMode || isFirstPersonMode) && <ToolManager />}
       {isFirstPersonMode && <FirstPersonControls />}
       <CustomCameraControls />
       <ThumbnailGenerator onThumbnailCapture={onThumbnailCapture} />
@@ -552,31 +619,165 @@ function DeleteCursorLayer({
   isVersionPreviewMode: boolean
 }) {
   const mode = useEditor((s) => s.mode)
-  const [position, setPosition] = useState<{ x: number; y: number } | null>(null)
+  const badgeRef = useRef<HTMLDivElement>(null)
   const active = mode === 'delete' && !isVersionPreviewMode
 
   useEffect(() => {
     if (!active) {
-      setPosition(null)
+      if (badgeRef.current) {
+        badgeRef.current.style.display = 'none'
+      }
       return
     }
     const el = containerRef.current
     if (!el) return
+    let frame = 0
+    let nextX = 0
+    let nextY = 0
+    const badge = badgeRef.current
+
+    const flushPosition = () => {
+      frame = 0
+      if (!badge) return
+      badge.style.display = 'block'
+      badge.style.transform = `translate(${nextX + DELETE_CURSOR_BADGE_OFFSET_X}px, ${nextY + DELETE_CURSOR_BADGE_OFFSET_Y}px)`
+    }
+
     const onMove = (e: PointerEvent) => {
       const rect = el.getBoundingClientRect()
-      setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+      nextX = e.clientX - rect.left
+      nextY = e.clientY - rect.top
+
+      if (frame === 0) {
+        frame = window.requestAnimationFrame(flushPosition)
+      }
     }
-    const onLeave = () => setPosition(null)
+    const onLeave = () => {
+      if (frame !== 0) {
+        window.cancelAnimationFrame(frame)
+        frame = 0
+      }
+      if (badge) {
+        badge.style.display = 'none'
+      }
+    }
     el.addEventListener('pointermove', onMove)
     el.addEventListener('pointerleave', onLeave)
     return () => {
+      if (frame !== 0) {
+        window.cancelAnimationFrame(frame)
+      }
       el.removeEventListener('pointermove', onMove)
       el.removeEventListener('pointerleave', onLeave)
     }
   }, [active, containerRef])
 
-  if (!(active && position)) return null
-  return <DeleteCursorBadge position={position} />
+  if (!active) return null
+
+  return (
+    <div
+      className="pointer-events-none"
+      ref={badgeRef}
+      style={{ display: 'none', position: 'absolute', left: 0, top: 0 }}
+    >
+      <DeleteCursorBadge position={{ x: 0, y: 0 }} />
+    </div>
+  )
+}
+
+function PaintCursorLayer({
+  containerRef,
+  isVersionPreviewMode,
+}: {
+  containerRef: React.RefObject<HTMLDivElement | null>
+  isVersionPreviewMode: boolean
+}) {
+  const mode = useEditor((s) => s.mode)
+  const activePaintMaterial = useEditor((s) => s.activePaintMaterial)
+  const activePaintTarget = useEditor((s) => s.activePaintTarget)
+  const badgeRef = useRef<HTMLDivElement>(null)
+  const active = mode === 'material-paint' && !isVersionPreviewMode
+
+  useEffect(() => {
+    if (!active) {
+      if (badgeRef.current) {
+        badgeRef.current.style.display = 'none'
+      }
+      return
+    }
+    const el = containerRef.current
+    if (!el) return
+    let frame = 0
+    let nextX = 0
+    let nextY = 0
+    const badge = badgeRef.current
+
+    const flushPosition = () => {
+      frame = 0
+      if (!badge) return
+      badge.style.display = 'block'
+      badge.style.transform = `translate(${nextX + PAINT_CURSOR_BADGE_OFFSET_X}px, ${nextY + PAINT_CURSOR_BADGE_OFFSET_Y}px)`
+    }
+
+    const onMove = (e: PointerEvent) => {
+      const rect = el.getBoundingClientRect()
+      nextX = e.clientX - rect.left
+      nextY = e.clientY - rect.top
+
+      if (frame === 0) {
+        frame = window.requestAnimationFrame(flushPosition)
+      }
+    }
+    const onLeave = () => {
+      if (frame !== 0) {
+        window.cancelAnimationFrame(frame)
+        frame = 0
+      }
+      if (badge) {
+        badge.style.display = 'none'
+      }
+    }
+    el.addEventListener('pointermove', onMove)
+    el.addEventListener('pointerleave', onLeave)
+    return () => {
+      if (frame !== 0) {
+        window.cancelAnimationFrame(frame)
+      }
+      el.removeEventListener('pointermove', onMove)
+      el.removeEventListener('pointerleave', onLeave)
+    }
+  }, [active, containerRef])
+
+  const hasMaterial = Boolean(
+    activePaintMaterial &&
+      (activePaintMaterial.material !== undefined ||
+        activePaintMaterial.materialPreset !== undefined),
+  )
+  const label = !hasMaterial ? 'Choose material' : `Paint ${activePaintTarget}`
+  const icon = 'mdi:format-color-fill'
+
+  useLayoutEffect(() => {
+    if (!active && badgeRef.current) {
+      badgeRef.current.style.display = 'none'
+    }
+  }, [active])
+
+  if (!active) return null
+
+  return (
+    <div
+      className="pointer-events-none"
+      ref={badgeRef}
+      style={{ display: 'none', position: 'absolute', left: 0, top: 0 }}
+    >
+      <PaintCursorBadge
+        disabled={!hasMaterial}
+        icon={icon}
+        label={label}
+        position={{ x: 0, y: 0 }}
+      />
+    </div>
+  )
 }
 
 // ── Viewer canvas: memoized, subscribes to viewMode/floorplanPaneRatio internally ──
@@ -684,6 +885,10 @@ const ViewerCanvas = memo(function ViewerCanvas({
             containerRef={viewer3dRef}
             isVersionPreviewMode={isVersionPreviewMode}
           />
+          <PaintCursorLayer
+            containerRef={viewer3dRef}
+            isVersionPreviewMode={isVersionPreviewMode}
+          />
           {!showLoader && isCameraControlsHintVisible && !isFirstPersonMode ? (
             <ViewerCanvasControlsHint
               isPreviewMode={isPreviewMode}
@@ -691,7 +896,10 @@ const ViewerCanvas = memo(function ViewerCanvas({
             />
           ) : null}
           <SelectionPersistenceManager enabled={hasLoadedInitialScene && !showLoader} />
-          <Viewer selectionManager={isFirstPersonMode ? 'default' : 'custom'}>
+          <Viewer
+            hoverStyles={EDITOR_HOVER_STYLES}
+            selectionManager={isFirstPersonMode ? 'default' : 'custom'}
+          >
             <ViewerSceneContent
               isFirstPersonMode={isFirstPersonMode}
               isLoading={isLoading}
@@ -731,8 +939,8 @@ export default function Editor({
   presetsAdapter,
   commandPaletteEmptyAction,
 }: EditorProps) {
-  useKeyboard({ isVersionPreviewMode })
-
+  const isFirstPersonMode = useEditor((s) => s.isFirstPersonMode)
+  useKeyboard({ isVersionPreviewMode, disabled: isFirstPersonMode })
   const { isLoadingSceneRef } = useAutoSave({
     onSave,
     onDirty,
@@ -743,7 +951,8 @@ export default function Editor({
   const [isSceneLoading, setIsSceneLoading] = useState(false)
   const [hasLoadedInitialScene, setHasLoadedInitialScene] = useState(false)
   const isPreviewMode = useEditor((s) => s.isPreviewMode)
-  const isFirstPersonMode = useEditor((s) => s.isFirstPersonMode)
+  const firstPersonPreviousLevelRef = useRef(useViewer.getState().selection.levelId)
+  const wasFirstPersonModeRef = useRef(isFirstPersonMode)
 
   const sidebarWidth = useSidebarStore((s) => s.width)
   const isSidebarCollapsed = useSidebarStore((s) => s.isCollapsed)
@@ -760,6 +969,39 @@ export default function Editor({
       useViewer.getState().setProjectId(null)
     }
   }, [projectId])
+
+  useEffect(() => {
+    const wasFirstPersonMode = wasFirstPersonModeRef.current
+    wasFirstPersonModeRef.current = isFirstPersonMode
+
+    if (isFirstPersonMode && !wasFirstPersonMode) {
+      const viewer = useViewer.getState()
+      firstPersonPreviousLevelRef.current = viewer.selection.levelId
+      viewer.setCameraMode('perspective')
+      viewer.setWallMode('up')
+      viewer.setWalkthroughMode(true)
+      viewer.setSelection({ selectedIds: [], zoneId: null })
+      return
+    }
+
+    if (!(wasFirstPersonMode && !isFirstPersonMode)) return
+
+    const viewer = useViewer.getState()
+    const previousLevelId = firstPersonPreviousLevelRef.current
+    firstPersonPreviousLevelRef.current = null
+    viewer.setWalkthroughMode(false)
+
+    if (!previousLevelId) return
+
+    const previousLevelNode = useScene.getState().nodes[previousLevelId]
+    if (previousLevelNode?.type === 'level') {
+      viewer.setSelection({
+        levelId: previousLevelId,
+        zoneId: null,
+        selectedIds: [],
+      })
+    }
+  }, [isFirstPersonMode])
 
   // Load scene on mount (or when onLoad identity changes, e.g. project switch)
   useEffect(() => {
@@ -823,7 +1065,7 @@ export default function Editor({
   const showLoader = isLoading || isSceneLoading
 
   const previewViewerContent = (
-    <Viewer selectionManager="default">
+    <Viewer hoverStyles={EDITOR_HOVER_STYLES} selectionManager="default">
       <ExportManager />
       <ViewerZoneSystem />
       <CeilingSystem />
@@ -866,7 +1108,13 @@ export default function Editor({
       return <Component />
     }
 
-    const tabBarTabs = sidebarTabs?.map(({ id, label }) => ({ id, label })) ?? []
+    const tabBarTabs =
+      sidebarTabs?.map(({ id, label, mobileDefaultSnap, mobileIcon }) => ({
+        id,
+        label,
+        mobileDefaultSnap,
+        mobileIcon,
+      })) ?? []
 
     return (
       <PresetsProvider adapter={presetsAdapter}>
@@ -913,7 +1161,7 @@ export default function Editor({
             />
             {/* First-person overlay — rendered on top of normal layout */}
             {isFirstPersonMode && (
-              <div className="fixed inset-0 z-50 pointer-events-none">
+              <div className="pointer-events-none fixed inset-0 z-50">
                 <FirstPersonOverlay onExit={() => useEditor.getState().setFirstPersonMode(false)} />
               </div>
             )}
