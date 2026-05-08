@@ -14,7 +14,7 @@
  */
 
 import { createSceneOperations, type SceneOperations } from '@aedifex/mcp/operations'
-import { SceneBridge } from '@aedifex/mcp'
+import { SceneBridge } from '@aedifex/mcp/bridge'
 
 let _ops: SceneOperations | null = null
 
