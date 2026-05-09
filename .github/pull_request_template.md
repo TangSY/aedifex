@@ -21,7 +21,7 @@ Drag and drop a video or paste a link here.
 
 ## Checklist
 
-- [ ] I've tested this locally with `bun dev`
-- [ ] My code follows the existing code style (run `bun check` to verify)
+- [ ] I've tested this locally with `pnpm dev`
+- [ ] My code follows the existing code style (run `pnpm check` to verify)
 - [ ] I've updated relevant documentation (if applicable)
 - [ ] This PR targets the `main` branch

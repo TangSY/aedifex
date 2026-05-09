@@ -8,15 +8,9 @@
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
         "SKIP_ENV_VALIDATION",
-        "BETTER_AUTH_SECRET",
-        "BETTER_AUTH_URL",
-        "GOOGLE_CLIENT_ID",
-        "GOOGLE_CLIENT_SECRET",
-        "RESEND_API_KEY",
-        "POSTGRES_URL",
-        "NEXT_PUBLIC_SUPABASE_URL",
-        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-        "SUPABASE_SERVICE_ROLE_KEY"
+        "AI_API_KEY",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"
       ]
     },
     "lint": {
