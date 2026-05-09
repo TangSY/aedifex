@@ -14,6 +14,20 @@ vi.mock('@aedifex/core', () => ({
   WallNode: {
     parse: vi.fn((input: unknown) => input),
   },
+  // Curved-wall helpers (v0.6.0). Tests in this file only exercise straight
+  // walls, so isCurvedWall returns false and the curve sample helpers are
+  // never reached — but they must be defined for the module mock to resolve.
+  isCurvedWall: vi.fn(() => false),
+  getWallCurveLength: vi.fn(() => 0),
+  getWallCurveFrameAt: vi.fn(() => ({
+    point: { x: 0, y: 0 },
+    tangent: { x: 1, y: 0 },
+    normal: { x: 0, y: 1 },
+  })),
+  // Item dimension helper used by the wall-split intersection path. Returns
+  // a non-zero footprint so codepaths that read [width, depth, height] don't
+  // hit a destructuring undefined.
+  getScaledDimensions: vi.fn(() => [1, 1, 1]),
 }))
 
 vi.mock('@aedifex/viewer', () => ({

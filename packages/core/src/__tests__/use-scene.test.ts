@@ -30,7 +30,9 @@ function makeItem(overrides?: Partial<{ id: string }>): AnyNode {
     id: overrides?.id,
     asset: {
       id: 'sofa', category: 'furniture', name: 'Sofa',
-      thumbnail: '', src: '',
+      // v0.6.0 added URL whitelist validation on asset.src — must match
+      // asset://, blob:, data:image/, /path, https://, or http://localhost.
+      thumbnail: 'asset://thumbnail/sofa.png', src: 'asset://item/sofa.glb',
     },
   }) as AnyNode
 }
