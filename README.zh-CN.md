@@ -73,7 +73,7 @@ https://github.com/user-attachments/assets/6c819726-65f4-45c6-903e-fa5c364a6340
 
 ```bash
 # 克隆
-git clone https://github.com/AedifexOrg/aedifex.git
+git clone https://github.com/TangSY/aedifex.git
 cd aedifex
 
 # 安装依赖
@@ -145,13 +145,16 @@ AI_SUMMARIZE_MODEL=gpt-4o-mini
 
 ## 架构
 
-Turborepo 单仓库，三个包：
+Turborepo 单仓库，5 个发布包 + 编辑器应用：
 
 ```
 aedifex/
-├── apps/editor/       # Next.js 16 应用
-├── packages/core/     # 数据模型、状态管理（Zustand）、几何系统、空间查询
-└── packages/viewer/   # 3D 渲染（React Three Fiber + WebGPU）
+├── apps/editor/         # Next.js 16 应用（入口）
+├── packages/core/       # 数据模型、状态管理（Zustand）、几何系统、空间查询
+├── packages/viewer/     # 3D 渲染（React Three Fiber + WebGPU）
+├── packages/editor/     # 编辑器 UI：工具、面板、选择管理、AI 助手
+├── packages/mcp/        # MCP server：35 个工具，提供自然语言场景控制
+└── packages/ui/         # 共享 shadcn/ui 基础组件
 ```
 
 | 包 | 职责 |
@@ -159,6 +162,8 @@ aedifex/
 | **core** | 节点 Schema（Zod）、场景存储 + 撤销重做（Zundo）、几何系统、空间网格、事件总线 |
 | **viewer** | 渲染器、相机、灯光、后处理、楼层/扫描/参考系统 |
 | **editor** | 工具、面板、选择管理、AI 助手、自定义相机控制 |
+| **mcp** | Model Context Protocol server，将场景操作暴露给 Claude Desktop / Cursor |
+| **ui** | 编辑器使用的共享 shadcn/ui 基础组件 |
 
 ### 场景数据模型
 
