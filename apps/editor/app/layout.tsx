@@ -32,9 +32,10 @@ export default function RootLayout({
       lang="en"
     >
       <head>
+        {/* react-scan: uncomment to visualize component re-renders
         {process.env.NODE_ENV === 'development' && (
           <script async crossOrigin="anonymous" src="//unpkg.com/react-scan/dist/auto.global.js" />
-        )}
+        )} */}
       </head>
       <body className="font-sans">
         <ClientBootstrap>{children}</ClientBootstrap>
