@@ -29,7 +29,7 @@ export const ExportSystem = () => {
   useEffect(() => {
     const exportFn = async (format: 'glb' | 'stl' | 'obj' = 'glb') => {
       const date = new Date().toISOString().split('T')[0]
-      const filename = `pascal-export-${date}`
+      const filename = `aedifex-export-${date}`
 
       // Clone scene and strip editor-only objects (layer 1 = EDITOR_LAYER)
       const exportRoot = scene.clone(true) as Scene

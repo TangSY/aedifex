@@ -24,7 +24,7 @@ export interface PresetsAdapter {
   uploadPresetThumbnail?: (presetId: string, blob: Blob) => Promise<string | null>
 }
 
-const PRESETS_KEY = (type: string) => `pascal-presets-${type}`
+const PRESETS_KEY = (type: string) => `aedifex-presets-${type}`
 
 export const localStoragePresetsAdapter: PresetsAdapter = {
   tabs: ['mine'],
