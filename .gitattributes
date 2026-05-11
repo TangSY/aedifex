@@ -1,0 +1,9 @@
+# Brand docs — keep the aedifex fork's version on merge
+README.md merge=ours
+CONTRIBUTING.md merge=ours
+SETUP.md merge=ours
+AGENTS.md merge=ours
+packages/core/README.md merge=ours
+packages/viewer/README.md merge=ours
+packages/editor/README.md merge=ours
+packages/mcp/README.md merge=ours
