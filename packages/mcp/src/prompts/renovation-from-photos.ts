@@ -151,9 +151,9 @@ export function registerRenovationFromPhotos(server: McpServer, _bridge: SceneOp
         currentPhotos: z.string(),
         referencePhotos: z.string(),
         goals: z.string(),
-      },
+      } as any,
     },
-    async ({ currentPhotos, referencePhotos, goals }) => ({
+    async ({ currentPhotos, referencePhotos, goals }: any) => ({
       messages: buildRenovationMessages({ currentPhotos, referencePhotos, goals }),
     }),
   )

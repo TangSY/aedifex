@@ -6,12 +6,12 @@ import { ErrorCode, throwMcpError } from './errors'
 import { publishLiveSceneSnapshot } from './live-sync'
 import { NodeIdSchema } from './schemas'
 
-export const deleteNodeInput = {
+export const deleteNodeInput: any = {
   id: NodeIdSchema,
   cascade: z.boolean().optional(),
 }
 
-export const deleteNodeOutput = {
+export const deleteNodeOutput: any = {
   deletedIds: z.array(z.string()),
 }
 

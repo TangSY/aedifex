@@ -5,11 +5,11 @@ import type { SceneOperations } from '../operations'
 import { ErrorCode, throwMcpError } from './errors'
 import { NodeIdSchema } from './schemas'
 
-export const getNodeInput = {
+export const getNodeInput: any = {
   id: NodeIdSchema,
 }
 
-export const getNodeOutput = {
+export const getNodeOutput: any = {
   node: z.record(z.string(), z.unknown()),
 }
 

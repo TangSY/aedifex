@@ -4,13 +4,13 @@ import type { SceneOperations } from '../../operations'
 import { SceneNotFoundError, SceneVersionConflictError } from '../../storage/types'
 import { ErrorCode, throwMcpError } from '../errors'
 
-export const renameSceneInput = {
+export const renameSceneInput: any = {
   id: z.string().min(1).max(64),
   newName: z.string().min(1).max(200),
   expectedVersion: z.number().int().positive().optional(),
 }
 
-export const renameSceneOutput = {
+export const renameSceneOutput: any = {
   id: z.string(),
   name: z.string(),
   projectId: z.string().nullable(),

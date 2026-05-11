@@ -5,11 +5,11 @@ import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { NodeIdSchema } from './schemas'
 
-export const checkCollisionsInput = {
+export const checkCollisionsInput: any = {
   levelId: NodeIdSchema.optional(),
 }
 
-export const checkCollisionsOutput = {
+export const checkCollisionsOutput: any = {
   collisions: z.array(
     z.object({
       aId: z.string(),

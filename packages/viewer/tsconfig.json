@@ -6,7 +6,7 @@
     "noEmit": false,
     "composite": true,
     "incremental": true,
-    "types": ["node"]
+    "types": ["node", "@webgpu/types"]
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "src/**/__tests__", "src/**/*.test.ts", "src/**/*.test.tsx"],

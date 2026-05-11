@@ -8,11 +8,11 @@ import type { SceneOperations } from '../../operations'
  *
  * Same image resolution rules as `analyze_floorplan_image`.
  */
-export const analyzeRoomPhotoInput = {
+export const analyzeRoomPhotoInput: any = {
   image: z.string().describe('Base64-encoded image or http(s) URL'),
 }
 
-export const analyzeRoomPhotoOutput = {
+export const analyzeRoomPhotoOutput: any = {
   approximateDimensions: z.object({
     widthM: z.number(),
     lengthM: z.number(),

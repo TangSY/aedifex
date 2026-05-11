@@ -48,14 +48,14 @@ export function registerFromBrief(server: McpServer, _bridge: SceneOperations): 
       argsSchema: {
         brief: z.string(),
         constraints: z.string().optional(),
-      },
+      } as any,
     },
-    async ({ brief, constraints }) => ({
+    async ({ brief, constraints }: any) => ({
       messages: [
         {
-          role: 'user',
+          role: 'user' as const,
           content: {
-            type: 'text',
+            type: 'text' as const,
             text: buildFromBriefPrompt({ brief, constraints }),
           },
         },

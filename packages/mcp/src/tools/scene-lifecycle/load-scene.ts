@@ -4,11 +4,11 @@ import type { SceneOperations } from '../../operations'
 import { ErrorCode, throwMcpError } from '../errors'
 import { currentLevelContext, sceneMetaPayload } from './metadata'
 
-export const loadSceneInput = {
+export const loadSceneInput: any = {
   id: z.string().min(1).max(64),
 }
 
-export const loadSceneOutput = {
+export const loadSceneOutput: any = {
   id: z.string(),
   name: z.string(),
   projectId: z.string().nullable(),

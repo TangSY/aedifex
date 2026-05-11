@@ -4,13 +4,13 @@ import type { SceneOperations } from '../../operations'
 import { ErrorCode, throwMcpError } from '../errors'
 import { currentLevelContext, projectStatusPayload } from './metadata'
 
-export const createProjectInput = {
+export const createProjectInput: any = {
   name: z.string().min(1).max(200),
   id: z.string().min(1).max(64).optional(),
   isPrivate: z.boolean().default(true),
 }
 
-export const createProjectOutput = {
+export const createProjectOutput: any = {
   id: z.string(),
   projectId: z.string(),
   name: z.string(),

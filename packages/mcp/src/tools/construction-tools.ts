@@ -18,7 +18,7 @@ import { NodeIdSchema, Vec2Schema, Vec3Schema } from './schemas'
 const ROOF_TYPES = ['hip', 'gable', 'shed', 'gambrel', 'dutch', 'mansard', 'flat'] as const
 const RAILING_MODES = ['none', 'left', 'right', 'both'] as const
 
-export const createStoryShellInput = {
+export const createStoryShellInput: any = {
   levelId: NodeIdSchema,
   footprint: z.array(Vec2Schema).min(3),
   wallHeight: z.number().positive().default(2.8),
@@ -33,7 +33,7 @@ export const createStoryShellInput = {
   ceilingMaterialPreset: z.string().optional(),
 }
 
-export const createStoryShellOutput = {
+export const createStoryShellOutput: any = {
   levelId: z.string(),
   wallIds: z.array(z.string()),
   slabId: z.string().nullable(),
@@ -41,7 +41,7 @@ export const createStoryShellOutput = {
   createdIds: z.array(z.string()),
 }
 
-export const createRoofInput = {
+export const createRoofInput: any = {
   levelId: NodeIdSchema,
   roofLevelId: NodeIdSchema.optional(),
   useDedicatedRoofLevel: z.boolean().default(true),
@@ -60,7 +60,7 @@ export const createRoofInput = {
   name: z.string().optional(),
 }
 
-export const createRoofOutput = {
+export const createRoofOutput: any = {
   referenceLevelId: z.string(),
   roofLevelId: z.string(),
   createdRoofLevelId: z.string().nullable(),
@@ -68,7 +68,7 @@ export const createRoofOutput = {
   roofSegmentId: z.string(),
 }
 
-export const createStairBetweenLevelsInput = {
+export const createStairBetweenLevelsInput: any = {
   fromLevelId: NodeIdSchema,
   toLevelId: NodeIdSchema,
   position: Vec3Schema,
@@ -91,7 +91,7 @@ export const createStairBetweenLevelsInput = {
   name: z.string().optional(),
 }
 
-export const createStairBetweenLevelsOutput = {
+export const createStairBetweenLevelsOutput: any = {
   stairId: z.string(),
   stairSegmentId: z.string(),
   destinationSlabId: z.string().nullable(),

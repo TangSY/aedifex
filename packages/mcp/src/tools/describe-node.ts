@@ -5,11 +5,11 @@ import type { SceneOperations } from '../operations'
 import { ErrorCode, throwMcpError } from './errors'
 import { NodeIdSchema } from './schemas'
 
-export const describeNodeInput = {
+export const describeNodeInput: any = {
   id: NodeIdSchema,
 }
 
-export const describeNodeOutput = {
+export const describeNodeOutput: any = {
   id: z.string(),
   type: z.string(),
   parentId: z.string().nullable(),

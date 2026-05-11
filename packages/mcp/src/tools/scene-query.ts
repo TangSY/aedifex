@@ -12,13 +12,13 @@ import {
 } from './geometry'
 import { NodeIdSchema } from './schemas'
 
-export const levelScopedInput = {
+export const levelScopedInput: any = {
   levelId: NodeIdSchema.optional(),
 }
 
 const jsonObject = z.record(z.string(), z.unknown())
 
-export const listLevelsOutput = {
+export const listLevelsOutput: any = {
   activeSceneId: z.string().nullable(),
   levelCount: z.number(),
   occupiedStoryCount: z.number(),
@@ -27,7 +27,7 @@ export const listLevelsOutput = {
   levels: z.array(jsonObject),
 }
 
-export const getLevelSummaryOutput = {
+export const getLevelSummaryOutput: any = {
   levelId: z.string(),
   levelName: z.string().optional(),
   role: z.string(),
@@ -43,17 +43,17 @@ export const getLevelSummaryOutput = {
   ceilings: z.array(jsonObject),
 }
 
-export const getWallsOutput = {
+export const getWallsOutput: any = {
   levelId: z.string(),
   walls: z.array(jsonObject),
 }
 
-export const getZonesOutput = {
+export const getZonesOutput: any = {
   levelId: z.string(),
   zones: z.array(jsonObject),
 }
 
-export const verifySceneOutput = {
+export const verifySceneOutput: any = {
   ok: z.boolean(),
   valid: z.boolean(),
   levelCount: z.number(),
