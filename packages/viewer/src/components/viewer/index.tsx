@@ -81,7 +81,7 @@ extend(THREE as any)
 const WEBGPU_RENDERER_CACHE = new WeakMap<HTMLCanvasElement, Promise<THREE.WebGPURenderer>>()
 
 /**
- * Monitors the WebGPU device for loss events and logs them.
+ * Monitors the WebGPU device for loss / uncaptured errors and logs them.
  * WebGPU device loss can happen when:
  *  - Tab is backgrounded and OS reclaims GPU
  *  - Driver crash or GPU reset
@@ -105,7 +105,7 @@ function GPUDeviceWatcher() {
 
   useEffect(() => {
     const backend = (gl as any).backend
-    const device = backend?.device as WebGPUDeviceLike | undefined
+    const device: GPUDevice | undefined = backend?.device
 
     if (!device) {
       console.warn('[viewer] No WebGPU device on backend — running on a fallback renderer.', {
@@ -117,25 +117,25 @@ function GPUDeviceWatcher() {
 
     console.log('[viewer] WebGPU device ready', {
       label: device.label,
-      features: device.features ? Array.from(device.features) : [],
+      features: Array.from(device.features ?? []),
     })
 
-    device.lost.then((info: WebGPUDeviceLossInfo) => {
+    device.lost.then((info) => {
       console.error(
-        `[viewer] WebGPU device lost: reason="${info.reason ?? 'unknown'}", message="${info.message ?? ''}". ` +
+        `[viewer] WebGPU device lost: reason="${info.reason}", message="${info.message}". ` +
           'The page must be reloaded to recover the GPU context.',
       )
     })
 
     // Uncaptured errors are normally silent (only console-warned by Chrome at
     // best). Pipe them to console.error so silent mobile crashes show up.
-    const onUncapturedError = (event: any) => {
-      console.error('[viewer] WebGPU uncaptured error:', event?.error?.message, event?.error)
+    const onUncapturedError = (event: GPUUncapturedErrorEvent) => {
+      console.error('[viewer] WebGPU uncaptured error:', event.error.message, event.error)
     }
-    device.addEventListener?.('uncapturederror', onUncapturedError)
+    device.addEventListener('uncapturederror', onUncapturedError as EventListener)
 
     return () => {
-      device.removeEventListener?.('uncapturederror', onUncapturedError)
+      device.removeEventListener('uncapturederror', onUncapturedError as EventListener)
     }
   }, [gl])
 
@@ -147,6 +147,7 @@ interface ViewerProps {
   hoverStyles?: HoverStyles
   selectionManager?: 'default' | 'custom'
   perf?: boolean
+  useBvh?: boolean
 }
 
 const Viewer: React.FC<ViewerProps> = ({
@@ -154,6 +155,7 @@ const Viewer: React.FC<ViewerProps> = ({
   hoverStyles = DEFAULT_HOVER_STYLES,
   selectionManager = 'default',
   perf = false,
+  useBvh = true,
 }) => {
   const theme = useViewer((state) => state.theme)
   return (
@@ -216,9 +218,13 @@ const Viewer: React.FC<ViewerProps> = ({
         {/* <directionalLight position={[10, 10, 5]} intensity={0.5} castShadow
           /> */}
         <Lights />
-        <Bvh>
+        {useBvh ? (
+          <Bvh>
+            <SceneRenderer />
+          </Bvh>
+        ) : (
           <SceneRenderer />
-        </Bvh>
+        )}
 
         {/* Default Systems */}
         <LevelSystem />

@@ -6,7 +6,8 @@
     "noImplicitAny": false,
     "noUncheckedIndexedAccess": false,
     "declaration": false,
-    "declarationMap": false
+    "declarationMap": false,
+    "types": ["bun"]
   },
   "include": ["src"],
   "exclude": ["node_modules", "src/**/__tests__", "src/**/*.test.ts", "src/**/*.test.tsx"]

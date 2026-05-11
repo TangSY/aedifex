@@ -12,8 +12,8 @@ import { useViewer } from '@aedifex/viewer'
 import { BookMarked, Copy, FlipHorizontal2, Move, Trash2 } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 import { usePresetsAdapter } from '../../../contexts/presets-context'
-import { cn } from '../../../lib/utils'
 import { sfxEmitter } from '../../../lib/sfx-bus'
+import { cn } from '../../../lib/utils'
 import useEditor from '../../../store/use-editor'
 import { ActionButton, ActionGroup } from '../controls/action-button'
 import { MetricControl } from '../controls/metric-control'
@@ -129,7 +129,11 @@ export function WindowPanel() {
       if (liveNode?.type !== 'window') return
 
       if (
-        !(previewRef.current && previewRef.current.id === selectedId && previewRef.current.key === key)
+        !(
+          previewRef.current &&
+          previewRef.current.id === selectedId &&
+          previewRef.current.key === key
+        )
       ) {
         previewRef.current = {
           id: selectedId as AnyNodeId,
@@ -299,7 +303,8 @@ export function WindowPanel() {
   const normRows = node.rowRatios.map((r) => r / rowSum)
   const isOpening = node.openingKind === 'opening'
   const openingShape = node.openingShape ?? 'rectangle'
-  const windowShape = openingShape === 'arch' || openingShape === 'rounded' ? openingShape : 'rectangle'
+  const windowShape =
+    openingShape === 'arch' || openingShape === 'rounded' ? openingShape : 'rectangle'
   const openingRadiusMode = node.openingRadiusMode ?? 'all'
   const openingCornerRadii = node.openingCornerRadii ?? [0.15, 0.15, 0.15, 0.15]
   const cornerRadius = node.cornerRadius ?? 0.15
@@ -340,7 +345,10 @@ export function WindowPanel() {
           nextUpdates.openingCornerRadii = nextRadii
         }
       } else {
-        const nextRadius = Math.min(Math.max(cornerRadius, 0), getMaxSharedWindowRadius(nextWidth, nextHeight))
+        const nextRadius = Math.min(
+          Math.max(cornerRadius, 0),
+          getMaxSharedWindowRadius(nextWidth, nextHeight),
+        )
         if (Math.abs(nextRadius - cornerRadius) > 1e-6) {
           nextUpdates.cornerRadius = nextRadius
         }
@@ -597,7 +605,7 @@ export function WindowPanel() {
         />
       </PanelSection>
 
-      {!isOpening && !rectangleOnlyWindowTypes.has(node.windowType) && (
+      {!(isOpening || rectangleOnlyWindowTypes.has(node.windowType)) && (
         <PanelSection title="Corner Shape">
           <SegmentedControl
             onChange={(value) =>

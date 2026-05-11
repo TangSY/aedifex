@@ -127,7 +127,7 @@ export function buildLevelDuplicateCreateOps({
   const keptIds = new Set(filteredNodes.map((node) => node.id))
 
   const cleanedNodes = filteredNodes.map((node) => {
-    if (!('children' in node) || !Array.isArray(node.children)) {
+    if (!('children' in node && Array.isArray(node.children))) {
       return node
     }
 

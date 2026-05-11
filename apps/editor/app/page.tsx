@@ -1,13 +1,36 @@
 'use client'
 
-import { Editor, type SidebarTab, ViewerToolbarLeft, ViewerToolbarRight } from '@aedifex/editor'
+import {
+  Editor,
+  ItemsPanel,
+  type SidebarTab,
+  ViewerToolbarLeft,
+  ViewerToolbarRight,
+} from '@aedifex/editor'
+import { Layers, Package, Settings } from 'lucide-react'
 import Link from 'next/link'
 
-const SIDEBAR_TABS: (SidebarTab & { component: React.ComponentType })[] = [
+const SIDEBAR_TABS = [
   {
     id: 'site',
     label: 'Scene',
-    component: () => null, // Built-in SitePanel handles this
+    component: () => null,
+    mobileDefaultSnap: 0.5,
+    mobileIcon: <Layers className="h-5 w-5" />,
+  },
+  {
+    id: 'items',
+    label: 'Items',
+    component: ItemsPanel,
+    mobileDefaultSnap: 0.5,
+    mobileIcon: <Package className="h-5 w-5" />,
+  },
+  {
+    id: 'settings',
+    label: 'Settings',
+    component: () => null,
+    mobileDefaultSnap: 0.5,
+    mobileIcon: <Settings className="h-5 w-5" />,
   },
 ]
 

@@ -63,10 +63,12 @@ function getLinkedWallSnapshots(args: {
     }
 
     if (
-      !samePoint(node.start, originalStart) &&
-      !samePoint(node.start, originalEnd) &&
-      !samePoint(node.end, originalStart) &&
-      !samePoint(node.end, originalEnd)
+      !(
+        samePoint(node.start, originalStart) ||
+        samePoint(node.start, originalEnd) ||
+        samePoint(node.end, originalStart) ||
+        samePoint(node.end, originalEnd)
+      )
     ) {
       continue
     }

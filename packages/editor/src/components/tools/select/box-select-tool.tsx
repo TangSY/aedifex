@@ -192,7 +192,17 @@ function collectNodeIdsInBounds(bounds: Bounds): string[] {
 
   const result: string[] = []
 
-  if (phase === 'structure' && structureLayer === 'elements') {
+  if (phase === 'structure' && structureLayer === 'zones') {
+    for (const childId of levelNode.children) {
+      const node = nodes[childId as AnyNodeId]
+      if (!node || node.type !== 'zone') continue
+      const zone = node as ZoneNode
+      if (polygonIntersectsBounds(zone.polygon, bounds)) {
+        result.push(zone.id)
+      }
+    }
+  } else {
+    // structure (elements) and furnish: collect all node types
     for (const childId of levelNode.children) {
       const node = nodes[childId as AnyNodeId]
       if (!node) continue
@@ -240,22 +250,7 @@ function collectNodeIdsInBounds(bounds: Bounds): string[] {
         if (objectBoundsIntersectsBounds(node.id, bounds)) {
           result.push(node.id)
         }
-      }
-    }
-  } else if (phase === 'structure' && structureLayer === 'zones') {
-    for (const childId of levelNode.children) {
-      const node = nodes[childId as AnyNodeId]
-      if (!node || node.type !== 'zone') continue
-      const zone = node as ZoneNode
-      if (polygonIntersectsBounds(zone.polygon, bounds)) {
-        result.push(zone.id)
-      }
-    }
-  } else if (phase === 'furnish') {
-    for (const childId of levelNode.children) {
-      const node = nodes[childId as AnyNodeId]
-      if (!node) continue
-      if (node.type === 'item') {
+      } else if (node.type === 'item') {
         const item = node as ItemNode
         if (item.asset.category === 'door' || item.asset.category === 'window') continue
         const xz = getNodeWorldXZ(item.id)

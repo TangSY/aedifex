@@ -45,6 +45,7 @@ const tools: Record<Phase, Partial<Record<Tool, React.FC>>> = {
     door: DoorTool,
     item: ItemTool,
     zone: ZoneTool,
+    spawn: SpawnTool,
     window: WindowTool,
   },
   furnish: {
@@ -63,10 +64,9 @@ export const ToolManager: React.FC = () => {
   const curvingFence = useEditor((state) => state.curvingFence)
   const editingHole = useEditor((state) => state.editingHole)
   const selectedZoneId = useViewer((state) => state.selection.zoneId)
-  const selectedLevelId = useViewer((state) => state.selection.levelId)
-  const buildingId = useViewer((state) => state.selection.buildingId)
   const selectedIds = useViewer((state) => state.selection.selectedIds)
-  const setSelection = useViewer((state) => state.setSelection)
+  const buildingId = useViewer((state) => state.selection.buildingId)
+  const activeLevelId = useViewer((state) => state.selection.levelId)
   const nodes = useScene((state) => state.nodes)
 
   // Building transform for the local group — all building-relative tools live inside this group
@@ -128,13 +128,13 @@ export const ToolManager: React.FC = () => {
 
   const BuildToolComponent = showBuildTool ? tools[phase]?.[tool] : null
   const handlePlacedNodeSelected = (nodeId: AnyNodeId) => {
-    setSelection({ selectedIds: [nodeId] })
+    useViewer.getState().setSelection({ selectedIds: [nodeId] })
   }
 
   return (
     <>
-      {showSiteBoundaryEditor && <SiteBoundaryEditor />}
       {/* World-space tools: site boundary and building movement operate in world coordinates */}
+      {showSiteBoundaryEditor && <SiteBoundaryEditor />}
       {movingNode?.type === 'building' && <MoveTool onSpawnMoved={handlePlacedNodeSelected} />}
 
       {/* Building-local group: all other tools are relative to the selected building.
@@ -162,13 +162,13 @@ export const ToolManager: React.FC = () => {
         {movingNode && movingNode.type !== 'building' && (
           <MoveTool onSpawnMoved={handlePlacedNodeSelected} />
         )}
-        {!movingNode && showBuildTool && tool === 'spawn' && (
-          <SpawnTool currentLevelId={selectedLevelId} onPlaced={handlePlacedNodeSelected} />
-        )}
-        {!movingNode && showBuildTool && tool === 'column' && (
-          <ColumnTool currentLevelId={selectedLevelId} onPlaced={handlePlacedNodeSelected} />
-        )}
-        {!movingNode && BuildToolComponent && tool !== 'column' && <BuildToolComponent />}
+        {!movingNode && BuildToolComponent && tool === 'spawn' ? (
+          <SpawnTool currentLevelId={activeLevelId ?? null} onPlaced={handlePlacedNodeSelected} />
+        ) : !movingNode && showBuildTool && tool === 'column' ? (
+          <ColumnTool currentLevelId={activeLevelId ?? null} onPlaced={handlePlacedNodeSelected} />
+        ) : !movingNode && BuildToolComponent && tool !== 'column' ? (
+          <BuildToolComponent />
+        ) : null}
       </group>
     </>
   )

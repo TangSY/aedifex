@@ -1,6 +1,5 @@
 'use client'
 
-
 import {
   type AnyNode,
   type AnyNodeId,
@@ -85,10 +84,6 @@ export function FencePanel() {
   const handleClose = useCallback(() => {
     setSelection({ selectedIds: [] })
   }, [setSelection])
-
-
-
-
 
   if (!(node && node.type === 'fence' && selectedId && selectedCount === 1)) return null
 

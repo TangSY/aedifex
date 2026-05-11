@@ -341,7 +341,7 @@ function applySingleSurfacePaintPreview(
   if (node.type === 'ceiling') {
     const root = getRegisteredMesh(node.id)
     const overlay = root?.getObjectByName('ceiling-grid') as Mesh | undefined
-    if (!root || !overlay) return null
+    if (!(root && overlay)) return null
 
     const previewColor =
       getMaterialPresetByRef(material.materialPreset)?.mapProperties.color ??
@@ -999,7 +999,6 @@ export const SelectionManager = () => {
       'roof-segment',
       'stair',
       'stair-segment',
-      'spawn',
       'window',
       'door',
       'zone',
@@ -1392,6 +1391,7 @@ export const SelectionManager = () => {
       'roof-segment',
       'stair',
       'stair-segment',
+      'spawn',
       'window',
       'door',
       'zone',

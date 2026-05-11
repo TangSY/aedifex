@@ -1,6 +1,6 @@
 {
   "name": "@aedifex/mcp",
-  "version": "0.6.0",
+  "version": "0.2.0",
   "description": "Model Context Protocol server for Aedifex 3D building editor",
   "type": "module",
   "main": "./dist/index.js",
@@ -10,6 +10,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js",
+      "default": "./dist/server.js"
     },
     "./storage": {
       "types": "./dist/storage/index.d.ts",
@@ -21,20 +26,15 @@
       "import": "./dist/storage/types.js",
       "default": "./dist/storage/types.js"
     },
-    "./bridge": {
-      "types": "./dist/bridge/scene-bridge.d.ts",
-      "import": "./dist/bridge/scene-bridge.js",
-      "default": "./dist/bridge/scene-bridge.js"
-    },
-    "./server": {
-      "types": "./dist/server.d.ts",
-      "import": "./dist/server.js",
-      "default": "./dist/server.js"
-    },
     "./operations": {
       "types": "./dist/operations/index.d.ts",
       "import": "./dist/operations/index.js",
       "default": "./dist/operations/index.js"
+    },
+    "./bridge": {
+      "types": "./dist/bridge/index.d.ts",
+      "import": "./dist/bridge/index.js",
+      "default": "./dist/bridge/index.js"
     },
     "./templates": {
       "types": "./dist/templates/index.d.ts",
@@ -59,14 +59,14 @@
     "prepublishOnly": "bun run build && bun test"
   },
   "peerDependencies": {
-    "@aedifex/core": "workspace:*"
+    "@aedifex/core": "^0.8.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^4.3.5"
   },
   "devDependencies": {
-    "@aedifex/core": "workspace:*",
+    "@aedifex/core": "^0.8.0",
     "@pascal/typescript-config": "*",
     "@types/node": "^25.5.0",
     "typescript": "5.9.3"

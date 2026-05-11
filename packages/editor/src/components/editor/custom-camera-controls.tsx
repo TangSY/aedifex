@@ -1,4 +1,5 @@
 'use client'
+
 import {
   type CameraControlEvent,
   type CameraControlFitSceneEvent,
@@ -6,7 +7,7 @@ import {
   sceneRegistry,
   useScene,
 } from '@aedifex/core'
-import { useViewer, ZONE_LAYER } from '@aedifex/viewer'
+import { useViewer, WalkthroughControls, ZONE_LAYER } from '@aedifex/viewer'
 import { CameraControls, CameraControlsImpl } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef } from 'react'

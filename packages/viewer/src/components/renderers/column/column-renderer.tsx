@@ -834,37 +834,24 @@ function Flutes({
   )
 }
 
-function DravidianShaftPanels({
-  node,
-  shaftY,
-  shaftHeight,
+function DravidianPanelFace({
+  position,
+  rotation = 0,
+  panelHeight,
+  panelWidth,
+  rail,
+  reliefDepth,
+  panelShape,
 }: {
-  node: ColumnNode
-  shaftY: number
-  shaftHeight: number
+  position: [number, number, number]
+  rotation?: number
+  panelHeight: number
+  panelWidth: number
+  rail: number
+  reliefDepth: number
+  panelShape: NonNullable<ColumnNode['panelShape']>
 }) {
-  const panelCount = Math.max(
-    node.panelCount ?? 0,
-    node.style === 'dravidian-carved' || node.shaftDetail === 'panelled' ? 3 : 0,
-  )
-  if (panelCount <= 0 || shaftHeight <= 0) return null
-
-  const shaftWidth = node.width * 0.72
-  const shaftDepth = node.depth * 0.72
-  const panelHeight = Math.min(0.42, shaftHeight / Math.max(4, panelCount + 2))
-  const panelWidth = node.width * 0.26
-  const rail = Math.max(0.012, node.width * 0.028)
-  const reliefDepth = Math.max(0.012, node.panelInsetDepth ?? node.width * 0.025)
-  const rows = Array.from({ length: panelCount }, (_, index) => (index + 1) / (panelCount + 1))
-  const panelShape = node.panelShape ?? 'rectangle'
-
-  const PanelFace = ({
-    position,
-    rotation = 0,
-  }: {
-    position: [number, number, number]
-    rotation?: number
-  }) => (
+  return (
     <group position={position} rotation={[0, rotation, 0]}>
       <MappedBox
         depth={reliefDepth}
@@ -917,6 +904,33 @@ function DravidianShaftPanels({
       )}
     </group>
   )
+}
+
+function DravidianShaftPanels({
+  node,
+  shaftY,
+  shaftHeight,
+}: {
+  node: ColumnNode
+  shaftY: number
+  shaftHeight: number
+}) {
+  const panelCount = Math.max(
+    node.panelCount ?? 0,
+    node.style === 'dravidian-carved' || node.shaftDetail === 'panelled' ? 3 : 0,
+  )
+  if (panelCount <= 0 || shaftHeight <= 0) return null
+
+  const shaftWidth = node.width * 0.72
+  const shaftDepth = node.depth * 0.72
+  const panelHeight = Math.min(0.42, shaftHeight / Math.max(4, panelCount + 2))
+  const panelWidth = node.width * 0.26
+  const rail = Math.max(0.012, node.width * 0.028)
+  const reliefDepth = Math.max(0.012, node.panelInsetDepth ?? node.width * 0.025)
+  const rows = Array.from({ length: panelCount }, (_, index) => (index + 1) / (panelCount + 1))
+  const panelShape = node.panelShape ?? 'rectangle'
+
+  const faceProps = { panelHeight, panelWidth, rail, reliefDepth, panelShape }
 
   return (
     <group>
@@ -924,12 +938,23 @@ function DravidianShaftPanels({
         const y = shaftY + shaftHeight * t
         return (
           <group key={rowIndex}>
-            <PanelFace position={[0, y, shaftDepth / 2 + reliefDepth / 2]} />
-            <PanelFace position={[0, y, -shaftDepth / 2 - reliefDepth / 2]} />
-            <PanelFace position={[shaftWidth / 2 + reliefDepth / 2, y, 0]} rotation={Math.PI / 2} />
-            <PanelFace
+            <DravidianPanelFace
+              position={[0, y, shaftDepth / 2 + reliefDepth / 2]}
+              {...faceProps}
+            />
+            <DravidianPanelFace
+              position={[0, y, -shaftDepth / 2 - reliefDepth / 2]}
+              {...faceProps}
+            />
+            <DravidianPanelFace
+              position={[shaftWidth / 2 + reliefDepth / 2, y, 0]}
+              rotation={Math.PI / 2}
+              {...faceProps}
+            />
+            <DravidianPanelFace
               position={[-shaftWidth / 2 - reliefDepth / 2, y, 0]}
               rotation={Math.PI / 2}
+              {...faceProps}
             />
           </group>
         )

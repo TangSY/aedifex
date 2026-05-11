@@ -92,6 +92,8 @@ function panelForType(type: string | null) {
       return <StairSegmentPanel />
     case 'slab':
       return <SlabPanel />
+    case 'spawn':
+      return <SpawnPanel />
     case 'ceiling':
       return <CeilingPanel />
     case 'column':
@@ -238,36 +240,5 @@ export function PanelManager() {
   }
 
   // Show appropriate panel based on selected node type
-  if (selectedNodeType) {
-    switch (selectedNodeType) {
-      case 'item':
-        return <ItemPanel />
-      case 'roof':
-        return <RoofPanel />
-      case 'roof-segment':
-        return <RoofSegmentPanel />
-      case 'stair':
-        return <StairPanel />
-      case 'stair-segment':
-        return <StairSegmentPanel />
-      case 'slab':
-        return <SlabPanel />
-      case 'spawn':
-        return <SpawnPanel />
-      case 'ceiling':
-        return <CeilingPanel />
-      case 'column':
-        return <ColumnPanel />
-      case 'wall':
-        return <WallPanel />
-      case 'fence':
-        return <FencePanel />
-      case 'door':
-        return <DoorPanel />
-      case 'window':
-        return <WindowPanel />
-    }
-  }
-
-  return null
+  return panelForType(selectedNodeType)
 }

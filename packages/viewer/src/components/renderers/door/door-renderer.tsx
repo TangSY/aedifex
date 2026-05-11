@@ -1,6 +1,6 @@
 import { type DoorNode, useRegistry, useScene } from '@aedifex/core'
 import { useLayoutEffect, useRef } from 'react'
-import { MeshBasicMaterial, type Mesh } from 'three'
+import { type Mesh, MeshBasicMaterial } from 'three'
 import { useNodeEvents } from '../../../hooks/use-node-events'
 
 const doorHitboxMaterial = new MeshBasicMaterial({ visible: false })

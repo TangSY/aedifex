@@ -1,5 +1,5 @@
-import { useFrame } from '@react-three/fiber'
 import { type AnyNodeId, type CeilingNode, sceneRegistry, useScene } from '@aedifex/core'
+import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
 function ensureUv2Attribute(geometry: THREE.BufferGeometry) {

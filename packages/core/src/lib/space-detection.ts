@@ -1,14 +1,20 @@
 import {
-  getClampedWallCurveOffset,
-  getWallCurveFrameAt,
-  isCurvedWall,
-} from '../systems/wall/wall-curve'
-import { CeilingNode, SlabNode, type CeilingNode as CeilingNodeType, type SlabNode as SlabNodeType, type WallNode } from '../schema'
+  CeilingNode,
+  type CeilingNode as CeilingNodeType,
+  SlabNode,
+  type SlabNode as SlabNodeType,
+  type WallNode,
+} from '../schema'
 import {
   getSceneHistoryPauseDepth,
   pauseSceneHistory,
   resumeSceneHistory,
 } from '../store/history-control'
+import {
+  getClampedWallCurveOffset,
+  getWallCurveFrameAt,
+  isCurvedWall,
+} from '../systems/wall/wall-curve'
 import { simplifyClosedPolygon } from './polygon-geometry'
 
 type Point2D = { x: number; y: number }
@@ -147,10 +153,10 @@ function polygonCentroid(points: Point2D[]) {
 }
 
 function bboxOf(points: Point2D[]) {
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
+  let minX = Number.POSITIVE_INFINITY
+  let minY = Number.POSITIVE_INFINITY
+  let maxX = Number.NEGATIVE_INFINITY
+  let maxY = Number.NEGATIVE_INFINITY
 
   for (const point of points) {
     minX = Math.min(minX, point.x)
@@ -216,7 +222,13 @@ function sampleWallPointsForRoomDetection(
     return [start, end]
   }
 
-  const subdivide = (t0: number, p0: Point2D, t1: number, p1: Point2D, depth: number): Point2D[] => {
+  const subdivide = (
+    t0: number,
+    p0: Point2D,
+    t1: number,
+    p1: Point2D,
+    depth: number,
+  ): Point2D[] => {
     const midT = (t0 + t1) / 2
     const midPoint = getWallCurveFrameAt(wall, midT).point
     const deviation = pointLineDistance(midPoint, p0, p1)
@@ -361,7 +373,7 @@ function extractRoomPolygons(walls: WallNode[]): Point2D[][] {
 
     const signedArea = polygonArea(polygon)
     if (signedArea <= 0) continue
-    if (signedArea < 0.5 || signedArea > 10000) continue
+    if (signedArea < 0.5 || signedArea > 10_000) continue
 
     const signature = polygonSignature(polygon)
     if (faces.some((face) => polygonSignature(face) === signature)) continue
@@ -442,10 +454,7 @@ function nextAutoRoomName(
   return `Room ${maxIndex + 1} ${suffix}`
 }
 
-function sameTuplePolygon(
-  current: Array<[number, number]>,
-  next: Array<[number, number]>,
-) {
+function sameTuplePolygon(current: Array<[number, number]>, next: Array<[number, number]>) {
   return (
     current.length === next.length &&
     current.every((point, index) => point[0] === next[index]?.[0] && point[1] === next[index]?.[1])
@@ -727,7 +736,9 @@ function syncAutoCeilingsForLevel(
       const polygon = updatesById.get(ceiling.id)
       if (!polygon) return []
 
-      return sameTuplePolygon(ceiling.polygon, polygon) ? [] : [{ id: ceiling.id, data: { polygon } }]
+      return sameTuplePolygon(ceiling.polygon, polygon)
+        ? []
+        : [{ id: ceiling.id, data: { polygon } }]
     })
 
   const plannedCeilingsForNaming: Array<{ name?: string }> = [...existingCeilings]

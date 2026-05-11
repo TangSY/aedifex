@@ -28,12 +28,13 @@ export interface GridEvent {
   /** World-space intersection point on the grid plane. */
   position: [number, number, number]
   /**
-   * Building-local intersection point, relative to the currently selected building.
+   * Building-local intersection point — relative to the currently selected building.
    * Equals `position` when no building is selected.
-   * Use this for placing or committing anything that lives inside a building
-   * (walls, slabs, items, etc.).
+   * Use this for placing/committing anything that lives inside a building (walls, slabs, items, etc.).
    */
   localPosition: [number, number, number]
+  faceIndex?: number
+  object: Object3D
   nativeEvent: ThreeEvent<PointerEvent>
 }
 
@@ -66,7 +67,7 @@ export type StairSegmentEvent = NodeEvent<StairSegmentNode>
 export type WindowEvent = NodeEvent<WindowNode>
 export type DoorEvent = NodeEvent<DoorNode>
 
-// Event suffixes, exported for use in hooks
+// Event suffixes - exported for use in hooks
 export const eventSuffixes = [
   'click',
   'move',
@@ -99,7 +100,7 @@ export interface ThumbnailGenerateEvent {
   /**
    * When true, snap levels to their true positions before capturing (for a
    * consistent auto-thumbnail angle) and defer the capture if the tab is
-   * hidden, the background auto-save path. Omit for user-driven captures
+   * hidden — the background auto-save path. Omit for user-driven captures
    * that should fire immediately from the current camera pose.
    */
   snapLevels?: boolean
@@ -107,8 +108,10 @@ export interface ThumbnailGenerateEvent {
 
 export interface CameraControlFitSceneEvent {
   /**
-   * XZ-plane axis-aligned bounds for camera framing. Omitted values let the
-   * listener choose its default framing pose.
+   * XZ-plane axis-aligned bounds of the scene's geometry, computed from the
+   * scene graph (see `@aedifex/editor`'s `computeSceneBoundsXZ`). The
+   * viewer's camera-controls listener frames the camera onto this box.
+   * Omitted values fall back to the camera's default pose.
    */
   bounds?: {
     min: [number, number]

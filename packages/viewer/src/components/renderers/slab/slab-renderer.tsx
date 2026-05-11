@@ -1,5 +1,5 @@
 import { getMaterialPresetByRef, type SlabNode, useRegistry } from '@aedifex/core'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { Mesh } from 'three'
 import * as THREE from 'three'
 import { useNodeEvents } from '../../../hooks/use-node-events'

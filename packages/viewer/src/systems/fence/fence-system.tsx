@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber'
 import {
   type AnyNodeId,
   type FenceNode,
@@ -7,6 +6,7 @@ import {
   sceneRegistry,
   useScene,
 } from '@aedifex/core'
+import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
@@ -69,7 +69,9 @@ function createFenceCurveSpanParts(
   const parts: FencePart[] = []
   const frameCount = Math.max(
     1,
-    Math.ceil((getWallCurveLength(fence) * Math.max(1e-4, endT - startT)) / MIN_CURVE_SEGMENT_LENGTH),
+    Math.ceil(
+      (getWallCurveLength(fence) * Math.max(1e-4, endT - startT)) / MIN_CURVE_SEGMENT_LENGTH,
+    ),
   )
 
   let previous = getFencePointAt(fence, startT)

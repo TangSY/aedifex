@@ -90,9 +90,7 @@ function MoveItemContent({ movingNode }: { movingNode: ItemNode }) {
   return <>{cursor}</>
 }
 
-export const MoveTool: React.FC<{
-  onSpawnMoved?: (nodeId: SpawnNode['id']) => void
-}> = ({ onSpawnMoved }) => {
+export const MoveTool: React.FC = () => {
   const movingNode = useEditor((state) => state.movingNode)
 
   if (!movingNode) return null
@@ -100,15 +98,14 @@ export const MoveTool: React.FC<{
     return <MoveBuildingContent node={movingNode as BuildingNode} />
   if (movingNode.type === 'door') return <MoveDoorTool node={movingNode as DoorNode} />
   if (movingNode.type === 'window') return <MoveWindowTool node={movingNode as WindowNode} />
-  if (movingNode.type === 'fence') return <MoveFenceTool node={movingNode as FenceNode} />
   if (movingNode.type === 'ceiling') return <MoveCeilingTool node={movingNode as CeilingNode} />
   if (movingNode.type === 'column') return <MoveColumnTool node={movingNode as ColumnNode} />
   if (movingNode.type === 'slab') return <MoveSlabTool node={movingNode as SlabNode} />
   if (movingNode.type === 'wall') return <MoveWallTool node={movingNode as WallNode} />
+  if (movingNode.type === 'fence') return <MoveFenceTool node={movingNode as FenceNode} />
   if (movingNode.type === 'roof' || movingNode.type === 'roof-segment')
     return <MoveRoofTool node={movingNode as RoofNode | RoofSegmentNode} />
-  if (movingNode.type === 'spawn')
-    return <MoveSpawnTool node={movingNode as SpawnNode} onCommitted={onSpawnMoved} />
+  if (movingNode.type === 'spawn') return <MoveSpawnTool node={movingNode as SpawnNode} />
   if (movingNode.type === 'stair' || movingNode.type === 'stair-segment')
     return <MoveRoofTool node={movingNode as StairNode | StairSegmentNode} />
   return <MoveItemContent movingNode={movingNode as ItemNode} />

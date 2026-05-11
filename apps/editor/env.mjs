@@ -1,8 +1,8 @@
 /**
  * Environment variable validation for the editor app.
  *
- * This file validates that required environment variables are set at runtime.
- * Variables are defined in the root .env file.
+ * This file validates environment variables used by the standalone editor app.
+ * Values are loaded from the repo root .env.local by package scripts.
  *
  * @see https://env.t3.gg/docs/nextjs
  */
@@ -24,6 +24,7 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().optional(),
     NEXT_PUBLIC_APP_URL: z.string().optional(),
+    NEXT_PUBLIC_ASSETS_CDN_URL: z.string().optional(),
   },
 
   /**
@@ -35,6 +36,8 @@ export const env = createEnv({
     // Client
     NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_ASSETS_CDN_URL:
+      process.env.NEXT_PUBLIC_ASSETS_CDN_URL ?? process.env.NEXT_PUBLIC_EDITOR_ASSETS_CDN_URL,
   },
 
   /**

@@ -1,13 +1,19 @@
 'use client'
 
-import { type AnyNodeId, emitter, type GridEvent, useScene, type CeilingNode } from '@aedifex/core'
+import {
+  type AnyNodeId,
+  type CeilingNode,
+  emitter,
+  type GridEvent,
+  useScene,
+} from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { BufferGeometry, DoubleSide, Path, Shape, ShapeGeometry, Vector3 } from 'three'
 import { markToolCancelConsumed } from '../../../hooks/use-keyboard'
 import { sfxEmitter } from '../../../lib/sfx-bus'
 import useEditor from '../../../store/use-editor'
 import { CursorSphere } from '../shared/cursor-sphere'
-import { BufferGeometry, DoubleSide, Path, Shape, ShapeGeometry, Vector3 } from 'three'
 
 function snap(value: number) {
   return Math.round(value * 2) / 2
