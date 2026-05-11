@@ -9,7 +9,7 @@ import { ErrorCode, throwMcpError } from '../errors'
 import { appendLiveSceneEvent } from '../live-sync'
 import { currentLevelContext, sceneMetaPayload } from '../scene-lifecycle/metadata'
 
-export const createFromTemplateInput = {
+export const createFromTemplateInput: any = {
   id: z
     .string()
     .describe(
@@ -31,7 +31,7 @@ export const createFromTemplateInput = {
   projectId: z.string().optional(),
 }
 
-export const createFromTemplateOutput = {
+export const createFromTemplateOutput: any = {
   templateId: z.string(),
   rootNodeIds: z.array(z.string()),
   nodeCount: z.number(),

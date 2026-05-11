@@ -18,7 +18,7 @@ import { appendLiveSceneEvent } from '../live-sync'
  * Input shape for the `photo_to_scene` orchestrator. `image` matches the
  * contract documented on `analyze_floorplan_image` — base64 or http(s) URL.
  */
-export const photoToSceneInput = {
+export const photoToSceneInput: any = {
   image: z.string().describe('Base64 or https URL of the floor-plan photo'),
   scaleHint: z.string().optional().describe('e.g. "1 cm = 1 m" or "approx 80 m²"'),
   name: z.string().default('Scene from photo'),
@@ -27,7 +27,7 @@ export const photoToSceneInput = {
   defaultWallHeight: z.number().default(2.6),
 }
 
-export const photoToSceneOutput = {
+export const photoToSceneOutput: any = {
   sceneId: z.string().optional(),
   url: z.string().optional(),
   walls: z.number(),

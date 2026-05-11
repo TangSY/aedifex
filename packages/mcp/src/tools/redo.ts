@@ -3,11 +3,11 @@ import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { publishLiveSceneSnapshot } from './live-sync'
 
-export const redoInput = {
+export const redoInput: any = {
   steps: z.number().int().positive().optional(),
 }
 
-export const redoOutput = {
+export const redoOutput: any = {
   redone: z.number(),
 }
 

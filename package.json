@@ -24,8 +24,9 @@
     "@biomejs/biome": "^2.4.6",
     "dotenv-cli": "^11.0.0",
     "turbo": "^2.8.15",
-    "typescript": "6.0.2",
-    "ultracite": "^7.2.5"
+    "typescript": "5.9.3",
+    "ultracite": "^7.2.5",
+    "vitest": "^4.1.5"
   },
   "engines": {
     "node": ">=18"

@@ -10,7 +10,7 @@ import type { SceneOperations } from '../../operations'
  * `data:image/<mime>;base64,` URL) or an `http(s)` URL which we fetch and
  * inline as base64 before forwarding to the MCP host via sampling.
  */
-export const analyzeFloorplanImageInput = {
+export const analyzeFloorplanImageInput: any = {
   image: z.string().describe('Base64-encoded image or http(s) URL'),
   scaleHint: z
     .string()
@@ -18,7 +18,7 @@ export const analyzeFloorplanImageInput = {
     .describe("Text hint about scale, e.g. '1 cm = 1 m' or 'approximately 80 m²'"),
 }
 
-export const analyzeFloorplanImageOutput = {
+export const analyzeFloorplanImageOutput: any = {
   walls: z.array(
     z.object({
       start: z.tuple([z.number(), z.number()]),

@@ -7,14 +7,14 @@ import { ErrorCode, throwMcpError } from './errors'
 import { publishLiveSceneSnapshot } from './live-sync'
 import { NodeIdSchema } from './schemas'
 
-export const createLevelInput = {
+export const createLevelInput: any = {
   buildingId: NodeIdSchema,
   elevation: z.number().optional(),
   height: z.number().optional(),
   label: z.string().optional(),
 }
 
-export const createLevelOutput = {
+export const createLevelOutput: any = {
   levelId: z.string(),
 }
 

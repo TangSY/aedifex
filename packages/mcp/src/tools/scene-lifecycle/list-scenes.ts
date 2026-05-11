@@ -5,12 +5,12 @@ import { ErrorCode, throwMcpError } from '../errors'
 
 const DEFAULT_LIMIT = 100
 
-export const listScenesInput = {
+export const listScenesInput: any = {
   projectId: z.string().optional(),
   limit: z.number().int().positive().max(1000).optional(),
 }
 
-export const listScenesOutput = {
+export const listScenesOutput: any = {
   scenes: z.array(
     z.object({
       id: z.string(),

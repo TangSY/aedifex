@@ -8,7 +8,7 @@ import { wallLength, wallLocalXFromT } from './geometry'
 import { publishLiveSceneSnapshot } from './live-sync'
 import { NodeIdSchema } from './schemas'
 
-export const cutOpeningInput = {
+export const cutOpeningInput: any = {
   wallId: NodeIdSchema,
   type: z.enum(['door', 'window']),
   position: z.number().min(0).max(1),
@@ -16,7 +16,7 @@ export const cutOpeningInput = {
   height: z.number().positive(),
 }
 
-export const cutOpeningOutput = {
+export const cutOpeningOutput: any = {
   openingId: z.string(),
 }
 

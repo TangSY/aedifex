@@ -2,9 +2,9 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 
-export const exportGlbInput = {}
+export const exportGlbInput: any = {}
 
-export const exportGlbOutput = {
+export const exportGlbOutput: any = {
   status: z.literal('not_implemented'),
   reason: z.string(),
 }

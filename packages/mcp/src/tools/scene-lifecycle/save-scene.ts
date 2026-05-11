@@ -8,7 +8,7 @@ import { ErrorCode, throwMcpError } from '../errors'
 import { appendLiveSceneEvent } from '../live-sync'
 import { currentLevelContext, sceneMetaPayload } from './metadata'
 
-export const saveSceneInput = {
+export const saveSceneInput: any = {
   id: z.string().min(1).max(64).optional(),
   name: z.string().min(1).max(200),
   projectId: z.string().optional(),
@@ -36,7 +36,7 @@ export const saveSceneInput = {
     ),
 }
 
-export const saveSceneOutput = {
+export const saveSceneOutput: any = {
   id: z.string(),
   name: z.string(),
   projectId: z.string().nullable(),

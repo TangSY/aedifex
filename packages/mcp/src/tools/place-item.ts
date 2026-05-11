@@ -9,14 +9,14 @@ import { projectWorldPointToWallLocalX, wallLength } from './geometry'
 import { publishLiveSceneSnapshot } from './live-sync'
 import { NodeIdSchema, Vec3Schema } from './schemas'
 
-export const placeItemInput = {
+export const placeItemInput: any = {
   catalogItemId: z.string().min(1),
   targetNodeId: NodeIdSchema,
   position: Vec3Schema,
   rotation: z.number().optional(),
 }
 
-export const placeItemOutput = {
+export const placeItemOutput: any = {
   itemId: z.string(),
   status: z.string().optional(),
 }

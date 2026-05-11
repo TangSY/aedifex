@@ -7,14 +7,14 @@ import { ErrorCode, throwMcpError } from './errors'
 import { publishLiveSceneSnapshot } from './live-sync'
 import { NodeIdSchema, Vec2Schema } from './schemas'
 
-export const setZoneInput = {
+export const setZoneInput: any = {
   levelId: NodeIdSchema,
   polygon: z.array(Vec2Schema).min(3),
   label: z.string().min(1),
   properties: z.record(z.string(), z.unknown()).optional(),
 }
 
-export const setZoneOutput = {
+export const setZoneOutput: any = {
   zoneId: z.string(),
 }
 

@@ -7,7 +7,7 @@ import { ErrorCode, throwMcpError } from './errors'
 import { publishLiveSceneSnapshot } from './live-sync'
 import { NodeIdSchema, Vec2Schema } from './schemas'
 
-export const createWallInput = {
+export const createWallInput: any = {
   levelId: NodeIdSchema,
   start: Vec2Schema,
   end: Vec2Schema,
@@ -15,7 +15,7 @@ export const createWallInput = {
   height: z.number().positive().optional(),
 }
 
-export const createWallOutput = {
+export const createWallOutput: any = {
   wallId: z.string(),
 }
 
