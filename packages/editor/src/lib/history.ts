@@ -1,6 +1,7 @@
-import { useLiveTransforms, useScene } from '@aedifex/core'
+import { useLiveNodeOverrides, useLiveTransforms, useScene } from '@aedifex/core'
 
 function refreshSceneAfterHistoryJump() {
+  useLiveNodeOverrides.getState().clearAll()
   useLiveTransforms.getState().clearAll()
 
   const state = useScene.getState()

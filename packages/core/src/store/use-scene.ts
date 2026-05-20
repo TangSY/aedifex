@@ -438,6 +438,11 @@ export type SceneState = {
 
   createNode: (node: AnyNode, parentId?: AnyNodeId) => void
   createNodes: (ops: { node: AnyNode; parentId?: AnyNodeId }[]) => void
+  applyNodeChanges: (changes: {
+    create?: { node: AnyNode; parentId?: AnyNodeId }[]
+    update?: { id: AnyNodeId; data: Partial<AnyNode> }[]
+    delete?: AnyNodeId[]
+  }) => void
 
   updateNode: (id: AnyNodeId, data: Partial<AnyNode>) => void
   updateNodes: (updates: { id: AnyNodeId; data: Partial<AnyNode> }[]) => void
@@ -594,6 +599,7 @@ const useScene: UseSceneStore = create<SceneState>()(
 
       createNodes: (ops) => nodeActions.createNodesAction(set, get, ops),
       createNode: (node, parentId) => nodeActions.createNodesAction(set, get, [{ node, parentId }]),
+      applyNodeChanges: (changes) => nodeActions.applyNodeChangesAction(set, get, changes),
 
       updateNodes: (updates) => nodeActions.updateNodesAction(set, get, updates),
       updateNode: (id, data) => nodeActions.updateNodesAction(set, get, [{ id, data }]),

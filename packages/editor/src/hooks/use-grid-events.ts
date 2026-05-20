@@ -8,7 +8,7 @@ import {
 import { useViewer } from '@aedifex/viewer'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
-import { Plane, Raycaster, Vector2, Vector3 } from 'three'
+import { Object3D, Plane, Raycaster, Vector2, Vector3 } from 'three'
 
 /**
  * Custom grid events hook that uses manual raycasting instead of mesh events.
@@ -20,6 +20,8 @@ export function useGridEvents(gridY: number) {
   const pointer = useRef(new Vector2())
   const groundPlane = useRef(new Plane(new Vector3(0, 1, 0), 0))
   const intersectionPoint = useRef(new Vector3())
+  // 占位对象：手动 raycast 没有真实命中 mesh，仅用于满足 GridEvent.object 类型契约
+  const gridObject = useRef(new Object3D())
 
   // Update ground plane when grid Y changes
   useEffect(() => {
@@ -59,6 +61,7 @@ export function useGridEvents(gridY: number) {
       const payload: GridEvent = {
         position: [point.x, point.y, point.z],
         localPosition: [localPoint.x, localPoint.y, localPoint.z],
+        object: buildingMesh ?? gridObject.current,
         nativeEvent: nativeEvent as any, // Type compatibility with ThreeEvent
       }
 

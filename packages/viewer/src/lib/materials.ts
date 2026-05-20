@@ -1,13 +1,13 @@
 import {
   getMaterialPresetByRef,
+  resolveMaterial,
   type MaterialMapProperties,
   type MaterialPresetPayload,
   type MaterialProperties,
   type MaterialSchema,
-  resolveMaterial,
 } from '@aedifex/core'
 import * as THREE from 'three'
-import { MeshStandardNodeMaterial } from 'three/webgpu'
+import { MeshLambertNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu'
 
 export const baseMaterial = new MeshStandardNodeMaterial({
   color: '#f2f0ed',
@@ -15,10 +15,8 @@ export const baseMaterial = new MeshStandardNodeMaterial({
   metalness: 0.0,
 })
 
-export const glassMaterial = new MeshStandardNodeMaterial({
+export const glassMaterial = new MeshLambertNodeMaterial({
   color: '#e0f2fe',
-  roughness: 0.05,
-  metalness: 0.0,
   transparent: true,
   opacity: 0.35,
   side: THREE.DoubleSide,
@@ -282,16 +280,18 @@ export function createMaterial(material?: MaterialSchema): THREE.MeshStandardMat
   }
 
   const map = getTexture(material)
-
-  const threeMaterial = new THREE.MeshStandardMaterial({
+  const materialParams: THREE.MeshStandardMaterialParameters = {
     color: props.color,
     roughness: props.roughness,
     metalness: props.metalness,
     opacity: props.opacity,
     transparent: props.transparent,
     side: sideMap[props.side],
-    map,
-  })
+  }
+
+  if (map) materialParams.map = map
+
+  const threeMaterial = new THREE.MeshStandardMaterial(materialParams)
 
   materialCache.set(cacheKey, threeMaterial)
   return threeMaterial

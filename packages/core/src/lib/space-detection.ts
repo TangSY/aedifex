@@ -41,6 +41,12 @@ type DetectedRoom = {
   bbox: ReturnType<typeof bboxOf>
 }
 
+export type AutoSlabSyncPlan = {
+  create: SlabNodeType[]
+  update: Array<{ id: SlabNodeType['id']; data: Partial<SlabNodeType> }>
+  delete: Array<SlabNodeType['id']>
+}
+
 const DEFAULT_AUTO_SLAB_ELEVATION = 0.05
 const DEFAULT_AUTO_CEILING_HEIGHT = 2.5
 const ROOM_CURVE_TOLERANCE = 0.04
@@ -488,12 +494,10 @@ function buildSpace(levelId: string, polygon: Point2D[]): Space {
   }
 }
 
-function syncAutoSlabsForLevel(
-  levelId: string,
+export function planAutoSlabsForLevel(
   roomPolygons: Point2D[][],
   existingSlabs: SlabNodeType[],
-  sceneStore: any,
-) {
+): AutoSlabSyncPlan {
   const manualSlabs = existingSlabs.filter((slab) => !slab.autoFromWalls)
   const manualSignatures = new Set(
     manualSlabs.map((slab) => polygonSignature(slab.polygon.map(pointFromTuple))),
@@ -618,16 +622,31 @@ function syncAutoSlabsForLevel(
     )
   }
 
-  if (slabsToDelete.length > 0) {
-    sceneStore.getState().deleteNodes(slabsToDelete)
+  return {
+    create: slabsToCreate,
+    update: slabsToUpdate,
+    delete: slabsToDelete,
+  }
+}
+
+function syncAutoSlabsForLevel(
+  levelId: string,
+  roomPolygons: Point2D[][],
+  existingSlabs: SlabNodeType[],
+  sceneStore: any,
+) {
+  const plan = planAutoSlabsForLevel(roomPolygons, existingSlabs)
+
+  if (plan.delete.length > 0) {
+    sceneStore.getState().deleteNodes(plan.delete)
   }
 
-  if (slabsToUpdate.length > 0) {
-    sceneStore.getState().updateNodes(slabsToUpdate)
+  if (plan.update.length > 0) {
+    sceneStore.getState().updateNodes(plan.update)
   }
 
-  if (slabsToCreate.length > 0) {
-    sceneStore.getState().createNodes(slabsToCreate.map((node) => ({ node, parentId: levelId })))
+  if (plan.create.length > 0) {
+    sceneStore.getState().createNodes(plan.create.map((node) => ({ node, parentId: levelId })))
   }
 }
 

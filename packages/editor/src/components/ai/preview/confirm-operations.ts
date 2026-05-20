@@ -638,9 +638,9 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           }
           affectedNodeIds.push(existing.id as AnyNodeId)
           // Switch selection to the building's first level if available
-          const firstLevelId = existing.children[0]
-          if (firstLevelId) {
-            useViewer.getState().setSelection({ levelId: firstLevelId })
+          const firstChildId = existing.children[0]
+          if (firstChildId && firstChildId.startsWith('level_')) {
+            useViewer.getState().setSelection({ levelId: firstChildId as `level_${string}` })
           }
           break
         }
