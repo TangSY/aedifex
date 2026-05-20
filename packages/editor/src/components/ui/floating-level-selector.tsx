@@ -26,7 +26,7 @@ import {
   useScene,
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
-import { Copy, GripVertical, MoreVertical, Plus, Trash2 } from 'lucide-react'
+import { ClipboardPaste, Copy, GripVertical, MoreVertical, Plus, Trash2 } from 'lucide-react'
 import {
   type ButtonHTMLAttributes,
   type CSSProperties,
@@ -34,6 +34,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import {
@@ -41,6 +42,12 @@ import {
   type LevelDuplicatePreset,
 } from '../../lib/level-duplication'
 import { deleteLevelWithFallbackSelection } from '../../lib/level-selection'
+import {
+  getEditorClipboardSnapshot,
+  pasteEditorClipboardToLevel,
+  subscribeEditorClipboard,
+} from '../../lib/scene-clipboard'
+import { sfxEmitter } from '../../lib/sfx-bus'
 import { cn } from '../../lib/utils'
 import { LevelDuplicateDialog } from './level-duplicate-dialog'
 import {
@@ -126,6 +133,7 @@ function LevelRow({
   dragHandleRef,
   onSelect,
   onDuplicate,
+  onPaste,
   onRequestDelete,
 }: {
   level: LevelNode
@@ -135,6 +143,7 @@ function LevelRow({
   dragHandleRef?: (element: HTMLButtonElement | null) => void
   onSelect: () => void
   onDuplicate: (preset?: LevelDuplicatePreset) => void
+  onPaste?: () => void
   onRequestDelete: () => void
 }) {
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false)
@@ -223,6 +232,19 @@ function LevelRow({
                 <Copy className="h-3 w-3" />
                 Duplicate with options...
               </button>
+              {onPaste && (
+                <button
+                  className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-muted-foreground text-xs transition-colors hover:bg-white/10 hover:text-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onPaste()
+                  }}
+                  type="button"
+                >
+                  <ClipboardPaste className="h-3 w-3" />
+                  Paste copied selection
+                </button>
+              )}
               <button
                 className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-muted-foreground text-xs transition-colors hover:bg-white/10 hover:text-red-400"
                 onClick={(e) => {
@@ -256,12 +278,14 @@ function SortableLevelRow({
   isSelected,
   onSelect,
   onDuplicate,
+  onPaste,
   onRequestDelete,
 }: {
   level: LevelNode
   isSelected: boolean
   onSelect: () => void
   onDuplicate: (preset?: LevelDuplicatePreset) => void
+  onPaste?: () => void
   onRequestDelete: () => void
 }) {
   const {
@@ -291,6 +315,7 @@ function SortableLevelRow({
         isSelected={isSelected}
         level={level}
         onDuplicate={onDuplicate}
+        onPaste={onPaste}
         onRequestDelete={onRequestDelete}
         onSelect={onSelect}
       />
@@ -310,6 +335,11 @@ export function FloatingLevelSelector() {
 
   const [deletingLevel, setDeletingLevel] = useState<LevelNode | null>(null)
   const [draggingLevelId, setDraggingLevelId] = useState<string | null>(null)
+  const clipboardSnapshot = useSyncExternalStore(
+    subscribeEditorClipboard,
+    getEditorClipboardSnapshot,
+    getEditorClipboardSnapshot,
+  )
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 4 },
@@ -424,6 +454,13 @@ export function FloatingLevelSelector() {
     [createNodes, levels, resolvedBuildingId, setSelection, updateNodes],
   )
 
+  const handlePasteToLevel = useCallback((level: LevelNode) => {
+    const result = pasteEditorClipboardToLevel(level.id)
+    if (result?.pastedIds.length) {
+      sfxEmitter.emit('sfx:item-place')
+    }
+  }, [])
+
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setDraggingLevelId(String(event.active.id))
   }, [])
@@ -523,6 +560,9 @@ export function FloatingLevelSelector() {
                         isSelected={isSelected}
                         level={level}
                         onDuplicate={(preset) => handleDuplicateLevel(level, preset)}
+                        onPaste={
+                          clipboardSnapshot ? () => handlePasteToLevel(level) : undefined
+                        }
                         onRequestDelete={() => setDeletingLevel(level)}
                         onSelect={() =>
                           setSelection(

@@ -13,7 +13,6 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import type { Group } from 'three'
 import { sfxEmitter } from '../../../lib/sfx-bus'
-import useEditor from '../../../store/use-editor'
 import { CursorSphere } from '../shared/cursor-sphere'
 
 const COLUMN_ICON = (
@@ -70,8 +69,6 @@ export const ColumnTool: React.FC<ColumnToolProps> = ({ currentLevelId, onPlaced
       useScene.getState().createNode(column, currentLevelId)
       onPlaced?.(column.id)
       sfxEmitter.emit('sfx:structure-build')
-      useEditor.getState().setTool(null)
-      useEditor.getState().setMode('select')
     }
 
     emitter.on('grid:move', onGridMove)
@@ -88,7 +85,7 @@ export const ColumnTool: React.FC<ColumnToolProps> = ({ currentLevelId, onPlaced
   return (
     <CursorSphere
       color="#a78bfa"
-      height={2.8}
+      height={2.5}
       ref={cursorRef}
       showTooltip
       tooltipContent={COLUMN_ICON}

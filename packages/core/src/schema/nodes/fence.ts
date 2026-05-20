@@ -23,6 +23,7 @@ export const FenceNode = BaseNode.extend({
   groundClearance: z.number().default(0),
   edgeInset: z.number().default(0.015),
   baseStyle: FenceBaseStyle.default('grounded'),
+  showInfill: z.boolean().default(true),
   color: z.string().default('#ffffff'),
   style: FenceStyle.default('slat'),
 }).describe(
@@ -33,6 +34,7 @@ export const FenceNode = BaseNode.extend({
   - curveOffset: midpoint sagitta offset used to bend the fence into an arc
   - baseHeight/postSpacing/postSize/topRailHeight: exact geometric controls from the plan3D fence model
   - groundClearance/edgeInset/baseStyle: fence support and inset configuration
+  - showInfill: whether to draw intermediate posts/slats between end posts
   - color/style: visual appearance options
   `,
 )

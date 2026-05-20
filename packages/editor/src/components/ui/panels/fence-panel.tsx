@@ -23,6 +23,7 @@ import { MaterialPicker } from '../controls/material-picker'
 import { PanelSection } from '../controls/panel-section'
 import { SegmentedControl } from '../controls/segmented-control'
 import { SliderControl } from '../controls/slider-control'
+import { ToggleControl } from '../controls/toggle-control'
 import { PanelWrapper } from './panel-wrapper'
 
 type FenceStyleValue = 'slat' | 'rail' | 'privacy'
@@ -109,6 +110,12 @@ export function FencePanel() {
           onChange={(value) => handleUpdate({ baseStyle: value })}
           options={FENCE_BASE_STYLE_OPTIONS}
           value={node.baseStyle}
+        />
+        <ToggleControl
+          checked={node.showInfill ?? true}
+          className="mt-2"
+          label="Fence Infill"
+          onChange={(checked) => handleUpdate({ showInfill: checked })}
         />
       </PanelSection>
 

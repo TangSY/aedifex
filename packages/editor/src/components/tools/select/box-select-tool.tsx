@@ -1,7 +1,10 @@
+import '../../../three-types'
+
 import { Icon } from '@iconify/react'
 import {
   type AnyNodeId,
   type CeilingNode,
+  type ColumnNode,
   emitter,
   type GridEvent,
   type ItemNode,
@@ -13,6 +16,7 @@ import {
   type ZoneNode,
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
+import type { ThreeElements } from '@react-three/fiber'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import {
@@ -33,6 +37,12 @@ import { EDITOR_LAYER } from '../../../lib/constants'
 import { sfxEmitter } from '../../../lib/sfx-bus'
 import useEditor from '../../../store/use-editor'
 import { CursorSphere } from '../shared/cursor-sphere'
+
+declare module 'react/jsx-runtime' {
+  namespace JSX {
+    interface IntrinsicElements extends ThreeElements {}
+  }
+}
 
 /**
  * Module-level flag to prevent the SelectionManager from deselecting
@@ -249,6 +259,11 @@ function collectNodeIdsInBounds(bounds: Bounds): string[] {
       } else if (node.type === 'stair') {
         if (objectBoundsIntersectsBounds(node.id, bounds)) {
           result.push(node.id)
+        }
+      } else if (node.type === 'column') {
+        const column = node as ColumnNode
+        if (objectBoundsIntersectsBounds(column.id, bounds)) {
+          result.push(column.id)
         }
       } else if (node.type === 'item') {
         const item = node as ItemNode

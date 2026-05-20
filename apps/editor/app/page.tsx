@@ -1,14 +1,12 @@
 'use client'
 
-import {
-  Editor,
-  ItemsPanel,
-  type SidebarTab,
-  ViewerToolbarLeft,
-  ViewerToolbarRight,
-} from '@aedifex/editor'
+import { Editor, ItemsPanel } from '@aedifex/editor'
 import { Layers, Package, Settings } from 'lucide-react'
 import Link from 'next/link'
+import {
+  CommunityViewerToolbarLeft,
+  CommunityViewerToolbarRight,
+} from '@/components/viewer-toolbar'
 
 const SIDEBAR_TABS = [
   {
@@ -59,8 +57,8 @@ export default function Home() {
         layoutVersion="v2"
         projectId={PROJECT_ID}
         sidebarTabs={SIDEBAR_TABS}
-        viewerToolbarLeft={<ViewerToolbarLeft />}
-        viewerToolbarRight={<ViewerToolbarRight />}
+        viewerToolbarLeft={<CommunityViewerToolbarLeft />}
+        viewerToolbarRight={<CommunityViewerToolbarRight />}
       />
     </div>
   )

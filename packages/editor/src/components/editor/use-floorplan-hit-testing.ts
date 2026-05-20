@@ -3,7 +3,9 @@
 import type {
   AnyNode,
   CeilingNode,
+  ColumnNode,
   DoorNode,
+  ElevatorNode,
   ItemNode,
   Point2D,
   RoofNode,
@@ -46,6 +48,16 @@ type CeilingPolygonEntry = {
   holes: Point2D[][]
 }
 
+type ColumnPolygonEntry = {
+  column: ColumnNode
+  polygon: Point2D[]
+}
+
+type ElevatorPolygonEntry = {
+  elevator: ElevatorNode
+  polygon: Point2D[]
+}
+
 type FloorplanRoofEntry = {
   roof: RoofNode
   segments: Array<{
@@ -72,8 +84,10 @@ type FloorplanStairEntry = {
 
 type UseFloorplanHitTestingArgs = {
   ceilingPolygons: CeilingPolygonEntry[]
+  columnPolygons: ColumnPolygonEntry[]
   displaySlabPolygons: SlabPolygonEntry[]
   displayWallPolygons: WallPolygonEntry[]
+  floorplanElevatorEntries: ElevatorPolygonEntry[]
   floorplanItemEntries: FloorplanItemEntry[]
   floorplanOpeningHitTolerance: number
   floorplanRoofEntries: FloorplanRoofEntry[]
@@ -88,8 +102,10 @@ type UseFloorplanHitTestingArgs = {
 
 export function useFloorplanHitTesting({
   ceilingPolygons,
+  columnPolygons,
   displaySlabPolygons,
   displayWallPolygons,
+  floorplanElevatorEntries,
   floorplanItemEntries,
   floorplanOpeningHitTolerance,
   floorplanRoofEntries,
@@ -113,18 +129,22 @@ export function useFloorplanHitTesting({
         openings: openingsPolygons,
         roofs: floorplanRoofEntries,
         stairs: floorplanStairEntries,
+        elevators: floorplanElevatorEntries,
         walls: displayWallPolygons,
         slabs: displaySlabPolygons,
         openingHitTolerance: floorplanOpeningHitTolerance,
         wallHitTolerance: floorplanWallHitTolerance,
+        columns: columnPolygons,
         getOpeningCenterLine,
       })
     },
     [
       ceilingPolygons,
+      columnPolygons,
       displaySlabPolygons,
       displayWallPolygons,
       floorplanItemEntries,
+      floorplanElevatorEntries,
       floorplanOpeningHitTolerance,
       floorplanRoofEntries,
       floorplanStairEntries,
@@ -149,13 +169,17 @@ export function useFloorplanHitTesting({
         openings: openingsPolygons,
         roofs: floorplanRoofEntries,
         slabs: displaySlabPolygons,
+        columns: columnPolygons,
+        elevators: floorplanElevatorEntries,
         stairs: floorplanStairEntries,
       }),
     [
       ceilingPolygons,
+      columnPolygons,
       displaySlabPolygons,
       displayWallPolygons,
       floorplanItemEntries,
+      floorplanElevatorEntries,
       floorplanRoofEntries,
       floorplanStairEntries,
       isFloorplanItemContextActive,

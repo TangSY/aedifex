@@ -20,6 +20,9 @@ import {
 
 export type FencePlanPoint = WallPlanPoint
 
+const FENCE_CORNER_SNAP_RADIUS = 0.28
+const FENCE_SPAN_SNAP_RADIUS = 0.16
+
 type SegmentNode = {
   start: FencePlanPoint
   end: FencePlanPoint
@@ -57,46 +60,68 @@ function findFenceSnapTarget(
   fences: FenceNode[],
   ignoreFenceIds: string[] = [],
 ): FencePlanPoint | null {
-  const radiusSquared = 0.35 ** 2
+  const cornerRadiusSquared = FENCE_CORNER_SNAP_RADIUS ** 2
+  const spanRadiusSquared = FENCE_SPAN_SNAP_RADIUS ** 2
   const ignoredFenceIds = new Set(ignoreFenceIds)
-  let bestTarget: FencePlanPoint | null = null
-  let bestDistanceSquared = Number.POSITIVE_INFINITY
+  let bestCornerTarget: FencePlanPoint | null = null
+  let bestCornerDistanceSquared = Number.POSITIVE_INFINITY
+  let bestSpanTarget: FencePlanPoint | null = null
+  let bestSpanDistanceSquared = Number.POSITIVE_INFINITY
 
   for (const fence of fences) {
     if (ignoredFenceIds.has(fence.id)) {
       continue
     }
 
-    const candidates: Array<FencePlanPoint | null> = [fence.start, fence.end]
-    if (isCurvedWall(fence)) {
-      const sampleCount = Math.max(8, Math.ceil(getWallCurveLength(fence) / 0.3))
-      for (let index = 0; index <= sampleCount; index += 1) {
-        const frame = getWallCurveFrameAt(fence, index / sampleCount)
-        candidates.push([frame.point.x, frame.point.y])
+    for (const candidate of [fence.start, fence.end]) {
+      const candidateDistanceSquared = distanceSquared(point, candidate)
+      if (
+        candidateDistanceSquared > cornerRadiusSquared ||
+        candidateDistanceSquared >= bestCornerDistanceSquared
+      ) {
+        continue
       }
-    } else {
-      candidates.push(projectPointOntoSegment(point, fence))
+
+      bestCornerTarget = candidate
+      bestCornerDistanceSquared = candidateDistanceSquared
     }
 
-    for (const candidate of candidates) {
+    if (isCurvedWall(fence)) {
+      const sampleCount = Math.max(8, Math.ceil(getWallCurveLength(fence) / 0.3))
+      for (let index = 1; index < sampleCount; index += 1) {
+        const frame = getWallCurveFrameAt(fence, index / sampleCount)
+        const candidate: FencePlanPoint = [frame.point.x, frame.point.y]
+        const candidateDistanceSquared = distanceSquared(point, candidate)
+        if (
+          candidateDistanceSquared > spanRadiusSquared ||
+          candidateDistanceSquared >= bestSpanDistanceSquared
+        ) {
+          continue
+        }
+
+        bestSpanTarget = candidate
+        bestSpanDistanceSquared = candidateDistanceSquared
+      }
+    } else {
+      const candidate = projectPointOntoSegment(point, fence)
       if (!candidate) {
         continue
       }
 
       const candidateDistanceSquared = distanceSquared(point, candidate)
       if (
-        candidateDistanceSquared > radiusSquared ||
-        candidateDistanceSquared >= bestDistanceSquared
+        candidateDistanceSquared > spanRadiusSquared ||
+        candidateDistanceSquared >= bestSpanDistanceSquared
       ) {
         continue
       }
 
-      bestTarget = candidate
-      bestDistanceSquared = candidateDistanceSquared
+      bestSpanTarget = candidate
+      bestSpanDistanceSquared = candidateDistanceSquared
     }
   }
 
-  return bestTarget
+  return bestCornerTarget ?? bestSpanTarget
 }
 
 export function snapFenceDraftPoint(args: {

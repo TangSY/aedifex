@@ -3,6 +3,10 @@ import { useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
 import { closeDoorOpenState, toggleDoorOpenState } from '../lib/door-interaction'
 import { runRedo, runUndo } from '../lib/history'
+import {
+  copySelectedNodesToEditorClipboard,
+  pasteEditorClipboardToLevel,
+} from '../lib/scene-clipboard'
 import { sfxEmitter } from '../lib/sfx-bus'
 import { closeWindowOpenState, toggleWindowOpenState } from '../lib/window-interaction'
 import useEditor from '../store/use-editor'
@@ -106,6 +110,17 @@ export const useKeyboard = ({
         useEditor.getState().setPhase('structure')
         useEditor.getState().setStructureLayer('elements')
         useEditor.getState().setMode('material-paint')
+      } else if (e.key === 'c' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+        if (isVersionPreviewMode) return
+        e.preventDefault()
+        copySelectedNodesToEditorClipboard()
+      } else if (e.key === 'v' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+        if (isVersionPreviewMode) return
+        e.preventDefault()
+        const result = pasteEditorClipboardToLevel()
+        if (result?.pastedIds.length) {
+          sfxEmitter.emit('sfx:item-place')
+        }
       } else if (e.key === 'z' && (e.metaKey || e.ctrlKey)) {
         if (isVersionPreviewMode) return
         e.preventDefault()
@@ -119,13 +134,19 @@ export const useKeyboard = ({
         const { buildingId, levelId } = useViewer.getState().selection
         if (buildingId) {
           const building = useScene.getState().nodes[buildingId]
-          if (building && building.type === 'building' && building.children.length > 0) {
-            const currentIdx = levelId ? building.children.indexOf(levelId as any) : -1
-            const nextIdx = currentIdx < building.children.length - 1 ? currentIdx + 1 : currentIdx
+          const levels =
+            building?.type === 'building'
+              ? building.children.filter(
+                  (childId) => useScene.getState().nodes[childId as AnyNodeId]?.type === 'level',
+                )
+              : []
+          if (levels.length > 0) {
+            const currentIdx = levelId ? levels.indexOf(levelId as any) : -1
+            const nextIdx = currentIdx < levels.length - 1 ? currentIdx + 1 : currentIdx
             if (nextIdx !== -1 && nextIdx !== currentIdx) {
-              useViewer.getState().setSelection({ levelId: building.children[nextIdx] as any })
+              useViewer.getState().setSelection({ levelId: levels[nextIdx] as any })
             } else if (currentIdx === -1) {
-              useViewer.getState().setSelection({ levelId: building.children[0] as any })
+              useViewer.getState().setSelection({ levelId: levels[0] as any })
             }
           }
         }
@@ -134,15 +155,19 @@ export const useKeyboard = ({
         const { buildingId, levelId } = useViewer.getState().selection
         if (buildingId) {
           const building = useScene.getState().nodes[buildingId]
-          if (building && building.type === 'building' && building.children.length > 0) {
-            const currentIdx = levelId ? building.children.indexOf(levelId as any) : -1
+          const levels =
+            building?.type === 'building'
+              ? building.children.filter(
+                  (childId) => useScene.getState().nodes[childId as AnyNodeId]?.type === 'level',
+                )
+              : []
+          if (levels.length > 0) {
+            const currentIdx = levelId ? levels.indexOf(levelId as any) : -1
             const prevIdx = currentIdx > 0 ? currentIdx - 1 : currentIdx
             if (prevIdx !== -1 && prevIdx !== currentIdx) {
-              useViewer.getState().setSelection({ levelId: building.children[prevIdx] as any })
+              useViewer.getState().setSelection({ levelId: levels[prevIdx] as any })
             } else if (currentIdx === -1) {
-              useViewer
-                .getState()
-                .setSelection({ levelId: building.children[building.children.length - 1] as any })
+              useViewer.getState().setSelection({ levelId: levels[levels.length - 1] as any })
             }
           }
         }

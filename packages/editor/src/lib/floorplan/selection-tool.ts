@@ -1,6 +1,8 @@
 import type {
   CeilingNode,
+  ColumnNode,
   DoorNode,
+  ElevatorNode,
   ItemNode,
   Point2D,
   RoofNode,
@@ -53,6 +55,16 @@ type CeilingEntry = {
   holes: Point2D[][]
 }
 
+type ColumnEntry = {
+  column: ColumnNode
+  polygon: Point2D[]
+}
+
+type ElevatorEntry = {
+  elevator: ElevatorNode
+  polygon: Point2D[]
+}
+
 type RoofEntry = {
   roof: RoofNode
   segments: Array<{
@@ -71,6 +83,8 @@ type FloorplanSelectionToolContext = {
   walls: WallEntry[]
   slabs: SlabEntry[]
   ceilings: CeilingEntry[]
+  columns: ColumnEntry[]
+  elevators: ElevatorEntry[]
   roofs: RoofEntry[]
   openingHitTolerance: number
   wallHitTolerance: number
@@ -123,6 +137,20 @@ export function getFloorplanHitNodeId(context: FloorplanSelectionToolContext) {
       return stairHit.stair.id
     }
 
+    const elevatorHit = context.elevators.find(({ polygon }) =>
+      isPointInsidePolygon(context.point, polygon),
+    )
+    if (elevatorHit) {
+      return elevatorHit.elevator.id
+    }
+
+    const columnHit = context.columns.find(({ polygon }) =>
+      isPointInsidePolygon(context.point, polygon),
+    )
+    if (columnHit) {
+      return columnHit.column.id
+    }
+
     const wallHit = context.walls.find(
       ({ wall, polygon }) =>
         isPointInsidePolygon(context.point, polygon) ||
@@ -166,6 +194,8 @@ type FloorplanSelectionBoundsContext = {
   openings: OpeningPolygonEntry[]
   slabs: SlabEntry[]
   ceilings: CeilingEntry[]
+  columns: ColumnEntry[]
+  elevators: ElevatorEntry[]
   stairs: StairEntry[]
   roofs: RoofEntry[]
 }
@@ -179,6 +209,8 @@ export function getFloorplanSelectionIdsInBounds({
   openings,
   slabs,
   ceilings,
+  columns,
+  elevators,
   stairs,
   roofs,
 }: FloorplanSelectionBoundsContext) {
@@ -204,6 +236,12 @@ export function getFloorplanSelectionIdsInBounds({
   const ceilingIds = ceilings
     .filter(({ polygon }) => doesPolygonIntersectSelectionBounds(polygon, bounds))
     .map(({ ceiling }) => ceiling.id)
+  const columnIds = columns
+    .filter(({ polygon }) => doesPolygonIntersectSelectionBounds(polygon, bounds))
+    .map(({ column }) => column.id)
+  const elevatorIds = elevators
+    .filter(({ polygon }) => doesPolygonIntersectSelectionBounds(polygon, bounds))
+    .map(({ elevator }) => elevator.id)
   const stairIds = stairs
     .filter((stair) =>
       getStairHitPolygons(stair).some((polygon) =>
@@ -224,6 +262,8 @@ export function getFloorplanSelectionIdsInBounds({
       ...openingIds,
       ...slabIds,
       ...ceilingIds,
+      ...columnIds,
+      ...elevatorIds,
       ...stairIds,
       ...roofIds,
     ]),

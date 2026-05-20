@@ -1,8 +1,8 @@
 import { type SiteNode, type SlabNode, useRegistry, useScene } from '@aedifex/core'
-import polygonClipping from 'polygon-clipping'
 import { useMemo, useRef } from 'react'
-import { BufferGeometry, Float32BufferAttribute, type Group, Path, Shape } from 'three'
+import { BufferGeometry, Float32BufferAttribute, Path, Shape, type Group } from 'three'
 import { useNodeEvents } from '../../../hooks/use-node-events'
+import { unionPolygons } from '../../../lib/polygon-union'
 import useViewer from '../../../store/use-viewer'
 import { NodeRenderer } from '../node-renderer'
 
@@ -89,22 +89,13 @@ export const SiteRenderer = ({ node }: { node: SiteNode }) => {
     shape.closePath()
 
     if (slabPolygons.length > 0) {
-      const multiPolygons = slabPolygons.map((p) => [
-        p.map((pt) => [pt[0], -pt[1]] as [number, number]),
-      ])
-      const unioned = polygonClipping.union(
-        multiPolygons[0] as polygonClipping.Polygon,
-        ...(multiPolygons.slice(1) as polygonClipping.Polygon[]),
-      )
-      for (const geom of unioned) {
-        const ring = geom[0]
-        if (ring && ring.length > 0) {
-          const hole = new Path()
-          hole.moveTo(ring[0]![0], ring[0]![1])
-          for (let i = 1; i < ring.length; i++) hole.lineTo(ring[i]![0], ring[i]![1])
-          hole.closePath()
-          shape.holes.push(hole)
-        }
+      for (const ring of unionPolygons(slabPolygons.map((p) => p.map((pt) => [pt[0], -pt[1]])))) {
+        if (ring.length < 3) continue
+        const hole = new Path()
+        hole.moveTo(ring[0]![0], ring[0]![1])
+        for (let i = 1; i < ring.length; i++) hole.lineTo(ring[i]![0], ring[i]![1])
+        hole.closePath()
+        shape.holes.push(hole)
       }
     }
 
@@ -135,15 +126,23 @@ export const SiteRenderer = ({ node }: { node: SiteNode }) => {
 
       {/* Ground fill: site polygon with slab holes, occludes below-grade geometry */}
       {groundShape && (
-        <mesh position={[0, -0.05, 0]} receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh position={[0, -0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <shapeGeometry args={[groundShape]} />
-          <meshStandardMaterial
+          {/* PERF TEST: basic material — no PBR / shadows / lighting calc.
+              Ground color = canvas background, so lighting is invisible work. */}
+          <meshBasicMaterial
+            color={bgColor}
+            polygonOffset={true}
+            polygonOffsetFactor={1}
+            polygonOffsetUnits={1}
+          />
+          {/* <meshStandardMaterial
             color={bgColor}
             depthWrite={true}
             polygonOffset={true}
             polygonOffsetFactor={1}
             polygonOffsetUnits={1}
-          />
+          /> */}
         </mesh>
       )}
 

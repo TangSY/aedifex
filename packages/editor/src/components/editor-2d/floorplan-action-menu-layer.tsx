@@ -16,10 +16,12 @@ export type FloorplanActionMenuEntry = {
   onDelete: FloorplanActionMenuHandler
   onMove: FloorplanActionMenuHandler
   onAddHole?: FloorplanActionMenuHandler
+  onCurve?: FloorplanActionMenuHandler
   onDuplicate?: FloorplanActionMenuHandler
 }
 
 type FloorplanActionMenuLayerProps = {
+  elevator: FloorplanActionMenuEntry
   item: FloorplanActionMenuEntry
   wall: FloorplanActionMenuEntry
   fence: FloorplanActionMenuEntry
@@ -33,6 +35,7 @@ type FloorplanActionMenuLayerProps = {
 }
 
 export const FloorplanActionMenuLayer = memo(function FloorplanActionMenuLayer({
+  elevator,
   item,
   wall,
   fence,
@@ -55,6 +58,7 @@ export const FloorplanActionMenuLayer = memo(function FloorplanActionMenuLayer({
   }
 
   const entries: FloorplanActionMenuEntry[] = [
+    elevator,
     item,
     wall,
     fence,
@@ -81,6 +85,7 @@ export const FloorplanActionMenuLayer = memo(function FloorplanActionMenuLayer({
           >
             <NodeActionMenu
               onAddHole={entry.onAddHole}
+              onCurve={entry.onCurve}
               onDelete={entry.onDelete}
               onDuplicate={entry.onDuplicate}
               onMove={entry.onMove}

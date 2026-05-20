@@ -6,7 +6,9 @@ import {
   useScene,
 } from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
+import { useEffect } from 'react'
 import * as THREE from 'three'
+import { mergeSurfaceHolePolygons } from '../surface-hole-geometry'
 
 function ensureUv2Attribute(geometry: THREE.BufferGeometry) {
   const uv = geometry.getAttribute('uv')
@@ -22,6 +24,16 @@ function ensureUv2Attribute(geometry: THREE.BufferGeometry) {
 export const SlabSystem = () => {
   const dirtyNodes = useScene((state) => state.dirtyNodes)
   const clearDirty = useScene((state) => state.clearDirty)
+  const markDirty = useScene((state) => state.markDirty)
+
+  useEffect(() => {
+    const nodes = useScene.getState().nodes
+    for (const node of Object.values(nodes)) {
+      if (node.type === 'slab') {
+        markDirty(node.id)
+      }
+    }
+  }, [markDirty])
 
   useFrame(() => {
     if (dirtyNodes.size === 0) return
@@ -75,6 +87,7 @@ export function generateSlabGeometry(slabNode: SlabNode): THREE.BufferGeometry {
 function generatePositiveSlabGeometry(slabNode: SlabNode): THREE.BufferGeometry {
   const polygon = getRenderableSlabPolygon(slabNode)
   const elevation = slabNode.elevation ?? 0.05
+  const holePolygons = mergeSurfaceHolePolygons(slabNode.holes ?? [])
 
   if (polygon.length < 3) return new THREE.BufferGeometry()
 
@@ -83,7 +96,7 @@ function generatePositiveSlabGeometry(slabNode: SlabNode): THREE.BufferGeometry 
   for (let i = 1; i < polygon.length; i++) shape.lineTo(polygon[i]![0], -polygon[i]![1])
   shape.closePath()
 
-  for (const holePolygon of slabNode.holes ?? []) {
+  for (const holePolygon of holePolygons) {
     if (holePolygon.length < 3) continue
     const holePath = new THREE.Path()
     holePath.moveTo(holePolygon[0]![0], -holePolygon[0]![1])
@@ -111,6 +124,7 @@ function generatePositiveSlabGeometry(slabNode: SlabNode): THREE.BufferGeometry 
 function generatePoolGeometry(slabNode: SlabNode): THREE.BufferGeometry {
   const polygon = getRenderableSlabPolygon(slabNode)
   const depth = Math.abs(slabNode.elevation ?? 0.05)
+  const holePolygons = mergeSurfaceHolePolygons(slabNode.holes ?? [])
 
   if (polygon.length < 3) return new THREE.BufferGeometry()
 
@@ -123,7 +137,7 @@ function generatePoolGeometry(slabNode: SlabNode): THREE.BufferGeometry {
   for (const [x, z] of polygon) {
     bounds.expandByPoint(new THREE.Vector2(x, z))
   }
-  for (const hole of slabNode.holes ?? []) {
+  for (const hole of holePolygons) {
     for (const [x, z] of hole) {
       bounds.expandByPoint(new THREE.Vector2(x, z))
     }
@@ -146,8 +160,8 @@ function generatePoolGeometry(slabNode: SlabNode): THREE.BufferGeometry {
   for (const [x, z] of polygon) pushFloorVertex(x!, 0, z!)
 
   const pts2d = polygon.map(([x, z]) => new THREE.Vector2(x!, z!))
-  const holesPts2d = (slabNode.holes ?? []).map((h) => h.map(([x, z]) => new THREE.Vector2(x!, z!)))
-  for (const hole of slabNode.holes ?? []) {
+  const holesPts2d = holePolygons.map((h) => h.map(([x, z]) => new THREE.Vector2(x!, z!)))
+  for (const hole of holePolygons) {
     for (const [x, z] of hole) pushFloorVertex(x!, 0, z!)
   }
 

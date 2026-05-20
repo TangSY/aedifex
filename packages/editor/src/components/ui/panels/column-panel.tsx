@@ -11,10 +11,12 @@ import { useViewer } from '@aedifex/viewer'
 import { Move, Trash2 } from 'lucide-react'
 import { useCallback } from 'react'
 import { sfxEmitter } from '../../../lib/sfx-bus'
+import { cn } from '../../../lib/utils'
 import useEditor from '../../../store/use-editor'
 import { ActionButton, ActionGroup } from '../controls/action-button'
 import { PanelSection } from '../controls/panel-section'
 import { SliderControl } from '../controls/slider-control'
+import { ToggleControl } from '../controls/toggle-control'
 import { PanelWrapper } from './panel-wrapper'
 
 const SELECT_CLASS =
@@ -77,6 +79,20 @@ const COLUMN_PROPORTION_OPTIONS = Object.entries(COLUMN_PROPORTION_PRESETS).map(
   }),
 )
 
+const SUPPORT_STYLE_OPTIONS: Array<{ label: string; value: ColumnNode['supportStyle'] }> = [
+  { label: 'Vertical', value: 'vertical' },
+  { label: 'A-Frame', value: 'a-frame' },
+  { label: 'Y Support', value: 'y-frame' },
+  { label: 'V Support', value: 'v-frame' },
+  { label: 'X Brace', value: 'x-brace' },
+  { label: 'K Brace', value: 'k-brace' },
+  { label: 'Single Strut', value: 'single-strut' },
+  { label: 'Tripod', value: 'tripod' },
+  { label: 'Trestle', value: 'trestle' },
+  { label: 'Portal Frame', value: 'portal-frame' },
+  { label: 'Box Frame', value: 'box-frame' },
+]
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
@@ -85,6 +101,7 @@ function presetUpdates(presetId: ColumnPresetId): Partial<ColumnNode> {
   const { label, ...preset } = COLUMN_PRESETS[presetId]
   return {
     name: label,
+    supportStyle: 'supportStyle' in preset ? preset.supportStyle : 'vertical',
     ...preset,
   }
 }
@@ -201,6 +218,18 @@ export function ColumnPanel() {
 
   if (!(node && node.type === 'column' && selectedId && selectedCount === 1)) return null
   const shaftProfile = node.shaftProfile ?? 'straight'
+  const supportStyle = node.supportStyle ?? 'vertical'
+  const isBraceSupport =
+    supportStyle === 'a-frame' ||
+    supportStyle === 'y-frame' ||
+    supportStyle === 'v-frame' ||
+    supportStyle === 'x-brace' ||
+    supportStyle === 'k-brace' ||
+    supportStyle === 'single-strut' ||
+    supportStyle === 'tripod' ||
+    supportStyle === 'trestle' ||
+    supportStyle === 'portal-frame' ||
+    supportStyle === 'box-frame'
 
   return (
     <PanelWrapper
@@ -228,57 +257,119 @@ export function ColumnPanel() {
       </PanelSection>
 
       <PanelSection title="Shape">
-        <select
-          className={SELECT_CLASS}
-          onChange={(event) =>
-            handleUpdate({ crossSection: event.target.value as ColumnNode['crossSection'] })
-          }
-          value={node.crossSection}
-        >
-          <option value="round">Round</option>
-          <option value="square">Square</option>
-          <option value="rectangular">Rectangular</option>
-        </select>
-        <SliderControl
-          label="Edge Softness"
-          max={0.12}
-          min={0}
-          onChange={(value) => handleUpdate({ edgeSoftness: value })}
-          precision={3}
-          step={0.005}
-          unit="m"
-          value={node.edgeSoftness ?? 0.025}
-        />
-        {(node.crossSection === 'square' || node.crossSection === 'rectangular') && (
-          <SliderControl
-            label="Shaft Corner Radius"
-            max={0.3}
-            min={0}
-            onChange={(value) => handleUpdate({ shaftCornerRadius: value })}
-            precision={3}
-            step={0.005}
-            unit="m"
-            value={node.shaftCornerRadius ?? 0.035}
-          />
+        <div className="grid grid-cols-2 gap-1.5 px-1 pt-1">
+          {SUPPORT_STYLE_OPTIONS.map((option) => {
+            const isSelected = supportStyle === option.value
+            return (
+              <button
+                className={cn(
+                  'flex min-h-12 items-center rounded-lg border px-2.5 text-left text-xs transition-colors',
+                  isSelected
+                    ? 'border-orange-400/60 bg-orange-400/10 text-foreground'
+                    : 'border-border/50 bg-[#2C2C2E] text-muted-foreground hover:bg-[#3e3e3e] hover:text-foreground',
+                )}
+                key={option.value}
+                onClick={() =>
+                  handleUpdate({
+                    supportStyle: option.value,
+                    ...(option.value !== 'vertical'
+                      ? {
+                          crossSection: 'rectangular',
+                          width: node.braceWidth ?? node.width,
+                          depth: node.braceDepth ?? node.depth,
+                          baseStyle: 'none',
+                          capitalStyle: 'none',
+                        }
+                      : {}),
+                  })
+                }
+                type="button"
+              >
+                <span className="truncate font-medium">{option.label}</span>
+              </button>
+            )
+          })}
+        </div>
+        {isBraceSupport ? (
+          <>
+            <SliderControl
+              label="Brace Width"
+              max={0.8}
+              min={0.04}
+              onChange={(value) => handleUpdate({ braceWidth: value, width: value })}
+              precision={2}
+              step={0.01}
+              unit="m"
+              value={node.braceWidth ?? node.width}
+            />
+            <SliderControl
+              label="Brace Depth"
+              max={0.8}
+              min={0.04}
+              onChange={(value) => handleUpdate({ braceDepth: value, depth: value })}
+              precision={2}
+              step={0.01}
+              unit="m"
+              value={node.braceDepth ?? node.depth}
+            />
+          </>
+        ) : (
+          <>
+            <select
+              className={SELECT_CLASS}
+              onChange={(event) =>
+                handleUpdate({ crossSection: event.target.value as ColumnNode['crossSection'] })
+              }
+              value={node.crossSection}
+            >
+              <option value="round">Round</option>
+              <option value="square">Square</option>
+              <option value="rectangular">Rectangular</option>
+            </select>
+            <SliderControl
+              label="Edge Softness"
+              max={0.12}
+              min={0}
+              onChange={(value) => handleUpdate({ edgeSoftness: value })}
+              precision={3}
+              step={0.005}
+              unit="m"
+              value={node.edgeSoftness ?? 0.025}
+            />
+            {(node.crossSection === 'square' || node.crossSection === 'rectangular') && (
+              <SliderControl
+                label="Shaft Corner Radius"
+                max={0.3}
+                min={0}
+                onChange={(value) => handleUpdate({ shaftCornerRadius: value })}
+                precision={3}
+                step={0.005}
+                unit="m"
+                value={node.shaftCornerRadius ?? 0.035}
+              />
+            )}
+          </>
         )}
       </PanelSection>
 
       <PanelSection title="Dimensions">
-        <select
-          className={SELECT_CLASS}
-          onChange={(event) => {
-            if (!event.target.value) return
-            handleUpdate(proportionUpdates(node, event.target.value as ColumnProportionPresetId))
-          }}
-          value=""
-        >
-          <option value="">Apply proportion...</option>
-          {COLUMN_PROPORTION_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        {!isBraceSupport && (
+          <select
+            className={SELECT_CLASS}
+            onChange={(event) => {
+              if (!event.target.value) return
+              handleUpdate(proportionUpdates(node, event.target.value as ColumnProportionPresetId))
+            }}
+            value=""
+          >
+            <option value="">Apply proportion...</option>
+            {COLUMN_PROPORTION_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        )}
         <SliderControl
           label="Height"
           max={6}
@@ -289,205 +380,287 @@ export function ColumnPanel() {
           unit="m"
           value={node.height}
         />
-        <SliderControl
-          label="Width"
-          max={1.6}
-          min={0.12}
-          onChange={(value) =>
-            handleUpdate({
-              width: value,
-              radius: value / 2,
-              ...(node.crossSection === 'rectangular' ? {} : { depth: value }),
-            })
-          }
-          precision={2}
-          step={0.02}
-          unit="m"
-          value={node.width}
-        />
-        {node.crossSection === 'rectangular' && (
-          <SliderControl
-            label="Depth"
-            max={1.6}
-            min={0.12}
-            onChange={(value) => handleUpdate({ depth: value })}
-            precision={2}
-            step={0.02}
-            unit="m"
-            value={node.depth}
-          />
+        {isBraceSupport ? (
+          <>
+            {(supportStyle === 'a-frame' ||
+              supportStyle === 'x-brace' ||
+              supportStyle === 'k-brace' ||
+              supportStyle === 'single-strut' ||
+              supportStyle === 'tripod' ||
+              supportStyle === 'trestle' ||
+              supportStyle === 'portal-frame' ||
+              supportStyle === 'box-frame') && (
+              <SliderControl
+                label="Bottom Spread"
+                max={4}
+                min={0.2}
+                onChange={(value) =>
+                  handleUpdate({
+                    braceBottomSpread: value,
+                    braceTopSpread:
+                      supportStyle === 'a-frame'
+                        ? Math.min(node.braceTopSpread ?? 0.12, value)
+                        : (node.braceTopSpread ?? 1),
+                  })
+                }
+                precision={2}
+                step={0.05}
+                unit="m"
+                value={node.braceBottomSpread ?? 1.2}
+              />
+            )}
+            <SliderControl
+              label={supportStyle === 'y-frame' ? 'Fork Spread' : 'Top Spread'}
+              max={
+                supportStyle === 'y-frame' ||
+                supportStyle === 'v-frame' ||
+                supportStyle === 'x-brace' ||
+                supportStyle === 'k-brace' ||
+                supportStyle === 'single-strut' ||
+                supportStyle === 'tripod' ||
+                supportStyle === 'trestle' ||
+                supportStyle === 'box-frame'
+                  ? 4
+                  : Math.max(0.2, node.braceBottomSpread ?? 1.2)
+              }
+              min={0}
+              onChange={(value) => handleUpdate({ braceTopSpread: value })}
+              precision={2}
+              step={0.02}
+              unit="m"
+              value={
+                node.braceTopSpread ??
+                (supportStyle === 'y-frame' ||
+                supportStyle === 'v-frame' ||
+                supportStyle === 'x-brace' ||
+                supportStyle === 'k-brace' ||
+                supportStyle === 'single-strut' ||
+                supportStyle === 'tripod' ||
+                supportStyle === 'trestle' ||
+                supportStyle === 'portal-frame' ||
+                supportStyle === 'box-frame'
+                  ? 1
+                  : 0.12)
+              }
+            />
+            <ToggleControl
+              checked={node.bracePlateEnabled ?? true}
+              label="Connector Plates"
+              onChange={(checked) => handleUpdate({ bracePlateEnabled: checked })}
+            />
+          </>
+        ) : (
+          <>
+            <SliderControl
+              label="Width"
+              max={1.6}
+              min={0.12}
+              onChange={(value) =>
+                handleUpdate({
+                  width: value,
+                  radius: value / 2,
+                  ...(node.crossSection === 'rectangular' ? {} : { depth: value }),
+                })
+              }
+              precision={2}
+              step={0.02}
+              unit="m"
+              value={node.width}
+            />
+            {node.crossSection === 'rectangular' && (
+              <SliderControl
+                label="Depth"
+                max={1.6}
+                min={0.12}
+                onChange={(value) => handleUpdate({ depth: value })}
+                precision={2}
+                step={0.02}
+                unit="m"
+                value={node.depth}
+              />
+            )}
+          </>
         )}
       </PanelSection>
 
-      <PanelSection title="Shaft">
-        <select
-          className={SELECT_CLASS}
-          onChange={(event) =>
-            handleUpdate(shaftProfileUpdates(event.target.value as ColumnNode['shaftProfile']))
-          }
-          value={shaftProfile}
-        >
-          <option value="straight">Straight</option>
-          <option value="tapered">Tapered</option>
-          <option value="bulged">Bulged</option>
-          <option value="hourglass">Hourglass</option>
-        </select>
-        {shaftProfile === 'straight' && (
+      {!isBraceSupport && (
+        <PanelSection title="Shaft">
+          <select
+            className={SELECT_CLASS}
+            onChange={(event) =>
+              handleUpdate(
+                shaftProfileUpdates(event.target.value as ColumnNode['shaftProfile']),
+              )
+            }
+            value={shaftProfile}
+          >
+            <option value="straight">Straight</option>
+            <option value="tapered">Tapered</option>
+            <option value="bulged">Bulged</option>
+            <option value="hourglass">Hourglass</option>
+          </select>
+          {shaftProfile === 'straight' && (
+            <SliderControl
+              label="Shaft Width"
+              max={1.2}
+              min={0.3}
+              onChange={(value) => handleUpdate({ shaftStartScale: value, shaftEndScale: value })}
+              precision={2}
+              step={0.02}
+              value={node.shaftStartScale ?? 0.72}
+            />
+          )}
+          {shaftProfile === 'tapered' && (
+            <>
+              <SliderControl
+                label="Bottom Width"
+                max={1.2}
+                min={0.3}
+                onChange={(value) => handleUpdate({ shaftStartScale: value })}
+                precision={2}
+                step={0.02}
+                value={node.shaftStartScale ?? 0.82}
+              />
+              <SliderControl
+                label="Top Width"
+                max={1.2}
+                min={0.3}
+                onChange={(value) => handleUpdate({ shaftEndScale: value })}
+                precision={2}
+                step={0.02}
+                value={node.shaftEndScale ?? 0.72}
+              />
+              <SliderControl
+                label="Taper"
+                max={0.45}
+                min={0}
+                onChange={(value) => handleUpdate({ shaftTaper: value })}
+                precision={2}
+                step={0.01}
+                value={node.shaftTaper ?? 0.14}
+              />
+            </>
+          )}
+          {shaftProfile === 'bulged' && (
+            <>
+              <SliderControl
+                label="End Width"
+                max={1.2}
+                min={0.3}
+                onChange={(value) =>
+                  handleUpdate({ shaftStartScale: value, shaftEndScale: value })
+                }
+                precision={2}
+                step={0.02}
+                value={node.shaftStartScale ?? 0.68}
+              />
+              <SliderControl
+                label="Bulge"
+                max={0.35}
+                min={0}
+                onChange={(value) => handleUpdate({ shaftBulge: value })}
+                precision={2}
+                step={0.01}
+                value={node.shaftBulge ?? 0.12}
+              />
+            </>
+          )}
+          {shaftProfile === 'hourglass' && (
+            <>
+              <SliderControl
+                label="End Width"
+                max={1.2}
+                min={0.3}
+                onChange={(value) =>
+                  handleUpdate({ shaftStartScale: value, shaftEndScale: value })
+                }
+                precision={2}
+                step={0.02}
+                value={node.shaftStartScale ?? 0.84}
+              />
+              <SliderControl
+                label="Waist"
+                max={0.35}
+                min={0}
+                onChange={(value) => handleUpdate({ shaftBulge: value })}
+                precision={2}
+                step={0.01}
+                value={node.shaftBulge ?? 0.12}
+              />
+            </>
+          )}
           <SliderControl
-            label="Shaft Width"
-            max={1.2}
-            min={0.3}
-            onChange={(value) => handleUpdate({ shaftStartScale: value, shaftEndScale: value })}
-            precision={2}
-            step={0.02}
-            value={node.shaftStartScale ?? 0.72}
+            label="Segment Twist"
+            max={90}
+            min={-90}
+            onChange={(value) =>
+              handleUpdate({
+                shaftTwistStep: value,
+                ...(Math.abs(value) > 0.001 && (node.shaftSegmentCount ?? 1) < 8
+                  ? { shaftSegmentCount: 12 }
+                  : {}),
+              })
+            }
+            precision={0}
+            step={5}
+            unit="°"
+            value={node.shaftTwistStep ?? 0}
           />
-        )}
-        {shaftProfile === 'tapered' && (
-          <>
+          {Math.abs(node.shaftTwistStep ?? 0) > 0.001 && (
             <SliderControl
-              label="Bottom Width"
-              max={1.2}
-              min={0.3}
-              onChange={(value) => handleUpdate({ shaftStartScale: value })}
-              precision={2}
-              step={0.02}
-              value={node.shaftStartScale ?? 0.82}
+              label="Twist Segments"
+              max={48}
+              min={4}
+              onChange={(value) => handleUpdate({ shaftSegmentCount: Math.round(value) })}
+              precision={0}
+              step={1}
+              value={node.shaftSegmentCount ?? 12}
             />
-            <SliderControl
-              label="Top Width"
-              max={1.2}
-              min={0.3}
-              onChange={(value) => handleUpdate({ shaftEndScale: value })}
-              precision={2}
-              step={0.02}
-              value={node.shaftEndScale ?? 0.72}
-            />
-            <SliderControl
-              label="Taper"
-              max={0.45}
-              min={0}
-              onChange={(value) => handleUpdate({ shaftTaper: value })}
-              precision={2}
-              step={0.01}
-              value={node.shaftTaper ?? 0.14}
-            />
-          </>
-        )}
-        {shaftProfile === 'bulged' && (
-          <>
-            <SliderControl
-              label="End Width"
-              max={1.2}
-              min={0.3}
-              onChange={(value) => handleUpdate({ shaftStartScale: value, shaftEndScale: value })}
-              precision={2}
-              step={0.02}
-              value={node.shaftStartScale ?? 0.68}
-            />
-            <SliderControl
-              label="Bulge"
-              max={0.35}
-              min={0}
-              onChange={(value) => handleUpdate({ shaftBulge: value })}
-              precision={2}
-              step={0.01}
-              value={node.shaftBulge ?? 0.12}
-            />
-          </>
-        )}
-        {shaftProfile === 'hourglass' && (
-          <>
-            <SliderControl
-              label="End Width"
-              max={1.2}
-              min={0.3}
-              onChange={(value) => handleUpdate({ shaftStartScale: value, shaftEndScale: value })}
-              precision={2}
-              step={0.02}
-              value={node.shaftStartScale ?? 0.84}
-            />
-            <SliderControl
-              label="Waist"
-              max={0.35}
-              min={0}
-              onChange={(value) => handleUpdate({ shaftBulge: value })}
-              precision={2}
-              step={0.01}
-              value={node.shaftBulge ?? 0.12}
-            />
-          </>
-        )}
-        <SliderControl
-          label="Segment Twist"
-          max={90}
-          min={-90}
-          onChange={(value) =>
-            handleUpdate({
-              shaftTwistStep: value,
-              ...(Math.abs(value) > 0.001 && (node.shaftSegmentCount ?? 1) < 8
-                ? { shaftSegmentCount: 12 }
-                : {}),
-            })
-          }
-          precision={0}
-          step={5}
-          unit="°"
-          value={node.shaftTwistStep ?? 0}
-        />
-        {Math.abs(node.shaftTwistStep ?? 0) > 0.001 && (
+          )}
           <SliderControl
-            label="Twist Segments"
-            max={48}
-            min={4}
-            onChange={(value) => handleUpdate({ shaftSegmentCount: Math.round(value) })}
+            label="Ring Pairs"
+            max={4}
+            min={0}
+            onChange={(value) =>
+              handleUpdate({
+                ringCount: Math.round(value) * 2,
+                ringPlacement: 'ends',
+                ringSpread: node.ringSpread ?? 0.16,
+                ringThickness: node.ringThickness ?? 0.055,
+              })
+            }
             precision={0}
             step={1}
-            value={node.shaftSegmentCount ?? 12}
+            value={Math.ceil((node.ringCount ?? 0) / 2)}
           />
-        )}
-        <SliderControl
-          label="Ring Pairs"
-          max={4}
-          min={0}
-          onChange={(value) =>
-            handleUpdate({
-              ringCount: Math.round(value) * 2,
-              ringPlacement: 'ends',
-              ringSpread: node.ringSpread ?? 0.16,
-              ringThickness: node.ringThickness ?? 0.055,
-            })
-          }
-          precision={0}
-          step={1}
-          value={Math.ceil((node.ringCount ?? 0) / 2)}
-        />
-        {(node.ringCount ?? 0) > 0 && (
-          <SliderControl
-            label="Ring Thickness"
-            max={0.14}
-            min={0.01}
-            onChange={(value) => handleUpdate({ ringThickness: value })}
-            precision={3}
-            step={0.005}
-            unit="m"
-            value={node.ringThickness ?? 0.055}
-          />
-        )}
-        {(node.ringCount ?? 0) > 0 && (
-          <SliderControl
-            label="Ring Spread"
-            max={0.45}
-            min={0.04}
-            onChange={(value) => handleUpdate({ ringSpread: value, ringPlacement: 'ends' })}
-            precision={2}
-            step={0.01}
-            value={node.ringSpread ?? 0.16}
-          />
-        )}
-      </PanelSection>
+          {(node.ringCount ?? 0) > 0 && (
+            <SliderControl
+              label="Ring Thickness"
+              max={0.14}
+              min={0.01}
+              onChange={(value) => handleUpdate({ ringThickness: value })}
+              precision={3}
+              step={0.005}
+              unit="m"
+              value={node.ringThickness ?? 0.055}
+            />
+          )}
+          {(node.ringCount ?? 0) > 0 && (
+            <SliderControl
+              label="Ring Spread"
+              max={0.45}
+              min={0.04}
+              onChange={(value) => handleUpdate({ ringSpread: value, ringPlacement: 'ends' })}
+              precision={2}
+              step={0.01}
+              value={node.ringSpread ?? 0.16}
+            />
+          )}
+        </PanelSection>
+      )}
 
-      <PanelSection title="Ends">
+      {!isBraceSupport && (
+        <PanelSection title="Ends">
         <select
           className={SELECT_CLASS}
           onChange={(event) => {
@@ -728,7 +901,8 @@ export function ColumnPanel() {
             value={node.baseStepSpread ?? 0.34}
           />
         )}
-      </PanelSection>
+        </PanelSection>
+      )}
 
       <PanelSection title="Transform">
         <SliderControl

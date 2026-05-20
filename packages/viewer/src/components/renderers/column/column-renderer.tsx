@@ -1,6 +1,6 @@
 import { type ColumnNode, useLiveTransforms, useRegistry } from '@aedifex/core'
 import { createContext, useContext, useMemo, useRef } from 'react'
-import type { Group, Material } from 'three'
+import { BufferGeometry, Float32BufferAttribute, type Group, type Material } from 'three'
 import { useNodeEvents } from '../../../hooks/use-node-events'
 import { baseMaterial, createMaterial, createMaterialFromPresetRef } from '../../../lib/materials'
 import {
@@ -84,6 +84,10 @@ function getShaftScaleAt(node: ColumnNode, t: number) {
 
 type VectorTuple = [number, number, number]
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
 function MappedBox({
   depth,
   height,
@@ -114,6 +118,605 @@ function MappedBox({
       <primitive attach="geometry" dispose={null} object={geometry} />
       <ColumnMaterial />
     </mesh>
+  )
+}
+
+function FlatEndedBeam({
+  depth,
+  end,
+  start,
+  width,
+}: {
+  depth: number
+  end: VectorTuple
+  start: VectorTuple
+  width: number
+}) {
+  const dx = end[0] - start[0]
+  const dy = end[1] - start[1]
+  const dz = end[2] - start[2]
+  const length = Math.hypot(dx, dy, dz)
+  const geometry = useMemo(() => {
+    if (length <= 0.001 || width <= 0 || depth <= 0) return null
+
+    const halfWidth = width / 2
+    const halfDepth = depth / 2
+    const bottomY = start[1]
+    const topY = end[1]
+    const bottomCenterX = start[0]
+    const topCenterX = end[0]
+    const bottomCenterZ = start[2]
+    const topCenterZ = end[2]
+    const vertices: VectorTuple[] = [
+      [bottomCenterX - halfWidth, bottomY, bottomCenterZ - halfDepth],
+      [bottomCenterX + halfWidth, bottomY, bottomCenterZ - halfDepth],
+      [bottomCenterX + halfWidth, bottomY, bottomCenterZ + halfDepth],
+      [bottomCenterX - halfWidth, bottomY, bottomCenterZ + halfDepth],
+      [topCenterX - halfWidth, topY, topCenterZ - halfDepth],
+      [topCenterX + halfWidth, topY, topCenterZ - halfDepth],
+      [topCenterX + halfWidth, topY, topCenterZ + halfDepth],
+      [topCenterX - halfWidth, topY, topCenterZ + halfDepth],
+    ]
+    const faceQuads: [number, number, number, number][] = [
+      [0, 1, 2, 3],
+      [4, 7, 6, 5],
+      [0, 4, 5, 1],
+      [1, 5, 6, 2],
+      [2, 6, 7, 3],
+      [3, 7, 4, 0],
+    ]
+    const positions: number[] = []
+    const uvs: number[] = []
+    const pushVertex = (vertexIndex: number, uv: [number, number]) => {
+      const vertex = vertices[vertexIndex]
+      if (!vertex) return false
+      positions.push(...vertex)
+      uvs.push(...uv)
+      return true
+    }
+    const pushTriangle = (
+      a: number,
+      b: number,
+      c: number,
+      uvA: [number, number],
+      uvB: [number, number],
+      uvC: [number, number],
+    ) => {
+      const va = vertices[a]
+      const vb = vertices[b]
+      const vc = vertices[c]
+      if (!va || !vb || !vc) return
+      pushVertex(a, uvA)
+      pushVertex(b, uvB)
+      pushVertex(c, uvC)
+    }
+
+    for (const [a, b, c, d] of faceQuads) {
+      const va = vertices[a]
+      const vb = vertices[b]
+      const vc = vertices[c]
+      const vd = vertices[d]
+      if (!va || !vb || !vc || !vd) continue
+
+      const edgeU = Math.hypot(vb[0] - va[0], vb[1] - va[1], vb[2] - va[2])
+      const edgeV = Math.hypot(vd[0] - va[0], vd[1] - va[1], vd[2] - va[2])
+      const uvA: [number, number] = [0, 0]
+      const uvB: [number, number] = [edgeU, 0]
+      const uvC: [number, number] = [edgeU, edgeV]
+      const uvD: [number, number] = [0, edgeV]
+
+      pushTriangle(a, b, c, uvA, uvB, uvC)
+      pushTriangle(a, c, d, uvA, uvC, uvD)
+      pushTriangle(a, c, b, uvA, uvC, uvB)
+      pushTriangle(a, d, c, uvA, uvD, uvC)
+    }
+
+    const geometry = new BufferGeometry()
+    geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+    geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2))
+    geometry.setAttribute('uv2', new Float32BufferAttribute(uvs.slice(), 2))
+    geometry.computeVertexNormals()
+    return geometry
+  }, [depth, length, start, end, width])
+
+  if (!geometry) return null
+
+  return (
+    <mesh dispose={null}>
+      <primitive attach="geometry" dispose={null} object={geometry} />
+      <ColumnMaterial />
+    </mesh>
+  )
+}
+
+function AFrameSupport({ node }: { node: ColumnNode }) {
+  const height = Math.max(0.2, node.height)
+  const braceWidth = clamp(node.braceWidth ?? node.width, 0.04, 1.6)
+  const braceDepth = clamp(node.braceDepth ?? node.depth, 0.04, 1.6)
+  const bottomSpread = Math.max(0.2, node.braceBottomSpread ?? Math.max(node.width * 3, 1.2))
+  const topSpread = clamp(node.braceTopSpread ?? 0.12, 0, bottomSpread)
+  const bottomY = 0
+  const topY = height
+  const leftBottom: VectorTuple = [-bottomSpread / 2, bottomY, 0]
+  const rightBottom: VectorTuple = [bottomSpread / 2, bottomY, 0]
+  const leftTop: VectorTuple = [-topSpread / 2, topY, 0]
+  const rightTop: VectorTuple = [topSpread / 2, topY, 0]
+  const plateHeight = Math.max(0.035, Math.min(0.08, braceWidth * 0.45))
+  const footPlateWidth = braceWidth * 1.9
+  const footPlateDepth = braceDepth * 1.75
+  const topPlateWidth = Math.max(topSpread + braceWidth * 1.9, braceWidth * 2.2)
+  const topPlateDepth = braceDepth * 1.75
+
+  return (
+    <group>
+      <FlatEndedBeam depth={braceDepth} end={leftTop} start={leftBottom} width={braceWidth} />
+      <FlatEndedBeam depth={braceDepth} end={rightTop} start={rightBottom} width={braceWidth} />
+      {(node.bracePlateEnabled ?? true) && (
+        <>
+          <MappedBox
+            depth={footPlateDepth}
+            height={plateHeight}
+            position={[leftBottom[0], plateHeight / 2, leftBottom[2]]}
+            width={footPlateWidth}
+          />
+          <MappedBox
+            depth={footPlateDepth}
+            height={plateHeight}
+            position={[rightBottom[0], plateHeight / 2, rightBottom[2]]}
+            width={footPlateWidth}
+          />
+          <MappedBox
+            depth={topPlateDepth}
+            height={plateHeight}
+            position={[0, height - plateHeight / 2, 0]}
+            width={topPlateWidth}
+          />
+        </>
+      )}
+    </group>
+  )
+}
+
+function YFrameSupport({ node }: { node: ColumnNode }) {
+  const height = Math.max(0.2, node.height)
+  const braceWidth = clamp(node.braceWidth ?? node.width, 0.04, 1.6)
+  const braceDepth = clamp(node.braceDepth ?? node.depth, 0.04, 1.6)
+  const topSpread = Math.max(0.2, node.braceTopSpread ?? 0.9)
+  const splitY = height * 0.56
+  const foot: VectorTuple = [0, 0, 0]
+  const split: VectorTuple = [0, splitY, 0]
+  const leftTop: VectorTuple = [-topSpread / 2, height, 0]
+  const rightTop: VectorTuple = [topSpread / 2, height, 0]
+  const plateHeight = Math.max(0.035, Math.min(0.08, braceWidth * 0.45))
+  const footPlateWidth = braceWidth * 1.9
+  const footPlateDepth = braceDepth * 1.75
+  const topPlateWidth = topSpread + braceWidth * 1.9
+  const topPlateDepth = braceDepth * 1.75
+
+  return (
+    <group>
+      <FlatEndedBeam depth={braceDepth} end={split} start={foot} width={braceWidth} />
+      <FlatEndedBeam depth={braceDepth} end={leftTop} start={split} width={braceWidth} />
+      <FlatEndedBeam depth={braceDepth} end={rightTop} start={split} width={braceWidth} />
+      {(node.bracePlateEnabled ?? true) && (
+        <>
+          <MappedBox
+            depth={footPlateDepth}
+            height={plateHeight}
+            position={[foot[0], plateHeight / 2, foot[2]]}
+            width={footPlateWidth}
+          />
+          <MappedBox
+            depth={topPlateDepth}
+            height={plateHeight}
+            position={[0, height - plateHeight / 2, 0]}
+            width={topPlateWidth}
+          />
+        </>
+      )}
+    </group>
+  )
+}
+
+function VFrameSupport({ node }: { node: ColumnNode }) {
+  const height = Math.max(0.2, node.height)
+  const braceWidth = clamp(node.braceWidth ?? node.width, 0.04, 1.6)
+  const braceDepth = clamp(node.braceDepth ?? node.depth, 0.04, 1.6)
+  const topSpread = Math.max(0.2, node.braceTopSpread ?? 1)
+  const foot: VectorTuple = [0, 0, 0]
+  const leftTop: VectorTuple = [-topSpread / 2, height, 0]
+  const rightTop: VectorTuple = [topSpread / 2, height, 0]
+  const plateHeight = Math.max(0.035, Math.min(0.08, braceWidth * 0.45))
+  const footPlateWidth = braceWidth * 1.9
+  const footPlateDepth = braceDepth * 1.75
+  const topPlateWidth = topSpread + braceWidth * 1.9
+  const topPlateDepth = braceDepth * 1.75
+
+  return (
+    <group>
+      <FlatEndedBeam depth={braceDepth} end={leftTop} start={foot} width={braceWidth} />
+      <FlatEndedBeam depth={braceDepth} end={rightTop} start={foot} width={braceWidth} />
+      {(node.bracePlateEnabled ?? true) && (
+        <>
+          <MappedBox
+            depth={footPlateDepth}
+            height={plateHeight}
+            position={[foot[0], plateHeight / 2, foot[2]]}
+            width={footPlateWidth}
+          />
+          <MappedBox
+            depth={topPlateDepth}
+            height={plateHeight}
+            position={[0, height - plateHeight / 2, 0]}
+            width={topPlateWidth}
+          />
+        </>
+      )}
+    </group>
+  )
+}
+
+function XBraceSupport({ node }: { node: ColumnNode }) {
+  const height = Math.max(0.2, node.height)
+  const braceWidth = clamp(node.braceWidth ?? node.width, 0.04, 1.6)
+  const braceDepth = clamp(node.braceDepth ?? node.depth, 0.04, 1.6)
+  const bottomSpread = Math.max(0.2, node.braceBottomSpread ?? 1)
+  const topSpread = Math.max(0.2, node.braceTopSpread ?? 1)
+  const leftBottom: VectorTuple = [-bottomSpread / 2, 0, 0]
+  const rightBottom: VectorTuple = [bottomSpread / 2, 0, 0]
+  const leftTop: VectorTuple = [-topSpread / 2, height, 0]
+  const rightTop: VectorTuple = [topSpread / 2, height, 0]
+  const plateHeight = Math.max(0.035, Math.min(0.08, braceWidth * 0.45))
+  const footPlateWidth = braceWidth * 1.9
+  const footPlateDepth = braceDepth * 1.75
+  const topPlateWidth = braceWidth * 1.9
+  const topPlateDepth = braceDepth * 1.75
+
+  return (
+    <group>
+      <FlatEndedBeam depth={braceDepth} end={rightTop} start={leftBottom} width={braceWidth} />
+      <FlatEndedBeam depth={braceDepth} end={leftTop} start={rightBottom} width={braceWidth} />
+      {(node.bracePlateEnabled ?? true) && (
+        <>
+          <MappedBox
+            depth={footPlateDepth}
+            height={plateHeight}
+            position={[leftBottom[0], plateHeight / 2, leftBottom[2]]}
+            width={footPlateWidth}
+          />
+          <MappedBox
+            depth={footPlateDepth}
+            height={plateHeight}
+            position={[rightBottom[0], plateHeight / 2, rightBottom[2]]}
+            width={footPlateWidth}
+          />
+          <MappedBox
+            depth={topPlateDepth}
+            height={plateHeight}
+            position={[leftTop[0], height - plateHeight / 2, leftTop[2]]}
+            width={topPlateWidth}
+          />
+          <MappedBox
+            depth={topPlateDepth}
+            height={plateHeight}
+            position={[rightTop[0], height - plateHeight / 2, rightTop[2]]}
+            width={topPlateWidth}
+          />
+        </>
+      )}
+    </group>
+  )
+}
+
+function KBraceSupport({ node }: { node: ColumnNode }) {
+  const height = Math.max(0.2, node.height)
+  const braceWidth = clamp(node.braceWidth ?? node.width, 0.04, 1.6)
+  const braceDepth = clamp(node.braceDepth ?? node.depth, 0.04, 1.6)
+  const spread = Math.max(0.2, Math.max(node.braceBottomSpread ?? 1, node.braceTopSpread ?? 1))
+  const leftBottom: VectorTuple = [-spread / 2, 0, 0]
+  const leftTop: VectorTuple = [-spread / 2, height, 0]
+  const centerBottom: VectorTuple = [0, 0, 0]
+  const centerMiddle: VectorTuple = [0, height / 2, 0]
+  const centerTop: VectorTuple = [0, height, 0]
+  const plateHeight = Math.max(0.035, Math.min(0.08, braceWidth * 0.45))
+  const plateWidth = braceWidth * 1.9
+  const plateDepth = braceDepth * 1.75
+
+  return (
+    <group>
+      <FlatEndedBeam depth={braceDepth} end={centerTop} start={centerBottom} width={braceWidth} />
+      <FlatEndedBeam depth={braceDepth} end={centerMiddle} start={leftBottom} width={braceWidth} />
+      <FlatEndedBeam depth={braceDepth} end={centerMiddle} start={leftTop} width={braceWidth} />
+      {(node.bracePlateEnabled ?? true) && (
+        <>
+          <MappedBox
+            depth={plateDepth}
+            height={plateHeight}
+            position={[leftBottom[0], plateHeight / 2, leftBottom[2]]}
+            width={plateWidth}
+          />
+          <MappedBox
+            depth={plateDepth}
+            height={plateHeight}
+            position={[centerBottom[0], plateHeight / 2, centerBottom[2]]}
+            width={plateWidth}
+          />
+          <MappedBox
+            depth={plateDepth}
+            height={plateHeight}
+            position={[leftTop[0], height - plateHeight / 2, leftTop[2]]}
+            width={plateWidth}
+          />
+          <MappedBox
+            depth={plateDepth}
+            height={plateHeight}
+            position={[centerTop[0], height - plateHeight / 2, centerTop[2]]}
+            width={plateWidth}
+          />
+        </>
+      )}
+    </group>
+  )
+}
+
+function SingleStrutSupport({ node }: { node: ColumnNode }) {
+  const height = Math.max(0.2, node.height)
+  const braceWidth = clamp(node.braceWidth ?? node.width, 0.04, 1.6)
+  const braceDepth = clamp(node.braceDepth ?? node.depth, 0.04, 1.6)
+  const spread = Math.max(0.2, Math.max(node.braceBottomSpread ?? 1, node.braceTopSpread ?? 1))
+  const bottom: VectorTuple = [-spread / 2, 0, 0]
+  const top: VectorTuple = [spread / 2, height, 0]
+  const plateHeight = Math.max(0.035, Math.min(0.08, braceWidth * 0.45))
+  const plateWidth = braceWidth * 1.9
+  const plateDepth = braceDepth * 1.75
+
+  return (
+    <group>
+      <FlatEndedBeam depth={braceDepth} end={top} start={bottom} width={braceWidth} />
+      {(node.bracePlateEnabled ?? true) && (
+        <>
+          <MappedBox
+            depth={plateDepth}
+            height={plateHeight}
+            position={[bottom[0], plateHeight / 2, bottom[2]]}
+            width={plateWidth}
+          />
+          <MappedBox
+            depth={plateDepth}
+            height={plateHeight}
+            position={[top[0], height - plateHeight / 2, top[2]]}
+            width={plateWidth}
+          />
+        </>
+      )}
+    </group>
+  )
+}
+
+function TripodSupport({ node }: { node: ColumnNode }) {
+  const height = Math.max(0.2, node.height)
+  const braceWidth = clamp(node.braceWidth ?? node.width, 0.04, 1.6)
+  const braceDepth = clamp(node.braceDepth ?? node.depth, 0.04, 1.6)
+  const width = Math.max(0.2, node.braceBottomSpread ?? 1.1)
+  const depth = Math.max(0.2, node.braceTopSpread ?? 1.1)
+  const top: VectorTuple = [0, height, 0]
+  const feet: VectorTuple[] = [
+    [0, 0, -depth / 2],
+    [-width / 2, 0, depth / 2],
+    [width / 2, 0, depth / 2],
+  ]
+  const plateHeight = Math.max(0.035, Math.min(0.08, braceWidth * 0.45))
+  const plateWidth = braceWidth * 1.9
+  const plateDepth = braceDepth * 1.75
+
+  return (
+    <group>
+      {feet.map((foot, index) => (
+        <FlatEndedBeam
+          depth={braceDepth}
+          end={top}
+          key={`leg-${index}`}
+          start={foot}
+          width={braceWidth}
+        />
+      ))}
+      {(node.bracePlateEnabled ?? true) && (
+        <>
+          {feet.map((foot, index) => (
+            <MappedBox
+              depth={plateDepth}
+              height={plateHeight}
+              key={`foot-${index}`}
+              position={[foot[0], plateHeight / 2, foot[2]]}
+              width={plateWidth}
+            />
+          ))}
+          <MappedBox
+            depth={plateDepth}
+            height={plateHeight}
+            position={[0, height - plateHeight / 2, 0]}
+            width={plateWidth}
+          />
+        </>
+      )}
+    </group>
+  )
+}
+
+function TrestleSupport({ node }: { node: ColumnNode }) {
+  const height = Math.max(0.2, node.height)
+  const braceWidth = clamp(node.braceWidth ?? node.width, 0.04, 1.6)
+  const braceDepth = clamp(node.braceDepth ?? node.depth, 0.04, 1.6)
+  const width = Math.max(0.2, node.braceBottomSpread ?? 1.2)
+  const depth = Math.max(0.2, node.braceTopSpread ?? 1)
+  const zPositions = [-depth / 2, depth / 2]
+  const topPoints: VectorTuple[] = zPositions.map((z) => [0, height, z])
+  const footPoints: VectorTuple[] = zPositions.flatMap((z) => [
+    [-width / 2, 0, z] as VectorTuple,
+    [width / 2, 0, z] as VectorTuple,
+  ])
+  const plateHeight = Math.max(0.035, Math.min(0.08, braceWidth * 0.45))
+  const plateWidth = braceWidth * 1.9
+  const plateDepth = braceDepth * 1.75
+
+  return (
+    <group>
+      {zPositions.map((z, index) => {
+        const leftBottom: VectorTuple = [-width / 2, 0, z]
+        const rightBottom: VectorTuple = [width / 2, 0, z]
+        const top: VectorTuple = topPoints[index] ?? [0, height, z]
+        return (
+          <group key={`frame-${z}`}>
+            <FlatEndedBeam depth={braceDepth} end={top} start={leftBottom} width={braceWidth} />
+            <FlatEndedBeam depth={braceDepth} end={top} start={rightBottom} width={braceWidth} />
+          </group>
+        )
+      })}
+      <FlatEndedBeam
+        depth={braceDepth}
+        end={topPoints[1] ?? [0, height, depth / 2]}
+        start={topPoints[0] ?? [0, height, -depth / 2]}
+        width={braceWidth}
+      />
+      {(node.bracePlateEnabled ?? true) && (
+        <>
+          {footPoints.map((foot, index) => (
+            <MappedBox
+              depth={plateDepth}
+              height={plateHeight}
+              key={`foot-${index}`}
+              position={[foot[0], plateHeight / 2, foot[2]]}
+              width={plateWidth}
+            />
+          ))}
+          {topPoints.map((top, index) => (
+            <MappedBox
+              depth={plateDepth}
+              height={plateHeight}
+              key={`top-${index}`}
+              position={[top[0], height - plateHeight / 2, top[2]]}
+              width={plateWidth}
+            />
+          ))}
+        </>
+      )}
+    </group>
+  )
+}
+
+function PortalFrameSupport({ node }: { node: ColumnNode }) {
+  const height = Math.max(0.2, node.height)
+  const braceWidth = clamp(node.braceWidth ?? node.width, 0.04, 1.6)
+  const braceDepth = clamp(node.braceDepth ?? node.depth, 0.04, 1.6)
+  const width = Math.max(0.2, node.braceBottomSpread ?? 1.4)
+  const leftBottom: VectorTuple = [-width / 2, 0, 0]
+  const rightBottom: VectorTuple = [width / 2, 0, 0]
+  const leftTop: VectorTuple = [-width / 2, height, 0]
+  const rightTop: VectorTuple = [width / 2, height, 0]
+  const plateHeight = Math.max(0.035, Math.min(0.08, braceWidth * 0.45))
+  const plateWidth = braceWidth * 1.9
+  const plateDepth = braceDepth * 1.75
+
+  return (
+    <group>
+      <FlatEndedBeam depth={braceDepth} end={leftTop} start={leftBottom} width={braceWidth} />
+      <FlatEndedBeam depth={braceDepth} end={rightTop} start={rightBottom} width={braceWidth} />
+      <FlatEndedBeam depth={braceDepth} end={rightTop} start={leftTop} width={braceWidth} />
+      {(node.bracePlateEnabled ?? true) && (
+        <>
+          {[leftBottom, rightBottom].map((foot, index) => (
+            <MappedBox
+              depth={plateDepth}
+              height={plateHeight}
+              key={`foot-${index}`}
+              position={[foot[0], plateHeight / 2, foot[2]]}
+              width={plateWidth}
+            />
+          ))}
+          {[leftTop, rightTop].map((top, index) => (
+            <MappedBox
+              depth={plateDepth}
+              height={plateHeight}
+              key={`top-${index}`}
+              position={[top[0], height - plateHeight / 2, top[2]]}
+              width={plateWidth}
+            />
+          ))}
+        </>
+      )}
+    </group>
+  )
+}
+
+function BoxFrameSupport({ node }: { node: ColumnNode }) {
+  const height = Math.max(0.2, node.height)
+  const braceWidth = clamp(node.braceWidth ?? node.width, 0.04, 1.6)
+  const braceDepth = clamp(node.braceDepth ?? node.depth, 0.04, 1.6)
+  const width = Math.max(0.2, node.braceBottomSpread ?? 1.4)
+  const depth = Math.max(0.2, node.braceTopSpread ?? 1)
+  const corners: VectorTuple[] = [
+    [-width / 2, 0, -depth / 2],
+    [width / 2, 0, -depth / 2],
+    [width / 2, 0, depth / 2],
+    [-width / 2, 0, depth / 2],
+  ]
+  const topCorners = corners.map(([x, _y, z]) => [x, height, z] as VectorTuple)
+  const plateHeight = Math.max(0.035, Math.min(0.08, braceWidth * 0.45))
+  const plateWidth = braceWidth * 1.9
+  const plateDepth = braceDepth * 1.75
+
+  return (
+    <group>
+      {corners.map((corner, index) => (
+        <FlatEndedBeam
+          depth={braceDepth}
+          end={topCorners[index] ?? [corner[0], height, corner[2]]}
+          key={`post-${index}`}
+          start={corner}
+          width={braceWidth}
+        />
+      ))}
+      {topCorners.map((corner, index) => (
+        <FlatEndedBeam
+          depth={braceDepth}
+          end={topCorners[(index + 1) % topCorners.length] ?? corner}
+          key={`top-rail-${index}`}
+          start={corner}
+          width={braceWidth}
+        />
+      ))}
+      {corners.map((corner, index) => (
+        <FlatEndedBeam
+          depth={braceDepth}
+          end={corners[(index + 1) % corners.length] ?? corner}
+          key={`bottom-rail-${index}`}
+          start={corner}
+          width={braceWidth}
+        />
+      ))}
+      {(node.bracePlateEnabled ?? true) && (
+        <>
+          {corners.map((corner, index) => (
+            <MappedBox
+              depth={plateDepth}
+              height={plateHeight}
+              key={`foot-${index}`}
+              position={[corner[0], plateHeight / 2, corner[2]]}
+              width={plateWidth}
+            />
+          ))}
+          {topCorners.map((corner, index) => (
+            <MappedBox
+              depth={plateDepth}
+              height={plateHeight}
+              key={`top-${index}`}
+              position={[corner[0], height - plateHeight / 2, corner[2]]}
+              width={plateWidth}
+            />
+          ))}
+        </>
+      )}
+    </group>
   )
 }
 
@@ -244,7 +847,14 @@ function MappedTorus({
 }) {
   const geometry = useMemo(() => {
     if (ringRadius <= 0 || tubeRadius <= 0) return null
-    return createColumnTorusGeometry({ arc, ringRadius, scaleX, scaleY, scaleZ, tubeRadius })
+    return createColumnTorusGeometry({
+      arc,
+      ringRadius,
+      scaleX,
+      scaleY,
+      scaleZ,
+      tubeRadius,
+    })
   }, [arc, ringRadius, scaleX, scaleY, scaleZ, tubeRadius])
 
   if (!geometry) return null
@@ -1449,7 +2059,11 @@ export const ColumnRenderer = ({ node }: { node: ColumnNode }) => {
   const handlers = useNodeEvents(node, 'column')
   const liveTransform = useLiveTransforms((state) => state.get(node.id))
   const material = useMemo(
-    () => createColumnMaterial({ material: node.material, materialPreset: node.materialPreset }),
+    () =>
+      createColumnMaterial({
+        material: node.material,
+        materialPreset: node.materialPreset,
+      }),
     [
       node.material,
       node.material?.preset,
@@ -1479,41 +2093,73 @@ export const ColumnRenderer = ({ node }: { node: ColumnNode }) => {
           visible={node.visible}
           {...handlers}
         >
-          <Base height={shaftLayout.baseHeight} node={node} />
-          <BaseCarvings height={shaftLayout.baseHeight} node={node} />
-          <Shaft height={shaftLayout.shaftHeight} node={node} y={shaftLayout.shaftY} />
-          <Rings node={node} shaftHeight={shaftLayout.shaftHeight} shaftY={shaftLayout.shaftY} />
-          <LatheBands
-            node={node}
-            shaftHeight={shaftLayout.shaftHeight}
-            shaftY={shaftLayout.shaftY}
-          />
-          <Flutes node={node} shaftHeight={shaftLayout.shaftHeight} shaftY={shaftLayout.shaftY} />
-          <LowerCarvedBand
-            node={node}
-            shaftHeight={shaftLayout.shaftHeight}
-            shaftY={shaftLayout.shaftY}
-          />
-          <DravidianShaftPanels
-            node={node}
-            shaftHeight={shaftLayout.shaftHeight}
-            shaftY={shaftLayout.shaftY}
-          />
-          <SpiralRibs
-            node={node}
-            shaftHeight={shaftLayout.shaftHeight}
-            shaftY={shaftLayout.shaftY}
-          />
-          <Capital
-            height={shaftLayout.capitalHeight}
-            node={node}
-            y={shaftLayout.baseHeight + shaftLayout.shaftHeight}
-          />
-          <CapitalCarvings
-            capitalHeight={shaftLayout.capitalHeight}
-            capitalY={shaftLayout.baseHeight + shaftLayout.shaftHeight}
-            node={node}
-          />
+          {node.supportStyle === 'a-frame' ? (
+            <AFrameSupport node={node} />
+          ) : node.supportStyle === 'y-frame' ? (
+            <YFrameSupport node={node} />
+          ) : node.supportStyle === 'v-frame' ? (
+            <VFrameSupport node={node} />
+          ) : node.supportStyle === 'x-brace' ? (
+            <XBraceSupport node={node} />
+          ) : node.supportStyle === 'k-brace' ? (
+            <KBraceSupport node={node} />
+          ) : node.supportStyle === 'single-strut' ? (
+            <SingleStrutSupport node={node} />
+          ) : node.supportStyle === 'tripod' ? (
+            <TripodSupport node={node} />
+          ) : node.supportStyle === 'trestle' ? (
+            <TrestleSupport node={node} />
+          ) : node.supportStyle === 'portal-frame' ? (
+            <PortalFrameSupport node={node} />
+          ) : node.supportStyle === 'box-frame' ? (
+            <BoxFrameSupport node={node} />
+          ) : (
+            <>
+              <Base height={shaftLayout.baseHeight} node={node} />
+              <BaseCarvings height={shaftLayout.baseHeight} node={node} />
+              <Shaft height={shaftLayout.shaftHeight} node={node} y={shaftLayout.shaftY} />
+              <Rings
+                node={node}
+                shaftHeight={shaftLayout.shaftHeight}
+                shaftY={shaftLayout.shaftY}
+              />
+              <LatheBands
+                node={node}
+                shaftHeight={shaftLayout.shaftHeight}
+                shaftY={shaftLayout.shaftY}
+              />
+              <Flutes
+                node={node}
+                shaftHeight={shaftLayout.shaftHeight}
+                shaftY={shaftLayout.shaftY}
+              />
+              <LowerCarvedBand
+                node={node}
+                shaftHeight={shaftLayout.shaftHeight}
+                shaftY={shaftLayout.shaftY}
+              />
+              <DravidianShaftPanels
+                node={node}
+                shaftHeight={shaftLayout.shaftHeight}
+                shaftY={shaftLayout.shaftY}
+              />
+              <SpiralRibs
+                node={node}
+                shaftHeight={shaftLayout.shaftHeight}
+                shaftY={shaftLayout.shaftY}
+              />
+              <Capital
+                height={shaftLayout.capitalHeight}
+                node={node}
+                y={shaftLayout.baseHeight + shaftLayout.shaftHeight}
+              />
+              <CapitalCarvings
+                capitalHeight={shaftLayout.capitalHeight}
+                capitalY={shaftLayout.baseHeight + shaftLayout.shaftHeight}
+                node={node}
+              />
+            </>
+          )}
         </group>
       </ColumnEdgeSoftnessContext.Provider>
     </ColumnMaterialContext.Provider>
