@@ -10,12 +10,12 @@ import { registerSceneSummary } from './scene-summary'
  * Registers all MCP resources exposed by `@aedifex/mcp`.
  *
  * Resources:
- * - `pascal://scene/current`          — application/json, full snapshot
- * - `pascal://scene/current/summary`  — text/markdown, human summary
- * - `pascal://catalog/items`          — application/json, host-supplied catalog
- * - `pascal://constraints/{levelId}`  — application/json, per-level constraints
- * - `pascal://agent-guide`            — text/markdown, MCP-first agent guide
- * - `pascal://agent/guide`            — text/markdown, legacy alias
+ * - `aedifex://scene/current`          — application/json, full snapshot
+ * - `aedifex://scene/current/summary`  — text/markdown, human summary
+ * - `aedifex://catalog/items`          — application/json, host-supplied catalog
+ * - `aedifex://constraints/{levelId}`  — application/json, per-level constraints
+ * - `aedifex://agent-guide`            — text/markdown, MCP-first agent guide
+ * - `aedifex://agent/guide`            — text/markdown, legacy alias
  */
 export function registerResources(server: McpServer, operations: SceneOperations): void {
   registerAgentGuide(server, operations)

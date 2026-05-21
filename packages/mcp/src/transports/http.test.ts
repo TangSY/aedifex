@@ -3,7 +3,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { SceneBridge } from '../bridge/scene-bridge'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 import { connectHttp, type HttpTransportHandle } from './http'
 
 let bridge: SceneBridge
@@ -13,7 +13,7 @@ let handle: HttpTransportHandle | null = null
 beforeEach(() => {
   bridge = new SceneBridge()
   bridge.loadDefault()
-  server = createPascalMcpServer({ bridge })
+  server = createAedifexMcpServer({ bridge })
 })
 
 afterEach(async () => {

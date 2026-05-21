@@ -742,7 +742,7 @@ const useEditor = create<EditorState>()(
       setMobilePanelSheetHeight: (px) => set({ mobilePanelSheetHeight: Math.max(0, px) }),
     }),
     {
-      name: 'pascal-editor-ui-preferences',
+      name: 'aedifex-editor-ui-preferences',
       merge: (persistedState, currentState) => ({
         ...currentState,
         ...normalizePersistedEditorUiState(persistedState as Partial<PersistedEditorState>),

@@ -74,7 +74,7 @@ export function registerCreateFromTemplate(server: McpServer, bridge: SceneOpera
     {
       title: 'Create scene from template',
       description:
-        'Instantiate a seed Pascal scene template into the bridge. Regenerates all ids before applying. When `save: true` and a SceneStore is wired, also persists the new scene and returns the SceneMeta.',
+        'Instantiate a seed Aedifex scene template into the bridge. Regenerates all ids before applying. When `save: true` and a SceneStore is wired, also persists the new scene and returns the SceneMeta.',
       inputSchema: createFromTemplateInput,
       outputSchema: createFromTemplateOutput,
     },

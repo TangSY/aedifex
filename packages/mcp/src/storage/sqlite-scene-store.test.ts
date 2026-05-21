@@ -37,7 +37,7 @@ function makeGraph(overrides: Partial<SceneGraph> = {}): SceneGraph {
 }
 
 async function mkTmpRoot(): Promise<string> {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'pascal-sqlite-test-'))
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aedifex-sqlite-test-'))
 }
 
 async function rmrf(p: string): Promise<void> {
@@ -57,21 +57,21 @@ describe('resolveDefaultDatabasePath', () => {
   })
 
   test('resolves AEDIFEX_DATA_DIR to aedifex.db', () => {
-    expect(resolveDefaultDatabasePath({ AEDIFEX_DATA_DIR: '/tmp/pascal-data' })).toBe(
-      path.join('/tmp/pascal-data', 'aedifex.db'),
+    expect(resolveDefaultDatabasePath({ AEDIFEX_DATA_DIR: '/tmp/aedifex-data' })).toBe(
+      path.join('/tmp/aedifex-data', 'aedifex.db'),
     )
   })
 
   test('falls back to XDG_DATA_HOME on Unix', () => {
     if (process.platform === 'win32') return
     expect(resolveDefaultDatabasePath({ XDG_DATA_HOME: '/xdg/share' })).toBe(
-      path.join('/xdg/share', 'pascal', 'data', 'aedifex.db'),
+      path.join('/xdg/share', 'aedifex', 'data', 'aedifex.db'),
     )
   })
 
   test('falls back to homedir + .aedifex/data/aedifex.db', () => {
     if (process.platform === 'win32') return
-    expect(resolveDefaultDatabasePath({}).endsWith(path.join('.pascal', 'data', 'aedifex.db'))).toBe(
+    expect(resolveDefaultDatabasePath({}).endsWith(path.join('.aedifex', 'data', 'aedifex.db'))).toBe(
       true,
     )
   })

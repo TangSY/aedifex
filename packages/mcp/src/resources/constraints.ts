@@ -71,14 +71,14 @@ function buildPayload(
 }
 
 /**
- * `pascal://constraints/{levelId}` — per-level geometric constraints used as
+ * `aedifex://constraints/{levelId}` — per-level geometric constraints used as
  * input hints for agents: slab nodes (with polygons/holes/elevation) + each
  * wall's plan-view footprint polygon.
  */
 export function registerConstraints(server: McpServer, bridge: SceneOperations): void {
   server.registerResource(
     'constraints',
-    new ResourceTemplate('pascal://constraints/{levelId}', { list: undefined }),
+    new ResourceTemplate('aedifex://constraints/{levelId}', { list: undefined }),
     {
       title: 'Level constraints',
       description:

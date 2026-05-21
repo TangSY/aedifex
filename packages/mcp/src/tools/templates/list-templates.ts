@@ -26,7 +26,7 @@ export function registerListTemplates(server: McpServer): void {
     {
       title: 'List scene templates',
       description:
-        'List the seed Pascal scene templates available to `create_from_template`. Returns the id, display name, one-line description and node count for each.',
+        'List the seed Aedifex scene templates available to `create_from_template`. Returns the id, display name, one-line description and node count for each.',
       inputSchema: listTemplatesInput,
       outputSchema: listTemplatesOutput,
     },

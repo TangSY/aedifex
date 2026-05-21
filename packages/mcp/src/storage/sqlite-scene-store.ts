@@ -77,13 +77,13 @@ const GraphSchema = z.object({
 })
 
 /**
- * Resolves Pascal's local SQLite database path.
+ * Resolves Aedifex's local SQLite database path.
  *
  * Precedence:
  * 1. `AEDIFEX_DB_PATH`
  * 2. `AEDIFEX_DATA_DIR/aedifex.db`
- * 3. On Windows: `%APPDATA%/Pascal/data/aedifex.db`
- * 4. `$XDG_DATA_HOME/pascal/data/aedifex.db`
+ * 3. On Windows: `%APPDATA%/Aedifex/data/aedifex.db`
+ * 4. `$XDG_DATA_HOME/aedifex/data/aedifex.db`
  * 5. `$HOME/.aedifex/data/aedifex.db`
  */
 export function resolveDefaultDatabasePath(env: NodeJS.ProcessEnv = process.env): string {
@@ -96,15 +96,15 @@ export function resolveDefaultDatabasePath(env: NodeJS.ProcessEnv = process.env)
   if (process.platform === 'win32') {
     const appData = env.APPDATA
     if (appData && appData.length > 0) {
-      return path.join(appData, 'Pascal', 'data', 'aedifex.db')
+      return path.join(appData, 'Aedifex', 'data', 'aedifex.db')
     }
-    return path.join(os.homedir(), '.pascal', 'data', 'aedifex.db')
+    return path.join(os.homedir(), '.aedifex', 'data', 'aedifex.db')
   }
   const xdg = env.XDG_DATA_HOME
   if (xdg && xdg.length > 0) {
-    return path.join(xdg, 'pascal', 'data', 'aedifex.db')
+    return path.join(xdg, 'aedifex', 'data', 'aedifex.db')
   }
-  return path.join(os.homedir(), '.pascal', 'data', 'aedifex.db')
+  return path.join(os.homedir(), '.aedifex', 'data', 'aedifex.db')
 }
 
 function resolveMaxSceneBytes(

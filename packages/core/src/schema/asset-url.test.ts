@@ -76,31 +76,31 @@ describe('AssetUrl', () => {
 
     test('single origin allowlist accepts matching https URL', () => {
       if (!g.process?.env) return // browser-only runtime
-      g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.pascal.app'
-      expect(isValid('https://cdn.pascal.app/a.glb')).toBe(true)
-      expect(isValid('https://cdn.pascal.app/deep/path?q=1')).toBe(true)
+      g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.aedifex.app'
+      expect(isValid('https://cdn.aedifex.app/a.glb')).toBe(true)
+      expect(isValid('https://cdn.aedifex.app/deep/path?q=1')).toBe(true)
     })
 
     test('single origin allowlist rejects non-matching https URL', () => {
       if (!g.process?.env) return
-      g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.pascal.app'
+      g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.aedifex.app'
       expect(isValid('https://cdn.other.com/a.glb')).toBe(false)
       expect(isValid('https://attacker.example.com/x')).toBe(false)
     })
 
     test('multi-origin allowlist accepts any listed origin', () => {
       if (!g.process?.env) return
-      g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.pascal.app, https://assets.pascal.app'
-      expect(isValid('https://cdn.pascal.app/a.glb')).toBe(true)
-      expect(isValid('https://assets.pascal.app/tex.webp')).toBe(true)
+      g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.aedifex.app, https://assets.aedifex.app'
+      expect(isValid('https://cdn.aedifex.app/a.glb')).toBe(true)
+      expect(isValid('https://assets.aedifex.app/tex.webp')).toBe(true)
       expect(isValid('https://third.example.com/x')).toBe(false)
     })
 
     test('allowlist ignores trailing / in URL path (origin match only)', () => {
       if (!g.process?.env) return
-      g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.pascal.app'
-      expect(isValid('https://cdn.pascal.app/')).toBe(true)
-      expect(isValid('https://cdn.pascal.app')).toBe(true)
+      g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.aedifex.app'
+      expect(isValid('https://cdn.aedifex.app/')).toBe(true)
+      expect(isValid('https://cdn.aedifex.app')).toBe(true)
     })
 
     test('empty allowlist behaves like unset', () => {
@@ -111,7 +111,7 @@ describe('AssetUrl', () => {
 
     test('allowlist does not restrict non-https schemes', () => {
       if (!g.process?.env) return
-      g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.pascal.app'
+      g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.aedifex.app'
       // these should still pass because they match earlier scheme-based branches
       expect(isValid('asset://x')).toBe(true)
       expect(isValid('blob:https://example.com/abc')).toBe(true)
@@ -122,16 +122,16 @@ describe('AssetUrl', () => {
 
     test('allowlist rejects subdomain spoofing', () => {
       if (!g.process?.env) return
-      g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.pascal.app'
-      expect(isValid('https://cdn.pascal.app.evil.com/x')).toBe(false)
-      expect(isValid('https://evil.com/cdn.pascal.app')).toBe(false)
+      g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.aedifex.app'
+      expect(isValid('https://cdn.aedifex.app.evil.com/x')).toBe(false)
+      expect(isValid('https://evil.com/cdn.aedifex.app')).toBe(false)
     })
 
     test('allowlist respects ports', () => {
       if (!g.process?.env) return
-      g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.pascal.app:8443'
-      expect(isValid('https://cdn.pascal.app:8443/x')).toBe(true)
-      expect(isValid('https://cdn.pascal.app/x')).toBe(false)
+      g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.aedifex.app:8443'
+      expect(isValid('https://cdn.aedifex.app:8443/x')).toBe(true)
+      expect(isValid('https://cdn.aedifex.app/x')).toBe(false)
     })
   })
 })
