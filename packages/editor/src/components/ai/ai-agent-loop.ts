@@ -366,8 +366,12 @@ export async function runAgentLoop({
 
         if (isTerminalTool) {
           // Terminal: auto-confirm any pending ops, then exit loop
+          let terminalCreatedIds: AnyNodeId[] = []
+          let terminalRemovedIds: AnyNodeId[] = []
           if (isGhostPreviewActive() && validOps.length > 0) {
             const log = confirmGhostPreview(validOps)
+            terminalCreatedIds = log.createdNodeIds
+            terminalRemovedIds = log.removedNodes.map((r) => r.node.id as AnyNodeId)
             invalidateSceneCache()
             if (lastMessageId) {
               log.messageId = lastMessageId
@@ -378,6 +382,8 @@ export async function runAgentLoop({
           const toolResult = buildToolResult(
             mutationCalls.map((tc) => tc.tool).join('+'),
             validated,
+            terminalCreatedIds,
+            { compact: true, removedNodeIds: terminalRemovedIds },
           )
           onIterationEnd?.(iteration, toolResult)
           break
@@ -386,9 +392,17 @@ export async function runAgentLoop({
         // Non-terminal: auto-confirm and feed result back to LLM for next step.
         // This allows the agent to continue building (e.g. walls → doors → furniture).
         let createdNodeIds: AnyNodeId[] = []
+        let removedNodeIds: AnyNodeId[] = []
         if (isGhostPreviewActive()) {
           const log = confirmGhostPreview(validOps)
-          createdNodeIds = log.affectedNodeIds
+          // log.createdNodeIds is the inserts; log.removedNodes carries the
+          // (node, parentId) pairs of deletes. Split them apart so the tool
+          // result can report each category separately — passing
+          // log.affectedNodeIds as "created" was the bug that made remove
+          // batches surface as "Created nodes: wall_X (unknown), ..." in the
+          // tool result, confusing the LLM into re-issuing the deletes.
+          createdNodeIds = log.createdNodeIds
+          removedNodeIds = log.removedNodes.map((r) => r.node.id as AnyNodeId)
           invalidateSceneCache()
           if (lastMessageId) {
             log.messageId = lastMessageId
@@ -412,7 +426,7 @@ export async function runAgentLoop({
           mutationCalls.map((tc) => tc.tool).join('+'),
           validated,
           createdNodeIds,
-          { compact: true },
+          { compact: true, removedNodeIds },
         )
         onIterationEnd?.(iteration, toolResult)
 

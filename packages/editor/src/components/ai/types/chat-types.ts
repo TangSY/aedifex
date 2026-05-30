@@ -84,6 +84,8 @@ export interface ToolResult {
     errors: string[]
     /** IDs of nodes created by this operation (for LLM to reference in follow-up) */
     createdNodeIds?: string[]
+    /** IDs of nodes removed by this operation (so the LLM doesn't re-issue deletes for already-gone ids) */
+    removedNodeIds?: string[]
   }
 }
 

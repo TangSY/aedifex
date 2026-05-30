@@ -411,7 +411,10 @@ export function buildToolResult(
   toolName: string,
   operations: ValidatedOperation[],
   createdNodeIds?: AnyNodeId[],
-  { compact = false }: { compact?: boolean } = {},
+  {
+    compact = false,
+    removedNodeIds,
+  }: { compact?: boolean; removedNodeIds?: AnyNodeId[] } = {},
 ): ToolResult {
   const validCount = operations.filter((op) => op.status === 'valid').length
   const adjustedCount = operations.filter((op) => op.status === 'adjusted').length
@@ -453,12 +456,23 @@ export function buildToolResult(
     createdSummary = ` Created nodes: ${nodeDescriptions.join(', ')}.`
   }
 
+  // Build removed nodes summary. Critical for the LLM's mental model: after
+  // a bulk remove the agent loop's next iteration sees "Removed: wall_X,
+  // wall_Y, ..." in the tool result and knows not to re-issue removes for
+  // the same ids. Without this, the LLM would re-emit the same delete
+  // batch on the next turn and the validator would reject all of them as
+  // "node not found" — wasted tokens + confusing chat history.
+  let removedSummary = ''
+  if (removedNodeIds && removedNodeIds.length > 0) {
+    removedSummary = ` Removed nodes: ${removedNodeIds.join(', ')}.`
+  }
+
   return {
     toolName,
     success,
     summary: `Executed ${operations.length} operations: ${parts.join(', ')}.${
       adjustments.length > 0 ? ` Adjustments: ${adjustments.join('; ')}` : ''
-    }${errors.length > 0 ? ` Errors: ${errors.join('; ')}` : ''}${createdSummary}`,
+    }${errors.length > 0 ? ` Errors: ${errors.join('; ')}` : ''}${createdSummary}${removedSummary}`,
     details: {
       validCount,
       adjustedCount,
@@ -467,6 +481,7 @@ export function buildToolResult(
       adjustments: compact ? adjustments.slice(0, 3) : adjustments,
       errors,
       createdNodeIds: createdNodeIds ?? [],
+      removedNodeIds: removedNodeIds ?? [],
     },
   }
 }
