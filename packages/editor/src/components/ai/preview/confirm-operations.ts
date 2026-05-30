@@ -257,7 +257,14 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
       }
       case 'remove_item':
       case 'remove_node': {
-        // Restore the node first (it was hidden during preview), then delete it
+        // Restore the node first (it was hidden during preview), then delete it.
+        // cascade=true because the AI's remove ops typically target a parent
+        // (wall, level, building) that owns children (windows, slabs); without
+        // cascade the scene bridge guard throws "node has N descendant(s);
+        // pass cascade: true to delete recursively" and the whole confirm
+        // batch fails. The AI flow is a considered batch — recursive removal
+        // is the intended semantics, unlike the panel-level single-delete UX
+        // where the user gets warned about children first.
         const saved = removedNodeStates.get(op.nodeId)
         if (saved) {
           const currentNode = nodes[op.nodeId]
@@ -268,7 +275,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
             })
           }
         }
-        ops().deleteNode(op.nodeId)
+        ops().deleteNode(op.nodeId, true)
         affectedNodeIds.push(op.nodeId)
         break
       }
@@ -913,11 +920,15 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
 export function undoConfirmedOperation(log: AIOperationLog): void {
   if (log.status !== 'confirmed') return
 
-  // Step 1: Delete nodes that were created by this operation
+  // Step 1: Delete nodes that were created by this operation.
+  // cascade=true: when the confirmed op created a parent + children
+  // (e.g. a wall with attached windows in a single AI batch), undoing must
+  // remove the whole subtree. The existence guard above handles the
+  // "already cascaded away by an earlier iteration" case.
   for (const nodeId of log.createdNodeIds) {
     const node = useScene.getState().nodes[nodeId]
     if (node) {
-      ops().deleteNode(nodeId)
+      ops().deleteNode(nodeId, true)
     }
   }
 
