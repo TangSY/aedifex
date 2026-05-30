@@ -298,9 +298,10 @@ describe('optimizeLayout — move_item', () => {
 // ============================================================================
 // optimizeLayout — orientation enforcement (regression for QA-AI 2026-05-01 v3)
 // ============================================================================
-// Renderer convention: at rotY=0 the item's forward vector is -Z. Verify
-// enforceAgainstWallOrientation produces orientations that put forward toward
-// the room interior.
+// Renderer convention: at rotY=0 the item's forward vector is +Z (the same contract
+// the system prompt hands the LLM). Rotating +Z by θ about Y gives forward = (sin θ,
+// cos θ). Verify enforceAgainstWallOrientation produces orientations that put forward
+// toward the room interior.
 
 describe('optimizeLayout — against-wall orientation enforcement', () => {
   // Test setup: 5x4 rectangular room. North wall at z=-2, south wall at z=+2.
@@ -315,21 +316,24 @@ describe('optimizeLayout — against-wall orientation enforcement', () => {
     })
   }
 
-  it('keeps rotY=0 when sofa is against the south wall (forward -Z faces room)', () => {
+  it('rotates sofa to π against the south wall (rotY=0 forward +Z would face the wall)', () => {
     setupRectRoom()
-    // Sofa center at (0, 0.05, 1.13) — within enforce threshold of south wall (z=2)
+    // Sofa center at (0, 0.05, 1.13) — within enforce threshold of south wall (z=2).
+    // AI emitted rotationY=0 → forward +Z points south, into the wall. Must be corrected.
     const op = makeAddItemOp('sofa', 'sofa', [0, 0.05, 1.13], [0, 0, 0], [2, 0.9, 0.9])
     const result = optimizeLayout([op]) as [ValidatedAddItem]
-    expect(result[0].rotation[1]).toBeCloseTo(0, 2)
+    // Corrected so forward faces room interior (-Z): rotationY = π
+    expect(Math.abs(result[0].rotation[1])).toBeCloseTo(Math.PI, 2)
+    expect(result[0].status).toBe('adjusted')
   })
 
-  it('rotates sofa to π when moved against the north wall (forward -Z would face wall)', () => {
+  it('keeps rotY=0 against the north wall (forward +Z already faces room interior)', () => {
     setupRectRoom()
     setNodes({
       ...mockNodes,
       item_sofa: {
         id: 'item_sofa', type: 'item', object: 'node', parentId: null,
-        visible: true, metadata: {}, position: [0, 0.05, 1.13],
+        visible: true, metadata: {}, position: [0, 0.05, -1.13],
         rotation: [0, 0, 0], scale: [1, 1, 1],
         asset: {
           id: 'sofa', category: 'sofa', name: 'Sofa',
@@ -340,15 +344,14 @@ describe('optimizeLayout — against-wall orientation enforcement', () => {
         children: [],
       },
     })
-    // User: "move sofa to north wall edge" → AI gives a position near z=-1.13, rotation [0,0,0]
+    // North wall is at z=-2; sofa at z=-1.13 with rotationY=0 → forward +Z points south,
+    // toward room center. Already correct — orientation must NOT be flipped.
     const op = makeMoveItemOp('item_sofa', [0, 0.05, -1.13], [0, 0, 0])
     const result = optimizeLayout([op]) as [ValidatedMoveItem]
-    // Expect orientation corrected to π so seat faces +Z (room interior)
-    expect(Math.abs(result[0].rotation[1])).toBeCloseTo(Math.PI, 2)
-    expect(result[0].status).toBe('adjusted')
+    expect(result[0].rotation[1]).toBeCloseTo(0, 2)
   })
 
-  it('rotates sofa to ±π/2 when against the west wall', () => {
+  it('rotates sofa to +π/2 when against the west wall', () => {
     setupRectRoom()
     setNodes({
       ...mockNodes,
@@ -365,12 +368,29 @@ describe('optimizeLayout — against-wall orientation enforcement', () => {
         children: [],
       },
     })
-    // Move sofa close to west wall (x=-2). Forward should face +X.
+    // Move sofa close to west wall (x=-2.5). Forward should face room interior (+X).
     const op = makeMoveItemOp('item_sofa', [-1.5, 0.05, 0], [0, 0, 0])
     const result = optimizeLayout([op]) as [ValidatedMoveItem]
-    // forward = (-sinθ, -cosθ) should equal +X = (1, 0)
-    // -sinθ = 1 → θ = -π/2
-    expect(result[0].rotation[1]).toBeCloseTo(-Math.PI / 2, 2)
+    // forward = (sin θ, cos θ) should equal +X = (1, 0) → sin θ = 1 → θ = π/2
+    expect(result[0].rotation[1]).toBeCloseTo(Math.PI / 2, 2)
+  })
+
+  // Reverse protection: when the AI already supplies the correct +Z-convention
+  // orientation, enforcement must be a no-op — NEVER flip a correctly-placed item.
+  // This guards against the -Z/+Z convention mismatch that turned sofas to face the
+  // wall after the AI had oriented them correctly (the original bug). Each position is
+  // inside the enforce threshold of its wall so the orientation logic is exercised.
+  it.each([
+    { wall: 'south', pos: [0, 0.05, 1.13] as [number, number, number], correct: Math.PI },
+    { wall: 'north', pos: [0, 0.05, -1.13] as [number, number, number], correct: 0 },
+    { wall: 'west', pos: [-1.5, 0.05, 0] as [number, number, number], correct: Math.PI / 2 },
+    { wall: 'east', pos: [1.5, 0.05, 0] as [number, number, number], correct: -Math.PI / 2 },
+  ])('keeps a correctly-oriented sofa unchanged against the $wall wall', ({ pos, correct }) => {
+    setupRectRoom()
+    const op = makeAddItemOp('sofa', 'sofa', pos, [0, correct, 0], [2, 0.9, 0.9])
+    const result = optimizeLayout([op]) as [ValidatedAddItem]
+    // Correct orientation in → same orientation out, no orientation adjustment.
+    expect(result[0].rotation[1]).toBeCloseTo(correct, 2)
   })
 })
 

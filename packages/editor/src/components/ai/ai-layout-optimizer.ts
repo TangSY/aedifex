@@ -322,14 +322,16 @@ function snapToNearestWall(
   const side = Math.sign(toCenterX * normalX + toCenterZ * normalZ) || 1
 
   // Compute item facing direction: face along normal (toward room interior).
-  // Renderer convention: at rotY=0 the item's forward vector is -Z (Three.js default
-  // camera forward; ItemRenderer wraps the GLB Clone in a group whose rotation is the
-  // node's rotation, and asset.rotation has already normalized the GLB itself). To make
-  // forward = (side*normalX, side*normalZ), solve -(sin θ, cos θ) = side*normal →
-  // θ = atan2(-side*normalX, -side*normalZ).
+  // Renderer convention: at rotY=0 the item's forward vector is +Z. This is the SAME
+  // contract the system prompt hands the LLM (Furniture Orientation section) and the same
+  // one adjustForGroupSpacing relies on below. ItemRenderer wraps the GLB Clone in a group
+  // whose rotation is the node's rotation, and asset.rotation has already normalized the GLB
+  // so its canonical front is +Z. Rotating +Z by θ about Y gives forward = (sin θ, cos θ).
+  // To make forward = (side*normalX, side*normalZ), solve (sin θ, cos θ) = side*normal →
+  // θ = atan2(side*normalX, side*normalZ).
   // Must compute faceAngle first, then use final rotation for dimension projection.
   // Otherwise halfDepth/halfWidth use original rotation but we return a new one, causing wall-clamping inaccuracy.
-  const faceAngle = Math.atan2(-side * normalX, -side * normalZ)
+  const faceAngle = Math.atan2(side * normalX, side * normalZ)
 
   const [w, , d] = dimensions
   const wallAngle = Math.atan2(wallDz, wallDx)
@@ -431,8 +433,8 @@ function enforceAgainstWallOrientation(
   const side = Math.sign(toCenterX * normalX + toCenterZ * normalZ) || 1
 
   // Correct orientation: front faces away from wall, toward room interior.
-  // See faceAngle in snapToNearestWall for the -Z forward convention rationale.
-  const correctAngle = Math.atan2(-side * normalX, -side * normalZ)
+  // See faceAngle in snapToNearestWall for the +Z forward convention rationale.
+  const correctAngle = Math.atan2(side * normalX, side * normalZ)
 
   // For against-wall items the front must face the room interior, not along the wall.
   // Tolerance: 45° — anything beyond that is corrected. The previous 90° tolerance let
