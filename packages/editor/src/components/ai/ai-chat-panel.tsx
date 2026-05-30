@@ -24,10 +24,10 @@ import {
   rejectAllProposals,
   switchToProposal,
 } from './ai-proposal-manager'
-import type { ChatMessage, ValidatedOperation } from './types'
+import type { ChatMessage } from './types'
 import { MessageBubble } from './chat-ui/message-bubble'
 import { StreamingIndicator } from './chat-ui/streaming-indicator'
-import { OperationHistoryPanel, PendingOperationCard } from './chat-ui/operation-cards'
+import { OperationHistoryPanel } from './chat-ui/operation-cards'
 import { ProposalTabs } from './chat-ui/proposal-cards'
 
 // ============================================================================
@@ -126,20 +126,6 @@ export function AIChatPanel() {
     textareaRef.current?.focus()
   }, [input, isStreaming, isAIProcessing, pendingQuestion, addUserMessage])
 
-  const handleConfirm = useCallback(
-    (messageId: string, operations: ValidatedOperation[]) => {
-      confirmOperationsFromUI(messageId, operations)
-    },
-    [],
-  )
-
-  const handleReject = useCallback(
-    (messageId: string) => {
-      rejectOperationsFromUI(messageId)
-    },
-    [],
-  )
-
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -182,15 +168,6 @@ export function AIChatPanel() {
           onReject={handleProposalReject}
           onSwitch={switchToProposal}
           proposals={proposals}
-        />
-      )}
-
-      {/* Sticky Operation Card Area (single-proposal mode) */}
-      {proposals.length <= 1 && (
-        <PendingOperationCard
-          messages={messages}
-          onConfirm={handleConfirm}
-          onReject={handleReject}
         />
       )}
 

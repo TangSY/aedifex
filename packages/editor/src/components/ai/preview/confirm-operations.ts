@@ -257,6 +257,17 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
       }
       case 'remove_item':
       case 'remove_node': {
+        // Skip silently if an earlier op in this batch already cascade-removed
+        // the target. The AI often enumerates parents (walls) AND their
+        // children (windows, doors) explicitly in a "clear" intent; with
+        // cascade=true the parent delete sweeps the children out, and the
+        // child-delete iterations below would otherwise throw "node not
+        // found" and abort the whole batch. The user's intent is satisfied
+        // either way, so no-op is correct.
+        const liveNodes = useScene.getState().nodes
+        if (!liveNodes[op.nodeId]) {
+          break
+        }
         // Restore the node first (it was hidden during preview), then delete it.
         // cascade=true because the AI's remove ops typically target a parent
         // (wall, level, building) that owns children (windows, slabs); without
