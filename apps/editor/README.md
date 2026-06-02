@@ -1,4 +1,4 @@
-# Pascal Editor
+# Aedifex
 
 A 3D building editor built with React Three Fiber and WebGPU.
 
