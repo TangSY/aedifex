@@ -198,3 +198,4 @@ export {
   type ValidationSeverity,
   validateBuildJson,
 } from './validation/validate-build-json'
+export type { AssetInput } from './schema/nodes/item'

@@ -1,0 +1,795 @@
+import type { ChatCompletionTool } from 'openai/resources/chat/completions'
+
+// ============================================================================
+// OpenAI Tool Definitions
+// Shared between open-source editor and SaaS.
+// ============================================================================
+
+export const OPENAI_TOOLS: ChatCompletionTool[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'add_item',
+      description: 'Add a furniture item from the catalog to the scene. Use when you are confident about the placement.',
+      parameters: {
+        type: 'object',
+        properties: {
+          catalogSlug: { type: 'string', description: 'The catalog item ID (e.g., "sofa", "dining-table", "ceiling-lamp")' },
+          position: { type: 'array', items: { type: 'number' }, description: 'Position in meters [x, y, z]. Y is up (usually 0 for floor items).' },
+          rotationY: { type: 'number', description: 'Y-axis rotation in radians. Against-wall items should face away from wall.' },
+          levelId: { type: 'string', description: 'Target level ID (from scene context). Required for multi-level buildings when targeting a level other than the currently selected one.' },
+          outdoor: { type: 'boolean', description: 'Set true ONLY when the user explicitly asks for an outdoor placement (e.g. "在房子外面", "在院子里", "outdoor", landscape items on the site). Default false — items must stay inside a zone polygon and out-of-zone positions will be clamped back inside.' },
+          description: { type: 'string', description: 'Brief description of why this item was placed here.' },
+        },
+        required: ['catalogSlug', 'position', 'rotationY'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'remove_item',
+      description: 'Remove a furniture item from the scene.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the item to remove.' },
+          reason: { type: 'string', description: 'Brief reason for removing.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'move_item',
+      description: 'Move or rotate an existing furniture item.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the item to move.' },
+          position: { type: 'array', items: { type: 'number' }, description: 'New position in meters [x, y, z].' },
+          rotationY: { type: 'number', description: 'New Y-axis rotation in radians.' },
+          levelId: { type: 'string', description: 'Target level ID (from scene context). Required for multi-level buildings when targeting a level other than the currently selected one.' },
+          outdoor: { type: 'boolean', description: 'Set true ONLY when the user explicitly asks to move the item outdoors (e.g. "把桌子搬到院子里"). Default false — out-of-zone destinations are clamped back inside the zone.' },
+          reason: { type: 'string', description: 'Brief reason for the move.' },
+        },
+        required: ['nodeId', 'position'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_material',
+      description: 'Change the material/color of a furniture item, slab, ceiling, fence, or door/window. For walls use update_wall_material; for roofs use update_roof_material; for stairs use update_stair_material.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the item.' },
+          material: { type: 'string', description: 'Material identifier or color value.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId', 'material'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_wall_material',
+      description: 'Change wall surface material. Walls have separate interior and exterior faces — use side="both" only when you intentionally want the legacy single-face material to drive both sides.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the wall.' },
+          side: { type: 'string', enum: ['interior', 'exterior', 'both'], description: 'Which face to apply the material to.' },
+          materialPreset: { type: 'string', enum: ['wall-wood1', 'wall-wood2', 'wall-wood3', 'wall-wood4', 'wall-wood5', 'wall-wallpaper1', 'wall-wallpaper2', 'wall-wallpaper3', 'preset-white', 'preset-metal', 'preset-glass'], description: 'Catalog preset ID. Only IDs valid for wall surfaces are allowed. Mutually exclusive with materialColor; if both are provided, preset wins.' },
+          materialColor: { type: 'string', description: 'Inline color hex string (e.g. "#aabbcc"). Use when no catalog preset matches.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId', 'side'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_roof_material',
+      description: 'Change roof surface material per role: top (sheet), edge (fascia), wall (gable wall under roof). Falls back through node defaults when a role-specific material is not set.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the roof container (RoofNode), not a segment.' },
+          role: { type: 'string', enum: ['top', 'edge', 'wall'], description: 'Which roof surface role to update.' },
+          materialPreset: { type: 'string', enum: ['wall-wood1', 'wall-wood2', 'wall-wood3'], description: 'Catalog preset ID valid for roof surfaces. The catalog has no roof-specific presets yet; these wall woods are roof-targeted. Mutually exclusive with materialColor.' },
+          materialColor: { type: 'string', description: 'Inline color hex string.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId', 'role'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_stair_material',
+      description: 'Change stair surface material per role: railing, tread (step surface), side (stringer). Falls back through node defaults when a role-specific material is not set.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the stair container (StairNode), not a segment.' },
+          role: { type: 'string', enum: ['railing', 'tread', 'side'], description: 'Which stair surface role to update.' },
+          materialPreset: { type: 'string', enum: ['wall-wood1', 'wall-wood2', 'wall-wood3', 'wall-wood4', 'wall-wood5', 'wall-marble1', 'wall-marble2', 'preset-white'], description: 'Catalog preset ID valid for stair surfaces. The catalog has no stair-specific presets yet; these are stair-targeted woods/marbles. Mutually exclusive with materialColor.' },
+          materialColor: { type: 'string', description: 'Inline color hex string.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId', 'role'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_wall',
+      description: 'Create a wall segment. Walls snap to 0.5m grid. Pass curveOffset to bend the wall into an arc.',
+      parameters: {
+        type: 'object',
+        properties: {
+          start: { type: 'array', items: { type: 'number' }, description: 'Start point [x, z] in meters.' },
+          end: { type: 'array', items: { type: 'number' }, description: 'End point [x, z] in meters.' },
+          thickness: { type: 'number', description: 'Wall thickness in meters (default: 0.2).' },
+          height: { type: 'number', description: 'Wall height in meters (default: 2.8).' },
+          curveOffset: { type: 'number', description: 'Optional sagitta offset (meters) at the wall midpoint to bend the wall into an arc. Positive offsets bow toward the wall front, negative toward the back. Omit for a straight wall.' },
+          levelId: { type: 'string', description: 'Target level ID (from scene context). Required for multi-level buildings when targeting a level other than the currently selected one.' },
+          description: { type: 'string', description: 'Brief description of this wall.' },
+        },
+        required: ['start', 'end'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_door',
+      description: 'Add a door to an existing wall. Positioned using positionAlongWall (meters from wall start).',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallId: { type: 'string', description: 'The node ID of the wall.' },
+          positionAlongWall: { type: 'number', description: 'Position along wall in meters from start.' },
+          width: { type: 'number', description: 'Door width in meters (default: 0.9).' },
+          height: { type: 'number', description: 'Door height in meters (default: 2.1).' },
+          side: { type: 'string', enum: ['front', 'back'], description: 'Which side of the wall the door faces.' },
+          hingesSide: { type: 'string', enum: ['left', 'right'], description: 'Which side the hinges are on.' },
+          swingDirection: { type: 'string', enum: ['inward', 'outward'], description: 'Door swing direction.' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['wallId', 'positionAlongWall'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_window',
+      description: 'Add a window to an existing wall. Positioned using positionAlongWall (meters from wall start).',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallId: { type: 'string', description: 'The node ID of the wall.' },
+          positionAlongWall: { type: 'number', description: 'Position along wall in meters from start.' },
+          heightFromFloor: { type: 'number', description: 'Height of window center from floor (default: 1.2).' },
+          width: { type: 'number', description: 'Window width in meters (default: 1.5).' },
+          height: { type: 'number', description: 'Window height in meters (default: 1.5).' },
+          side: { type: 'string', enum: ['front', 'back'], description: 'Which side of the wall the window faces.' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['wallId', 'positionAlongWall'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_wall',
+      description: 'Update properties of an existing wall (height, thickness, start/end points, curveOffset). Preserves all doors and windows on the wall.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the wall to update.' },
+          height: { type: 'number', description: 'New wall height in meters.' },
+          thickness: { type: 'number', description: 'New wall thickness in meters.' },
+          start: { type: 'array', items: { type: 'number' }, description: 'New start point [x, z] in meters.' },
+          end: { type: 'array', items: { type: 'number' }, description: 'New end point [x, z] in meters.' },
+          curveOffset: { type: 'number', description: 'Sagitta offset (meters) at the wall midpoint to bend the wall into an arc. Pass 0 (or omit) to keep straight.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_door',
+      description: 'Update properties of an existing door (width, height, position, swing). Preserves the door on its wall.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the door to update.' },
+          width: { type: 'number', description: 'New door width in meters.' },
+          height: { type: 'number', description: 'New door height in meters.' },
+          positionAlongWall: { type: 'number', description: 'New position along wall in meters from start.' },
+          side: { type: 'string', enum: ['front', 'back'], description: 'Which side of the wall the door faces.' },
+          hingesSide: { type: 'string', enum: ['left', 'right'], description: 'Which side the hinges are on.' },
+          swingDirection: { type: 'string', enum: ['inward', 'outward'], description: 'Door swing direction.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_window',
+      description: 'Update properties of an existing window (width, height, position).',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the window to update.' },
+          width: { type: 'number', description: 'New window width in meters.' },
+          height: { type: 'number', description: 'New window height in meters.' },
+          positionAlongWall: { type: 'number', description: 'New position along wall in meters from start.' },
+          heightFromFloor: { type: 'number', description: 'Height of window center from floor.' },
+          side: { type: 'string', enum: ['front', 'back'], description: 'Which side of the wall the window faces.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'remove_node',
+      description: 'Remove any scene node (wall, door, window, or item).',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID to remove.' },
+          reason: { type: 'string', description: 'Brief reason for removing.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_level',
+      description: 'Create a new level (floor) in the current building. The level number is auto-incremented. After creation, subsequent operations apply to this new level.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Optional name for the level (e.g., "Second Floor").' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_slab',
+      description: 'Create a floor slab (horizontal plate) from a polygon. Used for multi-level buildings to define floor plates.',
+      parameters: {
+        type: 'object',
+        properties: {
+          polygon: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'Boundary polygon as array of [x, z] points in meters.' },
+          elevation: { type: 'number', description: 'Slab elevation (Y position) in meters (default: 0.05).' },
+          holes: { type: 'array', items: { type: 'array', items: { type: 'array', items: { type: 'number' } } }, description: 'Optional holes in the slab as arrays of [x, z] polygons.' },
+          levelId: { type: 'string', description: 'Target level ID (from scene context). Required for multi-level buildings when targeting a level other than the currently selected one.' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['polygon'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_slab',
+      description: 'Update properties of an existing slab (elevation, polygon).',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the slab to update.' },
+          elevation: { type: 'number', description: 'New slab elevation in meters.' },
+          polygon: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'New boundary polygon as array of [x, z] points.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_ceiling',
+      description: "Create a flat ceiling panel from a polygon. Typically covers a room or zone boundary. polygon is optional — if omitted, the system will automatically use the active zone's boundary.",
+      parameters: {
+        type: 'object',
+        properties: {
+          polygon: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'Ceiling boundary polygon as array of [x, z] points in meters. Optional — if omitted, the system auto-detects from the active zone boundary.' },
+          height: { type: 'number', description: 'Ceiling height in meters (default: 2.5).' },
+          material: { type: 'string', description: 'Material identifier or color value.' },
+          levelId: { type: 'string', description: 'Target level ID (from scene context). Required for multi-level buildings when targeting a level other than the currently selected one.' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_ceiling',
+      description: 'Update properties of an existing ceiling (height, material).',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the ceiling to update.' },
+          height: { type: 'number', description: 'New ceiling height in meters.' },
+          material: { type: 'string', description: 'New material identifier or color value.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_roof',
+      description: 'Create a roof structure. Supports 7 types: hip, gable, shed, gambrel, dutch, mansard, flat. Creates a RoofNode container with one RoofSegment inside.',
+      parameters: {
+        type: 'object',
+        properties: {
+          position: { type: 'array', items: { type: 'number' }, description: 'Center position [x, y, z] in meters.' },
+          width: { type: 'number', description: 'Roof width in meters.' },
+          depth: { type: 'number', description: 'Roof depth in meters.' },
+          roofType: { type: 'string', enum: ['hip', 'gable', 'shed', 'gambrel', 'dutch', 'mansard', 'flat'], description: 'Type of roof.' },
+          roofHeight: { type: 'number', description: 'Roof peak height in meters (default: 2.5).' },
+          wallHeight: { type: 'number', description: 'Wall height below roof in meters (default: 0.5).' },
+          overhang: { type: 'number', description: 'Eave overhang in meters (default: 0.3).' },
+          levelId: { type: 'string', description: 'Target level ID (from scene context). Required for multi-level buildings when targeting a level other than the currently selected one.' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['position', 'width', 'depth', 'roofType'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_roof',
+      description: 'Update properties of an existing roof segment (type, dimensions).',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the roof segment to update.' },
+          roofType: { type: 'string', enum: ['hip', 'gable', 'shed', 'gambrel', 'dutch', 'mansard', 'flat'], description: 'New roof type.' },
+          roofHeight: { type: 'number', description: 'New roof peak height in meters.' },
+          wallHeight: { type: 'number', description: 'New wall height in meters.' },
+          width: { type: 'number', description: 'New width in meters.' },
+          depth: { type: 'number', description: 'New depth in meters.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_stair',
+      description: 'Create a staircase. Default stairType="straight" creates one flight; "curved" uses innerRadius+sweepAngle; "spiral" uses innerRadius+sweepAngle plus optional integrated top landing. Set slabOpeningMode="destination" to auto-cut a hole in the destination level slab/ceiling for the stairwell.',
+      parameters: {
+        type: 'object',
+        properties: {
+          position: { type: 'array', items: { type: 'number' }, description: 'Position [x, y, z] in meters where the stair starts.' },
+          rotationY: { type: 'number', description: 'Rotation around Y axis in radians (default: 0). 0 = stairs go toward +Z.' },
+          width: { type: 'number', description: 'Stair width in meters (default: 1.0). Range: 0.5-5.0.' },
+          length: { type: 'number', description: 'Horizontal run distance in meters (default: 3.0, straight stairs only). Range: 0.5-10.0.' },
+          height: { type: 'number', description: 'Vertical rise in meters (default: 2.5). Should match floor-to-floor height. Range: 0.5-10.0.' },
+          stepCount: { type: 'number', description: 'Number of steps (default: 10). Must be a whole number. Range: 2-30.' },
+          stairType: { type: 'string', enum: ['straight', 'curved', 'spiral'], description: 'Stair geometry kind (default: straight).' },
+          slabOpeningMode: { type: 'string', enum: ['none', 'destination'], description: 'Whether to auto-cut a slab/ceiling hole on the destination level (default: none).' },
+          openingOffset: { type: 'number', description: 'Extra cutout polygon expansion in meters (default: 0).' },
+          fillToFloor: { type: 'boolean', description: 'Whether the stair mass fills down to the floor (default: true). Set false for thin tread-only look.' },
+          innerRadius: { type: 'number', description: 'Inner curve radius in meters for curved/spiral stairs (default: 0.9).' },
+          sweepAngle: { type: 'number', description: 'Total sweep in radians for curved/spiral stairs (default: π/2).' },
+          topLandingMode: { type: 'string', enum: ['none', 'integrated'], description: 'Optional integrated top landing for spiral stairs (default: none).' },
+          topLandingDepth: { type: 'number', description: 'Depth of the integrated spiral top landing in meters (default: 0.9).' },
+          showCenterColumn: { type: 'boolean', description: 'Render the spiral center column (default: true).' },
+          showStepSupports: { type: 'boolean', description: 'Render step support brackets for spiral stairs (default: true).' },
+          railingMode: { type: 'string', enum: ['none', 'left', 'right', 'both'], description: 'Where to render railings (default: none).' },
+          railingHeight: { type: 'number', description: 'Railing top height above stair surface in meters (default: 0.92).' },
+          fromLevelId: { type: 'string', description: 'Source level ID for auto cutout (defaults to the stair host level).' },
+          toLevelId: { type: 'string', description: 'Destination level ID for auto cutout (defaults to the level immediately above).' },
+          levelId: { type: 'string', description: 'Target level ID (from scene context). Required for multi-level buildings when targeting a level other than the currently selected one.' },
+          description: { type: 'string', description: 'Brief description of this staircase.' },
+        },
+        required: ['position'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_stair',
+      description: 'Update properties of an existing staircase. Geometry-level fields apply to the StairNode container; width/length/height/stepCount/fillToFloor are also mirrored onto the first straight-stair segment.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the stair to update.' },
+          position: { type: 'array', items: { type: 'number' }, description: 'New position [x, y, z] in meters.' },
+          rotationY: { type: 'number', description: 'New rotation around Y axis in radians.' },
+          width: { type: 'number', description: 'New stair width in meters (0.5-5.0).' },
+          length: { type: 'number', description: 'New horizontal run in meters (0.5-10.0, straight stairs only).' },
+          height: { type: 'number', description: 'New vertical rise in meters (0.5-10.0).' },
+          stepCount: { type: 'number', description: 'New number of steps (2-30). Must be a whole number.' },
+          stairType: { type: 'string', enum: ['straight', 'curved', 'spiral'], description: 'New stair geometry kind.' },
+          slabOpeningMode: { type: 'string', enum: ['none', 'destination'], description: 'Toggle auto-cutout on destination level.' },
+          openingOffset: { type: 'number', description: 'Adjust extra cutout expansion in meters.' },
+          fillToFloor: { type: 'boolean', description: 'Toggle filled mass vs tread-only.' },
+          innerRadius: { type: 'number', description: 'Inner radius for curved/spiral stairs.' },
+          sweepAngle: { type: 'number', description: 'Total sweep in radians for curved/spiral stairs.' },
+          topLandingMode: { type: 'string', enum: ['none', 'integrated'], description: 'Integrated spiral top landing toggle.' },
+          topLandingDepth: { type: 'number', description: 'Spiral top landing depth in meters.' },
+          showCenterColumn: { type: 'boolean', description: 'Spiral center column toggle.' },
+          showStepSupports: { type: 'boolean', description: 'Spiral step support toggle.' },
+          railingMode: { type: 'string', enum: ['none', 'left', 'right', 'both'], description: 'Railing rendering mode.' },
+          railingHeight: { type: 'number', description: 'Railing top height in meters.' },
+          fromLevelId: { type: 'string', description: 'Source level for auto cutout.' },
+          toLevelId: { type: 'string', description: 'Destination level for auto cutout.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_zone',
+      description: 'Manually create a room/zone from a polygon. Zones are usually auto-detected from walls, but this allows manual zone creation.',
+      parameters: {
+        type: 'object',
+        properties: {
+          polygon: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'Zone boundary polygon as array of [x, z] points in meters.' },
+          name: { type: 'string', description: 'Zone name (e.g., "Living Room", "Kitchen").' },
+          levelId: { type: 'string', description: 'Target level ID (from scene context). Required for multi-level buildings when targeting a level other than the currently selected one.' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['polygon'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_zone',
+      description: 'Update properties of an existing zone (polygon, name).',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the zone to update.' },
+          polygon: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'New boundary polygon as array of [x, z] points.' },
+          name: { type: 'string', description: 'New zone name.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_building',
+      description: 'Create a new building in the scene. Automatically includes Level 0. Use when the scene needs multiple separate buildings.',
+      parameters: {
+        type: 'object',
+        properties: {
+          position: { type: 'array', items: { type: 'number' }, description: 'Building position [x, y, z] in meters (default: [0, 0, 0]).' },
+          name: { type: 'string', description: 'Building name.' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_site',
+      description: 'Update the site boundary polygon.',
+      parameters: {
+        type: 'object',
+        properties: {
+          polygon: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'New site boundary polygon as array of [x, z] points in meters.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['polygon'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_scan',
+      description: 'Add a 3D scan or reference model to the scene.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'URL to the 3D model file.' },
+          position: { type: 'array', items: { type: 'number' }, description: 'Position [x, y, z] in meters (default: [0, 0, 0]).' },
+          scale: { type: 'number', description: 'Uniform scale factor (default: 1).' },
+          opacity: { type: 'number', description: 'Opacity 0-1 (default: 0.5).' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['url'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_guide',
+      description: 'Add a reference guide (floor plan image or guide overlay) to the scene.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'URL to the guide image or model file.' },
+          position: { type: 'array', items: { type: 'number' }, description: 'Position [x, y, z] in meters (default: [0, 0, 0]).' },
+          scale: { type: 'number', description: 'Uniform scale factor (default: 1).' },
+          opacity: { type: 'number', description: 'Opacity 0-1 (default: 0.5).' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['url'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_item',
+      description: 'Update properties of an existing furniture item (scale). Use move_item for position changes.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the item to update.' },
+          scale: { type: 'array', items: { type: 'number' }, description: 'New scale [x, y, z] (e.g., [1.5, 1.5, 1.5] for 150%).' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'move_building',
+      description: 'Move and/or rotate an entire building on the site. All internal elements (walls, doors, furniture) move with it.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The building node ID to move.' },
+          position: { type: 'array', items: { type: 'number' }, description: 'New site position [x, y, z] in meters.' },
+          rotationY: { type: 'number', description: 'New Y-axis rotation in radians (e.g., Math.PI/2 for 90°).' },
+          reason: { type: 'string', description: 'Brief reason for moving.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'clone_level',
+      description: 'Clone an entire floor (level) including all walls, doors, windows, furniture, and slabs. Creates a new level with fresh IDs. Use for duplicating floor layouts in multi-story buildings.',
+      parameters: {
+        type: 'object',
+        properties: {
+          levelId: { type: 'string', description: 'The level node ID to clone (from scene context, e.g., "level_abc123").' },
+          name: { type: 'string', description: 'Name for the new cloned level (e.g., "Level 2").' },
+          description: { type: 'string', description: 'Brief description of why this level is being cloned.' },
+        },
+        required: ['levelId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'enter_walkthrough',
+      description: 'Enter first-person walkthrough mode so the user can explore the building from ground level. Use after completing a design to let the user preview it.',
+      parameters: {
+        type: 'object',
+        properties: {
+          reason: { type: 'string', description: 'Brief reason for entering walkthrough mode.' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_fence',
+      description: 'Create a fence segment between two points. Fences are decorative/boundary elements with configurable style (slat, rail, privacy).',
+      parameters: {
+        type: 'object',
+        properties: {
+          start: { type: 'array', items: { type: 'number' }, description: 'Start point [x, z] in meters.' },
+          end: { type: 'array', items: { type: 'number' }, description: 'End point [x, z] in meters.' },
+          height: { type: 'number', description: 'Fence height in meters (default: 1.8).' },
+          thickness: { type: 'number', description: 'Fence panel thickness in meters (default: 0.08).' },
+          style: { type: 'string', enum: ['slat', 'rail', 'privacy'], description: 'Fence style (default: slat). slat = spaced vertical boards, rail = horizontal rails, privacy = solid panels.' },
+          baseStyle: { type: 'string', enum: ['floating', 'grounded'], description: 'Base style (default: grounded). grounded = sits on ground, floating = raised above ground.' },
+          color: { type: 'string', description: 'Fence color as hex string (default: #ffffff).' },
+          postSpacing: { type: 'number', description: 'Distance between fence posts in meters (default: 2).' },
+          curveOffset: { type: 'number', description: 'Optional sagitta offset (meters) at the fence midpoint to bend it into an arc. Omit for a straight fence.' },
+          levelId: { type: 'string', description: 'Target level ID (from scene context). Required for multi-level buildings when targeting a level other than the currently selected one.' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['start', 'end'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_fence',
+      description: 'Update properties of an existing fence (position, height, style, color, curveOffset, etc.).',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the fence to update.' },
+          start: { type: 'array', items: { type: 'number' }, description: 'New start point [x, z] in meters.' },
+          end: { type: 'array', items: { type: 'number' }, description: 'New end point [x, z] in meters.' },
+          height: { type: 'number', description: 'New fence height in meters.' },
+          thickness: { type: 'number', description: 'New fence panel thickness in meters.' },
+          style: { type: 'string', enum: ['slat', 'rail', 'privacy'], description: 'New fence style.' },
+          baseStyle: { type: 'string', enum: ['floating', 'grounded'], description: 'New base style.' },
+          color: { type: 'string', description: 'New fence color as hex string.' },
+          postSpacing: { type: 'number', description: 'New post spacing in meters.' },
+          curveOffset: { type: 'number', description: 'New sagitta offset in meters (use 0 to straighten an arced fence).' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_cut_out',
+      description: 'Add a hole (cut-out) to an existing slab or ceiling. The hole is defined as a polygon within the slab/ceiling boundary. Useful for stairwell openings, skylights, or HVAC vents.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID of the target slab or ceiling.' },
+          hole: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'Hole polygon as array of [x, z] points in meters. Must be within the slab/ceiling boundary.' },
+          description: { type: 'string', description: 'Brief description (e.g., "stairwell opening", "skylight").' },
+        },
+        required: ['nodeId', 'hole'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'batch_operations',
+      description: 'Execute multiple operations at once. Use for room creation, room setups, or any multi-step operation.',
+      parameters: {
+        type: 'object',
+        properties: {
+          operations: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                type: { type: 'string', enum: ['add_item', 'remove_item', 'move_item', 'update_material', 'update_item', 'add_wall', 'update_wall', 'update_wall_material', 'add_door', 'update_door', 'add_window', 'update_window', 'remove_node', 'add_level', 'add_slab', 'update_slab', 'add_ceiling', 'update_ceiling', 'add_roof', 'update_roof', 'update_roof_material', 'add_stair', 'update_stair', 'update_stair_material', 'add_zone', 'update_zone', 'add_building', 'update_site', 'add_scan', 'add_guide', 'move_building', 'clone_level', 'add_fence', 'update_fence', 'add_cut_out'] },
+                catalogSlug: { type: 'string' }, nodeId: { type: 'string' },
+                position: { type: 'array', items: { type: 'number' } }, rotationY: { type: 'number' },
+                material: { type: 'string' },
+                start: { type: 'array', items: { type: 'number' } }, end: { type: 'array', items: { type: 'number' } },
+                thickness: { type: 'number' }, height: { type: 'number' },
+                wallId: { type: 'string' }, levelId: { type: 'string' }, positionAlongWall: { type: 'number' }, heightFromFloor: { type: 'number' },
+                width: { type: 'number' }, side: { type: 'string' }, hingesSide: { type: 'string' }, swingDirection: { type: 'string' },
+                description: { type: 'string' }, reason: { type: 'string' },
+                style: { type: 'string' }, baseStyle: { type: 'string' }, color: { type: 'string' }, postSpacing: { type: 'number' },
+                hole: { type: 'array', items: { type: 'array', items: { type: 'number' } } },
+                // Curved wall/fence
+                curveOffset: { type: 'number' },
+                // Material role/preset/color (used by update_wall_material, update_roof_material, update_stair_material)
+                role: { type: 'string' }, materialPreset: { type: 'string' }, materialColor: { type: 'string' },
+                // Stair fields (add_stair, update_stair)
+                length: { type: 'number' }, stepCount: { type: 'number' },
+                stairType: { type: 'string' }, slabOpeningMode: { type: 'string' }, openingOffset: { type: 'number' },
+                fillToFloor: { type: 'boolean' }, innerRadius: { type: 'number' }, sweepAngle: { type: 'number' },
+                topLandingMode: { type: 'string' }, topLandingDepth: { type: 'number' },
+                showCenterColumn: { type: 'boolean' }, showStepSupports: { type: 'boolean' },
+                railingMode: { type: 'string' }, railingHeight: { type: 'number' },
+                fromLevelId: { type: 'string' }, toLevelId: { type: 'string' },
+              },
+            },
+          },
+          description: { type: 'string', description: 'Summary of what this batch does.' },
+        },
+        required: ['operations', 'description'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'propose_placement',
+      description: 'Present 2-3 placement options to the user for confirmation.',
+      parameters: {
+        type: 'object',
+        properties: {
+          question: { type: 'string', description: 'The question to ask the user.' },
+          options: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' }, label: { type: 'string' }, catalogSlug: { type: 'string' },
+                position: { type: 'array', items: { type: 'number' } }, rotationY: { type: 'number' },
+                reason: { type: 'string' },
+              },
+              required: ['id', 'label', 'catalogSlug', 'position', 'rotationY', 'reason'],
+            },
+          },
+        },
+        required: ['question', 'options'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'ask_user',
+      description: 'Ask the user a clarifying question when the request is ambiguous.',
+      parameters: {
+        type: 'object',
+        properties: {
+          question: { type: 'string', description: 'The question to ask.' },
+          suggestions: { type: 'array', items: { type: 'string' }, description: 'Optional suggested responses.' },
+        },
+        required: ['question'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'confirm_preview',
+      description: 'Confirm and apply the current ghost preview.',
+      parameters: { type: 'object', properties: { reason: { type: 'string' } } },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'reject_preview',
+      description: 'Reject and discard the current ghost preview.',
+      parameters: { type: 'object', properties: { reason: { type: 'string' } } },
+    },
+  },
+]

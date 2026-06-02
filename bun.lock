@@ -212,7 +212,7 @@
     },
     "packages/mcp": {
       "name": "@aedifex/mcp",
-      "version": "0.3.0",
+      "version": "0.2.0",
       "bin": {
         "aedifex-mcp": "./dist/bin/aedifex-mcp.js",
       },
@@ -222,7 +222,7 @@
       },
       "devDependencies": {
         "@aedifex/core": "^0.8.0",
-        "@pascal/typescript-config": "*",
+        "@repo/typescript-config": "*",
         "@types/node": "^25.5.0",
         "typescript": "5.9.3",
       },

@@ -1,7 +1,7 @@
 {
   "name": "@aedifex/mcp",
-  "version": "0.3.0",
-  "description": "Model Context Protocol server for Aedifex 3D editor",
+  "version": "0.2.0",
+  "description": "Model Context Protocol server for Aedifex 3D building editor",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -35,6 +35,11 @@
       "types": "./dist/bridge/index.d.ts",
       "import": "./dist/bridge/index.js",
       "default": "./dist/bridge/index.js"
+    },
+    "./templates": {
+      "types": "./dist/templates/index.d.ts",
+      "import": "./dist/templates/index.js",
+      "default": "./dist/templates/index.js"
     }
   },
   "bin": {
@@ -48,7 +53,7 @@
   "scripts": {
     "build": "tsc --build",
     "dev": "tsc --build --watch",
-    "start": "bun dist/bin/pascal-mcp.js",
+    "start": "bun dist/bin/aedifex-mcp.js",
     "test": "bun test",
     "smoke": "bun run scripts/smoke.ts",
     "prepublishOnly": "bun run build && bun test"
@@ -62,14 +67,14 @@
   },
   "devDependencies": {
     "@aedifex/core": "^0.8.0",
-    "@pascal/typescript-config": "*",
+    "@repo/typescript-config": "*",
     "@types/node": "^25.5.0",
     "typescript": "5.9.3"
   },
   "keywords": [
     "mcp",
     "model-context-protocol",
-    "pascal",
+    "aedifex",
     "3d",
     "building",
     "editor",
