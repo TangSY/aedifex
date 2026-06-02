@@ -12,7 +12,7 @@ Design buildings with natural language — AI creates walls, places doors & wind
 
 [**English**](./README.md) | [**中文**](./README.zh-CN.md)
 
-https://github.com/user-attachments/assets/8b50e7cf-cebe-4579-9cf3-8786b35f7b6b
+https://github.com/user-attachments/assets/6c819726-65f4-45c6-903e-fa5c364a6340
 
 </div>
 
@@ -73,7 +73,7 @@ https://github.com/user-attachments/assets/8b50e7cf-cebe-4579-9cf3-8786b35f7b6b
 
 ```bash
 # Clone
-git clone https://github.com/AedifexOrg/aedifex.git
+git clone https://github.com/TangSY/aedifex.git
 cd aedifex
 
 # Install dependencies
@@ -145,13 +145,16 @@ AI_SUMMARIZE_MODEL=gpt-4o-mini
 
 ## Architecture
 
-Turborepo monorepo with three packages:
+Turborepo monorepo with five published packages plus the editor app:
 
 ```
 aedifex/
-├── apps/editor/       # Next.js 16 application
-├── packages/core/     # Schema, state (Zustand), systems, spatial queries
-└── packages/viewer/   # 3D rendering (React Three Fiber + WebGPU)
+├── apps/editor/         # Next.js 16 application (entry point)
+├── packages/core/       # Schema, state (Zustand), systems, spatial queries
+├── packages/viewer/     # 3D rendering (React Three Fiber + WebGPU)
+├── packages/editor/     # Editor UI: tools, panels, selection, AI assistant
+├── packages/mcp/        # MCP server: 35 tools for natural-language scene control
+└── packages/ui/         # Shared shadcn/ui primitives
 ```
 
 | Package | Responsibility |
@@ -159,6 +162,8 @@ aedifex/
 | **core** | Node schemas (Zod), scene store with undo/redo (Zundo), geometry systems, spatial grid, event bus |
 | **viewer** | Renderers, camera, lighting, post-processing, level/scan/guide systems |
 | **editor** | Tools, panels, selection manager, AI assistant, custom camera controls |
+| **mcp** | Model Context Protocol server exposing scene operations to Claude Desktop / Cursor |
+| **ui** | Shared shadcn/ui primitives consumed by the editor |
 
 ### Scene Data Model
 
@@ -222,3 +227,9 @@ Aedifex is built upon [Pascal Editor](https://github.com/pascalorg/editor) by Pa
 ## License
 
 [MIT](LICENSE)
+
+---
+
+## Links
+
+- [LINUX DO](https://linux.do/)
