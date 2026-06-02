@@ -34,7 +34,7 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
-    "@pascal/typescript-config": "*",
+    "@repo/typescript-config": "*",
     "@types/node": "^22.19.12",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.3",

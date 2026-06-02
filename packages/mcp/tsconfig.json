@@ -1,5 +1,5 @@
 {
-  "extends": "@pascal/typescript-config/base.json",
+  "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
@@ -7,7 +7,9 @@
     "composite": true,
     "incremental": true,
     "types": ["node"],
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "scripts"],

@@ -34,7 +34,7 @@
     "zustand": "^5"
   },
   "devDependencies": {
-    "@pascal/typescript-config": "*",
+    "@repo/typescript-config": "*",
     "@types/node": "^22",
     "@types/react": "^19.2.2",
     "@types/three": "^0.184.0",
