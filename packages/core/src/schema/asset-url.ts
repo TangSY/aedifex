@@ -14,7 +14,7 @@ const ALLOWED_SCHEMES = ['asset:', 'blob:', 'https:', 'data:image/'] as const
 
 /**
  * Optional environment variable that narrows which `https:` origins are
- * accepted. Set to a comma-separated list (e.g. `https://cdn.pascal.app`).
+ * accepted. Set to a comma-separated list (e.g. `https://cdn.aedifex.com`).
  * When unset, any `https:` origin is permitted.
  */
 export const ALLOWED_ORIGINS_ENV = 'PASCAL_ALLOWED_ASSET_ORIGINS'
