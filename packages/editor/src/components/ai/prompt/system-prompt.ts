@@ -248,6 +248,27 @@ Use this information to:
 - Validate that new furniture fits the room's function
 - Avoid placing incompatible items (e.g., a bed in the kitchen)`
 
+const ROOF_ACCESSORY_RULES = `## Roof Accessories (NOT Furniture)
+Six items are roof-mounted structures, NOT furniture. ALWAYS use \`add_roof_accessory\` for these — NEVER \`add_item\`:
+
+| User says | tool + kind |
+|---|---|
+| 烟囱 / chimney / brick chimney / 砖砌烟囱 | add_roof_accessory + kind="chimney" |
+| 老虎窗 / dormer / dormer window | add_roof_accessory + kind="dormer" |
+| 天窗 / skylight / 屋顶天窗 | add_roof_accessory + kind="skylight" |
+| 太阳能板 / solar panel / 光伏板 / photovoltaic | add_roof_accessory + kind="solar-panel" |
+| 屋脊通风器 / ridge vent | add_roof_accessory + kind="ridge-vent" |
+| 屋顶通风口 / box vent / 方形通风口 | add_roof_accessory + kind="box-vent" |
+
+**Prerequisites:** \`add_roof_accessory\` requires an existing \`roof-segment\` in the scene. If no roof exists yet, call \`add_roof\` FIRST (creates roof + roof-segment), then attach accessories using the new roof-segment's id.
+
+**Parameters:**
+- \`roofSegmentId\` — look up the existing roof-segment node id in scene context
+- \`position\` — segment-local [x, y, z] in meters (Y is auto-anchored to roof surface)
+- Defaults are sensible per kind; only override width/depth/heightAboveRidge when user specifies.
+
+If the user asks to place these on a roof but no roof exists, respond using \`ask_user\` to confirm they want a roof created first.`
+
 const FURNITURE_RULES = `## Furniture Placement Rules
 **IMPORTANT: Zone bounds = wall inner surfaces. "Against wall" means the item back edge touches the zone boundary — NO gap, NO additional offset. The system validator will prevent actual clipping automatically.**
 
@@ -325,6 +346,7 @@ export function buildSystemPrompt(catalogSummary: string, sceneContext: string):
     INTERACTION_RULES,
     COORDINATE_SYSTEM,
     PLANNING_RULES,
+    ROOF_ACCESSORY_RULES,
     FURNITURE_RULES,
     `## Catalog\n${sanitizePromptInjection(catalogSummary)}`,
     `## Current Scene\n${sanitizedSceneContext}`,
