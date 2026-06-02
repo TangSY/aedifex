@@ -69,18 +69,18 @@ describe('safeFetch — SSRF protection', () => {
     expect((err as Error).message).toContain('invalid_url')
   })
 
-  test('applies PASCAL_ALLOWED_ASSET_ORIGINS env allowlist when set', async () => {
-    const prev = process.env.PASCAL_ALLOWED_ASSET_ORIGINS
-    process.env.PASCAL_ALLOWED_ASSET_ORIGINS = 'https://cdn.example.com'
+  test('applies AEDIFEX_ALLOWED_ASSET_ORIGINS env allowlist when set', async () => {
+    const prev = process.env.AEDIFEX_ALLOWED_ASSET_ORIGINS
+    process.env.AEDIFEX_ALLOWED_ASSET_ORIGINS = 'https://cdn.example.com'
     try {
       const err = await safeFetch('https://other.example.com/x.png').catch((e) => e)
       expect(err).toBeInstanceOf(McpError)
       expect((err as Error).message).toContain('url_origin_not_allowlisted')
     } finally {
       if (prev === undefined) {
-        delete process.env.PASCAL_ALLOWED_ASSET_ORIGINS
+        delete process.env.AEDIFEX_ALLOWED_ASSET_ORIGINS
       } else {
-        process.env.PASCAL_ALLOWED_ASSET_ORIGINS = prev
+        process.env.AEDIFEX_ALLOWED_ASSET_ORIGINS = prev
       }
     }
   })

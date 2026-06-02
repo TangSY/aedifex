@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNode, nodeRegistry, type RendererSource, useScene } from '@pascal-app/core'
+import { type AnyNode, nodeRegistry, type RendererSource, useScene } from '@aedifex/core'
 import { type ComponentType, lazy, Suspense } from 'react'
 import { ParametricNodeRenderer } from './parametric-node-renderer'
 

@@ -3,7 +3,7 @@ import {
   createDefaultMaterial,
   createSurfaceRoleMaterial,
   type RenderShading,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import * as THREE from 'three'
 
 // Production materials — match the rest of the scene (white walls, light-gray slabs).

@@ -1,4 +1,4 @@
-import type { NodeDefinition } from '@pascal-app/core'
+import type { NodeDefinition } from '@aedifex/core'
 import { buildSpawnFloorplan } from './floorplan'
 import { spawnParametrics } from './parametrics'
 import { SpawnNode } from './schema'

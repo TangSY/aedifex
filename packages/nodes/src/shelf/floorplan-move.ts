@@ -6,8 +6,8 @@ import {
   sceneRegistry,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
-import { snapPointToGrid, triggerSFX, type WallPlanPoint } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { snapPointToGrid, triggerSFX, type WallPlanPoint } from '@aedifex/editor'
 import type * as THREE from 'three'
 
 /**

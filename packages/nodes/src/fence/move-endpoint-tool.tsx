@@ -1,6 +1,6 @@
 'use client'
 
-import { type FenceNode, useScene, type WallNode } from '@pascal-app/core'
+import { type FenceNode, useScene, type WallNode } from '@aedifex/core'
 import {
   CursorSphere,
   type FencePlanPoint,
@@ -11,8 +11,8 @@ import {
   triggerSFX,
   useDragAction,
   useEditor,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useEffect, useMemo, useState } from 'react'
 import { moveFenceEndpointDragAction } from './actions/move-endpoint'

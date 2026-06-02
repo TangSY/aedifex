@@ -1,4 +1,4 @@
-import { type LevelNode, useScene } from '@pascal-app/core'
+import { type LevelNode, useScene } from '@aedifex/core'
 import { useMemo } from 'react'
 import * as THREE from 'three'
 import { unionPolygons } from '../../lib/polygon-union'

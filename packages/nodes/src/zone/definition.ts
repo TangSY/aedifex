@@ -1,4 +1,4 @@
-import { type NodeDefinition, ZoneNode as ZoneNodeSchema } from '@pascal-app/core'
+import { type NodeDefinition, ZoneNode as ZoneNodeSchema } from '@aedifex/core'
 import { buildZoneFloorplan } from './floorplan'
 import {
   zoneAddVertexAffordance,

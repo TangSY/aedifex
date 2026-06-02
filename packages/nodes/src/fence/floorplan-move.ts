@@ -5,9 +5,9 @@ import {
   type FloorplanMoveTargetSession,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { getSegmentGridStep, isSegmentLongEnough, snapPointToGrid } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { getSegmentGridStep, isSegmentLongEnough, snapPointToGrid } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 
 type PlanPoint = [number, number]
 

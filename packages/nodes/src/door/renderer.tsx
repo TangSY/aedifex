@@ -1,7 +1,7 @@
 'use client'
 
-import { type DoorNode, useRegistry, useScene } from '@pascal-app/core'
-import { useNodeEvents } from '@pascal-app/viewer'
+import { type DoorNode, useRegistry, useScene } from '@aedifex/core'
+import { useNodeEvents } from '@aedifex/viewer'
 import { useLayoutEffect, useRef } from 'react'
 import { type Mesh, MeshBasicMaterial } from 'three'
 

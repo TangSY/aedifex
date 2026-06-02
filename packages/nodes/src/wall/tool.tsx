@@ -8,7 +8,7 @@ import {
   useScene,
   type WallMiterData,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CursorSphere,
   createWallOnCurrentLevel,
@@ -23,8 +23,8 @@ import {
   triggerSFX,
   WALL_FINE_GRID_STEP,
   type WallPlanPoint,
-} from '@pascal-app/editor'
-import { getSceneTheme, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { getSceneTheme, useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BoxGeometry, BufferGeometry, DoubleSide, type Group, type Mesh, Vector3 } from 'three'

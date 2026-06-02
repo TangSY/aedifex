@@ -1,4 +1,4 @@
-import { LevelNode as LevelNodeSchema, type NodeDefinition } from '@pascal-app/core'
+import { LevelNode as LevelNodeSchema, type NodeDefinition } from '@aedifex/core'
 import { levelParametrics } from './parametrics'
 import { LevelNode } from './schema'
 

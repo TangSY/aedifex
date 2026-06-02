@@ -8,7 +8,7 @@ import {
   useLiveNodeOverrides,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type ColorPreset,
   createMaterial,
@@ -16,7 +16,7 @@ import {
   createSurfaceRoleMaterial,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useEffect, useMemo, useRef } from 'react'
 import type * as THREE from 'three'
 import {
@@ -181,7 +181,7 @@ const DormerRenderer = ({ node: storeNode }: { node: DormerNode }) => {
 }
 
 // Re-export so consumers (e.g. tests) can reach the gable slot index
-// without importing from `@pascal-app/viewer` directly.
+// without importing from `@aedifex/viewer` directly.
 export { DORMER_GABLE_MATERIAL_INDEX }
 
 export default DormerRenderer

@@ -9,8 +9,8 @@ import {
   sceneRegistry,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
-import { CursorSphere, markToolCancelConsumed, triggerSFX, useEditor } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { CursorSphere, markToolCancelConsumed, triggerSFX, useEditor } from '@aedifex/editor'
 import { useCallback, useEffect, useState } from 'react'
 
 /**

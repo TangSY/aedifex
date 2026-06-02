@@ -1,4 +1,4 @@
-import { type AnyNode, type AnyNodeId, isCurvedWall, type WallNode } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, isCurvedWall, type WallNode } from '@aedifex/core'
 
 /**
  * Shared helpers for the kinds whose 2D move snaps onto a wall in plan

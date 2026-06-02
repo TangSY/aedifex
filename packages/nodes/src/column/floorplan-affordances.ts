@@ -3,7 +3,7 @@ import {
   type ColumnNode,
   type FloorplanAffordance,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 // Floor minimums — mirror the 3D handles in `column/definition.ts` so a
 // drag can't push a value past what the renderer accepts.

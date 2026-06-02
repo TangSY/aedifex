@@ -1,4 +1,4 @@
-import type { SlabNode } from '@pascal-app/core'
+import type { SlabNode } from '@aedifex/core'
 import {
   createPolygonAddVertexAffordance,
   createPolygonMoveEdgeAffordance,

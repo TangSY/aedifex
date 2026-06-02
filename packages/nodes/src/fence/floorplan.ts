@@ -6,7 +6,7 @@ import {
   getWallMidpointHandlePoint,
   isCurvedWall,
   sampleWallCenterline,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { FenceNode } from './schema'
 
 /**

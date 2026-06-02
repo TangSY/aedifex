@@ -5,13 +5,13 @@ import {
   getMaterialPresetByRef,
   resolveMaterial,
   useRegistry,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   createSurfaceRoleMaterial,
   NodeRenderer,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useEffect, useMemo, useRef } from 'react'
 import { BufferGeometry, Float32BufferAttribute } from 'three'
 import { float, mix, positionWorld, smoothstep } from 'three/tsl'

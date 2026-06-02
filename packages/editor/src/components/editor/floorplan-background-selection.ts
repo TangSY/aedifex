@@ -1,6 +1,6 @@
 'use client'
 
-import type { Point2D, ZoneNode as ZoneNodeType } from '@pascal-app/core'
+import type { Point2D, ZoneNode as ZoneNodeType } from '@aedifex/core'
 import { isPointInsidePolygon } from '../../lib/floorplan'
 import type { WallPlanPoint } from '../tools/wall/wall-drafting'
 

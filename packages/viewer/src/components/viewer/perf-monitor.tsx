@@ -1,4 +1,4 @@
-import { useScene } from '@pascal-app/core'
+import { useScene } from '@aedifex/core'
 import { Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef, useState } from 'react'

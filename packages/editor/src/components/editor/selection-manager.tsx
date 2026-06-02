@@ -30,7 +30,7 @@ import {
   type StairSurfaceMaterialRole,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 import {
   applyMaterialPresetToMaterials,
@@ -40,7 +40,7 @@ import {
   getStairBodyMaterials,
   getStairRailingMaterial,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useCallback, useEffect, useRef } from 'react'
 import { type BufferGeometry, Color, type Material, type Mesh, type Object3D } from 'three'
 import {

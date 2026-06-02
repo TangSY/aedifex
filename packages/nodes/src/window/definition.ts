@@ -4,7 +4,7 @@ import type {
   NodeDefinition,
   WallNode,
   WindowNode as WindowNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildWindowFloorplan } from './floorplan'
 import { windowWidthAffordance } from './floorplan-affordances'
 import { windowFloorplanMoveTarget } from './floorplan-move'

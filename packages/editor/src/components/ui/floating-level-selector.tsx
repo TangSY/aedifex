@@ -24,8 +24,8 @@ import {
   type BuildingNode,
   LevelNode,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { ClipboardPaste, Copy, GripVertical, MoreVertical, Plus, Trash2 } from 'lucide-react'
 import {
   type ButtonHTMLAttributes,

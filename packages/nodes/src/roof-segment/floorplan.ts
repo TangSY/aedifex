@@ -4,7 +4,7 @@ import type {
   GeometryContext,
   RoofNode,
   RoofSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Stage C floor-plan builder for roof segment. Renders the segment's

@@ -4,7 +4,7 @@ import type {
   GeometryContext,
   StairNode,
   StairSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 // Offset from the stair's footprint edge to the rotation chevron's
 // origin. Same magnitude as `STAIR_ROTATE_CORNER_OFFSET` in
@@ -18,7 +18,7 @@ import {
   buildSvgArcPath,
   buildSvgArrowHeadPoints,
   getArcPlanPoint,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 
 /**
  * Stage C floor-plan emitter for stair. The stair is the parent; its
@@ -33,7 +33,7 @@ import {
  *
  * The actual cumulative walk + segment / arrow / inner-band / tread-bar
  * geometry lives in `editor/src/lib/floorplan/stairs.ts` via
- * `buildFloorplanStairEntry`. We re-export that from `@pascal-app/editor`
+ * `buildFloorplanStairEntry`. We re-export that from `@aedifex/editor`
  * and emit `FloorplanGeometry` primitives over its output — same shape
  * pattern the legacy `<FloorplanStairLayer>` consumed, minus the
  * per-pixel SVG drawing (the registry's `FloorplanGeometryRenderer`

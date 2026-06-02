@@ -7,7 +7,7 @@ import {
   SiteNode,
   WallNode,
   ZoneNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import { SceneBridge } from './scene-bridge'
 
 function tick() {

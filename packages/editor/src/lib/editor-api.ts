@@ -1,4 +1,4 @@
-import type { AnyNode, EditorApi, FenceNode, WallNode } from '@pascal-app/core'
+import type { AnyNode, EditorApi, FenceNode, WallNode } from '@aedifex/core'
 import useEditor from '../store/use-editor'
 
 type EditorState = ReturnType<typeof useEditor.getState>

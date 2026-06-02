@@ -1,6 +1,6 @@
 'use client'
 
-import type { AssetInput } from '@pascal-app/core'
+import type { AssetInput } from '@aedifex/core'
 import { Root as TooltipRoot } from '@radix-ui/react-tooltip'
 import NextImage from 'next/image'
 import { useMemo, useState } from 'react'

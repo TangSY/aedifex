@@ -1,6 +1,6 @@
 'use client'
 
-import { convertIfcToPascal, type PascalSceneGraph } from '@pascal-app/ifc-converter'
+import { convertIfcToAedifex, type AedifexSceneGraph } from '@aedifex/ifc-converter'
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { availableTestFiles, exampleFileUrl, testFiles } from '@/lib/test-files'
@@ -8,7 +8,7 @@ import { availableTestFiles, exampleFileUrl, testFiles } from '@/lib/test-files'
 // The viewer uses three's WebGPU renderer + the registry-driven scene
 // store, neither of which run during SSR — dynamic-import with ssr:false
 // so the bundle doesn't hit the server.
-const PascalViewer = dynamic(() => import('./PascalSceneViewer'), { ssr: false })
+const PascalViewer = dynamic(() => import('./AedifexSceneViewer'), { ssr: false })
 
 type Status = 'idle' | 'loading' | 'converting' | 'ready' | 'error'
 
@@ -32,7 +32,7 @@ function meta(node: { metadata?: unknown } | null | undefined): ConverterMetadat
 }
 
 export default function IfcConverter() {
-  const [pascalData, setPascalData] = useState<PascalSceneGraph | null>(null)
+  const [pascalData, setPascalData] = useState<AedifexSceneGraph | null>(null)
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -135,7 +135,7 @@ export default function IfcConverter() {
     setConversionMessage('Starting conversion...')
 
     try {
-      const result = await convertIfcToPascal(data, (message, percent) => {
+      const result = await convertIfcToAedifex(data, (message, percent) => {
         setConversionMessage(message)
         setConversionProgress(percent)
       })
@@ -370,7 +370,7 @@ export default function IfcConverter() {
                     onClick={downloadPascalJson}
                     className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    Download Pascal JSON
+                    Download Aedifex JSON
                   </button>
                 </div>
               </div>
@@ -516,7 +516,7 @@ export default function IfcConverter() {
             </>
           )}
 
-          {/* Pascal 3D Viewer */}
+          {/* Aedifex 3D Viewer */}
           <div className="flex gap-4">
             <div className="flex-1 min-w-0 relative">
               {/* Loading overlay */}
@@ -682,7 +682,7 @@ export default function IfcConverter() {
       {status === 'ready' && pascalData && showJson && (
         <div className="fixed right-0 top-0 h-screen w-96 bg-gray-900 shadow-2xl z-50 flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-gray-700">
-            <h3 className="text-sm font-semibold text-gray-300">Pascal JSON</h3>
+            <h3 className="text-sm font-semibold text-gray-300">Aedifex JSON</h3>
             <div className="flex items-center gap-2">
               <button
                 onClick={copyJsonToClipboard}

@@ -9,10 +9,10 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: [
     'three',
-    '@pascal-app/viewer',
-    '@pascal-app/core',
-    '@pascal-app/editor',
-    '@pascal-app/mcp',
+    '@aedifex/viewer',
+    '@aedifex/core',
+    '@aedifex/editor',
+    '@aedifex/mcp',
   ],
   turbopack: {
     resolveAlias: {

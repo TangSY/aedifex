@@ -5,7 +5,7 @@ import {
   type FloorplanAffordanceSession,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 const MIN_DOOR_WIDTH = 0.3
 

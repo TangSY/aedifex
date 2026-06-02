@@ -1,6 +1,6 @@
 'use client'
 
-import { WallCutout, WallSystem } from '@pascal-app/viewer'
+import { WallCutout, WallSystem } from '@aedifex/viewer'
 
 /**
  * Registry-driven wall system bundle.

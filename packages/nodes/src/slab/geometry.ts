@@ -1,4 +1,4 @@
-import { getMaterialPresetByRef, type SlabNode } from '@pascal-app/core'
+import { getMaterialPresetByRef, type SlabNode } from '@aedifex/core'
 import {
   applyMaterialPresetToMaterials,
   type ColorPreset,
@@ -8,7 +8,7 @@ import {
   DEFAULT_SLAB_MATERIAL,
   generateSlabGeometry,
   type RenderShading,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { DoubleSide, Group, type Material, Mesh, type Texture } from 'three'
 
 /**

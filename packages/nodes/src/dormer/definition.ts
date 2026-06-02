@@ -3,7 +3,7 @@ import {
   DormerNode as DormerNodeSchema,
   type DormerNode as DormerNodeType,
   type NodeDefinition,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildDormerRoofCut } from './csg-geometry'
 import { dormerPaint } from './paint'
 import { dormerParametrics } from './parametrics'

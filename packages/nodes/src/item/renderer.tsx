@@ -9,7 +9,7 @@ import {
   useInteractive,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   baseMaterial,
   type ColorPreset,
@@ -23,7 +23,7 @@ import {
   useItemLightPool,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useAnimations } from '@react-three/drei'
 import { Clone } from '@react-three/drei/core/Clone'
 import { useGLTF } from '@react-three/drei/core/Gltf'

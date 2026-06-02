@@ -9,9 +9,9 @@ import {
   type RoofSegmentNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { triggerSFX } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { triggerSFX } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { resolveRoofSegmentHit } from '../roof/segment-hit'

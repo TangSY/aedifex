@@ -2,7 +2,7 @@ import {
   DEFAULT_STAIR_MATERIAL,
   generateFenceGeometry,
   type RenderShading,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { Group, Mesh } from 'three'
 import type { FenceNode } from './schema'
 

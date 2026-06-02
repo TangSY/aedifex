@@ -10,9 +10,9 @@ import {
   sceneRegistry,
   snapPointToGrid,
   useScene,
-} from '@pascal-app/core'
-import { triggerSFX } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { triggerSFX } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef } from 'react'
 import { type Group, Vector3 } from 'three'
 import { shelfDefinition } from './definition'

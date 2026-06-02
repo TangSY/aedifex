@@ -10,14 +10,14 @@ import type {
   ShelfNode,
   WallEvent,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getScaledDimensions,
   isLowProfileItemSurface,
   nodeRegistry,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Euler, Matrix3, Quaternion, Vector3 } from 'three'
 import {
   calculateCursorRotation,

@@ -1,4 +1,4 @@
-import type { DormerNode } from '@pascal-app/core'
+import type { DormerNode } from '@aedifex/core'
 import * as THREE from 'three'
 
 /**
@@ -28,7 +28,7 @@ export const DORMER_PLACEMENT_ROTATION_STEP = (15 * Math.PI) / 180
  * the gable approximation — exact per-type silhouettes are a future
  * improvement.
  *
- * Kept self-contained (no `@pascal-app/viewer` imports) so the geometry
+ * Kept self-contained (no `@aedifex/viewer` imports) so the geometry
  * test doesn't drag in the CSG / BVH module graph, which fails to load
  * outside of a browser/WebGL context. The viewer has its own
  * `buildDormerFallbackGeometry` that mirrors this shape — used both as

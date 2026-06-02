@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNodeId, StairOpeningSystem } from '@pascal-app/core'
+import { type AnyNodeId, StairOpeningSystem } from '@aedifex/core'
 import { Canvas, extend, type ThreeToJSXElements, useFrame, useThree } from '@react-three/fiber'
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import * as THREE from 'three/webgpu'

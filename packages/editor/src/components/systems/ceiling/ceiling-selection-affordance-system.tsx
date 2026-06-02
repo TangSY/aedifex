@@ -6,8 +6,8 @@ import {
   resolveLevelId,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { createPortal, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useState } from 'react'
 import type { Object3D } from 'three'

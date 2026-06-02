@@ -7,7 +7,7 @@ import {
   getScaledDimensions,
   type ItemNode,
   useLiveTransforms,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Stage C floor-plan builder for item.

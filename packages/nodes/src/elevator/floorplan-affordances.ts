@@ -3,7 +3,7 @@ import {
   type ElevatorNode,
   type FloorplanAffordance,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 const MIN_ELEVATOR_DIM = 0.6
 

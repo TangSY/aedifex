@@ -14,8 +14,8 @@ import {
   useScene,
   type WallNode,
   type ZoneNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import type { ThreeElements } from '@react-three/fiber'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'

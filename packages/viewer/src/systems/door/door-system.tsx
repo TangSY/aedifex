@@ -8,7 +8,7 @@ import {
   useInteractive,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import { useEffect } from 'react'
 import * as THREE from 'three'

@@ -9,8 +9,8 @@ import {
   RoofSegmentNode as RoofSegmentNodeSchema,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import useEditor from '../store/use-editor'
 
 type DuplicateRoofMode = 'select' | 'move'

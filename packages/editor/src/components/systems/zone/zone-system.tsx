@@ -1,5 +1,5 @@
-import { sceneRegistry, useScene, type ZoneNode } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { sceneRegistry, useScene, type ZoneNode } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useFrame } from '@react-three/fiber'
 import { type Group, MathUtils, type Mesh } from 'three'
 import type { MeshBasicNodeMaterial } from 'three/webgpu'

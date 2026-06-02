@@ -1,6 +1,6 @@
 'use client'
 
-import { nodeRegistry } from '@pascal-app/core'
+import { nodeRegistry } from '@aedifex/core'
 import { useIsMobile } from '../../../hooks/use-mobile'
 import useEditor from '../../../store/use-editor'
 import { BuildingHelper } from './building-helper'

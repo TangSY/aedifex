@@ -1,13 +1,13 @@
 'use client'
 
-import type { ItemNode } from '@pascal-app/core'
+import type { ItemNode } from '@aedifex/core'
 import {
   type PlacementState,
   triggerSFX,
   useDraftNode,
   useEditor,
   usePlacementCoordinator,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { Vector3 } from 'three'
 
 /**
@@ -30,7 +30,7 @@ import { Vector3 } from 'three'
  * time.
  *
  * Placement primitives (`useDraftNode`, `usePlacementCoordinator`,
- * `PlacementState`) are re-exported from `@pascal-app/editor` — same
+ * `PlacementState`) are re-exported from `@aedifex/editor` — same
  * hooks the legacy code used. When `ItemTool` (item placement, not
  * move) also ports to `def.tool`, the primitives can be inlined here
  * and dropped from editor.

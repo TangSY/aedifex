@@ -1,8 +1,8 @@
 'use client'
 
-import { type CeilingNode, resolveLevelId, useLiveNodeOverrides, useScene } from '@pascal-app/core'
-import { PolygonEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+import { type CeilingNode, resolveLevelId, useLiveNodeOverrides, useScene } from '@aedifex/core'
+import { PolygonEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect } from 'react'
 
 /**

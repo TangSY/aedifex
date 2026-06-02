@@ -1,7 +1,7 @@
 'use client'
 
-import { type GuideNode, useRegistry } from '@pascal-app/core'
-import { useAssetUrl, useViewer } from '@pascal-app/viewer'
+import { type GuideNode, useRegistry } from '@aedifex/core'
+import { useAssetUrl, useViewer } from '@aedifex/viewer'
 import { useLoader } from '@react-three/fiber'
 import { Suspense, useEffect, useMemo, useRef } from 'react'
 import { DoubleSide, type Group, PlaneGeometry, type Texture, TextureLoader } from 'three'

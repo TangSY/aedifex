@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { SpawnNode as SpawnSchemaFromCore } from '@pascal-app/core'
+import { SpawnNode as SpawnSchemaFromCore } from '@aedifex/core'
 import { spawnDefinition } from '../definition'
 import { SpawnNode } from '../schema'
 
@@ -7,7 +7,7 @@ import { SpawnNode } from '../schema'
  * Structural parity for the spawn registry definition.
  *
  * The new renderer is a near-line-by-line port of the legacy
- * `@pascal-app/viewer/components/renderers/spawn/spawn-renderer.tsx` —
+ * `@aedifex/viewer/components/renderers/spawn/spawn-renderer.tsx` —
  * same mesh count, same primitives, same colors. The "parity" assertion
  * for the spike is structural (definition is well-formed, both lazy
  * modules resolve to React components) plus a manual visual eyeball check

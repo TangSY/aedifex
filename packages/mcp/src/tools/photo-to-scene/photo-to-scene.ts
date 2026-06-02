@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
-import type { SceneGraph } from '@pascal-app/core/clone-scene-graph'
-import type { AnyNodeId, AnyNode as AnyNodeT } from '@pascal-app/core/schema'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
+import type { AnyNodeId, AnyNode as AnyNodeT } from '@aedifex/core/schema'
 import {
   AnyNode,
   BuildingNode,
@@ -9,7 +9,7 @@ import {
   SiteNode,
   WallNode,
   ZoneNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { SceneOperations } from '../../operations'
 import { appendLiveSceneEvent } from '../live-sync'
@@ -344,7 +344,7 @@ export function registerPhotoToScene(server: McpServer, bridge: SceneOperations)
   server.registerTool(
     'photo_to_scene',
     {
-      title: 'Photo to Pascal scene',
+      title: 'Photo to Aedifex scene',
       description:
         'Orchestrator: analyse a floor-plan photo via MCP sampling, translate the structured vision result into a Pascal SceneGraph (site → building → level with walls and zones), optionally save it, and swap the bridge to the new scene. Requires host support for sampling.',
       inputSchema: photoToSceneInput,

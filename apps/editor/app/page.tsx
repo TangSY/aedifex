@@ -1,6 +1,6 @@
 'use client'
 
-import { Editor, ItemsPanel } from '@pascal-app/editor'
+import { Editor, ItemsPanel } from '@aedifex/editor'
 import { Layers, Package, Settings } from 'lucide-react'
 import Link from 'next/link'
 import {

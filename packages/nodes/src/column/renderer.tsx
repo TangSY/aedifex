@@ -5,7 +5,7 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useRegistry,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   baseMaterial,
   type ColorPreset,
@@ -19,7 +19,7 @@ import {
   type RenderShading,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { createContext, useContext, useMemo, useRef } from 'react'
 import { BufferGeometry, Float32BufferAttribute, type Group, type Material } from 'three'
 

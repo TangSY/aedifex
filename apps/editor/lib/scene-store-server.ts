@@ -1,5 +1,5 @@
-import type { SceneOperations } from '@pascal-app/mcp/operations'
-import type { SceneStore } from '@pascal-app/mcp/storage'
+import type { SceneOperations } from '@aedifex/mcp/operations'
+import type { SceneStore } from '@aedifex/mcp/storage'
 
 /**
  * Per-process singleton. The factory is async because backend modules are
@@ -12,7 +12,7 @@ let cachedOperations: Promise<SceneOperations> | null = null
 export function getSceneStore(): Promise<SceneStore> {
   if (!cachedStore) {
     cachedStore = (async () => {
-      const mod = (await import('@pascal-app/mcp/storage')) as {
+      const mod = (await import('@aedifex/mcp/storage')) as {
         createSceneStore: (env?: NodeJS.ProcessEnv) => Promise<SceneStore>
       }
       return mod.createSceneStore(process.env)
@@ -25,7 +25,7 @@ export function getSceneOperations(): Promise<SceneOperations> {
   if (!cachedOperations) {
     cachedOperations = (async () => {
       const store = await getSceneStore()
-      const mod = (await import('@pascal-app/mcp/operations')) as {
+      const mod = (await import('@aedifex/mcp/operations')) as {
         createSceneOperations: (options: { store: SceneStore }) => SceneOperations
       }
       return mod.createSceneOperations({ store })

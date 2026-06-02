@@ -4,7 +4,7 @@ import type { AnyNode, AnyNodeId } from '../schema/types'
 // Generic, opinion-free primitives the host app composes to implement
 // catalog / paste / duplicate / preset flows.
 //
-// Design intent (see pascalorg/editor#340 redesign):
+// Design intent (see TangSY/aedifex#340 redesign):
 //   - The editor exposes a *pure* live-scene walk + a generic clone-and-
 //     insert helper. It owns nothing about storage shape, position
 //     re-anchoring policy, or host-ref re-derivation.

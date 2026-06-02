@@ -6,7 +6,7 @@ import {
   type MaterialSchema,
   resolveMaterial,
   type SurfaceRole,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 import { MeshLambertNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu'
 

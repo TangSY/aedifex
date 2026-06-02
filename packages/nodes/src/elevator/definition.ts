@@ -9,7 +9,7 @@ import {
   type HandleDescriptor,
   type NodeDefinition,
   resolveElevatorLevels,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildElevatorFloorplan } from './floorplan'
 import { elevatorResizeAffordance, elevatorRotateAffordance } from './floorplan-affordances'
 import { elevatorParametrics } from './parametrics'

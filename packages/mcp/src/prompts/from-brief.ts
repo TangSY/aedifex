@@ -42,7 +42,7 @@ export function registerFromBrief(server: McpServer, _bridge: SceneOperations): 
   server.registerPrompt(
     'from_brief',
     {
-      title: 'Generate a Pascal scene from a brief',
+      title: 'Generate a Aedifex scene from a brief',
       description:
         'Produces a plan of apply_patch calls to create a scene from a natural-language brief.',
       argsSchema: {

@@ -1,4 +1,4 @@
-import type { AssetInput } from '@pascal-app/core'
+import type { AssetInput } from '@aedifex/core'
 
 export const CATALOG_ITEMS: AssetInput[] = [
   {

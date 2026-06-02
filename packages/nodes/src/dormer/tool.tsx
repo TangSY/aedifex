@@ -1,7 +1,7 @@
 'use client'
 
-import { type AnyNodeId, DormerNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, DormerNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useMemo } from 'react'
 import { dormerDefinition } from './definition'
 import DormerPreview from './preview'

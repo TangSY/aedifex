@@ -1,4 +1,4 @@
-import { type NodeDefinition, RidgeVentNode as RidgeVentNodeSchema } from '@pascal-app/core'
+import { type NodeDefinition, RidgeVentNode as RidgeVentNodeSchema } from '@aedifex/core'
 import { ridgeVentParametrics } from './parametrics'
 import { RidgeVentNode } from './schema'
 

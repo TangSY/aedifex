@@ -3,8 +3,8 @@ import type {
   ChimneyNode,
   MaterialSchema,
   PaintCapability,
-} from '@pascal-app/core'
-import { createMaterial, createMaterialFromPresetRef } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { createMaterial, createMaterialFromPresetRef } from '@aedifex/viewer'
 import type { Material, Mesh } from 'three'
 
 /**

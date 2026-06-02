@@ -5,7 +5,7 @@ import {
   type StairNode,
   type StairSegmentNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 // Minimums + max sweep mirror the 3D handles in
 // `packages/editor/src/components/editor/stair-segment-handles.tsx` so a 2D

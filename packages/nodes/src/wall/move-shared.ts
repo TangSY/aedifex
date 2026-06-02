@@ -8,8 +8,8 @@ import {
   type WallNode,
   type WallPlanPoint,
   WallNode as WallSchema,
-} from '@pascal-app/core'
-import { isSegmentLongEnough } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { isSegmentLongEnough } from '@aedifex/editor'
 
 /**
  * Pure helpers shared by the 3D `MoveWallTool` and the 2D

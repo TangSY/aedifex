@@ -6,8 +6,8 @@ import {
   sceneRegistry,
   type WallNode,
   type WallSurfaceSide,
-} from '@pascal-app/core'
-import { getVisibleWallMaterials } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { getVisibleWallMaterials } from '@aedifex/viewer'
 import type { Material, Mesh } from 'three'
 
 /**

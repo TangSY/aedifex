@@ -11,15 +11,15 @@ import {
   useScene,
   type WallMoveAxis,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CursorSphere,
   markToolCancelConsumed,
   snapFenceDraftPoint,
   triggerSFX,
   useEditor,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**

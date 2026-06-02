@@ -1,4 +1,4 @@
-import type { ToolHint } from '@pascal-app/core'
+import type { ToolHint } from '@aedifex/core'
 import { ShortcutToken } from '../primitives/shortcut-token'
 
 /**

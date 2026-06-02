@@ -1,6 +1,6 @@
 'use client'
 
-import { emitter } from '@pascal-app/core'
+import { emitter } from '@aedifex/core'
 import { Camera, Check, Crop, Loader2, Maximize2, Monitor, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useIsMobile } from '../../hooks/use-mobile'

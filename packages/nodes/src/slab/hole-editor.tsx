@@ -1,8 +1,8 @@
 'use client'
 
-import { resolveLevelId, type SlabNode, useLiveNodeOverrides, useScene } from '@pascal-app/core'
-import { PolygonEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+import { resolveLevelId, type SlabNode, useLiveNodeOverrides, useScene } from '@aedifex/core'
+import { PolygonEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect } from 'react'
 
 /**

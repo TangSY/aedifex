@@ -7,7 +7,7 @@ import {
   useScene,
   type WallEvent,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   calculateCursorRotation,
   calculateItemRotation,
@@ -16,8 +16,8 @@ import {
   isValidWallSideFace,
   snapToHalf,
   triggerSFX,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useRef } from 'react'
 import { BoxGeometry, EdgesGeometry, type Group, type LineSegments } from 'three'
 import { LineBasicNodeMaterial } from 'three/webgpu'

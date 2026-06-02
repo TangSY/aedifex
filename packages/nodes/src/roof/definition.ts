@@ -1,4 +1,4 @@
-import { type NodeDefinition, RoofNode as RoofNodeSchema } from '@pascal-app/core'
+import { type NodeDefinition, RoofNode as RoofNodeSchema } from '@aedifex/core'
 import { roofParametrics } from './parametrics'
 import { RoofNode } from './schema'
 

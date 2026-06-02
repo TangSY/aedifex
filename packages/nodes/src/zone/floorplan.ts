@@ -1,4 +1,4 @@
-import type { FloorplanGeometry, FloorplanPoint, GeometryContext, ZoneNode } from '@pascal-app/core'
+import type { FloorplanGeometry, FloorplanPoint, GeometryContext, ZoneNode } from '@aedifex/core'
 
 /**
  * Stage C floor-plan builder for zone. Zones are colored polygons —

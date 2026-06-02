@@ -2,7 +2,7 @@ import {
   getEffectiveRoofSurfaceMaterial,
   type RoofNode,
   type RoofSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type * as THREE from 'three'
 import {
   type ColorPreset,

@@ -2,7 +2,7 @@ import type {
   CeilingNode as CeilingNodeType,
   HandleDescriptor,
   NodeDefinition,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildCeilingFloorplan } from './floorplan'
 import {
   ceilingAddVertexAffordance,

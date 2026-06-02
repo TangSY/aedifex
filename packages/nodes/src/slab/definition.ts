@@ -1,4 +1,4 @@
-import type { HandleDescriptor, NodeDefinition, SlabNode as SlabNodeType } from '@pascal-app/core'
+import type { HandleDescriptor, NodeDefinition, SlabNode as SlabNodeType } from '@aedifex/core'
 import { buildSlabFloorplan } from './floorplan'
 import {
   slabAddVertexAffordance,

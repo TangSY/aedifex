@@ -1,8 +1,8 @@
 'use client'
 
 import { Icon } from '@iconify/react'
-import { type LevelNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type LevelNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { type LucideIcon, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import { cn } from './../../../lib/utils'

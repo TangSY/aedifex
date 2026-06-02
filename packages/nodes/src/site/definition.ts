@@ -1,4 +1,4 @@
-import { type NodeDefinition, SiteNode as SiteNodeSchema } from '@pascal-app/core'
+import { type NodeDefinition, SiteNode as SiteNodeSchema } from '@aedifex/core'
 import { siteParametrics } from './parametrics'
 import { SiteNode } from './schema'
 

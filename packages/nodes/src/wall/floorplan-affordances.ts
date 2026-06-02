@@ -9,7 +9,7 @@ import {
   useLiveNodeOverrides,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getSegmentGridStep,
   isSegmentLongEnough,
@@ -17,7 +17,7 @@ import {
   snapWallDraftPoint,
   WALL_FINE_GRID_STEP,
   type WallPlanPoint,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 
 /**
  * Floor-plan 2D drag affordances for wall.

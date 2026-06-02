@@ -1,6 +1,6 @@
 'use client'
 
-import { emitter, type FenceNode, isCurvedWall, type WallNode } from '@pascal-app/core'
+import { emitter, type FenceNode, isCurvedWall, type WallNode } from '@aedifex/core'
 import { type MouseEvent as ReactMouseEvent, useCallback } from 'react'
 import { getPlanPointDistance } from '../../lib/floorplan'
 import { snapFenceDraftPoint } from '../tools/fence/fence-drafting'

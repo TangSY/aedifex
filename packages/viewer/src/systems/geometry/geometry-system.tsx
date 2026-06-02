@@ -9,7 +9,7 @@ import {
   type SurfaceRole,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import { useEffect } from 'react'
 import { FrontSide, type Group, type Material, type Mesh } from 'three'

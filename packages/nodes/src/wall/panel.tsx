@@ -10,7 +10,7 @@ import {
   useLiveNodeOverrides,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   ActionButton,
   ActionGroup,
@@ -19,8 +19,8 @@ import {
   SliderControl,
   triggerSFX,
   useEditor,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Spline } from 'lucide-react'
 import { useCallback, useMemo, useRef } from 'react'
 

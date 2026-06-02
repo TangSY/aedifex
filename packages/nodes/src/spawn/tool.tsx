@@ -1,8 +1,8 @@
 'use client'
 
-import { emitter, type GridEvent, SpawnNode, sceneRegistry, useScene } from '@pascal-app/core'
-import { CursorSphere, triggerSFX, useEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+import { emitter, type GridEvent, SpawnNode, sceneRegistry, useScene } from '@aedifex/core'
+import { CursorSphere, triggerSFX, useEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useRef } from 'react'
 import { type Group, Vector3 } from 'three'
 
@@ -35,7 +35,7 @@ function getLevelLocalPosition(levelId: string, event: GridEvent): [number, numb
 /**
  * Registry-driven spawn placement tool. Reads `activeLevelId` from useViewer
  * directly (no props), broadcasts placement via store updates + SFX, and
- * uses the shared CursorSphere from @pascal-app/editor for visual parity
+ * uses the shared CursorSphere from @aedifex/editor for visual parity
  * with legacy placement tools.
  */
 const SpawnTool = () => {

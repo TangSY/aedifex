@@ -4,8 +4,8 @@ import {
   type FloorplanMoveTarget,
   type FloorplanMoveTargetSession,
   useScene,
-} from '@pascal-app/core'
-import { snapToHalf } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { snapToHalf } from '@aedifex/editor'
 import { findClosestWallInPlan } from '../shared/wall-attach-target'
 import { clampToWall, hasWallChildOverlap } from './door-math'
 

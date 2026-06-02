@@ -2,7 +2,7 @@ import {
   getScaledDimensions,
   type ItemNode as ItemNodeType,
   type NodeDefinition,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildItemFloorplan } from './floorplan'
 import { itemFloorplanMoveTarget } from './floorplan-move'
 import { itemParametrics } from './parametrics'

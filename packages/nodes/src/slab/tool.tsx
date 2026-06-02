@@ -1,8 +1,8 @@
 'use client'
 
-import { emitter, type GridEvent, type LevelNode, useScene } from '@pascal-app/core'
-import { CursorSphere, EDITOR_LAYER, markToolCancelConsumed, triggerSFX } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+import { emitter, type GridEvent, type LevelNode, useScene } from '@aedifex/core'
+import { CursorSphere, EDITOR_LAYER, markToolCancelConsumed, triggerSFX } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BufferGeometry, DoubleSide, type Group, type Line, Shape, Vector3 } from 'three'
 import { SlabNode } from './schema'

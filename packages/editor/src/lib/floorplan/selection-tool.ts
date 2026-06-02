@@ -11,7 +11,7 @@ import type {
   StairNode,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   doesPolygonIntersectSelectionBounds,
   getDistanceToWallSegment,

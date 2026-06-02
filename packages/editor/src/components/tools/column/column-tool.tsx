@@ -9,7 +9,7 @@ import {
   type GridEvent,
   type LevelNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useEffect, useRef, useState } from 'react'
 import type { Group } from 'three'
 import { sfxEmitter } from '../../../lib/sfx-bus'

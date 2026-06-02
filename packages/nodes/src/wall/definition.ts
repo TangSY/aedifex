@@ -1,4 +1,4 @@
-import type { NodeDefinition } from '@pascal-app/core'
+import type { NodeDefinition } from '@aedifex/core'
 import { buildWallFloorplan } from './floorplan'
 import { wallCurveAffordance, wallMoveEndpointAffordance } from './floorplan-affordances'
 import { wallFloorplanMoveTarget } from './floorplan-move'

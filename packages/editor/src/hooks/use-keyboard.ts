@@ -1,5 +1,5 @@
-import { type AnyNodeId, emitter, nodeRegistry, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, emitter, nodeRegistry, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
 import { toggleDoorOpenState } from '../lib/door-interaction'
 import { runRedo, runUndo } from '../lib/history'

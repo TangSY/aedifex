@@ -1,6 +1,6 @@
 'use client'
 
-import type { ChimneyNode, RoofSegmentNode } from '@pascal-app/core'
+import type { ChimneyNode, RoofSegmentNode } from '@aedifex/core'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { buildChimneyGeometry } from './geometry'

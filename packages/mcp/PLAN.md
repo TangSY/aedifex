@@ -1,4 +1,4 @@
-# @pascal-app/mcp — Implementation Plan
+# @aedifex/mcp — Implementation Plan
 
 > This document is the contract for the 8-agent parallel build. All subagents MUST read it before writing code. Deviations require an entry in `CROSS_CUTTING.md`.
 
@@ -7,7 +7,7 @@
 - **Monorepo layout.** Turborepo + Bun. Root `package.json` already lists `packages/*` in `workspaces`. Our new package sits at `packages/mcp/`.
 - **Build tooling.** TypeScript 5.9.3, `tsc --build` per package, outputs to `dist/`. Biome 2.4.x for lint/format (root `biome.jsonc`).
 - **AGENTS.md does not exist.** `CLAUDE.md` is a symlink pointing to a non-existent `AGENTS.md`. The conventions referenced in the task prompt are therefore derived from `README.md`, `CONTRIBUTING.md`, and the actual code.
-- **`@pascal-app/core` v0.5.1** — already built and consumed by `@pascal-app/viewer` with `workspace:*` via `peerDependencies`. It exports the full Zod schema surface, the `useScene` Zustand store with `temporal` (Zundo) wrapper, systems, hooks, lib utilities, events, and `clone-scene-graph`.
+- **`@aedifex/core` v0.5.1** — already built and consumed by `@aedifex/viewer` with `workspace:*` via `peerDependencies`. It exports the full Zod schema surface, the `useScene` Zustand store with `temporal` (Zundo) wrapper, systems, hooks, lib utilities, events, and `clone-scene-graph`.
 - **MCP SDK** — `@modelcontextprotocol/sdk@1.29.0` (latest stable). Subpath exports include `./server/mcp.js`, `./server/stdio.js`, `./server/streamableHttp.js`, `./client/*`, `./types.js`.
 
 ## 0.5 Bridge spike result (CONFIRMED)
@@ -27,7 +27,7 @@ Node compatibility requires:
 
 ## 0.6 Import contract (CRITICAL — every subagent must use these)
 
-Do **NOT** `import X from '@pascal-app/core'`. The main entry re-exports Three.js systems and fails at load-time in Node.
+Do **NOT** `import X from '@aedifex/core'`. The main entry re-exports Three.js systems and fails at load-time in Node.
 
 Use these subpaths (added to core's `exports` map — see `CROSS_CUTTING.md`):
 
@@ -39,34 +39,34 @@ import {
   LevelNode, RoofNode, RoofSegmentNode, ScanNode, SiteNode, SlabNode,
   StairNode, StairSegmentNode, WallNode, WindowNode, ZoneNode,
   type AnyNodeId, type AnyNodeType,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 
 // Zustand store (default export)
-import useScene from '@pascal-app/core/store'
+import useScene from '@aedifex/core/store'
 // NOTE: useScene is the DEFAULT export from this subpath
 
 // Clone helpers
 import {
   cloneLevelSubtree, cloneSceneGraph, forkSceneGraph,
   type SceneGraph,
-} from '@pascal-app/core/clone-scene-graph'
+} from '@aedifex/core/clone-scene-graph'
 
 // Material catalog (safe in Node — no three imports)
 import {
   MATERIAL_CATALOG, getCatalogMaterialById, getMaterialsForTarget,
-} from '@pascal-app/core/material-library'
+} from '@aedifex/core/material-library'
 
 // Spatial utilities (pure functions — safe in Node)
-import { pointInPolygon, spatialGridManager } from '@pascal-app/core/spatial-grid'
+import { pointInPolygon, spatialGridManager } from '@aedifex/core/spatial-grid'
 
 // Wall helpers (pure functions)
 import {
   DEFAULT_WALL_HEIGHT, DEFAULT_WALL_THICKNESS,
   getWallPlanFootprint, getWallThickness,
-} from '@pascal-app/core/wall'
+} from '@aedifex/core/wall'
 ```
 
-`useScene` is the default export of `@pascal-app/core/store`. Use `useScene.getState()` / `useScene.temporal.getState()` as usual.
+`useScene` is the default export of `@aedifex/core/store`. Use `useScene.getState()` / `useScene.temporal.getState()` as usual.
 
 ## 0.7 SiteNode.children quirk
 
@@ -157,7 +157,7 @@ useScene.temporal.getState().pastStates         // readonly
 useScene.temporal.getState().futureStates       // readonly
 ```
 
-Plus `import { clearSceneHistory } from '@pascal-app/core'`.
+Plus `import { clearSceneHistory } from '@aedifex/core'`.
 
 **Dirty bookkeeping in headless mode.** Because no renderer is consuming `dirtyNodes`, the set accumulates. For MCP correctness we don't care — dirty tracking is a renderer concern. We will expose a `flushDirty()` helper in the bridge that simply empties the set after a mutation batch for observability.
 
@@ -255,7 +255,7 @@ All tools declared with Zod input AND output schemas. Handlers return `{ content
    - Resolve `catalogItemId` → asset payload. Catalog may be unavailable in headless mode — return structured `{ status: 'catalog_unavailable' }` error if so.
 10. **`cut_opening`** — `{ wallId, type: 'door' | 'window', position: 0..1, width, height }` → `{ openingId }`. Creates a `DoorNode` or `WindowNode` with `wallId` set; position maps to wallT.
 11. **`set_zone`** — `{ levelId, polygon, label, properties? }` → `{ zoneId }`. Creates `ZoneNode` via `ZoneNode.parse`.
-12. **`duplicate_level`** — `{ levelId }` → `{ newLevelId, newNodeIds[] }`. Uses `cloneLevelSubtree(levelId, { nodes, rootNodeIds })` from `@pascal-app/core/clone-scene-graph`, then bulk-inserts the cloned nodes via `createNodes`.
+12. **`duplicate_level`** — `{ levelId }` → `{ newLevelId, newNodeIds[] }`. Uses `cloneLevelSubtree(levelId, { nodes, rootNodeIds })` from `@aedifex/core/clone-scene-graph`, then bulk-inserts the cloned nodes via `createNodes`.
 13. **`delete_node`** — `{ id, cascade?: boolean }` → `{ deletedIds: [] }`. If `cascade` is false and node has children, throw `InvalidRequest` "node has children; pass cascade: true to delete recursively". If `cascade` is true, just call `deleteNode(id)` (core's deleteNodesAction already cascades via descendant collection).
 
 ### Undo/redo
@@ -280,10 +280,10 @@ All tools declared with Zod input AND output schemas. Handlers return `{ content
 
 ## 6. Resources (4)
 
-- `pascal://scene/current` — `application/json`, full `{ nodes, rootNodeIds, collections }`
-- `pascal://scene/current/summary` — `text/markdown`, human summary with counts + bbox + areas
-- `pascal://catalog/items` — `application/json`, item catalog if available; else `{ status: 'catalog_unavailable', items: [] }`
-- `pascal://constraints/{levelId}` — `application/json`, slab footprints + wall polygons for that level
+- `aedifex://scene/current` — `application/json`, full `{ nodes, rootNodeIds, collections }`
+- `aedifex://scene/current/summary` — `text/markdown`, human summary with counts + bbox + areas
+- `aedifex://catalog/items` — `application/json`, item catalog if available; else `{ status: 'catalog_unavailable', items: [] }`
+- `aedifex://constraints/{levelId}` — `application/json`, slab footprints + wall polygons for that level
 
 Register via `server.registerResource(...)` with `readResource` handlers.
 
@@ -308,7 +308,7 @@ CLI `pascal-mcp` flags:
 
 ```jsonc
 {
-  "name": "@pascal-app/mcp",
+  "name": "@aedifex/mcp",
   "version": "0.1.0",
   "description": "Model Context Protocol server for Pascal 3D editor",
   "type": "module",
@@ -332,7 +332,7 @@ CLI `pascal-mcp` flags:
     "prepublishOnly": "bun run build && bun test"
   },
   "peerDependencies": {
-    "@pascal-app/core": "workspace:*"
+    "@aedifex/core": "workspace:*"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
@@ -346,7 +346,7 @@ CLI `pascal-mcp` flags:
 }
 ```
 
-Note: `@pascal-app/core` is a **peer dependency**, but Bun workspaces auto-resolve it via `workspaces` in the root. In practice we'll also list it under `devDependencies` with `workspace:*` so `bun install` hoists it.
+Note: `@aedifex/core` is a **peer dependency**, but Bun workspaces auto-resolve it via `workspaces` in the root. In practice we'll also list it under `devDependencies` with `workspace:*` so `bun install` hoists it.
 
 ## 10. tsconfig.json contract
 
@@ -405,7 +405,7 @@ The existing `turbo.json` globs `packages/*` implicitly via Bun workspaces and p
 
 - `export_glb` returns `not_implemented`. GLB export depends on Three.js renderer output — not reachable headlessly without a large additional effort.
 - Vision tools require MCP host sampling support. Claude Desktop supports this; some MCP clients don't.
-- Systems run only via React hooks; headless mode doesn't regenerate geometry. Wall mitering, slab triangulation, CSG cutouts, etc. remain unexecuted in the MCP process — but their inputs (node data) are still fully manipulable. Consumers that need derived geometry call `@pascal-app/viewer` in a browser host.
+- Systems run only via React hooks; headless mode doesn't regenerate geometry. Wall mitering, slab triangulation, CSG cutouts, etc. remain unexecuted in the MCP process — but their inputs (node data) are still fully manipulable. Consumers that need derived geometry call `@aedifex/viewer` in a browser host.
 - Core's `loadAssetUrl`/`saveAsset` are browser-only; items that reference `asset://<id>` URLs aren't resolvable in Node. MCP consumers should supply absolute URLs or `data:` URLs for item assets if they need them usable outside the browser.
 - `dirtyNodes` accumulates in headless mode. Consumers who care can call `bridge.flushDirty()`.
 
@@ -414,7 +414,7 @@ The existing `turbo.json` globs `packages/*` implicitly via Bun workspaces and p
 - Import `z` from `zod`, matching core's `"zod": "^4.3.5"`.
 - Input schemas: declared per-tool. Prefer positional tuples for `[x, z]`/`[x, y, z]` to match core.
 - Output schemas: declared per-tool; used to validate the handler's return before sending to MCP.
-- `AnyNode` / `SiteNode` / `WallNode` etc. imported from `@pascal-app/core`. Do not redeclare.
+- `AnyNode` / `SiteNode` / `WallNode` etc. imported from `@aedifex/core`. Do not redeclare.
 - For `apply_patch` inputs we use **partial schemas** (`AnyNode.partial()` isn't directly supported for discriminated unions; we declare a per-type update schema that accepts a subset of fields keyed by the type literal).
 
 ## 15. Test strategy
@@ -426,7 +426,7 @@ The existing `turbo.json` globs `packages/*` implicitly via Bun workspaces and p
 
 ## 16. Conventional commits (one per agent scope)
 
-- `feat(mcp): scaffold @pascal-app/mcp package`       — Agent A
+- `feat(mcp): scaffold @aedifex/mcp package`       — Agent A
 - `feat(mcp): add headless scene bridge`              — Agent B
 - `feat(mcp): implement scene query and mutation tools` — Agent C
 - `feat(mcp): add resources and prompts`              — Agent D

@@ -1,7 +1,7 @@
 'use client'
 
-import type { DormerNode } from '@pascal-app/core'
-import { PanelSection, SegmentedControl, SliderControl, ToggleControl } from '@pascal-app/editor'
+import type { DormerNode } from '@aedifex/core'
+import { PanelSection, SegmentedControl, SliderControl, ToggleControl } from '@aedifex/editor'
 import { useState } from 'react'
 
 type WindowShape = DormerNode['windowShape']

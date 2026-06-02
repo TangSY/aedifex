@@ -1,11 +1,11 @@
-import { getMaterialPresetByRef } from '@pascal-app/core'
+import { getMaterialPresetByRef } from '@aedifex/core'
 import {
   applyMaterialPresetToMaterials,
   createDefaultMaterial,
   createMaterial,
   DEFAULT_SHELF_MATERIAL,
   type RenderShading,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { BoxGeometry, FrontSide, Group, type Material, Mesh } from 'three'
 import type { ShelfNode } from './schema'
 

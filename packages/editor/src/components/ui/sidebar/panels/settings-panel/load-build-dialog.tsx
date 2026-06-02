@@ -1,4 +1,4 @@
-import type { BuildStats, SchemaIssue, ValidateBuildJsonResult } from '@pascal-app/core'
+import type { BuildStats, SchemaIssue, ValidateBuildJsonResult } from '@aedifex/core'
 import {
   AlertTriangle,
   AppWindow,

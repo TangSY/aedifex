@@ -1,4 +1,4 @@
-import { ChimneyNode as ChimneyNodeSchema, type NodeDefinition } from '@pascal-app/core'
+import { ChimneyNode as ChimneyNodeSchema, type NodeDefinition } from '@aedifex/core'
 import { chimneyPaint } from './paint'
 import { chimneyParametrics } from './parametrics'
 import { ChimneyNode } from './schema'

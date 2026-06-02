@@ -9,9 +9,9 @@ import {
   type SkylightNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { markToolCancelConsumed, triggerSFX, useEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { markToolCancelConsumed, triggerSFX, useEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import SkylightPreview from './preview'

@@ -6,14 +6,14 @@ import {
   type SlabNode,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getSceneTheme,
   NodeRenderer,
   unionPolygons,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useMemo, useRef } from 'react'
 import { BufferGeometry, Float32BufferAttribute, type Group, Path, Shape } from 'three'
 import { MeshLambertNodeMaterial } from 'three/webgpu'

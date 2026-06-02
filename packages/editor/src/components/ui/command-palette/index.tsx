@@ -1,8 +1,8 @@
 'use client'
 
-import type { AnyNodeId, LevelNode } from '@pascal-app/core'
-import { useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import type { AnyNodeId, LevelNode } from '@aedifex/core'
+import { useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Command, useCommandState } from 'cmdk'
 import { ChevronRight, Search } from 'lucide-react'
 import type { ReactNode } from 'react'

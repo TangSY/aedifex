@@ -1,4 +1,4 @@
-import type { ParametricDescriptor } from '@pascal-app/core'
+import type { ParametricDescriptor } from '@aedifex/core'
 import { FenceCurveEditor, FenceLengthEditor } from './inspector-editors'
 import type { FenceNode } from './schema'
 

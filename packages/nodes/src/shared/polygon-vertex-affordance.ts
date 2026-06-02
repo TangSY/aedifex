@@ -3,8 +3,8 @@ import {
   type FloorplanAffordance,
   type FloorplanAffordanceSession,
   useScene,
-} from '@pascal-app/core'
-import { snapPointToGrid, type WallPlanPoint } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { snapPointToGrid, type WallPlanPoint } from '@aedifex/editor'
 
 /**
  * Shared "edit polygon" floor-plan affordances. Used by kinds whose

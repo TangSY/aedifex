@@ -1,7 +1,7 @@
 'use client'
 
-import { useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
 import { resolvePaintTargetFromSelection } from './../../../lib/material-paint'
 import useEditor from './../../../store/use-editor'

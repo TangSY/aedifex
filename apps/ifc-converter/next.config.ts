@@ -6,10 +6,10 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: [
     'three',
-    '@pascal-app/core',
-    '@pascal-app/ifc-converter',
-    '@pascal-app/nodes',
-    '@pascal-app/viewer',
+    '@aedifex/core',
+    '@aedifex/ifc-converter',
+    '@aedifex/nodes',
+    '@aedifex/viewer',
   ],
   turbopack: {
     resolveAlias: {

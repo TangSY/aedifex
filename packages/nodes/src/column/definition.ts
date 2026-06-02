@@ -3,7 +3,7 @@ import {
   type ColumnNode as ColumnNodeType,
   type HandleDescriptor,
   type NodeDefinition,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildColumnFloorplan } from './floorplan'
 import { columnResizeAffordance, columnRotateAffordance } from './floorplan-affordances'
 import { columnParametrics } from './parametrics'

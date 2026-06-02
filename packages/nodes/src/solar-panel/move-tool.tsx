@@ -9,9 +9,9 @@ import {
   type SolarPanelNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { EDITOR_LAYER, markToolCancelConsumed, triggerSFX, useEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { EDITOR_LAYER, markToolCancelConsumed, triggerSFX, useEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { resolveRoofSegmentHit } from '../roof/segment-hit'

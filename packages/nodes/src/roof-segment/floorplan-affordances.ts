@@ -5,7 +5,7 @@ import {
   type RoofNode,
   type RoofSegmentNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 const MIN_ROOF_DIM = 1
 

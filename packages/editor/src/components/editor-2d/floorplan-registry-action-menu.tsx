@@ -10,8 +10,8 @@ import {
   useLiveNodeOverrides,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { sfxEmitter } from '../../lib/sfx-bus'

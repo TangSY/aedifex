@@ -6,7 +6,7 @@ import {
   LevelNode,
   SpawnNode,
   WallNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import { buildLevelDuplicateCreateOps } from './level-duplication'
 
 describe('buildLevelDuplicateCreateOps', () => {

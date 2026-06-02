@@ -4,7 +4,7 @@ import type {
   HandleDescriptor,
   NodeDefinition,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildDoorFloorplan } from './floorplan'
 import { doorWidthAffordance } from './floorplan-affordances'
 import { doorFloorplanMoveTarget } from './floorplan-move'

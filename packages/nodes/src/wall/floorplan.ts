@@ -9,7 +9,7 @@ import {
   getWallPlanFootprint,
   isCurvedWall,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 // Same constants the legacy `getFloorplanWall` uses (editor/lib/floorplan/walls.ts).
 // Slightly exaggerates thin walls so the 2D plan stays legible without

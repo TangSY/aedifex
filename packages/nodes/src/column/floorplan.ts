@@ -3,7 +3,7 @@ import type {
   FloorplanGeometry,
   FloorplanPoint,
   GeometryContext,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { ColumnResizePayload } from './floorplan-affordances'
 
 // Offsets for the floor-plan selection arrows. Resize chevrons hug the

@@ -9,14 +9,14 @@ import {
   type LevelNode,
   useScene,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CLAY_PALETTE,
   type EdgeMode,
   getSceneTheme,
   SCENE_THEMES,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import {
   ArrowLeft,
   Box,

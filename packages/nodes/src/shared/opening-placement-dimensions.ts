@@ -7,7 +7,7 @@ import {
   isCurvedWall,
   type WallNode,
   type WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Build placement-measurement dimension lines for a door / window

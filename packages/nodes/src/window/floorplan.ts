@@ -4,7 +4,7 @@ import type {
   GeometryContext,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildOpeningPlacementDimensions } from '../shared/opening-placement-dimensions'
 
 /**

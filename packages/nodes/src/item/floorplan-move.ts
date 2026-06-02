@@ -7,8 +7,8 @@ import {
   getScaledDimensions,
   type ItemNode,
   useScene,
-} from '@pascal-app/core'
-import { snapPointToGrid, type WallPlanPoint } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { snapPointToGrid, type WallPlanPoint } from '@aedifex/editor'
 import { findClosestWallInPlan } from '../shared/wall-attach-target'
 
 /**

@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { cloneSceneGraph } from '@pascal-app/core/clone-scene-graph'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core/schema'
+import { cloneSceneGraph } from '@aedifex/core/clone-scene-graph'
+import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
 import { z } from 'zod'
 import { rehydrateSiteChildren } from '../../lib/rehydrate-site-children'
 import type { SceneOperations } from '../../operations'
@@ -74,7 +74,7 @@ export function registerCreateFromTemplate(server: McpServer, bridge: SceneOpera
     {
       title: 'Create scene from template',
       description:
-        'Instantiate a seed Pascal scene template into the bridge. Regenerates all ids before applying. When `save: true` and a SceneStore is wired, also persists the new scene and returns the SceneMeta.',
+        'Instantiate a seed Aedifex scene template into the bridge. Regenerates all ids before applying. When `save: true` and a SceneStore is wired, also persists the new scene and returns the SceneMeta.',
       inputSchema: createFromTemplateInput,
       outputSchema: createFromTemplateOutput,
     },

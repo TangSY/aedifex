@@ -22,7 +22,7 @@ import {
   useLiveTransforms,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type ColorPreset,
   createDefaultMaterial,
@@ -30,7 +30,7 @@ import {
   type RenderShading,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useFrame } from '@react-three/fiber'
 import { useCallback, useLayoutEffect, useMemo, useRef } from 'react'
 import {

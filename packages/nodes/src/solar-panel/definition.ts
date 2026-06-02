@@ -1,4 +1,4 @@
-import { type NodeDefinition, SolarPanelNode as SolarPanelNodeSchema } from '@pascal-app/core'
+import { type NodeDefinition, SolarPanelNode as SolarPanelNodeSchema } from '@aedifex/core'
 import { solarPanelParametrics } from './parametrics'
 import { SolarPanelNode } from './schema'
 

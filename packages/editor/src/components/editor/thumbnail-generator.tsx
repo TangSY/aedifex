@@ -1,7 +1,7 @@
 'use client'
 
-import { emitter, sceneRegistry } from '@pascal-app/core'
-import { GRID_LAYER, SSGI_PARAMS, snapLevelsToTruePositions, useViewer } from '@pascal-app/viewer'
+import { emitter, sceneRegistry } from '@aedifex/core'
+import { GRID_LAYER, SSGI_PARAMS, snapLevelsToTruePositions, useViewer } from '@aedifex/viewer'
 import type { CameraControls } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useRef } from 'react'

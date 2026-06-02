@@ -8,7 +8,7 @@ import {
   resumeSceneHistory,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CursorSphere,
   formatAngleRadians,
@@ -22,8 +22,8 @@ import {
   useEditor,
   WALL_FINE_GRID_STEP,
   type WallPlanPoint,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useCallback, useEffect, useRef, useState } from 'react'
 

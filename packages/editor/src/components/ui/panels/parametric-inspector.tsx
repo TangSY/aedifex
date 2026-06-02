@@ -7,8 +7,8 @@ import {
   nodeRegistry,
   type ParamField,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Icon } from '@iconify/react'
 import { Move, Trash2 } from 'lucide-react'
 import { type ComponentType, lazy, Suspense, useCallback } from 'react'

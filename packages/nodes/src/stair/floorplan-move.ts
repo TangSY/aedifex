@@ -5,8 +5,8 @@ import {
   type StairNode,
   snapScalar,
   useScene,
-} from '@pascal-app/core'
-import { getSegmentGridStep } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { getSegmentGridStep } from '@aedifex/editor'
 
 /**
  * 2D floor-plan move handler for stair — kicks in when the user clicks

@@ -3,7 +3,7 @@ import {
   type FloorplanAffordance,
   type ShelfNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 // Mirror the 3D handles in `shelf/definition.ts` so a drag can't push a
 // value past what the renderer / geometry builder accepts.

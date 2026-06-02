@@ -1,7 +1,7 @@
-# @pascal-app/mcp
+# @aedifex/mcp
 
 Model Context Protocol server for the Pascal 3D editor. Drives the
-`@pascal-app/core` scene graph from any MCP-compatible AI host.
+`@aedifex/core` scene graph from any MCP-compatible AI host.
 
 The server runs headlessly in Bun with no browser, WebGPU, React, or external
 database service. It exposes the same scene mutations used by the editor UI
@@ -11,10 +11,10 @@ and prompts.
 ## Install
 
 ```bash
-bun add @pascal-app/mcp
+bun add @aedifex/mcp
 ```
 
-`@pascal-app/core` is a peer dependency; Bun workspaces resolve it automatically.
+`@aedifex/core` is a peer dependency; Bun workspaces resolve it automatically.
 The MCP CLI is intended to run with Bun. When the storage package is consumed by
 the Next.js editor server, it opens the same local database through Node's
 built-in SQLite driver.
@@ -42,7 +42,7 @@ pascal-mcp --http --port 8787
 Binding a non-loopback host requires a bearer token:
 
 ```bash
-PASCAL_MCP_HTTP_TOKEN="$(openssl rand -hex 32)" \
+AEDIFEX_MCP_HTTP_TOKEN="$(openssl rand -hex 32)" \
   pascal-mcp --http --host 0.0.0.0 --port 8787 --cors-origin https://editor.example
 ```
 
@@ -54,8 +54,8 @@ Scenes saved through MCP are stored in a local SQLite database:
 ~/.pascal/data/pascal.db
 ```
 
-Set `PASCAL_DATA_DIR` when you want the MCP server and the running editor to
-share a different directory, or `PASCAL_DB_PATH` when you need an exact database
+Set `AEDIFEX_DATA_DIR` when you want the MCP server and the running editor to
+share a different directory, or `AEDIFEX_DB_PATH` when you need an exact database
 file path. The store uses WAL mode and transactional version checks so separate
 local processes can save and open the same scene database.
 
@@ -63,15 +63,15 @@ During workspace development, run both sides with the same data directory:
 
 ```bash
 # Terminal 1: run the editor
-PASCAL_DATA_DIR="$HOME/.pascal/data" bun run dev
+AEDIFEX_DATA_DIR="$HOME/.pascal/data" bun run dev
 
 # Terminal 2 or an MCP host: run the server
-PASCAL_DATA_DIR="$HOME/.pascal/data" bun packages/mcp/dist/bin/pascal-mcp.js
+AEDIFEX_DATA_DIR="$HOME/.pascal/data" bun packages/mcp/dist/bin/pascal-mcp.js
 ```
 
 ## Live editor updates
 
-When the editor and MCP server share the same `PASCAL_DATA_DIR`, MCP mutations
+When the editor and MCP server share the same `AEDIFEX_DATA_DIR`, MCP mutations
 against a loaded saved scene are persisted to SQLite and recorded in a local
 `scene_events` stream. The editor page subscribes to that stream at
 `/api/scenes/:id/events` with server-sent events, so an open browser tab can
@@ -101,7 +101,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
       "command": "bunx",
       "args": ["pascal-mcp"],
       "env": {
-        "PASCAL_DATA_DIR": "/Users/you/.pascal/data"
+        "AEDIFEX_DATA_DIR": "/Users/you/.pascal/data"
       }
     }
   }
@@ -128,7 +128,7 @@ Or add to `.mcp.json` at the repo root:
       "command": "bunx",
       "args": ["pascal-mcp"],
       "env": {
-        "PASCAL_DATA_DIR": "/Users/you/.pascal/data"
+        "AEDIFEX_DATA_DIR": "/Users/you/.pascal/data"
       }
     }
   }
@@ -145,7 +145,7 @@ the built binary:
       "command": "bun",
       "args": ["/absolute/path/to/editor/packages/mcp/dist/bin/pascal-mcp.js"],
       "env": {
-        "PASCAL_DATA_DIR": "/Users/you/.pascal/data"
+        "AEDIFEX_DATA_DIR": "/Users/you/.pascal/data"
       }
     }
   }
@@ -157,7 +157,7 @@ the built binary:
 Via the CLI:
 
 ```bash
-codex mcp add pascal --env PASCAL_DATA_DIR="$HOME/.pascal/data" -- bunx pascal-mcp
+codex mcp add pascal --env AEDIFEX_DATA_DIR="$HOME/.pascal/data" -- bunx pascal-mcp
 ```
 
 For local workspace testing before publish:
@@ -165,7 +165,7 @@ For local workspace testing before publish:
 ```bash
 bun run --cwd packages/mcp build
 codex mcp add pascal-dev \
-  --env PASCAL_DATA_DIR="$HOME/.pascal/data" \
+  --env AEDIFEX_DATA_DIR="$HOME/.pascal/data" \
   -- bun "$PWD/packages/mcp/dist/bin/pascal-mcp.js"
 ```
 
@@ -177,7 +177,7 @@ command = "bun"
 args = ["/absolute/path/to/editor/packages/mcp/dist/bin/pascal-mcp.js"]
 
 [mcp_servers.pascal-dev.env]
-PASCAL_DATA_DIR = "/Users/you/.pascal/data"
+AEDIFEX_DATA_DIR = "/Users/you/.pascal/data"
 ```
 
 ## Cursor config
@@ -191,7 +191,7 @@ In Cursor settings (`settings.json`):
       "command": "bunx",
       "args": ["pascal-mcp"],
       "env": {
-        "PASCAL_DATA_DIR": "/Users/you/.pascal/data"
+        "AEDIFEX_DATA_DIR": "/Users/you/.pascal/data"
       }
     }
   }
@@ -205,7 +205,7 @@ example below runs a full client/server pair inside a single script — useful
 for agent frameworks and tests.
 
 ```ts
-import { createPascalMcpServer, SceneBridge } from '@pascal-app/mcp'
+import { createPascalMcpServer, SceneBridge } from '@aedifex/mcp'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 
@@ -277,11 +277,11 @@ The vision tools require the MCP host to support the sampling capability
 
 | URI | MIME | Purpose |
 | --- | --- | --- |
-| `pascal://scene/current` | `application/json` | Full `{ nodes, rootNodeIds, collections }` snapshot. |
-| `pascal://scene/current/summary` | `text/markdown` | Human-readable summary with node counts, bounding box, and level areas. |
-| `pascal://agent/guide` | `text/markdown` | MCP-first construction workflow, scene invariants, and tool preferences for agents. |
-| `pascal://catalog/items` | `application/json` | Dependency-free built-in catalog subset for common residential furniture and fixtures. |
-| `pascal://constraints/{levelId}` | `application/json` | Slab footprints and wall polygons for the given level — useful as planner context. |
+| `aedifex://scene/current` | `application/json` | Full `{ nodes, rootNodeIds, collections }` snapshot. |
+| `aedifex://scene/current/summary` | `text/markdown` | Human-readable summary with node counts, bounding box, and level areas. |
+| `aedifex://agent/guide` | `text/markdown` | MCP-first construction workflow, scene invariants, and tool preferences for agents. |
+| `aedifex://catalog/items` | `application/json` | Dependency-free built-in catalog subset for common residential furniture and fixtures. |
+| `aedifex://constraints/{levelId}` | `application/json` | Slab footprints and wall polygons for the given level — useful as planner context. |
 
 ## Prompts
 
@@ -303,7 +303,7 @@ The vision tools require the MCP host to support the sampling capability
 - Systems (wall mitering, slab triangulation, CSG cutouts, roof / stair
   generation) run inside React hooks in the editor. Headless mode doesn't
   regenerate derived geometry — but all node data remains fully manipulable.
-  Consumers that need rendered geometry run `@pascal-app/viewer` in a browser
+  Consumers that need rendered geometry run `@aedifex/viewer` in a browser
   host.
 - Core's `loadAssetUrl` / `saveAsset` are browser-only; items that reference
   `asset://<id>` URLs aren't resolvable in Node. Supply absolute URLs or

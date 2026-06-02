@@ -3,7 +3,7 @@ import {
   type NodeDefinition,
   StairNode as StairNodeSchema,
   type StairNode as StairNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 const MIN_CURVED_RISE = 0.3
 const MIN_CURVED_WIDTH = 0.4

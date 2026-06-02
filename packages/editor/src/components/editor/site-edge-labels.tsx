@@ -1,8 +1,8 @@
 'use client'
 
-import type { SiteNode } from '@pascal-app/core'
-import { sceneRegistry, useScene } from '@pascal-app/core'
-import { getSceneTheme, useViewer } from '@pascal-app/viewer'
+import type { SiteNode } from '@aedifex/core'
+import { sceneRegistry, useScene } from '@aedifex/core'
+import { getSceneTheme, useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { createPortal, useFrame } from '@react-three/fiber'
 import { useMemo, useRef, useState } from 'react'

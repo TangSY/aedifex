@@ -14,10 +14,10 @@
     "check-types": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@pascal-app/core": "*",
-    "@pascal-app/ifc-converter": "*",
-    "@pascal-app/nodes": "*",
-    "@pascal-app/viewer": "*",
+    "@aedifex/core": "*",
+    "@aedifex/ifc-converter": "*",
+    "@aedifex/nodes": "*",
+    "@aedifex/viewer": "*",
     "lucide-react": "^1.7.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",

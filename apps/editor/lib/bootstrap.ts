@@ -4,8 +4,8 @@ import {
   loadPlugin,
   nodeRegistry,
   registerNode,
-} from '@pascal-app/core'
-import { builtinPlugin } from '@pascal-app/nodes'
+} from '@aedifex/core'
+import { builtinPlugin } from '@aedifex/nodes'
 
 // Idempotency guards: HMR can reload this module, but `registerNode`
 // throws on duplicate kinds. Flags live in the module closure so they
@@ -36,7 +36,7 @@ function loadBuiltinsSync(): void {
   builtinsLoaded = true
   for (const def of builtinPlugin.nodes ?? []) {
     // Skip kinds the registry already has. The module-closure flag
-    // above resets on HMR, but the registry singleton (in @pascal-app/core)
+    // above resets on HMR, but the registry singleton (in @aedifex/core)
     // persists — without this guard we'd throw on the first duplicate.
     if (nodeRegistry.has((def as AnyNodeDefinition).kind)) continue
     registerNode(def as AnyNodeDefinition)
@@ -51,7 +51,7 @@ function loadBuiltinsSync(): void {
       )
     }
     // Expose the registry on globalThis for ad-hoc dev inspection. In
-    // prod the registry is reachable through @pascal-app/core's
+    // prod the registry is reachable through @aedifex/core's
     // exports only.
     if (typeof globalThis !== 'undefined') {
       ;(globalThis as { __pascalNodeRegistry?: typeof nodeRegistry }).__pascalNodeRegistry =

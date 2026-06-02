@@ -1,7 +1,7 @@
 'use client'
 
-import { useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '../../../lib/utils'
 

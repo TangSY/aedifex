@@ -6,12 +6,12 @@ import { readFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { version } from '../index'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 import { createSceneStore } from '../storage'
 import { connectHttp } from '../transports/http'
 import { connectStdio } from '../transports/stdio'
 
-const HELP = `pascal-mcp — MCP server for the Pascal editor
+const HELP = `aedifex-mcp — MCP server for the Aedifex editor
 
 USAGE:
   pascal-mcp [--stdio | --http --port <n>] [--scene <path>]
@@ -62,7 +62,7 @@ async function main(): Promise<void> {
   }
 
   const store = await createSceneStore()
-  const server = createPascalMcpServer({ bridge, store })
+  const server = createAedifexMcpServer({ bridge, store })
 
   if (values.http) {
     const portNum = Number.parseInt(values.port ?? '3917', 10)

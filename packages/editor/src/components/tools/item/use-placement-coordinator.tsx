@@ -1,4 +1,4 @@
-import type { AssetInput } from '@pascal-app/core'
+import type { AssetInput } from '@aedifex/core'
 import {
   type AnyNodeId,
   type CeilingEvent,
@@ -15,8 +15,8 @@ import {
   useSpatialQuery,
   type WallEvent,
   type WallNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -117,7 +117,7 @@ function expandBoundsToGrid(
 }
 
 function getFallbackPreviewBounds(
-  item: import('@pascal-app/core').ItemNode | null,
+  item: import('@aedifex/core').ItemNode | null,
   asset: AssetInput | null | undefined,
   attachTo: AssetInput['attachTo'] | null | undefined,
 ): PreviewBounds {

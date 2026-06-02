@@ -1,4 +1,4 @@
-import { BoxVentNode as BoxVentNodeSchema, type NodeDefinition } from '@pascal-app/core'
+import { BoxVentNode as BoxVentNodeSchema, type NodeDefinition } from '@aedifex/core'
 import { boxVentParametrics } from './parametrics'
 import { BoxVentNode } from './schema'
 

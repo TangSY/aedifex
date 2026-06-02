@@ -1,4 +1,4 @@
-import type { FloorplanGeometry } from '@pascal-app/core'
+import type { FloorplanGeometry } from '@aedifex/core'
 import type { SpawnNode } from './schema'
 
 /**

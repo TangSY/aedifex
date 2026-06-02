@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import * as fs from 'node:fs/promises'
 import * as os from 'node:os'
 import * as path from 'node:path'
-import type { SceneGraph } from '@pascal-app/core/clone-scene-graph'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
 import {
   resolveDefaultDatabasePath,
   SqliteSceneStore,
@@ -52,12 +52,12 @@ function createStore(rootDir: string, opts: Partial<SqliteSceneStoreOptions> = {
 }
 
 describe('resolveDefaultDatabasePath', () => {
-  test('respects PASCAL_DB_PATH when set', () => {
-    expect(resolveDefaultDatabasePath({ PASCAL_DB_PATH: '/tmp/custom.db' })).toBe('/tmp/custom.db')
+  test('respects AEDIFEX_DB_PATH when set', () => {
+    expect(resolveDefaultDatabasePath({ AEDIFEX_DB_PATH: '/tmp/custom.db' })).toBe('/tmp/custom.db')
   })
 
-  test('resolves PASCAL_DATA_DIR to pascal.db', () => {
-    expect(resolveDefaultDatabasePath({ PASCAL_DATA_DIR: '/tmp/pascal-data' })).toBe(
+  test('resolves AEDIFEX_DATA_DIR to pascal.db', () => {
+    expect(resolveDefaultDatabasePath({ AEDIFEX_DATA_DIR: '/tmp/pascal-data' })).toBe(
       path.join('/tmp/pascal-data', 'pascal.db'),
     )
   })

@@ -208,8 +208,8 @@ Response:
 The agent then reads the scene summary for its response to the user:
 
 ```jsonc
-// resource: pascal://scene/current/summary
-{ "uri": "pascal://scene/current/summary" }
+// resource: aedifex://scene/current/summary
+{ "uri": "aedifex://scene/current/summary" }
 ```
 
 The host displays the returned Markdown: 1 site, 1 building, 1 level, 8
@@ -238,5 +238,5 @@ Zustand store, the user can `undo` the change if they dislike it:
   the whole logical change.
 - Zones are not walls — they're polygon annotations that make later queries
   (`find_nodes({ zoneId })`) and planning steps much easier for the agent.
-- The agent never needs to speak to `@pascal-app/viewer`: everything the
+- The agent never needs to speak to `@aedifex/viewer`: everything the
   host sees flows through tools + resources + prompts.

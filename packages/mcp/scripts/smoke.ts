@@ -1,5 +1,5 @@
 /**
- * End-to-end smoke test for @pascal-app/mcp.
+ * End-to-end smoke test for @aedifex/mcp.
  *
  * Spawns the compiled stdio binary as a child process, connects as an MCP
  * client, and exercises a handful of representative tools. This test requires

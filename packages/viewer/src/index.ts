@@ -3,13 +3,13 @@
 // Public so registry-driven kinds can compose children without reaching
 // into viewer's internal paths.
 
-export type { SurfaceRole } from '@pascal-app/core'
+export type { SurfaceRole } from '@aedifex/core'
 export { ErrorBoundary } from './components/error-boundary'
-// Stage A wrap-exports for the rest of the kinds — `@pascal-app/nodes`
+// Stage A wrap-exports for the rest of the kinds — `@aedifex/nodes`
 // registers each via `def.renderer` (and `def.system` when present)
 // Generic dispatch component used by recursive renderers (e.g. level →
 // children, building → children). The per-kind renderers live in
-// `@pascal-app/nodes/<kind>/renderer.tsx` and are loaded by the registry
+// `@aedifex/nodes/<kind>/renderer.tsx` and are loaded by the registry
 // — no per-kind re-exports needed.
 export { NodeRenderer } from './components/renderers/node-renderer'
 export { default as Viewer, type ViewerHandle } from './components/viewer'
@@ -108,7 +108,7 @@ export { getRoofMaterialArray } from './systems/roof/roof-materials'
 // Generic roof-segment primitives. Kinds that compose CSG against
 // the roof shell (chimney's self-trim, dormer's virtual-segment cut)
 // read these through the public surface. No kind-specific helpers
-// belong here — those live in `@pascal-app/nodes/<kind>/`.
+// belong here — those live in `@aedifex/nodes/<kind>/`.
 export {
   getRoofOuterSurfaceFrameAtPoint,
   getRoofSegmentBrushes,
@@ -133,7 +133,7 @@ export {
 export { StairSystem } from './systems/stair/stair-system'
 export { WallCutout } from './systems/wall/wall-cutout'
 export { getVisibleWallMaterials } from './systems/wall/wall-materials'
-// Wall internals re-exported so `@pascal-app/nodes`' registry-driven wall
+// Wall internals re-exported so `@aedifex/nodes`' registry-driven wall
 // definition can compose them into `def.system` without duplicating the
 // 800+ lines of CSG / mitering logic during Phase 3. These exports are
 // removed in Phase 6 when the legacy mount points are deleted.

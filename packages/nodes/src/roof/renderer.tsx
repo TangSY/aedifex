@@ -7,8 +7,8 @@ import {
   type RoofSegmentNode,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
-import { getRoofMaterialArray, NodeRenderer, useNodeEvents, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { getRoofMaterialArray, NodeRenderer, useNodeEvents, useViewer } from '@aedifex/viewer'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useShallow } from 'zustand/react/shallow'

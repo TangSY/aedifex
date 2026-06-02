@@ -7,8 +7,8 @@ import type {
   SpawnNode,
   StairNode,
   StairSegmentNode,
-} from '@pascal-app/core'
-import { nodeRegistry } from '@pascal-app/core'
+} from '@aedifex/core'
+import { nodeRegistry } from '@aedifex/core'
 import { Suspense } from 'react'
 import useEditor from '../../../store/use-editor'
 import { MoveBuildingContent } from '../building/move-building-tool'
