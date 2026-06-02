@@ -29,6 +29,8 @@ import {
 } from '../../lib/scene'
 import { initSFXBus } from '../../lib/sfx-bus'
 import useEditor from '../../store/use-editor'
+import { CameraAzimuthSync } from './compass-hud'
+import { CompassOverlay } from './compass-overlay'
 import { CeilingSelectionAffordanceSystem } from '../systems/ceiling/ceiling-selection-affordance-system'
 import { CeilingSystem } from '../systems/ceiling/ceiling-system'
 import { RoofEditSystem } from '../systems/roof/roof-edit-system'
@@ -616,6 +618,7 @@ const ViewerSceneContent = memo(function ViewerSceneContent({
       <ThumbnailGenerator onThumbnailCapture={onThumbnailCapture} />
       {!isFirstPersonMode && <SiteEdgeLabels />}
       <InteractiveSystem />
+      <CameraAzimuthSync />
     </>
   )
 })
@@ -921,6 +924,7 @@ const ViewerCanvas = memo(function ViewerCanvas({
               onThumbnailCapture={onThumbnailCapture}
             />
           </Viewer>
+          {!isFirstPersonMode && <CompassOverlay />}
         </div>
       </div>
       {!(isLoading || isVersionPreviewMode) && <ZoneLabelEditorSystem />}
