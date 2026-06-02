@@ -10,6 +10,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./door/door-math": {
+      "types": "./dist/door/door-math.d.ts",
+      "import": "./dist/door/door-math.js",
+      "default": "./dist/door/door-math.js"
     }
   },
   "files": [
@@ -37,15 +42,15 @@
     "@aedifex/core": "^0.8.0",
     "@aedifex/editor": "^0.8.0",
     "@aedifex/viewer": "^0.8.0",
-    "@pascal/typescript-config": "*",
+    "@repo/typescript-config": "*",
     "@types/bun": "^1.3.0",
     "@types/node": "^22.19.12",
     "@types/react": "^19.2.2",
     "@types/three": "^0.184.0",
-    "typescript": "6.0.2"
+    "typescript": "5.9.3"
   },
   "keywords": [
-    "pascal",
+    "aedifex",
     "3d",
     "editor",
     "node-registry"

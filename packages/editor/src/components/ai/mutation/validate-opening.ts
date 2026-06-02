@@ -6,7 +6,7 @@ import {
   useScene,
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
-import { clampToWall, hasWallChildOverlap } from '../../tools/door/door-math'
+import { clampToWall, hasWallChildOverlap } from '../../../lib/door-math-ai'
 import type {
   AddDoorToolCall,
   AddWindowToolCall,
