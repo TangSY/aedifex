@@ -27,6 +27,7 @@ import {
   validateAddGuide,
   validateAddLevel,
   validateAddRoof,
+  validateAddRoofAccessory,
   validateAddScan,
   validateAddSlab,
   validateAddStair,
@@ -140,6 +141,8 @@ export function validateToolCall(
       return [validateUpdateFence(toolCall)]
     case 'add_cut_out':
       return [validateAddCutOut(toolCall)]
+    case 'add_roof_accessory':
+      return [validateAddRoofAccessory(toolCall)]
     case 'update_wall_material':
       return [validateUpdateWallMaterial(toolCall)]
     case 'update_roof_material':

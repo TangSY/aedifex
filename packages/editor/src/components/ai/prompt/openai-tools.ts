@@ -792,4 +792,29 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
       parameters: { type: 'object', properties: { reason: { type: 'string' } } },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'add_roof_accessory',
+      description: 'Attach an accessory (chimney/dormer/skylight/solar-panel/ridge-vent/box-vent) onto an existing roof segment. Requires the parent roof to exist first — call add_roof before this if no roof is present. The accessory is anchored to the pitched roof surface using segment-local 2D coordinates.',
+      parameters: {
+        type: 'object',
+        properties: {
+          kind: {
+            type: 'string',
+            enum: ['chimney', 'dormer', 'skylight', 'solar-panel', 'ridge-vent', 'box-vent'],
+            description: 'Accessory kind. chimney=砖砌烟囱, dormer=老虎窗, skylight=天窗, solar-panel=太阳能光伏板, ridge-vent=屋脊通风器, box-vent=方形通风口.',
+          },
+          roofSegmentId: { type: 'string', description: 'Node ID of the parent roof-segment (look up "roof-segment" entries in scene context).' },
+          position: { type: 'array', items: { type: 'number' }, description: 'Segment-local position [x, y, z] in meters. Y is anchored to roof surface automatically.' },
+          rotation: { type: 'number', description: 'Rotation around Y axis in radians (default: 0).' },
+          width: { type: 'number', description: 'Width in meters. Defaults: chimney 0.6, dormer 2.0, skylight 1.0, solar-panel 1.0, ridge-vent 2.0, box-vent 0.6.' },
+          depth: { type: 'number', description: 'Depth in meters. Defaults: chimney 0.6, dormer 1.5, skylight 1.0, solar-panel 1.6, ridge-vent 0.3, box-vent 0.6.' },
+          heightAboveRidge: { type: 'number', description: 'Chimney only: height above ridge in meters (default: 1.0). Ignored for other kinds.' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['kind', 'roofSegmentId', 'position'],
+      },
+    },
+  },
 ]

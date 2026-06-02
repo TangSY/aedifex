@@ -1,18 +1,24 @@
 import {
   type AnyNode,
   type AnyNodeId,
+  BoxVentNode,
   BuildingNode,
   CeilingNode,
+  ChimneyNode,
   cloneLevelSubtree,
   DoorNode,
+  DormerNode,
   FenceNode,
   GuideNode,
   ItemNode,
   LevelNode,
+  RidgeVentNode,
   RoofNode,
   RoofSegmentNode,
   ScanNode,
+  SkylightNode,
   SlabNode,
+  SolarPanelNode,
   StairNode,
   StairSegmentNode,
   WallNode as WallSchema,
@@ -500,6 +506,83 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         ])
         affectedNodeIds.push(roof.id as AnyNodeId, segment.id as AnyNodeId)
         createdNodeIds.push(roof.id as AnyNodeId, segment.id as AnyNodeId)
+        break
+      }
+      case 'add_roof_accessory': {
+        // biome-ignore lint/suspicious/noExplicitAny: type imported lazily
+        const accOp = op as any
+        const kindCount = getCachedTypeCount(accOp.kind)
+        const name = `${accOp.kind.charAt(0).toUpperCase()}${accOp.kind.slice(1)} ${kindCount + 1}`
+        let node: AnyNode
+        switch (accOp.kind) {
+          case 'chimney':
+            node = ChimneyNode.parse({
+              name,
+              roofSegmentId: accOp.roofSegmentId,
+              position: accOp.position,
+              rotation: accOp.rotation,
+              width: accOp.width,
+              depth: accOp.depth,
+              heightAboveRidge: accOp.heightAboveRidge ?? 1.0,
+            })
+            break
+          case 'dormer':
+            node = DormerNode.parse({
+              name,
+              roofSegmentId: accOp.roofSegmentId,
+              position: accOp.position,
+              rotation: accOp.rotation,
+              width: accOp.width,
+              depth: accOp.depth,
+            })
+            break
+          case 'skylight':
+            node = SkylightNode.parse({
+              name,
+              roofSegmentId: accOp.roofSegmentId,
+              position: accOp.position,
+              rotation: accOp.rotation,
+              width: accOp.width,
+              depth: accOp.depth,
+            })
+            break
+          case 'solar-panel':
+            node = SolarPanelNode.parse({
+              name,
+              roofSegmentId: accOp.roofSegmentId,
+              position: accOp.position,
+              rotation: accOp.rotation,
+              width: accOp.width,
+              depth: accOp.depth,
+            })
+            break
+          case 'ridge-vent':
+            node = RidgeVentNode.parse({
+              name,
+              roofSegmentId: accOp.roofSegmentId,
+              position: accOp.position,
+              rotation: accOp.rotation,
+              width: accOp.width,
+              depth: accOp.depth,
+            })
+            break
+          case 'box-vent':
+            node = BoxVentNode.parse({
+              name,
+              roofSegmentId: accOp.roofSegmentId,
+              position: accOp.position,
+              rotation: accOp.rotation,
+              width: accOp.width,
+              depth: accOp.depth,
+            })
+            break
+          default:
+            // 防御性：validator 已挡住 unknown kind，理论不会到这
+            continue
+        }
+        batchCreates.push({ node, parentId: accOp.roofSegmentId as AnyNodeId })
+        affectedNodeIds.push(node.id as AnyNodeId)
+        createdNodeIds.push(node.id as AnyNodeId)
         break
       }
       case 'add_stair': {

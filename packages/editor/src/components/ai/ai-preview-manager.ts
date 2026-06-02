@@ -168,6 +168,10 @@ export function applyGhostPreview(operations: ValidatedOperation[]): AnyNodeId[]
         // Roof creates both container + segment — no ghost preview needed
         break
       }
+      case 'add_roof_accessory': {
+        // Roof accessory creates a single registry-driven node — committed at confirm time.
+        break
+      }
       case 'update_slab':
       case 'update_ceiling':
       case 'update_roof':

@@ -905,3 +905,99 @@ export function validateCloneLevel(call: CloneLevelToolCall): ValidatedCloneLeve
 
 // enter_walkthrough is handled as a special tool in ai-agent-loop.ts
 // No validator needed here.
+
+// ============================================================================
+// Roof accessory validator — shared by chimney/dormer/skylight/solar-panel/ridge-vent/box-vent
+// ============================================================================
+
+const ROOF_ACCESSORY_KINDS = new Set([
+  'chimney',
+  'dormer',
+  'skylight',
+  'solar-panel',
+  'ridge-vent',
+  'box-vent',
+])
+
+const ACCESSORY_DEFAULT_DIMENSIONS: Record<string, { width: number; depth: number }> = {
+  chimney: { width: 0.6, depth: 0.6 },
+  dormer: { width: 2.0, depth: 1.5 },
+  skylight: { width: 1.0, depth: 1.0 },
+  'solar-panel': { width: 1.0, depth: 1.6 },
+  'ridge-vent': { width: 2.0, depth: 0.3 },
+  'box-vent': { width: 0.6, depth: 0.6 },
+}
+
+export function validateAddRoofAccessory(
+  // biome-ignore lint/suspicious/noExplicitAny: imported lazily to avoid circular dep
+  call: any,
+): import('../types/validated-types').ValidatedAddRoofAccessory {
+  const kind = call.kind
+  if (!ROOF_ACCESSORY_KINDS.has(kind)) {
+    return {
+      type: 'add_roof_accessory',
+      status: 'invalid',
+      kind: kind ?? 'chimney',
+      roofSegmentId: call.roofSegmentId ?? '',
+      position: call.position ?? [0, 0, 0],
+      rotation: call.rotation ?? 0,
+      width: call.width ?? 0,
+      depth: call.depth ?? 0,
+      errorReason: `Unknown roof accessory kind "${kind}". Allowed: ${[...ROOF_ACCESSORY_KINDS].join(', ')}.`,
+    }
+  }
+
+  const defaults = ACCESSORY_DEFAULT_DIMENSIONS[kind] ?? { width: 0.5, depth: 0.5 }
+  const width = call.width && call.width > 0 ? call.width : defaults.width
+  const depth = call.depth && call.depth > 0 ? call.depth : defaults.depth
+  const rotation = typeof call.rotation === 'number' ? call.rotation : 0
+  const position: [number, number, number] = Array.isArray(call.position) && call.position.length === 3
+    ? [call.position[0], call.position[1], call.position[2]]
+    : [0, 0, 0]
+
+  // Resolve parent roof segment from scene
+  const { nodes } = useScene.getState()
+  const segment = call.roofSegmentId ? nodes[call.roofSegmentId as AnyNodeId] : undefined
+
+  if (!segment) {
+    return {
+      type: 'add_roof_accessory',
+      status: 'invalid',
+      kind,
+      roofSegmentId: call.roofSegmentId ?? '',
+      position,
+      rotation,
+      width,
+      depth,
+      heightAboveRidge: call.heightAboveRidge,
+      errorReason: `Roof segment "${call.roofSegmentId}" not found. Pass a valid roof-segment node ID.`,
+    }
+  }
+
+  if (segment.type !== 'roof-segment') {
+    return {
+      type: 'add_roof_accessory',
+      status: 'invalid',
+      kind,
+      roofSegmentId: call.roofSegmentId,
+      position,
+      rotation,
+      width,
+      depth,
+      heightAboveRidge: call.heightAboveRidge,
+      errorReason: `Node "${call.roofSegmentId}" is a ${segment.type}, not a roof-segment. Use add_roof first to create a roof, then attach accessories to its segment.`,
+    }
+  }
+
+  return {
+    type: 'add_roof_accessory',
+    status: 'valid',
+    kind,
+    roofSegmentId: call.roofSegmentId,
+    position,
+    rotation,
+    width,
+    depth,
+    ...(kind === 'chimney' ? { heightAboveRidge: call.heightAboveRidge ?? 1.0 } : {}),
+  }
+}

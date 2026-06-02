@@ -428,6 +428,35 @@ export interface UpdateFenceToolCall {
   reason?: string
 }
 
+/** Roof accessory kind — six configurations exposed by AI tools. */
+export type RoofAccessoryKind =
+  | 'chimney'
+  | 'dormer'
+  | 'skylight'
+  | 'solar-panel'
+  | 'ridge-vent'
+  | 'box-vent'
+
+/** Add a roof accessory (chimney/dormer/skylight/solar-panel/ridge-vent/box-vent) to a roof segment */
+export interface AddRoofAccessoryToolCall {
+  tool: 'add_roof_accessory'
+  /** Accessory kind */
+  kind: RoofAccessoryKind
+  /** Target roof segment node ID (from scene context) */
+  roofSegmentId: string
+  /** Segment-local position [x, y, z] (Y is ignored — anchored to pitched surface) */
+  position: [number, number, number]
+  /** Rotation around Y axis in radians (default: 0) */
+  rotation?: number
+  /** Width in meters. Kind defaults: chimney/box-vent 0.6, dormer 2.0, skylight 1.0, solar-panel 1.0, ridge-vent 2.0 */
+  width?: number
+  /** Depth in meters. Kind defaults: chimney 0.6, dormer 1.5, skylight 1.0, solar-panel 1.6, box-vent 0.6, ridge-vent 0.3 */
+  depth?: number
+  /** Chimney only: height above ridge in meters (default: 1.0) */
+  heightAboveRidge?: number
+  description?: string
+}
+
 /** Add a cut-out (hole) to an existing slab or ceiling */
 export interface AddCutOutToolCall {
   tool: 'add_cut_out'
@@ -503,6 +532,7 @@ export type AIToolCall =
   | AddFenceToolCall
   | UpdateFenceToolCall
   | AddCutOutToolCall
+  | AddRoofAccessoryToolCall
   | UpdateWallMaterialToolCall
   | UpdateRoofMaterialToolCall
   | UpdateStairMaterialToolCall

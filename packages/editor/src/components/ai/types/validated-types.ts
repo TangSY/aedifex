@@ -1,4 +1,24 @@
 import type { AnyNodeId, AssetInput } from '@aedifex/core'
+import type { RoofAccessoryKind } from './tool-call-types'
+
+// ============================================================================
+// Roof accessory validated op (shared by chimney/dormer/skylight/solar-panel/ridge-vent/box-vent)
+// ============================================================================
+
+export interface ValidatedAddRoofAccessory {
+  type: 'add_roof_accessory'
+  status: ValidatedOperationStatus
+  kind: RoofAccessoryKind
+  roofSegmentId: string
+  position: [number, number, number]
+  rotation: number
+  width: number
+  depth: number
+  /** Chimney only */
+  heightAboveRidge?: number
+  adjustmentReason?: string
+  errorReason?: string
+}
 
 // ============================================================================
 // Validated Operation (output of mutation executor)
@@ -478,6 +498,7 @@ export type ValidatedOperation =
   | ValidatedAddFence
   | ValidatedUpdateFence
   | ValidatedAddCutOut
+  | ValidatedAddRoofAccessory
   | ValidatedUpdateWallMaterial
   | ValidatedUpdateRoofMaterial
   | ValidatedUpdateStairMaterial
