@@ -124,7 +124,7 @@ describe('AssetUrl', () => {
       if (!g.process?.env) return
       g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.aedifex.com'
       expect(isValid('https://cdn.aedifex.com.evil.com/x')).toBe(false)
-      expect(isValid('https://evil.com/cdn.pascal.app')).toBe(false)
+      expect(isValid('https://evil.com/cdn.aedifex.com')).toBe(false)
     })
 
     test('allowlist respects ports', () => {
