@@ -246,7 +246,7 @@ function buildTemplate(): SceneGraph {
   const siteInDict = nodes['site_empty' as AnyNodeId] as unknown as {
     children: unknown[]
   }
-  siteInDict.children = [nodes['building_empty' as AnyNodeId]]
+  siteInDict.children = ['building_empty']
 
   return {
     nodes,
