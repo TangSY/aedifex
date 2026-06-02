@@ -170,6 +170,7 @@
       },
       "peerDependencies": {
         "@aedifex/core": "^0.8.0",
+        "@aedifex/mcp": "^0.2.0",
         "@aedifex/viewer": "^0.8.0",
         "@react-three/drei": "^10",
         "@react-three/fiber": "^9",
