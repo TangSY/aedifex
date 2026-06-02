@@ -26,13 +26,13 @@
       "name": "editor",
       "version": "0.1.0",
       "dependencies": {
+        "@aedifex/core": "*",
+        "@aedifex/editor": "*",
+        "@aedifex/mcp": "*",
+        "@aedifex/nodes": "*",
+        "@aedifex/viewer": "*",
         "@iconify/react": "^6.0.2",
         "@number-flow/react": "^0.5.14",
-        "@pascal-app/core": "*",
-        "@pascal-app/editor": "*",
-        "@pascal-app/mcp": "*",
-        "@pascal-app/nodes": "*",
-        "@pascal-app/viewer": "*",
         "@radix-ui/react-tooltip": "^1.2.8",
         "@react-three/drei": "^10.7.7",
         "@react-three/fiber": "^9.5.0",
@@ -66,10 +66,10 @@
       "name": "ifc-converter-app",
       "version": "0.1.0",
       "dependencies": {
-        "@pascal-app/core": "*",
-        "@pascal-app/ifc-converter": "*",
-        "@pascal-app/nodes": "*",
-        "@pascal-app/viewer": "*",
+        "@aedifex/core": "*",
+        "@aedifex/ifc-converter": "*",
+        "@aedifex/nodes": "*",
+        "@aedifex/viewer": "*",
         "@react-three/drei": "^10.7.7",
         "@react-three/fiber": "^9.5.0",
         "@tailwindcss/postcss": "^4.2.1",
@@ -95,7 +95,7 @@
       },
     },
     "packages/core": {
-      "name": "@pascal-app/core",
+      "name": "@aedifex/core",
       "version": "0.8.0",
       "dependencies": {
         "dedent": "^1.7.1",
@@ -121,7 +121,7 @@
       },
     },
     "packages/editor": {
-      "name": "@pascal-app/editor",
+      "name": "@aedifex/editor",
       "version": "0.8.0",
       "dependencies": {
         "@dnd-kit/core": "^6.3.1",
@@ -157,8 +157,8 @@
         "zustand": "^5.0.11",
       },
       "devDependencies": {
-        "@pascal-app/core": "^0.8.0",
-        "@pascal-app/viewer": "^0.8.0",
+        "@aedifex/core": "^0.8.0",
+        "@aedifex/viewer": "^0.8.0",
         "@pascal/typescript-config": "*",
         "@types/bun": "^1.3.0",
         "@types/howler": "^2.2.12",
@@ -168,8 +168,8 @@
         "typescript": "6.0.2",
       },
       "peerDependencies": {
-        "@pascal-app/core": "^0.8.0",
-        "@pascal-app/viewer": "^0.8.0",
+        "@aedifex/core": "^0.8.0",
+        "@aedifex/viewer": "^0.8.0",
         "@react-three/drei": "^10",
         "@react-three/fiber": "^9",
         "next": ">=15",
@@ -196,10 +196,10 @@
       },
     },
     "packages/ifc-converter": {
-      "name": "@pascal-app/ifc-converter",
+      "name": "@aedifex/ifc-converter",
       "version": "0.1.0",
       "dependencies": {
-        "@pascal-app/core": "*",
+        "@aedifex/core": "*",
         "nanoid": "^5.1.6",
         "web-ifc": "^0.0.77",
       },
@@ -210,32 +210,32 @@
       },
     },
     "packages/mcp": {
-      "name": "@pascal-app/mcp",
+      "name": "@aedifex/mcp",
       "version": "0.3.0",
       "bin": {
-        "pascal-mcp": "./dist/bin/pascal-mcp.js",
+        "aedifex-mcp": "./dist/bin/aedifex-mcp.js",
       },
       "dependencies": {
         "@modelcontextprotocol/sdk": "^1.29.0",
         "zod": "^4.3.5",
       },
       "devDependencies": {
-        "@pascal-app/core": "^0.8.0",
+        "@aedifex/core": "^0.8.0",
         "@pascal/typescript-config": "*",
         "@types/node": "^25.5.0",
         "typescript": "5.9.3",
       },
       "peerDependencies": {
-        "@pascal-app/core": "^0.8.0",
+        "@aedifex/core": "^0.8.0",
       },
     },
     "packages/nodes": {
-      "name": "@pascal-app/nodes",
+      "name": "@aedifex/nodes",
       "version": "0.1.0",
       "devDependencies": {
-        "@pascal-app/core": "^0.8.0",
-        "@pascal-app/editor": "^0.8.0",
-        "@pascal-app/viewer": "^0.8.0",
+        "@aedifex/core": "^0.8.0",
+        "@aedifex/editor": "^0.8.0",
+        "@aedifex/viewer": "^0.8.0",
         "@pascal/typescript-config": "*",
         "@types/bun": "^1.3.0",
         "@types/node": "^22.19.12",
@@ -244,9 +244,9 @@
         "typescript": "6.0.2",
       },
       "peerDependencies": {
-        "@pascal-app/core": "^0.8.0",
-        "@pascal-app/editor": "^0.8.0",
-        "@pascal-app/viewer": "^0.8.0",
+        "@aedifex/core": "^0.8.0",
+        "@aedifex/editor": "^0.8.0",
+        "@aedifex/viewer": "^0.8.0",
         "@react-three/drei": "^10",
         "@react-three/fiber": "^9",
         "lucide-react": "^1",
@@ -277,7 +277,7 @@
       },
     },
     "packages/viewer": {
-      "name": "@pascal-app/viewer",
+      "name": "@aedifex/viewer",
       "version": "0.8.0",
       "dependencies": {
         "three-bvh-csg": "^0.0.18",
@@ -292,7 +292,7 @@
         "typescript": "6.0.2",
       },
       "peerDependencies": {
-        "@pascal-app/core": "^0.8.0",
+        "@aedifex/core": "^0.8.0",
         "@react-three/drei": "^10",
         "@react-three/fiber": "^9",
         "react": "^18 || ^19",
@@ -310,6 +310,18 @@
     "@types/three": "0.184.0",
   },
   "packages": {
+    "@aedifex/core": ["@aedifex/core@workspace:packages/core"],
+
+    "@aedifex/editor": ["@aedifex/editor@workspace:packages/editor"],
+
+    "@aedifex/ifc-converter": ["@aedifex/ifc-converter@workspace:packages/ifc-converter"],
+
+    "@aedifex/mcp": ["@aedifex/mcp@workspace:packages/mcp"],
+
+    "@aedifex/nodes": ["@aedifex/nodes@workspace:packages/nodes"],
+
+    "@aedifex/viewer": ["@aedifex/viewer@workspace:packages/viewer"],
+
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
 
     "@antfu/ni": ["@antfu/ni@30.1.0", "", { "dependencies": { "fzf": "^0.5.2", "package-manager-detector": "^1.6.0", "tinyexec": "^1.0.4", "tinyglobby": "^0.2.15" }, "bin": { "ni": "bin/ni.mjs", "nci": "bin/nci.mjs", "nr": "bin/nr.mjs", "nup": "bin/nup.mjs", "nd": "bin/nd.mjs", "nlx": "bin/nlx.mjs", "na": "bin/na.mjs", "nun": "bin/nun.mjs" } }, "sha512-3VuAbPjgY52rQNn4wABaXMhBU2Oq91uy6L8nX49eJ35OLI68CyckGU+HZxcaHix4ymuGM2nFL1D6sLpgODK5xw=="],
@@ -517,18 +529,6 @@
     "@nodelib/fs.walk": ["@nodelib/fs.walk@1.2.8", "", { "dependencies": { "@nodelib/fs.scandir": "2.1.5", "fastq": "^1.6.0" } }, "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg=="],
 
     "@number-flow/react": ["@number-flow/react@0.5.14", "", { "dependencies": { "esm-env": "^1.1.4", "number-flow": "0.5.12" }, "peerDependencies": { "react": "^18 || ^19", "react-dom": "^18 || ^19" } }, "sha512-FGUqjh/P5/ukr0U0ySwb987M0SbRkrnZq70f0wQFncDbXa3SIib4L+FTr5ngvWwGAW8S6b391eTXcfhErZsw4w=="],
-
-    "@pascal-app/core": ["@pascal-app/core@workspace:packages/core"],
-
-    "@pascal-app/editor": ["@pascal-app/editor@workspace:packages/editor"],
-
-    "@pascal-app/ifc-converter": ["@pascal-app/ifc-converter@workspace:packages/ifc-converter"],
-
-    "@pascal-app/mcp": ["@pascal-app/mcp@workspace:packages/mcp"],
-
-    "@pascal-app/nodes": ["@pascal-app/nodes@workspace:packages/nodes"],
-
-    "@pascal-app/viewer": ["@pascal-app/viewer@workspace:packages/viewer"],
 
     "@pascal/typescript-config": ["@pascal/typescript-config@workspace:tooling/typescript"],
 
@@ -1602,6 +1602,12 @@
 
     "zustand": ["zustand@5.0.13", "", { "peerDependencies": { "@types/react": ">=18.0.0", "immer": ">=9.0.6", "react": ">=18.0.0", "use-sync-external-store": ">=1.2.0" }, "optionalPeers": ["@types/react", "immer", "react", "use-sync-external-store"] }, "sha512-efI2tVaVQPqtOh114loML/Z80Y4NP3yc+Ff0fYiZJPauNeWZeIp/bRFD7I9bfmCOYBh/PHxlglQ9+wvlwnPikQ=="],
 
+    "@aedifex/mcp/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+
+    "@aedifex/nodes/@types/node": ["@types/node@22.19.18", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-9v00a+dn2yWVsYDEunWC4g/TcRKVq3r8N5FuZp7u0SGrPvdN9c2yXI9bBuf5Fl0hNCb+QTIePTn5pJs2pwBOQQ=="],
+
+    "@aedifex/viewer/@types/node": ["@types/node@22.19.18", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-9v00a+dn2yWVsYDEunWC4g/TcRKVq3r8N5FuZp7u0SGrPvdN9c2yXI9bBuf5Fl0hNCb+QTIePTn5pJs2pwBOQQ=="],
+
     "@babel/helper-compilation-targets/lru-cache": ["lru-cache@5.1.1", "", { "dependencies": { "yallist": "^3.0.2" } }, "sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w=="],
 
     "@eslint-community/eslint-utils/eslint-visitor-keys": ["eslint-visitor-keys@3.4.3", "", {}, "sha512-wpc+LXeiyiisxPlEkUzU6svyS1frIO3Mgxj1fdy7Pm8Ygzguax2N3Fa/D/ag1WqbOprdI+uY6wMUl8/a2G+iag=="],
@@ -1609,12 +1615,6 @@
     "@eslint/eslintrc/ajv": ["ajv@6.15.0", "", { "dependencies": { "fast-deep-equal": "^3.1.1", "fast-json-stable-stringify": "^2.0.0", "json-schema-traverse": "^0.4.1", "uri-js": "^4.2.2" } }, "sha512-fgFx7Hfoq60ytK2c7DhnF8jIvzYgOMxfugjLOSMHjLIPgenqa7S7oaagATUq99mV6IYvN2tRmC0wnTYX6iPbMw=="],
 
     "@eslint/eslintrc/globals": ["globals@14.0.0", "", {}, "sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ=="],
-
-    "@pascal-app/mcp/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
-
-    "@pascal-app/nodes/@types/node": ["@types/node@22.19.18", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-9v00a+dn2yWVsYDEunWC4g/TcRKVq3r8N5FuZp7u0SGrPvdN9c2yXI9bBuf5Fl0hNCb+QTIePTn5pJs2pwBOQQ=="],
-
-    "@pascal-app/viewer/@types/node": ["@types/node@22.19.18", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-9v00a+dn2yWVsYDEunWC4g/TcRKVq3r8N5FuZp7u0SGrPvdN9c2yXI9bBuf5Fl0hNCb+QTIePTn5pJs2pwBOQQ=="],
 
     "@radix-ui/react-alert-dialog/@radix-ui/react-slot": ["@radix-ui/react-slot@1.2.3", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-aeNmHnBxbi2St0au6VBVC7JXFlhLlOnvIIlePNniyUNAClzmtAUEY8/pBiK3iHjufOlwA+c20/8jngo7xcrg8A=="],
 
@@ -1696,11 +1696,11 @@
 
     "tunnel-rat/zustand": ["zustand@4.5.7", "", { "dependencies": { "use-sync-external-store": "^1.2.2" }, "peerDependencies": { "@types/react": ">=16.8", "immer": ">=9.0.6", "react": ">=16.8" }, "optionalPeers": ["@types/react", "immer", "react"] }, "sha512-CHOUy7mu3lbD6o6LJLfllpjkzhHXSBlX8B9+qPddUsIfeF5S/UZ5q0kmCsnRqT1UHFQZchNFDDzMbQsuesHWlw=="],
 
+    "@aedifex/nodes/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
+
+    "@aedifex/viewer/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
+
     "@eslint/eslintrc/ajv/json-schema-traverse": ["json-schema-traverse@0.4.1", "", {}, "sha512-xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg=="],
-
-    "@pascal-app/nodes/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
-
-    "@pascal-app/viewer/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
     "@repo/ui/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
