@@ -26,8 +26,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 })
   }
 
-  const { messages, catalogSummary, sceneContext } = body
-  if (!messages?.length || !catalogSummary || !sceneContext) {
+  const { messages, sceneContext } = body
+  // OSS deployments may lack a registered furniture catalog — accept empty
+  // catalogSummary so the LLM still gets structural tools (add_wall/etc.).
+  const catalogSummary: string = body.catalogSummary ?? ''
+  if (!messages?.length || sceneContext === undefined || sceneContext === null) {
     return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 })
   }
 
@@ -50,8 +53,8 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  if (catalogSummary.length > 8000) {
-    return NextResponse.json({ error: 'catalogSummary exceeds maximum length of 8000 characters.' }, { status: 400 })
+  if (catalogSummary.length > 64000) {
+    return NextResponse.json({ error: 'catalogSummary exceeds maximum length of 64000 characters.' }, { status: 400 })
   }
   if (sceneContext.length > 16000) {
     return NextResponse.json({ error: 'sceneContext exceeds maximum length of 16000 characters.' }, { status: 400 })

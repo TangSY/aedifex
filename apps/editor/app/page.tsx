@@ -1,7 +1,8 @@
 'use client'
 
 import { Editor, ItemsPanel } from '@aedifex/editor'
-import { Layers, Package, Settings } from 'lucide-react'
+import { AIChatPanel } from '@aedifex/editor/components/ai'
+import { Bot, Layers, Package, Settings } from 'lucide-react'
 import Link from 'next/link'
 import {
   CommunityViewerToolbarLeft,
@@ -15,6 +16,13 @@ const SIDEBAR_TABS = [
     component: () => null,
     mobileDefaultSnap: 0.5,
     mobileIcon: <Layers className="h-5 w-5" />,
+  },
+  {
+    id: 'ai',
+    label: 'AI',
+    component: AIChatPanel,
+    mobileDefaultSnap: 0.5,
+    mobileIcon: <Bot className="h-5 w-5" />,
   },
   {
     id: 'items',
