@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { startTransition, type ReactNode } from 'react'
 import { cn } from './../../../lib/utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../primitives/tooltip'
 
@@ -33,7 +33,8 @@ export function TabBar({ tabs, activeTab, onTabChange }: TabBarProps) {
                 : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
             )}
             key={tab.id}
-            onClick={() => onTabChange(tab.id)}
+            // 同 IconRail：tab 切换可能触发重组件挂载
+            onClick={() => startTransition(() => onTabChange(tab.id))}
             type="button"
           >
             {tab.label}
@@ -77,7 +78,13 @@ export function IconRail({ tabs, activeTab, collapsed, onIconClick }: IconRailPr
                       ? 'bg-accent text-foreground shadow-sm [&_img]:opacity-100 [&_img]:grayscale-0'
                       : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground [&_img]:opacity-60 [&_img]:grayscale hover:[&_img]:opacity-100 hover:[&_img]:grayscale-0',
                   )}
-                  onClick={() => onIconClick(tab.id)}
+                  // startTransition: tab 切换会触发 panel 折叠/展开 + 重新挂载
+                  // 下游 R3F scene + AI 面板（首挂载时建 zustand store、读
+                  // persisted localStorage、计算 catalog summary），整链同步执行
+                  // 会让按钮点击 INP 长达 ~700ms。把状态更新标记为 transition，
+                  // 让 React 在下一帧绘制按钮 hover/active 反馈，再异步推进
+                  // 沉重的下游 render，按钮点击 INP 应回到 <100ms。
+                  onClick={() => startTransition(() => onIconClick(tab.id))}
                   type="button"
                 >
                   {tab.icon ?? tab.label.charAt(0)}
