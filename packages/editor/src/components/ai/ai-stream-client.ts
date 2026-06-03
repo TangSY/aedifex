@@ -112,6 +112,22 @@ async function processStream(
     return
   }
 
+  await parseSseChatStream(response, callbacks)
+}
+
+/**
+ * Parse a `text/event-stream` chat response (OpenAI-format deltas) and
+ * fire callbacks for text chunks, tool calls, completion, and errors.
+ *
+ * Exposed as a shared helper so SaaS deployments can implement their
+ * own ChatTransport without duplicating the SSE / tool_call accumulator
+ * logic. The caller is responsible for the fetch itself + non-2xx
+ * status handling — this function only consumes the readable body.
+ */
+export async function parseSseChatStream(
+  response: Response,
+  callbacks: StreamCallbacks,
+): Promise<void> {
   const reader = response.body?.getReader()
   if (!reader) {
     callbacks.onError('No response body.')

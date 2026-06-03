@@ -4,6 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import { abortActiveLoop } from './ai-agent-loop'
 import { undoConfirmedOperation } from './ai-preview-manager'
 import { shouldAutoCompact } from './ai-token-estimator'
+import { getAIRuntime } from './runtime'
 import type {
   AIOperationLog,
   AIToolCall,
@@ -36,6 +37,17 @@ export interface AIChatState {
 
   // Error state
   error: string | null
+  /**
+   * Opaque metadata returned by the chat transport alongside `error`.
+   * The OSS store treats this as a black-box `Record<string, unknown>`
+   * and never parses its contents. SaaS deployments use it to carry
+   * structured fields like `{ code, upgradeUrl }` that their decorator
+   * components consume to render upgrade overlays.
+   *
+   * Null when there is no active error or when the transport did not
+   * attach metadata.
+   */
+  errorMetadata: Record<string, unknown> | null
 
   // Conversation summarization
   conversationSummary: string | null
@@ -68,7 +80,7 @@ export interface AIChatActions {
   startStreaming: () => void
   appendStreamContent: (chunk: string) => void
   finishStreaming: (toolCalls?: AIToolCall[]) => string
-  setStreamError: (error: string) => void
+  setStreamError: (error: string, metadata?: Record<string, unknown> | null) => void
 
   // Operation actions
   setOperations: (messageId: string, operations: ValidatedOperation[]) => void
@@ -133,6 +145,7 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
   proposals: [],
   activeProposalId: null,
   error: null,
+  errorMetadata: null,
   conversationSummary: null,
   isSummarizing: false,
   summarizeFailureCount: 0,
@@ -158,7 +171,7 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
   },
 
   startStreaming: () => {
-    set({ isStreaming: true, streamingContent: '', error: null })
+    set({ isStreaming: true, streamingContent: '', error: null, errorMetadata: null })
   },
 
   appendStreamContent: (chunk) => {
@@ -186,8 +199,13 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
     return id
   },
 
-  setStreamError: (error) => {
-    set({ isStreaming: false, streamingContent: '', error })
+  setStreamError: (error, metadata = null) => {
+    set({
+      isStreaming: false,
+      streamingContent: '',
+      error,
+      errorMetadata: metadata ?? null,
+    })
   },
 
   // Operation actions
@@ -374,41 +392,38 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
         return
       }
 
-      const response = await fetch('/api/ai/summarize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: messagesToSummarize.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
-      })
+      // Route summarize through the AI runtime so SaaS can inject auth
+      // headers + retry logic; OSS default hits POST /api/ai/summarize.
+      const result = await getAIRuntime().transport.summarize(
+        messagesToSummarize.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+        new AbortController().signal,
+      )
 
-      if (response.ok) {
-        const { summary } = await response.json()
-        if (summary) {
-          // Success: reset failure count
-          set({ conversationSummary: summary, summarizeFailureCount: 0 })
-          // Release screenshots from summarized messages to free memory.
-          // summarizeIfNeeded keeps the last 10 messages (slice(0, -10) was
-          // summarized), so null out screenshots on all but the most recent 10.
-          const currentMessages = get().messages
-          if (currentMessages.length > 10) {
-            // Revoke Object URLs before clearing references
-            for (let i = 0; i < currentMessages.length - 10; i++) {
-              const m = currentMessages[i]!
-              if (m.screenshotBefore) URL.revokeObjectURL(m.screenshotBefore)
-              if (m.screenshotAfter) URL.revokeObjectURL(m.screenshotAfter)
-            }
-            set({
-              messages: currentMessages.map((m, i) =>
-                i < currentMessages.length - 10
-                  ? { ...m, screenshotBefore: undefined, screenshotAfter: undefined }
-                  : m,
-              ),
-            })
+      if (result?.summary) {
+        const { summary } = result
+        // Success: reset failure count
+        set({ conversationSummary: summary, summarizeFailureCount: 0 })
+        // Release screenshots from summarized messages to free memory.
+        // summarizeIfNeeded keeps the last 10 messages (slice(0, -10) was
+        // summarized), so null out screenshots on all but the most recent 10.
+        const currentMessages = get().messages
+        if (currentMessages.length > 10) {
+          // Revoke Object URLs before clearing references
+          for (let i = 0; i < currentMessages.length - 10; i++) {
+            const m = currentMessages[i]!
+            if (m.screenshotBefore) URL.revokeObjectURL(m.screenshotBefore)
+            if (m.screenshotAfter) URL.revokeObjectURL(m.screenshotAfter)
           }
+          set({
+            messages: currentMessages.map((m, i) =>
+              i < currentMessages.length - 10
+                ? { ...m, screenshotBefore: undefined, screenshotAfter: undefined }
+                : m,
+            ),
+          })
         }
       } else {
         // HTTP error: increment failure count
@@ -478,6 +493,7 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
       proposals: [],
       activeProposalId: null,
       error: null,
+      errorMetadata: null,
       conversationSummary: null,
       isSummarizing: false,
       summarizeFailureCount: 0,
@@ -499,7 +515,7 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
   },
 
   clearError: () => {
-    set({ error: null })
+    set({ error: null, errorMetadata: null })
   },
 
   // Conversation history (for API calls, with summarization support)
@@ -529,7 +545,11 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
 }),
   {
     name: 'ai-chat-session',
-    storage: createJSONStorage(() => sessionStorage),
+    // Storage abstraction goes through the AIRuntime so SaaS can wrap it
+    // with cloud sync; OSS default returns a thin sessionStorage facade.
+    // createJSONStorage expects a `Storage`-shaped getter — our
+    // ChatPersistence interface intentionally matches the same shape.
+    storage: createJSONStorage(() => getAIRuntime().persistence),
     partialize: (state) => ({
       // Only persist serializable, meaningful state
       messages: state.messages.map((m): ChatMessage => ({

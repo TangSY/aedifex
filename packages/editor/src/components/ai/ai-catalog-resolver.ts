@@ -41,13 +41,11 @@ for (const item of CATALOG_ITEMS) {
 // Public API
 // ============================================================================
 
-export interface CatalogResolveResult {
-  asset: AssetInput | null
-  matchType: 'exact' | 'name' | 'fuzzy' | 'none'
-  suggestions?: AssetInput[]
-  /** When fuzzy match found but shape/variant doesn't match the request */
-  shapeWarning?: string
-}
+// CatalogResolveResult is defined in ./contracts/runtime.ts as the contract
+// shared with SaaS CatalogProvider implementations. Re-exported here so
+// existing callers (ai-mutation-executor.ts etc.) keep working unchanged.
+import type { CatalogResolveResult } from './contracts/runtime'
+export type { CatalogResolveResult }
 
 /** Minimum fuzzy score to accept a match (vs falling back to suggestions). */
 const FUZZY_MATCH_THRESHOLD = 0.3

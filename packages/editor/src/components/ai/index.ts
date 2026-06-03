@@ -2,6 +2,32 @@
 // (used by app/api/ai/chat/route.ts via the './ai/prompt' subpath). Keeping it
 // out of the main index avoids bundling the full tool catalog into the client.
 export { buildSystemPrompt, SUMMARIZE_SYSTEM_PROMPT } from './ai-prompt'
+export {
+  ALLOWED_CHAT_ROLES,
+  AI_INPUT_LIMITS,
+  validateChatRequest,
+  describeChatRequestError,
+} from './contracts'
+export type {
+  AllowedChatRole,
+  ChatMessageInput,
+  ChatRequestBody,
+  ChatRequestError,
+  AIRuntime,
+  ChatTransport,
+  CatalogProvider,
+  CatalogResolveResult,
+  ChatPersistence,
+  AITelemetry,
+  StreamCallbacks,
+  StreamUsage,
+  LoopExitReason,
+} from './contracts'
+export {
+  createDefaultAIRuntime,
+  getAIRuntime,
+  setAIRuntime,
+} from './runtime'
 export { AIChatPanel } from './ai-chat-panel'
 export { useAIChat } from './ai-chat-store'
 export { resolveCatalogSlug, generateCatalogSummary } from './ai-catalog-resolver'

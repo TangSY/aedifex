@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid'
 import { captureScreenshot, useViewer } from '@aedifex/viewer'
 import { generateExecutionPlan, buildPlanningContext } from './ai-planner'
 import { useAIChat } from './ai-chat-store'
@@ -13,7 +14,8 @@ import {
   invalidateSceneCache,
   serializeSceneContext,
 } from './ai-scene-serializer'
-import { streamChat } from './ai-stream-client'
+import { getAIRuntime } from './runtime'
+import type { AllowedChatRole, ChatMessageInput } from './contracts/chat-request'
 import { estimateMessagesTokens } from './ai-token-estimator'
 import type { AnyNodeId } from '@aedifex/core'
 import type {
@@ -184,6 +186,14 @@ export async function runAgentLoop({
   let beforeScreenshotUrl: string | null = null // capture once on first mutation
   let consecutiveFailures = 0 // track all-invalid iterations to break collision loops
 
+  // Telemetry: best-effort, fully optional. The OSS default runtime
+  // ships a frozen no-op object so the indirection is essentially free.
+  const telemetry = getAIRuntime().telemetry
+  const loopMessageId = nanoid()
+  let totalToolCalls = 0
+  let loopExitReason: 'success' | 'aborted' | 'failed' | 'budget' | 'iteration-cap' = 'success'
+  telemetry?.loopStarted?.({ messageId: loopMessageId, userMessage })
+
   try {
     while (iteration < MAX_ITERATIONS && totalTokensUsed < TOKEN_BUDGET) {
       // Check if this loop has been superseded by a new one (clearChat or new message)
@@ -301,6 +311,13 @@ export async function runAgentLoop({
 
         // Validate and apply ghost preview
         const validated = validateAllToolCalls(mutationCalls)
+        // Telemetry: emit one event per validated op (no-op by default).
+        if (telemetry?.toolValidated) {
+          for (const op of validated) {
+            telemetry.toolValidated({ tool: op.type, status: op.status })
+          }
+        }
+        totalToolCalls += validated.length
         const validOps = validated.filter((op) => op.status !== 'invalid')
 
         // Only set operations on the message if there are valid ones
@@ -451,11 +468,35 @@ export async function runAgentLoop({
     }
   } catch (err) {
     // AbortError means this loop was superseded — don't show error to user
-    if (err instanceof DOMException && err.name === 'AbortError') return
-    if (signal.aborted) return
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      loopExitReason = 'aborted'
+      return
+    }
+    if (signal.aborted) {
+      loopExitReason = 'aborted'
+      return
+    }
     const errorMessage = err instanceof Error ? err.message : 'Agent loop error'
-    useAIChat.getState().setStreamError(errorMessage)
+    // Forward opaque metadata attached by the transport (e.g. SaaS-only
+    // { code, upgradeUrl }) so decorator components can render upgrade UI.
+    const metadata = (err as { metadata?: Record<string, unknown> })?.metadata ?? null
+    useAIChat.getState().setStreamError(errorMessage, metadata)
+    loopExitReason = 'failed'
+    telemetry?.error?.({ phase: 'stream', message: errorMessage, messageId: loopMessageId })
   } finally {
+    // Determine the technical reason for loop exit (success/budget/iteration-cap)
+    // if no explicit override was set in catch.
+    if (loopExitReason === 'success') {
+      if (totalTokensUsed >= TOKEN_BUDGET) loopExitReason = 'budget'
+      else if (iteration >= MAX_ITERATIONS) loopExitReason = 'iteration-cap'
+    }
+    telemetry?.loopFinished?.({
+      messageId: loopMessageId,
+      iterations: iteration,
+      toolCalls: totalToolCalls,
+      reason: loopExitReason,
+    })
+
     // Only clean up state if THIS loop is still the active one.
     // If a new loop superseded us, it owns the state now.
     if (!signal.aborted) {
@@ -490,13 +531,19 @@ function streamLLMResponse(
     const store = useAIChat.getState()
     store.startStreaming()
 
-    const streamController = streamChat(
+    // Route through the AI runtime — OSS default hits fetch('/api/ai/chat'),
+    // SaaS overrides with auth-cookie + retry transport.
+    const transportSignal = abortSignal ?? new AbortController().signal
+
+    const requestMessages: ChatMessageInput[] = messages.map((m) => ({
+      role: m.role as AllowedChatRole,
+      content: m.content,
+      ...(m.tool_call_id ? { tool_call_id: m.tool_call_id } : {}),
+    }))
+
+    getAIRuntime().transport.streamChat(
       {
-        messages: messages.map((m) => ({
-          role: m.role,
-          content: m.content,
-          ...(m.tool_call_id ? { tool_call_id: m.tool_call_id } : {}),
-        })),
+        messages: requestMessages,
         catalogSummary,
         sceneContext,
       },
@@ -510,19 +557,25 @@ function streamLLMResponse(
         onComplete: (fullText, toolCalls, toolCallIds, usage) => {
           resolve({ text: fullText, toolCalls, toolCallIds: toolCallIds ?? [], usage })
         },
-        onError: (err) => {
-          reject(new Error(err))
+        onError: (err, metadata) => {
+          // Attach the (opaque) metadata onto the rejection so the loop
+          // surface can later forward it into useAIChat.setStreamError.
+          const error = new Error(err) as Error & {
+            metadata?: Record<string, unknown>
+          }
+          if (metadata) error.metadata = metadata
+          reject(error)
         },
         onRetry: () => {
           useAIChat.getState().startStreaming()
         },
       },
-    )
-
-    // If the parent loop is aborted, also abort the HTTP stream
-    abortSignal?.addEventListener('abort', () => {
-      streamController.abort()
-    }, { once: true })
+      transportSignal,
+    ).catch((err) => {
+      if ((err as { name?: string })?.name !== 'AbortError') {
+        reject(err)
+      }
+    })
   })
 }
 

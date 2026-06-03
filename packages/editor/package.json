@@ -7,10 +7,13 @@
     ".": "./src/index.tsx",
     "./catalog": "./src/components/ui/item-catalog/catalog-items.tsx",
     "./ai/prompt": "./src/components/ai/prompt/index.ts",
+    "./ai/contracts": "./src/components/ai/contracts/index.ts",
+    "./ai/stream-client": "./src/components/ai/ai-stream-client.ts",
     "./components/ai": "./src/components/ai/index.ts"
   },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "check-boundary": "bash ./scripts/check-oss-boundary.sh"
   },
   "peerDependencies": {
     "@aedifex/core": "^0.8.0",
