@@ -1,6 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { buildSystemPrompt, OPENAI_TOOLS } from '@aedifex/editor/ai/prompt'
 import {
+  validateChatRequest,
+  describeChatRequestError,
+} from '@aedifex/editor/ai/contracts'
+import {
   AI_API_KEY,
   AI_CHAT_MAX_TOKENS,
   AI_CHAT_MODEL,
@@ -19,56 +23,23 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  let body: { messages: { role: string; content: string; tool_call_id?: string }[]; catalogSummary: string; sceneContext: string }
+  let body: unknown
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 })
   }
 
-  const { messages, sceneContext } = body
-  // OSS deployments may lack a registered furniture catalog — accept empty
-  // catalogSummary so the LLM still gets structural tools (add_wall/etc.).
-  const catalogSummary: string = body.catalogSummary ?? ''
-  if (!messages?.length || sceneContext === undefined || sceneContext === null) {
-    return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 })
-  }
-
-  // BUG FIX A-4: Input length limits
-  const MAX_MESSAGES = 100
-  const MAX_MESSAGE_CONTENT_LENGTH = 64 * 1024 // 64K chars per message
-
-  if (messages.length > MAX_MESSAGES) {
+  // Shared validator: role whitelist + length limits + tool_call_id check.
+  // OSS and SaaS routes use the same contract to prevent silent drift.
+  const result = validateChatRequest(body)
+  if (!result.ok) {
     return NextResponse.json(
-      { error: `Message count exceeds limit of ${MAX_MESSAGES}.` },
+      { error: describeChatRequestError(result.error), code: result.error },
       { status: 400 },
     )
   }
-
-  const oversizedMessage = messages.find((m) => m.content && m.content.length > MAX_MESSAGE_CONTENT_LENGTH)
-  if (oversizedMessage) {
-    return NextResponse.json(
-      { error: 'A message exceeds the maximum content length of 64K characters.' },
-      { status: 400 },
-    )
-  }
-
-  if (catalogSummary.length > 64000) {
-    return NextResponse.json({ error: 'catalogSummary exceeds maximum length of 64000 characters.' }, { status: 400 })
-  }
-  if (sceneContext.length > 16000) {
-    return NextResponse.json({ error: 'sceneContext exceeds maximum length of 16000 characters.' }, { status: 400 })
-  }
-
-  // BUG FIX A-1: Role whitelist — reject messages with role "system" to prevent prompt injection
-  const ALLOWED_ROLES = new Set(['user', 'assistant', 'tool'])
-  const invalidMessage = messages.find((m) => !ALLOWED_ROLES.has(m.role))
-  if (invalidMessage) {
-    return NextResponse.json(
-      { error: `Invalid message role: "${invalidMessage.role}". Allowed roles: user, assistant, tool.` },
-      { status: 400 },
-    )
-  }
+  const { messages, catalogSummary, sceneContext } = result.value
 
   const systemPrompt = buildSystemPrompt(catalogSummary, sceneContext)
 
