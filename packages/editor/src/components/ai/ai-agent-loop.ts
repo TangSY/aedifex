@@ -185,6 +185,12 @@ export async function runAgentLoop({
   let lastMessageId: string | null = null
   let beforeScreenshotUrl: string | null = null // capture once on first mutation
   let consecutiveFailures = 0 // track all-invalid iterations to break collision loops
+  // Multi-level safety net: when the LLM tries to stop with ≥2 levels but no
+  // stair connecting them, we inject a reminder and let it run one more
+  // iteration to add the missing stair. Latched so we only nag once per
+  // user turn — if the LLM still doesn't add a stair after the reminder,
+  // we accept it and exit (probably the user explicitly asked for no stairs).
+  let stairReminderInjected = false
 
   // Telemetry: best-effort, fully optional. The OSS default runtime
   // ships a frozen no-op object so the indirection is essentially free.
@@ -249,8 +255,38 @@ export async function runAgentLoop({
         toolCalls.length > 0 ? toolCalls : undefined,
       )
 
-      // No tool calls → LLM is done, exit loop
+      // No tool calls → LLM is done, exit loop … unless the scene has a
+      // dangling multi-level structure without any stair connecting it,
+      // in which case force one more round to add the missing stair.
       if (toolCalls.length === 0) {
+        if (!stairReminderInjected) {
+          try {
+            const checkCtx = serializeSceneContext()
+            if (checkCtx.levels.length >= 2 && checkCtx.stairs.length === 0) {
+              stairReminderInjected = true
+              conversationMessages.push({
+                role: 'assistant' as const,
+                content: text || '',
+              })
+              conversationMessages.push({
+                role: 'user' as const,
+                content:
+                  `[System reminder] The scene now contains ${checkCtx.levels.length} levels but no stair connects them. ` +
+                  `Per the Multi-Level Building Workflow rules, you MUST add at least one stair so the levels are ` +
+                  `physically accessible. Call \`add_stair\` now with \`slabOpeningMode:"destination"\` so the ` +
+                  `destination level's slab is auto-cut for the stairwell. Default to ` +
+                  `\`stairType:"straight"\` with \`length:3.0\` and \`width:1.0\` unless a tighter footprint forces ` +
+                  `\`"spiral"\`. If the user explicitly asked for a stairs-free design, reply with text explaining ` +
+                  `the constraint and that you are leaving the levels disconnected by request, then stop.`,
+              })
+              onIterationEnd?.(iteration, null)
+              continue
+            }
+          } catch (err) {
+            // Non-fatal: just log and fall through to the normal exit path.
+            console.warn('[AI Agent] Multi-level stair check failed:', err)
+          }
+        }
         // Empty response fallback: if LLM returned no text AND no tools,
         // show a helpful message instead of leaving the chat silent.
         if (!text?.trim() && lastMessageId) {
