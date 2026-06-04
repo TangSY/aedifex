@@ -396,6 +396,32 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'add_elevator',
+      description: 'Create a passenger elevator core attached to a building. The shaft spans levels [fromLevelId, toLevelId] (or servedLevelIds) and the system auto-cuts the slab/ceiling openings on every served floor — DO NOT call add_cut_out for the elevator shaft. Use add_stair when the user wants a visible stairway; use add_elevator for vertical transport that crosses three or more floors or whenever the user explicitly asks for an elevator / lift / 电梯 / エレベーター.',
+      parameters: {
+        type: 'object',
+        properties: {
+          position: { type: 'array', items: { type: 'number' }, description: 'Building-local shaft center [x, 0, z] in meters. Y is auto-resolved to the floor support so pass 0.' },
+          rotationY: { type: 'number', description: 'Rotation around Y axis in radians (default: 0). 0 = elevator door faces +Z.' },
+          width: { type: 'number', description: 'Cab width in meters (default: 1.6). Range: 0.6-4.0.' },
+          depth: { type: 'number', description: 'Cab depth in meters (default: 1.6). Range: 0.6-4.0.' },
+          cabHeight: { type: 'number', description: 'Cab interior height in meters (default: 2.35). Range: 2.0-4.0.' },
+          fromLevelId: { type: 'string', description: 'Bottom-most served level ID. Defaults to the currently selected level.' },
+          toLevelId: { type: 'string', description: 'Top-most served level ID. Defaults to the level immediately above fromLevelId.' },
+          servedLevelIds: { type: 'array', items: { type: 'string' }, description: 'Optional explicit served-level list; used only when from/to are absent.' },
+          shaftStyle: { type: 'string', enum: ['solid', 'glass'], description: 'Shaft shell presentation (default: solid). Use "glass" for a scenic / observation elevator.' },
+          doorStyle: { type: 'string', enum: ['center-opening', 'single-left', 'single-right'], description: 'Door movement style (default: center-opening).' },
+          doorPanelStyle: { type: 'string', enum: ['glass-frame', 'solid-panel', 'segmented-panel'], description: 'Door leaf visual style (default: glass-frame).' },
+          buildingId: { type: 'string', description: 'Target building ID. Defaults to the building containing the active level.' },
+          description: { type: 'string', description: 'Brief description of this elevator.' },
+        },
+        required: ['position'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'add_stair',
       description: 'Create a staircase. Default stairType="straight" creates one flight; "curved" uses innerRadius+sweepAngle; "spiral" uses innerRadius+sweepAngle plus optional integrated top landing. Set slabOpeningMode="destination" to auto-cut a hole in the destination level slab/ceiling for the stairwell.',
       parameters: {
@@ -703,7 +729,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
             items: {
               type: 'object',
               properties: {
-                type: { type: 'string', enum: ['add_item', 'remove_item', 'move_item', 'update_material', 'update_item', 'add_wall', 'update_wall', 'update_wall_material', 'add_door', 'update_door', 'add_window', 'update_window', 'remove_node', 'add_level', 'add_slab', 'update_slab', 'add_ceiling', 'update_ceiling', 'add_roof', 'update_roof', 'update_roof_material', 'add_stair', 'update_stair', 'update_stair_material', 'add_zone', 'update_zone', 'add_building', 'update_site', 'add_scan', 'add_guide', 'move_building', 'clone_level', 'add_fence', 'update_fence', 'add_cut_out'] },
+                type: { type: 'string', enum: ['add_item', 'remove_item', 'move_item', 'update_material', 'update_item', 'add_wall', 'update_wall', 'update_wall_material', 'add_door', 'update_door', 'add_window', 'update_window', 'remove_node', 'add_level', 'add_slab', 'update_slab', 'add_ceiling', 'update_ceiling', 'add_roof', 'update_roof', 'update_roof_material', 'add_stair', 'update_stair', 'update_stair_material', 'add_elevator', 'add_zone', 'update_zone', 'add_building', 'update_site', 'add_scan', 'add_guide', 'move_building', 'clone_level', 'add_fence', 'update_fence', 'add_cut_out'] },
                 catalogSlug: { type: 'string' }, nodeId: { type: 'string' },
                 position: { type: 'array', items: { type: 'number' } }, rotationY: { type: 'number' },
                 material: { type: 'string' },

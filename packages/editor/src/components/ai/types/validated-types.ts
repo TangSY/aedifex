@@ -261,6 +261,25 @@ export interface ValidatedAddRoof {
   errorReason?: string
 }
 
+export interface ValidatedAddElevator {
+  type: 'add_elevator'
+  status: ValidatedOperationStatus
+  position: [number, number, number]
+  rotation: number
+  width: number
+  depth: number
+  cabHeight: number
+  fromLevelId: string | null
+  toLevelId: string | null
+  servedLevelIds?: string[]
+  shaftStyle?: 'solid' | 'glass'
+  doorStyle?: 'center-opening' | 'single-left' | 'single-right'
+  doorPanelStyle?: 'glass-frame' | 'solid-panel' | 'segmented-panel'
+  buildingId?: string
+  adjustmentReason?: string
+  errorReason?: string
+}
+
 export interface ValidatedAddStair {
   type: 'add_stair'
   status: ValidatedOperationStatus
@@ -485,6 +504,7 @@ export type ValidatedOperation =
   | ValidatedUpdateRoof
   | ValidatedAddStair
   | ValidatedUpdateStair
+  | ValidatedAddElevator
   | ValidatedAddZone
   | ValidatedUpdateZone
   | ValidatedAddBuilding

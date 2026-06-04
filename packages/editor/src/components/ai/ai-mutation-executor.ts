@@ -30,6 +30,7 @@ import {
   validateAddRoofAccessory,
   validateAddScan,
   validateAddSlab,
+  validateAddElevator,
   validateAddStair,
   validateAddZone,
   validateCloneLevel,
@@ -115,6 +116,8 @@ export function validateToolCall(
       return [validateUpdateRoof(toolCall)]
     case 'add_stair':
       return [validateAddStair(toolCall)]
+    case 'add_elevator':
+      return [validateAddElevator(toolCall)]
     case 'update_stair':
       return [validateUpdateStair(toolCall)]
     case 'add_zone':

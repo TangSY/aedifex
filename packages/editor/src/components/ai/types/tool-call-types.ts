@@ -236,6 +236,29 @@ export type StairSlabOpening = 'none' | 'destination'
 export type StairTopLanding = 'none' | 'integrated'
 export type StairRailing = 'none' | 'left' | 'right' | 'both'
 
+export interface AddElevatorToolCall {
+  tool: 'add_elevator'
+  /** Building-local X/Z. Y is auto-resolved to the floor support; pass [x, 0, z]. */
+  position: [number, number, number]
+  rotationY?: number
+  /** Cab footprint (default 1.6 × 1.6). */
+  width?: number
+  depth?: number
+  cabHeight?: number
+  /** Service range — bottom stop. Defaults to the currently selected level. */
+  fromLevelId?: string | null
+  /** Service range — top stop. Defaults to the level above fromLevelId. */
+  toLevelId?: string | null
+  /** Optional explicit served levels (only used when fromLevelId/toLevelId are absent). */
+  servedLevelIds?: string[]
+  shaftStyle?: 'solid' | 'glass'
+  doorStyle?: 'center-opening' | 'single-left' | 'single-right'
+  doorPanelStyle?: 'glass-frame' | 'solid-panel' | 'segmented-panel'
+  /** Target building. When omitted, uses the building containing the active level. */
+  buildingId?: string
+  description?: string
+}
+
 export interface AddStairToolCall {
   tool: 'add_stair'
   position: [number, number, number]
@@ -514,6 +537,7 @@ export type AIToolCall =
   | UpdateRoofToolCall
   | AddStairToolCall
   | UpdateStairToolCall
+  | AddElevatorToolCall
   | AddZoneToolCall
   | UpdateZoneToolCall
   | AddBuildingToolCall

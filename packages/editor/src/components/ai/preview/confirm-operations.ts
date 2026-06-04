@@ -8,6 +8,7 @@ import {
   cloneLevelSubtree,
   DoorNode,
   DormerNode,
+  ElevatorNode,
   FenceNode,
   GuideNode,
   ItemNode,
@@ -28,6 +29,10 @@ import {
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { nanoid } from 'nanoid'
+import {
+  resolveCurrentBuildingId,
+  resolveElevatorSupportY,
+} from '../../../lib/elevator-support'
 import { getSceneOperations } from '../scene-operations-adapter'
 import type {
   AIOperationLog,
@@ -40,6 +45,7 @@ import type {
   ValidatedAddRoof,
   ValidatedAddScan,
   ValidatedAddSlab,
+  ValidatedAddElevator,
   ValidatedAddStair,
   ValidatedAddZone,
   ValidatedOperation,
@@ -583,6 +589,70 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         batchCreates.push({ node, parentId: accOp.roofSegmentId as AnyNodeId })
         affectedNodeIds.push(node.id as AnyNodeId)
         createdNodeIds.push(node.id as AnyNodeId)
+        break
+      }
+      case 'add_elevator': {
+        const elOp = op as ValidatedAddElevator
+        // Resolve the target building from explicit op.buildingId, otherwise
+        // from the active level. ElevatorNode lives under building (not level)
+        // because the shaft crosses multiple levels.
+        const targetBuildingId = resolveCurrentBuildingId({
+          buildingId: (elOp.buildingId as BuildingNode['id'] | null | undefined) ?? null,
+          levelId: (levelId ?? null) as LevelNode['id'] | null,
+          nodes,
+        })
+        if (!targetBuildingId) {
+          // No building to attach to — skip silently rather than crash. The
+          // operation card will show this as a no-op; the LLM will see no
+          // elevator appear in the next scene context and can retry.
+          break
+        }
+
+        // Resolve service range. fromLevelId defaults to the currently selected
+        // level; toLevelId defaults to the level above (sorted by level number).
+        const building = nodes[targetBuildingId]
+        const levels = (building && building.type === 'building' ? building.children : [])
+          .map((id) => nodes[id as AnyNodeId])
+          .filter((n): n is LevelNode => n?.type === 'level')
+          .sort((a, b) => a.level - b.level)
+        const explicitFrom = elOp.fromLevelId ?? null
+        const fromIdx = explicitFrom
+          ? levels.findIndex((l) => l.id === explicitFrom)
+          : levels.findIndex((l) => l.id === levelId)
+        const fromLevel = levels[fromIdx >= 0 ? fromIdx : 0]
+        const toIdx = elOp.toLevelId
+          ? levels.findIndex((l) => l.id === elOp.toLevelId)
+          : Math.min((fromIdx >= 0 ? fromIdx : 0) + 1, levels.length - 1)
+        const toLevel = levels[toIdx >= 0 ? toIdx : levels.length - 1] ?? fromLevel
+
+        const supportY = resolveElevatorSupportY({
+          buildingId: targetBuildingId,
+          preferredLevelId: fromLevel?.id ?? null,
+          x: elOp.position[0],
+          z: elOp.position[2],
+        })
+
+        const elevatorCount = Object.values(nodes).filter((n) => n.type === 'elevator').length
+        const elevator = ElevatorNode.parse({
+          name: `Elevator ${elevatorCount + 1}`,
+          parentId: targetBuildingId,
+          position: [elOp.position[0], supportY, elOp.position[2]],
+          rotation: elOp.rotation,
+          width: elOp.width,
+          depth: elOp.depth,
+          cabHeight: elOp.cabHeight,
+          fromLevelId: fromLevel?.id ?? null,
+          toLevelId: toLevel?.id ?? fromLevel?.id ?? null,
+          defaultLevelId: fromLevel?.id ?? null,
+          ...(elOp.servedLevelIds ? { servedLevelIds: elOp.servedLevelIds } : {}),
+          ...(elOp.shaftStyle ? { shaftStyle: elOp.shaftStyle } : {}),
+          ...(elOp.doorStyle ? { doorStyle: elOp.doorStyle } : {}),
+          ...(elOp.doorPanelStyle ? { doorPanelStyle: elOp.doorPanelStyle } : {}),
+        })
+        const { createNodes } = useScene.getState()
+        createNodes([{ node: elevator, parentId: targetBuildingId }])
+        affectedNodeIds.push(elevator.id as AnyNodeId)
+        createdNodeIds.push(elevator.id as AnyNodeId)
         break
       }
       case 'add_stair': {

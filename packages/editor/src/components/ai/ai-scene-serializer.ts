@@ -4,7 +4,7 @@ import { useViewer } from '@aedifex/viewer'
 import { useAIChat } from './ai-chat-store'
 import { polygonArea } from './mutation/validate-structure'
 import { analyzeRoom, formatRoomAnalysis } from './room-analyzer'
-import type { SceneContext, SceneCeilingSummary, SceneFenceSummary, SceneLevelSummary, SceneRoofSummary, SceneSlabSummary, SceneStairSummary, SceneItemSummary } from './types'
+import type { SceneContext, SceneCeilingSummary, SceneElevatorSummary, SceneFenceSummary, SceneLevelSummary, SceneRoofSummary, SceneSlabSummary, SceneStairSummary, SceneItemSummary } from './types'
 
 // ============================================================================
 // Scene Context Cache
@@ -335,6 +335,7 @@ export function serializeSceneContext(): SceneContext {
       roofs: [],
       slabs: [],
       stairs: [],
+      elevators: [],
       fences: [],
       wallCount: 0,
       zoneCount: 0,
@@ -356,7 +357,7 @@ export function serializeSceneContext(): SceneContext {
   // Collect all nodes belonging to this level
   const levelNode = nodes[levelId]
   if (!levelNode || !('children' in levelNode)) {
-    return { levelId, items: [], walls: [], zones: [], levels: [], buildings: [], ceilings: [], roofs: [], slabs: [], stairs: [], fences: [], wallCount: 0, zoneCount: 0 }
+    return { levelId, items: [], walls: [], zones: [], levels: [], buildings: [], ceilings: [], roofs: [], slabs: [], stairs: [], elevators: [], fences: [], wallCount: 0, zoneCount: 0 }
   }
 
   // Walk through all nodes to find items, walls, and zones on this level
@@ -449,6 +450,48 @@ export function serializeSceneContext(): SceneContext {
     }
   }
 
+  // Collect elevators on the current building (elevators live under building,
+  // not under a single level, because the shaft spans multiple floors).
+  const elevators: SceneElevatorSummary[] = []
+  if (currentLevel?.parentId) {
+    const building = nodes[currentLevel.parentId as AnyNodeId]
+    if (building && building.type === 'building' && 'children' in building && Array.isArray(building.children)) {
+      for (const childId of building.children) {
+        const child = nodes[childId as AnyNodeId]
+        if (child && child.type === 'elevator') {
+          const e = child as {
+            id: string
+            position: [number, number, number]
+            rotation: number
+            width: number
+            depth: number
+            cabHeight: number
+            fromLevelId: string | null
+            toLevelId: string | null
+            servedLevelIds?: string[]
+            shaftStyle: string
+            doorStyle: string
+            doorPanelStyle: string
+          }
+          elevators.push({
+            id: e.id,
+            position: e.position,
+            rotation: e.rotation,
+            width: e.width,
+            depth: e.depth,
+            cabHeight: e.cabHeight,
+            fromLevelId: e.fromLevelId,
+            toLevelId: e.toLevelId,
+            ...(e.servedLevelIds ? { servedLevelIds: e.servedLevelIds } : {}),
+            shaftStyle: e.shaftStyle,
+            doorStyle: e.doorStyle,
+            doorPanelStyle: e.doorPanelStyle,
+          })
+        }
+      }
+    }
+  }
+
   // Collect all buildings on the site
   const buildings: SceneContext['buildings'] = []
   for (const node of Object.values(nodes)) {
@@ -479,6 +522,7 @@ export function serializeSceneContext(): SceneContext {
     roofs,
     slabs,
     stairs,
+    elevators,
     fences,
     wallCount,
     zoneCount,
@@ -501,7 +545,7 @@ export function serializeSceneContext(): SceneContext {
 export function formatSceneContextForPrompt(ctx: SceneContext): string {
   const lines: string[] = [
     `Current scene (level: ${ctx.levelId}):`,
-    `- ${ctx.wallCount} walls, ${ctx.zoneCount} zones, ${ctx.ceilings.length} ceilings, ${ctx.roofs.length} roofs, ${ctx.slabs.length} slabs, ${ctx.stairs.length} stairs, ${ctx.fences.length} fences`,
+    `- ${ctx.wallCount} walls, ${ctx.zoneCount} zones, ${ctx.ceilings.length} ceilings, ${ctx.roofs.length} roofs, ${ctx.slabs.length} slabs, ${ctx.stairs.length} stairs, ${ctx.elevators.length} elevators, ${ctx.fences.length} fences`,
   ]
 
   // Building info (site-level)
@@ -562,6 +606,16 @@ export function formatSceneContextForPrompt(ctx: SceneContext): string {
       if (st.hasMaterial) containerExtras.push('hasMaterial')
       const extra = containerExtras.length > 0 ? ` [${containerExtras.join(', ')}]` : ''
       lines.push(`  - ${st.id}: pos=[${st.position.map((v) => v.toFixed(1)).join(',')}] rot=${st.rotation.toFixed(2)}rad, ${st.segments.length} segment(s) — ${segDescs}${extra}`)
+    }
+  }
+
+  // Elevator info
+  if (ctx.elevators.length > 0) {
+    lines.push(`\nElevators (${ctx.elevators.length}):`)
+    for (const el of ctx.elevators) {
+      const range = el.fromLevelId && el.toLevelId ? `${el.fromLevelId}→${el.toLevelId}` : 'service range undefined'
+      const served = el.servedLevelIds && el.servedLevelIds.length > 0 ? ` served=[${el.servedLevelIds.join(',')}]` : ''
+      lines.push(`  - ${el.id}: pos=[${el.position.map((v) => v.toFixed(1)).join(',')}] rot=${el.rotation.toFixed(2)}rad, cab=${el.width}×${el.depth}×${el.cabHeight}m, ${range}${served}, shaft=${el.shaftStyle}, door=${el.doorStyle}/${el.doorPanelStyle}`)
     }
   }
 

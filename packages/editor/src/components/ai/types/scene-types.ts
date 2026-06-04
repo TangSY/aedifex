@@ -95,6 +95,26 @@ export interface SceneStairSummary {
   }[]
 }
 
+export interface SceneElevatorSummary {
+  id: string
+  /** Building-local center on X/Z. Y is the floor-support height; LLM rarely needs it. */
+  position: [number, number, number]
+  rotation: number
+  /** Cab footprint. shaft* default to these unless overridden. */
+  width: number
+  depth: number
+  cabHeight: number
+  /** Service range — fromLevelId/toLevelId define the bottom/top stops. */
+  fromLevelId: string | null
+  toLevelId: string | null
+  /** Optional override list when from/to aren't sufficient. */
+  servedLevelIds?: string[]
+  /** Visual presentation. */
+  shaftStyle: string
+  doorStyle: string
+  doorPanelStyle: string
+}
+
 export interface SceneItemSummary {
   id: string
   name: string
@@ -129,6 +149,7 @@ export interface SceneContext {
   roofs: SceneRoofSummary[]
   slabs: SceneSlabSummary[]
   stairs: SceneStairSummary[]
+  elevators: SceneElevatorSummary[]
   fences: SceneFenceSummary[]
   wallCount: number
   zoneCount: number

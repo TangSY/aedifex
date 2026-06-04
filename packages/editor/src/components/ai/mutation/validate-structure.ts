@@ -13,6 +13,7 @@ import type {
   AddRoofToolCall,
   AddScanToolCall,
   AddSlabToolCall,
+  AddElevatorToolCall,
   AddStairToolCall,
   AddZoneToolCall,
   CloneLevelToolCall,
@@ -32,6 +33,7 @@ import type {
   ValidatedAddRoof,
   ValidatedAddScan,
   ValidatedAddSlab,
+  ValidatedAddElevator,
   ValidatedAddStair,
   ValidatedAddZone,
   ValidatedCloneLevel,
@@ -426,6 +428,62 @@ export function validateUpdateRoof(call: UpdateRoofToolCall): ValidatedUpdateRoo
     wallHeight: call.wallHeight,
     width: call.width,
     depth: call.depth,
+  }
+}
+
+export function validateAddElevator(call: AddElevatorToolCall): ValidatedAddElevator {
+  const width = call.width ?? 1.6
+  const depth = call.depth ?? 1.6
+  const cabHeight = call.cabHeight ?? 2.35
+  const rotation = call.rotationY ?? 0
+  const position = call.position ?? [0, 0, 0]
+
+  if (width < 0.6 || width > 4.0) {
+    return {
+      type: 'add_elevator',
+      status: 'invalid',
+      position, rotation,
+      width, depth, cabHeight,
+      fromLevelId: call.fromLevelId ?? null,
+      toLevelId: call.toLevelId ?? null,
+      errorReason: `Elevator width ${width}m is out of range. Must be 0.6-4.0m.`,
+    }
+  }
+  if (depth < 0.6 || depth > 4.0) {
+    return {
+      type: 'add_elevator',
+      status: 'invalid',
+      position, rotation,
+      width, depth, cabHeight,
+      fromLevelId: call.fromLevelId ?? null,
+      toLevelId: call.toLevelId ?? null,
+      errorReason: `Elevator depth ${depth}m is out of range. Must be 0.6-4.0m.`,
+    }
+  }
+  if (cabHeight < 2.0 || cabHeight > 4.0) {
+    return {
+      type: 'add_elevator',
+      status: 'invalid',
+      position, rotation,
+      width, depth, cabHeight,
+      fromLevelId: call.fromLevelId ?? null,
+      toLevelId: call.toLevelId ?? null,
+      errorReason: `Elevator cabHeight ${cabHeight}m is out of range. Must be 2.0-4.0m.`,
+    }
+  }
+
+  return {
+    type: 'add_elevator',
+    status: 'valid',
+    position, rotation,
+    width, depth, cabHeight,
+    fromLevelId: call.fromLevelId ?? null,
+    toLevelId: call.toLevelId ?? null,
+    ...(call.servedLevelIds ? { servedLevelIds: call.servedLevelIds } : {}),
+    ...(call.shaftStyle ? { shaftStyle: call.shaftStyle } : {}),
+    ...(call.doorStyle ? { doorStyle: call.doorStyle } : {}),
+    ...(call.doorPanelStyle ? { doorPanelStyle: call.doorPanelStyle } : {}),
+    ...(call.buildingId ? { buildingId: call.buildingId } : {}),
   }
 }
 
