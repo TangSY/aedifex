@@ -186,11 +186,12 @@ export async function runAgentLoop({
   let beforeScreenshotUrl: string | null = null // capture once on first mutation
   let consecutiveFailures = 0 // track all-invalid iterations to break collision loops
   // Multi-level safety net: when the LLM tries to stop with ≥2 levels but no
-  // stair connecting them, we inject a reminder and let it run one more
-  // iteration to add the missing stair. Latched so we only nag once per
-  // user turn — if the LLM still doesn't add a stair after the reminder,
-  // we accept it and exit (probably the user explicitly asked for no stairs).
-  let stairReminderInjected = false
+  // vertical connection (no stair AND no elevator), we inject a reminder
+  // and let it run one more iteration to add the missing connection. Latched
+  // so we only nag once per user turn — if the LLM still doesn't add one
+  // after the reminder, we accept it and exit (probably the user explicitly
+  // asked for disconnected levels).
+  let verticalConnectionReminderInjected = false
 
   // Telemetry: best-effort, fully optional. The OSS default runtime
   // ships a frozen no-op object so the indirection is essentially free.
@@ -259,11 +260,13 @@ export async function runAgentLoop({
       // dangling multi-level structure without any stair connecting it,
       // in which case force one more round to add the missing stair.
       if (toolCalls.length === 0) {
-        if (!stairReminderInjected) {
+        if (!verticalConnectionReminderInjected) {
           try {
             const checkCtx = serializeSceneContext()
-            if (checkCtx.levels.length >= 2 && checkCtx.stairs.length === 0) {
-              stairReminderInjected = true
+            const hasVerticalConnection =
+              checkCtx.stairs.length > 0 || checkCtx.elevators.length > 0
+            if (checkCtx.levels.length >= 2 && !hasVerticalConnection) {
+              verticalConnectionReminderInjected = true
               conversationMessages.push({
                 role: 'assistant' as const,
                 content: text || '',
@@ -271,20 +274,21 @@ export async function runAgentLoop({
               conversationMessages.push({
                 role: 'user' as const,
                 content:
-                  `[System reminder] The scene now contains ${checkCtx.levels.length} levels but no stair connects them. ` +
-                  `Per the Multi-Level Building Workflow rules, you MUST add at least one stair so the levels are ` +
-                  `physically accessible. Call \`add_stair\` now with \`slabOpeningMode:"destination"\` so the ` +
-                  `destination level's slab is auto-cut for the stairwell. Default to ` +
-                  `\`stairType:"straight"\` with \`length:3.0\` and \`width:1.0\` unless a tighter footprint forces ` +
-                  `\`"spiral"\`. If the user explicitly asked for a stairs-free design, reply with text explaining ` +
-                  `the constraint and that you are leaving the levels disconnected by request, then stop.`,
+                  `[System reminder] The scene now contains ${checkCtx.levels.length} levels but neither a stair nor an elevator connects them. ` +
+                  `Per the Multi-Level Building Workflow rules, you MUST add at least one vertical connection so the levels are ` +
+                  `physically accessible. Either call \`add_stair\` with \`slabOpeningMode:"destination"\` (defaults: ` +
+                  `\`stairType:"straight"\`, \`length:3.0\`, \`width:1.0\`), or call \`add_elevator\` (defaults: ` +
+                  `\`width:1.6\`, \`depth:1.6\`, \`cabHeight:2.35\`; service range auto-resolves to the bottom and top served levels). ` +
+                  `Prefer the elevator when the user explicitly asked for one or the building spans 3+ floors. ` +
+                  `If the user explicitly asked for a disconnected design, reply with text explaining the constraint and that you ` +
+                  `are leaving the levels disconnected by request, then stop.`,
               })
               onIterationEnd?.(iteration, null)
               continue
             }
           } catch (err) {
             // Non-fatal: just log and fall through to the normal exit path.
-            console.warn('[AI Agent] Multi-level stair check failed:', err)
+            console.warn('[AI Agent] Multi-level vertical-connection check failed:', err)
           }
         }
         // Empty response fallback: if LLM returned no text AND no tools,
