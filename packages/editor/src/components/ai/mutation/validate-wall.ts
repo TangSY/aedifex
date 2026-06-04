@@ -369,11 +369,16 @@ export function validateRemoveNode(call: RemoveNodeToolCall): ValidatedRemoveNod
     }
   }
 
-  // Allow removing all user-created node types
+  // Allow removing all user-facing node types. Excludes:
+  //   - stair-segment / spawn / site — internal sub-nodes or scene root.
+  //     stair-segment piece-deletion would partially gut a StairNode's
+  //     geometry; instead, callers remove the whole stair container.
   const removableTypes = new Set([
     'wall', 'door', 'window', 'item',
     'level', 'slab', 'ceiling', 'roof', 'roof-segment',
     'zone', 'scan', 'guide', 'building',
+    'stair', 'elevator', 'fence', 'column', 'shelf',
+    'chimney', 'dormer', 'box-vent', 'ridge-vent', 'skylight', 'solar-panel',
   ])
   if (!removableTypes.has(node.type)) {
     return {
