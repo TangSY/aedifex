@@ -944,7 +944,20 @@ export type Capabilities = {
   snappable?: SnappableConfig
   surfaces?: SurfacesConfig
   duplicable?: boolean
-  deletable?: boolean
+  /**
+   * Whether instances of this kind can be removed from the scene. **REQUIRED**
+   * on every NodeDefinition — the type forces every new node kind to make an
+   * explicit decision rather than inheriting an implicit default. Set `false`
+   * for scene roots (site) and containers whose removal cascades destructively
+   * (building owns levels). Everything else is typically `true`.
+   *
+   * Single source of truth for AI tool `remove_node` validation and the
+   * inspector UI's "Delete" menu item — both readers (validateRemoveNode in
+   * the editor AI layer, canDelete in parametric-inspector) consult this
+   * field directly. NEVER maintain a parallel hardcoded list; the previous
+   * iteration's drift cost real production bugs.
+   */
+  deletable: boolean
   groupable?: boolean
   selectable?: SelectableConfig
   interactive?: boolean

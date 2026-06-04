@@ -255,7 +255,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'remove_node',
-      description: 'Remove a scene node by id. Supported node types: wall, door, window, item, level, slab, ceiling, roof, roof-segment, zone, scan, guide, building, stair, elevator, fence, column, shelf, chimney, dormer, box-vent, ridge-vent, skylight, solar-panel. Pass the container nodeId (e.g. the stair, not stair-segment).',
+      description: 'Remove a scene node by id. Most node types are removable; non-deletable types (e.g. scene root, building containers, internal sub-pieces like stair-segment) will return an explicit invalid result with errorReason — read the errorReason if a removal fails. Pass the container nodeId (e.g. the stair container, not stair-segment).',
       parameters: {
         type: 'object',
         properties: {

@@ -1,6 +1,7 @@
 import {
   type AnyNodeId,
   getCatalogMaterialById,
+  nodeRegistry,
   normalizeWallCurveOffset,
   type WallNode,
   useScene,
@@ -369,24 +370,29 @@ export function validateRemoveNode(call: RemoveNodeToolCall): ValidatedRemoveNod
     }
   }
 
-  // Allow removing all user-facing node types. Excludes:
-  //   - stair-segment / spawn / site — internal sub-nodes or scene root.
-  //     stair-segment piece-deletion would partially gut a StairNode's
-  //     geometry; instead, callers remove the whole stair container.
-  const removableTypes = new Set([
-    'wall', 'door', 'window', 'item',
-    'level', 'slab', 'ceiling', 'roof', 'roof-segment',
-    'zone', 'scan', 'guide', 'building',
-    'stair', 'elevator', 'fence', 'column', 'shelf',
-    'chimney', 'dormer', 'box-vent', 'ridge-vent', 'skylight', 'solar-panel',
-  ])
-  if (!removableTypes.has(node.type)) {
+  // Single source of truth: NodeDefinition.capabilities.deletable. The
+  // Capabilities type forces every NodeDefinition to declare this field
+  // explicitly, so new node kinds CANNOT silently drift out of sync with
+  // remove_node the way they did when this was a hardcoded whitelist.
+  // Two readers consult the same flag: this validator (AI tool path) and
+  // the parametric-inspector "Delete" menu (manual UI path).
+  const def = nodeRegistry.get(node.type)
+  if (!def) {
     return {
       type: 'remove_node',
       status: 'invalid',
       nodeId: call.nodeId as AnyNodeId,
       nodeType: node.type,
-      errorReason: `Cannot remove ${node.type} nodes.`,
+      errorReason: `Node kind "${node.type}" is not registered. Cannot determine if it is removable.`,
+    }
+  }
+  if (!def.capabilities.deletable) {
+    return {
+      type: 'remove_node',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      nodeType: node.type,
+      errorReason: `Cannot remove ${node.type} nodes (NodeDefinition declares deletable=false).`,
     }
   }
 

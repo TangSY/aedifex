@@ -22,7 +22,7 @@ function makeDefinition(
     schema: z.object({ type: z.literal(kind) }) as any,
     category: 'utility',
     defaults: () => ({}) as any,
-    capabilities: {},
+    capabilities: { deletable: false },
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
     ...overrides,
   }
@@ -85,13 +85,13 @@ describe('isPresettable', () => {
   })
 
   test('explicit true wins', () => {
-    const def = makeDefinition('explicit-true', { capabilities: { presettable: true } })
+    const def = makeDefinition('explicit-true', { capabilities: { presettable: true, deletable: false } })
     expect(isPresettable(def)).toBe(true)
   })
 
   test('explicit false wins even with parametrics', () => {
     const def = makeDefinition('explicit-false', {
-      capabilities: { presettable: false },
+      capabilities: { presettable: false, deletable: false },
       parametrics: { groups: [] } as any,
     })
     expect(isPresettable(def)).toBe(false)
@@ -116,7 +116,7 @@ describe('isPresettable', () => {
 
 describe('getHostRefFields', () => {
   test('returns the declared hostRefFields verbatim', () => {
-    const def = makeDefinition('door', { capabilities: { hostRefFields: ['wallId'] } })
+    const def = makeDefinition('door', { capabilities: { hostRefFields: ['wallId'], deletable: false } })
     expect(getHostRefFields(def)).toEqual(['wallId'])
   })
 
@@ -132,17 +132,17 @@ describe('isDrawnViaTool', () => {
   })
 
   test('true when capability set', () => {
-    const def = makeDefinition('fence', { capabilities: { drawTool: true } })
+    const def = makeDefinition('fence', { capabilities: { drawTool: true, deletable: false } })
     expect(isDrawnViaTool(def)).toBe(true)
   })
 
   test('false when unset or not exactly true', () => {
     expect(isDrawnViaTool(makeDefinition('column'))).toBe(false)
-    expect(isDrawnViaTool(makeDefinition('off', { capabilities: { drawTool: false } }))).toBe(false)
+    expect(isDrawnViaTool(makeDefinition('off', { capabilities: { drawTool: false, deletable: false } }))).toBe(false)
   })
 
   test('isDrawnViaToolKind looks up the registry', () => {
-    registerNode(makeDefinition('fence', { capabilities: { drawTool: true } }))
+    registerNode(makeDefinition('fence', { capabilities: { drawTool: true, deletable: false } }))
     expect(isDrawnViaToolKind('fence')).toBe(true)
     expect(isDrawnViaToolKind('unknown')).toBe(false)
   })
