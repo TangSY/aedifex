@@ -401,8 +401,16 @@ function migrateNodes(nodes: Record<string, any>): Record<string, AnyNode> {
     // in an orphaned accessory (parented in scene state but never
     // appended to `seg.children`, so the renderer's recursive
     // `<NodeRenderer>` mount never sees it).
+    //
+    // Spread from `patchedNodes[id] ?? node` (NOT `node`) so the pitch
+    // fallback from the block above is preserved. Spreading the raw
+    // `node` here was a silent regression: a roof-segment saved with
+    // BOTH missing pitch AND missing children would get children=[]
+    // but lose the pitch fix → slope-frame guard collapsed it to a
+    // flat slab on load.
     if (node.type === 'roof-segment' && !Array.isArray((node as { children?: unknown }).children)) {
-      patchedNodes[id] = { ...node, children: [] } as AnyNode
+      const base = patchedNodes[id] ?? node
+      patchedNodes[id] = { ...base, children: [] } as AnyNode
     }
 
     if (node.type === 'roof') {
