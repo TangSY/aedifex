@@ -1,4 +1,4 @@
-import { type AnyNodeId, useScene } from '@aedifex/core'
+import { type AnyNode, type AnyNodeId, useScene } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import type { ValidatedOperation } from './types'
 import {
@@ -202,16 +202,14 @@ export function clearGhostPreview(): void {
     useScene.getState().deleteNode(ghostId)
   }
 
-  // Restore modified nodes to original state
+  // Restore modified nodes to original state. We used to gate this on
+  // `'position' in originalState` which excluded wall/ceiling/zone-shaped
+  // nodes (no top-level `position` field) — their previewMaterial /
+  // isGhostPreview metadata then leaked into the live scene when the user
+  // rejected. Replace with a setNode that swaps the entire snapshot back,
+  // matching what the user actually meant by "reject this preview".
   originalNodeStates.forEach((originalState, nodeId) => {
-    if ('position' in originalState) {
-      useScene.getState().updateNode(nodeId, {
-        position: originalState.position as [number, number, number],
-        rotation: originalState.rotation as [number, number, number],
-        visible: originalState.visible,
-        metadata: originalState.metadata,
-      })
-    }
+    useScene.getState().setNode(nodeId, originalState as AnyNode)
   })
 
   // Restore removed nodes (make them visible again)

@@ -459,6 +459,20 @@ export function serializeSceneContext(): SceneContext {
       for (const childId of building.children) {
         const child = nodes[childId as AnyNodeId]
         if (child && child.type === 'elevator') {
+          // Mirror the BFS visibility filter (lines 376-388) — without this
+          // re-check, ghost-preview / ghost-removal / hidden elevators would
+          // be reported to the LLM as real scene content, causing it to
+          // re-create elevators it already proposed or to think a removed
+          // elevator is still there. Elevators are collected here (not via
+          // the BFS) because they parent on building, not level.
+          const meta = child.metadata as Record<string, unknown> | undefined
+          if (
+            meta?.isGhostPreview === true
+            || meta?.isGhostRemoval === true
+            || (child as { visible?: boolean }).visible === false
+          ) {
+            continue
+          }
           const e = child as {
             id: string
             position: [number, number, number]

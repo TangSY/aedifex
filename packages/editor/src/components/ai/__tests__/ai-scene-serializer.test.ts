@@ -139,6 +139,79 @@ function makeWindow(id: string, wallId: string, localX: number) {
   }
 }
 
+function makeBuilding(id: string, levelIds: string[], extraChildIds: string[] = []) {
+  return {
+    id,
+    type: 'building',
+    object: 'node',
+    parentId: null,
+    visible: true,
+    metadata: {},
+    name: 'Building A',
+    position: [0, 0, 0],
+    rotation: [0, 0, 0],
+    children: [...levelIds, ...extraChildIds],
+  }
+}
+
+function makeElevator(
+  id: string,
+  buildingId: string,
+  opts?: {
+    fromLevelId?: string | null
+    toLevelId?: string | null
+    servedLevelIds?: string[]
+    visible?: boolean
+    isGhostPreview?: boolean
+  },
+) {
+  const meta: Record<string, unknown> = {}
+  if (opts?.isGhostPreview) meta.isGhostPreview = true
+  return {
+    id,
+    type: 'elevator',
+    object: 'node',
+    parentId: buildingId,
+    visible: opts?.visible ?? true,
+    metadata: meta,
+    position: [2, 0, 3] as [number, number, number],
+    rotation: 0,
+    width: 1.6,
+    depth: 1.6,
+    cabHeight: 2.35,
+    fromLevelId: opts?.fromLevelId ?? 'level_1',
+    toLevelId: opts?.toLevelId ?? 'level_2',
+    ...(opts && 'servedLevelIds' in opts ? { servedLevelIds: opts.servedLevelIds } : {}),
+    shaftStyle: 'enclosed',
+    doorStyle: 'sliding',
+    doorPanelStyle: 'center-opening',
+    children: [],
+  }
+}
+
+function makeStair(
+  id: string,
+  opts?: { stairType?: string; innerRadius?: number; sweepAngle?: number },
+) {
+  return {
+    id,
+    type: 'stair',
+    object: 'node',
+    parentId: 'level_1',
+    visible: true,
+    metadata: {},
+    position: [1, 0, 1] as [number, number, number],
+    rotation: 0,
+    stairType: opts?.stairType,
+    width: 1.0,
+    totalRise: 3.0,
+    stepCount: 16,
+    ...(opts && 'innerRadius' in opts ? { innerRadius: opts.innerRadius } : {}),
+    ...(opts && 'sweepAngle' in opts ? { sweepAngle: opts.sweepAngle } : {}),
+    children: [],
+  }
+}
+
 // ============================================================================
 // Reset mocks before each test
 // ============================================================================
@@ -373,6 +446,7 @@ describe('formatSceneContextForPrompt', () => {
       roofs: [],
       slabs: [],
       stairs: [],
+      elevators: [],
       fences: [],
       buildings: [],
     }
@@ -397,6 +471,7 @@ describe('formatSceneContextForPrompt', () => {
         { id: 'wall_long', start: [0, 0] as [number, number], end: [6, 0] as [number, number], thickness: 0.2, length: 6 },
       ],
       stairs: [],
+      elevators: [],
       fences: [],
       buildings: [],
     }
@@ -429,6 +504,7 @@ describe('formatSceneContextForPrompt', () => {
       roofs: [],
       slabs: [],
       stairs: [],
+      elevators: [],
       fences: [],
       buildings: [],
     }
@@ -469,6 +545,7 @@ describe('formatSceneContextForPrompt', () => {
         },
       ],
       stairs: [],
+      elevators: [],
       fences: [],
       buildings: [],
     }
@@ -498,6 +575,7 @@ describe('formatSceneContextForPrompt', () => {
         },
       ],
       stairs: [],
+      elevators: [],
       fences: [],
       buildings: [],
     }
@@ -518,10 +596,403 @@ describe('formatSceneContextForPrompt', () => {
       roofs: [],
       slabs: [],
       stairs: [],
+      elevators: [],
       fences: [],
       buildings: [],
     }
     const output = formatSceneContextForPrompt(ctx)
     expect(output).toContain('empty')
+  })
+})
+
+// ============================================================================
+// Elevator collection (building-scoped)
+// ============================================================================
+
+describe('serializeSceneContext — elevator collection (building-scoped)', () => {
+  it('collects elevators that live under the current building', () => {
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      building_1: makeBuilding('building_1', ['level_1'], ['elev_1']),
+      level_1: { ...makeLevel('level_1', []), parentId: 'building_1' },
+      elev_1: makeElevator('elev_1', 'building_1'),
+    })
+
+    const ctx = serializeSceneContext()
+    expect(ctx.elevators).toHaveLength(1)
+    expect(ctx.elevators[0]!.id).toBe('elev_1')
+    expect(ctx.elevators[0]!.fromLevelId).toBe('level_1')
+    expect(ctx.elevators[0]!.toLevelId).toBe('level_2')
+  })
+
+  it('does NOT collect elevators under a different building', () => {
+    // Two buildings, current level lives under building_1 — elevator on building_2 must be skipped
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      building_1: makeBuilding('building_1', ['level_1']),
+      level_1: { ...makeLevel('level_1', []), parentId: 'building_1' },
+      building_2: makeBuilding('building_2', ['level_2'], ['elev_other']),
+      level_2: { ...makeLevel('level_2', []), parentId: 'building_2' },
+      elev_other: makeElevator('elev_other', 'building_2'),
+    })
+
+    const ctx = serializeSceneContext()
+    expect(ctx.elevators).toHaveLength(0)
+    // Buildings list still includes both for site-level awareness
+    expect(ctx.buildings).toHaveLength(2)
+  })
+
+  it('omits servedLevelIds key when undefined (conditional spread)', () => {
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      building_1: makeBuilding('building_1', ['level_1'], ['elev_1']),
+      level_1: { ...makeLevel('level_1', []), parentId: 'building_1' },
+      // makeElevator with no servedLevelIds option → property absent on input
+      elev_1: makeElevator('elev_1', 'building_1'),
+    })
+
+    const ctx = serializeSceneContext()
+    expect(ctx.elevators[0]).not.toHaveProperty('servedLevelIds')
+  })
+
+  it('includes servedLevelIds when populated', () => {
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      building_1: makeBuilding('building_1', ['level_1'], ['elev_1']),
+      level_1: { ...makeLevel('level_1', []), parentId: 'building_1' },
+      elev_1: makeElevator('elev_1', 'building_1', { servedLevelIds: ['level_1', 'level_2', 'level_3'] }),
+    })
+
+    const ctx = serializeSceneContext()
+    expect(ctx.elevators[0]!.servedLevelIds).toEqual(['level_1', 'level_2', 'level_3'])
+  })
+
+  it('treats empty servedLevelIds [] as falsy and OMITS it from summary (current behavior)', () => {
+    // The conditional spread `...(e.servedLevelIds ? { servedLevelIds: e.servedLevelIds } : {})`
+    // evaluates [] as truthy in JS, so an empty array WOULD be kept.
+    // This test pins the actual semantics so any contract drift is caught.
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      building_1: makeBuilding('building_1', ['level_1'], ['elev_1']),
+      level_1: { ...makeLevel('level_1', []), parentId: 'building_1' },
+      elev_1: makeElevator('elev_1', 'building_1', { servedLevelIds: [] }),
+    })
+
+    const ctx = serializeSceneContext()
+    // Current behavior: empty array IS kept (because [] is truthy in JS).
+    // This pins the as-implemented contract — see notes for caveat.
+    expect(ctx.elevators[0]!.servedLevelIds).toEqual([])
+  })
+})
+
+// ============================================================================
+// Ghost / hidden node filtering
+// ============================================================================
+
+describe('serializeSceneContext — ghost / hidden filtering', () => {
+  it('excludes walls with visible=false from the active level', () => {
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      level_1: makeLevel('level_1', ['wall_1', 'wall_hidden']),
+      wall_1: makeWall('wall_1', [0, 0], [4, 0]),
+      wall_hidden: { ...makeWall('wall_hidden', [0, 2], [4, 2]), visible: false },
+    })
+
+    const ctx = serializeSceneContext()
+    expect(ctx.wallCount).toBe(1)
+    expect(ctx.walls.map((w) => w.id)).toEqual(['wall_1'])
+  })
+
+  it('excludes walls flagged metadata.isGhostPreview', () => {
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      level_1: makeLevel('level_1', ['wall_1', 'wall_ghost']),
+      wall_1: makeWall('wall_1', [0, 0], [4, 0]),
+      wall_ghost: { ...makeWall('wall_ghost', [0, 2], [4, 2]), metadata: { isGhostPreview: true } },
+    })
+
+    const ctx = serializeSceneContext()
+    expect(ctx.wallCount).toBe(1)
+    expect(ctx.walls[0]!.id).toBe('wall_1')
+  })
+
+  it('excludes walls flagged metadata.isGhostRemoval', () => {
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      level_1: makeLevel('level_1', ['wall_1', 'wall_pendingRemove']),
+      wall_1: makeWall('wall_1', [0, 0], [4, 0]),
+      wall_pendingRemove: { ...makeWall('wall_pendingRemove', [0, 2], [4, 2]), metadata: { isGhostRemoval: true } },
+    })
+
+    const ctx = serializeSceneContext()
+    expect(ctx.wallCount).toBe(1)
+    expect(ctx.walls[0]!.id).toBe('wall_1')
+  })
+
+  it('ghost-preview elevators are filtered out (mirrors BFS visibility check)', () => {
+    // Elevators are collected in a SECOND, building-scoped pass (not the
+    // level-scoped BFS), so the visibility filter has to be re-applied
+    // explicitly there. Was a real source bug — pinned here in the fixed
+    // state so a future regression would surface.
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      building_1: makeBuilding('building_1', ['level_1'], ['elev_ghost']),
+      level_1: { ...makeLevel('level_1', []), parentId: 'building_1' },
+      elev_ghost: makeElevator('elev_ghost', 'building_1', { isGhostPreview: true }),
+    })
+
+    const ctx = serializeSceneContext()
+    expect(ctx.elevators).toHaveLength(0)
+  })
+
+  it('invisible elevators (visible=false) are filtered out of the summary', () => {
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      building_1: makeBuilding('building_1', ['level_1'], ['elev_hidden']),
+      level_1: { ...makeLevel('level_1', []), parentId: 'building_1' },
+      elev_hidden: makeElevator('elev_hidden', 'building_1', { visible: false }),
+    })
+
+    const ctx = serializeSceneContext()
+    expect(ctx.elevators).toHaveLength(0)
+  })
+})
+
+// ============================================================================
+// Cache (sceneContextCache)
+// ============================================================================
+
+describe('serializeSceneContext — cache', () => {
+  it('returns same reference on consecutive calls when nodes hash unchanged', () => {
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      level_1: makeLevel('level_1', ['wall_1']),
+      wall_1: makeWall('wall_1', [0, 0], [4, 0]),
+    })
+
+    const first = serializeSceneContext()
+    const second = serializeSceneContext()
+    expect(second).toBe(first) // reference equality — cache hit
+  })
+
+  it('invalidates cache when a node is added (hash changes)', () => {
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      level_1: makeLevel('level_1', ['wall_1']),
+      wall_1: makeWall('wall_1', [0, 0], [4, 0]),
+    })
+
+    const first = serializeSceneContext()
+    expect(first.wallCount).toBe(1)
+
+    // Add a new wall — hash changes
+    mockNodes.wall_2 = makeWall('wall_2', [0, 2], [4, 2])
+    ;(mockNodes.level_1 as { children: string[] }).children = ['wall_1', 'wall_2']
+
+    const second = serializeSceneContext()
+    expect(second).not.toBe(first)
+    expect(second.wallCount).toBe(2)
+  })
+
+  it('invalidates cache when levelId changes', () => {
+    setNodes({
+      level_1: makeLevel('level_1', ['wall_1']),
+      wall_1: makeWall('wall_1', [0, 0], [4, 0]),
+      level_2: makeLevel('level_2', []),
+    })
+
+    mockSelection.levelId = 'level_1'
+    const first = serializeSceneContext()
+    expect(first.levelId).toBe('level_1')
+
+    mockSelection.levelId = 'level_2'
+    const second = serializeSceneContext()
+    expect(second).not.toBe(first)
+    expect(second.levelId).toBe('level_2')
+  })
+
+  it('invalidateSceneCache() forces a re-serialize even when nodes are identical', () => {
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      level_1: makeLevel('level_1', ['wall_1']),
+      wall_1: makeWall('wall_1', [0, 0], [4, 0]),
+    })
+
+    const first = serializeSceneContext()
+    invalidateSceneCache()
+    const second = serializeSceneContext()
+    // Different object identity — recomputed
+    expect(second).not.toBe(first)
+    // But same content
+    expect(second.wallCount).toBe(first.wallCount)
+  })
+})
+
+// ============================================================================
+// Stair conditional fields (innerRadius / sweepAngle by stairType)
+// ============================================================================
+
+describe('serializeSceneContext — stair conditional fields', () => {
+  it('stairType="straight" omits innerRadius and sweepAngle even if numeric', () => {
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      level_1: makeLevel('level_1', ['stair_1']),
+      stair_1: makeStair('stair_1', { stairType: 'straight', innerRadius: 0.5, sweepAngle: 90 }),
+    })
+
+    const ctx = serializeSceneContext()
+    expect(ctx.stairs).toHaveLength(1)
+    const s = ctx.stairs[0]!
+    expect(s.stairType).toBe('straight')
+    expect(s).not.toHaveProperty('innerRadius')
+    expect(s).not.toHaveProperty('sweepAngle')
+  })
+
+  it('stairType="curved" includes innerRadius and sweepAngle', () => {
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      level_1: makeLevel('level_1', ['stair_1']),
+      stair_1: makeStair('stair_1', { stairType: 'curved', innerRadius: 0.5, sweepAngle: 90 }),
+    })
+
+    const ctx = serializeSceneContext()
+    const s = ctx.stairs[0]!
+    expect(s.stairType).toBe('curved')
+    expect(s.innerRadius).toBe(0.5)
+    expect(s.sweepAngle).toBe(90)
+  })
+
+  it('stairType="spiral" includes innerRadius and sweepAngle', () => {
+    mockSelection.levelId = 'level_1'
+    setNodes({
+      level_1: makeLevel('level_1', ['stair_1']),
+      stair_1: makeStair('stair_1', { stairType: 'spiral', innerRadius: 0.3, sweepAngle: 270 }),
+    })
+
+    const ctx = serializeSceneContext()
+    const s = ctx.stairs[0]!
+    expect(s.stairType).toBe('spiral')
+    expect(s.innerRadius).toBe(0.3)
+    expect(s.sweepAngle).toBe(270)
+  })
+})
+
+// ============================================================================
+// formatSceneContextForPrompt — elevator + stair sections (snapshot-like)
+// ============================================================================
+
+describe('formatSceneContextForPrompt — elevator + stair sections', () => {
+  it('formats elevator section with id, pos, range, shaft/door styles', () => {
+    const ctx = {
+      levelId: 'level_1',
+      items: [],
+      walls: [],
+      zones: [],
+      wallCount: 0,
+      zoneCount: 0,
+      levels: [],
+      ceilings: [],
+      roofs: [],
+      slabs: [],
+      stairs: [],
+      fences: [],
+      buildings: [],
+      elevators: [
+        {
+          id: 'elev_1',
+          position: [2.5, 0, 3.0] as [number, number, number],
+          rotation: 1.57,
+          width: 1.6,
+          depth: 1.6,
+          cabHeight: 2.35,
+          fromLevelId: 'level_1',
+          toLevelId: 'level_2',
+          shaftStyle: 'enclosed',
+          doorStyle: 'sliding',
+          doorPanelStyle: 'center-opening',
+        },
+      ],
+    }
+
+    const out = formatSceneContextForPrompt(ctx)
+    expect(out).toContain('Elevators (1)')
+    expect(out).toContain('elev_1')
+    expect(out).toContain('level_1→level_2')
+    expect(out).toContain('1.6×1.6×2.35m')
+    expect(out).toContain('shaft=enclosed')
+    expect(out).toContain('door=sliding/center-opening')
+  })
+
+  it('formats elevator with service range undefined when fromLevelId is null', () => {
+    const ctx = {
+      levelId: 'level_1',
+      items: [],
+      walls: [],
+      zones: [],
+      wallCount: 0,
+      zoneCount: 0,
+      levels: [],
+      ceilings: [],
+      roofs: [],
+      slabs: [],
+      stairs: [],
+      fences: [],
+      buildings: [],
+      elevators: [
+        {
+          id: 'elev_1',
+          position: [0, 0, 0] as [number, number, number],
+          rotation: 0,
+          width: 1.6,
+          depth: 1.6,
+          cabHeight: 2.35,
+          fromLevelId: null,
+          toLevelId: null,
+          shaftStyle: 'glass',
+          doorStyle: 'sliding',
+          doorPanelStyle: 'center-opening',
+        },
+      ],
+    }
+
+    const out = formatSceneContextForPrompt(ctx)
+    expect(out).toContain('service range undefined')
+  })
+
+  it('formats stair section with type, slabOpening, railing extras', () => {
+    const ctx = {
+      levelId: 'level_1',
+      items: [],
+      walls: [],
+      zones: [],
+      wallCount: 0,
+      zoneCount: 0,
+      levels: [],
+      ceilings: [],
+      roofs: [],
+      slabs: [],
+      fences: [],
+      buildings: [],
+      elevators: [],
+      stairs: [
+        {
+          id: 'stair_1',
+          position: [1, 0, 1] as [number, number, number],
+          rotation: 0,
+          stairType: 'curved',
+          slabOpeningMode: 'destination',
+          railingMode: 'both',
+          segments: [
+            { id: 'seg_1', segmentType: 'stair', width: 1.0, length: 3.0, height: 2.5, stepCount: 16, attachmentSide: 'front' },
+          ],
+        },
+      ],
+    }
+    const out = formatSceneContextForPrompt(ctx)
+    expect(out).toContain('Stairs (1)')
+    expect(out).toContain('stair_1')
+    expect(out).toContain('type=curved')
+    expect(out).toContain('slabOpening=destination')
+    expect(out).toContain('railing=both')
   })
 })

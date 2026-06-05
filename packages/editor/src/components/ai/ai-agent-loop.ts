@@ -251,52 +251,68 @@ export async function runAgentLoop({
         useAIChat.getState().addTokensUsed(estimatedTokens)
       }
 
+      // Decide exit behavior BEFORE finishStreaming, because finishStreaming
+      // commits the current streaming buffer and resets streamingContent to
+      // ''. If we wait to append the empty-response fallback until after
+      // that reset, the fallback lands in the NEXT (never-flushed) streaming
+      // session and is invisible in messages[]. Same window applies to
+      // reading the scene-context for the vertical-connection reminder.
+      let willInjectVerticalReminder = false
+      let cachedCheckCtx: ReturnType<typeof serializeSceneContext> | null = null
+      if (toolCalls.length === 0 && !verticalConnectionReminderInjected) {
+        try {
+          cachedCheckCtx = serializeSceneContext()
+          const hasVerticalConnection =
+            cachedCheckCtx.stairs.length > 0 || cachedCheckCtx.elevators.length > 0
+          if (cachedCheckCtx.levels.length >= 2 && !hasVerticalConnection) {
+            willInjectVerticalReminder = true
+          }
+        } catch (err) {
+          console.warn('[AI Agent] Multi-level vertical-connection check failed:', err)
+        }
+      }
+
+      // Empty-response fallback — write to the streaming buffer BEFORE
+      // finishStreaming so it ends up inside the committed assistant message
+      // visible in messages[]. Skip when the reminder is about to continue
+      // the loop, since the reminder will produce real content next round.
+      if (toolCalls.length === 0 && !willInjectVerticalReminder && !text?.trim()) {
+        const fallback = 'Sorry, I was unable to process that request. Please try rephrasing or providing more details.'
+        useAIChat.getState().appendStreamContent(fallback)
+      }
+
       // Save assistant message
       lastMessageId = useAIChat.getState().finishStreaming(
         toolCalls.length > 0 ? toolCalls : undefined,
       )
 
       // No tool calls → LLM is done, exit loop … unless the scene has a
-      // dangling multi-level structure without any stair connecting it,
-      // in which case force one more round to add the missing stair.
+      // dangling multi-level structure without any stair/elevator connecting
+      // it, in which case force one more round to add the missing connection.
       if (toolCalls.length === 0) {
-        if (!verticalConnectionReminderInjected) {
-          try {
-            const checkCtx = serializeSceneContext()
-            const hasVerticalConnection =
-              checkCtx.stairs.length > 0 || checkCtx.elevators.length > 0
-            if (checkCtx.levels.length >= 2 && !hasVerticalConnection) {
-              verticalConnectionReminderInjected = true
-              conversationMessages.push({
-                role: 'assistant' as const,
-                content: text || '',
-              })
-              conversationMessages.push({
-                role: 'user' as const,
-                content:
-                  `[System reminder] The scene now contains ${checkCtx.levels.length} levels but neither a stair nor an elevator connects them. ` +
-                  `Per the Multi-Level Building Workflow rules, you MUST add at least one vertical connection so the levels are ` +
-                  `physically accessible. Either call \`add_stair\` with \`slabOpeningMode:"destination"\` (defaults: ` +
-                  `\`stairType:"straight"\`, \`length:3.0\`, \`width:1.0\`), or call \`add_elevator\` (defaults: ` +
-                  `\`width:1.6\`, \`depth:1.6\`, \`cabHeight:2.35\`; service range auto-resolves to the bottom and top served levels). ` +
-                  `Prefer the elevator when the user explicitly asked for one or the building spans 3+ floors. ` +
-                  `If the user explicitly asked for a disconnected design, reply with text explaining the constraint and that you ` +
-                  `are leaving the levels disconnected by request, then stop.`,
-              })
-              onIterationEnd?.(iteration, null)
-              continue
-            }
-          } catch (err) {
-            // Non-fatal: just log and fall through to the normal exit path.
-            console.warn('[AI Agent] Multi-level vertical-connection check failed:', err)
-          }
+        if (willInjectVerticalReminder && cachedCheckCtx) {
+          verticalConnectionReminderInjected = true
+          conversationMessages.push({
+            role: 'assistant' as const,
+            content: text || '',
+          })
+          conversationMessages.push({
+            role: 'user' as const,
+            content:
+              `[System reminder] The scene now contains ${cachedCheckCtx.levels.length} levels but neither a stair nor an elevator connects them. ` +
+              `Per the Multi-Level Building Workflow rules, you MUST add at least one vertical connection so the levels are ` +
+              `physically accessible. Either call \`add_stair\` with \`slabOpeningMode:"destination"\` (defaults: ` +
+              `\`stairType:"straight"\`, \`length:3.0\`, \`width:1.0\`), or call \`add_elevator\` (defaults: ` +
+              `\`width:1.6\`, \`depth:1.6\`, \`cabHeight:2.35\`; service range auto-resolves to the bottom and top served levels). ` +
+              `Prefer the elevator when the user explicitly asked for one or the building spans 3+ floors. ` +
+              `If the user explicitly asked for a disconnected design, reply with text explaining the constraint and that you ` +
+              `are leaving the levels disconnected by request, then stop.`,
+          })
+          onIterationEnd?.(iteration, null)
+          continue
         }
-        // Empty response fallback: if LLM returned no text AND no tools,
-        // show a helpful message instead of leaving the chat silent.
-        if (!text?.trim() && lastMessageId) {
-          const fallback = 'Sorry, I was unable to process that request. Please try rephrasing or providing more details.'
-          useAIChat.getState().appendStreamContent(fallback)
-        }
+        // Fallback (when applicable) was already appended above before
+        // finishStreaming, so the committed assistant message contains it.
         onIterationEnd?.(iteration, null)
         break
       }

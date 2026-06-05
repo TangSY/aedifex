@@ -546,6 +546,24 @@ function parseToolCall(name: string, input: Record<string, unknown>): AIToolCall
         description: input.description as string | undefined,
       }
 
+    case 'add_elevator':
+      return {
+        tool: 'add_elevator',
+        position: input.position as [number, number, number],
+        rotationY: input.rotationY as number | undefined,
+        width: input.width as number | undefined,
+        depth: input.depth as number | undefined,
+        cabHeight: input.cabHeight as number | undefined,
+        fromLevelId: input.fromLevelId as string | null | undefined,
+        toLevelId: input.toLevelId as string | null | undefined,
+        servedLevelIds: input.servedLevelIds as string[] | undefined,
+        shaftStyle: input.shaftStyle as 'solid' | 'glass' | undefined,
+        doorStyle: input.doorStyle as 'center-opening' | 'single-left' | 'single-right' | undefined,
+        doorPanelStyle: input.doorPanelStyle as 'glass-frame' | 'solid-panel' | 'segmented-panel' | undefined,
+        buildingId: input.buildingId as string | undefined,
+        description: input.description as string | undefined,
+      }
+
     case 'update_stair':
       return {
         tool: 'update_stair',

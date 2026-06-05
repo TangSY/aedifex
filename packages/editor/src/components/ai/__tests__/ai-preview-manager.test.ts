@@ -147,7 +147,12 @@ vi.mock('@aedifex/viewer', () => ({
   },
 }))
 
-vi.mock('nanoid', () => ({ nanoid: () => 'test-log-id' }))
+vi.mock('nanoid', () => ({
+  nanoid: () => 'test-log-id',
+  // customAlphabet is consumed transitively by @aedifex/core registry helpers.
+  // Without this the suite collapses at import time on vitest 4.1.8.
+  customAlphabet: () => () => 'test-id',
+}))
 
 import {
   applyGhostPreview,
