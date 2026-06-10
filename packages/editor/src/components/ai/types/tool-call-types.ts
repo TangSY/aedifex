@@ -451,7 +451,7 @@ export interface UpdateFenceToolCall {
   reason?: string
 }
 
-/** Roof accessory kind — six configurations exposed by AI tools. */
+/** Roof accessory kind — eleven configurations exposed by AI tools. */
 export type RoofAccessoryKind =
   | 'chimney'
   | 'dormer'
@@ -459,24 +459,40 @@ export type RoofAccessoryKind =
   | 'solar-panel'
   | 'ridge-vent'
   | 'box-vent'
+  | 'turbine-vent'
+  | 'eyebrow-vent'
+  | 'cupola'
+  | 'gutter'
+  | 'downspout'
 
-/** Add a roof accessory (chimney/dormer/skylight/solar-panel/ridge-vent/box-vent) to a roof segment */
+/** Add a roof accessory (point vents / dormer / skylight / solar-panel / gutter / downspout) to a roof segment */
 export interface AddRoofAccessoryToolCall {
   tool: 'add_roof_accessory'
   /** Accessory kind */
   kind: RoofAccessoryKind
-  /** Target roof segment node ID (from scene context) */
+  /** Target roof segment node ID (from scene context). For kind="downspout" this is derived from the host gutter and may be omitted. */
   roofSegmentId: string
-  /** Segment-local position [x, y, z] (Y is ignored — anchored to pitched surface) */
+  /**
+   * Segment-local position [x, y, z] (Y is ignored — anchored to pitched surface).
+   * For kind="gutter" this is treated as the cursor hit on the segment: the
+   * validator snaps it to the nearest eave (drip edge), like the manual tool.
+   * For kind="downspout" it is ignored — the mount derives from the gutter outlet.
+   */
   position: [number, number, number]
-  /** Rotation around Y axis in radians (default: 0) */
+  /** Rotation around Y axis in radians (default: 0). For kind="gutter" it is overridden by the eave snap orientation. */
   rotation?: number
-  /** Width in meters. Kind defaults: chimney/box-vent 0.6, dormer 2.0, skylight 1.0, solar-panel 1.0, ridge-vent 2.0 */
+  /** Width in meters. Kind defaults: chimney/box-vent 0.6, dormer 2.0, skylight 1.0, solar-panel 1.0, ridge-vent 2.0, eyebrow-vent 0.5, cupola 0.8. For turbine-vent this sets the head diameter (default 0.32). */
   width?: number
-  /** Depth in meters. Kind defaults: chimney 0.6, dormer 1.5, skylight 1.0, solar-panel 1.6, box-vent 0.6, ridge-vent 0.3 */
+  /** Depth in meters. Kind defaults: chimney 0.6, dormer 1.5, skylight 1.0, solar-panel 1.6, box-vent 0.6, ridge-vent 0.3, eyebrow-vent 0.6, cupola 0.8. Ignored for turbine-vent. */
   depth?: number
   /** Chimney only: height above ridge in meters (default: 1.0) */
   heightAboveRidge?: number
+  /** Gutter: run length along the eave in meters (default: 2.0). Downspout: vertical pipe length override (default: auto — eave height down to segment base). Ignored for other kinds. */
+  length?: number
+  /** Downspout only (required for it): node ID of the host gutter this downspout drains. Create the gutter first (add_roof_accessory kind="gutter"). */
+  gutterId?: string
+  /** Downspout only: outlet position along the gutter length (gutter-local +X), signed from the gutter CENTER in meters (default: 0). */
+  offsetAlongGutter?: number
   description?: string
 }
 

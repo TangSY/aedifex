@@ -497,13 +497,27 @@ function parseToolCall(name: string, input: Record<string, unknown>): AIToolCall
     case 'add_roof_accessory':
       return {
         tool: 'add_roof_accessory',
-        kind: input.kind as 'chimney' | 'dormer' | 'skylight' | 'solar-panel' | 'ridge-vent' | 'box-vent',
+        kind: input.kind as
+          | 'chimney'
+          | 'dormer'
+          | 'skylight'
+          | 'solar-panel'
+          | 'ridge-vent'
+          | 'box-vent'
+          | 'turbine-vent'
+          | 'eyebrow-vent'
+          | 'cupola'
+          | 'gutter'
+          | 'downspout',
         roofSegmentId: input.roofSegmentId as string,
         position: input.position as [number, number, number],
         rotation: input.rotation as number | undefined,
         width: input.width as number | undefined,
         depth: input.depth as number | undefined,
         heightAboveRidge: input.heightAboveRidge as number | undefined,
+        length: input.length as number | undefined,
+        gutterId: input.gutterId as string | undefined,
+        offsetAlongGutter: input.offsetAlongGutter as number | undefined,
         description: input.description as string | undefined,
       }
 

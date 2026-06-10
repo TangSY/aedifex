@@ -89,6 +89,7 @@ vi.mock('@aedifex/core', () => {
         deleteNode: mockDeleteNode,
         updateNode: mockUpdateNode,
         setNode: mockSetNode,
+        dirtyNodes: new Set<string>(),
       }),
       temporal: { getState: () => ({ pause: mockPause, resume: mockResume }) },
     },
@@ -119,7 +120,13 @@ vi.mock('@aedifex/core', () => {
     SolarPanelNode: makeParser('solar-panel'),
     RidgeVentNode: makeParser('ridge-vent'),
     BoxVentNode: makeParser('box-vent'),
+    TurbineVentNode: makeParser('turbine-vent'),
+    EyebrowVentNode: makeParser('eyebrow-vent'),
+    CupolaNode: makeParser('cupola'),
+    GutterNode: makeParser('gutter'),
+    DownspoutNode: makeParser('downspout'),
     ElevatorNode: makeParser('elevator'),
+    generateId: (prefix: string) => nextId(prefix),
   }
 })
 

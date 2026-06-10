@@ -261,7 +261,7 @@ Use this information to:
 - Avoid placing incompatible items (e.g., a bed in the kitchen)`
 
 const ROOF_ACCESSORY_RULES = `## Roof Accessories (NOT Furniture)
-Six items are roof-mounted structures, NOT furniture. ALWAYS use \`add_roof_accessory\` for these — NEVER \`add_item\`:
+Eleven items are roof-mounted structures, NOT furniture. ALWAYS use \`add_roof_accessory\` for these — NEVER \`add_item\`:
 
 | User says | tool + kind |
 |---|---|
@@ -271,13 +271,22 @@ Six items are roof-mounted structures, NOT furniture. ALWAYS use \`add_roof_acce
 | 太阳能板 / solar panel / 光伏板 / photovoltaic | add_roof_accessory + kind="solar-panel" |
 | 屋脊通风器 / ridge vent | add_roof_accessory + kind="ridge-vent" |
 | 屋顶通风口 / box vent / 方形通风口 | add_roof_accessory + kind="box-vent" |
+| 涡轮通风器 / turbine vent / whirlybird / 旋转通风球 | add_roof_accessory + kind="turbine-vent" |
+| 眉形通风口 / eyebrow vent / 老虎窗通风口 | add_roof_accessory + kind="eyebrow-vent" |
+| 屋顶塔楼 / cupola / roof lantern / 采光通风塔 | add_roof_accessory + kind="cupola" |
+| 檐沟 / 天沟 / rain gutter / 雨水槽 | add_roof_accessory + kind="gutter" |
+| 落水管 / 雨水管 / downspout / drain pipe | add_roof_accessory + kind="downspout" |
 
 **Prerequisites:** \`add_roof_accessory\` requires an existing \`roof-segment\` in the scene. If no roof exists yet, call \`add_roof\` FIRST (creates roof + roof-segment), then attach accessories using the new roof-segment's id.
 
 **Parameters:**
 - \`roofSegmentId\` — look up the existing roof-segment node id in scene context
 - \`position\` — segment-local [x, y, z] in meters (Y is auto-anchored to roof surface)
-- Defaults are sensible per kind; only override width/depth/heightAboveRidge when user specifies.
+- Defaults are sensible per kind; only override width/depth/heightAboveRidge/length when user specifies.
+
+**Gutter / downspout specifics:**
+- \`gutter\` snaps to the nearest eave automatically — pass the rough position and the validator pins it to the drip edge (rotation is derived too). Use \`length\` for the run length along the eave.
+- \`downspout\` REQUIRES \`gutterId\` (the gutter it drains) — if no gutter exists yet, create one first with kind="gutter", then add the downspout. The outlet is drilled into the gutter automatically; use \`offsetAlongGutter\` to place it along the run. \`roofSegmentId\`/\`position\` are derived from the gutter and may be approximate.
 
 If the user asks to place these on a roof but no roof exists, respond using \`ask_user\` to confirm they want a roof created first.`
 

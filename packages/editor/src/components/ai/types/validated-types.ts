@@ -2,7 +2,8 @@ import type { AnyNodeId, AssetInput } from '@aedifex/core'
 import type { RoofAccessoryKind } from './tool-call-types'
 
 // ============================================================================
-// Roof accessory validated op (shared by chimney/dormer/skylight/solar-panel/ridge-vent/box-vent)
+// Roof accessory validated op (shared by chimney/dormer/skylight/solar-panel/
+// ridge-vent/box-vent/turbine-vent/eyebrow-vent/cupola/gutter/downspout)
 // ============================================================================
 
 export interface ValidatedAddRoofAccessory {
@@ -10,12 +11,21 @@ export interface ValidatedAddRoofAccessory {
   status: ValidatedOperationStatus
   kind: RoofAccessoryKind
   roofSegmentId: string
+  /** For kind="gutter" this is the eave-snapped position (validator output, not the raw LLM input). */
   position: [number, number, number]
+  /** For kind="gutter" this is the eave snap orientation (outward axis away from the building). */
   rotation: number
+  /** For kind="turbine-vent" this carries the head diameter; for kind="downspout" the bore diameter. */
   width: number
   depth: number
   /** Chimney only */
   heightAboveRidge?: number
+  /** Gutter: run length along the eave. Downspout: vertical drop length (auto-computed from eave height when omitted in the call). */
+  length?: number
+  /** Downspout only: host gutter node ID. */
+  gutterId?: string
+  /** Downspout only: outlet offset along the gutter length, signed from center. */
+  outletOffset?: number
   adjustmentReason?: string
   errorReason?: string
 }
