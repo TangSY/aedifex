@@ -773,7 +773,7 @@ describe('skipped entity counts', () => {
     addLine(11002, { Name: { value: 'Beam B' } }, IFC.IFCBEAM)
     addLine(11003, { Name: { value: 'Beam C' } }, IFC.IFCBEAM)
     const out = await convertIfcToAedifex(new Uint8Array(0))
-    expect(Object.values(out.nodes).filter((n) => n.type === 'beam')).toHaveLength(0)
+    expect(Object.values(out.nodes).filter((n) => (n.type as string) === 'beam')).toHaveLength(0)
   })
 
   test('railings / coverings / curtain walls counted, no item node emitted', async () => {

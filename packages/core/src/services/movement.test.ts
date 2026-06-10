@@ -7,14 +7,14 @@ import { applyAxisLock, isMovable, movePlanToward, moveToward, resolveMovable } 
 
 const id = (s: string) => s as AnyNodeId
 
-function makeDef(kind: string, capabilities: Capabilities = {}): AnyNodeDefinition {
+function makeDef(kind: string, capabilities: Partial<Capabilities> = {}): AnyNodeDefinition {
   return {
     kind,
     schemaVersion: 1,
     schema: z.object({ type: z.literal(kind) }) as any,
     category: 'utility',
     defaults: () => ({}) as any,
-    capabilities,
+    capabilities: { deletable: true, ...capabilities },
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
   }
 }

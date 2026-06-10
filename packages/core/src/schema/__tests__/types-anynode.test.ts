@@ -108,7 +108,7 @@ describe('AnyNode discriminated union', () => {
       test(`${kind} parses and preserves type discriminator`, () => {
         const parsed = AnyNode.parse(fixture)
         expect(parsed.type).toBe(kind as typeof parsed.type)
-        expect(parsed.id).toBe(fixture.id as string)
+        expect(parsed.id as string).toBe(fixture.id as string)
       })
     }
   })

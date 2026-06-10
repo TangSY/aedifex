@@ -16,7 +16,7 @@ const id = (s: string) => s as AnyNodeId
 
 function makeDef(
   kind: string,
-  capabilities: Capabilities = {},
+  capabilities: Partial<Capabilities> = {},
   overrides: Partial<AnyNodeDefinition> = {},
 ): AnyNodeDefinition {
   return {
@@ -25,7 +25,7 @@ function makeDef(
     schema: z.object({ type: z.literal(kind) }) as any,
     category: 'utility',
     defaults: () => ({}) as any,
-    capabilities,
+    capabilities: { deletable: true, ...capabilities },
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
     ...overrides,
   }

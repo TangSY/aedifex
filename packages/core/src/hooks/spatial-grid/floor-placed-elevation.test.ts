@@ -10,7 +10,7 @@ const LEVEL_ID = 'level_test'
 
 function makeDefinition(
   kind: AnyNode['type'],
-  capabilities: AnyNodeDefinition['capabilities'] = {},
+  capabilities: Partial<AnyNodeDefinition['capabilities']> = {},
 ): AnyNodeDefinition {
   return {
     kind,
@@ -18,7 +18,7 @@ function makeDefinition(
     schema: z.object({ type: z.literal(kind) }) as never,
     category: 'utility',
     defaults: () => ({}) as never,
-    capabilities,
+    capabilities: { deletable: true, ...capabilities },
   }
 }
 

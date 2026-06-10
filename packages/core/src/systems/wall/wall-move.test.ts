@@ -9,8 +9,8 @@ import {
 } from './wall-move'
 
 // Minimal wall fixture for planning (matches Pick<WallNode, 'id' | 'start' | 'end'>)
-type TestWall = { id: string; start: WallPlanPoint; end: WallPlanPoint }
-const w = (id: string, start: WallPlanPoint, end: WallPlanPoint): TestWall => ({ id, start, end })
+type TestWall = { id: `wall_${string}`; start: WallPlanPoint; end: WallPlanPoint }
+const w = (id: `wall_${string}`, start: WallPlanPoint, end: WallPlanPoint): TestWall => ({ id, start, end })
 
 describe('getPerpendicularWallMoveAxis', () => {
   test('returns perpendicular unit vector for non-degenerate wall', () => {
@@ -42,7 +42,7 @@ describe('planWallMoveJunctions — perpendicular T-junction (anchor stays)', ()
     // Wall being moved is horizontal (0,0)->(10,0) and slides in +x along its axis.
     // The anchor wall (0,0)->(0,5) is perpendicular at the start endpoint.
     // Move direction = (+x), anchor wall direction = (+y) -> off-axis -> bridge.
-    const linked: TestWall[] = [w('anchor', [0, 0], [0, 5])]
+    const linked: TestWall[] = [w('wall_anchor', [0, 0], [0, 5])]
     const originalStart: WallPlanPoint = [0, 0]
     const originalEnd: WallPlanPoint = [10, 0]
     const nextStart: WallPlanPoint = [1, 0]
@@ -51,7 +51,7 @@ describe('planWallMoveJunctions — perpendicular T-junction (anchor stays)', ()
     const plan = planWallMoveJunctions(linked, originalStart, originalEnd, nextStart, nextEnd)
     expect(plan.linkedWallsToMove).toHaveLength(0)
     expect(plan.bridgePlans).toHaveLength(1)
-    expect(plan.bridgePlans[0]!.wall.id).toBe('anchor')
+    expect(plan.bridgePlans[0]!.wall.id).toBe('wall_anchor')
     expect(plan.wallsToDelete).toHaveLength(0)
   })
 })
@@ -65,7 +65,7 @@ describe('planWallMoveJunctions — bridge relations (4 cases)', () => {
     // Hmm: "same-direction" means the linked wall lies along the move axis. So linked wall
     // along x and move along x. We'll construct linked from (0,0) to (-100, 0) which is collinear.
     // Movement of length 5, distance from sharedPoint = 100 → not consumed.
-    const linked: TestWall[] = [w('sd', [0, 0], [-100, 0])]
+    const linked: TestWall[] = [w('wall_sd', [0, 0], [-100, 0])]
     const plan = planWallMoveJunctions(
       linked,
       [0, 0],
@@ -86,77 +86,77 @@ describe('planWallMoveJunctions — bridge relations (4 cases)', () => {
     // Move direction at start endpoint: nextStart (5,0) - sharedPoint (0,0) = (+5, 0). Dot < 0 -> opposite.
     // For same-direction we need free endpoint and nextStart on same side. So linked free at (+3,0).
     // But that's collinear with the moved wall itself. The plan only considers OTHER linked walls.
-    const linked: TestWall[] = [w('sd', [0, 0], [3, 0])]
+    const linked: TestWall[] = [w('wall_sd', [0, 0], [3, 0])]
     const plan = planWallMoveJunctions(linked, [0, 0], [10, 0], [5, 0], [15, 0])
     // sd at start: relation between sd and move at (0,0). Free=(3,0); next=(5,0). Same axis, same direction.
     // Move length 5, sd length 3 → 5 >= 3 so consumed → goes through consume path.
-    expect(plan.wallsToDelete.map((wall) => wall.id)).toContain('sd')
-    expect(plan.linkedWallTargetPlans.find((t) => t.wall.id === 'sd')).toBeDefined()
+    expect(plan.wallsToDelete.map((wall) => wall.id)).toContain('wall_sd')
+    expect(plan.linkedWallTargetPlans.find((t) => t.wall.id === 'wall_sd')).toBeDefined()
   })
 
   test('same-direction (not consumed) added to linkedWallsToMove when move length < wall length', () => {
     // Move only 1 unit, but sd wall length = 3
-    const linked: TestWall[] = [w('sd', [0, 0], [3, 0])]
+    const linked: TestWall[] = [w('wall_sd', [0, 0], [3, 0])]
     const plan = planWallMoveJunctions(linked, [0, 0], [10, 0], [1, 0], [11, 0])
     // 1 < 3 → not consumed; sd is "same-direction" → added to linkedWallsToMove (standard plan path).
-    expect(plan.linkedWallsToMove.map((wall) => wall.id)).toContain('sd')
+    expect(plan.linkedWallsToMove.map((wall) => wall.id)).toContain('wall_sd')
     expect(plan.wallsToDelete).toHaveLength(0)
   })
 
   test('opposite-direction wall without sideBranch is added to linkedWallsToMove', () => {
     // Linked wall direction opposite of move: free at (-3,0); next = (5,0); dot < 0 → opposite
-    const linked: TestWall[] = [w('opp', [0, 0], [-3, 0])]
+    const linked: TestWall[] = [w('wall_opp', [0, 0], [-3, 0])]
     const plan = planWallMoveJunctions(linked, [0, 0], [10, 0], [5, 0], [15, 0])
     // No off-axis sibling → opposite is treated as moving along.
-    expect(plan.linkedWallsToMove.map((wall) => wall.id)).toContain('opp')
+    expect(plan.linkedWallsToMove.map((wall) => wall.id)).toContain('wall_opp')
     expect(plan.bridgePlans).toHaveLength(0)
   })
 
   test('off-axis wall (perpendicular) generates a bridge plan', () => {
-    const linked: TestWall[] = [w('perp', [0, 0], [0, 5])]
+    const linked: TestWall[] = [w('wall_perp', [0, 0], [0, 5])]
     const plan = planWallMoveJunctions(linked, [0, 0], [10, 0], [5, 0], [15, 0])
     expect(plan.linkedWallsToMove).toHaveLength(0)
-    expect(plan.bridgePlans.map((b) => b.wall.id)).toContain('perp')
+    expect(plan.bridgePlans.map((b) => b.wall.id)).toContain('wall_perp')
   })
 
   test('stationary wall (when sharedPoint not actually moved) is added to linkedWallsToMove', () => {
     // nextStart == originalStart -> moveLength < epsilon -> stationary
-    const linked: TestWall[] = [w('stat', [0, 0], [0, 3])]
+    const linked: TestWall[] = [w('wall_stat', [0, 0], [0, 3])]
     const plan = planWallMoveJunctions(linked, [0, 0], [10, 0], [0, 0], [10, 0])
-    expect(plan.linkedWallsToMove.map((wall) => wall.id)).toContain('stat')
+    expect(plan.linkedWallsToMove.map((wall) => wall.id)).toContain('wall_stat')
   })
 })
 
 describe('planWallMoveJunctions — same-direction consumed (delete + bridge)', () => {
   test('move length >= same-direction wall length consumes it and adds to wallsToDelete', () => {
     // Linked wall: from (0,0) to (3,0), length=3. Move from (0,0) to (5,0), moveLength=5. 5 >= 3 consumed.
-    const consumedWall = w('sd', [0, 0], [3, 0])
+    const consumedWall = w('wall_sd', [0, 0], [3, 0])
     const linked: TestWall[] = [consumedWall]
     const plan = planWallMoveJunctions(linked, [0, 0], [10, 0], [5, 0], [15, 0])
-    expect(plan.wallsToDelete.map((wall) => wall.id)).toContain('sd')
+    expect(plan.wallsToDelete.map((wall) => wall.id)).toContain('wall_sd')
     // Should also produce a target plan that pivots to the free endpoint
-    const targetPlan = plan.linkedWallTargetPlans.find((t) => t.wall.id === 'sd')
+    const targetPlan = plan.linkedWallTargetPlans.find((t) => t.wall.id === 'wall_sd')
     expect(targetPlan).toBeDefined()
     // Pivot is the free endpoint of consumed wall = (3,0)
     expect(targetPlan!.targetPoint).toEqual([3, 0])
   })
 
   test('consumed same-direction wall with opposite bridge source creates through-bridge plan', () => {
-    const consumedWall = w('sd', [0, 0], [3, 0])
-    const oppositeWall = w('opp', [0, 0], [-1, 0])
+    const consumedWall = w('wall_sd', [0, 0], [3, 0])
+    const oppositeWall = w('wall_opp', [0, 0], [-1, 0])
     const linked: TestWall[] = [consumedWall, oppositeWall]
     const plan = planWallMoveJunctions(linked, [0, 0], [10, 0], [5, 0], [15, 0])
-    expect(plan.wallsToDelete.map((wall) => wall.id)).toContain('sd')
+    expect(plan.wallsToDelete.map((wall) => wall.id)).toContain('wall_sd')
     // bridge source target plan exists
-    expect(plan.linkedWallTargetPlans.find((t) => t.wall.id === 'opp')).toBeDefined()
+    expect(plan.linkedWallTargetPlans.find((t) => t.wall.id === 'wall_opp')).toBeDefined()
     // bridge plan exists with :through suffix
-    expect(plan.bridgePlans.some((b) => b.wall.id === 'opp')).toBe(true)
+    expect(plan.bridgePlans.some((b) => b.wall.id === 'wall_opp')).toBe(true)
   })
 })
 
 describe('getLinkedWallUpdates / getPlannedLinkedWallUpdates', () => {
   test('linked walls mapping shared endpoints to next endpoints', () => {
-    const wall = w('a', [0, 0], [0, 5])
+    const wall = w('wall_a', [0, 0], [0, 5])
     const updates = getLinkedWallUpdates(
       [{ wall }],
       [0, 0],
@@ -169,7 +169,7 @@ describe('getLinkedWallUpdates / getPlannedLinkedWallUpdates', () => {
   })
 
   test('targetPoint takes precedence over originalStart/End mapping', () => {
-    const wall = w('a', [0, 0], [0, 5])
+    const wall = w('wall_a', [0, 0], [0, 5])
     const updates = getLinkedWallUpdates(
       [{ wall, matchPoint: [0, 0], targetPoint: [99, 99] }],
       [0, 0],
@@ -181,8 +181,8 @@ describe('getLinkedWallUpdates / getPlannedLinkedWallUpdates', () => {
   })
 
   test('getPlannedLinkedWallUpdates merges linkedWallsToMove + linkedWallTargetPlans', () => {
-    const moveWall = w('moveMe', [0, 0], [0, 5])
-    const pivotWall = w('pivot', [0, 0], [3, 0])
+    const moveWall = w('wall_moveMe', [0, 0], [0, 5])
+    const pivotWall = w('wall_pivot', [0, 0], [3, 0])
     const plan = {
       linkedWallsToMove: [moveWall],
       linkedWallTargetPlans: [
@@ -199,8 +199,8 @@ describe('getLinkedWallUpdates / getPlannedLinkedWallUpdates', () => {
       [10, 1],
     )
     expect(updates).toHaveLength(2)
-    const moveUpdate = updates.find((u) => u.id === 'moveMe')!
-    const pivotUpdate = updates.find((u) => u.id === 'pivot')!
+    const moveUpdate = updates.find((u) => u.id === 'wall_moveMe')!
+    const pivotUpdate = updates.find((u) => u.id === 'wall_pivot')!
     expect(moveUpdate.start).toEqual([0, 1])
     expect(pivotUpdate.start).toEqual([99, 99])
   })
