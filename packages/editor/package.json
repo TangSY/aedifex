@@ -24,7 +24,7 @@
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",
     "three": "^0.184",
-    "@aedifex/mcp": "^0.2.0"
+    "@aedifex/mcp": "^0.3.1"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
