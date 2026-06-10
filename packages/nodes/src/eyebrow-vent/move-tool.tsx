@@ -8,8 +8,8 @@ import {
   type RoofSegmentNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { markToolCancelConsumed, triggerSFX, useEditor } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { markToolCancelConsumed, triggerSFX, useEditor } from '@aedifex/editor'
 import { useCallback, useEffect, useState } from 'react'
 import * as THREE from 'three'
 import {

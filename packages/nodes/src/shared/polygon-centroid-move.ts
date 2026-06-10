@@ -8,8 +8,8 @@ import {
   sceneRegistry,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
-import { getSegmentGridStep, useAlignmentGuides, type WallPlanPoint } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { getSegmentGridStep, useAlignmentGuides, type WallPlanPoint } from '@aedifex/editor'
 import type * as THREE from 'three'
 import { createFloorplanCursorResolver } from './floorplan-cursor'
 

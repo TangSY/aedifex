@@ -1,4 +1,4 @@
-import type { RoofSegmentNode } from '@pascal-app/core'
+import type { RoofSegmentNode } from '@aedifex/core'
 
 /**
  * Shared ridge-line snap math for ridge-vent placement + move tools.

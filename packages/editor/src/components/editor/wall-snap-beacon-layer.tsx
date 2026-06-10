@@ -1,8 +1,8 @@
 'use client'
 
-import { sceneRegistry } from '@pascal-app/core'
-import { useWallSnapIndicator, type WallSnapKind } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+import { sceneRegistry } from '@aedifex/core'
+import { useWallSnapIndicator, type WallSnapKind } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useFrame } from '@react-three/fiber'
 import { memo, useRef } from 'react'
 import { BoxGeometry, CircleGeometry, CylinderGeometry, type Group } from 'three'

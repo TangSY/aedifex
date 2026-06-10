@@ -3,7 +3,7 @@ import {
   type FloorplanAffordance,
   type SpawnNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export const spawnRotateAffordance: FloorplanAffordance<SpawnNode> = {
   start({ node, initialPlanPoint }) {

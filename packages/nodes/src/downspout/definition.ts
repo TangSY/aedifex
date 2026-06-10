@@ -8,7 +8,7 @@ import {
   type NodeDefinition,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { downspoutParametrics } from './parametrics'
 import {
   computeDownspoutPath,

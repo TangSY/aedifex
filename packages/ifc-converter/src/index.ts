@@ -2083,7 +2083,7 @@ export async function convertIfcToAedifex(
     simplificationStats.removedMergedWalls > 0 ||
     simplificationStats.removedDuplicateOpenings > 0
   ) {
-    console.log('[IFC→Pascal] Simplification:', simplificationStats)
+    console.log('[IFC→Aedifex] Simplification:', simplificationStats)
   }
 
   ifcApi.CloseModel(modelID)

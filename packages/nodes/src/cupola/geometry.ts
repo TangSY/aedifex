@@ -1,4 +1,4 @@
-import type { CupolaNode } from '@pascal-app/core'
+import type { CupolaNode } from '@aedifex/core'
 import * as THREE from 'three'
 
 /**

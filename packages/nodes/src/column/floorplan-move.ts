@@ -7,13 +7,13 @@ import {
   type FloorplanMoveTargetSession,
   movingFootprintAnchors,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   applyFloorplanAlignment,
   triggerSFX,
   useEditor,
   type WallPlanPoint,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { createFloorplanCursorResolver } from '../shared/floorplan-cursor'
 
 /**

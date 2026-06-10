@@ -1,6 +1,6 @@
 'use client'
 
-import { sceneRegistry } from '@pascal-app/core'
+import { sceneRegistry } from '@aedifex/core'
 import { useEffect, useMemo } from 'react'
 import {
   Box3,

@@ -3,7 +3,7 @@ import {
   type GutterNode as GutterNodeType,
   type HandleDescriptor,
   type NodeDefinition,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildGutterFloorplan } from './floorplan'
 import { snapLengthToCorner } from './length-snap'
 import { gutterParametrics } from './parametrics'

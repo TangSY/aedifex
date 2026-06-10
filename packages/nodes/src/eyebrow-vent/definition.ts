@@ -3,7 +3,7 @@ import {
   type EyebrowVentNode as EyebrowVentNodeType,
   type HandleDescriptor,
   type NodeDefinition,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { surfacePaintCapability } from '../shared/surface-paint'
 import { buildEyebrowVentFloorplan } from './floorplan'
 import { eyebrowVentParametrics } from './parametrics'

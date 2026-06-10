@@ -5,8 +5,8 @@ import {
   nodeRegistry,
   registerNode,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { z } from 'zod'
 import useEditor from '../../../store/use-editor'
 import { collectSelectableCandidateIds } from './select-candidates'

@@ -4,8 +4,8 @@ import {
   collectAlignmentAnchors,
   resolveAlignment,
   useScene,
-} from '@pascal-app/core'
-import { useAlignmentGuides } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { useAlignmentGuides } from '@aedifex/editor'
 
 /**
  * Fixed Figma-style alignment threshold (meters) for floor-plan placement /

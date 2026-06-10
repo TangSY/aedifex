@@ -7,7 +7,7 @@ export default function HomePage() {
         <h1 className="text-3xl font-bold text-gray-900">IFC → Aedifex Converter</h1>
         <p className="text-gray-600 leading-relaxed">
           Upload an IFC building model or pick one of the bundled examples. The converter reads the
-          IFC geometry, maps it onto Pascal's parametric node types, and returns a scene-graph JSON
+          IFC geometry, maps it onto Aedifex's parametric node types, and returns a scene-graph JSON
           you can load into the editor's <em>Load Build</em> dialog.
         </p>
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

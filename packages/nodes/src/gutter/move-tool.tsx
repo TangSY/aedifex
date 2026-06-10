@@ -9,8 +9,8 @@ import {
   type RoofSegmentNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { markToolCancelConsumed, triggerSFX, useEditor } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { markToolCancelConsumed, triggerSFX, useEditor } from '@aedifex/editor'
 import { useCallback, useEffect, useState } from 'react'
 import { createRelativeRoofDrag } from '../shared/relative-roof-drag'
 import { type EaveSnap, resolveEaveSnap } from './eave-snap'

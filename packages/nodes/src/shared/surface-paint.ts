@@ -1,5 +1,5 @@
-import type { AnyNode, MaterialSchema, PaintCapability } from '@pascal-app/core'
-import { createMaterial, createMaterialFromPresetRef } from '@pascal-app/viewer'
+import type { AnyNode, MaterialSchema, PaintCapability } from '@aedifex/core'
+import { createMaterial, createMaterialFromPresetRef } from '@aedifex/viewer'
 import type { Material, Mesh, Object3D } from 'three'
 
 /**

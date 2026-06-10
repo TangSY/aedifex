@@ -7,7 +7,7 @@ import {
   useLiveNodeOverrides,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type ColorPreset,
   createMaterial,
@@ -15,7 +15,7 @@ import {
   createSurfaceRoleMaterial,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { getAnalyticalNormal, surfaceQuatFromNormal } from '../shared/roof-surface'

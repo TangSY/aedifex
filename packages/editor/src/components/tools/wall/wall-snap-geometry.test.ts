@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { WallNode } from '@pascal-app/core'
+import type { WallNode } from '@aedifex/core'
 import {
   findWallSnapTarget,
   findWallSpecialPointSnap,

@@ -4,7 +4,7 @@ import {
   cloneNodesInto,
   collectSubtree,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { stripPlacementMetadataFlags } from './placement-metadata'
 
 function cleanPlacementMetadata<N extends AnyNode>(node: N): N {

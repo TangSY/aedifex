@@ -6,7 +6,7 @@ import type {
   RidgeVentNode,
   RoofNode,
   RoofSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 // Tab pitch for the shingled style — matches SHINGLED_TAB_SIZE in
 // geometry.ts so the plan's divider spacing reads like the 3D ridge cap.

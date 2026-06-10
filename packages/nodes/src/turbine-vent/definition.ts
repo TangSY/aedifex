@@ -3,7 +3,7 @@ import {
   type NodeDefinition,
   TurbineVentNode as TurbineVentNodeSchema,
   type TurbineVentNode as TurbineVentNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { surfacePaintCapability } from '../shared/surface-paint'
 import { buildTurbineVentFloorplan } from './floorplan'
 import { turbineVentParametrics } from './parametrics'

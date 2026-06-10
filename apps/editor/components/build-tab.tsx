@@ -1,6 +1,6 @@
 'use client'
 
-import { MaterialPaintPanel, triggerSFX, useEditor } from '@pascal-app/editor'
+import { MaterialPaintPanel, triggerSFX, useEditor } from '@aedifex/editor'
 import Image from 'next/image'
 import { useCallback, useEffect, useRef } from 'react'
 import {

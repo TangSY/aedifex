@@ -7,7 +7,7 @@ import {
   type GeometryContext,
   nodeRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { memo } from 'react'
 import usePlacementPreview from '../../../store/use-placement-preview'
 import { FloorplanGeometryRenderer } from './floorplan-geometry-renderer'

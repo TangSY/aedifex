@@ -1,7 +1,7 @@
 'use client'
 
-import { type AnyNodeId, sceneRegistry, useLiveNodeOverrides, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, sceneRegistry, useLiveNodeOverrides, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { createPortal, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import { BoxGeometry, type BufferGeometry, EdgesGeometry, type Group, Vector3 } from 'three'
