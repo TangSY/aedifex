@@ -9,8 +9,9 @@ import { columnDefinition } from '../definition'
 //   - vertical + rectangular                       → 2 axis arrows
 //   - non-vertical (a-frame / y-frame / x-brace …) → 2 brace arrows
 //                                                    + optional spread arrows
-// Height + rotate are universal. Tests evaluate the function with a parsed
-// column stub varied per scenario.
+// Height + rotate + move (translate grip, upstream #375 unified handle
+// system) are universal. Tests evaluate the function with a parsed column
+// stub varied per scenario.
 function makeColumn(overrides: Record<string, unknown> = {}) {
   return ColumnNode.parse({
     id: 'column_test' as never,
@@ -59,18 +60,20 @@ describe('columnDefinition.capabilities', () => {
 })
 
 describe('columnDefinition.handles — shape-dependent arrow set', () => {
-  test('vertical + round → height + radius + rotate = 3 handles', () => {
+  test('vertical + round → height + radius + rotate + move = 4 handles', () => {
     // Source: vertical branch with ROUND_CROSS_SECTIONS hits `columnRadiusHandle()`.
     const handles = (columnDefinition.handles as (n: any) => any[])(
       makeColumn({ supportStyle: 'vertical', crossSection: 'round' }),
     )
-    expect(handles).toHaveLength(3)
-    // [0] height (linear-resize y), [1] radius (radial-resize), [2] rotate (arc-resize rotate).
+    expect(handles).toHaveLength(4)
+    // [0] height (linear-resize y), [1] radius (radial-resize),
+    // [2] rotate (arc-resize rotate), [3] move (translate grip).
     expect(handles[0].kind).toBe('linear-resize')
     expect(handles[0].axis).toBe('y')
     expect(handles[1].kind).toBe('radial-resize')
     expect(handles[2].kind).toBe('arc-resize')
     expect(handles[2].shape).toBe('rotate')
+    expect(handles[3].kind).toBe('translate')
   })
 
   test('vertical + octagonal / sixteen-sided also yield exactly 1 radius arrow', () => {
@@ -78,7 +81,7 @@ describe('columnDefinition.handles — shape-dependent arrow set', () => {
       const handles = (columnDefinition.handles as (n: any) => any[])(
         makeColumn({ supportStyle: 'vertical', crossSection: cs }),
       )
-      expect(handles).toHaveLength(3)
+      expect(handles).toHaveLength(4)
       expect(handles[1].kind).toBe('radial-resize')
     }
   })
@@ -87,7 +90,7 @@ describe('columnDefinition.handles — shape-dependent arrow set', () => {
     const handles = (columnDefinition.handles as (n: any) => any[])(
       makeColumn({ supportStyle: 'vertical', crossSection: 'square' }),
     )
-    expect(handles).toHaveLength(3)
+    expect(handles).toHaveLength(4)
     // Uniform arrow writes BOTH width and depth from the same drag.
     const uniform = handles[1]
     expect(uniform.kind).toBe('linear-resize')
@@ -99,8 +102,8 @@ describe('columnDefinition.handles — shape-dependent arrow set', () => {
     const handles = (columnDefinition.handles as (n: any) => any[])(
       makeColumn({ supportStyle: 'vertical', crossSection: 'rectangular' }),
     )
-    // height + width + depth + rotate.
-    expect(handles).toHaveLength(4)
+    // height + width + depth + rotate + move.
+    expect(handles).toHaveLength(5)
     expect(handles[1].axis).toBe('x')
     expect(handles[2].axis).toBe('z')
   })
@@ -111,8 +114,8 @@ describe('columnDefinition.handles — shape-dependent arrow set', () => {
     const handles = (columnDefinition.handles as (n: any) => any[])(
       makeColumn({ supportStyle: 'a-frame' }),
     )
-    // height + braceWidth + braceDepth + bottomSpread + topSpread + rotate = 6.
-    expect(handles).toHaveLength(6)
+    // height + braceWidth + braceDepth + bottomSpread + topSpread + rotate + move = 7.
+    expect(handles).toHaveLength(7)
     // Confirm the brace + spread patches target the right fields.
     expect(handles[1].apply(makeColumn(), 0.2)).toEqual({ braceWidth: 0.2 })
     expect(handles[2].apply(makeColumn(), 0.2)).toEqual({ braceDepth: 0.2 })
@@ -125,8 +128,8 @@ describe('columnDefinition.handles — shape-dependent arrow set', () => {
       const handles = (columnDefinition.handles as (n: any) => any[])(
         makeColumn({ supportStyle: style }),
       )
-      // height + braceWidth + braceDepth + topSpread + rotate = 5.
-      expect(handles).toHaveLength(5)
+      // height + braceWidth + braceDepth + topSpread + rotate + move = 6.
+      expect(handles).toHaveLength(6)
       // No `braceBottomSpread`-emitting handle should appear.
       const fields = handles.map((h) => h.apply?.(makeColumn(), 1) ?? {}).map((p) => Object.keys(p)[0])
       expect(fields).not.toContain('braceBottomSpread')
@@ -139,14 +142,15 @@ describe('columnDefinition.handles — shape-dependent arrow set', () => {
       const handles = (columnDefinition.handles as (n: any) => any[])(
         makeColumn({ supportStyle: style }),
       )
-      // height + braceWidth + braceDepth + rotate = 4.
-      expect(handles).toHaveLength(4)
+      // height + braceWidth + braceDepth + rotate + move = 5.
+      expect(handles).toHaveLength(5)
     }
   })
 
   test('rotation handle negates the cursor delta (cursor atan2 vs three.js Ry)', () => {
     const handles = (columnDefinition.handles as (n: any) => any[])(makeColumn())
-    const rotate = handles.at(-1)
+    // Rotate sits second-to-last — the move grip is appended after it.
+    const rotate = handles.at(-2)
     expect(rotate.shape).toBe('rotate')
     // Source: `apply: (initial, delta) => ({ rotation: (initial.rotation ?? 0) - delta })`
     const patch = rotate.apply({ rotation: 1.0 } as any, 0.3)

@@ -58,14 +58,18 @@ describe('getEffectiveRoofSurfaceMaterial', () => {
   })
 
   describe('role: edge', () => {
-    test("edge unset and edgeMaterial absent → falls back to wallMaterial (the second 'edge' branch)", () => {
-      // No edgeMaterial set; wallMaterial set. Expect wall to fill in for edge.
+    test('edge unset does NOT bleed from wallMaterial (no cross-role fallback, upstream #372)', () => {
+      // Upstream 46f94b97 removed the edge↔wall cross-role fallback:
+      // painting one surface must never bleed onto the others. An unset
+      // edge with only wallMaterial set resolves to the legacy catch-all
+      // (here absent → empty spec), NOT to the wall material.
       const node = RoofNode.parse({
         ...MIN_ROOF,
         wallMaterial: { preset: 'brick' },
       })
       const spec = getEffectiveRoofSurfaceMaterial(node, 'edge')
-      expect(spec.material).toEqual({ preset: 'brick' })
+      expect(spec.material).toBeUndefined()
+      expect(spec.materialPreset).toBeUndefined()
     })
 
     test('edgeMaterial wins over wallMaterial when both set', () => {
@@ -98,13 +102,26 @@ describe('getEffectiveRoofSurfaceMaterial', () => {
       expect(spec.material).toEqual({ preset: 'plaster' })
     })
 
-    test('wall unset → edgeMaterial fills in (second wall branch)', () => {
+    test('wall unset does NOT bleed from edgeMaterial (no cross-role fallback, upstream #372)', () => {
+      // Same no-bleed contract as the edge case above: unset wall resolves
+      // to the legacy catch-all / theme default, never to edgeMaterial.
       const node = RoofNode.parse({
         ...MIN_ROOF,
         edgeMaterial: { preset: 'metal' },
       })
       const spec = getEffectiveRoofSurfaceMaterial(node, 'wall')
-      expect(spec.material).toEqual({ preset: 'metal' })
+      expect(spec.material).toBeUndefined()
+      expect(spec.materialPreset).toBeUndefined()
+    })
+
+    test('wall unset with legacy material set → falls through to legacy', () => {
+      const node = RoofNode.parse({
+        ...MIN_ROOF,
+        edgeMaterial: { preset: 'metal' },
+        material: { preset: 'concrete' },
+      })
+      const spec = getEffectiveRoofSurfaceMaterial(node, 'wall')
+      expect(spec.material).toEqual({ preset: 'concrete' })
     })
   })
 })

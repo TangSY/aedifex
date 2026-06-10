@@ -4,6 +4,8 @@ import { stairDefinition } from '../definition'
 // `def.handles` is a function — `(node) => HandleDescriptor[]` — because the
 // arrow set is shape-dependent: straight stairs delegate to their segment
 // children's handles, curved/spiral stairs render five parent-level arrows.
+// Every variant additionally gets the universal rotate gizmo + the
+// tap-to-engage move grip (upstream #375 unified handle system).
 // Tests evaluate the function with a stair-shaped stub.
 function makeStairLike(overrides: Record<string, unknown> = {}) {
   return {
@@ -38,39 +40,45 @@ describe('stairDefinition — registry contract', () => {
 })
 
 describe('stairDefinition.handles — variant-dependent arrow set', () => {
-  test('straight stair returns ONLY the rotate handle (segments own their arrows)', () => {
+  test('straight stair returns ONLY rotate + move handles (segments own their arrows)', () => {
     // Source comment: "Straight stairs have no parent-level shape arrows —
     // the segment children each render their own. The whole-stair rotation
-    // gizmo is universal."
+    // gizmo is universal." Upstream #375 added the universal tap-to-engage
+    // move grip alongside it.
     const handlesFn = stairDefinition.handles as (n: any) => any[]
     const handles = handlesFn(makeStairLike({ stairType: 'straight' }))
-    expect(handles).toHaveLength(1)
-    // The lone handle is the rotate gizmo (arc-resize / shape='rotate').
+    expect(handles).toHaveLength(2)
+    // First handle is the rotate gizmo (arc-resize / shape='rotate').
     expect(handles[0].kind).toBe('arc-resize')
     expect(handles[0].shape).toBe('rotate')
+    // Second is the tap-to-engage move grip.
+    expect(handles[1].kind).toBe('tap-action')
+    expect(handles[1].shape).toBe('move-cross')
   })
 
-  test('curved stair returns 5 handles (rise, width, innerRadius, sweep×2) + rotate', () => {
+  test('curved stair returns 5 handles (rise, width, innerRadius, sweep×2) + rotate + move', () => {
     // Source: when isCurvedOrSpiral(node) is true, push 5 curved handles,
-    // then push the universal rotate. Total = 6.
+    // then push the universal rotate + move pair. Total = 7.
     const handlesFn = stairDefinition.handles as (n: any) => any[]
     const handles = handlesFn(makeStairLike({ stairType: 'curved' }))
-    expect(handles).toHaveLength(6)
+    expect(handles).toHaveLength(7)
     // First two are linear-resize (rise + width).
     expect(handles[0].kind).toBe('linear-resize')
     expect(handles[1].kind).toBe('linear-resize')
     // Third is linear-resize (innerRadius). Fourth + fifth are arc-resize
-    // sweep handles. Last is the rotate gizmo.
+    // sweep handles. Then the rotate gizmo, then the move grip.
     expect(handles[2].kind).toBe('linear-resize')
     expect(handles[3].kind).toBe('arc-resize')
     expect(handles[4].kind).toBe('arc-resize')
     expect(handles[5].shape).toBe('rotate')
+    expect(handles[6].kind).toBe('tap-action')
+    expect(handles[6].shape).toBe('move-cross')
   })
 
-  test('spiral stair behaves identically to curved (6 handles)', () => {
+  test('spiral stair behaves identically to curved (7 handles)', () => {
     const handlesFn = stairDefinition.handles as (n: any) => any[]
     const handles = handlesFn(makeStairLike({ stairType: 'spiral' }))
-    expect(handles).toHaveLength(6)
+    expect(handles).toHaveLength(7)
   })
 })
 
