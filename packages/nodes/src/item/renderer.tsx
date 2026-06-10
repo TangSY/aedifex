@@ -3,10 +3,12 @@
 import {
   type AnimationEffect,
   type AnyNodeId,
+  getScaledDimensions,
   type Interactive,
   type ItemNode,
   type LightEffect,
   useInteractive,
+  useLiveNodeOverrides,
   useRegistry,
   useScene,
 } from '@aedifex/core'
@@ -75,21 +77,40 @@ const BrokenItemFallback = ({ node }: { node: ItemNode }) => {
   )
 }
 
-export const ItemRenderer = ({ node }: { node: ItemNode }) => {
+export const ItemRenderer = ({ node: storeNode }: { node: ItemNode }) => {
   const ref = useRef<Group>(null!)
 
-  useRegistry(node.id, node.type, ref)
+  useRegistry(storeNode.id, storeNode.type, ref)
+
+  // Merge live drag overrides so the mesh transforms in real time during a
+  // drag (e.g. the in-world rotate gizmo). The handle writes the in-flight
+  // rotation to `useLiveNodeOverrides` on every pointer move and commits to
+  // the store only on release — without this merge the item would stay put
+  // until commit.
+  const liveOverrides = useLiveNodeOverrides((state) => state.get(storeNode.id as AnyNodeId))
+  const node = useMemo(
+    () => (liveOverrides ? ({ ...storeNode, ...liveOverrides } as ItemNode) : storeNode),
+    [storeNode, liveOverrides],
+  )
+  const roomClearPreview =
+    (node as ItemNode & { roomClearPreview?: unknown }).roomClearPreview === true
 
   return (
     <group position={node.position} ref={ref} rotation={node.rotation} visible={node.visible}>
-      <ErrorBoundary fallback={<BrokenItemFallback node={node} />}>
-        <Suspense fallback={<PreviewModel node={node} />}>
-          <ModelRenderer node={node} />
-        </Suspense>
-      </ErrorBoundary>
-      {node.children?.map((childId) => (
-        <NodeRenderer key={childId} nodeId={childId} />
-      ))}
+      {roomClearPreview ? (
+        <ClearPreviewModel node={node} />
+      ) : (
+        <>
+          <ErrorBoundary fallback={<BrokenItemFallback node={node} />}>
+            <Suspense fallback={<PreviewModel node={node} />}>
+              <ModelRenderer node={node} />
+            </Suspense>
+          </ErrorBoundary>
+          {node.children?.map((childId) => (
+            <NodeRenderer key={childId} nodeId={childId} />
+          ))}
+        </>
+      )}
     </group>
   )
 }
@@ -121,6 +142,26 @@ const PreviewModel = ({ node }: { node: ItemNode }) => {
   )
 }
 
+const ClearPreviewModel = ({ node }: { node: ItemNode }) => {
+  const shading = useViewer((s) => s.shading)
+  const [w, h, d] = getScaledDimensions(node)
+  const material = useMemo(() => {
+    const next = createDefaultMaterial('#ef4444', 1, shading) as MutableMaterial
+    next.depthTest = false
+    next.opacity = 0.35
+    next.transparent = true
+    next.wireframe = true
+    next.needsUpdate = true
+    return next
+  }, [shading])
+
+  return (
+    <mesh material={material} position-y={h / 2}>
+      <boxGeometry args={[w, h, d]} />
+    </mesh>
+  )
+}
+
 const multiplyScales = (
   a: [number, number, number],
   b: [number, number, number],
@@ -144,7 +185,7 @@ const ModelRenderer = ({ node }: { node: ItemNode }) => {
 
   useEffect(() => {
     if (!node.parentId) return
-    useScene.getState().dirtyNodes.add(node.parentId as AnyNodeId)
+    useScene.getState().markDirty(node.parentId as AnyNodeId)
   }, [node.parentId])
 
   useEffect(() => {

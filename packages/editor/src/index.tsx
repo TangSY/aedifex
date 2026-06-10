@@ -12,6 +12,7 @@ export { default as Editor } from './components/editor'
 // surface uses the shorter, shell-friendly names from the unified
 // preset-system spec.
 export { FloatingActionMenu as FloatingMenu } from './components/editor/floating-action-menu'
+export { formatMeasurement, MeasurementPill } from './components/editor/measurement-pill'
 export {
   type SnapshotCameraData,
   ThumbnailGenerator,
@@ -58,6 +59,9 @@ export {
   usePlacementCoordinator,
 } from './components/tools/item/use-placement-coordinator'
 export { CursorSphere } from './components/tools/shared/cursor-sphere'
+export { DragBoundingBox } from './components/tools/shared/drag-bounding-box'
+export { getFloorStackPreviewPosition } from './components/tools/shared/floor-stack-preview'
+export { useFreshPlacementVisibility } from './components/tools/shared/fresh-placement-visibility'
 // Phase 5 Stage D — PolygonEditor for slab/ceiling boundary + hole editors.
 export {
   PolygonEditor,
@@ -98,7 +102,11 @@ export {
   snapPointToGrid,
   snapScalarToGrid,
   snapWallDraftPoint,
+  snapWallDraftPointDetailed,
   WALL_FINE_GRID_STEP,
+  WALL_GRID_STEP,
+  type WallDraftSnapKind,
+  type WallDraftSnapResult,
   type WallPlanPoint,
 } from './components/tools/wall/wall-drafting'
 // `ToolbarLeft` / `ToolbarRight` are the headless-spec aliases for the
@@ -137,6 +145,10 @@ export {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from './components/ui/primitives/dropdown-menu'
 export { useSidebarStore } from './components/ui/primitives/sidebar'
@@ -177,13 +189,20 @@ export {
 // their own polygon in isolation — the stair (parent) owns the
 // computation and emits the whole stack as one registry entry.
 export {
+  alignFloorplanDraftPoint,
+  applyFloorplanAlignment,
   buildFloorplanStairEntry,
+  FLOORPLAN_ALIGNMENT_THRESHOLD_M,
+  FLOORPLAN_DRAFT_ALIGN_ID,
+  type FloorplanAlignmentResult,
   type FloorplanStairArrowEntry,
   type FloorplanStairEntry,
   type FloorplanStairSegmentEntry,
   getFloorplanWallThickness,
 } from './lib/floorplan'
+export { commitFreshPlacementSubtree } from './lib/fresh-planar-placement'
 export {
+  buildResetSurfaceMaterialUpdates,
   buildRoofSurfaceMaterialPatch,
   buildSingleSurfaceMaterialPatch,
   buildStairSurfaceMaterialPatch,
@@ -191,15 +210,41 @@ export {
   getActivePaintMaterialLabel,
   hasActivePaintMaterial,
 } from './lib/material-paint'
-export { duplicateRoofSubtree } from './lib/roof-duplication'
+export {
+  addFreshPlacementMetadata,
+  getPlacementMetadataRecord,
+  isFreshPlacementMetadata,
+  stripPlacementMetadataFlags,
+} from './lib/placement-metadata'
+export {
+  type PlanarCursorPlacementMode,
+  type PlanarPoint,
+  resolvePlanarCursorPosition,
+} from './lib/planar-cursor-placement'
+export { clearRoofDuplicateMetadata, duplicateRoofSubtree } from './lib/roof-duplication'
 export type { SceneGraph } from './lib/scene'
 export { applySceneGraphToEditor } from './lib/scene'
 export { triggerSFX } from './lib/sfx-bus'
 export { duplicateStairSubtree } from './lib/stair-duplication'
+export {
+  getBuildingLevelsForLevel,
+  getStairLevelOptions,
+  resolveStairDestinationLevel,
+  resolveStairFromLevelId,
+  resolveStairPlacementLevelId,
+  resolveStairToLevelId,
+} from './lib/stair-levels'
 // `cn` (twMerge + clsx) — used by kind-owned panels in `@aedifex/
 // nodes` so they don't need their own copy / their own tailwind-merge
 // dependency.
 export { cn } from './lib/utils'
+export {
+  getActiveBuildingPose,
+  resolveAlignmentForActiveBuilding,
+  snapBuildingLocalToWorldGrid,
+  snapWorldXZForActiveBuilding,
+} from './lib/world-grid-snap'
+export { default as useAlignmentGuides } from './store/use-alignment-guides'
 export { default as useAudio } from './store/use-audio'
 export { type CommandAction, useCommandRegistry } from './store/use-command-registry'
 export type {
@@ -207,8 +252,10 @@ export type {
   MovingFenceEndpoint,
   MovingWallEndpoint,
   SplitOrientation,
+  Tool,
   ToolDefaults,
   ViewMode,
+  WorkspaceMode,
 } from './store/use-editor'
 export { default as useEditor } from './store/use-editor'
 export {
@@ -216,5 +263,11 @@ export {
   type PaletteViewProps,
   usePaletteViewRegistry,
 } from './store/use-palette-view-registry'
+export { default as usePlacementPreview } from './store/use-placement-preview'
 export { useUploadStore } from './store/use-upload'
 export { useWallMoveGhosts, type WallMoveGhostBridge } from './store/use-wall-move-ghosts'
+export {
+  default as useWallSnapIndicator,
+  type WallSnapKind,
+  type WallSnapPoint,
+} from './store/use-wall-snap-indicator'

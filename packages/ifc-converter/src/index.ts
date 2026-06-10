@@ -16,6 +16,12 @@ import {
 } from '@aedifex/core'
 import { customAlphabet } from 'nanoid'
 import * as WebIFC from 'web-ifc'
+import { type IfcConversionSimplificationOptions, simplifyConvertedSceneGraph } from './cleanup'
+
+export type {
+  IfcConversionSimplificationOptions,
+  IfcConversionSimplificationStats,
+} from './cleanup'
 
 export type AedifexNode = AnyNode
 
@@ -650,6 +656,7 @@ export interface ConversionOptions {
   swapYZ?: boolean
   extrusionDepthIsHeight?: boolean
   swapProfileDimensions?: boolean
+  simplify?: boolean | IfcConversionSimplificationOptions
   label?: string
 }
 
@@ -678,6 +685,12 @@ export async function convertIfcToAedifex(
     extrusionDepthIsHeight: options?.extrusionDepthIsHeight ?? true,
     swapProfileDimensions: options?.swapProfileDimensions ?? false,
   }
+  const simplificationOptions =
+    options?.simplify === false
+      ? { enabled: false }
+      : typeof options?.simplify === 'object'
+        ? options.simplify
+        : undefined
 
   const progress = (msg: string, pct: number) => {
     console.log(`[IFC→Aedifex] ${msg} (${pct}%)`)
@@ -2061,6 +2074,16 @@ export async function convertIfcToAedifex(
     }
   } catch {
     /* no type rels */
+  }
+
+  progress('Simplifying converted scene...', 94)
+  const simplificationStats = simplifyConvertedSceneGraph(nodes, simplificationOptions)
+  if (
+    simplificationStats.removedTinyWalls > 0 ||
+    simplificationStats.removedMergedWalls > 0 ||
+    simplificationStats.removedDuplicateOpenings > 0
+  ) {
+    console.log('[IFC→Pascal] Simplification:', simplificationStats)
   }
 
   ifcApi.CloseModel(modelID)

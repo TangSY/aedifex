@@ -6,6 +6,7 @@ import {
 } from '@aedifex/core'
 import { buildColumnFloorplan } from './floorplan'
 import { columnResizeAffordance, columnRotateAffordance } from './floorplan-affordances'
+import { columnFloorplanMoveTarget } from './floorplan-move'
 import { columnParametrics } from './parametrics'
 import { ColumnNode } from './schema'
 
@@ -18,6 +19,7 @@ const BRACE_HANDLE_OFFSET = 0.3
 const SPREAD_HANDLE_OFFSET = 0.22
 const ROTATE_CORNER_OFFSET = 0.32
 const ROTATE_RING_OFFSET = 0.04
+const MOVE_FRONT_OFFSET = 0.35
 const MIN_COLUMN_HEIGHT = 0.2
 const MIN_COLUMN_WIDTH = 0.1
 const MIN_COLUMN_DEPTH = 0.1
@@ -240,6 +242,29 @@ function columnRotateHandle(): HandleDescriptor<ColumnNodeType> {
   }
 }
 
+function columnMoveHandle(): HandleDescriptor<ColumnNodeType> {
+  return {
+    kind: 'translate',
+    placement: {
+      // Low to the floor at the front edge (matches the item move grip) so it
+      // reads as a floor-move grip and stays clear of the body resize / rotate
+      // handles that sit at mid-height.
+      position: (n) => {
+        const { halfZ } = columnFootprintHalf(n)
+        return [0, 0.02, halfZ + MOVE_FRONT_OFFSET]
+      },
+    },
+    apply: (_n, pos) => ({ position: [pos[0], pos[1], pos[2]] }),
+    snapExtents: (n) => {
+      const { halfX, halfZ } = columnFootprintHalf(n)
+      const dimX = Math.max(halfX * 2, MIN_COLUMN_WIDTH)
+      const dimZ = Math.max(halfZ * 2, MIN_COLUMN_DEPTH)
+      const swap = Math.abs(Math.sin(n.rotation ?? 0)) > 0.9
+      return [swap ? dimZ : dimX, swap ? dimX : dimZ]
+    },
+  }
+}
+
 function columnHandles(node: ColumnNodeType): HandleDescriptor<ColumnNodeType>[] {
   // 1. Height (universal).
   // 2. Footprint arrows depending on supportStyle + crossSection:
@@ -264,7 +289,7 @@ function columnHandles(node: ColumnNodeType): HandleDescriptor<ColumnNodeType>[]
   } else {
     handles.push(columnAxisHandle('x'), columnAxisHandle('z'))
   }
-  handles.push(columnRotateHandle())
+  handles.push(columnRotateHandle(), columnMoveHandle())
   return handles
 }
 
@@ -327,16 +352,28 @@ export const columnDefinition: NodeDefinition<typeof ColumnNode> = {
   affordanceTools: {
     move: () => import('./move-tool'),
   },
+  // Registry-driven placement tool — renders a translucent `ColumnPreview`
+  // ghost at the cursor (mirroring the shelf build tool) instead of the
+  // bare sphere the legacy editor-side `ColumnTool` showed. `ToolManager`'s
+  // registry-first path mounts this and skips the legacy `<ColumnTool>`.
+  tool: () => import('./tool'),
+  toolHints: [
+    { key: 'Left click', label: 'Place column' },
+    { key: 'Alt', label: 'No snap' },
+    { key: 'Esc', label: 'Cancel' },
+  ],
   floorplan: buildColumnFloorplan,
+  // 2D body move routes through this kind-specific target so the column
+  // aligns by its footprint *edges* (and snaps flush to wall faces) instead
+  // of the overlay's generic free-translate path, which aligned by bbox
+  // centre and gathered candidates from SVG bounding boxes only. Mirrors the
+  // shelf move target.
+  floorplanMoveTarget: columnFloorplanMoveTarget,
   // 2D drag affordances — `column-resize` handles every dimension arrow
   // the floor-plan builder emits per cross-section / support style (the
   // payload's `dim` field discriminates radius / uniform / width / depth
   // / brace-width / brace-depth / spreads). `column-rotate` powers the
-  // corner rotate-arrow. Body move continues to flow through the
-  // orange move-handle dot via the registry overlay's generic
-  // free-translate path — columns don't need a kind-specific
-  // `floorplanMoveTarget` since they have no linked-cascade
-  // requirements like wall.
+  // corner rotate-arrow.
   floorplanAffordances: {
     'column-resize': columnResizeAffordance,
     'column-rotate': columnRotateAffordance,

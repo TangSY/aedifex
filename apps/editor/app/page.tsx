@@ -2,12 +2,21 @@
 
 import { Editor, ItemsPanel } from '@aedifex/editor'
 import { AIChatPanel } from '@aedifex/editor/components/ai'
-import { Bot, Layers, Package, Settings } from 'lucide-react'
+import { Bot, Hammer, Layers, Package, Settings } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
+import { BuildTab } from '@/components/build-tab'
 import {
   CommunityViewerToolbarLeft,
   CommunityViewerToolbarRight,
 } from '@/components/viewer-toolbar'
+
+// The open-source editor only ships the built-in catalog (no uploaded items),
+// so the Library/Community/Mine source chips and tag filters add nothing —
+// drop them and keep the panel to plain categories.
+function EditorItemsPanel() {
+  return <ItemsPanel showSourceFilter={false} showTagFilters={false} />
+}
 
 const SIDEBAR_TABS = [
   {
@@ -16,6 +25,31 @@ const SIDEBAR_TABS = [
     component: () => null,
     mobileDefaultSnap: 0.5,
     mobileIcon: <Layers className="h-5 w-5" />,
+    icon: (
+      <Image
+        alt=""
+        className="h-8 w-8 object-contain"
+        height={32}
+        src="/icons/scene.png"
+        width={32}
+      />
+    ),
+  },
+  {
+    id: 'build',
+    label: 'Build',
+    component: BuildTab,
+    mobileDefaultSnap: 0.5,
+    mobileIcon: <Hammer className="h-5 w-5" />,
+    icon: (
+      <Image
+        alt=""
+        className="h-8 w-8 object-contain"
+        height={32}
+        src="/icons/build.png"
+        width={32}
+      />
+    ),
   },
   {
     id: 'ai',
@@ -27,9 +61,18 @@ const SIDEBAR_TABS = [
   {
     id: 'items',
     label: 'Items',
-    component: ItemsPanel,
+    component: EditorItemsPanel,
     mobileDefaultSnap: 0.5,
     mobileIcon: <Package className="h-5 w-5" />,
+    icon: (
+      <Image
+        alt=""
+        className="h-8 w-8 object-contain"
+        height={32}
+        src="/icons/couch.png"
+        width={32}
+      />
+    ),
   },
   {
     id: 'settings',
@@ -37,6 +80,15 @@ const SIDEBAR_TABS = [
     component: () => null,
     mobileDefaultSnap: 0.5,
     mobileIcon: <Settings className="h-5 w-5" />,
+    icon: (
+      <Image
+        alt=""
+        className="h-8 w-8 object-contain"
+        height={32}
+        src="/icons/settings.png"
+        width={32}
+      />
+    ),
   },
 ]
 

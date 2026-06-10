@@ -1,6 +1,6 @@
 {
   "name": "@aedifex/ifc-converter",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "IFC \u2192 Aedifex scene-graph conversion. Pure logic \u2014 no DOM, no React.",
   "type": "module",
   "main": "./dist/index.js",
@@ -28,8 +28,7 @@
   "devDependencies": {
     "@repo/typescript-config": "*",
     "@types/bun": "^1.3.0",
-    "typescript": "6.0.2",
-    "@aedifex/core": "^0.8.0"
+    "typescript": "6.0.3"
   },
   "repository": {
     "type": "git",
@@ -40,6 +39,6 @@
   "homepage": "https://github.com/TangSY/aedifex/tree/main/packages/ifc-converter#readme",
   "bugs": "https://github.com/TangSY/aedifex/issues",
   "peerDependencies": {
-    "@aedifex/core": "^0.8.0"
+    "@aedifex/core": "^0.9.1"
   }
 }

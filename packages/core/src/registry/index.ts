@@ -12,6 +12,7 @@ export type {
   LinearResizeHandle,
   RadialResizeHandle,
   TapActionHandle,
+  TranslateHandle,
 } from './handles'
 export {
   discoverPlugins,
@@ -47,6 +48,8 @@ export {
 } from './subtree'
 export type {
   Affordance,
+  AlignmentFootprint,
+  AlignmentFootprintConfig,
   AnyNodeDefinition,
   AssetRef,
   Capabilities,
@@ -54,6 +57,11 @@ export type {
   CuttableConfig,
   DragAction,
   EditorCtx,
+  FloorPlacedConfig,
+  FloorPlacedFootprint,
+  FloorPlacedFootprintContext,
+  FloorPlacedFootprintResolver,
+  FloorPlacedFootprintsResolver,
   FloorplanAffordance,
   FloorplanAffordanceModifiers,
   FloorplanAffordancePoint,
@@ -82,6 +90,7 @@ export type {
   PaintPatchArgs,
   PaintPreviewArgs,
   PaintResolveArgs,
+  ParamAction,
   ParametricDescriptor,
   ParamField,
   ParamGroup,
