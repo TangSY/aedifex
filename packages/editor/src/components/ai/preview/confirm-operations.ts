@@ -186,6 +186,19 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         }
       }
     }
+    // Downspout ops mutate their host gutter (outlet drilling) through
+    // gutterId without carrying a nodeId, so the generic capture above
+    // misses the gutter entirely. Snapshot it here or undo leaves an
+    // orphaned outlet hole in the gutter after the downspout is deleted.
+    if ('gutterId' in op) {
+      const gutterId = (op as { gutterId?: AnyNodeId }).gutterId
+      if (gutterId && !previousSnapshot[gutterId]) {
+        const gutterNode = nodes[gutterId]
+        if (gutterNode) {
+          previousSnapshot[gutterId] = cleanSnapshot(gutterNode)
+        }
+      }
+    }
   }
 
   // Capture removed nodes with their parent info (for re-creation on undo).

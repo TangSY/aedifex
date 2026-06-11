@@ -67,7 +67,10 @@ vi.mock('@aedifex/core', () => {
         createNodes: mockCreateNodes,
         deleteNode: mockDeleteNode,
         updateNode: mockUpdateNode,
-        setNode: vi.fn(),
+        // undoConfirmedOperation restores snapshots via setNode (full replace)
+        setNode: vi.fn((id: string, node: any) => {
+          mockNodes[id] = node
+        }),
         dirtyNodes: mockDirtyNodes,
       }),
       temporal: { getState: () => ({ pause: vi.fn(), resume: vi.fn() }) },
@@ -146,7 +149,7 @@ vi.mock('../../../lib/elevator-support', () => ({
 // Test setup
 // ============================================================================
 
-import { confirmGhostPreview } from '../preview/confirm-operations'
+import { confirmGhostPreview, undoConfirmedOperation } from '../preview/confirm-operations'
 import { resetPreviewState } from '../preview/ghost-node-helpers'
 import type { ValidatedAddRoofAccessory } from '../types/validated-types'
 
@@ -336,5 +339,35 @@ describe('confirmGhostPreview — add_roof_accessory kind=downspout', () => {
     confirmGhostPreview([downspoutOp({ status: 'invalid', errorReason: 'nope' })])
     expect(createdOfType('downspout')).toHaveLength(0)
     expect(mockUpdatedNodes).toHaveLength(0)
+  })
+
+  it('undo restores the host gutter outlets (no orphaned drill holes)', () => {
+    seedSegment()
+    seedGutter() // outlets: []
+
+    const log = confirmGhostPreview([downspoutOp()])
+
+    // Sanity: confirm drilled one outlet into the live gutter.
+    expect(mockNodes['gutter_1'].outlets).toHaveLength(1)
+    // The host gutter must be in the undo snapshot even though the op has no nodeId.
+    expect(log.previousSnapshot['gutter_1' as keyof typeof log.previousSnapshot]).toBeDefined()
+
+    undoConfirmedOperation(log)
+
+    // Downspout deleted AND the gutter's outlets restored to the pre-op state.
+    expect(mockNodes['gutter_1'].outlets).toHaveLength(0)
+  })
+
+  it('undo restores pre-existing outlets without dropping them', () => {
+    seedSegment()
+    seedGutter('gutter_1', [{ id: 'outlet_pre', offset: -0.8, diameter: 0.07 }])
+
+    const log = confirmGhostPreview([downspoutOp({ outletOffset: 0.5 })])
+    expect(mockNodes['gutter_1'].outlets).toHaveLength(2)
+
+    undoConfirmedOperation(log)
+
+    expect(mockNodes['gutter_1'].outlets).toHaveLength(1)
+    expect(mockNodes['gutter_1'].outlets[0].id).toBe('outlet_pre')
   })
 })
