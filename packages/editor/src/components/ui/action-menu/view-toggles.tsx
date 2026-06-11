@@ -118,6 +118,18 @@ function UploadButton({ onError }: { onError: (message: string | null) => void }
       }
 
       if (isImage) {
+        // When a host upload pipeline is registered, route guide images
+        // through it (cloud persistence — visible across devices, matching
+        // the Scene panel entry). The IndexedDB-local path below keeps the
+        // standalone editor working without a host.
+        const { uploadHandler: guideUploadHandler } = useUploadStore.getState()
+        const hostProjectId = window.location.pathname.split('/editor/')[1]?.split('/')[0]
+        if (guideUploadHandler && hostProjectId) {
+          useUploadStore.getState().clearUpload(levelId)
+          guideUploadHandler(hostProjectId, levelId, file, 'guide')
+          return
+        }
+
         setIsAddingGuide(true)
         try {
           const guide = await createLocalGuideImage({ createNode, file, levelId })
