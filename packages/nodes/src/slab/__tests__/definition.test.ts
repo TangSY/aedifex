@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { pointInPolygon2D, SlabNode } from '@aedifex/core'
 import { slabDefinition } from '../definition'
 
 function makeSlabLike(overrides: Record<string, unknown> = {}) {
@@ -111,8 +112,6 @@ describe('slabDefinition.defaults — initial shape', () => {
 })
 
 // --- Upstream (03f57b1f): height handle avoids hole cutouts ---
-import { pointInPolygon2D, SlabNode } from '@aedifex/core'
-import { slabDefinition } from '../definition'
 
 function getHeightHandlePosition(slab: SlabNode) {
   const handles =

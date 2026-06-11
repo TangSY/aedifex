@@ -57,6 +57,13 @@ const SIDEBAR_TABS = [
     component: AIChatPanel,
     mobileDefaultSnap: 0.5,
     mobileIcon: <Bot className="h-5 w-5" />,
+    // No PNG asset for the AI tab yet — wrap a lucide Bot in the same 8×8
+    // box the Image-based icons use so the desktop icon rail stays aligned.
+    icon: (
+      <span className="flex h-8 w-8 items-center justify-center">
+        <Bot className="h-6 w-6" />
+      </span>
+    ),
   },
   {
     id: 'items',
