@@ -502,10 +502,14 @@ const LevelReferences = memo(function LevelReferences({
       | GuideNode
       | undefined
 
+    // Host-managed assets carry http(s) or app-relative URLs; local-only
+    // references (data:/blob:/asset:) never reach the host.
     if (
       projectId &&
       refNode?.url &&
-      (refNode.url.startsWith('http://') || refNode.url.startsWith('https://'))
+      (refNode.url.startsWith('http://') ||
+        refNode.url.startsWith('https://') ||
+        refNode.url.startsWith('/'))
     ) {
       onDeleteAsset?.(projectId, refNode.url)
     }
