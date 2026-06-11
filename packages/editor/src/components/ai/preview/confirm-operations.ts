@@ -6,11 +6,16 @@ import {
   CeilingNode,
   ChimneyNode,
   cloneLevelSubtree,
+  CupolaNode,
   DoorNode,
   DormerNode,
+  DownspoutNode,
   ElevatorNode,
+  EyebrowVentNode,
   FenceNode,
+  generateId,
   GuideNode,
+  GutterNode,
   ItemNode,
   LevelNode,
   RidgeVentNode,
@@ -21,6 +26,7 @@ import {
   SlabNode,
   SolarPanelNode,
   StairNode,
+  TurbineVentNode,
   StairSegmentNode,
   WallNode as WallSchema,
   WindowNode,
@@ -177,6 +183,19 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         const existingNode = nodes[nodeId]
         if (existingNode) {
           previousSnapshot[nodeId] = cleanSnapshot(existingNode)
+        }
+      }
+    }
+    // Downspout ops mutate their host gutter (outlet drilling) through
+    // gutterId without carrying a nodeId, so the generic capture above
+    // misses the gutter entirely. Snapshot it here or undo leaves an
+    // orphaned outlet hole in the gutter after the downspout is deleted.
+    if ('gutterId' in op) {
+      const gutterId = (op as { gutterId?: AnyNodeId }).gutterId
+      if (gutterId && !previousSnapshot[gutterId]) {
+        const gutterNode = nodes[gutterId]
+        if (gutterNode) {
+          previousSnapshot[gutterId] = cleanSnapshot(gutterNode)
         }
       }
     }
@@ -582,6 +601,74 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
               depth: accOp.depth,
             })
             break
+          case 'turbine-vent':
+            // Schema has no width/depth — the unified tool's `width` carries
+            // the spinning head diameter (radially symmetric, depth ignored).
+            node = TurbineVentNode.parse({
+              name,
+              roofSegmentId: accOp.roofSegmentId,
+              position: accOp.position,
+              rotation: accOp.rotation,
+              diameter: accOp.width,
+            })
+            break
+          case 'eyebrow-vent':
+            node = EyebrowVentNode.parse({
+              name,
+              roofSegmentId: accOp.roofSegmentId,
+              position: accOp.position,
+              rotation: accOp.rotation,
+              width: accOp.width,
+              depth: accOp.depth,
+            })
+            break
+          case 'cupola':
+            node = CupolaNode.parse({
+              name,
+              roofSegmentId: accOp.roofSegmentId,
+              position: accOp.position,
+              rotation: accOp.rotation,
+              width: accOp.width,
+              depth: accOp.depth,
+            })
+            break
+          case 'gutter':
+            // position/rotation arrive eave-snapped from the validator (same
+            // pose the manual tool in packages/nodes/src/gutter/tool.tsx stores).
+            node = GutterNode.parse({
+              name,
+              roofSegmentId: accOp.roofSegmentId,
+              position: accOp.position,
+              rotation: accOp.rotation,
+              length: accOp.length ?? 2.0,
+            })
+            break
+          case 'downspout': {
+            // Mirror packages/nodes/src/downspout/tool.tsx: drill a new outlet
+            // into the host gutter at the requested offset, then drop a
+            // downspout linked to it. Read the gutter LIVE (not the snapshot)
+            // so several downspouts on one gutter in a single batch accumulate
+            // outlets instead of overwriting each other.
+            const state = useScene.getState()
+            const gutter = state.nodes[accOp.gutterId as AnyNodeId]
+            if (!gutter || gutter.type !== 'gutter') continue
+            const outletId = generateId('outlet')
+            const outlets = [
+              ...(gutter.outlets ?? []),
+              { id: outletId, offset: accOp.outletOffset ?? 0, diameter: 0.07 },
+            ]
+            state.updateNode(gutter.id as AnyNodeId, { outlets })
+            state.dirtyNodes.add(gutter.id as AnyNodeId)
+            affectedNodeIds.push(gutter.id as AnyNodeId)
+            node = DownspoutNode.parse({
+              name,
+              gutterId: gutter.id,
+              outletId,
+              length: accOp.length ?? 2.5,
+              diameter: 0.07,
+            })
+            break
+          }
           default:
             // 防御性：validator 已挡住 unknown kind，理论不会到这
             continue

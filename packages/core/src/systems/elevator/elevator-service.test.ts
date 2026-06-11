@@ -70,7 +70,7 @@ function buildScene({
 
   const allNodes = [
     buildingWithChildren,
-    ...levels.flatMap((l) => (l.ceiling ? [l.level, l.ceiling] : [l.level])),
+    ...levels.flatMap((l): AnyNode[] => (l.ceiling ? [l.level, l.ceiling] : [l.level])),
     elevator,
   ]
   const nodes = Object.fromEntries(allNodes.map((n) => [n.id, n])) as Record<string, AnyNode>

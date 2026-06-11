@@ -9,9 +9,12 @@ import {
   type SceneGraph,
   type SidebarTab,
 } from '@aedifex/editor'
+import { Hammer, Layers } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { BuildTab } from './build-tab'
 import { CommunityViewerToolbarLeft, CommunityViewerToolbarRight } from './viewer-toolbar'
 
 export interface SceneMeta {
@@ -32,6 +35,33 @@ const SIDEBAR_TABS: (SidebarTab & { component: React.ComponentType })[] = [
     id: 'site',
     label: 'Scene',
     component: () => null, // Built-in SitePanel handles this
+    mobileDefaultSnap: 0.5,
+    mobileIcon: <Layers className="h-5 w-5" />,
+    icon: (
+      <Image
+        alt=""
+        className="h-8 w-8 object-contain"
+        height={32}
+        src="/icons/scene.png"
+        width={32}
+      />
+    ),
+  },
+  {
+    id: 'build',
+    label: 'Build',
+    component: BuildTab,
+    mobileDefaultSnap: 0.5,
+    mobileIcon: <Hammer className="h-5 w-5" />,
+    icon: (
+      <Image
+        alt=""
+        className="h-8 w-8 object-contain"
+        height={32}
+        src="/icons/build.png"
+        width={32}
+      />
+    ),
   },
 ]
 
@@ -72,7 +102,7 @@ export function SceneLoader({ initialScene, meta }: SceneLoaderProps) {
   const handleLoad = useCallback(async () => initialScene, [initialScene])
 
   const handleSave = useCallback(
-    async (graph: SceneGraph) => {
+    async (graph: SceneGraph, options?: { keepalive?: boolean }) => {
       const graphJson = sceneGraphSignature(graph)
       const isRecentRemoteApply = Date.now() < suppressRemoteSaveUntilRef.current
       if (lastRemoteGraphJsonRef.current === graphJson) {
@@ -90,6 +120,11 @@ export function SceneLoader({ initialScene, meta }: SceneLoaderProps) {
             'If-Match': String(versionRef.current),
           },
           body: JSON.stringify({ name: meta.name, graph }),
+          // `keepalive` lets the request outlive a page unload (the autosave
+          // flush on refresh/close). Browsers cap keepalive bodies at 64KB, so
+          // only the unload flush opts in — normal debounced saves omit it and
+          // can carry arbitrarily large scenes.
+          keepalive: options?.keepalive,
         })
 
         if (response.status === 409) {

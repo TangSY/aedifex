@@ -19,6 +19,7 @@ import {
   useScene,
 } from '@aedifex/core'
 import { Euler, Matrix3, Quaternion, Vector3 } from 'three'
+import { snapWorldXZForActiveBuilding } from '../../../lib/world-grid-snap'
 import {
   calculateCursorRotation,
   calculateItemRotation,
@@ -99,16 +100,22 @@ export const floorStrategy = {
     const [dimX, , dimZ] = dims
     const rotY = ctx.draftItem?.rotation?.[1] ?? 0
     const swapDims = Math.abs(Math.sin(rotY)) > 0.9
-    // event.localPosition is building-local; the coordinator cursor group is inside the
-    // building-local ToolManager group, so local coords are correct for both data and visuals.
-    const x = snapToGrid(event.localPosition[0], swapDims ? dimZ : dimX)
-    const z = snapToGrid(event.localPosition[2], swapDims ? dimX : dimZ)
+    // Snap on the world XZ grid (the grid the editor renders) so the
+    // item edges land on the visible grid even when the active building
+    // is rotated; then project the world point back into building-local
+    // for storage. Without this, a rotated building drags placement off
+    // the world grid.
+    const snappedWorldX = snapToGrid(event.position[0], swapDims ? dimZ : dimX)
+    const snappedWorldZ = snapToGrid(event.position[2], swapDims ? dimX : dimZ)
+    const { local } = snapWorldXZForActiveBuilding(snappedWorldX, snappedWorldZ, 0)
+    const [x, z] = local
+    const y = ctx.gridPosition.y
 
     return {
-      gridPosition: [x, 0, z],
-      cursorPosition: [x, event.localPosition[1], z],
+      gridPosition: [x, y, z],
+      cursorPosition: [x, y, z],
       cursorRotationY: rotY,
-      nodeUpdate: { position: [x, 0, z] },
+      nodeUpdate: { position: [x, y, z] },
       stopPropagation: false,
       dirtyNodeId: null,
     }
@@ -126,7 +133,11 @@ export const floorStrategy = {
     if (ctx.state.surface !== 'floor') return null
     if (!(ctx.levelId && ctx.draftItem)) return null
 
-    const pos: [number, number, number] = [ctx.gridPosition.x, 0, ctx.gridPosition.z]
+    const pos: [number, number, number] = [
+      ctx.gridPosition.x,
+      ctx.gridPosition.y,
+      ctx.gridPosition.z,
+    ]
     const valid = validators.canPlaceOnFloor(
       ctx.levelId,
       pos,
@@ -365,16 +376,19 @@ export const ceilingStrategy = {
     // use the ceiling hit's local position rather than world position.
     const x = snapToGrid(event.localPosition[0], swapDims ? dimZ : dimX)
     const z = snapToGrid(event.localPosition[2], swapDims ? dimX : dimZ)
-    const worldSnapped = event.object.localToWorld(new Vector3(x, -itemHeight, z))
+    // Recessed fixtures seat flush with the ceiling plane (body rising into the
+    // void above); everything else hangs its full height below the ceiling.
+    const seatY = ctx.asset.recessed ? 0 : -itemHeight
+    const worldSnapped = event.object.localToWorld(new Vector3(x, seatY, z))
 
     return {
       stateUpdate: { surface: 'ceiling', ceilingId: event.node.id },
       nodeUpdate: {
-        position: [x, -itemHeight, z],
+        position: [x, seatY, z],
         parentId: event.node.id,
       },
       cursorRotationY: 0,
-      gridPosition: [x, -itemHeight, z],
+      gridPosition: [x, seatY, z],
       cursorPosition: [worldSnapped.x, worldSnapped.y, worldSnapped.z],
       stopPropagation: true,
     }
@@ -396,10 +410,13 @@ export const ceilingStrategy = {
 
     const x = snapToGrid(event.localPosition[0], swapDims ? dimZ : dimX)
     const z = snapToGrid(event.localPosition[2], swapDims ? dimX : dimZ)
-    const worldSnapped = event.object.localToWorld(new Vector3(x, -itemHeight, z))
+    // Recessed fixtures seat flush with the ceiling plane (body rising into the
+    // void above); everything else hangs its full height below the ceiling.
+    const seatY = ctx.draftItem.asset.recessed ? 0 : -itemHeight
+    const worldSnapped = event.object.localToWorld(new Vector3(x, seatY, z))
 
     return {
-      gridPosition: [x, -itemHeight, z],
+      gridPosition: [x, seatY, z],
       cursorPosition: [worldSnapped.x, worldSnapped.y, worldSnapped.z],
       cursorRotationY: 0,
       nodeUpdate: null,
@@ -793,7 +810,7 @@ export function checkCanPlace(ctx: PlacementContext, validators: SpatialValidato
   // Floor (no attachTo)
   return validators.canPlaceOnFloor(
     ctx.levelId,
-    [ctx.gridPosition.x, 0, ctx.gridPosition.z],
+    [ctx.gridPosition.x, ctx.gridPosition.y, ctx.gridPosition.z],
     alignedDims,
     ctx.draftItem.rotation,
     [ctx.draftItem.id],

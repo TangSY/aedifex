@@ -2,7 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import { getActiveRoofHeight, RoofSegmentNode } from '@aedifex/core'
 import { roofSegmentDefinition } from '../definition'
 
-// roof-segment handles is a constant tuple [width, depth, wallHeight, pitch, rotate].
+// roof-segment handles is a constant tuple
+// [width×2 (right/left), depth×2 (front/back), wallHeight, pitch, rotate] —
+// upstream #355 split width/depth into per-side asymmetric-resize arrows.
 function makeSegment(overrides: Record<string, unknown> = {}) {
   return RoofSegmentNode.parse({
     id: 'rseg_test' as never,
@@ -29,17 +31,23 @@ describe('roofSegmentDefinition.capabilities', () => {
   })
 })
 
-describe('roofSegmentDefinition.handles — 5-handle constant tuple', () => {
-  test('exposes width + depth + wallHeight + pitch + rotate', () => {
+describe('roofSegmentDefinition.handles — 7-handle constant tuple', () => {
+  test('exposes width×2 + depth×2 + wallHeight + pitch + rotate', () => {
     const handles = roofSegmentDefinition.handles as any[]
     expect(Array.isArray(handles)).toBe(true)
-    expect(handles).toHaveLength(5)
-    expect(handles[0].axis).toBe('x') // width
-    expect(handles[1].axis).toBe('z') // depth
-    expect(handles[2].axis).toBe('y') // wallHeight
-    expect(handles[3].axis).toBe('y') // pitch (also y, but distinct anchor)
-    expect(handles[4].kind).toBe('arc-resize')
-    expect(handles[4].shape).toBe('rotate')
+    expect(handles).toHaveLength(7)
+    expect(handles[0].axis).toBe('x') // width (right, -X edge anchored)
+    expect(handles[1].axis).toBe('x') // width (left, +X edge anchored)
+    expect(handles[0].anchor).toBe('min')
+    expect(handles[1].anchor).toBe('max')
+    expect(handles[2].axis).toBe('z') // depth (front, -Z edge anchored)
+    expect(handles[3].axis).toBe('z') // depth (back, +Z edge anchored)
+    expect(handles[2].anchor).toBe('min')
+    expect(handles[3].anchor).toBe('max')
+    expect(handles[4].axis).toBe('y') // wallHeight
+    expect(handles[5].axis).toBe('y') // pitch (also y, but distinct anchor)
+    expect(handles[6].kind).toBe('arc-resize')
+    expect(handles[6].shape).toBe('rotate')
   })
 
   test('pitch handle round-trips peakHeight → pitch within 0.1°, clamps [0,85]', () => {
@@ -55,7 +63,7 @@ describe('roofSegmentDefinition.handles — 5-handle constant tuple', () => {
       pitch: 30,
     })
     const handles = roofSegmentDefinition.handles as any[]
-    const pitchHandle = handles[3]
+    const pitchHandle = handles[5]
     // currentValue is wallHeight + active roof height.
     const peak = pitchHandle.currentValue(node)
     expect(peak).toBeCloseTo(node.wallHeight + getActiveRoofHeight(node), 5)
@@ -70,7 +78,7 @@ describe('roofSegmentDefinition.handles — 5-handle constant tuple', () => {
   test('pitch handle clamps peak heights to [0,85] degrees', () => {
     const node = makeSegment({ roofType: 'gable', width: 8, depth: 6, wallHeight: 2 })
     const handles = roofSegmentDefinition.handles as any[]
-    const pitchHandle = handles[3]
+    const pitchHandle = handles[5]
 
     // Drag the peak absurdly high — pitch should clamp to MAX_PITCH=85.
     const highPatch = pitchHandle.apply(node, 1000)
@@ -84,13 +92,13 @@ describe('roofSegmentDefinition.handles — 5-handle constant tuple', () => {
   test('pitch handle.min returns the node wallHeight (peak cannot go below wall)', () => {
     const node = makeSegment({ wallHeight: 3.5 })
     const handles = roofSegmentDefinition.handles as any[]
-    const min = (handles[3].min as (n: any) => number)(node)
+    const min = (handles[5].min as (n: any) => number)(node)
     expect(min).toBe(3.5)
   })
 
   test('rotation handle negates the delta (cursor atan2 vs three.js Ry)', () => {
     const handles = roofSegmentDefinition.handles as any[]
-    const rotate = handles[4]
+    const rotate = handles[6]
     const patch = rotate.apply({ rotation: 1.0 } as any, 0.3)
     expect(patch.rotation).toBeCloseTo(0.7)
   })

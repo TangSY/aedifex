@@ -459,6 +459,16 @@ const LevelReferences = memo(function LevelReferences({
     }
 
     if (isImage) {
+      // When the host provides an upload pipeline and a project is active,
+      // route guide images through it (same as scans) so upload progress is
+      // driven by the host via useUploadStore. Otherwise fall back to the
+      // local data-URL guide so the standalone experience keeps working.
+      if (onUploadAsset && projectId) {
+        clearUpload(levelId)
+        onUploadAsset(projectId, levelId, file, 'guide')
+        return
+      }
+
       useUploadStore.getState().startUpload(levelId, 'guide', file.name)
       useUploadStore.getState().setStatus(levelId, 'uploading')
 
@@ -492,10 +502,14 @@ const LevelReferences = memo(function LevelReferences({
       | GuideNode
       | undefined
 
+    // Host-managed assets carry http(s) or app-relative URLs; local-only
+    // references (data:/blob:/asset:) never reach the host.
     if (
       projectId &&
       refNode?.url &&
-      (refNode.url.startsWith('http://') || refNode.url.startsWith('https://'))
+      (refNode.url.startsWith('http://') ||
+        refNode.url.startsWith('https://') ||
+        refNode.url.startsWith('/'))
     ) {
       onDeleteAsset?.(projectId, refNode.url)
     }
@@ -1569,7 +1583,7 @@ export function SitePanel({ projectId, onUploadAsset, onDeleteAsset }: SitePanel
                   'h-5 w-5 object-contain transition-all',
                   phase !== 'site' && 'opacity-60 grayscale',
                 )}
-                src="/icons/site.png"
+                src="/icons/site-flag.png"
               />
               <span className="font-medium text-sm">{siteNode.name || 'Site'}</span>
             </div>

@@ -18,9 +18,9 @@ describe('DoorNode.parse', () => {
     test('default segments: two panels totalling 1.0 in heightRatio', () => {
       const d = DoorNode.parse(MIN_DOOR)
       expect(d.segments).toHaveLength(2)
-      expect(d.segments[0].heightRatio).toBe(0.4)
-      expect(d.segments[1].heightRatio).toBe(0.6)
-      expect(d.segments[0].type).toBe('panel')
+      expect(d.segments[0]!.heightRatio).toBe(0.4)
+      expect(d.segments[1]!.heightRatio).toBe(0.6)
+      expect(d.segments[0]!.type).toBe('panel')
     })
 
     test('idempotent', () => {

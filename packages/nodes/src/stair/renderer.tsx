@@ -22,6 +22,7 @@ import {
 } from '@aedifex/viewer'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { createPlaceholderGeometry } from '../shared/placeholder-geometry'
 
 type SegmentTransform = {
   position: [number, number, number]
@@ -106,13 +107,8 @@ export const StairRenderer = ({ node: rawNode }: { node: StairNode }) => {
     [node, shading, textures, colorPreset],
   )
 
-  const straightPlaceholderGeometry = useMemo(() => {
-    const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute([], 3))
-    geometry.addGroup(0, 0, 0)
-    geometry.addGroup(0, 0, 1)
-    return geometry
-  }, [])
+  // 2 groups map 1:1 to the stair body's 2-material array (body + tread).
+  const straightPlaceholderGeometry = useMemo(() => createPlaceholderGeometry(2), [])
 
   useEffect(() => {
     return () => {
@@ -155,16 +151,26 @@ export const StairRenderer = ({ node: rawNode }: { node: StairNode }) => {
 
 function StairRailings({ stair, material }: { stair: StairNode; material: THREE.Material }) {
   const nodes = useScene((state) => state.nodes)
+  // Stair segments' width/length/height arrow handles publish drag values to
+  // `useLiveNodeOverrides` and only commit to zustand on release. Subscribing
+  // here and merging each child segment's override means the railing tracks
+  // the drag in real time instead of freezing at the pre-drag values.
+  const overrides = useLiveNodeOverrides((s) => s.overrides)
 
   const segments = useMemo(
     () =>
       (stair.children ?? [])
-        .map((childId) => nodes[childId as AnyNodeId] as StairSegmentNode | undefined)
+        .map((childId) => {
+          const base = nodes[childId as AnyNodeId] as StairSegmentNode | undefined
+          if (!base) return undefined
+          const override = overrides.get(childId as AnyNodeId)
+          return (override ? { ...base, ...override } : base) as StairSegmentNode
+        })
         .filter(
           (node): node is StairSegmentNode =>
             node?.type === 'stair-segment' && node.visible !== false,
         ),
-    [nodes, stair.children],
+    [nodes, overrides, stair.children],
   )
 
   const railPaths = useMemo(

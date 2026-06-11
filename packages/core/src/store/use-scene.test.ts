@@ -168,7 +168,7 @@ describe('setScene — orphan removal', () => {
   test('resets collections to empty', () => {
     // pre-populate collections to confirm setScene wipes them
     useScene.setState({
-      collections: { col_x: { id: 'col_x', name: 'old', nodeIds: [] } },
+      collections: { collection_x: { id: 'collection_x', name: 'old', nodeIds: [] } },
     } as never)
     const site = makeSite('site_1' as AnyNodeId, [])
     useScene.getState().setScene({ [site.id]: site } as Record<AnyNodeId, AnyNode>, [site.id])
@@ -182,7 +182,7 @@ describe('loadScene — idempotent guard', () => {
     useScene.getState().loadScene()
     const state = useScene.getState()
     expect(state.rootNodeIds).toHaveLength(1)
-    const rootId = state.rootNodeIds[0]
+    const rootId = state.rootNodeIds[0]!
     const root = state.nodes[rootId]
     expect(root?.type).toBe('site')
     // Should have site + building + level = 3 nodes
@@ -376,44 +376,44 @@ describe('readOnly gate — all mutating actions are no-ops', () => {
   test('createCollection is a no-op in readOnly mode (returns empty id, no write)', () => {
     const before = snapshotCollections()
     const id = useScene.getState().createCollection('test', [])
-    expect(id).toBe('')
+    expect(id as string).toBe('')
     expect(snapshotCollections()).toBe(before)
   })
 
   test('deleteCollection is a no-op in readOnly mode', () => {
     // Even if a collection were to pre-exist, deletion must be blocked.
     useScene.setState({
-      collections: { col_x: { id: 'col_x', name: 'x', nodeIds: [] } },
+      collections: { collection_x: { id: 'collection_x', name: 'x', nodeIds: [] } },
     } as never)
     const before = snapshotCollections()
-    useScene.getState().deleteCollection('col_x')
+    useScene.getState().deleteCollection('collection_x')
     expect(snapshotCollections()).toBe(before)
   })
 
   test('updateCollection is a no-op in readOnly mode', () => {
     useScene.setState({
-      collections: { col_x: { id: 'col_x', name: 'x', nodeIds: [] } },
+      collections: { collection_x: { id: 'collection_x', name: 'x', nodeIds: [] } },
     } as never)
     const before = snapshotCollections()
-    useScene.getState().updateCollection('col_x', { name: 'y' })
+    useScene.getState().updateCollection('collection_x', { name: 'y' })
     expect(snapshotCollections()).toBe(before)
   })
 
   test('addToCollection is a no-op in readOnly mode', () => {
     useScene.setState({
-      collections: { col_x: { id: 'col_x', name: 'x', nodeIds: [] } },
+      collections: { collection_x: { id: 'collection_x', name: 'x', nodeIds: [] } },
     } as never)
     const before = snapshotCollections()
-    useScene.getState().addToCollection('col_x', 'level_1' as AnyNodeId)
+    useScene.getState().addToCollection('collection_x', 'level_1' as AnyNodeId)
     expect(snapshotCollections()).toBe(before)
   })
 
   test('removeFromCollection is a no-op in readOnly mode', () => {
     useScene.setState({
-      collections: { col_x: { id: 'col_x', name: 'x', nodeIds: ['level_1' as AnyNodeId] } },
+      collections: { collection_x: { id: 'collection_x', name: 'x', nodeIds: ['level_1' as AnyNodeId] } },
     } as never)
     const before = snapshotCollections()
-    useScene.getState().removeFromCollection('col_x', 'level_1' as AnyNodeId)
+    useScene.getState().removeFromCollection('collection_x', 'level_1' as AnyNodeId)
     expect(snapshotCollections()).toBe(before)
   })
 

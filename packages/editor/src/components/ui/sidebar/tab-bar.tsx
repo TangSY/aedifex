@@ -1,6 +1,7 @@
 'use client'
 
 import { startTransition, type ReactNode } from 'react'
+import { triggerSFX } from './../../../lib/sfx-bus'
 import { cn } from './../../../lib/utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../primitives/tooltip'
 
@@ -33,8 +34,12 @@ export function TabBar({ tabs, activeTab, onTabChange }: TabBarProps) {
                 : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
             )}
             key={tab.id}
-            // 同 IconRail：tab 切换可能触发重组件挂载
-            onClick={() => startTransition(() => onTabChange(tab.id))}
+            // 同 IconRail：tab 切换可能触发重组件挂载；SFX 在 transition 外同步触发
+            onClick={() => {
+              triggerSFX('sfx:menu-click')
+              startTransition(() => onTabChange(tab.id))
+            }}
+            onMouseEnter={() => triggerSFX('sfx:menu-hover')}
             type="button"
           >
             {tab.label}
@@ -84,7 +89,12 @@ export function IconRail({ tabs, activeTab, collapsed, onIconClick }: IconRailPr
                   // 会让按钮点击 INP 长达 ~700ms。把状态更新标记为 transition，
                   // 让 React 在下一帧绘制按钮 hover/active 反馈，再异步推进
                   // 沉重的下游 render，按钮点击 INP 应回到 <100ms。
-                  onClick={() => startTransition(() => onIconClick(tab.id))}
+                  // SFX 在 transition 外同步触发，保证音效即时。
+                  onClick={() => {
+                    triggerSFX('sfx:menu-click')
+                    startTransition(() => onIconClick(tab.id))
+                  }}
+                  onMouseEnter={() => triggerSFX('sfx:menu-hover')}
                   type="button"
                 >
                   {tab.icon ?? tab.label.charAt(0)}

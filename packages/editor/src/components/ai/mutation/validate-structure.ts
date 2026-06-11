@@ -965,7 +965,8 @@ export function validateCloneLevel(call: CloneLevelToolCall): ValidatedCloneLeve
 // No validator needed here.
 
 // ============================================================================
-// Roof accessory validator — shared by chimney/dormer/skylight/solar-panel/ridge-vent/box-vent
+// Roof accessory validator — shared by chimney/dormer/skylight/solar-panel/
+// ridge-vent/box-vent/turbine-vent/eyebrow-vent/cupola/gutter/downspout
 // ============================================================================
 
 const ROOF_ACCESSORY_KINDS = new Set([
@@ -975,6 +976,11 @@ const ROOF_ACCESSORY_KINDS = new Set([
   'solar-panel',
   'ridge-vent',
   'box-vent',
+  'turbine-vent',
+  'eyebrow-vent',
+  'cupola',
+  'gutter',
+  'downspout',
 ])
 
 const ACCESSORY_DEFAULT_DIMENSIONS: Record<string, { width: number; depth: number }> = {
@@ -984,6 +990,92 @@ const ACCESSORY_DEFAULT_DIMENSIONS: Record<string, { width: number; depth: numbe
   'solar-panel': { width: 1.0, depth: 1.6 },
   'ridge-vent': { width: 2.0, depth: 0.3 },
   'box-vent': { width: 0.6, depth: 0.6 },
+  // turbine-vent has no width/depth in its schema — `width` carries the head
+  // diameter (TurbineVentNode.diameter default 0.32); depth mirrors it.
+  'turbine-vent': { width: 0.32, depth: 0.32 },
+  'eyebrow-vent': { width: 0.5, depth: 0.6 },
+  cupola: { width: 0.8, depth: 0.8 },
+  // gutter is sized by `length` along the eave, not width/depth — these
+  // mirror the U-channel profile size (GutterNode.size default 0.13).
+  gutter: { width: 0.13, depth: 0.13 },
+  // downspout is sized by bore diameter (DownspoutNode.diameter default 0.07).
+  downspout: { width: 0.07, depth: 0.07 },
+}
+
+const GUTTER_DEFAULT_LENGTH = 2.0
+const GUTTER_DEFAULT_SIZE = 0.13
+const MIN_DOWNSPOUT_LENGTH = 0.1
+
+// ---------------------------------------------------------------------------
+// Gutter eave snap — mirrors packages/nodes/src/gutter/eave-snap.ts.
+// @aedifex/nodes peer-depends on @aedifex/editor, so the editor AI module
+// cannot import the original helpers without a package cycle. Keep this math
+// in lockstep with that file: the manual placement tool and this validator
+// must store identical poses for the same segment-local hit.
+// ---------------------------------------------------------------------------
+
+const EAVE_TUCK_INWARD = 0.04
+const EAVE_TUCK_UP = 0.04
+
+type EaveSnapSegment = {
+  roofType?: string
+  width?: number
+  depth?: number
+  wallHeight?: number
+  overhang?: number
+  pitch?: number
+}
+
+/** Live eave Y from a segment's wallHeight + overhang + pitch (see eave-snap.ts). */
+export function computeGutterEaveY(segment: EaveSnapSegment): number {
+  const wallHeight = segment.wallHeight ?? 0
+  // Flat roofs: the deck top IS the eave line — no slope drop, no tuck-up.
+  if ((segment.roofType ?? 'gable') === 'flat') return wallHeight
+  const overhang = segment.overhang ?? 0
+  const pitchRad = ((segment.pitch ?? 0) * Math.PI) / 180
+  return wallHeight - overhang * Math.tan(pitchRad) + EAVE_TUCK_UP
+}
+
+/**
+ * Snap a segment-local hit to the nearest eave (drip edge) of the segment.
+ * Side picking is roof-type aware: shed has a single low (+Z) eave;
+ * hip/flat/dutch get a 4-way snap; everything else is ±Z.
+ */
+export function resolveGutterEaveSnap(
+  segment: EaveSnapSegment,
+  localX: number,
+  localZ: number,
+): { eaveX: number; eaveY: number; eaveZ: number; rotation: number } {
+  const halfW = (segment.width ?? 0) / 2
+  const halfD = (segment.depth ?? 0) / 2
+  const overhang = segment.overhang ?? 0
+  const eaveY = computeGutterEaveY(segment)
+  const roofType = segment.roofType ?? 'gable'
+
+  let side: '+X' | '-X' | '+Z' | '-Z'
+  if (roofType === 'shed') {
+    side = '+Z'
+  } else if (roofType === 'hip' || roofType === 'flat' || roofType === 'dutch') {
+    const fx = halfW > 0 ? Math.abs(localX) / halfW : 0
+    const fz = halfD > 0 ? Math.abs(localZ) / halfD : 0
+    if (fx > fz) side = localX < 0 ? '-X' : '+X'
+    else side = localZ < 0 ? '-Z' : '+Z'
+  } else {
+    side = localZ < 0 ? '-Z' : '+Z'
+  }
+
+  const pinZ = Math.max(halfD, halfD + overhang - EAVE_TUCK_INWARD)
+  const pinX = Math.max(halfW, halfW + overhang - EAVE_TUCK_INWARD)
+  switch (side) {
+    case '+Z':
+      return { eaveX: localX, eaveY, eaveZ: pinZ, rotation: 0 }
+    case '-Z':
+      return { eaveX: localX, eaveY, eaveZ: -pinZ, rotation: Math.PI }
+    case '+X':
+      return { eaveX: pinX, eaveY, eaveZ: localZ, rotation: Math.PI / 2 }
+    case '-X':
+      return { eaveX: -pinX, eaveY, eaveZ: localZ, rotation: -Math.PI / 2 }
+  }
 }
 
 export function validateAddRoofAccessory(
@@ -1013,8 +1105,70 @@ export function validateAddRoofAccessory(
     ? [call.position[0], call.position[1], call.position[2]]
     : [0, 0, 0]
 
-  // Resolve parent roof segment from scene
   const { nodes } = useScene.getState()
+
+  // Downspout anchors to a GUTTER, not directly to a segment — the manual
+  // tool (packages/nodes/src/downspout/tool.tsx) drills a new outlet into the
+  // host gutter and derives the scene-graph parent from gutter.roofSegmentId.
+  if (kind === 'downspout') {
+    const invalid = (errorReason: string): import('../types/validated-types').ValidatedAddRoofAccessory => ({
+      type: 'add_roof_accessory',
+      status: 'invalid',
+      kind,
+      roofSegmentId: call.roofSegmentId ?? '',
+      position,
+      rotation,
+      width,
+      depth,
+      gutterId: call.gutterId ?? '',
+      errorReason,
+    })
+
+    if (!call.gutterId) {
+      return invalid(
+        'Downspout requires "gutterId" — the gutter it drains. Create a gutter first (add_roof_accessory kind="gutter"), then pass its node ID.',
+      )
+    }
+    const gutter = nodes[call.gutterId as AnyNodeId]
+    if (!gutter) {
+      return invalid(`Gutter "${call.gutterId}" not found. Pass a valid gutter node ID.`)
+    }
+    if (gutter.type !== 'gutter') {
+      return invalid(
+        `Node "${call.gutterId}" is a ${gutter.type}, not a gutter. A downspout drains a gutter — create one first (add_roof_accessory kind="gutter").`,
+      )
+    }
+    const hostSegmentId = gutter.roofSegmentId
+    const hostSegment = hostSegmentId ? nodes[hostSegmentId as AnyNodeId] : undefined
+    if (!hostSegment || hostSegment.type !== 'roof-segment') {
+      return invalid(
+        `Gutter "${call.gutterId}" has no valid host roof-segment (roofSegmentId="${hostSegmentId ?? ''}"). Cannot mount a downspout on it.`,
+      )
+    }
+
+    // Drop from the gutter outlet (eaveY − gutter size) down to segment Y = 0
+    // — same formula as the manual tool's dropLength.
+    const gutterSize = typeof gutter.size === 'number' ? gutter.size : GUTTER_DEFAULT_SIZE
+    const autoLength = Math.max(MIN_DOWNSPOUT_LENGTH, computeGutterEaveY(hostSegment) - gutterSize)
+    const length = call.length && call.length > 0 ? call.length : autoLength
+    const outletOffset = typeof call.offsetAlongGutter === 'number' ? call.offsetAlongGutter : 0
+
+    return {
+      type: 'add_roof_accessory',
+      status: 'valid',
+      kind,
+      roofSegmentId: hostSegmentId as string,
+      position,
+      rotation,
+      width,
+      depth,
+      length,
+      gutterId: call.gutterId,
+      outletOffset,
+    }
+  }
+
+  // Resolve parent roof segment from scene
   const segment = call.roofSegmentId ? nodes[call.roofSegmentId as AnyNodeId] : undefined
 
   if (!segment) {
@@ -1044,6 +1198,25 @@ export function validateAddRoofAccessory(
       depth,
       heightAboveRidge: call.heightAboveRidge,
       errorReason: `Node "${call.roofSegmentId}" is a ${segment.type}, not a roof-segment. Use add_roof first to create a roof, then attach accessories to its segment.`,
+    }
+  }
+
+  // Gutter mounts on the eave (drip edge), not the slope surface. Treat the
+  // LLM's position as the cursor hit and snap it like the manual tool does;
+  // rotation comes from the snap (outward axis away from the building).
+  if (kind === 'gutter') {
+    const snap = resolveGutterEaveSnap(segment, position[0], position[2])
+    const length = call.length && call.length > 0 ? call.length : GUTTER_DEFAULT_LENGTH
+    return {
+      type: 'add_roof_accessory',
+      status: 'valid',
+      kind,
+      roofSegmentId: call.roofSegmentId,
+      position: [snap.eaveX, snap.eaveY, snap.eaveZ],
+      rotation: snap.rotation,
+      width,
+      depth,
+      length,
     }
   }
 

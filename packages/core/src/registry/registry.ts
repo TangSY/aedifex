@@ -3,19 +3,17 @@ import type { AnyNodeDefinition, NodeRegistry, Plugin } from './types'
 
 const HOST_API_VERSION = 1 as const
 
-// True only when an interactive dev server (vite dev / next dev) is
-// running. Tries Vite's `import.meta.env.DEV` first (the editor app's
-// bundler) and falls back to `process.env.NODE_ENV === 'development'`
-// for Node-side execution.
+// True in dev / test builds, false in production. Tries Vite's
+// `import.meta.env.DEV` first (the editor app's bundler) and falls back
+// to `process.env.NODE_ENV !== 'production'` for Node test runners.
 //
-// Why the strict `=== 'development'` instead of `!== 'production'`:
-// test runners (bun test, vitest, jest) set NODE_ENV='test'. Under the
-// looser `!== 'production'` check, tests were treated as dev mode, so
-// the duplicate-kind branch took the HMR warn-and-overwrite path
-// instead of throwing. The three "duplicate-kind throws" assertions
-// in registry.test.ts then silently degraded. Tests want the same
-// strict contract as production; only an actual dev server needs HMR
-// tolerance, and dev servers consistently set NODE_ENV='development'.
+// History note: the fork briefly used the strict `=== 'development'`
+// check (272465a9) so the then-stale duplicate-kind tests would throw
+// under `bun test`. Upstream #358 (96d6e0af) fixed the same stale tests
+// at the test level instead — throw-path assertions pin
+// NODE_ENV='production' via `inProduction`, and dev/test get the HMR
+// warn-and-replace path. Post-merge we follow upstream's semantics so
+// the merged test suite and source agree.
 function isDevMode(): boolean {
   try {
     const meta = import.meta as { env?: { DEV?: boolean } }
@@ -24,7 +22,7 @@ function isDevMode(): boolean {
     // import.meta unavailable in some CJS contexts — fall through.
   }
   if (typeof process !== 'undefined' && process.env?.NODE_ENV) {
-    return process.env.NODE_ENV === 'development'
+    return process.env.NODE_ENV !== 'production'
   }
   // No environment signal — be safe and treat as production.
   return false

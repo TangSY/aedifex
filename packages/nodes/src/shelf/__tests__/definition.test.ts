@@ -84,13 +84,14 @@ describe('shelfDefinition.relations', () => {
 })
 
 describe('shelfDefinition.handles', () => {
-  test('returns four handles (width, depth, height, rotate) — shape-invariant', () => {
+  test('returns five handles (width, depth, height, rotate, move) — shape-invariant', () => {
     const handles = (shelfDefinition.handles as (n: any) => any[])(ShelfNode.parse({}))
-    expect(handles).toHaveLength(4)
+    expect(handles).toHaveLength(5)
     expect(handles[0].axis).toBe('x') // width
     expect(handles[1].axis).toBe('z') // depth
     expect(handles[2].axis).toBe('y') // height
     expect(handles[3].kind).toBe('arc-resize') // rotate
+    expect(handles[4].kind).toBe('translate') // move grip (upstream #375)
   })
 
   test('rotate handle writes back a [x, y, z] tuple with Y mutated (not a scalar)', () => {

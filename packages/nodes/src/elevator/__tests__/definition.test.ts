@@ -38,15 +38,18 @@ describe('elevatorDefinition.capabilities', () => {
   })
 })
 
-describe('elevatorDefinition.handles — four arrows', () => {
-  test('exposes 4 handles (width, depth, cab height, rotate)', () => {
+describe('elevatorDefinition.handles — five handles', () => {
+  test('exposes 5 handles (width, depth, cab height, rotate, move)', () => {
     const handles = Array.isArray(elevatorDefinition.handles)
       ? elevatorDefinition.handles
       : (elevatorDefinition.handles as any)({})
-    expect(handles).toHaveLength(4)
-    // The last one is the rotate gizmo (arc-resize shape='rotate').
+    expect(handles).toHaveLength(5)
+    // [3] is the rotate gizmo (arc-resize shape='rotate'); [4] is the
+    // tap-to-engage move grip added by the unified handle system.
     expect((handles[3] as any).kind).toBe('arc-resize')
     expect((handles[3] as any).shape).toBe('rotate')
+    expect((handles[4] as any).kind).toBe('tap-action')
+    expect((handles[4] as any).shape).toBe('move-cross')
   })
 })
 
