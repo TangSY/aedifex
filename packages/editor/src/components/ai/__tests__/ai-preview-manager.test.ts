@@ -154,6 +154,33 @@ vi.mock('nanoid', () => ({
   customAlphabet: () => () => 'test-id',
 }))
 
+// confirmGhostPreview/undoConfirmedOperation route all mutations through the
+// SceneOperations adapter (ops().*) — without this mock the real SceneBridge
+// runs against its own (empty) node lookup and every confirm/undo case dies
+// with "node not found". Mirrors confirm-roof-accessory.test.ts.
+vi.mock('../scene-operations-adapter', () => ({
+  getSceneOperations: () => ({
+    createNode: (node: any, parentId?: string) => mockCreateNode(node, parentId),
+    createNodes: (entries: any[]) => mockCreateNodes(entries),
+    deleteNode: (id: string) => mockDeleteNode(id),
+    updateNode: (id: string, data: any) => mockUpdateNode(id, data),
+    setNode: (id: string, node: any) => {
+      mockNodes[id] = { ...node }
+      mockUpdatedNodes.push({ id, data: node })
+    },
+    // confirmGhostPreview flushes batched creates through applyPatch — honor
+    // the create patches against the in-memory store.
+    applyPatch: (patches: any[]) => {
+      mockCreateNodes(
+        patches
+          .filter((p: any) => p.op === 'create')
+          .map((p: any) => ({ node: p.node, parentId: p.parentId ?? null })),
+      )
+    },
+  }),
+  resetSceneOperationsForTesting: vi.fn(),
+}))
+
 import {
   applyGhostPreview,
   clearGhostPreview,
