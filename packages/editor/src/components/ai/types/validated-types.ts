@@ -15,7 +15,12 @@ export interface ValidatedAddRoofAccessory {
   position: [number, number, number]
   /** For kind="gutter" this is the eave snap orientation (outward axis away from the building). */
   rotation: number
-  /** For kind="turbine-vent" this carries the head diameter; for kind="downspout" the bore diameter. */
+  /**
+   * For kind="turbine-vent" this carries the head diameter. For
+   * kind="downspout" width is a schema placeholder only — confirm hardcodes
+   * the bore diameter to 0.07 (matching the manual tool's
+   * DEFAULT_OUTLET_DIAMETER) and never reads this field.
+   */
   width: number
   depth: number
   /** Chimney only */

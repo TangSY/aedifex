@@ -11,8 +11,23 @@
  *    rotation, eave-Y formula (mirrors packages/nodes/src/gutter/eave-snap.ts)
  *  - downspout gutter anchoring: gutterId required, host segment derived from
  *    the gutter, drop length auto-computed from eave height − gutter size
+ *  - ANCHOR: the mirror in validate-structure.ts is asserted against the REAL
+ *    implementation in packages/nodes/src/gutter/eave-snap.ts, imported below
+ *    via a relative path (tests are not bound by the @aedifex/nodes ↔
+ *    @aedifex/editor package cycle). If anyone tunes the OSS constants or
+ *    branch logic, this file goes red immediately instead of silently
+ *    letting AI placement drift away from manual placement.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+// Real implementation — single source of truth the mirror must track.
+// 6 × `../` climbs __tests__ → mutation → ai → components → src → editor,
+// landing on packages/, then into nodes/src/gutter/eave-snap.ts.
+import {
+  computeEaveY,
+  EAVE_TUCK_INWARD,
+  EAVE_TUCK_UP,
+  resolveEaveSnap,
+} from '../../../../../../nodes/src/gutter/eave-snap'
 
 const mockNodes: Record<string, any> = {}
 
@@ -36,9 +51,6 @@ import {
 beforeEach(() => {
   for (const key of Object.keys(mockNodes)) delete mockNodes[key]
 })
-
-const EAVE_TUCK_INWARD = 0.04
-const EAVE_TUCK_UP = 0.04
 
 function makeSegment(
   id: string,
@@ -364,6 +376,22 @@ describe('validateAddRoofAccessory — downspout', () => {
     expect(result.length).toBeCloseTo(Math.max(0.1, computeGutterEaveY(seg) - 0.13))
   })
 
+  it('clamps the gutter size to the manual-path 0.04 floor when auto-computing length', () => {
+    // gutterDims() in packages/nodes/src/gutter/outlet-lookup.ts clamps
+    // size = max(0.04, gutter.size) before deriving the outlet Y the manual
+    // dropLength uses — a tiny gutter must not yield an over-long pipe.
+    const seg = makeSegment('rseg_1', { wallHeight: 2.5, overhang: 0.3, pitch: 40 })
+    makeGutter('gutter_1', { size: 0.01 })
+    const result = call({
+      kind: 'downspout',
+      roofSegmentId: 'rseg_1',
+      position: [0, 0, 0],
+      gutterId: 'gutter_1',
+    })
+    expect(result.status).toBe('valid')
+    expect(result.length).toBeCloseTo(Math.max(0.1, computeGutterEaveY(seg) - 0.04))
+  })
+
   it('honors an explicit length override and clamps outletOffset default to 0', () => {
     makeSegment('rseg_1')
     makeGutter('gutter_1')
@@ -384,5 +412,91 @@ describe('validateAddRoofAccessory — downspout', () => {
     })
     expect(explicit.length).toBeCloseTo(4.2)
     expect(explicit.outletOffset).toBeCloseTo(-0.6)
+  })
+})
+
+// ============================================================================
+// ANCHOR — mirror in validate-structure.ts vs the REAL eave-snap implementation
+// (packages/nodes/src/gutter/eave-snap.ts). Any tuning of the OSS constants or
+// side-picking logic must turn this suite red.
+// ============================================================================
+
+describe('eave-snap mirror — anchored to packages/nodes/src/gutter/eave-snap.ts', () => {
+  // Varied per-roof-type segment params so the formulas are exercised beyond
+  // the schema defaults (different width/depth/wallHeight/overhang/pitch).
+  const SEGMENT_PRESETS: Array<[string, Record<string, number | string>]> = [
+    ['gable', { roofType: 'gable', width: 8, depth: 6, wallHeight: 0.5, overhang: 0.3, pitch: 40 }],
+    ['shed', { roofType: 'shed', width: 6, depth: 4, wallHeight: 2.8, overhang: 0.45, pitch: 15 }],
+    ['hip', { roofType: 'hip', width: 8, depth: 6, wallHeight: 2.5, overhang: 0.3, pitch: 35 }],
+    ['flat', { roofType: 'flat', width: 10, depth: 7, wallHeight: 3.0, overhang: 0.2, pitch: 0 }],
+    ['dutch', { roofType: 'dutch', width: 9, depth: 5, wallHeight: 2.6, overhang: 0.35, pitch: 30 }],
+    ['gambrel', { roofType: 'gambrel', width: 7, depth: 6, wallHeight: 2.4, overhang: 0.25, pitch: 50 }],
+    ['mansard', { roofType: 'mansard', width: 8, depth: 8, wallHeight: 2.7, overhang: 0.4, pitch: 60 }],
+  ]
+
+  // Cursor hits covering all four quadrants, both dominant axes (drives the
+  // hip/flat/dutch 4-way picker through ±X and ±Z), an on-axis edge hit and
+  // a near-center hit.
+  const CURSOR_HITS: Array<[number, number]> = [
+    [1.5, 2.4], // +X/+Z quadrant, Z-dominant → +Z eave
+    [-2.2, -2.6], // -X/-Z quadrant, Z-dominant → -Z eave
+    [3.9, 0.6], // +X dominant → +X eave on 4-way roofs
+    [-3.8, -0.4], // -X dominant → -X eave on 4-way roofs
+    [0, 2.9], // on-axis +Z edge
+    [0.01, -0.02], // near-center (sign tie-breaking)
+  ]
+
+  const CASES = SEGMENT_PRESETS.flatMap(([roofType, preset]) =>
+    CURSOR_HITS.map(([x, z]) => [roofType, x, z, preset] as const),
+  )
+
+  it.each(CASES)(
+    'roofType=%s cursor=(%f, %f): mirror snap === real resolveEaveSnap',
+    (_roofType, x, z, preset) => {
+      const seg = makeSegment('rseg_1', preset as any)
+      const real = resolveEaveSnap(seg as any, x, z)
+      const mirrored = resolveGutterEaveSnap(seg, x, z)
+      expect(mirrored.eaveX).toBeCloseTo(real.eaveX, 12)
+      expect(mirrored.eaveY).toBeCloseTo(real.eaveY, 12)
+      expect(mirrored.eaveZ).toBeCloseTo(real.eaveZ, 12)
+      expect(mirrored.rotation).toBeCloseTo(real.rotation, 12)
+    },
+  )
+
+  it.each(CASES)(
+    'roofType=%s cursor=(%f, %f): validator gutter output === real snap pose',
+    (_roofType, x, z, preset) => {
+      const seg = makeSegment('rseg_1', preset as any)
+      const real = resolveEaveSnap(seg as any, x, z)
+      const result = call({ kind: 'gutter', roofSegmentId: 'rseg_1', position: [x, 0, z] })
+      expect(result.status).toBe('valid')
+      expect(result.position[0]).toBeCloseTo(real.eaveX, 12)
+      expect(result.position[1]).toBeCloseTo(real.eaveY, 12)
+      expect(result.position[2]).toBeCloseTo(real.eaveZ, 12)
+      expect(result.rotation).toBeCloseTo(real.rotation, 12)
+    },
+  )
+
+  it.each(SEGMENT_PRESETS)('roofType=%s: mirror eave-Y === real computeEaveY', (_t, preset) => {
+    const seg = makeSegment('rseg_1', preset as any)
+    expect(computeGutterEaveY(seg)).toBeCloseTo(computeEaveY(seg as any), 12)
+  })
+
+  it('mirror tuck constants equal the real EAVE_TUCK_INWARD / EAVE_TUCK_UP', () => {
+    // The mirror's constants are module-private, so recover them from its
+    // observable output and pin them to the imported real constants.
+    const seg = makeSegment('rseg_1', {
+      roofType: 'gable',
+      width: 8,
+      depth: 6,
+      wallHeight: 2.5,
+      overhang: 0.3,
+      pitch: 40,
+    })
+    const mirrorTuckUp = computeGutterEaveY(seg) - (2.5 - 0.3 * Math.tan((40 * Math.PI) / 180))
+    expect(mirrorTuckUp).toBeCloseTo(EAVE_TUCK_UP, 12)
+    const snap = resolveGutterEaveSnap(seg, 0, 2) // +Z eave: pin = halfD + overhang − tuck
+    const mirrorTuckInward = 3 + 0.3 - snap.eaveZ
+    expect(mirrorTuckInward).toBeCloseTo(EAVE_TUCK_INWARD, 12)
   })
 })

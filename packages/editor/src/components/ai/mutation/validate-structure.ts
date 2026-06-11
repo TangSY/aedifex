@@ -1147,8 +1147,13 @@ export function validateAddRoofAccessory(
     }
 
     // Drop from the gutter outlet (eaveY − gutter size) down to segment Y = 0
-    // — same formula as the manual tool's dropLength.
-    const gutterSize = typeof gutter.size === 'number' ? gutter.size : GUTTER_DEFAULT_SIZE
+    // — same formula as the manual tool's dropLength. The 0.04 floor mirrors
+    // gutterDims() in packages/nodes/src/gutter/outlet-lookup.ts (the manual
+    // path clamps size before deriving the outlet Y).
+    const gutterSize = Math.max(
+      0.04,
+      typeof gutter.size === 'number' ? gutter.size : GUTTER_DEFAULT_SIZE,
+    )
     const autoLength = Math.max(MIN_DOWNSPOUT_LENGTH, computeGutterEaveY(hostSegment) - gutterSize)
     const length = call.length && call.length > 0 ? call.length : autoLength
     const outletOffset = typeof call.offsetAlongGutter === 'number' ? call.offsetAlongGutter : 0

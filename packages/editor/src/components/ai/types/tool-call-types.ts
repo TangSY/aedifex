@@ -471,7 +471,7 @@ export interface AddRoofAccessoryToolCall {
   /** Accessory kind */
   kind: RoofAccessoryKind
   /** Target roof segment node ID (from scene context). For kind="downspout" this is derived from the host gutter and may be omitted. */
-  roofSegmentId: string
+  roofSegmentId?: string
   /**
    * Segment-local position [x, y, z] (Y is ignored — anchored to pitched surface).
    * For kind="gutter" this is treated as the cursor hit on the segment: the

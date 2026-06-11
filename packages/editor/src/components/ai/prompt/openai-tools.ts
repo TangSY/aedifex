@@ -831,7 +831,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
             enum: ['chimney', 'dormer', 'skylight', 'solar-panel', 'ridge-vent', 'box-vent', 'turbine-vent', 'eyebrow-vent', 'cupola', 'gutter', 'downspout'],
             description: 'Accessory kind. chimney=砖砌烟囱, dormer=老虎窗, skylight=天窗, solar-panel=太阳能光伏板, ridge-vent=屋脊通风器, box-vent=方形通风口, turbine-vent=涡轮通风器(whirlybird), eyebrow-vent=眉形通风口, cupola=屋顶塔楼(louvered roof lantern), gutter=檐沟(rain gutter), downspout=落水管.',
           },
-          roofSegmentId: { type: 'string', description: 'Node ID of the parent roof-segment (look up "roof-segment" entries in scene context). For kind="downspout" it is derived from the host gutter automatically.' },
+          roofSegmentId: { type: 'string', description: 'Node ID of the parent roof-segment (look up "roof-segment" entries in scene context). REQUIRED for every kind except downspout. For kind="downspout" it may be omitted — the validator derives it from the host gutter automatically and ignores any value passed here.' },
           position: { type: 'array', items: { type: 'number' }, description: 'Segment-local position [x, y, z] in meters. Y is anchored to roof surface automatically. For kind="gutter" the position is snapped to the nearest eave (X/Z pick which eave side). Ignored for kind="downspout" (mount derives from the gutter outlet).' },
           rotation: { type: 'number', description: 'Rotation around Y axis in radians (default: 0). Overridden by the eave orientation for kind="gutter".' },
           width: { type: 'number', description: 'Width in meters. Defaults: chimney 0.6, dormer 2.0, skylight 1.0, solar-panel 1.0, ridge-vent 2.0, box-vent 0.6, eyebrow-vent 0.5, cupola 0.8. For turbine-vent this is the spinning head diameter (default 0.32).' },
@@ -842,7 +842,11 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
           offsetAlongGutter: { type: 'number', description: 'Downspout only: outlet position along the gutter length, signed meters from the gutter center (default: 0). The outlet is drilled into the gutter automatically.' },
           description: { type: 'string', description: 'Brief description.' },
         },
-        required: ['kind', 'roofSegmentId', 'position'],
+        // roofSegmentId is intentionally NOT in `required`: kind="downspout"
+        // derives it from the host gutter (validate-structure.ts downspout
+        // branch never reads the call value). All other kinds still need it —
+        // the validator rejects them with a clear errorReason when missing.
+        required: ['kind', 'position'],
       },
     },
   },
