@@ -1,7 +1,7 @@
 # Generate a 2-bed apartment from a brief
 
 This example walks through a realistic session with an MCP host (Claude
-Desktop, Claude Code, or Cursor) that has `pascal-mcp` configured. The agent
+Desktop, Claude Code, or Cursor) that has `aedifex-mcp` configured. The agent
 uses the `from_brief` prompt to turn a short brief into a concrete scene.
 
 ## The brief

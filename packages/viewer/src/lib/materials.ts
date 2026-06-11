@@ -551,7 +551,7 @@ export function createSurfaceRoleMaterial(
           side: resolvedSide,
         })
 
-  material.userData.__pascalCachedMaterial = true
+  material.userData.__aedifexCachedMaterial = true
   surfaceRoleMaterialCache.set(cacheKey, material)
   return material
 }

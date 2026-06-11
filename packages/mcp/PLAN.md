@@ -310,7 +310,7 @@ CLI `pascal-mcp` flags:
 {
   "name": "@aedifex/mcp",
   "version": "0.1.0",
-  "description": "Model Context Protocol server for Pascal 3D editor",
+  "description": "Model Context Protocol server for Aedifex 3D editor",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

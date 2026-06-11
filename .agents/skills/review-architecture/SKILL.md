@@ -1,10 +1,10 @@
 ---
 name: review-architecture
-description: Review a PR against the Pascal architectural rules — package boundaries (core/viewer/editor/nodes), the registry-driven composition model (def.geometry / def.renderer / def.system), legacy-dispatch regressions, hook hygiene (useEditor/useScene/useViewer), and selector performance. Use when the user asks to review a PR, audit a branch, or check that changes respect the codebase's architecture.
+description: Review a PR against the Aedifex architectural rules — package boundaries (core/viewer/editor/nodes), the registry-driven composition model (def.geometry / def.renderer / def.system), legacy-dispatch regressions, hook hygiene (useEditor/useScene/useViewer), and selector performance. Use when the user asks to review a PR, audit a branch, or check that changes respect the codebase's architecture.
 allowed-tools: Bash(git *) Bash(gh *) Read Grep Glob
 ---
 
-Architectural review for Pascal PRs. The user will provide a PR URL, branch name, or ask to review the current branch.
+Architectural review for Aedifex PRs. The user will provide a PR URL, branch name, or ask to review the current branch.
 
 ## 1. Load the rules (required — do not skip)
 
@@ -61,8 +61,8 @@ Owns: `<Viewer>`, the generic `<NodeRenderer>` / `<ParametricNodeRenderer>` / `<
 **`packages/editor` (and `apps/editor`) — the editing experience.**
 Owns: the tool framework (`useDragAction`, `ParametricInspector`, `<MoveRegistryNodeTool>`, the registry-aware dispatchers in `tool-manager.tsx` / `MoveTool` / `panel-manager.tsx` / `helper-manager.tsx`), `useEditor`, action menus, panels, the floorplan panel and its helpers, paint mode, selection-manager phase/mode logic, cursor badges, command palette, keyboard shortcuts — anything absent from the read-only viewer route. Injects itself into `<Viewer>` via children and props, never the reverse. Must not import from `packages/nodes`.
 
-**`packages/nodes` — the built-in plugin (`pascal:core`).**
-Owns: one folder per node kind (`packages/nodes/src/<kind>/`) containing `definition.ts`, `schema.ts`, optionally `geometry.ts` / `renderer.tsx` / `system.tsx` / `floorplan.ts` / `tool.tsx` / `move-tool.tsx` / `panel.tsx` / `parametrics.ts` / `preview.tsx`. Exports `builtinPlugin`. Depends on `editor`, `viewer`, and `core` via their public surfaces — the same surfaces a third-party plugin uses (peer-dep style). **Nothing in `core/`, `viewer/`, or `editor/` may import from `@pascal-app/nodes`.** The dependency arrow is one-way: framework code consults `nodeRegistry`, never reaches into a specific kind's folder.
+**`packages/nodes` — the built-in plugin (`aedifex:core`).**
+Owns: one folder per node kind (`packages/nodes/src/<kind>/`) containing `definition.ts`, `schema.ts`, optionally `geometry.ts` / `renderer.tsx` / `system.tsx` / `floorplan.ts` / `tool.tsx` / `move-tool.tsx` / `panel.tsx` / `parametrics.ts` / `preview.tsx`. Exports `builtinPlugin`. Depends on `editor`, `viewer`, and `core` via their public surfaces — the same surfaces a third-party plugin uses (peer-dep style). **Nothing in `core/`, `viewer/`, or `editor/` may import from `@aedifex/nodes`.** The dependency arrow is one-way: framework code consults `nodeRegistry`, never reaches into a specific kind's folder.
 
 ### Triggers that mean "this is probably in the wrong package"
 
@@ -72,7 +72,7 @@ Owns: one folder per node kind (`packages/nodes/src/<kind>/`) containing `defini
 4. **Does the helper compute something only a 2D editor view needs?** (Floorplan transforms, measurement offsets, SVG path builders, marquee bounds scoped to floorplan.) Editor. Generic 2D geometry that any view could use (polygon math, rotation, clamping, line thickening) can live in core *as long as its names are generic* — no `Floorplan` prefix.
 5. **Does a new store field have a setter that no part of the target layer ever calls?** (e.g. `setMaterialPreview` in `useViewer` that only the editor would ever invoke.) That's a layering smell — the state belongs in the caller's layer.
 6. **Does the new file mention a specific kind by name?** (`door-…`, `wall-…`, `item-…`, etc.) Then it belongs in `packages/nodes/src/<kind>/`, **not** under `packages/viewer/src/components/renderers/<kind>/`, `packages/viewer/src/systems/<kind>.ts`, `packages/editor/src/components/tools/<kind>/`, or `packages/editor/src/components/ui/panels/<kind>-panel.tsx`. Those legacy locations were deleted at Phase 6 cleanup — reintroducing one is a regression to the dispatch model.
-7. **Does an `import` line read `from '@pascal-app/nodes'` inside `core/`, `viewer/`, or `editor/`?** Blocker. The Biome `noRestrictedImports` rule already bans this; if it slipped through, the framework is reaching down into the plugin.
+7. **Does an `import` line read `from '@aedifex/nodes'` inside `core/`, `viewer/`, or `editor/`?** Blocker. The Biome `noRestrictedImports` rule already bans this; if it slipped through, the framework is reaching down into the plugin.
 
 Write the classification down before writing findings. If core gains "Floorplan" types, the viewer gains paint-mode vocabulary, a renderer grows editor awareness, or a kind-specific file appears outside `packages/nodes/src/<kind>/` — those are the blockers to lead with, not downstream symptoms.
 
@@ -80,9 +80,9 @@ Write the classification down before writing findings. If core gains "Floorplan"
 
 ### A. Package boundaries
 
-- `packages/viewer/**` does not import from `@pascal-app/editor`, `apps/editor`, or `@pascal-app/nodes`, and does not reference `useEditor`, tool state, phase, or mode.
-- `packages/core/**` does not import Three.js, react-three-fiber, `@pascal-app/viewer`, `@pascal-app/editor`, or `@pascal-app/nodes`.
-- `packages/editor/**` does not import from `@pascal-app/nodes`.
+- `packages/viewer/**` does not import from `@aedifex/editor`, `apps/editor`, or `@aedifex/nodes`, and does not reference `useEditor`, tool state, phase, or mode.
+- `packages/core/**` does not import Three.js, react-three-fiber, `@aedifex/viewer`, `@aedifex/editor`, or `@aedifex/nodes`.
+- `packages/editor/**` does not import from `@aedifex/nodes`.
 - `packages/core/**` does not introduce types or helpers named after an editor view (`Floorplan*`, `Paint*`, `Draft*`). Generic plan-geometry helpers are fine; view-specific vocabulary is not.
 - No new `case '<kind>':` clauses (or equivalent kind-specific branching keyed on `node.type`) inside `packages/viewer/**` or `packages/editor/**`. Phase 6 deleted these; the dispatch happens via `nodeRegistry`. The exceptions left in tree are `treeNodeByType` (a lookup *map*, not a switch) and unit-formatting switches (`centimeters` / `feet` / `inches`). Any new `case 'door'|'wall'|'item'…` in a framework package is a blocker — the behavior belongs on the kind's `NodeDefinition`.
 - Tools mutate `useScene` (committed state) and `useLiveTransforms` (ephemeral drag state); direct `sceneRegistry` mesh transforms are allowed only under the live-drag exception in `wiki/architecture/tools.md`. No business logic, no imports from `packages/viewer`.

@@ -1,9 +1,9 @@
-# IFC → Pascal Converter
+# IFC → Aedifex Converter
 
-A web app that converts IFC building models into Pascal scene-graph JSON and
+A web app that converts IFC building models into Aedifex scene-graph JSON and
 previews the result in the real `@aedifex/viewer`. Drop in an `.ifc` file
 (or pick a bundled example), inspect what was extracted, and download the
-JSON to load into the Pascal editor.
+JSON to load into the Aedifex editor.
 
 > ## ⚠️ Early alpha
 >
@@ -23,7 +23,7 @@ JSON to load into the Pascal editor.
 
 - **`@aedifex/ifc-converter`** (`packages/ifc-converter`) — the pure
   conversion logic. Parses IFC via [web-ifc](https://github.com/ThatOpen/engine_web-ifc),
-  maps elements onto Pascal node schemas from `@aedifex/core`. No DOM, no
+  maps elements onto Aedifex node schemas from `@aedifex/core`. No DOM, no
   React.
 - **This app** — the UI: drop zone, example picker, element search/filters,
   the 3D preview, and JSON download.
@@ -44,8 +44,8 @@ fetched from a public bucket at runtime; the small ones are committed under
 
 - Plain `IFCWALL` (Brep/mapped geometry) falls back to a default height — exact
   per-wall heights need geometry-AABB extraction.
-- Items (furniture, etc.) are skipped — Pascal items require a catalog asset.
-- Beams have no Pascal node type yet and are skipped.
+- Items (furniture, etc.) are skipped — Aedifex items require a catalog asset.
+- Beams have no Aedifex node type yet and are skipped.
 - Doors/windows are matched to walls by proximity when the IFC omits fill
   relationships; matching isn't perfect.
 - Stairs/roofs are placeholders (bounding box / flat polygon in metadata).

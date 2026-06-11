@@ -1,6 +1,6 @@
-# Agent Instructions — `pascalorg/editor`
+# Agent Instructions — `TangSY/aedifex`
 
-Public, open-source home of `@pascal-app/{core,viewer,editor,mcp}` and the standalone editor app. Consumed both as npm packages and (in `pascalorg/private-editor`) as a git submodule.
+Public, open-source home of `@aedifex/{core,viewer,editor,mcp}` and the standalone editor app. Consumed both as npm packages and (in the closed-source `aedifex-saas` repo) via `file:` workspace links.
 
 ## Repo Shape
 

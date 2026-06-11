@@ -2,13 +2,13 @@
 
 ## Summary
 
-Introduces a new workspace package `@aedifex/mcp` (v0.1.0) that exposes the Pascal scene graph (`@aedifex/core`) as MCP **tools**, **resources**, and **prompts** so any MCP-compatible AI host — Claude Desktop, Claude Code, Codex CLI, Cursor, or a custom agent — can read, mutate, save, and reopen Pascal projects programmatically with full Zod validation, atomic patches, undo-safe mutations, multimodal image inputs, and local SQLite persistence.
+Introduces a new workspace package `@aedifex/mcp` (v0.1.0) that exposes the Aedifex scene graph (`@aedifex/core`) as MCP **tools**, **resources**, and **prompts** so any MCP-compatible AI host — Claude Desktop, Claude Code, Codex CLI, Cursor, or a custom agent — can read, mutate, save, and reopen Aedifex projects programmatically with full Zod validation, atomic patches, undo-safe mutations, multimodal image inputs, and local SQLite persistence.
 
 The branch is now local-first: scenes persist to `~/.pascal/data/pascal.db` through SQLite, using `bun:sqlite` in the MCP CLI and `node:sqlite` when the Next.js editor server imports the storage package. The earlier Supabase adapter, SQL migrations, and committed `test-reports/` artifacts have been removed.
 
 ## Motivation
 
-Issue [#74 "Viewer component API definition"](https://github.com/TangSY/aedifex/issues/74) opens the question of how external consumers should drive Pascal. The viewer answers "embed in a React app." This PR answers the complementary case: **drive Pascal from anything, without a browser** — AI agents, CLI scripts, background services, or IDE plugins.
+Issue [#74 "Viewer component API definition"](https://github.com/TangSY/aedifex/issues/74) opens the question of how external consumers should drive Aedifex. The viewer answers "embed in a React app." This PR answers the complementary case: **drive Aedifex from anything, without a browser** — AI agents, CLI scripts, background services, or IDE plugins.
 
 ## What's in the box
 

@@ -302,10 +302,6 @@
         "three": "^0.184",
       },
     },
-    "tooling/typescript": {
-      "name": "@pascal/typescript-config",
-      "version": "0.0.0",
-    },
   },
   "overrides": {
     "@types/react": "19.2.17",
@@ -685,8 +681,6 @@
     "@oxlint/binding-win32-ia32-msvc": ["@oxlint/binding-win32-ia32-msvc@1.69.0", "https://registry.npmmirror.com/@oxlint/binding-win32-ia32-msvc/-/binding-win32-ia32-msvc-1.69.0.tgz", { "os": "win32", "cpu": "ia32" }, "sha512-1907kRPF8/PrcIw1E7LMs9JbVrpgnt/MvFdss3an8oDkYNAACXzTntV3t3869ZZhMZxb2AzRGbz1pA/jdFatXA=="],
 
     "@oxlint/binding-win32-x64-msvc": ["@oxlint/binding-win32-x64-msvc@1.69.0", "https://registry.npmmirror.com/@oxlint/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.69.0.tgz", { "os": "win32", "cpu": "x64" }, "sha512-w8SOXv3mT9Fi6jY8OXdXCfnvX/3KNLXGNr4HEz2TA7S4Mv/PYAOmpB8y/ge40mxvBMgGNaSaaDwZpAsQn7HtWA=="],
-
-    "@pascal/typescript-config": ["@pascal/typescript-config@workspace:tooling/typescript"],
 
     "@preact/signals": ["@preact/signals@2.9.1", "https://registry.npmmirror.com/@preact/signals/-/signals-2.9.1.tgz", { "dependencies": { "@preact/signals-core": "^1.14.0" }, "peerDependencies": { "preact": ">= 10.25.0 || >=11.0.0-0" } }, "sha512-xVqN8mJjbSN5IB/8Ubmd9NN+Ew6zJswoRxrjZbH3YsgkMshFeO6d8zxEFpHRTq9GJZx7cnPs2CnCpFqtGXGNsw=="],
 

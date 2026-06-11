@@ -1,4 +1,4 @@
-# Contributing to Pascal Editor
+# Contributing to Aedifex
 
 Thanks for your interest in contributing! We welcome all kinds of contributions — bug fixes, new features, documentation, and ideas.
 
@@ -11,8 +11,8 @@ Thanks for your interest in contributing! We welcome all kinds of contributions 
 ### Setup
 
 ```bash
-git clone https://github.com/pascalorg/editor.git
-cd editor
+git clone https://github.com/TangSY/aedifex.git
+cd aedifex
 bun install
 bun dev
 ```
@@ -60,12 +60,12 @@ A key rule: **`packages/viewer` must never import from `apps/editor`**. The view
 
 ## Reporting bugs
 
-Use the [Bug Report](https://github.com/pascalorg/editor/issues/new?template=bug_report.yml) template. Include steps to reproduce — this helps us fix things faster.
+Use the [Bug Report](https://github.com/TangSY/aedifex/issues/new?template=bug_report.yml) template. Include steps to reproduce — this helps us fix things faster.
 
 ## Suggesting features
 
-Use the [Feature Request](https://github.com/pascalorg/editor/issues/new?template=feature_request.yml) template, or start a [Discussion](https://github.com/pascalorg/editor/discussions) if you want to brainstorm first.
+Use the [Feature Request](https://github.com/TangSY/aedifex/issues/new?template=feature_request.yml) template, or start a [Discussion](https://github.com/TangSY/aedifex/discussions) if you want to brainstorm first.
 
 ## Questions?
 
-Head to [Discussions](https://github.com/pascalorg/editor/discussions) — we're happy to help!
+Head to [Discussions](https://github.com/TangSY/aedifex/discussions) — we're happy to help!

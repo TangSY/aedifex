@@ -1,6 +1,6 @@
 # @aedifex/core
 
-Core library for Pascal 3D building editor.
+Core library for Aedifex 3D building editor.
 
 ## Installation
 

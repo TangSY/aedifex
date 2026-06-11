@@ -234,7 +234,7 @@ export default function IfcConverter() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = fileName.replace('.ifc', '') + '_pascal.json'
+    a.download = fileName.replace('.ifc', '') + '_aedifex.json'
     a.click()
     URL.revokeObjectURL(url)
   }

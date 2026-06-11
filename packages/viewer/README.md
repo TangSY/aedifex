@@ -1,6 +1,6 @@
 # @aedifex/viewer
 
-3D viewer component for Pascal building editor.
+3D viewer component for Aedifex building editor.
 
 ## Installation
 
@@ -82,7 +82,7 @@ import { resolveCdnUrl, ASSETS_CDN_URL } from '@aedifex/viewer'
 
 // Resolves relative paths to CDN URLs
 const url = resolveCdnUrl('/items/chair/model.glb')
-// → 'https://pascal-cdn.wawasensei.dev/items/chair/model.glb'
+// → 'https://editor.aedifex.com/items/chair/model.glb'
 
 // Handles external URLs and asset:// protocol
 const externalUrl = resolveCdnUrl('https://example.com/model.glb')
