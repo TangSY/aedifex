@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     )
   }
-  const { messages, catalogSummary, sceneContext } = result.value
+  const { messages, catalogSummary, sceneContext, roomPresetSummary } = result.value
 
-  const systemPrompt = buildSystemPrompt(catalogSummary, sceneContext)
+  const systemPrompt = buildSystemPrompt(catalogSummary, sceneContext, roomPresetSummary)
 
   // DRY A-D5: Use shared factory function
   const openai = createAIClient()

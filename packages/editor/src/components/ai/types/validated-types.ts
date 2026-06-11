@@ -454,6 +454,40 @@ export interface ValidatedEnterWalkthrough {
   errorReason?: string
 }
 
+/**
+ * Validated save_room_preset. Resolution happens at validation time:
+ * roomName/levelName fuzzy-match against scene zones. Execution is a host
+ * async action (RoomPresetProvider.save) — no ghost preview is produced.
+ */
+export interface ValidatedSaveRoomPreset {
+  type: 'save_room_preset'
+  status: ValidatedOperationStatus
+  /** Resolved zone node id (empty string when status is 'invalid'). */
+  zoneId: string
+  /** Resolved zone display name — used as the suggested preset name. */
+  zoneName: string
+  errorReason?: string
+}
+
+/**
+ * Validated insert_room_preset. presetName fuzzy-matches against
+ * RoomPresetProvider.list(); level/position resolve like other placement
+ * tools. Execution is a host async action (RoomPresetProvider.insert).
+ */
+export interface ValidatedInsertRoomPreset {
+  type: 'insert_room_preset'
+  status: ValidatedOperationStatus
+  /** Resolved preset id (empty string when status is 'invalid'). */
+  presetId: string
+  /** Resolved preset display name. */
+  presetName: string
+  /** Resolved target level id (empty string when status is 'invalid'). */
+  levelId: string
+  /** Floor-plane anchor [x, z]. */
+  position: [number, number]
+  errorReason?: string
+}
+
 export interface ValidatedAddFence {
   type: 'add_fence'
   status: ValidatedOperationStatus
@@ -530,6 +564,8 @@ export type ValidatedOperation =
   | ValidatedMoveBuilding
   | ValidatedCloneLevel
   | ValidatedEnterWalkthrough
+  | ValidatedSaveRoomPreset
+  | ValidatedInsertRoomPreset
   | ValidatedAddFence
   | ValidatedUpdateFence
   | ValidatedAddCutOut

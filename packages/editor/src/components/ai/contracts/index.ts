@@ -26,4 +26,6 @@ export type {
   StreamCallbacks,
   StreamUsage,
   LoopExitReason,
+  RoomPresetProvider,
+  RoomPresetSummaryEntry,
 } from './runtime'

@@ -46,6 +46,7 @@ import {
 } from './mutation/validate-structure'
 import { validateAddWall, validateRemoveNode, validateUpdateWall, validateUpdateWallMaterial } from './mutation/validate-wall'
 import { validateAddCutOut, validateAddFence, validateUpdateFence } from './mutation/validate-fence'
+import { validateInsertRoomPreset, validateSaveRoomPreset } from './mutation/validate-room-preset'
 
 // ============================================================================
 // Mutation Executor
@@ -152,6 +153,13 @@ export function validateToolCall(
       return [validateUpdateRoofMaterial(toolCall)]
     case 'update_stair_material':
       return [validateUpdateStairMaterial(toolCall)]
+    case 'save_room_preset':
+      // Host-async action (RoomPresetProvider.save). Validation resolves the
+      // zone here; execution happens in ai-room-preset-executor.ts via the
+      // agent loop — these ops never enter the ghost preview path.
+      return [validateSaveRoomPreset(toolCall)]
+    case 'insert_room_preset':
+      return [validateInsertRoomPreset(toolCall)]
     // enter_walkthrough is handled as a special tool in ai-agent-loop.ts
     // before reaching the mutation path, so no validation case needed here.
     case 'batch_operations': {

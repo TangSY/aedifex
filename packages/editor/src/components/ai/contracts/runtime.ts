@@ -112,6 +112,41 @@ export interface CatalogProvider {
 }
 
 // ============================================================================
+// RoomPresetProvider — user's saved room presets (host-backed)
+// ============================================================================
+
+/** Compact entry describing one saved room preset, injected into the LLM prompt. */
+export interface RoomPresetSummaryEntry {
+  id: string
+  name: string
+  nodeCount: number
+}
+
+/**
+ * Host seam for "save room as preset" / "insert saved preset" AI tools.
+ *
+ * The OSS default implementation has no storage backend: `list()` returns
+ * `[]` and `save`/`insert` resolve `{ ok: false }` with an explanatory
+ * message. A host deployment that persists presets (serialization, quota,
+ * thumbnails — all host concerns) overrides this provider. The interface
+ * stays purely technical: ids, names, node counts, scene coordinates.
+ */
+export interface RoomPresetProvider {
+  /** 当前用户的预设清单（用于提示词注入 + 名称解析）。OSS 默认实现返回 []。 */
+  list(): RoomPresetSummaryEntry[]
+  /** 宿主把 zone 存为预设（序列化/配额/缩略图全在宿主侧）。 */
+  save(
+    zoneId: string,
+    suggestedName: string,
+  ): Promise<{ ok: boolean; presetId?: string; message?: string }>
+  /** 宿主把预设实例化进场景；返回创建的根节点 id 供撤销。 */
+  insert(
+    presetId: string,
+    target: { levelId: string; position: [number, number] },
+  ): Promise<{ ok: boolean; rootIds?: string[]; message?: string }>
+}
+
+// ============================================================================
 // ChatPersistence — synchronous Storage-shaped interface
 // ============================================================================
 
@@ -167,4 +202,9 @@ export interface AIRuntime {
   catalog: CatalogProvider
   persistence: ChatPersistence
   telemetry?: AITelemetry
+  /**
+   * Optional room preset provider. When absent, the agent loop falls back
+   * to the default "not available in this deployment" implementation.
+   */
+  roomPresets?: RoomPresetProvider
 }

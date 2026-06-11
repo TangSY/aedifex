@@ -19,6 +19,7 @@ export const AI_INPUT_LIMITS = {
   MAX_MESSAGE_CONTENT: 64 * 1024,
   MAX_CATALOG_SUMMARY: 64 * 1024,
   MAX_SCENE_CONTEXT: 16 * 1024,
+  MAX_ROOM_PRESET_SUMMARY: 16 * 1024,
 } as const
 
 export interface ChatMessageInput {
@@ -41,6 +42,13 @@ export interface ChatRequestBody {
    * be present so the LLM can reason about "no scene yet".
    */
   sceneContext: string
+  /**
+   * User's saved room presets rendered as a single prompt line (e.g.
+   * "User's saved room presets: 日式书房 (12 nodes), …"). Optional —
+   * omitted/empty when the deployment has no preset backend or the
+   * user has not saved any presets yet.
+   */
+  roomPresetSummary?: string
 }
 
 export type ChatRequestError =
@@ -53,6 +61,7 @@ export type ChatRequestError =
   | 'MESSAGE_TOO_LONG'
   | 'CATALOG_TOO_LONG'
   | 'CONTEXT_TOO_LONG'
+  | 'PRESET_SUMMARY_TOO_LONG'
 
 const CHAT_REQUEST_ERROR_MESSAGES: Record<ChatRequestError, string> = {
   INVALID_JSON: 'Invalid JSON body.',
@@ -64,6 +73,7 @@ const CHAT_REQUEST_ERROR_MESSAGES: Record<ChatRequestError, string> = {
   MESSAGE_TOO_LONG: `A message exceeds the maximum content length of ${AI_INPUT_LIMITS.MAX_MESSAGE_CONTENT} characters.`,
   CATALOG_TOO_LONG: `catalogSummary exceeds maximum length of ${AI_INPUT_LIMITS.MAX_CATALOG_SUMMARY} characters.`,
   CONTEXT_TOO_LONG: `sceneContext exceeds maximum length of ${AI_INPUT_LIMITS.MAX_SCENE_CONTEXT} characters.`,
+  PRESET_SUMMARY_TOO_LONG: `roomPresetSummary exceeds maximum length of ${AI_INPUT_LIMITS.MAX_ROOM_PRESET_SUMMARY} characters.`,
 }
 
 export function describeChatRequestError(code: ChatRequestError): string {
@@ -116,6 +126,7 @@ export function validateChatRequest(
   }
 
   const catalogSummary = typeof b.catalogSummary === 'string' ? b.catalogSummary : ''
+  const roomPresetSummary = typeof b.roomPresetSummary === 'string' ? b.roomPresetSummary : ''
   const sceneContext = b.sceneContext
 
   if (sceneContext === undefined || sceneContext === null) {
@@ -130,6 +141,9 @@ export function validateChatRequest(
   if (sceneContext.length > AI_INPUT_LIMITS.MAX_SCENE_CONTEXT) {
     return { ok: false, error: 'CONTEXT_TOO_LONG' }
   }
+  if (roomPresetSummary.length > AI_INPUT_LIMITS.MAX_ROOM_PRESET_SUMMARY) {
+    return { ok: false, error: 'PRESET_SUMMARY_TOO_LONG' }
+  }
 
   return {
     ok: true,
@@ -137,6 +151,7 @@ export function validateChatRequest(
       messages: messages as ChatMessageInput[],
       catalogSummary,
       sceneContext,
+      ...(roomPresetSummary ? { roomPresetSummary } : {}),
     },
   }
 }

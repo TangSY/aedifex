@@ -14,7 +14,12 @@ import {
   invalidateSceneCache,
   serializeSceneContext,
 } from './ai-scene-serializer'
-import { getAIRuntime } from './runtime'
+import { getAIRuntime, getRoomPresetProvider } from './runtime'
+import { formatRoomPresetSummary } from './runtime/default-room-presets'
+import {
+  executeRoomPresetToolCalls,
+  isRoomPresetToolCall,
+} from './ai-room-preset-executor'
 import type { AllowedChatRole, ChatMessageInput } from './contracts/chat-request'
 import { estimateMessagesTokens } from './ai-token-estimator'
 import type { AnyNodeId } from '@aedifex/core'
@@ -350,6 +355,38 @@ export async function runAgentLoop({
         break
       }
 
+      // Room preset tools (save_room_preset / insert_room_preset) — host-async
+      // actions executed by the RoomPresetProvider, NOT scene mutations. They
+      // bypass the ghost preview pipeline entirely: validate → call provider →
+      // feed the outcome back to the LLM as a tool message and continue the
+      // loop so the model can summarize (or recover from quota/name errors).
+      // The system prompt instructs the LLM to call these tools standalone;
+      // any other mutation calls in the same response are intentionally not
+      // executed this iteration (mirrors the propose_placement precedent) —
+      // the LLM re-issues them next round after seeing the tool result.
+      const presetCalls = toolCalls.filter(isRoomPresetToolCall)
+      if (presetCalls.length > 0) {
+        const presetResult = await executeRoomPresetToolCalls(presetCalls, lastMessageId)
+        totalToolCalls += presetCalls.length
+        onIterationEnd?.(iteration, presetResult)
+
+        // Feed result back to the LLM (success wording / host-provided
+        // failure messages such as "quota reached" flow through verbatim).
+        conversationMessages.push({
+          role: 'assistant' as const,
+          content: text || '',
+        })
+        for (let i = 0; i < toolCalls.length; i++) {
+          const callId = toolCallIds?.[i] ?? `call_${i}`
+          conversationMessages.push({
+            role: 'tool',
+            content: JSON.stringify(presetResult),
+            tool_call_id: callId,
+          })
+        }
+        continue
+      }
+
       // Execute mutation tool calls
       const mutationCalls = toolCalls.filter(
         (tc) => !['ask_user', 'confirm_preview', 'reject_preview', 'propose_placement'].includes(tc.tool),
@@ -597,11 +634,23 @@ function streamLLMResponse(
       ...(m.tool_call_id ? { tool_call_id: m.tool_call_id } : {}),
     }))
 
+    // Saved room presets — re-read each request so a save executed earlier
+    // in the same loop is visible to subsequent iterations. Empty list →
+    // empty string → field omitted (deployments without a preset backend
+    // pay zero prompt-token cost).
+    let roomPresetSummary = ''
+    try {
+      roomPresetSummary = formatRoomPresetSummary(getRoomPresetProvider().list())
+    } catch (err) {
+      console.warn('[AI Agent] Room preset list failed, omitting summary:', err)
+    }
+
     getAIRuntime().transport.streamChat(
       {
         messages: requestMessages,
         catalogSummary,
         sceneContext,
+        ...(roomPresetSummary ? { roomPresetSummary } : {}),
       },
       {
         onTextChunk: (text) => {

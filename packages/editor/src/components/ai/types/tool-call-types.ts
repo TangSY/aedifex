@@ -512,6 +512,30 @@ export interface EnterWalkthroughToolCall {
   reason?: string
 }
 
+/**
+ * Save an existing room (zone) as a reusable preset. The actual persistence
+ * (serialization, quota, thumbnail) is delegated to the host's
+ * RoomPresetProvider — OSS deployments without a backend decline gracefully.
+ */
+export interface SaveRoomPresetToolCall {
+  tool: 'save_room_preset'
+  /** Room name to match against zone names (case-insensitive, substring). */
+  roomName: string
+  /** Optional level name/number to narrow the search (e.g. "2", "Second Floor"). */
+  levelName?: string
+}
+
+/** Insert one of the user's saved room presets into the scene. */
+export interface InsertRoomPresetToolCall {
+  tool: 'insert_room_preset'
+  /** Preset name to match against the user's saved presets (case-insensitive, substring). */
+  presetName: string
+  /** Optional target level name/number. Defaults to the active level. */
+  levelName?: string
+  /** Optional [x, z] anchor on the floor plane. Defaults to [0, 0]. */
+  position?: [number, number]
+}
+
 /** LLM asks the user a question and waits for response */
 export interface AskUserToolCall {
   tool: 'ask_user'
@@ -566,6 +590,8 @@ export type AIToolCall =
   | MoveBuildingToolCall
   | CloneLevelToolCall
   | EnterWalkthroughToolCall
+  | SaveRoomPresetToolCall
+  | InsertRoomPresetToolCall
   | AskUserToolCall
   | ConfirmPreviewToolCall
   | RejectPreviewToolCall

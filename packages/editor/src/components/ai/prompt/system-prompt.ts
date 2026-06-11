@@ -333,6 +333,16 @@ Before placing furniture, check the scene context for missing prerequisites and 
 - **Walkways:** Minimum 0.6m between furniture groups. 0.8–1.0m in front of doors/windows.
 - **NO overlapping:** Items must not overlap each other. The validator checks item-to-item collisions and will reject overlapping placements. Space items apart.`
 
+const ROOM_PRESET_RULES = `## Room Presets (save & reuse rooms)
+
+The user can save a finished room (zone) as a personal preset and insert it again later. Two dedicated tools handle this — they are backend actions, NOT scene mutations:
+
+- **\`save_room_preset\`** — when the user says "save this room as a preset" / "把这个房间存为预设" / "保存书房" / "save my study", call it with \`roomName\` set to the zone name (zone names are listed in the scene context). Use \`levelName\` only when the user names a specific floor. If the tool result reports multiple matching rooms or no match, ask the user (via \`ask_user\`) using the candidate names from the result — do NOT guess.
+- **\`insert_room_preset\`** — when the user says "insert my X preset" / "放一个我的XX预设" / "用我存的书房", call it with \`presetName\`. The user's saved presets (if any) are listed in this prompt under "User's Saved Room Presets" — if the requested name does not match any entry, ask the user first instead of guessing. Pick a \`position\` in an empty area so the inserted room does not overlap existing rooms; omit it to default to [0, 0].
+- Call these tools on their own — do NOT mix them into \`batch_operations\` or combine them with other mutation tools in the same response.
+- Both tools may be declined by the deployment backend (e.g. presets unavailable, quota reached). Relay the returned message to the user in their language.
+- After a successful insert, the created nodes are selected automatically and the user can undo the insertion from the operation log.`
+
 // ============================================================================
 // Prompt Injection Sanitizer
 // BUG FIX A-10: Strip common injection markers from user-supplied context strings
@@ -356,7 +366,11 @@ export function sanitizePromptInjection(text: string): string {
     .replace(/^---+\s*$/gm, '')
 }
 
-export function buildSystemPrompt(catalogSummary: string, sceneContext: string): string {
+export function buildSystemPrompt(
+  catalogSummary: string,
+  sceneContext: string,
+  roomPresetSummary?: string,
+): string {
   const sanitizedSceneContext = sanitizePromptInjection(sceneContext)
 
   const sections = [
@@ -368,8 +382,14 @@ export function buildSystemPrompt(catalogSummary: string, sceneContext: string):
     COORDINATE_SYSTEM,
     PLANNING_RULES,
     ROOF_ACCESSORY_RULES,
+    ROOM_PRESET_RULES,
     FURNITURE_RULES,
     `## Catalog\n${sanitizePromptInjection(catalogSummary)}`,
+    // Saved-presets list: only injected when non-empty so prompts stay
+    // compact for deployments without a preset backend.
+    ...(roomPresetSummary?.trim()
+      ? [`## User's Saved Room Presets\n${sanitizePromptInjection(roomPresetSummary)}`]
+      : []),
     `## Current Scene\n${sanitizedSceneContext}`,
     // Final reminder placed last so it has highest recency weight in attention
     `## FINAL REMINDER\nRespond in the SAME language as the user's last message. Chinese input → Chinese output. English input → English output. No mixing. Tool parameters (catalogSlug, reason, description) are the ONLY exception — those stay English. ask_user question and suggestions MUST be in the user's language — they are shown directly to the user.`,

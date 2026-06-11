@@ -850,4 +850,35 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'save_room_preset',
+      description: 'Save an existing room (zone) as a reusable preset in the user\'s preset library. Use when the user says "save this room", "存为预设", "保存这个房间". The room is matched by name against the zones in the scene context. Saving is handled by the deployment backend — if presets are unavailable or the quota is full, relay the returned message to the user.',
+      parameters: {
+        type: 'object',
+        properties: {
+          roomName: { type: 'string', description: 'Room (zone) name to save, matched case-insensitively against zone names in the scene context (substring match allowed, e.g. "书房" matches "日式书房").' },
+          levelName: { type: 'string', description: 'Optional level name or number to narrow the search when multiple levels contain similarly-named rooms (e.g. "2", "Second Floor", "二层").' },
+        },
+        required: ['roomName'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'insert_room_preset',
+      description: 'Insert one of the user\'s saved room presets into the scene. Use when the user says "insert my X preset", "放一个我的XX预设", "插入预设". The preset is matched by name against the saved-presets list in the context — if the name does not match, ask the user instead of guessing. Insertion is handled by the deployment backend; the created nodes are selected automatically and can be undone from the AI operation log.',
+      parameters: {
+        type: 'object',
+        properties: {
+          presetName: { type: 'string', description: 'Saved preset name, matched case-insensitively against the "User\'s saved room presets" list (substring match allowed).' },
+          levelName: { type: 'string', description: 'Optional target level name or number (e.g. "2", "Second Floor"). Defaults to the currently active level.' },
+          position: { type: 'array', items: { type: 'number' }, description: 'Optional floor-plane anchor [x, z] in meters for the inserted room. Defaults to [0, 0]. Pick an empty area that does not overlap existing rooms.' },
+        },
+        required: ['presetName'],
+      },
+    },
+  },
 ]

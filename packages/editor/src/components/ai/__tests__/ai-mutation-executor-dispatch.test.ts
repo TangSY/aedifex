@@ -159,6 +159,12 @@ function payload(name: string): AIToolCall {
       return { tool: 'update_stair_material', nodeId: 'stair_1', role: 'tread', materialPreset: 'stair-wood1' } as AIToolCall
     case 'batch_operations':
       return { tool: 'batch_operations', description: '', operations: [{ type: 'add_wall', start: [0, 0], end: [3, 0] }] } as AIToolCall
+    case 'save_room_preset':
+      return { tool: 'save_room_preset', roomName: 'Zone' } as AIToolCall
+    case 'insert_room_preset':
+      // Default RoomPresetProvider has an empty list → status='invalid',
+      // but the dispatch contract (non-empty result, matching type) holds.
+      return { tool: 'insert_room_preset', presetName: 'Study' } as AIToolCall
     default:
       throw new Error(`No payload helper for ${name}`)
   }
@@ -179,6 +185,7 @@ const MUTATION_TOOLS = [
   'add_fence', 'update_fence', 'add_cut_out',
   'update_wall_material', 'update_roof_material', 'update_stair_material',
   'batch_operations',
+  'save_room_preset', 'insert_room_preset',
 ] as const
 
 const NON_MUTATION_TOOLS = [

@@ -12,10 +12,11 @@
  * read implicitly via `getAIRuntime()`.
  */
 
-import type { AIRuntime, AITelemetry } from '../contracts/runtime'
+import type { AIRuntime, AITelemetry, RoomPresetProvider } from '../contracts/runtime'
 import { createDefaultChatTransport } from './default-transport'
 import { createDefaultCatalogProvider } from './default-catalog'
 import { createDefaultChatPersistence } from './default-persistence'
+import { createDefaultRoomPresetProvider } from './default-room-presets'
 
 // Frozen no-op telemetry — same object reference so the 200-iteration
 // agent loop's null-checks don't allocate on every step.
@@ -39,7 +40,22 @@ export function createDefaultAIRuntime(
     catalog: createDefaultCatalogProvider(),
     persistence: createDefaultChatPersistence(),
     telemetry: NOOP_TELEMETRY,
+    roomPresets: createDefaultRoomPresetProvider(),
   }
+}
+
+// Shared fallback for runtimes installed without a roomPresets field
+// (e.g. a host runtime built before the seam existed). Stateless, so a
+// single module-level instance is safe to share.
+const FALLBACK_ROOM_PRESETS = createDefaultRoomPresetProvider()
+
+/**
+ * Read the active RoomPresetProvider. Never returns undefined — when the
+ * installed runtime omits `roomPresets`, the default "not available"
+ * provider is returned so tool execution stays a straight line.
+ */
+export function getRoomPresetProvider(): RoomPresetProvider {
+  return getAIRuntime().roomPresets ?? FALLBACK_ROOM_PRESETS
 }
 
 /**

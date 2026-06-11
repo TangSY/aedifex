@@ -22,12 +22,20 @@ export type {
   StreamCallbacks,
   StreamUsage,
   LoopExitReason,
+  RoomPresetProvider,
+  RoomPresetSummaryEntry,
 } from './contracts'
 export {
   createDefaultAIRuntime,
   getAIRuntime,
   setAIRuntime,
+  getRoomPresetProvider,
 } from './runtime'
+export {
+  createDefaultRoomPresetProvider,
+  formatRoomPresetSummary,
+} from './runtime/default-room-presets'
+export { executeRoomPresetToolCalls, isRoomPresetToolCall } from './ai-room-preset-executor'
 export { AIChatPanel } from './ai-chat-panel'
 export { useAIChat } from './ai-chat-store'
 export { resolveCatalogSlug, generateCatalogSummary } from './ai-catalog-resolver'

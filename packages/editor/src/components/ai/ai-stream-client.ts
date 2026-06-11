@@ -759,6 +759,21 @@ function parseToolCall(name: string, input: Record<string, unknown>): AIToolCall
         reason: input.reason as string | undefined,
       }
 
+    case 'save_room_preset':
+      return {
+        tool: 'save_room_preset',
+        roomName: (input.roomName as string) ?? '',
+        levelName: input.levelName as string | undefined,
+      }
+
+    case 'insert_room_preset':
+      return {
+        tool: 'insert_room_preset',
+        presetName: (input.presetName as string) ?? '',
+        levelName: input.levelName as string | undefined,
+        position: input.position as [number, number] | undefined,
+      }
+
     case 'ask_user':
       return {
         tool: 'ask_user',
