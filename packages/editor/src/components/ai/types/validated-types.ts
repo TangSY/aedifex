@@ -58,6 +58,8 @@ export interface ValidatedRemoveItem {
   type: 'remove_item'
   status: ValidatedOperationStatus
   nodeId: AnyNodeId
+  /** Display name captured at validation time (node may be gone after confirm). */
+  nodeName?: string
   errorReason?: string
 }
 
@@ -65,6 +67,8 @@ export interface ValidatedMoveItem {
   type: 'move_item'
   status: ValidatedOperationStatus
   nodeId: AnyNodeId
+  /** Display name captured at validation time. */
+  nodeName?: string
   position: [number, number, number]
   rotation: [number, number, number]
   /** Resolved target level ID (from tool call or viewer selection at validation time). */
@@ -77,6 +81,8 @@ export interface ValidatedUpdateMaterial {
   type: 'update_material'
   status: ValidatedOperationStatus
   nodeId: AnyNodeId
+  /** Display name captured at validation time. */
+  nodeName?: string
   material: string
   errorReason?: string
 }
@@ -203,6 +209,8 @@ export interface ValidatedRemoveNode {
   status: ValidatedOperationStatus
   nodeId: AnyNodeId
   nodeType: string
+  /** Display name captured at validation time (node may be gone after confirm). */
+  nodeName?: string
   errorReason?: string
 }
 

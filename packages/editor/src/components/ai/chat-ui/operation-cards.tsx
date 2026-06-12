@@ -64,10 +64,10 @@ export function OperationSummary({
               {op.type === 'add_door' && 'Add door'}
               {op.type === 'add_window' && 'Add window'}
               {op.type === 'add_stair' && 'Add staircase'}
-              {op.type === 'remove_item' && `Remove ${op.nodeId}`}
-              {op.type === 'remove_node' && `Remove ${op.nodeType ?? 'node'} ${op.nodeId}`}
-              {op.type === 'move_item' && `Move ${op.nodeId}`}
-              {op.type === 'update_material' && `Update material ${op.nodeId}`}
+              {op.type === 'remove_item' && `Remove ${op.nodeName ?? op.nodeId}`}
+              {op.type === 'remove_node' && `Remove ${op.nodeName ?? `${op.nodeType ?? 'node'} ${op.nodeId}`}`}
+              {op.type === 'move_item' && `Move ${op.nodeName ?? op.nodeId}`}
+              {op.type === 'update_material' && `Update material of ${op.nodeName ?? op.nodeId}`}
             </span>
             {op.status === 'adjusted' && (
               <span
