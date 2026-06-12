@@ -769,15 +769,17 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
       parameters: {
         type: 'object',
         properties: {
-          question: { type: 'string', description: 'The question to ask the user.' },
+          question: { type: 'string', description: "The question to ask the user, in the user's language." },
           options: {
             type: 'array',
             items: {
               type: 'object',
               properties: {
-                id: { type: 'string' }, label: { type: 'string' }, catalogSlug: { type: 'string' },
+                id: { type: 'string' },
+                label: { type: 'string', description: "Short option title shown to the user — MUST be in the user's language." },
+                catalogSlug: { type: 'string' },
                 position: { type: 'array', items: { type: 'number' } }, rotationY: { type: 'number' },
-                reason: { type: 'string' },
+                reason: { type: 'string', description: "Why this placement works, shown to the user — MUST be in the user's language." },
               },
               required: ['id', 'label', 'catalogSlug', 'position', 'rotationY', 'reason'],
             },
