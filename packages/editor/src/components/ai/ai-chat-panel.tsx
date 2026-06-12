@@ -1,6 +1,6 @@
 'use client'
 
-import { Bot, MessageCircleQuestion, Send, Trash2, X } from 'lucide-react'
+import { Bot, MessageCircleQuestion, RotateCcw, Send, Trash2, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   type KeyboardEvent,
@@ -15,6 +15,7 @@ import {
   answerPendingQuestion,
   confirmOperationsFromUI,
   rejectOperationsFromUI,
+  retryLastAgentRun,
   runAgentLoop,
 } from './ai-agent-loop'
 import { generateCatalogSummary } from './ai-catalog-resolver'
@@ -211,15 +212,28 @@ export function AIChatPanel() {
             exit={{ height: 0, opacity: 0 }}
             initial={{ height: 0, opacity: 0 }}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <p className="font-barlow text-destructive text-xs">{error}</p>
-              <button
-                className="text-destructive/60 hover:text-destructive"
-                onClick={clearError}
-                type="button"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  className="flex items-center gap-1 rounded border border-destructive/30 px-1.5 py-0.5 font-barlow text-[11px] text-destructive/80 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => {
+                    clearError()
+                    retryLastAgentRun()
+                  }}
+                  type="button"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Retry
+                </button>
+                <button
+                  className="text-destructive/60 hover:text-destructive"
+                  onClick={clearError}
+                  type="button"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

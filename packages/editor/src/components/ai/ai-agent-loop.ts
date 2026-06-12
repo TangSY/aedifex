@@ -89,6 +89,23 @@ const COMPRESS_KEEP_RECENT = 6
  */
 const DETERMINISTIC_TOOLS = new Set(['confirm_preview', 'reject_preview'])
 
+// Last run's arguments — lets the error-banner Retry button re-issue the
+// request after a transport failure without the user retyping the message.
+let lastRunArgs: { userMessage: string; catalogSummary: string } | null = null
+
+/**
+ * Re-run the agent loop with the same message as the last run (after a
+ * stream/transport error). Returns false when there is nothing to retry
+ * or a loop is already in flight.
+ */
+export function retryLastAgentRun(): boolean {
+  if (!lastRunArgs) return false
+  const { isAIProcessing, isStreaming } = useAIChat.getState()
+  if (isAIProcessing || isStreaming) return false
+  void runAgentLoop(lastRunArgs)
+  return true
+}
+
 /**
  * Run the agentic loop for a user message.
  *
@@ -113,6 +130,7 @@ export async function runAgentLoop({
 }): Promise<void> {
   // Abort any previous in-flight loop to prevent stale callbacks
   abortActiveLoop()
+  lastRunArgs = { userMessage, catalogSummary }
   const loopController = new AbortController()
   activeLoopController = loopController
   const signal = loopController.signal
