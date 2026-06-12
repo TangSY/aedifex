@@ -333,6 +333,27 @@ describe('executeRoomPresetToolCalls — insert_room_preset', () => {
     expect(log.createdNodeIds).toEqual(['zone_9'])
   })
 
+  it('fails loudly when the provider says ok but ZERO nodes landed (truth-in-reporting)', async () => {
+    // QA-AI 2026-06-12 BUG-1: an intermittent host-side revert (save-conflict
+    // reload racing the insert) left the scene unchanged while the provider
+    // returned ok+rootIds — the LLM then told the user the room was inserted.
+    // Zero landed ids must be reported as failure, never success.
+    mockPresetList.value = PRESETS
+    mockInsert.mockResolvedValue({ ok: true, rootIds: ['phantom_a', 'phantom_b'] })
+
+    const result = await executeRoomPresetToolCalls(
+      [{ tool: 'insert_room_preset', presetName: '日式书房' }],
+      'msg_zero',
+    )
+
+    expect(result.success).toBe(false)
+    expect(result.summary).toContain('did not take effect')
+    expect(result.details.createdNodeIds).toEqual([])
+    // No op log and no selection for a failed insert
+    expect(mockAddOperationLog).not.toHaveBeenCalled()
+    expect(mockSetSelection).not.toHaveBeenCalled()
+  })
+
   it('relays host failure messages and records no log/selection', async () => {
     mockPresetList.value = PRESETS
     const failMessage = 'Preset no longer exists — it may have been deleted on another device.'

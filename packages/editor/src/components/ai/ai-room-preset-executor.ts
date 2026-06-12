@@ -79,6 +79,18 @@ async function executeInsert(op: ValidatedInsertRoomPreset): Promise<PresetExecu
     // against a provider returning ids it failed to create.
     const liveNodes = useScene.getState().nodes
     const createdNodeIds = rootIds.filter((id) => Boolean(liveNodes[id]))
+    // Zero ids landing despite a provider "ok" means the scene rejected or
+    // reverted the write (e.g. a save-conflict reload raced the insert).
+    // Reporting success here would make the LLM tell the user the room is
+    // there while the viewport shows nothing — fail loudly instead.
+    if (rootIds.length > 0 && createdNodeIds.length === 0) {
+      return {
+        operation: op,
+        success: false,
+        detail: `Inserting preset "${op.presetName}" failed: the host reported success but none of the created nodes are present in the scene (a concurrent reload may have reverted it). Tell the user the insert did not take effect and suggest trying again.`,
+        createdNodeIds: [],
+      }
+    }
     return {
       operation: op,
       success: true,
