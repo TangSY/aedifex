@@ -583,6 +583,72 @@ describe('formatSceneContextForPrompt', () => {
     expect(output).toContain('horizontal')
   })
 
+  it('annotates each wall with a compass side relative to the room centroid', () => {
+    // 4m x 4m room centered at origin: north wall at z=-2, south at z=+2,
+    // east at x=+2, west at x=-2 (+Z = south, -Z = north).
+    const mkWall = (id: string, start: [number, number], end: [number, number]) => ({
+      id, start, end, thickness: 0.2, length: 4,
+    })
+    const ctx = {
+      levelId: 'level_1',
+      items: [],
+      zones: [],
+      wallCount: 4,
+      zoneCount: 0,
+      levels: [],
+      ceilings: [],
+      roofs: [],
+      slabs: [],
+      walls: [
+        mkWall('wall_north', [-2, -2], [2, -2]),
+        mkWall('wall_east', [2, -2], [2, 2]),
+        mkWall('wall_south', [2, 2], [-2, 2]),
+        mkWall('wall_west', [-2, 2], [-2, -2]),
+      ],
+      stairs: [],
+      elevators: [],
+      fences: [],
+      buildings: [],
+    }
+    const output = formatSceneContextForPrompt(ctx)
+    const lineFor = (id: string) => output.split('\n').find((l: string) => l.includes(`[${id}]`)) ?? ''
+    expect(lineFor('wall_north')).toContain('side=N')
+    expect(lineFor('wall_south')).toContain('side=S')
+    expect(lineFor('wall_east')).toContain('side=E')
+    expect(lineFor('wall_west')).toContain('side=W')
+  })
+
+  it('labels a hexagon diagonal wall with its diagonal compass side', () => {
+    // Regular hexagon edge centered to the southeast of the centroid.
+    const ctx = {
+      levelId: 'level_1',
+      items: [],
+      zones: [],
+      wallCount: 6,
+      zoneCount: 0,
+      levels: [],
+      ceilings: [],
+      roofs: [],
+      slabs: [],
+      walls: [
+        { id: 'w_e',  start: [2.5, -1.5] as [number, number], end: [2.5, 1.5] as [number, number], thickness: 0.2, length: 3 },
+        { id: 'w_se', start: [2.5, 1.5] as [number, number], end: [1, 3] as [number, number], thickness: 0.2, length: 2.1 },
+        { id: 'w_sw', start: [1, 3] as [number, number], end: [-1.5, 1.5] as [number, number], thickness: 0.2, length: 2.9 },
+        { id: 'w_w',  start: [-1.5, 1.5] as [number, number], end: [-1.5, -1.5] as [number, number], thickness: 0.2, length: 3 },
+        { id: 'w_nw', start: [-1.5, -1.5] as [number, number], end: [1, -3] as [number, number], thickness: 0.2, length: 2.9 },
+        { id: 'w_ne', start: [1, -3] as [number, number], end: [2.5, -1.5] as [number, number], thickness: 0.2, length: 2.1 },
+      ],
+      stairs: [],
+      elevators: [],
+      fences: [],
+      buildings: [],
+    }
+    const output = formatSceneContextForPrompt(ctx)
+    const lineFor = (id: string) => output.split('\n').find((l: string) => l.includes(`[${id}]`)) ?? ''
+    expect(lineFor('w_se')).toContain('side=SE')
+    expect(lineFor('w_ne')).toContain('side=NE')
+  })
+
   it('includes (empty — no items placed yet) when items list is empty', () => {
     const ctx = {
       levelId: 'level_1',

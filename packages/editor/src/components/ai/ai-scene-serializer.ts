@@ -714,14 +714,32 @@ export function formatSceneContextForPrompt(ctx: SceneContext): string {
     // Find the longest wall
     const longestWall = wallInfos.reduce((a, b) => a.length > b.length ? a : b)
 
+    // Centroid of wall midpoints — used to annotate each wall with a compass
+    // side (N at -Z, S at +Z, E at +X, W at -X) so the LLM doesn't have to
+    // derive "which wall is southeast" from raw coordinates (it gets diagonal
+    // walls wrong without this).
+    const centroidX = wallInfos.reduce((s, i) => s + (i.wall.start[0] + i.wall.end[0]) / 2, 0) / wallInfos.length
+    const centroidZ = wallInfos.reduce((s, i) => s + (i.wall.start[1] + i.wall.end[1]) / 2, 0) / wallInfos.length
+    const COMPASS_8 = ['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE']
+    const compassFor = (midX: number, midZ: number): string | null => {
+      const vx = midX - centroidX
+      const vz = midZ - centroidZ
+      if (Math.hypot(vx, vz) < 0.5) return null // interior wall near centroid — no meaningful side
+      // Angle in the (x, z) plane: 0° → +X (E), 90° → +Z (S)
+      const deg = (Math.atan2(vz, vx) * 180 / Math.PI + 360) % 360
+      return COMPASS_8[Math.round(deg / 45) % 8] ?? null
+    }
+
     for (const info of wallInfos) {
       const { wall, length, orientation } = info
       const isLongest = info === longestWall ? ' [LONGEST]' : ''
+      const compass = compassFor((wall.start[0] + wall.end[0]) / 2, (wall.start[1] + wall.end[1]) / 2)
+      const compassStr = compass ? ` side=${compass}` : ''
       const wallTags: string[] = []
       if (typeof wall.curveOffset === 'number') wallTags.push(`curveOffset=${wall.curveOffset.toFixed(2)}`)
       if (wall.hasMaterial) wallTags.push('hasMaterial')
       const wallTagStr = wallTags.length > 0 ? ` [${wallTags.join(', ')}]` : ''
-      lines.push(`  [${wall.id}] (${wall.start[0].toFixed(2)}, ${wall.start[1].toFixed(2)}) → (${wall.end[0].toFixed(2)}, ${wall.end[1].toFixed(2)}) length=${length.toFixed(2)}m ${orientation}${isLongest}${wallTagStr}`)
+      lines.push(`  [${wall.id}] (${wall.start[0].toFixed(2)}, ${wall.start[1].toFixed(2)}) → (${wall.end[0].toFixed(2)}, ${wall.end[1].toFixed(2)}) length=${length.toFixed(2)}m ${orientation}${compassStr}${isLongest}${wallTagStr}`)
 
       // Show doors/windows on this wall
       if (wall.children && wall.children.length > 0) {
