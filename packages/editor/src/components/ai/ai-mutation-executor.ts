@@ -1,6 +1,7 @@
 import {
   type AnyNodeId,
   type WallNode,
+  spatialGridManager,
   useScene,
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
@@ -14,6 +15,7 @@ import type {
 import { checkWallCollision, checkZoneBoundary, getItemAABB, getItemCorners, obbOverlap } from './mutation/collision-detection'
 import {
   guessToolType,
+  tryAutoOffset,
   validateAddItem,
   validateMoveItem,
   validateRemoveItem,
@@ -294,7 +296,7 @@ function enforceZoneBoundaryPostOptimize(op: ValidatedOperation, _wallCache?: Ma
     } as ValidatedOperation
   }
   if (wallCollision) {
-    return {
+    op = {
       ...op,
       position: wallCollision.position,
       status: 'adjusted',
@@ -302,6 +304,36 @@ function enforceZoneBoundaryPostOptimize(op: ValidatedOperation, _wallCache?: Ma
         'adjustmentReason' in op ? op.adjustmentReason : undefined,
         wallCollision.reason,
       ].filter(Boolean).join(' '),
+    } as ValidatedOperation
+  }
+
+  // Existing-item collision re-check: optimizer spacing / zone clamp / wall
+  // push above may have dropped the item onto an item already in the scene
+  // (validation-time collision checks ran against earlier positions).
+  const finalPos = (op as { position: [number, number, number] }).position
+  const finalRot = (op as { rotation: [number, number, number] }).rotation
+  const ignoreIds = op.type === 'move_item' ? [op.nodeId] : undefined
+  const placeCheck = spatialGridManager.canPlaceOnFloor(levelId, finalPos, dimensions, finalRot, ignoreIds)
+  if (!placeCheck.valid && placeCheck.conflictIds.length > 0) {
+    const reAdjusted = tryAutoOffset(finalPos, dimensions, finalRot, levelId, ignoreIds)
+    const stillInside =
+      reAdjusted && !checkZoneBoundary(reAdjusted, dimensions, finalRot, levelId)
+    if (reAdjusted && stillInside) {
+      return {
+        ...op,
+        position: reAdjusted,
+        status: 'adjusted',
+        adjustmentReason: [
+          'adjustmentReason' in op ? op.adjustmentReason : undefined,
+          'Position re-adjusted to avoid overlapping existing items.',
+        ].filter(Boolean).join(' '),
+      } as ValidatedOperation
+    }
+    const name = op.type === 'add_item' ? ((op as ValidatedAddItem).asset?.name ?? 'Item') : 'Item'
+    return {
+      ...op,
+      status: 'invalid',
+      errorReason: `"${name}" cannot be placed here — it would overlap existing items and no collision-free spot is available nearby. Ask the user for a different location or suggest removing items.`,
     } as ValidatedOperation
   }
 

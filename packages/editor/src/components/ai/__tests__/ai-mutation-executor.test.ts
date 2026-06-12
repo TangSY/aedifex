@@ -78,6 +78,9 @@ beforeEach(() => {
   for (const key of Object.keys(mockNodes)) {
     delete mockNodes[key]
   }
+  // The mocked selection points at 'level-1' — it must exist as a live node,
+  // since resolveEffectiveLevelId now verifies liveness.
+  mockNodes['level-1'] = { id: 'level-1', type: 'level', visible: true, metadata: {}, children: [], parentId: null }
   vi.clearAllMocks()
 })
 
@@ -123,7 +126,7 @@ describe('validateToolCall — add_item', () => {
   it('treats transient collision as valid (false positive)', () => {
     // First call: collision detected, but subsequent checks find no collision
     // (e.g., stale spatial grid) — should be treated as valid, not adjusted
-    const canPlaceMock = vi.mocked(spatialGridManager.canPlaceOnFloor)
+    const canPlaceMock = spatialGridManager.canPlaceOnFloor as ReturnType<typeof vi.fn>
     canPlaceMock
       .mockReturnValueOnce({ valid: false, conflictIds: ['existing-item'] })
       .mockReturnValue({ valid: true, conflictIds: [] })
@@ -146,7 +149,7 @@ describe('validateToolCall — add_item', () => {
   it('returns invalid when collision cannot be resolved', () => {
     // All checks return collision — auto-offset fails, re-check confirms collision
     // Use mockReturnValueOnce (×6 to cover all calls) to avoid leaking mock state
-    const canPlaceMock = vi.mocked(spatialGridManager.canPlaceOnFloor)
+    const canPlaceMock = spatialGridManager.canPlaceOnFloor as ReturnType<typeof vi.fn>
     for (let i = 0; i < 6; i++) {
       canPlaceMock.mockReturnValueOnce({ valid: false, conflictIds: ['existing-item'] })
     }
@@ -285,10 +288,11 @@ describe('validateToolCall — move_item', () => {
 
 describe('validateToolCall — update_material', () => {
   it('validates material update on existing node', () => {
+    // Must be a material-capable type — items have no material slot
     mockNodes['item-3'] = {
       id: 'item-3',
-      type: 'item',
-      name: 'Test Item 3',
+      type: 'ceiling',
+      name: 'Test Ceiling 3',
     }
 
     const call: UpdateMaterialToolCall = {

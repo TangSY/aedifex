@@ -28,6 +28,18 @@ export function validateAddItem(call: AddItemToolCall, _wallCache?: Map<string, 
   // This enables multi-level batch operations where the AI specifies target levels.
   const effectiveLevelId = resolveEffectiveLevelId(call.levelId)
 
+  // No live level — the created item would be parented to nothing and
+  // silently dropped. Fail loudly so the LLM creates a level first.
+  if (!effectiveLevelId) {
+    return {
+      type: 'add_item',
+      status: 'invalid',
+      position: call.position ?? [0, 0, 0],
+      rotation: [0, call.rotationY ?? 0, 0],
+      errorReason: 'No level exists in the scene. Use add_level to create a floor before placing items.',
+    }
+  }
+
   // Guard against undefined catalogSlug (can happen when batch_operations
   // guesses wrong tool type for an operation missing the 'type' field)
   if (!call.catalogSlug) {
@@ -242,6 +254,49 @@ export function validateAddItem(call: AddItemToolCall, _wallCache?: Map<string, 
           ? `${adjustmentReason} ${wallCollision.reason}`
           : wallCollision.reason
       }
+
+      // Item-collision re-check: the zone clamp / wall push above can move the
+      // item onto an existing item (the first collision pass ran against the
+      // pre-clamp position). Re-verify and re-offset; if no clear spot exists
+      // inside the room, reject instead of silently overlapping.
+      if (zoneBoundary || wallCollision) {
+        const postMoveCheck = spatialGridManager.canPlaceOnFloor(
+          levelId,
+          position,
+          asset.dimensions ?? [1, 1, 1],
+          rotation,
+        )
+        if (!postMoveCheck.valid && postMoveCheck.conflictIds.length > 0) {
+          const reAdjusted = tryAutoOffset(
+            position,
+            asset.dimensions ?? [1, 1, 1],
+            rotation,
+            levelId,
+          )
+          const stillInside =
+            reAdjusted &&
+            !checkZoneBoundary(
+              reAdjusted,
+              asset.dimensions ?? [1, 1, 1],
+              rotation,
+              levelId,
+              call.outdoor === true,
+            )
+          if (reAdjusted && stillInside) {
+            position = reAdjusted
+            adjustmentReason = `${adjustmentReason ?? ''} Position re-adjusted to avoid collision after boundary correction.`.trim()
+          } else {
+            return {
+              type: 'add_item',
+              status: 'invalid',
+              asset,
+              position,
+              rotation,
+              errorReason: `"${asset.name}" cannot be placed here — after keeping it inside the room it would overlap existing items, and no collision-free spot is available nearby. Ask the user for a different location or suggest removing items.`,
+            }
+          }
+        }
+      }
     }
   }
 
@@ -282,6 +337,7 @@ export function validateRemoveItem(call: RemoveItemToolCall): ValidatedRemoveIte
     type: 'remove_item',
     status: 'valid',
     nodeId: call.nodeId as AnyNodeId,
+    nodeName: node.name ?? node.asset?.name,
   }
 }
 
@@ -415,6 +471,49 @@ export function validateMoveItem(call: MoveItemToolCall, _wallCache?: Map<string
           ? `${adjustmentReason} ${wallCollision.reason}`
           : wallCollision.reason
       }
+
+      // Item-collision re-check after zone clamp / wall push (mirrors add_item):
+      // the boundary correction can drop the item onto an existing item.
+      if (zoneBoundary || wallCollision) {
+        const postMoveCheck = spatialGridManager.canPlaceOnFloor(
+          levelId,
+          position,
+          node.asset.dimensions,
+          rotation,
+          [node.id],
+        )
+        if (!postMoveCheck.valid && postMoveCheck.conflictIds.length > 0) {
+          const reAdjusted = tryAutoOffset(
+            position,
+            node.asset.dimensions,
+            rotation,
+            levelId,
+            [node.id],
+          )
+          const stillInside =
+            reAdjusted &&
+            !checkZoneBoundary(
+              reAdjusted,
+              node.asset.dimensions,
+              rotation,
+              levelId,
+              call.outdoor === true,
+            )
+          if (reAdjusted && stillInside) {
+            position = reAdjusted
+            adjustmentReason = `${adjustmentReason ?? ''} Position re-adjusted to avoid collision after boundary correction.`.trim()
+          } else {
+            return {
+              type: 'move_item',
+              status: 'invalid',
+              nodeId: call.nodeId as AnyNodeId,
+              position,
+              rotation,
+              errorReason: `"${node.name ?? node.asset.name}" cannot be moved here — after keeping it inside the room it would overlap existing items, and no collision-free spot is available nearby.`,
+            }
+          }
+        }
+      }
     }
   }
 
@@ -422,12 +521,26 @@ export function validateMoveItem(call: MoveItemToolCall, _wallCache?: Map<string
     type: 'move_item',
     status: adjustmentReason ? 'adjusted' : 'valid',
     nodeId: call.nodeId as AnyNodeId,
+    nodeName: node.name ?? node.asset?.name,
     position,
     rotation,
     levelId: effectiveMoveLevel ?? undefined,
     adjustmentReason,
   }
 }
+
+/**
+ * Node types whose schema carries the legacy `material`/`materialPreset`
+ * fields that update_material writes. Items (GLB models), doors and windows
+ * have no material slot — writing to them is a silent no-op the renderer
+ * ignores, so those calls must be rejected rather than falsely confirmed.
+ */
+const MATERIAL_CAPABLE_NODE_TYPES = new Set([
+  'wall', 'ceiling', 'slab', 'roof', 'roof-segment', 'stair', 'stair-segment',
+  'fence', 'column', 'elevator', 'shelf', 'gutter', 'downspout', 'chimney',
+  'dormer', 'skylight', 'cupola', 'solar-panel', 'box-vent', 'ridge-vent',
+  'eyebrow-vent', 'turbine-vent',
+])
 
 export function validateUpdateMaterial(call: UpdateMaterialToolCall): ValidatedUpdateMaterial {
   const { nodes } = useScene.getState()
@@ -443,10 +556,34 @@ export function validateUpdateMaterial(call: UpdateMaterialToolCall): ValidatedU
     }
   }
 
+  if (!MATERIAL_CAPABLE_NODE_TYPES.has(node.type)) {
+    const hint = node.type === 'item'
+      ? 'Furniture items use fixed 3D-model materials and cannot be recolored. Tell the user that changing furniture colors is not supported.'
+      : `Nodes of type "${node.type}" have no material slot.`
+    return {
+      type: 'update_material',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      material: call.material,
+      errorReason: `Cannot change material of "${call.nodeId}" (${node.type}). ${hint}`,
+    }
+  }
+
+  if (typeof call.material !== 'string' || call.material.trim() === '') {
+    return {
+      type: 'update_material',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      material: call.material,
+      errorReason: 'Material must be a non-empty preset id or hex color.',
+    }
+  }
+
   return {
     type: 'update_material',
     status: 'valid',
     nodeId: call.nodeId as AnyNodeId,
+    nodeName: node.name ?? node.type,
     material: call.material,
   }
 }

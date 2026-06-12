@@ -65,7 +65,10 @@ import {
 
 beforeEach(() => {
   for (const key of Object.keys(mockNodes)) delete mockNodes[key]
-  mockSelectionLevelId.value = null
+  // A live default level must exist — resolveEffectiveLevelId now verifies
+  // liveness and validators reject add_item when no level exists.
+  mockNodes['level-default'] = { id: 'level-default', type: 'level', visible: true, metadata: {}, children: [], parentId: null }
+  mockSelectionLevelId.value = 'level-default'
   sgmState.canPlaceOnFloor.mockReset()
   sgmState.canPlaceOnFloor.mockReturnValue({ valid: true, conflictIds: [] })
   sgmState.getSlabElevationForItem.mockReset()
@@ -101,7 +104,7 @@ describe('validateAddItem', () => {
     expect(r.errorReason).toMatch(/not found/i)
   })
 
-  it('returns valid when no level selected and no zone walls exist', () => {
+  it('returns valid on a bare level with no zone walls', () => {
     const r = validateAddItem({
       tool: 'add_item',
       catalogSlug: 'chair',
@@ -110,6 +113,21 @@ describe('validateAddItem', () => {
     } as any)
     expect(r.status).toBe('valid')
     expect(r.asset!.id).toBe('chair')
+  })
+
+  // Regression for QA-AI 2026-06-12 BUG-6: with every level deleted, add_item
+  // used to "succeed" while the created node was silently swallowed.
+  it('rejects when no level exists in the scene at all', () => {
+    delete mockNodes['level-default']
+    mockSelectionLevelId.value = null
+    const r = validateAddItem({
+      tool: 'add_item',
+      catalogSlug: 'chair',
+      position: [0, 0, 0],
+      rotationY: 0,
+    } as any)
+    expect(r.status).toBe('invalid')
+    expect(r.errorReason).toMatch(/no level exists/i)
   })
 
   it('zone boundary clamps an out-of-zone indoor item rather than rejecting', () => {
@@ -215,12 +233,29 @@ describe('validateUpdateMaterial', () => {
     } as any)
     expect(r.status).toBe('invalid')
   })
-  it('accepts existing node with material', () => {
-    mockNodes['x1'] = { id: 'x1', type: 'item' }
+  it('accepts material-capable node (ceiling) with material', () => {
+    mockNodes['c1'] = { id: 'c1', type: 'ceiling' }
     const r = validateUpdateMaterial({
-      tool: 'update_material', nodeId: 'x1', material: 'wood',
+      tool: 'update_material', nodeId: 'c1', material: 'wood',
     } as any)
     expect(r.status).toBe('valid')
+  })
+  // Items are GLB models with no material slot — update_material on them was
+  // a silent no-op falsely reported as success (QA-AI 2026-06-12 BUG-4).
+  it('rejects items (no material slot) with a user-facing explanation', () => {
+    mockNodes['x1'] = { id: 'x1', type: 'item' }
+    const r = validateUpdateMaterial({
+      tool: 'update_material', nodeId: 'x1', material: '#0000ff',
+    } as any)
+    expect(r.status).toBe('invalid')
+    expect((r as any).errorReason).toMatch(/cannot be recolored|no material slot/i)
+  })
+  it('rejects empty material string', () => {
+    mockNodes['c2'] = { id: 'c2', type: 'ceiling' }
+    const r = validateUpdateMaterial({
+      tool: 'update_material', nodeId: 'c2', material: '',
+    } as any)
+    expect(r.status).toBe('invalid')
   })
 })
 
