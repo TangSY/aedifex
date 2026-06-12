@@ -575,6 +575,22 @@ function migrateNodes(nodes: Record<string, any>): Record<string, AnyNode> {
       }
     }
   }
+
+  // Backfill missing parentId backlinks from children arrays. Seeded scenes
+  // (and older saves) expressed hierarchy only via children[], leaving e.g.
+  // the default level with parentId=null while it sits inside the building's
+  // children — runtime-created nodes always carry both links.
+  for (const [id, node] of Object.entries(patchedNodes)) {
+    if (!Array.isArray((node as { children?: unknown }).children)) continue
+    for (const childId of (node as { children: string[] }).children) {
+      if (typeof childId !== 'string') continue
+      const child = patchedNodes[childId]
+      if (child && !child.parentId) {
+        patchedNodes[childId] = { ...child, parentId: id }
+      }
+    }
+  }
+
   return patchedNodes as Record<string, AnyNode>
 }
 
@@ -804,6 +820,11 @@ const useScene: UseSceneStore = create<SceneState>()(
         const site = SiteNode.parse({
           children: [building.id],
         })
+
+        // Set parentId backlinks — children[] alone leaves the seeded nodes
+        // inconsistent with runtime-created ones (which carry both links).
+        level0.parentId = building.id
+        building.parentId = site.id
 
         // Define all nodes flat
         const nodes: Record<AnyNodeId, AnyNode> = {
