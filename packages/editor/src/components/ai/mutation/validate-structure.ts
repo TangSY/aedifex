@@ -5,6 +5,7 @@ import {
   useScene,
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
+import { checkWallCollision } from './collision-detection'
 import type {
   AddBuildingToolCall,
   AddCeilingToolCall,
@@ -472,11 +473,41 @@ export function validateAddElevator(call: AddElevatorToolCall): ValidatedAddElev
     }
   }
 
+  // Wall collision: same guard as stairs — an elevator shaft must not cut
+  // through walls on its boarding level.
+  let elevatorPosition: [number, number, number] = position
+  let elevatorAdjustment: string | undefined
+  const elevatorLevel = resolveEffectiveLevelId(call.fromLevelId ?? undefined)
+  const elevatorHit = checkStructureWallCollision(
+    elevatorPosition,
+    [width, cabHeight, depth],
+    rotation,
+    elevatorLevel,
+  )
+  if (elevatorHit === 'no-space') {
+    return {
+      type: 'add_elevator',
+      status: 'invalid',
+      position, rotation,
+      width, depth, cabHeight,
+      fromLevelId: call.fromLevelId ?? null,
+      toLevelId: call.toLevelId ?? null,
+      errorReason:
+        'Elevator placement collides with walls and there is no nearby free spot. Pick a position clear of walls.',
+    }
+  }
+  if (elevatorHit) {
+    elevatorPosition = elevatorHit.position
+    elevatorAdjustment = elevatorHit.reason
+  }
+
   return {
     type: 'add_elevator',
-    status: 'valid',
-    position, rotation,
+    status: elevatorAdjustment ? 'adjusted' : 'valid',
+    position: elevatorPosition,
+    rotation,
     width, depth, cabHeight,
+    ...(elevatorAdjustment ? { adjustmentReason: elevatorAdjustment } : {}),
     fromLevelId: call.fromLevelId ?? null,
     toLevelId: call.toLevelId ?? null,
     ...(call.servedLevelIds ? { servedLevelIds: call.servedLevelIds } : {}),
@@ -485,6 +516,23 @@ export function validateAddElevator(call: AddElevatorToolCall): ValidatedAddElev
     ...(call.doorPanelStyle ? { doorPanelStyle: call.doorPanelStyle } : {}),
     ...(call.buildingId ? { buildingId: call.buildingId } : {}),
   }
+}
+
+/**
+ * Wall-collision guard for footprint-based structure nodes (stair/elevator).
+ * Items already run checkWallCollision in validate-item; stairs and elevators
+ * skipped it entirely, which let the LLM place a staircase straight through a
+ * wall (QA-AI 2026-06-12 finding). Returns the pushed-out position, 'no-space'
+ * when both sides are blocked, or null when there is no collision / no level.
+ */
+function checkStructureWallCollision(
+  position: [number, number, number],
+  footprint: [number, number, number],
+  rotationY: number,
+  levelId: string | null | undefined,
+): { position: [number, number, number]; reason: string } | 'no-space' | null {
+  if (!levelId) return null
+  return checkWallCollision(position, footprint, [0, rotationY, 0], levelId)
 }
 
 export function validateAddStair(call: AddStairToolCall): ValidatedAddStair {
@@ -559,14 +607,46 @@ export function validateAddStair(call: AddStairToolCall): ValidatedAddStair {
     // curved/spiral
     if (call.length !== undefined && call.length !== 3.0) irrelevantWarnings.push('length')
   }
-  const adjustmentReason = irrelevantWarnings.length > 0
+  const warningReason = irrelevantWarnings.length > 0
     ? `${irrelevantWarnings.join(', ')} ignored for stairType=${stairKind} (only applies to ${stairKind === 'straight' ? 'curved/spiral' : 'straight'} stairs).`
     : undefined
+
+  // Wall collision: a stair must not cut through walls. Straight stairs use
+  // their width × length footprint; curved/spiral stairs are approximated by
+  // the bounding square of their outer radius (innerRadius + tread width).
+  let position: [number, number, number] = call.position ?? [0, 0, 0]
+  let collisionReason: string | undefined
+  const footprint: [number, number, number] =
+    stairKind === 'straight'
+      ? [width, height, length]
+      : (() => {
+          const outer = 2 * ((call.innerRadius ?? 0.6) + width)
+          return [outer, height, outer]
+        })()
+  const wallHit = checkStructureWallCollision(position, footprint, rotation, effectiveStairLevel)
+  if (wallHit === 'no-space') {
+    return {
+      type: 'add_stair',
+      status: 'invalid',
+      position,
+      rotation,
+      width, length, height, stepCount,
+      errorReason:
+        'Stair placement collides with walls and there is no nearby free spot. Pick a position clear of walls (the stair footprint must not cut through any wall).',
+    }
+  }
+  if (wallHit) {
+    position = wallHit.position
+    collisionReason = wallHit.reason
+  }
+
+  const adjustmentReason =
+    [warningReason, collisionReason].filter(Boolean).join(' ') || undefined
 
   return {
     type: 'add_stair',
     status: adjustmentReason ? 'adjusted' : 'valid',
-    position: call.position ?? [0, 0, 0],
+    position,
     rotation,
     width,
     length,

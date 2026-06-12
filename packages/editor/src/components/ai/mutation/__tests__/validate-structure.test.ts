@@ -425,3 +425,91 @@ describe('validateUpdateStairMaterial', () => {
     expect(r.status).toBe('valid')
   })
 })
+
+// ============================================================================
+// Wall-collision guard for stairs & elevators (QA-AI 2026-06-12: a staircase
+// was placed straight through a wall — stairs/elevators skipped the
+// checkWallCollision guard items already had)
+// ============================================================================
+
+describe('validateAddStair — wall collision guard', () => {
+  function setupRoom() {
+    makeBuilding('building1', ['level1'])
+    makeLevel('level1', ['w1'])
+    // Wall along x: [0,0] -> [5,0], thickness 0.2
+    makeWall('w1', 'level1', 2.5)
+  }
+
+  it('keeps a stair clear of walls untouched (valid)', () => {
+    setupRoom()
+    const r = validateAddStair({
+      tool: 'add_stair', position: [2.5, 0, 4], levelId: 'level1',
+    } as any)
+    expect(r.status).toBe('valid')
+    expect(r.position).toEqual([2.5, 0, 4])
+  })
+
+  it('pushes a wall-crossing stair out along the wall normal (adjusted)', () => {
+    setupRoom()
+    // Default footprint 1×3 centered at z=0.3 spans z -1.2..1.8 — cuts the wall at z=0
+    const r = validateAddStair({
+      tool: 'add_stair', position: [2.5, 0, 0.3], levelId: 'level1',
+    } as any)
+    expect(r.status).toBe('adjusted')
+    expect(r.position[2]).toBeGreaterThan(0.3)
+    expect(r.adjustmentReason).toBeTruthy()
+  })
+
+  it('resolves a stair between two close walls to a spot clear of BOTH', () => {
+    makeBuilding('building1', ['level1'])
+    makeLevel('level1', ['w1', 'w2'])
+    makeWall('w1', 'level1', 2.5)
+    mockNodes['w2'] = {
+      id: 'w2', type: 'wall', visible: true, metadata: {},
+      parentId: 'level1', children: [], start: [0, 1], end: [5, 1],
+      height: 2.5, thickness: 0.2,
+    }
+    // 3m-long stair centered between walls 1m apart cannot stay there; the
+    // guard must land it fully on ONE side (open field beyond either wall),
+    // not leave it straddling a wall line.
+    const r = validateAddStair({
+      tool: 'add_stair', position: [2.5, 0, 0.5], levelId: 'level1',
+    } as any)
+    expect(r.status).toBe('adjusted')
+    const z = r.position[2]
+    const halfLen = 1.5
+    const clearOfW1 = z - halfLen > 0.1 || z + halfLen < -0.1
+    const clearOfW2 = z - halfLen > 1.1 || z + halfLen < 0.9
+    expect(clearOfW1 && clearOfW2).toBe(true)
+  })
+
+  it('skips the guard when no level can be resolved', () => {
+    const r = validateAddStair({ tool: 'add_stair', position: [2.5, 0, 0.3] } as any)
+    expect(r.status).toBe('valid')
+  })
+})
+
+describe('validateAddElevator — wall collision guard', () => {
+  it('pushes a wall-crossing elevator out (adjusted)', () => {
+    makeBuilding('building1', ['level1'])
+    makeLevel('level1', ['w1'])
+    makeWall('w1', 'level1', 2.5)
+    const r = validateAddElevator({
+      tool: 'add_elevator', position: [2.5, 0, 0.2], fromLevelId: 'level1',
+    } as any)
+    expect(r.status).toBe('adjusted')
+    expect(r.position[2]).toBeGreaterThan(0.2)
+    expect(r.adjustmentReason).toBeTruthy()
+  })
+
+  it('leaves a clear elevator untouched (valid)', () => {
+    makeBuilding('building1', ['level1'])
+    makeLevel('level1', ['w1'])
+    makeWall('w1', 'level1', 2.5)
+    const r = validateAddElevator({
+      tool: 'add_elevator', position: [2.5, 0, 4], fromLevelId: 'level1',
+    } as any)
+    expect(r.status).toBe('valid')
+    expect(r.position).toEqual([2.5, 0, 4])
+  })
+})
