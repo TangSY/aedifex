@@ -165,6 +165,14 @@ function optimizeMoveItem(
   let rotation = [...op.rotation] as [number, number, number]
   const reasons: string[] = []
 
+  // A rotation that differs from the node's current rotation is an explicit
+  // user/LLM intent ("rotate the sofa 90°") — wall snap and interior-facing
+  // enforcement must not silently revert it, or the move reports success
+  // while the item visibly never turns.
+  const currentRotY = node.rotation?.[1] ?? 0
+  const rotationDelta = Math.abs(Math.atan2(Math.sin(rotation[1] - currentRotY), Math.cos(rotation[1] - currentRotY)))
+  const explicitRotation = rotationDelta > 0.01
+
   const moveMeta = getPlacementMeta(node.asset.id, node.asset.category)
   if (moveMeta.placementType === 'against-wall' || moveMeta.placementType === 'corner') {
     // Fetch walls once and reuse for both snap and orientation checks
@@ -172,14 +180,16 @@ function optimizeMoveItem(
     const wallSnap = snapToNearestWall(position, node.asset.dimensions, rotation, walls)
     if (wallSnap) {
       position = wallSnap.position
-      rotation = wallSnap.rotation
+      if (!explicitRotation) rotation = wallSnap.rotation
       reasons.push('snapped to nearest wall')
     }
 
-    const orientFix = enforceAgainstWallOrientation(position, node.asset.dimensions, rotation, walls)
-    if (orientFix) {
-      rotation = orientFix.rotation
-      reasons.push('orientation corrected to face room interior')
+    if (!explicitRotation) {
+      const orientFix = enforceAgainstWallOrientation(position, node.asset.dimensions, rotation, walls)
+      if (orientFix) {
+        rotation = orientFix.rotation
+        reasons.push('orientation corrected to face room interior')
+      }
     }
   }
 

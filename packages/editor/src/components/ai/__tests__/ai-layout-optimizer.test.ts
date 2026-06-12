@@ -293,6 +293,77 @@ describe('optimizeLayout — move_item', () => {
     const moveOp = result[0] as ValidatedMoveItem
     expect(moveOp.position).not.toEqual([0, 0, 0.2])
   })
+
+  // Regression for QA-AI 2026-06-12: "把沙发转 90 度" was silently reverted —
+  // wall snap + orientation enforcement overrode the explicitly requested
+  // rotation, so the AI reported a rotation that never happened.
+  it('preserves an explicitly requested rotation for against-wall items near a wall', () => {
+    setNodes({
+      wall_1: makeWall('wall_1', [-5, 0], [5, 0], 0.2),
+      item_1: {
+        id: 'item_1',
+        type: 'item',
+        object: 'node',
+        parentId: null,
+        visible: true,
+        metadata: {},
+        position: [0, 0, 0.6],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+        asset: {
+          id: 'sofa-old',
+          category: 'sofa',
+          name: 'Old Sofa',
+          thumbnail: '', src: '',
+          dimensions: [2, 0.9, 0.9],
+          offset: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1],
+        },
+        children: [],
+      },
+    })
+
+    // Rotation differs from the node's current rotY=0 → explicit intent.
+    const op = makeMoveItemOp('item_1', [0, 0, 0.6], [0, Math.PI / 2, 0])
+    const result = optimizeLayout([op])
+
+    const moveOp = result[0] as ValidatedMoveItem
+    expect(moveOp.rotation[1]).toBeCloseTo(Math.PI / 2, 5)
+  })
+
+  it('still enforces interior-facing orientation when rotation is unchanged', () => {
+    setNodes({
+      // South wall of a room whose interior is at -Z (wall runs west→east at z=2)
+      wall_south: makeWall('wall_south', [-2.5, 2], [2.5, 2], 0.2),
+      item_1: {
+        id: 'item_1',
+        type: 'item',
+        object: 'node',
+        parentId: null,
+        visible: true,
+        metadata: {},
+        position: [0, 0.05, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+        asset: {
+          id: 'sofa-old',
+          category: 'sofa',
+          name: 'Old Sofa',
+          thumbnail: '', src: '',
+          dimensions: [2, 0.9, 0.9],
+          offset: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1],
+        },
+        children: [],
+      },
+    })
+
+    // Same rotation as the node (0) → no explicit intent; moving against the
+    // south wall must still flip the sofa to face the interior (rotY=π).
+    const op = makeMoveItemOp('item_1', [0, 0.05, 1.13], [0, 0, 0])
+    const result = optimizeLayout([op])
+
+    const moveOp = result[0] as ValidatedMoveItem
+    expect(Math.abs(moveOp.rotation[1])).toBeCloseTo(Math.PI, 2)
+  })
 })
 
 // ============================================================================
