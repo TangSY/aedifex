@@ -121,14 +121,17 @@ export const useKeyboard = ({
         if (result?.pastedIds.length) {
           sfxEmitter.emit('sfx:item-place')
         }
-      } else if (e.key === 'z' && (e.metaKey || e.ctrlKey)) {
-        if (isVersionPreviewMode) return
-        e.preventDefault()
-        runUndo()
-      } else if (e.key === 'Z' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
+      } else if (e.key.toLowerCase() === 'z' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
+        // Match both 'Z' and 'z': synthetic events (tests, automation) may
+        // report lowercase 'z' even with Shift held — without this, Cmd+Shift+Z
+        // would fall through to the undo branch and undo instead of redo.
         if (isVersionPreviewMode) return
         e.preventDefault()
         runRedo()
+      } else if (e.key === 'z' && !e.shiftKey && (e.metaKey || e.ctrlKey)) {
+        if (isVersionPreviewMode) return
+        e.preventDefault()
+        runUndo()
       } else if (e.key === 'ArrowUp' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
         const { buildingId, levelId } = useViewer.getState().selection
