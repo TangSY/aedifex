@@ -19,15 +19,27 @@ import { useViewer } from '@aedifex/viewer'
  * Returns null if no valid level can be resolved.
  */
 export function resolveEffectiveLevelId(explicitLevelId?: string): string | null {
+  const { nodes } = useScene.getState()
   if (explicitLevelId) {
-    const { nodes } = useScene.getState()
     const node = nodes[explicitLevelId as AnyNodeId]
     if (node && node.type === 'level') {
       return explicitLevelId
     }
     // Invalid levelId from LLM — fall back to viewer selection
   }
-  return useViewer.getState().selection.levelId
+  // The viewer selection can go stale (e.g. the selected level was just
+  // deleted). Returning a dead id here made structure ops "succeed" while
+  // their nodes were silently swallowed — verify liveness, then fall back
+  // to any existing level before giving up.
+  const selectionLevelId = useViewer.getState().selection.levelId
+  if (selectionLevelId) {
+    const node = nodes[selectionLevelId as AnyNodeId]
+    if (node && node.type === 'level') {
+      return selectionLevelId
+    }
+  }
+  const anyLevel = Object.values(nodes).find((n) => n.type === 'level')
+  return anyLevel ? anyLevel.id : null
 }
 
 /**

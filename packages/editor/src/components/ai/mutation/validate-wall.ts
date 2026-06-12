@@ -38,6 +38,20 @@ export function validateAddWall(call: AddWallToolCall, wallCache?: Map<string, W
   // This enables multi-level batch operations where the AI specifies target levels.
   const effectiveLevelId = resolveEffectiveLevelId(call.levelId)
 
+  // No live level anywhere (e.g. all levels were just deleted) — creating the
+  // wall would silently parent it to nothing. Fail loudly so the LLM adds a
+  // level first instead of reporting phantom success.
+  if (!effectiveLevelId) {
+    return {
+      type: 'add_wall',
+      status: 'invalid',
+      start,
+      end,
+      thickness,
+      errorReason: 'No level exists in the scene. Use add_level to create a floor before adding walls.',
+    }
+  }
+
   // If height not specified, inherit from existing walls on this level.
   // Prevents mismatched wall heights (e.g., outer walls 3m, partition wall defaulting to 2.8m).
   let height = call.height
@@ -401,6 +415,7 @@ export function validateRemoveNode(call: RemoveNodeToolCall): ValidatedRemoveNod
     status: 'valid',
     nodeId: call.nodeId as AnyNodeId,
     nodeType: node.type,
+    nodeName: node.name ?? undefined,
   }
 }
 

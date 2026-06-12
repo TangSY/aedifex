@@ -47,7 +47,10 @@ import {
 
 beforeEach(() => {
   for (const key of Object.keys(mockNodes)) delete mockNodes[key]
-  mockSelectionLevelId.value = null
+  // A live default level must exist — resolveEffectiveLevelId now verifies
+  // liveness and validators reject structure ops when no level exists.
+  mockNodes['level-default'] = { id: 'level-default', type: 'level', visible: true, metadata: {}, children: [], parentId: null }
+  mockSelectionLevelId.value = 'level-default'
 })
 
 function makeLevel(id: string, children: string[]) {
@@ -80,6 +83,16 @@ function makeWall(
 // ============================================================================
 
 describe('validateAddWall', () => {
+  // Regression for QA-AI 2026-06-12 BUG-6: with every level deleted, add_wall
+  // used to "succeed" while the wall was silently swallowed.
+  it('rejects when no level exists in the scene at all', () => {
+    delete mockNodes['level-default']
+    mockSelectionLevelId.value = null
+    const result = validateAddWall({ tool: 'add_wall', start: [0, 0], end: [5, 0] } as any)
+    expect(result.status).toBe('invalid')
+    expect(result.errorReason).toMatch(/no level exists/i)
+  })
+
   it('rejects zero-length wall (start == end after grid snap)', () => {
     mockSelectionLevelId.value = null
     const result = validateAddWall({
