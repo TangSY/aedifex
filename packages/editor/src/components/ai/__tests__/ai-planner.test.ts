@@ -58,6 +58,23 @@ describe('isComplexInstruction', () => {
     // simple "remove" should short-circuit even if villa is mentioned
     expect(isComplexInstruction('remove the villa')).toBe(false)
   })
+
+  // Regression for QA-AI 2026-06-12: the greedy /\d+.*间/ pattern marked
+  // single-room and door-position requests as complex, triggering plan
+  // confirmation round-trips for trivial asks.
+  it('returns false for single-room creation with dimensions', () => {
+    expect(isComplexInstruction('创建一个 5m x 4m 的房间')).toBe(false)
+    expect(isComplexInstruction('在二层创建一个 6m×4m 的矩形房间')).toBe(false)
+  })
+
+  it('returns false for "墙中间" door placement requests', () => {
+    expect(isComplexInstruction('重建北墙（从 [-2.5,-2] 到 [2.5,-2]），并在墙中间加一扇门')).toBe(false)
+  })
+
+  it('still returns true for genuine multi-room counts', () => {
+    expect(isComplexInstruction('帮我做三间卧室和两个卫生间')).toBe(true)
+    expect(isComplexInstruction('创建 2 个房间')).toBe(true)
+  })
 })
 
 // ============================================================================

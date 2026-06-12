@@ -20,8 +20,12 @@ const COMPLEX_PATTERNS = [
   // Complete building types
   /别墅/i, /villa/i, /公寓/i, /apartment/i, /办公/i, /office/i,
   /两室/, /三室/, /一室/, /开间/, /studio/i,
-  // Multi-room requests
-  /多.*房间/, /multiple.*room/i, /几.*间/, /\d+.*间/,
+  // Multi-room requests — require an explicit room-count context. The old
+  // /\d+.*间/ was so greedy that "5m x 4m 的房间" and "墙中间加一扇门"
+  // both triggered full planning (plan-confirmation round-trips for trivial
+  // single-room asks, QA-AI 2026-06-12).
+  /多.*房间/, /multiple.*room/i, /几个?(房间|卧室|卫生间)/,
+  /[两二三四五六七八九十\d]+\s*[个间]?\s*(房间|卧室|卫生间)/,
   // Complete layout requests
   /整个|整套|完整|全部/, /entire|complete|whole|full/i,
   // Furnish entire room/building
@@ -185,7 +189,7 @@ function generateGenericPlan(userMessage: string): ExecutionPlan {
   const msg = userMessage.toLowerCase()
 
   // Detect scope from the message
-  const hasMultiRoom = /多.*房间|multiple.*room|\d+.*间|两室|三室/i.test(msg)
+  const hasMultiRoom = /多.*房间|multiple.*room|[两二三四五六七八九十\d]+\s*[个间]?\s*(房间|卧室|卫生间)|两室|三室/i.test(msg)
   const hasMultiLevel = /(\d+)\s*层|(\d+)\s*story|(\d+)\s*floor/i.test(msg)
   const hasFurniture = /布置|furnish|装修|decorate|家具|furniture/i.test(msg)
 
