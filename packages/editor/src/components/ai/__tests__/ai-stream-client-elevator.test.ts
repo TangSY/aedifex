@@ -64,7 +64,7 @@ function makeCallbacks(): StreamCallbacks & {
 }
 
 const mockFetch = vi.fn()
-vi.stubGlobal('fetch', mockFetch)
+globalThis.fetch = mockFetch as unknown as typeof fetch
 
 function mockFetchOk(stream: ReadableStream<Uint8Array>) {
   mockFetch.mockResolvedValueOnce({ ok: true, status: 200, body: stream })

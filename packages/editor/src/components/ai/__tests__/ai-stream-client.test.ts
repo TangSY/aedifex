@@ -91,7 +91,7 @@ function makeCallbacks(overrides?: Partial<StreamCallbacks>): StreamCallbacks & 
 // ============================================================================
 
 const mockFetch = vi.fn()
-vi.stubGlobal('fetch', mockFetch)
+globalThis.fetch = mockFetch as unknown as typeof fetch
 
 function mockFetchOk(stream: ReadableStream<Uint8Array>) {
   mockFetch.mockResolvedValueOnce({
@@ -395,30 +395,31 @@ describe('streamChat — network errors', () => {
     controller.abort()
   })
 
+  // Real timers: bun's vitest shim lacks advanceTimersByTimeAsync, and the
+  // retry delay (STREAM_RETRY_DELAY_MS = 1000) is short enough to wait out.
+  async function waitUntil(cond: () => boolean, timeoutMs = 4000): Promise<void> {
+    const start = Date.now()
+    while (!cond()) {
+      if (Date.now() - start > timeoutMs) throw new Error('waitUntil timed out')
+      await new Promise((r) => setTimeout(r, 25))
+    }
+  }
+
   it('calls onError when fetch throws a network error', async () => {
-    vi.useFakeTimers()
     // Reject for both the initial attempt and the retry
     mockFetch.mockRejectedValue(new Error('Network failure'))
 
     const cbs = makeCallbacks()
     const controller = streamChat(baseRequest, cbs)
 
-    // Flush the first attempt (microtask)
-    await vi.advanceTimersByTimeAsync(0)
-    // Advance past the retry delay (STREAM_RETRY_DELAY_MS = 1000)
-    await vi.advanceTimersByTimeAsync(1100)
-    // Flush the retry attempt
-    await vi.advanceTimersByTimeAsync(0)
+    await waitUntil(() => cbs.errors.length === 1)
 
     expect(cbs.errors).toHaveLength(1)
     expect(cbs.errors[0]).toContain('Network failure')
     controller.abort()
-    vi.useRealTimers()
   })
 
   it('calls onRetry before retrying after a mid-stream failure', async () => {
-    vi.useFakeTimers()
-
     mockFetch
       .mockResolvedValueOnce({
         ok: true,
@@ -443,15 +444,12 @@ describe('streamChat — network errors', () => {
     const cbs = makeCallbacks({ onRetry })
     const controller = streamChat(baseRequest, cbs)
 
-    await vi.advanceTimersByTimeAsync(0)
-    await vi.advanceTimersByTimeAsync(1100)
-    await vi.advanceTimersByTimeAsync(0)
+    await waitUntil(() => cbs.completes.length === 1)
 
     expect(onRetry).toHaveBeenCalledOnce()
     expect(cbs.completes).toHaveLength(1)
     expect(cbs.completes[0]?.[0]).toBe('final')
     controller.abort()
-    vi.useRealTimers()
   })
 })
 
