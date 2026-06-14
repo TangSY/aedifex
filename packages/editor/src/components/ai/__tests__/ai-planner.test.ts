@@ -126,6 +126,63 @@ describe('generateExecutionPlan', () => {
     expect(plan.isComplex).toBe(true)
     expect(plan.steps.length).toBeGreaterThanOrEqual(3)
   })
+
+  // Phased execution (QA-AI 2026-06-14): multi-floor builds split into
+  // "shell first, furniture floor-by-floor" so the LLM stops dropping an
+  // entire floor's furniture / over-simplifying partitions in one giant run.
+  it('marks a 3-story villa plan as phased and defers all furniture', () => {
+    const plan = generateExecutionPlan('帮我设计一个三层别墅')
+    expect(plan.phased).toBe(true)
+    // No inline per-floor furniture steps — furniture is one deferred stage.
+    const inlineFurnitureSteps = plan.steps.filter(
+      (s) => /Place furniture in \d+ rooms/.test(s.description),
+    )
+    expect(inlineFurnitureSteps.length).toBe(0)
+    // Exactly one floor-by-floor furnishing stage at the end.
+    const deferredStages = plan.steps.filter((s) => /one floor at a time/.test(s.description))
+    expect(deferredStages.length).toBe(1)
+    // Plan summary uses the staged strategy wording.
+    expect(plan.planSummary).toContain('Stage 1')
+    expect(plan.planSummary).toContain('Stage 2')
+  })
+
+  it('does NOT mark a SMALL single-floor template plan as phased', () => {
+    // Studio apartment = 1 floor, 3 rooms (< LARGE_LAYOUT_ROOM_COUNT) → not phased.
+    const plan = generateExecutionPlan('帮我做一个开间公寓')
+    expect(plan.isComplex).toBe(true)
+    if (plan.template) {
+      expect(plan.template.floors.length).toBe(1)
+      expect(plan.template.floors[0]!.rooms.length).toBeLessThan(4)
+      expect(plan.phased).toBe(false)
+      // Small single-floor plans keep inline furniture steps.
+      expect(plan.planSummary).toContain('Execution steps:')
+    }
+  })
+
+  // QA-AI 2026-06-14 follow-up: a large single-floor layout has the same
+  // failure mode as multi-floor (over-simplified partitions, dropped
+  // furniture in one giant run), so it now goes staged too.
+  it('marks a LARGE single-floor layout as phased', () => {
+    // Two-bedroom apartment = 1 floor, 5 rooms (≥ LARGE_LAYOUT_ROOM_COUNT).
+    const plan = generateExecutionPlan('帮我做一个两室一厅')
+    expect(plan.isComplex).toBe(true)
+    if (plan.template) {
+      expect(plan.template.floors.length).toBe(1)
+      expect(plan.template.floors[0]!.rooms.length).toBeGreaterThanOrEqual(4)
+      expect(plan.phased).toBe(true)
+      // Furniture deferred to one staged room-group step (no inline furniture).
+      const inlineFurniture = plan.steps.filter((st) => /Place furniture in \d+ rooms/.test(st.description))
+      expect(inlineFurniture.length).toBe(0)
+      expect(plan.planSummary).toContain('Stage 1')
+      expect(plan.planSummary).toContain('room group at a time')
+    }
+  })
+
+  it('marks a generic multi-floor request as phased', () => {
+    const plan = generateExecutionPlan('帮我做一个3层的楼')
+    expect(plan.isComplex).toBe(true)
+    expect(plan.phased).toBe(true)
+  })
 })
 
 // ============================================================================
@@ -139,6 +196,7 @@ describe('buildPlanningContext', () => {
       template: null,
       steps: [],
       planSummary: '',
+      phased: false,
     })
     expect(out).toBe('')
   })
@@ -149,6 +207,7 @@ describe('buildPlanningContext', () => {
       template: null,
       steps: [],
       planSummary: 'ignored',
+      phased: false,
     })
     expect(out).toBe('')
   })
@@ -161,6 +220,7 @@ describe('buildPlanningContext', () => {
         { step: 1, description: 'do thing', toolHint: 'add_wall', dependsOn: [] },
       ],
       planSummary: 'Execution Plan (1 steps):\n  Step 1: do thing',
+      phased: false,
     })
     expect(out).toContain('[SYSTEM: Complex task detected.')
     expect(out).toContain('ask_user')
@@ -181,10 +241,40 @@ describe('buildPlanningContext', () => {
         { step: 1, description: 'foo', toolHint: 'add_wall', dependsOn: [] },
       ],
       planSummary: 'plan body',
+      phased: false,
     })
     expect(out).toContain('Test Villa')
     expect(out).toContain('测试别墅')
     expect(out).toContain('12m × 10m')
     expect(out).toContain('plan body')
+  })
+
+  it('emits the staged-execution mandate when plan.phased is true', () => {
+    const out = buildPlanningContext({
+      isComplex: true,
+      template: null,
+      steps: [
+        { step: 1, description: 'build shell', toolHint: 'batch_operations', dependsOn: [] },
+      ],
+      planSummary: 'plan body',
+      phased: true,
+    })
+    expect(out).toContain('STAGED EXECUTION')
+    expect(out).toContain('ONE FLOOR AT A TIME')
+    expect(out).toContain('Do NOT place ANY furniture during this stage')
+  })
+
+  it('uses the one-step-at-a-time wording when plan.phased is false', () => {
+    const out = buildPlanningContext({
+      isComplex: true,
+      template: null,
+      steps: [
+        { step: 1, description: 'do thing', toolHint: 'add_wall', dependsOn: [] },
+      ],
+      planSummary: 'plan body',
+      phased: false,
+    })
+    expect(out).toContain('execute one step at a time')
+    expect(out).not.toContain('STAGED EXECUTION')
   })
 })

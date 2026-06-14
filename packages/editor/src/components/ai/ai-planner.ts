@@ -32,6 +32,12 @@ const COMPLEX_PATTERNS = [
   /布置.*整个/, /furnish.*entire/i, /装修/, /decorate.*all/i,
 ]
 
+/** A single-floor layout with at least this many rooms is treated as a large
+ *  build that benefits from staged (shell-first, furnish-in-batches) execution
+ *  — same failure mode as multi-floor: the LLM over-simplifies partitions and
+ *  drops furniture when it does everything in one giant run. */
+const LARGE_LAYOUT_ROOM_COUNT = 4
+
 /** Patterns for simple requests that should NOT trigger planning */
 const SIMPLE_PATTERNS = [
   // Single item operations
@@ -62,6 +68,13 @@ export interface ExecutionPlan {
   steps: PlanStep[]
   /** Human-readable plan summary for injection into conversation */
   planSummary: string
+  /**
+   * True for large multi-floor builds: execute in two stages — build the full
+   * structural shell first, then confirm furniture floor-by-floor via ask_user.
+   * A single giant run makes the LLM drop whole steps (an entire floor's
+   * furniture) and over-simplify partitions; staged keeps each turn small.
+   */
+  phased: boolean
 }
 
 /**
@@ -87,7 +100,7 @@ export function isComplexInstruction(userMessage: string): boolean {
  */
 export function generateExecutionPlan(userMessage: string): ExecutionPlan {
   if (!isComplexInstruction(userMessage)) {
-    return { isComplex: false, template: null, steps: [], planSummary: '' }
+    return { isComplex: false, template: null, steps: [], planSummary: '', phased: false }
   }
 
   // Try to match a building template
@@ -106,8 +119,15 @@ export function generateExecutionPlan(userMessage: string): ExecutionPlan {
 // ============================================================================
 
 function generateTemplateBasedPlan(template: BuildingTemplate): ExecutionPlan {
+  // Staged execution: multi-floor builds OR large single-floor layouts
+  // (≥ LARGE_LAYOUT_ROOM_COUNT rooms). Build the shell first, then furnish in
+  // small confirmed batches so nothing gets dropped or over-simplified.
+  const totalRooms = template.floors.reduce((sum, f) => sum + f.rooms.length, 0)
+  const phased = template.floors.length > 1 || totalRooms >= LARGE_LAYOUT_ROOM_COUNT
   const steps: PlanStep[] = []
   let stepNum = 1
+  let prevStep = 0
+  const linkPrev = () => (prevStep > 0 ? [prevStep] : [])
 
   for (let i = 0; i < template.floors.length; i++) {
     const floor = template.floors[i]!
@@ -118,8 +138,9 @@ function generateTemplateBasedPlan(template: BuildingTemplate): ExecutionPlan {
         step: stepNum,
         description: `Create ${floor.label} (Level ${floor.level})`,
         toolHint: 'add_level',
-        dependsOn: i > 1 ? [stepNum - 3] : [], // depends on previous floor completion
+        dependsOn: linkPrev(),
       })
+      prevStep = stepNum
       stepNum++
     }
 
@@ -129,9 +150,10 @@ function generateTemplateBasedPlan(template: BuildingTemplate): ExecutionPlan {
       step: stepNum,
       description: `Build walls for ${floor.label}: ${roomNames}`,
       toolHint: 'batch_operations (add_wall)',
-      dependsOn: i > 0 ? [stepNum - 1] : [],
+      dependsOn: linkPrev(),
     })
     const wallStep = stepNum
+    prevStep = stepNum
     stepNum++
 
     // Step: Add doors and windows
@@ -144,39 +166,60 @@ function generateTemplateBasedPlan(template: BuildingTemplate): ExecutionPlan {
         toolHint: 'batch_operations (add_door, add_window)',
         dependsOn: [wallStep],
       })
+      prevStep = stepNum
       stepNum++
     }
 
-    // Step: Place furniture in each room
-    const furnishedRooms = floor.rooms.filter((r) => r.furniture.length > 0)
-    if (furnishedRooms.length > 0) {
-      steps.push({
-        step: stepNum,
-        description: `Place furniture in ${furnishedRooms.length} rooms on ${floor.label}`,
-        toolHint: 'batch_operations (add_item)',
-        dependsOn: [wallStep],
-      })
-      stepNum++
+    // Step: Place furniture in each room — only inline for single-floor plans.
+    // Phased plans defer ALL furniture to a single floor-by-floor stage at the
+    // end so the model never tries to furnish everything in one run.
+    if (!phased) {
+      const furnishedRooms = floor.rooms.filter((r) => r.furniture.length > 0)
+      if (furnishedRooms.length > 0) {
+        steps.push({
+          step: stepNum,
+          description: `Place furniture in ${furnishedRooms.length} rooms on ${floor.label}`,
+          toolHint: 'batch_operations (add_item)',
+          dependsOn: [wallStep],
+        })
+        prevStep = stepNum
+        stepNum++
+      }
     }
   }
 
-  // Final step: stairs between levels (if multi-story)
+  // Stairs between levels (multi-story shell).
   if (template.floors.length > 1) {
     steps.push({
       step: stepNum,
       description: `Add stairs between ${template.floors.length} levels`,
       toolHint: 'add_stair',
-      dependsOn: [stepNum - 1],
+      dependsOn: linkPrev(),
+    })
+    prevStep = stepNum
+    stepNum++
+  }
+
+  // Phased: a single deferred stage that furnishes one floor at a time,
+  // each gated behind an ask_user confirmation.
+  if (phased) {
+    const cadence = template.floors.length > 1 ? 'one floor at a time' : 'one room group at a time'
+    steps.push({
+      step: stepNum,
+      description: `Shell complete — furnish ${cadence}, confirming with the user before each`,
+      toolHint: 'ask_user → batch_operations (add_item)',
+      dependsOn: linkPrev(),
     })
   }
 
-  const planText = generatePlanFromTemplate(template)
+  const planText = generatePlanFromTemplate(template, phased)
 
   return {
     isComplex: true,
     template,
     steps,
     planSummary: planText,
+    phased,
   }
 }
 
@@ -224,7 +267,19 @@ function generateGenericPlan(userMessage: string): ExecutionPlan {
     })
   }
 
-  if (hasFurniture || hasMultiRoom) {
+  // Staged for multi-floor OR explicit multi-room generic builds — defer
+  // furniture to a small-batch confirmation stage instead of one giant step.
+  const phased = hasMultiLevel || hasMultiRoom
+
+  if (phased) {
+    const cadence = hasMultiLevel ? 'one floor at a time' : 'one room group at a time'
+    steps.push({
+      step: stepNum++,
+      description: `Shell complete — furnish ${cadence}, confirming with the user before each`,
+      toolHint: 'ask_user → batch_operations (add_item)',
+      dependsOn: stepNum > 2 ? [stepNum - 2] : [],
+    })
+  } else if (hasFurniture) {
     steps.push({
       step: stepNum++,
       description: 'Place furniture in each room',
@@ -251,6 +306,7 @@ function generateGenericPlan(userMessage: string): ExecutionPlan {
     template: null,
     steps,
     planSummary,
+    phased,
   }
 }
 
@@ -283,7 +339,16 @@ export function buildPlanningContext(plan: ExecutionPlan): string {
   lines.push(plan.planSummary)
   lines.push('')
   lines.push('Present this plan to the user using ask_user. Ask if they want to proceed or modify any steps.')
-  lines.push('After user confirms, execute one step at a time. Do NOT batch all steps together.')
+
+  if (plan.phased) {
+    lines.push('')
+    lines.push('[STAGED EXECUTION — MANDATORY for this large build]')
+    lines.push('1. After the user confirms, build the COMPLETE structural shell first: every wall and room partition promised in the plan, plus doors, windows, slab and ceiling for each floor — and for a multi-storey building also the stairs between levels and the roof. Build the FULL set of room partitions; do NOT collapse a multi-room layout into a single outer shell. Do NOT place ANY furniture during this stage.')
+    lines.push('2. When the shell is finished, STOP and use ask_user to offer furnishing in SMALL batches — ONE FLOOR AT A TIME for a multi-storey building, or ONE ROOM (or room group) AT A TIME for a single floor. e.g. question "The Ground Floor shell is ready — shall I furnish it now?", suggestions ["Furnish it", "Skip it"]. Furnish only that part, then ask about the next.')
+    lines.push('3. NEVER furnish the whole building in one batch. Each small step is what keeps rooms from being skipped or the layout left half-finished.')
+  } else {
+    lines.push('After user confirms, execute one step at a time. Do NOT batch all steps together.')
+  }
 
   return lines.join('\n')
 }

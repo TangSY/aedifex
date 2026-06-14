@@ -285,8 +285,13 @@ export function getAvailableTemplates(): { id: string; name: string; nameCN: str
 /**
  * Generate a human-readable plan from a template.
  * This is injected into the AI's response when a complex instruction is detected.
+ *
+ * When `phased` is true (multi-floor builds), the execution strategy splits
+ * into "shell first, furniture floor-by-floor". A single giant run tends to
+ * make the LLM drop whole steps (e.g. skip an entire floor's furniture) and
+ * over-simplify room partitions; keeping each turn small fixes that.
  */
-export function generatePlanFromTemplate(template: BuildingTemplate): string {
+export function generatePlanFromTemplate(template: BuildingTemplate, phased = false): string {
   const lines: string[] = []
   lines.push(`Building Plan: ${template.name} (${template.nameCN})`)
   lines.push(`Footprint: ${template.footprint[0]}m x ${template.footprint[1]}m`)
@@ -301,15 +306,29 @@ export function generatePlanFromTemplate(template: BuildingTemplate): string {
     lines.push('')
   }
 
-  lines.push(`Execution steps:`)
-  for (let i = 0; i < template.floors.length; i++) {
-    const floor = template.floors[i]!
-    const stepBase = i * 3 + 1
-    lines.push(`  Step ${stepBase}: Create Level ${floor.level} ${i > 0 ? `(add_level)` : '(already exists)'}`)
-    lines.push(`  Step ${stepBase + 1}: Build walls, doors, and windows for ${floor.label}`)
-    lines.push(`  Step ${stepBase + 2}: Place furniture in each room of ${floor.label}`)
+  if (phased) {
+    const multi = template.floors.length > 1
+    lines.push(`Execution strategy (staged — build the structural shell first, then furnish in small confirmed batches):`)
+    lines.push(`  Stage 1 — Full structural shell${multi ? ` of all ${template.floors.length} floors` : ''} (NO furniture in this stage):`)
+    for (let i = 0; i < template.floors.length; i++) {
+      const floor = template.floors[i]!
+      const createNote = i > 0 ? 'add_level, then ' : ''
+      lines.push(`    • ${floor.label}: ${createNote}build walls (all room partitions), doors, windows, slab, ceiling`)
+    }
+    if (multi) lines.push(`    • Add stairs between levels and the roof.`)
+    const cadence = multi ? 'ONE floor at a time' : 'ONE room group at a time'
+    lines.push(`  Stage 2 — After the shell is complete, furnish ${cadence}, confirming with the user before each.`)
+  } else {
+    lines.push(`Execution steps:`)
+    for (let i = 0; i < template.floors.length; i++) {
+      const floor = template.floors[i]!
+      const stepBase = i * 3 + 1
+      lines.push(`  Step ${stepBase}: Create Level ${floor.level} ${i > 0 ? `(add_level)` : '(already exists)'}`)
+      lines.push(`  Step ${stepBase + 1}: Build walls, doors, and windows for ${floor.label}`)
+      lines.push(`  Step ${stepBase + 2}: Place furniture in each room of ${floor.label}`)
+    }
+    lines.push(`  Final: Add stairs between levels and roof structure`)
   }
-  lines.push(`  Final: Add stairs between levels and roof structure`)
 
   return lines.join('\n')
 }
