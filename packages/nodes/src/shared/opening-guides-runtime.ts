@@ -13,8 +13,8 @@ import {
   spatialGridManager,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
-import { type OpeningGuide3D, useOpeningGuides } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { type OpeningGuide3D, useOpeningGuides } from '@aedifex/editor'
 
 // Parity with `snapLocalXToNeighbors`' along-wall threshold.
 const SILL_SNAP_THRESHOLD_M = 0.08

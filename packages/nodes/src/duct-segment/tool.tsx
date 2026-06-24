@@ -10,7 +10,7 @@ import {
   getCeilingAt,
   getCeilingHeightAt,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CursorSphere,
   DimensionPill,
@@ -18,8 +18,8 @@ import {
   markToolCancelConsumed,
   triggerSFX,
   useEditor,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {

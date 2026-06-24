@@ -1,6 +1,6 @@
 'use client'
 
-import { emitter, type GridEvent, LinesetNode, useScene } from '@pascal-app/core'
+import { emitter, type GridEvent, LinesetNode, useScene } from '@aedifex/core'
 import {
   CursorSphere,
   DimensionPill,
@@ -8,8 +8,8 @@ import {
   markToolCancelConsumed,
   triggerSFX,
   useEditor,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useEffect, useRef, useState } from 'react'
 import { type Group, Vector3 } from 'three'

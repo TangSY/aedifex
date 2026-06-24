@@ -1,1 +1,1 @@
-export { LiquidLineNode } from '@pascal-app/core'
+export { LiquidLineNode } from '@aedifex/core'

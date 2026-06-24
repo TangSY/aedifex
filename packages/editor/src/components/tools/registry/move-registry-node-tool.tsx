@@ -242,7 +242,7 @@ export function MoveRegistryNodeTool({ node }: { node: AnyNode }) {
   // Kinds that declare `movable.portSnap` (duct terminals) magnetically
   // mate one of their own ports onto a nearby scene port while dragging —
   // a register collar drops onto a duct run end. Reads `def.ports` through
-  // the core registry, so it stays layer-clean (no @pascal-app/nodes import).
+  // the core registry, so it stays layer-clean (no @aedifex/nodes import).
   const portSnapConfig = nodeRegistry.get(node.type)?.capabilities?.movable?.portSnap ?? null
   // Mirrors of `valid` / Shift for the event handlers inside the effect, which
   // can't read React state without stale closures.

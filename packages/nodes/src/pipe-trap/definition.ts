@@ -1,4 +1,4 @@
-import type { NodeDefinition } from '@pascal-app/core'
+import type { NodeDefinition } from '@aedifex/core'
 import { buildPipeTrapFloorplan } from './floorplan'
 import { buildPipeTrapGeometry } from './geometry'
 import { pipeTrapParametrics } from './parametrics'

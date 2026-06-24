@@ -8,7 +8,7 @@ import {
   nodeRegistry,
   type SceneApi,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 function resolveHandles(node: AnyNode): HandleDescriptor<AnyNode>[] {
   const handles = nodeRegistry.get(node.type)?.handles

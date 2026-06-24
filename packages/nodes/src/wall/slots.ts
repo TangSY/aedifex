@@ -1,4 +1,4 @@
-import { type SlotDeclaration, WALL_SLOT_DEFAULT } from '@pascal-app/core'
+import { type SlotDeclaration, WALL_SLOT_DEFAULT } from '@aedifex/core'
 
 /**
  * A wall exposes two paintable faces — interior + exterior. Painting writes

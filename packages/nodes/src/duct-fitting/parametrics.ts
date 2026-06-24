@@ -4,7 +4,7 @@ import {
   type DuctSegmentNode,
   type ParametricDescriptor,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Vector3 } from 'three'
 import {
   autoOffsetInvalidationUpdates,

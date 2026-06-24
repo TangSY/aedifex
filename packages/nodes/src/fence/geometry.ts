@@ -1,4 +1,4 @@
-import { type GeometryContext, getMaterialPresetByRef } from '@pascal-app/core'
+import { type GeometryContext, getMaterialPresetByRef } from '@aedifex/core'
 import {
   applyMaterialPresetToMaterials,
   type ColorPreset,

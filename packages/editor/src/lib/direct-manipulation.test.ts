@@ -5,7 +5,7 @@ import {
   DEFAULT_ANGLE_STEP,
   nodeRegistry,
   registerNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { z } from 'zod'
 import {
   canDirectMoveNode,

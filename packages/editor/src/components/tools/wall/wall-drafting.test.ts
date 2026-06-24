@@ -5,8 +5,8 @@ import {
   useScene,
   type WallNode,
   WallNode as WallSchema,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { createWallOnCurrentLevel, snapWallDraftPointDetailed } from './wall-drafting'
 import type { WallPlanPoint } from './wall-snap-geometry'
 

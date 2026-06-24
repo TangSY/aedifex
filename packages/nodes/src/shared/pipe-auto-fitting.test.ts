@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { PipeSegmentNode } from '@pascal-app/core'
+import { PipeSegmentNode } from '@aedifex/core'
 import { getPipeFittingPorts } from '../pipe-fitting/ports'
 import { planPipeBranchTap, planPipeElbowAtPort } from './auto-fitting'
 import type { RunBodyHit, ScenePort } from './ports'

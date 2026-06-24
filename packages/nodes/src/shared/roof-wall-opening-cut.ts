@@ -1,6 +1,6 @@
-import type { DoorNode, RoofSegmentNode, WindowNode } from '@pascal-app/core'
-import { getRoofWallFaceFrame, roofFacePointToSegment } from '@pascal-app/core'
-import { buildOpeningCutoutGeometry, hasFlatOpeningCutoutBottom } from '@pascal-app/viewer'
+import type { DoorNode, RoofSegmentNode, WindowNode } from '@aedifex/core'
+import { getRoofWallFaceFrame, roofFacePointToSegment } from '@aedifex/core'
+import { buildOpeningCutoutGeometry, hasFlatOpeningCutoutBottom } from '@aedifex/viewer'
 import * as THREE from 'three'
 
 /**

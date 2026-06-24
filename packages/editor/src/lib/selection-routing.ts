@@ -1,4 +1,4 @@
-import { type AnyNode, type ItemNode, nodeRegistry } from '@pascal-app/core'
+import { type AnyNode, type ItemNode, nodeRegistry } from '@aedifex/core'
 
 export type SelectionModifierKeys = {
   meta: boolean

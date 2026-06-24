@@ -10,7 +10,7 @@ import {
   resolveLevelId,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getSegmentGridStep,
   snapWallDraftPointDetailed,

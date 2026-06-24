@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
-import { type AnyNode, type RoofSegmentNode, useScene } from '@pascal-app/core'
+import { type AnyNode, type RoofSegmentNode, useScene } from '@aedifex/core'
 import { getRoofSurfaceFaceBoundsAt } from './roof-surface'
 
-mock.module('@pascal-app/editor', () => ({
+mock.module('@aedifex/editor', () => ({
   useOpeningGuides: {
     getState: () => ({
       clear: () => undefined,
@@ -11,7 +11,7 @@ mock.module('@pascal-app/editor', () => ({
   },
 }))
 
-mock.module('@pascal-app/viewer', () => ({
+mock.module('@aedifex/viewer', () => ({
   Brush: class {},
   SUBTRACTION: 0,
   csgEvaluator: {

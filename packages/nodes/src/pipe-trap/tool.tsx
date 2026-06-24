@@ -1,8 +1,8 @@
 'use client'
 
-import { emitter, type GridEvent, PipeTrapNode, useScene } from '@pascal-app/core'
-import { triggerSFX, useEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+import { emitter, type GridEvent, PipeTrapNode, useScene } from '@aedifex/core'
+import { triggerSFX, useEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { LevelOffsetGroup } from '../shared/level-offset-group'

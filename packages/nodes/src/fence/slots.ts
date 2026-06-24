@@ -1,4 +1,4 @@
-import type { SlotDeclaration } from '@pascal-app/core'
+import type { SlotDeclaration } from '@aedifex/core'
 import type { FenceNode } from './schema'
 
 // Slots map 1:1 to the fence panel's build options: the end posts, the infill

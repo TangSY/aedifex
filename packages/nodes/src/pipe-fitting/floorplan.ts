@@ -1,4 +1,4 @@
-import type { FloorplanGeometry, GeometryContext } from '@pascal-app/core'
+import type { FloorplanGeometry, GeometryContext } from '@aedifex/core'
 import { INCHES_TO_METERS } from '../duct-segment/geometry'
 import { getPipeFittingPorts } from './ports'
 import type { PipeFittingNode } from './schema'

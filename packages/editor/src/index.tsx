@@ -41,7 +41,7 @@ export {
 } from './components/editor/measurement-pill'
 // In-world arrow handle primitives (chevron geometry, invisible hit area,
 // shared material, palette + scale constants). Re-exported so kind-owned
-// 3D selection affordances in `@pascal-app/nodes` (duct side-move / height /
+// 3D selection affordances in `@aedifex/nodes` (duct side-move / height /
 // extend arrows) reuse the same UI family as the wall / fence side handles.
 export {
   ARROW_COLOR,
@@ -295,7 +295,7 @@ export {
 } from './lib/planar-cursor-placement'
 export { clearRoofDuplicateMetadata, duplicateRoofSubtree } from './lib/roof-duplication'
 // Roof wall-face hit resolution + overlap guard — shared by the
-// kind-owned door / window tools in `@pascal-app/nodes` and the item
+// kind-owned door / window tools in `@aedifex/nodes` and the item
 // placement coordinator's roof-wall strategy.
 export { hasRoofFaceChildOverlap, type RoofWallHit, resolveRoofWallHit } from './lib/roof-wall-hit'
 export type { SceneGraph } from './lib/scene'

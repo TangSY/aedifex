@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { getRoofSegmentSurfaceY, type RoofSegmentNode } from '@pascal-app/core'
+import { getRoofSegmentSurfaceY, type RoofSegmentNode } from '@aedifex/core'
 import { getDormerExposedFaces } from '../csg-geometry'
 import {
   buildDormerGhostGeometry,
