@@ -6,6 +6,7 @@ import {
   type AnyNodeId,
   type BuildingNode,
   emitter,
+  getLevelDisplayName,
   type LevelNode,
   useScene,
   type ZoneNode,
@@ -24,19 +25,24 @@ import {
   Check,
   ChevronRight,
   Diamond,
+  Footprints,
   Layers,
+  Palette,
   PenLine,
   Sparkles,
+  Square,
 } from 'lucide-react'
 import Link from 'next/link'
+import { flushSync } from 'react-dom'
 import { useShallow } from 'zustand/react/shallow'
-import { getLevelDisplayName } from '../lib/level-name'
 import { cn } from '../lib/utils'
+import useEditor from '../store/use-editor'
 import { ActionButton } from './ui/action-menu/action-button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/primitives/dropdown-menu'
 import { TooltipProvider } from './ui/primitives/tooltip'
@@ -46,6 +52,24 @@ type ProjectOwner = {
   name: string
   username: string | null
   image: string | null
+}
+
+function requestWalkthroughPointerLock() {
+  const canvas = document.querySelector<HTMLCanvasElement>('[data-pascal-viewer-3d] canvas')
+  if (!canvas) return
+
+  if (!canvas.hasAttribute('tabindex')) {
+    canvas.tabIndex = -1
+  }
+  canvas.focus({ preventScroll: true })
+
+  if (document.pointerLockElement === canvas) return
+
+  try {
+    canvas.requestPointerLock?.()
+  } catch {
+    return
+  }
 }
 
 const levelModeLabels: Record<'stacked' | 'exploded' | 'solo', string> = {
@@ -64,21 +88,27 @@ const levelModeBadgeLabels: Record<'manual' | 'stacked' | 'exploded' | 'solo', s
 const wallModeConfig = {
   up: {
     icon: (props: any) => (
-      <img alt="Full Height" height={28} src="/icons/room.png" width={28} {...props} />
+      <img alt="Full Height" height={28} src="/icons/room.webp" width={28} {...props} />
     ),
     label: 'Full Height',
   },
   cutaway: {
     icon: (props: any) => (
-      <img alt="Cutaway" height={28} src="/icons/wallcut.png" width={28} {...props} />
+      <img alt="Cutaway" height={28} src="/icons/wallcut.webp" width={28} {...props} />
     ),
     label: 'Cutaway',
   },
   down: {
     icon: (props: any) => (
-      <img alt="Low" height={28} src="/icons/walllow.png" width={28} {...props} />
+      <img alt="Low" height={28} src="/icons/walllow.webp" width={28} {...props} />
     ),
     label: 'Low',
+  },
+  translucent: {
+    icon: (props: any) => (
+      <img alt="Translucent" height={28} src="/icons/wall.png" width={28} {...props} />
+    ),
+    label: 'Translucent',
   },
 }
 
@@ -87,8 +117,14 @@ const SHADING_OPTIONS = [
   { id: 'rendered', name: 'Rendered', detail: 'Full ambient occlusion', icon: Sparkles },
 ] as const
 
+const TEXTURE_OPTIONS = [
+  { id: true, name: 'Colored', detail: 'Show materials, textures & colors', icon: Palette },
+  { id: false, name: 'Monochrome', detail: 'Flat clay surfaces by role', icon: Square },
+] as const
+
 function RenderModeMenu() {
   const shading = useViewer((s) => s.shading)
+  const textures = useViewer((s) => s.textures)
   const active = SHADING_OPTIONS.find((o) => o.id === shading) ?? SHADING_OPTIONS[0]
   const ActiveIcon = active.icon
   return (
@@ -118,6 +154,23 @@ function RenderModeMenu() {
                 <span className="text-muted-foreground text-xs">{option.detail}</span>
               </div>
               {shading === option.id ? <Check className="ml-auto text-foreground" /> : null}
+            </DropdownMenuItem>
+          )
+        })}
+        <DropdownMenuSeparator />
+        {TEXTURE_OPTIONS.map((option) => {
+          const OptionIcon = option.icon
+          return (
+            <DropdownMenuItem
+              key={option.name}
+              onSelect={() => useViewer.getState().setTextures(option.id)}
+            >
+              <OptionIcon />
+              <div className="flex flex-col">
+                <span className="text-foreground">{option.name}</span>
+                <span className="text-muted-foreground text-xs">{option.detail}</span>
+              </div>
+              {textures === option.id ? <Check className="ml-auto text-foreground" /> : null}
             </DropdownMenuItem>
           )
         })}
@@ -455,7 +508,7 @@ export const ViewerOverlay = ({
                 <img
                   alt="Scans"
                   className="h-[28px] w-[28px] object-contain"
-                  src="/icons/mesh.png"
+                  src="/icons/mesh.webp"
                 />
               </ActionButton>
             )}
@@ -476,7 +529,7 @@ export const ViewerOverlay = ({
                 <img
                   alt="Guides"
                   className="h-[28px] w-[28px] object-contain"
-                  src="/icons/floorplan.png"
+                  src="/icons/floorplan.webp"
                 />
               </ActionButton>
             )}
@@ -554,7 +607,12 @@ export const ViewerOverlay = ({
               }
               label={`Walls: ${wallModeConfig[wallMode as keyof typeof wallModeConfig].label}`}
               onClick={() => {
-                const modes: ('cutaway' | 'up' | 'down')[] = ['cutaway', 'up', 'down']
+                const modes: ('cutaway' | 'up' | 'down' | 'translucent')[] = [
+                  'cutaway',
+                  'up',
+                  'down',
+                  'translucent',
+                ]
                 const nextIndex = (modes.indexOf(wallMode as any) + 1) % modes.length
                 useViewer.getState().setWallMode(modes[nextIndex] ?? 'cutaway')
               }}
@@ -582,7 +640,7 @@ export const ViewerOverlay = ({
               <img
                 alt="Orbit Left"
                 className="h-[28px] w-[28px] -scale-x-100 object-contain opacity-70 transition-opacity group-hover:opacity-100"
-                src="/icons/rotate.png"
+                src="/icons/rotate.webp"
               />
             </ActionButton>
 
@@ -597,7 +655,7 @@ export const ViewerOverlay = ({
               <img
                 alt="Orbit Right"
                 className="h-[28px] w-[28px] object-contain opacity-70 transition-opacity group-hover:opacity-100"
-                src="/icons/rotate.png"
+                src="/icons/rotate.webp"
               />
             </ActionButton>
 
@@ -612,8 +670,25 @@ export const ViewerOverlay = ({
               <img
                 alt="Top View"
                 className="h-[28px] w-[28px] object-contain opacity-70 transition-opacity group-hover:opacity-100"
-                src="/icons/topview.png"
+                src="/icons/topview.webp"
               />
+            </ActionButton>
+
+            <div className="mx-1 h-5 w-px bg-border/40" />
+
+            {/* First-person walkthrough */}
+            <ActionButton
+              className="hover:bg-white/5 hover:text-emerald-400"
+              label="Walkthrough"
+              onClick={() => {
+                flushSync(() => useEditor.getState().setFirstPersonMode(true))
+                requestWalkthroughPointerLock()
+              }}
+              size="icon"
+              tooltipSide="top"
+              variant="ghost"
+            >
+              <Footprints className="h-6 w-6" />
             </ActionButton>
           </div>
         </TooltipProvider>

@@ -215,6 +215,8 @@ export default function WindowPanel() {
       rotation: [...node.rotation] as [number, number, number],
       side: node.side,
       wallId: node.wallId,
+      roofSegmentId: node.roofSegmentId,
+      roofFace: node.roofFace,
       parentId: node.parentId,
       width: node.width,
       height: node.height,
@@ -381,7 +383,7 @@ export default function WindowPanel() {
 
   return (
     <PanelWrapper
-      icon="/icons/window.png"
+      icon="/icons/window.webp"
       onClose={handleClose}
       title={node.name || 'Window'}
       width={320}

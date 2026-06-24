@@ -15,6 +15,10 @@ interface OriginalState {
   rotation: [number, number, number]
   side: ItemNode['side']
   parentId: string | null
+  // Roof-segment wall hosting — cleared/changed by surface transitions
+  // mid-move, so reverts must restore it alongside parentId.
+  roofSegmentId: ItemNode['roofSegmentId']
+  roofFace: ItemNode['roofFace']
   metadata: ItemNode['metadata']
 }
 
@@ -23,12 +27,14 @@ export interface DraftNodeHandle {
   readonly current: ItemNode | null
   /** Whether the current draft was adopted (move mode) vs created (create mode) */
   readonly isAdopted: boolean
-  /** Create a new draft item at the given position. Returns the created node or null. */
+  /** Create a new draft item at the given position. Returns the created node or null.
+   *  `slots` seeds painted slot overrides so duplicates keep their materials. */
   create: (
     gridPosition: Vector3,
     asset: AssetInput,
     rotation?: [number, number, number],
     scale?: [number, number, number],
+    slots?: ItemNode['slots'],
   ) => ItemNode | null
   /** Take ownership of an existing scene node as the draft (for move mode). */
   adopt: (node: ItemNode) => void
@@ -57,6 +63,7 @@ export function useDraftNode(): DraftNodeHandle {
       asset: AssetInput,
       rotation?: [number, number, number],
       scale?: [number, number, number],
+      slots?: ItemNode['slots'],
     ): ItemNode | null => {
       const currentLevelId = useViewer.getState().selection.levelId
       if (!currentLevelId) return null
@@ -69,6 +76,7 @@ export function useDraftNode(): DraftNodeHandle {
         asset,
         parentId: currentLevelId,
         metadata: { isTransient: true },
+        ...(slots ? { slots } : {}),
       })
 
       useScene.getState().createNode(node, currentLevelId)
@@ -92,6 +100,8 @@ export function useDraftNode(): DraftNodeHandle {
       rotation: [...node.rotation] as [number, number, number],
       side: node.side,
       parentId: node.parentId,
+      roofSegmentId: node.roofSegmentId,
+      roofFace: node.roofFace,
       metadata: node.metadata,
     }
 
@@ -121,6 +131,8 @@ export function useDraftNode(): DraftNodeHandle {
         rotation: original.rotation,
         side: original.side,
         parentId: original.parentId,
+        roofSegmentId: original.roofSegmentId,
+        roofFace: original.roofFace,
         metadata: original.metadata,
       })
 
@@ -133,6 +145,15 @@ export function useDraftNode(): DraftNodeHandle {
         side: updateProps.side ?? draft.side,
         metadata: updateProps.metadata ?? stripTransient(draft.metadata),
         parentId: parentId as string,
+        // Forward the roof host explicitly: strategies set it on every
+        // commit (segment id on a roof face, undefined elsewhere), and
+        // dropping it here strands the item in the roof frame without
+        // the segment transform.
+        roofSegmentId: updateProps.roofSegmentId,
+        roofFace: updateProps.roofFace,
+        // Only when the strategy decided about wallId (roof commits clear
+        // it) — floor/ceiling commits never managed the field.
+        ...('wallId' in updateProps ? { wallId: updateProps.wallId } : {}),
       })
 
       useScene.temporal.getState().pause()
@@ -163,6 +184,13 @@ export function useDraftNode(): DraftNodeHandle {
       rotation: updateProps.rotation ?? draft.rotation,
       scale: updateProps.scale ?? draft.scale,
       side: updateProps.side ?? draft.side,
+      // Carry painted slot overrides so a duplicated item keeps its materials.
+      ...(draft.slots ? { slots: draft.slots } : {}),
+      // Roof host — see the move-mode commit above for why this must be
+      // forwarded explicitly.
+      roofSegmentId: updateProps.roofSegmentId,
+      roofFace: updateProps.roofFace,
+      ...('wallId' in updateProps ? { wallId: updateProps.wallId } : {}),
       metadata: updateProps.metadata ?? stripTransient(draft.metadata),
     })
     useScene.getState().createNode(finalNode, parentId)
@@ -207,6 +235,8 @@ export function useDraftNode(): DraftNodeHandle {
         rotation: original.rotation,
         side: original.side,
         parentId: original.parentId,
+        roofSegmentId: original.roofSegmentId,
+        roofFace: original.roofFace,
         metadata: original.metadata,
       })
 

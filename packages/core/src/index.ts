@@ -61,6 +61,7 @@ export {
   isOperationDoorType,
   SECTIONAL_GARAGE_RENDER_OPEN_SCALE,
 } from './lib/door-operation'
+export { getDefaultLevelName, getLevelDisplayName } from './lib/level-name'
 export {
   type Point2D as PolygonPoint2D,
   pointInPolygon as pointInPolygon2D,
@@ -71,6 +72,12 @@ export {
   segmentsIntersect,
 } from './lib/polygon-relations'
 export { getRenderableSlabPolygon } from './lib/slab-polygon'
+export {
+  deriveSlotId,
+  isSlotMaterialName,
+  SLOT_MATERIAL_PREFIX,
+  slotLabelFromId,
+} from './lib/slots'
 export {
   type AutoCeilingPlanningContext,
   type AutoCeilingSyncPlan,
@@ -87,16 +94,32 @@ export {
   wallTouchesOthers,
 } from './lib/space-detection'
 export {
+  closestOnSegment,
+  collectLevelWallSegments,
+  nearestWallSegment,
+  WALL_SNAP_DISTANCE_M,
+  type WallSegment,
+  type WallSegmentClosest,
+} from './lib/wall-distance'
+export {
   getCatalogMaterialById,
   getLibraryMaterialIdFromRef,
   getMaterialPresetByRef,
   getMaterialsForCategory,
+  getSceneMaterialIdFromRef,
   LIBRARY_MATERIAL_REF_PREFIX,
   MATERIAL_CATALOG,
   MATERIAL_CATEGORIES,
+  MATERIAL_SURFACES,
   type MaterialCatalogItem,
   type MaterialCategory,
+  type MaterialRef,
+  type MaterialSurface,
+  type ParsedMaterialRef,
+  parseMaterialRef,
+  SCENE_MATERIAL_REF_PREFIX,
   toLibraryMaterialRef,
+  toSceneMaterialRef,
 } from './material-library'
 export type {
   FloorPlacedFootprint,

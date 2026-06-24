@@ -1,7 +1,8 @@
 import type { ComponentType } from 'react'
-import type { BufferGeometry, Object3D } from 'three'
+import type { BufferGeometry, Object3D, Ray } from 'three'
 import type { ZodObject, z } from 'zod'
 import type { MaterialSchema } from '../schema/material'
+import type { SceneMaterial, SceneMaterialId } from '../schema/scene-material'
 import type { AnyNode, AnyNodeId } from '../schema/types'
 import type { HandleList } from './handles'
 import type { CloneNodesIntoOptions, Subtree } from './subtree'
@@ -43,6 +44,15 @@ export type GeometryContext = {
    * has cheap access to siblings through `ctx.siblings`).
    */
   levelData?: unknown
+  /**
+   * The scene's shared material library (`useScene.materials`), passed so a
+   * pure geometry builder can resolve `scene:<id>` slot refs without importing
+   * `useScene`. Populated by `<GeometrySystem>` for every `def.geometry` call;
+   * undefined for `def.floorplan`. `library:<id>` refs resolve against the
+   * static catalog and need no store, so builders only consult this for
+   * `scene:` refs.
+   */
+  materials?: Record<SceneMaterialId, SceneMaterial>
   /**
    * Optional view state — only populated for `def.floorplan` builders. The
    * 2D floor-plan layer surfaces selection / hover here so kinds can vary
@@ -166,6 +176,40 @@ export type FloorplanStyle = {
    * advertise itself as a drag target.
    */
   cursor?: string
+}
+
+// ─── NodePort ────────────────────────────────────────────────────────
+//
+// A typed connection point exposed by a node — the open end of a duct
+// run, the collar of a fitting, the supply plenum of an air handler.
+// Ports are what placement tools snap to and what a future system graph
+// walks to decide connectivity.
+//
+// Coordinates are LEVEL-LOCAL meters — the same space duct paths and
+// grid events use. Kinds whose schema stores a node transform
+// (`position` / `rotation`) apply it themselves inside `def.ports` so
+// consumers never need to know how a kind stores its placement.
+
+export type NodePort = {
+  /** Stable identifier within the node, e.g. 'start', 'end', 'branch'. */
+  id: string
+  /** Level-local meters. */
+  position: readonly [number, number, number]
+  /** Unit vector pointing OUT of the port (away from the node body). */
+  direction: readonly [number, number, number]
+  /** Nominal connection diameter in inches. For a rect / oval port this is
+   *  the area-equivalent round size, so a round run still mates sensibly. */
+  diameter: number
+  /** Which distribution loop the port belongs to, e.g. 'supply' | 'return'. */
+  system?: string
+  /** Cross-section of the connection. Omitted = round at `diameter`. A duct
+   *  run joining a rect / oval port adopts this shape and rolls its
+   *  cross-section to line up with the collar. */
+  shape?: 'round' | 'rect' | 'oval'
+  /** Rect / oval cross-section in inches: width is the collar's horizontal
+   *  face at roll 0, height the vertical one. */
+  width?: number
+  height?: number
 }
 
 // ─── ToolHint ────────────────────────────────────────────────────────
@@ -441,6 +485,20 @@ export type FloorplanGeometry =
       angle: number
     }
   /**
+   * Equal-spacing badge — a small accent pill marking one gap in a run of
+   * (near-)equally-spaced openings (the 2D counterpart of Figma's "=" distance
+   * chips). Emitted once per equal gap so the repeated value reads as a rhythm.
+   * `text` is the shared gap distance; `angle` orients the pill along the wall
+   * (the renderer auto-flips it upright).
+   */
+  | {
+      kind: 'equal-spacing-badge'
+      point: FloorplanPoint
+      text: string
+      /** Rotation in radians. */
+      angle: number
+    }
+  /**
    * Architect's dimension overlay — extension lines from the edge
    * endpoints out past the dimension line, two dimension line halves
    * with the label sitting in the gap, end ticks perpendicular to the
@@ -616,6 +674,14 @@ export type FloorplanMoveTargetSession = {
    * returns.
    */
   commit?(): void
+  /**
+   * Optional R-key flip toggle. Kinds with a directional facing
+   * (door / window: front ↔ back) implement this so the overlay can flip
+   * the orientation mid-placement before commit. Toggling just records the
+   * intent; the visible change lands when the overlay re-runs `apply()` with
+   * the last pointer position. Kinds with no facing leave it unset.
+   */
+  flipSide?(): void
 }
 
 export type FloorplanMoveTarget<N> = (args: {
@@ -644,12 +710,40 @@ export type SurfaceRole =
   | 'glazing'
   | 'furnishing'
 
+/** Role a kind plays in a duct / pipe / lineset distribution system. */
+export type DistributionRole = 'run' | 'fitting' | 'terminal' | 'equipment'
+
 export type NodeDefinition<S extends ZodObject<any>> = {
   kind: string
   schemaVersion: number
   schema: S
   category: NodeCategory
   surfaceRole?: SurfaceRole
+  /**
+   * Role this kind plays in a distribution system (HVAC duct / DWV pipe /
+   * refrigerant lineset). Lets the system-graph summary classify a
+   * component without branching on `node.type`:
+   *   - `'run'` — a duct / pipe / lineset segment (carries `path`).
+   *   - `'fitting'` — an inline fitting (elbow / tee / reducer / trap).
+   *   - `'terminal'` — a grille / register / diffuser endpoint.
+   *   - `'equipment'` — a furnace / air handler / condenser source.
+   * Kinds outside any distribution system leave this unset.
+   */
+  distributionRole?: DistributionRole
+  /**
+   * When `distributionRole` is `'fitting'`, controls whether this fitting
+   * is dragged as a rigid follower when a connected run endpoint moves.
+   *
+   * - `true` (default for `distributionRole === 'fitting'`): the fitting
+   *   translates rigidly so its mated collar stays on the moved port — the
+   *   right behaviour for in-line fittings (elbows, tees, wyes, crosses).
+   * - `false`: the fitting is anchored in space; moving a connected run
+   *   endpoint stretches the run arm, not the fitting. Use this for
+   *   fixed-position fixtures like `pipe-trap`.
+   *
+   * Has no effect when `distributionRole` is not `'fitting'`.
+   */
+  portConnectivityFollow?: boolean
 
   defaults: () => Omit<z.infer<S>, 'id' | 'type'>
   migrate?: Record<number, (old: unknown) => unknown>
@@ -657,6 +751,18 @@ export type NodeDefinition<S extends ZodObject<any>> = {
   capabilities: Capabilities
   relations?: Relations
   parametrics?: ParametricDescriptor<z.infer<S>>
+
+  /**
+   * Whether scene mutations add this kind to `dirtyNodes` (the per-frame
+   * rebuild queue). Default true. Set `false` for structural/organizational
+   * kinds (site, building, level, zone, guide) that no dirty consumer ever
+   * rebuilds — no `def.geometry`, no legacy viewer system, no
+   * `capabilities.floorPlaced`. Their marks are never cleared, so they
+   * accumulate for the whole session, defeat every consumer's empty-set
+   * early exit each frame, and pollute the perf overlay's DIRTY readout.
+   * If a kind later gains a dirty consumer, delete the flag.
+   */
+  dirtyTracking?: boolean
 
   /**
    * Renderer for this kind. Optional under the three-checkbox composition
@@ -795,6 +901,15 @@ export type NodeDefinition<S extends ZodObject<any>> = {
     nodes: Record<AnyNodeId, AnyNode>
     liveOverrides: Map<string, Record<string, unknown>>
   }) => Record<AnyNodeId, AnyNode>
+  /**
+   * Typed connection points this kind exposes (duct/pipe open ends,
+   * fitting collars, equipment plenums). Pure function of the node —
+   * returns LEVEL-LOCAL positions/directions (the kind applies its own
+   * transform). Consumed by placement tools for port-snapping and, in a
+   * later slice, by the system graph for connectivity. Kinds with no
+   * connectable geometry omit this.
+   */
+  ports?: (node: z.infer<S>) => NodePort[]
   system?: SystemContribution
   tool?: LazyComponent
   /**
@@ -881,6 +996,14 @@ export type KeyboardActions = {
   r?: KeyboardAction
   /** T / Shift+T secondary action. */
   t?: KeyboardAction
+  /**
+   * Set for kinds whose R/T rotation turns around a user-cyclable world
+   * axis (Alt cycles Y → X → Z) — duct / pipe fittings with full 3D
+   * orientation. The floating action menu reads this to surface the
+   * active-axis pill above the selected node; kinds with plain Y-only
+   * rotation omit it.
+   */
+  axisCycling?: boolean
 }
 
 export type KeyboardAction = {
@@ -1025,6 +1148,16 @@ export type Capabilities = {
   ceilingCut?: CeilingCutCapability
   paint?: PaintCapability
   /**
+   * Declares the kind's paintable slots — the `{ slotId, label, default }`
+   * contract shared by items (scanned from the GLB) and procedural kinds
+   * (declared here). Procedural generators tag their emitted geometry with
+   * `userData.slotId` and resolve each slot's material from
+   * `node.slots[slotId]` → this declaration's `default` → role colour. The
+   * declaration is a function of the node because a kind's slot set can depend
+   * on its parameters (a shelf has a `back` slot only when it has a back).
+   */
+  slots?: (node: AnyNode) => SlotDeclaration[]
+  /**
    * Kind is placed by clicking on a wall (door, window). When set, the
    * floor-plan layer lets wall background clicks pass through during
    * placement / move-on-wall — the placement tool's `wall:click` event
@@ -1115,6 +1248,19 @@ export type Capabilities = {
  * the `selectedMaterialTarget` round-trip, the paint-mode toolbar.
  * Kinds with no paint behaviour omit `paint`.
  */
+/**
+ * One paintable slot a kind exposes. `slotId` is the stable key written into
+ * `node.slots`; `label` is the human name (sentence case). `default` is the
+ * slot's fallback appearance when no override is set — either a `MaterialRef`
+ * (`library:<id>` / `scene:<id>`) or a `#rrggbb` colour. Mirrors the shape
+ * items derive from their GLB material names.
+ */
+export type SlotDeclaration = {
+  slotId: string
+  label: string
+  default?: string
+}
+
 export type PaintCapability = {
   /**
    * Resolve which logical surface the user clicked. Returns `null`
@@ -1127,6 +1273,14 @@ export type PaintCapability = {
    * `role`. Returned partial is merged into the node by the editor.
    */
   buildPatch: (args: PaintPatchArgs) => Partial<AnyNode>
+  /**
+   * Optional: fully own the click-commit instead of the default
+   * `updateNode(node.id, buildPatch(...))`. Kinds whose commit has a side
+   * effect (items create a scene material for one-off colours, then store a
+   * `scene:<id>` ref) implement this; kinds that just patch the node omit it.
+   * Must perform its mutations as a single undo step.
+   */
+  commit?: (args: PaintPatchArgs) => void
   /**
    * Apply a preview to the kind's registered mesh subtree at
    * `role`. The kind builds whatever preview material(s) it needs
@@ -1170,6 +1324,16 @@ export type PaintResolveArgs = {
   localPosition?: readonly [number, number, number]
   /** Optional: name of the three.js object that received the hit. Stair uses this. */
   hitObjectName?: string
+  /** Optional: the three.js object that received the pointer hit. Items read userData.slotId off it. */
+  hitObject?: Object3D
+  /**
+   * Optional: the pointer's world ray, so a kind can re-raycast its OWN subtree
+   * to pick the precise sub-mesh under the cursor — independent of what the
+   * shared scene raycast hit first. Door/window use this: their opening proxy
+   * (a proud invisible cutout) wins the scene raycast over the wall in front of
+   * the recessed door body, then they re-raycast their parts to find the slot.
+   */
+  ray?: Ray
 }
 
 export type PaintPatchArgs = {
@@ -1218,6 +1382,23 @@ export type PaintEffectiveMaterialArgs = {
  */
 export type RoofAccessoryConfig = {
   buildCut?: (node: AnyNode, hostSegment: AnyNode) => BufferGeometry | null
+  /**
+   * Which segment brushes `buildCut` subtracts from. Wall-face openings
+   * (door / window) cut only the wall brush — subtracting the same box
+   * from the shin / deck slabs is pointless work and creates tangential
+   * / coplanar CSG cases near the gable and shed slopes. Defaults to
+   * all three (skylight / dormer genuinely poke through the deck).
+   */
+  cutScope?: 'all' | 'wall'
+  /**
+   * The kind's own dirty-driven geometry system consumes its dirty
+   * marks (door / window via DoorSystem / WindowSystem, which already
+   * cascade to the host segment through `parentId`). The roof-merge
+   * loop must then leave those marks alone — consuming them would
+   * starve that system whenever it defers a rebuild (mesh not mounted
+   * yet, per-frame rebuild budget exhausted).
+   */
+  dirtyHandledByOwnSystem?: boolean
 }
 
 /**
@@ -1241,6 +1422,31 @@ export type CapabilityCtx = { node: AnyNode }
 export type MovableConfig = {
   axes: ReadonlyArray<'x' | 'y' | 'z'>
   gridSnap?: boolean
+  /**
+   * Pin the dragged node to the cursor (absolute placement) instead of the
+   * default offset-preserving drag, where the node moves by the cursor's
+   * delta from where the drag started. Offset preservation suits large
+   * furniture you grab by an edge; small connector-like kinds (duct
+   * fittings) read as "lagging behind the mouse" — they want the cursor.
+   */
+  cursorAttached?: boolean
+  /**
+   * Magnetically snap one of this kind's own ports onto a nearby scene
+   * port while dragging — e.g. a register's collar onto a duct run end.
+   * The dragged node shifts in XZ so its closest matching port lands on
+   * the target port. Alt bypasses the snap. Kinds without `def.ports`
+   * can't use this. Snap takes precedence over grid / alignment snap.
+   */
+  portSnap?: {
+    /**
+     * Distribution loops a target port must belong to (e.g.
+     * `['supply', 'return']`). A target port with no `system` always
+     * matches. Omit to match every port.
+     */
+    systems?: readonly string[]
+    /** Snap radius in meters (XZ). Defaults to 0.5. */
+    radius?: number
+  }
   override?: (ctx: CapabilityCtx) => MovableConfig | null
 }
 
@@ -1373,7 +1579,41 @@ export type Relations = {
 export type ParametricDescriptor<N> = {
   groups: ParamGroup<N>[]
   invariants?: ReadonlyArray<(n: N) => Issue[]>
-  derive?: (n: N) => Partial<N>
+  /**
+   * Co-update hook for fields that must stay consistent when edited
+   * from the inspector. Called with the node AFTER `patch` is merged
+   * plus the patch itself (so the hook can tell which field the user
+   * touched); whatever it returns is folded into the same update.
+   * Direct store/MCP writes bypass it — keep real invariants in
+   * `invariants`.
+   */
+  derive?: (next: N, patch: Partial<N>) => Partial<N>
+  /**
+   * Cross-node companion to `derive`: after an inspector edit lands on
+   * this node, return patches for OTHER nodes that must follow to keep
+   * the scene consistent — e.g. duct runs re-trimmed onto a resized
+   * fitting's collars. `prev` is the node before the edit, `next` after
+   * (with `derive` already folded in). Applied in the same gesture via
+   * `updateNodes`.
+   */
+  reconcile?: (prev: N, next: N) => Array<{ id: AnyNodeId; data: Partial<AnyNode> }>
+  /**
+   * Deletion companion to `reconcile`: when a node of this kind is about
+   * to be removed, return patches for OTHER nodes that must follow to
+   * undo whatever the node imposed on its neighbours — e.g. an
+   * auto-inserted elbow re-extends the duct runs it trimmed back onto the
+   * corner it replaced. Called with the node and the live scene `nodes`
+   * map BEFORE the deletion lands; patches targeting nodes also being
+   * deleted are ignored. Applied in the same `set` as the delete so it's
+   * one undo step. Fires only on `deleteNodes` (user-intent deletes) —
+   * NOT on `applyNodeChanges`, whose deletes are internal re-routes that
+   * rewrite neighbours explicitly in the same batch and would fight a
+   * restore.
+   */
+  onDelete?: (
+    node: N,
+    nodes: Record<AnyNodeId, AnyNode>,
+  ) => Array<{ id: AnyNodeId; data: Partial<AnyNode> }>
   customPanel?: () => Promise<{ default: ComponentType<{ node: N }> }>
   /**
    * Extra buttons rendered in the inspector's Actions section

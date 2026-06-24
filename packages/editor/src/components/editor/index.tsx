@@ -7,7 +7,13 @@ import {
   spatialGridManager,
   useScene,
 } from '@aedifex/core'
-import { type HoverStyles, InteractiveSystem, useViewer, Viewer } from '@aedifex/viewer'
+import {
+  type HoverStyles,
+  InteractiveSystem,
+  SceneEnvironment,
+  useViewer,
+  Viewer,
+} from '@aedifex/viewer'
 import { memo, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { ViewerOverlay } from '../../components/viewer-overlay'
 import { ViewerZoneSystem } from '../../components/viewer-zone-system'
@@ -26,6 +32,7 @@ import { CompassOverlay } from './compass-overlay'
 import { CeilingSelectionAffordanceSystem } from '../systems/ceiling/ceiling-selection-affordance-system'
 import { CeilingSystem } from '../systems/ceiling/ceiling-system'
 import { RoofEditSystem } from '../systems/roof/roof-edit-system'
+import { SelectionAffordanceManager } from '../systems/selection-affordance-manager'
 import { StairEditSystem } from '../systems/stair/stair-edit-system'
 import { ZoneLabelEditorSystem } from '../systems/zone/zone-label-editor-system'
 import { ZoneSystem } from '../systems/zone/zone-system'
@@ -57,6 +64,7 @@ import { Grid } from './grid'
 import { GroupMoveHandle } from './group-move-handle'
 import { GroupRotateHandle } from './group-rotate-handle'
 import { NodeArrowHandles } from './node-arrow-handles'
+import { RiserDiagramPanel } from './riser-diagram-panel'
 import { SelectionManager } from './selection-manager'
 import { SiteEdgeLabels } from './site-edge-labels'
 import { SlabHoleHighlights } from './slab-hole-highlights'
@@ -74,6 +82,7 @@ const PAINT_CURSOR_BADGE_COLOR = '#818cf8'
 const PAINT_CURSOR_BADGE_DISABLED_COLOR = '#94a3b8'
 const PAINT_CURSOR_BADGE_OFFSET_X = 14
 const PAINT_CURSOR_BADGE_OFFSET_Y = 14
+const SCENE_READY_FALLBACK_MS = 8000
 const EDITOR_HOVER_STYLES: HoverStyles = {
   default: { visibleColor: 0x00_aa_ff, hiddenColor: 0xf3_ff_47, strength: 5, pulse: true },
   delete: { visibleColor: 0xef_44_44, hiddenColor: 0x99_1b_1b, strength: 6, pulse: false },
@@ -568,7 +577,7 @@ function PaintCursorBadge({
           alt=""
           aria-hidden="true"
           className="h-5 w-5 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
-          src="/icons/paint.png"
+          src="/icons/paint.webp"
         />
       </div>
     </div>
@@ -600,10 +609,15 @@ const ViewerSceneContent = memo(function ViewerSceneContent({
 }) {
   // Studio mode is a clean render/snapshot surface — no selection or editing
   // affordances. It mirrors version-preview's chrome gating on the canvas.
-  const noEditing = isVersionPreviewMode || isFirstPersonMode || isStudioMode
+  // Capture (snapshot) mode is camera-only for the same reason: suppress
+  // selection, editing handles, and the tool manager (which mounts the site
+  // boundary flags) so the framed shot stays clean.
+  const isCaptureMode = useEditor((s) => s.isCaptureMode)
+  const noEditing = isVersionPreviewMode || isFirstPersonMode || isStudioMode || isCaptureMode
   return (
     <>
-      {!(isFirstPersonMode || isStudioMode) && <SelectionManager />}
+      <SceneEnvironment />
+      {!(isFirstPersonMode || isStudioMode || isCaptureMode) && <SelectionManager />}
       {!noEditing && <BoxSelectTool />}
       {!noEditing && <NodeArrowHandles />}
       {!noEditing && <GroupRotateHandle />}
@@ -618,6 +632,7 @@ const ViewerSceneContent = memo(function ViewerSceneContent({
       {isFirstPersonMode ? <ViewerZoneSystem /> : <ZoneSystem />}
       <CeilingSystem />
       <CeilingSelectionAffordanceSystem />
+      {!noEditing && <SelectionAffordanceManager />}
       <RoofEditSystem />
       <StairEditSystem />
       {!(isLoading || isFirstPersonMode) && <SnapAwareGrid />}
@@ -819,6 +834,13 @@ const ViewerCanvas = memo(function ViewerCanvas({
   )
 
   const viewerAreaRef = useRef<HTMLDivElement>(null)
+  // State mirror of `viewerAreaRef` so the floorplan compass portal re-renders
+  // once the container exists (a plain ref mutation wouldn't trigger it).
+  const [viewerAreaEl, setViewerAreaEl] = useState<HTMLDivElement | null>(null)
+  const setViewerAreaNode = useCallback((el: HTMLDivElement | null) => {
+    viewerAreaRef.current = el
+    setViewerAreaEl(el)
+  }, [])
   const viewer3dRef = useRef<HTMLDivElement>(null)
   const isResizingFloorplan = useRef(false)
 
@@ -864,7 +886,9 @@ const ViewerCanvas = memo(function ViewerCanvas({
 
   return (
     <ErrorBoundary fallback={<EditorSceneCrashFallback />}>
-      <div className="flex h-full" ref={viewerAreaRef}>
+      {/* `relative` so the floorplan compass (portaled here to stay visible in
+          2d / 3d / split alike) can anchor to this container's bottom-left. */}
+      <div className="relative flex h-full" ref={setViewerAreaNode}>
         {/* 2D floorplan — always mounted once shown, hidden via CSS to preserve state */}
         <div
           className="relative h-full flex-shrink-0"
@@ -874,7 +898,7 @@ const ViewerCanvas = memo(function ViewerCanvas({
           }}
         >
           <div className="h-full w-full overflow-hidden">
-            <FloorplanPanel />
+            <FloorplanPanel compassHost={viewerAreaEl} />
           </div>
           {viewMode === 'split' && (
             <div
@@ -889,6 +913,7 @@ const ViewerCanvas = memo(function ViewerCanvas({
         {/* 3D viewer — always mounted, hidden via CSS to avoid destroying the WebGL context */}
         <div
           className="relative min-w-0 flex-1 overflow-hidden"
+          data-pascal-viewer-3d
           ref={viewer3dRef}
           style={{ display: show3d ? undefined : 'none' }}
         >
@@ -1063,6 +1088,19 @@ export default function Editor({
     setIsViewerSceneReady(ready)
   }, [])
 
+  useEffect(() => {
+    if (isLoading || isSceneLoading || !hasLoadedInitialScene || isViewerSceneReady) return
+
+    const timer = window.setTimeout(() => {
+      console.warn('[editor] viewer scene readiness timed out; showing editor shell anyway', {
+        sceneReadyKey,
+      })
+      setIsViewerSceneReady(true)
+    }, SCENE_READY_FALLBACK_MS)
+
+    return () => window.clearTimeout(timer)
+  }, [hasLoadedInitialScene, isLoading, isSceneLoading, isViewerSceneReady, sceneReadyKey])
+
   const showLoader = isLoading || isSceneLoading || !hasLoadedInitialScene || !isViewerSceneReady
 
   const firstPersonPreviousLevelRef = useRef(useViewer.getState().selection.levelId)
@@ -1113,6 +1151,7 @@ export default function Editor({
       <CeilingSystem />
       <RoofEditSystem />
       <StairEditSystem />
+      {isFirstPersonMode && <FirstPersonControls />}
       <CustomCameraControls />
       <ThumbnailGenerator onThumbnailCapture={onThumbnailCapture} />
       <InteractiveSystem />
@@ -1171,8 +1210,14 @@ export default function Editor({
 
         {!isLoading && isPreviewMode ? (
           <div className="dark flex h-full w-full flex-col bg-neutral-100 text-foreground">
-            <ViewerOverlay onBack={() => useEditor.getState().setPreviewMode(false)} />
-            <div className="h-full w-full">{previewViewerContent}</div>
+            {isFirstPersonMode ? (
+              <FirstPersonOverlay onExit={() => useEditor.getState().setFirstPersonMode(false)} />
+            ) : (
+              <ViewerOverlay onBack={() => useEditor.getState().setPreviewMode(false)} />
+            )}
+            <div className="h-full w-full" data-pascal-viewer-3d>
+              {previewViewerContent}
+            </div>
           </div>
         ) : (
           <>
@@ -1236,8 +1281,14 @@ export default function Editor({
 
       {!isLoading && isPreviewMode ? (
         <>
-          <ViewerOverlay onBack={() => useEditor.getState().setPreviewMode(false)} />
-          <div className="h-full w-full">{previewViewerContent}</div>
+          {isFirstPersonMode ? (
+            <FirstPersonOverlay onExit={() => useEditor.getState().setFirstPersonMode(false)} />
+          ) : (
+            <ViewerOverlay onBack={() => useEditor.getState().setPreviewMode(false)} />
+          )}
+          <div className="h-full w-full" data-pascal-viewer-3d>
+            {previewViewerContent}
+          </div>
         </>
       ) : (
         <>
@@ -1267,6 +1318,7 @@ export default function Editor({
             <div className="pointer-events-auto">
               <HelperManager />
             </div>
+            <RiserDiagramPanel />
             {isFirstPersonMode && (
               <FirstPersonOverlay onExit={() => useEditor.getState().setFirstPersonMode(false)} />
             )}

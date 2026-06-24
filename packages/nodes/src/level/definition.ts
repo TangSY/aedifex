@@ -36,6 +36,8 @@ export const levelDefinition: NodeDefinition<typeof LevelNode> = {
   },
 
   parametrics: levelParametrics,
+  // No dirty consumer rebuilds this kind — see NodeDefinition.dirtyTracking.
+  dirtyTracking: false,
 
   renderer: {
     kind: 'parametric',
@@ -49,7 +51,7 @@ export const levelDefinition: NodeDefinition<typeof LevelNode> = {
   presentation: {
     label: 'Level',
     description: 'A single floor of a building, holding walls / slabs / ceilings / items.',
-    icon: { kind: 'url', src: '/icons/level.png' },
+    icon: { kind: 'url', src: '/icons/level.webp' },
     paletteSection: 'site',
     paletteOrder: 7,
   },

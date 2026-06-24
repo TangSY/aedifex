@@ -41,11 +41,23 @@ export const DoorNode = BaseNode.extend({
   id: objectId('door'),
   type: nodeType('door'),
   material: MaterialSchema.optional(),
+  // Per-slot material overrides on the unified slot model. Keys: `panel` (the
+  // door body), `glass`. Value = a `MaterialRef` (`library:<id>` / `scene:<id>`).
+  // Absent = the body/glass default. Mirrors `ShelfNode.slots`.
+  slots: z.record(z.string(), z.string()).optional(),
 
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   side: z.enum(['front', 'back']).optional(),
   wallId: z.string().optional(),
+  // Alternative host: a roof-segment's generated wall face (base wall
+  // under the roof or a coplanar gable end). When set, `position` is
+  // FACE-LOCAL — [u along the face, v height, z from the wall mid-plane]
+  // — exactly the wall-child convention; the renderer mounts the node
+  // inside the face frame (`getRoofWallFaceFrame`), which is what makes
+  // hosted children track segment resizes live.
+  roofSegmentId: z.string().optional(),
+  roofFace: z.enum(['front', 'back', 'right', 'left']).optional(),
 
   // Overall dimensions
   width: z.number().default(0.9),

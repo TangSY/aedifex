@@ -30,7 +30,7 @@ const SIDEBAR_TABS = [
         alt=""
         className="h-8 w-8 object-contain"
         height={32}
-        src="/icons/scene.png"
+        src="/icons/scene.webp"
         width={32}
       />
     ),
@@ -46,7 +46,7 @@ const SIDEBAR_TABS = [
         alt=""
         className="h-8 w-8 object-contain"
         height={32}
-        src="/icons/build.png"
+        src="/icons/build.webp"
         width={32}
       />
     ),
@@ -76,7 +76,7 @@ const SIDEBAR_TABS = [
         alt=""
         className="h-8 w-8 object-contain"
         height={32}
-        src="/icons/couch.png"
+        src="/icons/couch.webp"
         width={32}
       />
     ),
@@ -92,7 +92,7 @@ const SIDEBAR_TABS = [
         alt=""
         className="h-8 w-8 object-contain"
         height={32}
-        src="/icons/settings.png"
+        src="/icons/settings.webp"
         width={32}
       />
     ),

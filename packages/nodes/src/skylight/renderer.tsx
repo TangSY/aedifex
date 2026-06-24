@@ -628,8 +628,7 @@ const SkylightRenderer = ({ node: storeNode }: { node: SkylightNode }) => {
 
   const glassMaterial = useMemo(() => {
     // Untextured glass (and textures-off mode) takes the themed 'glazing'
-    // role material — already DoubleSide + semi-transparent, and shared
-    // from the cache, so it must not be mutated.
+    // role material from the shared cache, so it must not be mutated.
     if (!textures || (!node.glassMaterial && !node.glassMaterialPreset)) {
       return createSurfaceRoleMaterial('glazing', colorPreset, undefined, sceneTheme)
     }
@@ -638,7 +637,6 @@ const SkylightRenderer = ({ node: storeNode }: { node: SkylightNode }) => {
       : (createMaterialFromPresetRef(node.glassMaterialPreset, shading) ??
         defaultGlassMaterial.clone())
     if (mat && typeof mat === 'object') {
-      ;(mat as THREE.Material).side = THREE.DoubleSide
       if (mat instanceof THREE.MeshPhysicalMaterial) {
         mat.thickness = glassThickness
       }
@@ -654,6 +652,7 @@ const SkylightRenderer = ({ node: storeNode }: { node: SkylightNode }) => {
     node.glassMaterialPreset,
   ])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deps deliberately list the build inputs; depending on the whole object would rebuild on unrelated field changes.
   const surfaceFrame = useMemo(() => {
     if (!segment) return { point: new THREE.Vector3(), normal: new THREE.Vector3(0, 1, 0) }
     return getRoofOuterSurfaceFrameAtPoint(segment, node.position[0] ?? 0, node.position[2] ?? 0)

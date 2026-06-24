@@ -3,7 +3,9 @@
 import { type AnyNodeId, DormerNode, useScene } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { useMemo } from 'react'
+import { RoofAttachmentFallbackPreview } from '../shared/roof-attachment-fallback-preview'
 import { dormerDefinition } from './definition'
+import { DormerPlacementGuides } from './placement-guides'
 import DormerPreview from './preview'
 import { useDormerPlacement } from './use-dormer-placement'
 
@@ -47,36 +49,53 @@ const DormerTool = () => {
     [],
   )
 
-  const { activeBuildingId, segmentXform, hitLocal, ghostRotation } = useDormerPlacement({
-    onCommit: (hit, rotation) => {
-      const state = useScene.getState()
-      const dormer = DormerNode.parse({
-        ...dormerDefinition.defaults(),
-        name: `Dormer ${nextDormerNumber(state.nodes)}`,
-        roofSegmentId: hit.segment.id,
-        parentId: hit.segment.id,
-        // Anchor at the slope height so the renderer matches the ghost.
-        // The CSG still carves cleanly because it inverts T(position)
-        // when bringing the host into dormer-local.
-        position: [hit.localX, hit.localY, hit.localZ],
-        rotation,
-      })
-      state.createNode(dormer, hit.segment.id as AnyNodeId)
-      state.dirtyNodes.add(hit.segment.id as AnyNodeId)
-      setSelection({ selectedIds: [dormer.id] })
-    },
-  })
-
-  if (!activeBuildingId || !segmentXform || !hitLocal) return null
+  const { activeBuildingId, clearPreview, segmentXform, hitSegment, hitLocal, ghostRotation } =
+    useDormerPlacement({
+      onCommit: (hit, rotation) => {
+        const state = useScene.getState()
+        const dormer = DormerNode.parse({
+          ...dormerDefinition.defaults(),
+          name: `Dormer ${nextDormerNumber(state.nodes)}`,
+          roofSegmentId: hit.segment.id,
+          parentId: hit.segment.id,
+          // Anchor at the slope height so the renderer matches the ghost.
+          // The CSG still carves cleanly because it inverts T(position)
+          // when bringing the host into dormer-local.
+          position: [hit.localX, hit.localY, hit.localZ],
+          rotation,
+        })
+        state.createNode(dormer, hit.segment.id as AnyNodeId)
+        state.dirtyNodes.add(hit.segment.id as AnyNodeId)
+        setSelection({ selectedIds: [dormer.id] })
+      },
+    })
 
   return (
-    <group position={segmentXform.position} quaternion={segmentXform.quaternion}>
-      <group position={hitLocal}>
-        <group rotation-y={ghostRotation}>
-          <DormerPreview node={previewNode} />
+    <>
+      <RoofAttachmentFallbackPreview
+        activeBuildingId={activeBuildingId}
+        ghost={<DormerPreview node={previewNode} invalid />}
+        onInvalidTarget={clearPreview}
+      />
+      {activeBuildingId && segmentXform && hitLocal && (
+        <group position={segmentXform.position} quaternion={segmentXform.quaternion}>
+          {hitSegment && (
+            <DormerPlacementGuides
+              center={hitLocal}
+              depth={previewNode.depth}
+              rotation={ghostRotation}
+              segment={hitSegment}
+              width={previewNode.width}
+            />
+          )}
+          <group position={hitLocal}>
+            <group rotation-y={ghostRotation}>
+              <DormerPreview node={previewNode} />
+            </group>
+          </group>
         </group>
-      </group>
-    </group>
+      )}
+    </>
   )
 }
 

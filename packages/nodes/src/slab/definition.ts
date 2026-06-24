@@ -12,8 +12,10 @@ import {
 } from './floorplan-affordances'
 import { slabFloorplanMoveTarget } from './floorplan-move'
 import { buildSlabGeometry } from './geometry'
+import { slabPaint } from './paint'
 import { slabParametrics } from './parametrics'
 import { SlabNode } from './schema'
+import { slabSlots } from './slots'
 
 const HEIGHT_HANDLE_OFFSET = 0.22
 const MIN_SLAB_ELEVATION = 0.02
@@ -155,6 +157,10 @@ export const slabDefinition: NodeDefinition<typeof SlabNode> = {
     },
     duplicable: true,
     deletable: true,
+    // Unified slot model: one paintable floor surface with a declared default,
+    // painted through the registry `capabilities.paint` dispatch like the shelf.
+    slots: () => slabSlots(),
+    paint: slabPaint,
   },
 
   relations: {
@@ -166,7 +172,7 @@ export const slabDefinition: NodeDefinition<typeof SlabNode> = {
   handles: slabHandles,
 
   // Stage D: kind-owned placement tool. Multi-click polygon drawing
-  // with axis/45° snap (Shift to defeat).
+  // with 15° angle snap (Shift to defeat).
   tool: () => import('./tool'),
 
   // Stage D — all four slab drag-affordances live in this folder.
@@ -201,13 +207,14 @@ export const slabDefinition: NodeDefinition<typeof SlabNode> = {
   toolHints: [
     { key: 'Left click', label: 'Trace slab outline' },
     { key: 'Enter', label: 'Finish slab' },
+    { key: 'Shift', label: 'Free outline' },
     { key: 'Esc', label: 'Cancel' },
   ],
 
   presentation: {
     label: 'Slab',
     description: 'A polygon-bounded floor surface that hosts items on top.',
-    icon: { kind: 'url', src: '/icons/floor.png' },
+    icon: { kind: 'url', src: '/icons/floor.webp' },
     paletteSection: 'structure',
     paletteOrder: 30,
   },

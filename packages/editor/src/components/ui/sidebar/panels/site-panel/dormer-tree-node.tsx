@@ -2,6 +2,7 @@ import { type AnyNodeId, type DormerNode, useScene } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import Image from 'next/image'
 import { memo, useCallback, useState } from 'react'
+import { SnapTargetIcon } from '../../../snap-target-badge'
 import useEditor from './../../../../../store/use-editor'
 import { InlineRenameInput } from './inline-rename-input'
 import { focusTreeNode, handleTreeSelection, TreeNodeWrapper } from './tree-node'
@@ -57,13 +58,15 @@ export const DormerTreeNode = memo(function DormerTreeNode({
       expanded={false}
       hasChildren={false}
       icon={
-        <Image
-          alt=""
-          className="object-contain opacity-60"
-          height={14}
-          src="/icons/roof.png"
-          width={14}
-        />
+        <SnapTargetIcon target="roof">
+          <Image
+            alt=""
+            className="object-contain opacity-60"
+            height={14}
+            src="/icons/roof.webp"
+            width={14}
+          />
+        </SnapTargetIcon>
       }
       isHovered={isHovered}
       isLast={isLast}

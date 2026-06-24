@@ -3,19 +3,28 @@ import type {
   DoorNode as DoorNodeType,
   HandleDescriptor,
   NodeDefinition,
+  RoofSegmentNode,
   WallNode,
 } from '@aedifex/core'
+import { publishOpeningResizeGuides } from '../shared/opening-guides-runtime'
+import { readRoofFaceHeightMax, readRoofFaceWidthMax } from '../shared/roof-opening-host'
+import { buildRoofWallOpeningCut } from '../shared/roof-wall-opening-cut'
 import { scaleHandleHeight } from './door-math'
 import { buildDoorFloorplan } from './floorplan'
 import { doorWidthAffordance } from './floorplan-affordances'
 import { doorFloorplanMoveTarget } from './floorplan-move'
+import { doorPaint } from './paint'
 import { doorParametrics } from './parametrics'
 import { DoorNode } from './schema'
+import { doorSlots } from './slots'
 
 const SIDE_HANDLE_OFFSET = 0.24
 const HEIGHT_HANDLE_OFFSET = 0.24
 const MIN_DOOR_HEIGHT = 0.5
 const MIN_DOOR_WIDTH = 0.3
+// How far the move cross floats off the wall face (+Z, the door's facing
+// normal) so it's grabbable instead of buried in the leaf/frame.
+const MOVE_HANDLE_LIFT = 0.12
 
 function readWallLength(door: DoorNodeType, scene: { get: (id: AnyNodeId) => unknown }): number {
   if (!door.wallId) return Number.POSITIVE_INFINITY
@@ -42,8 +51,15 @@ function doorWidthHandle(side: 'left' | 'right'): HandleDescriptor<DoorNodeType>
     // 'max' = +X edge anchored (left arrow grows the -X edge outward).
     anchor: side === 'right' ? 'min' : 'max',
     min: MIN_DOOR_WIDTH,
-    max: (n, scene) => readWallLength(n, scene),
+    max: (n, scene) => {
+      // Roof-hosted doors clamp against the face profile (the wall-based
+      // limits read Infinity when wallId is unset).
+      const roofMax = readRoofFaceWidthMax(n, scene, sign)
+      if (roofMax !== null) return Math.max(MIN_DOOR_WIDTH, roofMax)
+      return readWallLength(n, scene)
+    },
     currentValue: (n) => n.width,
+    onDrag: (node) => publishOpeningResizeGuides(node, false),
     apply: (initial, newWidth) => {
       // Anchored edge stays fixed in wall-local coords. Door rotation is
       // applied by the inner ride group (the renderer mounts a nested
@@ -80,10 +96,13 @@ function doorHeightHandle(): HandleDescriptor<DoorNodeType> {
     anchor: 'min', // bottom anchored at wall-local Y = position[1] - height/2
     min: MIN_DOOR_HEIGHT,
     max: (n, scene) => {
+      const roofMax = readRoofFaceHeightMax(n, scene, 1)
+      if (roofMax !== null) return Math.max(MIN_DOOR_HEIGHT, roofMax)
       const bottom = n.position[1] - n.height / 2
       return Math.max(MIN_DOOR_HEIGHT, readWallHeight(n, scene) - bottom)
     },
     currentValue: (n) => n.height,
+    onDrag: (node) => publishOpeningResizeGuides(node, false),
     apply: (initial, newHeight) => {
       const bottom = initial.position[1] - initial.height / 2
       // Scale the handle so it tracks the door instead of staying glued to a
@@ -101,7 +120,26 @@ function doorHeightHandle(): HandleDescriptor<DoorNodeType> {
   }
 }
 
+// Press-drag move grip at the door centre, standing in the wall face. Routes
+// through the same move tool as the floating Move button (3D
+// `affordanceTools.move`, 2D `floorplanMoveTarget`) — wall slide + re-host onto
+// another wall — but `engageMoveDrag` commits on release, with no second click.
+function doorMoveHandle(): HandleDescriptor<DoorNodeType> {
+  return {
+    kind: 'tap-action',
+    shape: 'move-cross',
+    plane: 'node-normal',
+    portal: 'grandparent',
+    cursor: 'move',
+    onActivate: (node, _scene, editor) => editor.engageMoveDrag(node),
+    placement: {
+      position: () => [0, 0, MOVE_HANDLE_LIFT],
+    },
+  }
+}
+
 const doorHandles: HandleDescriptor<DoorNodeType>[] = [
+  doorMoveHandle(),
   doorWidthHandle('left'),
   doorWidthHandle('right'),
   doorHeightHandle(),
@@ -147,10 +185,26 @@ export const doorDefinition: NodeDefinition<typeof DoorNode> = {
     duplicable: true,
     deletable: true,
     wallOpeningPlacement: true,
-    // `wallId` ties the door to its host wall and is re-derived from
-    // the wall under the cursor when a preset is placed. Host apps
-    // strip this at preset-save time via `getHostRefFields(def)`.
-    hostRefFields: ['wallId'],
+    // Doors also host on roof-segment wall faces (base walls under the
+    // roof, gable ends). `buildCut` punches the opening into the
+    // segment's wall brush; `dirtyHandledByOwnSystem` keeps the roof-merge
+    // loop from consuming door dirty marks (DoorSystem owns them and
+    // already cascades to the host via parentId).
+    roofAccessory: {
+      buildCut: (node, hostSegment) =>
+        buildRoofWallOpeningCut(node as DoorNodeType, hostSegment as RoofSegmentNode),
+      cutScope: 'wall',
+      dirtyHandledByOwnSystem: true,
+    },
+    // `wallId` / `roofSegmentId` tie the door to its host and are
+    // re-derived from the surface under the cursor when a preset is
+    // placed. Host apps strip these at preset-save time via
+    // `getHostRefFields(def)`.
+    hostRefFields: ['wallId', 'roofSegmentId', 'roofFace'],
+    // Panel / glass slots painted through the registry. The door system tags
+    // each mesh with its `userData.slotId`; paint writes `node.slots`.
+    slots: () => doorSlots(),
+    paint: doorPaint,
   },
 
   parametrics: doorParametrics,
@@ -196,13 +250,14 @@ export const doorDefinition: NodeDefinition<typeof DoorNode> = {
 
   toolHints: [
     { key: 'Left click', label: 'Place door on wall' },
+    { key: 'Shift', label: 'Free place' },
     { key: 'Esc', label: 'Cancel' },
   ],
 
   presentation: {
     label: 'Door',
     description: 'A door cut into a wall. Animated open/close state.',
-    icon: { kind: 'url', src: '/icons/door.png' },
+    icon: { kind: 'url', src: '/icons/door.webp' },
     paletteSection: 'structure',
     paletteOrder: 50,
   },

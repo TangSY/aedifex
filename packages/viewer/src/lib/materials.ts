@@ -4,13 +4,17 @@ import {
   type MaterialPresetPayload,
   type MaterialProperties,
   type MaterialSchema,
+  parseMaterialRef,
   resolveMaterial,
+  type SceneMaterial,
+  type SceneMaterialId,
   type SurfaceRole,
 } from '@aedifex/core'
 import * as THREE from 'three'
 import { MeshLambertNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu'
 
 import { resolveCdnUrl } from './asset-url'
+import { isKtx2Url, ktx2Loader } from './ktx2-loader'
 import { getSceneTheme } from './scene-themes'
 
 export type RenderShading = 'solid' | 'rendered'
@@ -71,7 +75,7 @@ export function resolveSurfaceColor(
   // The active scene theme may tint individual roles (e.g. Mediterranean's blue
   // roof); fall back to the chosen colour preset's palette when it doesn't.
   const tints = sceneThemeId ? getSceneTheme(sceneThemeId).clayTints : undefined
-  return tints?.[role] ?? PRESET_PALETTES[preset][role]
+  return tints?.[role] ?? (PRESET_PALETTES[preset] ?? CLAY_PALETTE)[role]
 }
 
 // DoubleSide on any NodeMaterial inside the MRT scenePass (SSGI's output /
@@ -86,10 +90,14 @@ export const glassMaterial = new MeshLambertNodeMaterial({
   side: THREE.FrontSide,
 })
 
+function resolveNodeMaterialSide(side: THREE.Side): THREE.Side {
+  return side === THREE.DoubleSide ? THREE.FrontSide : side
+}
+
 const sideMap: Record<MaterialProperties['side'], THREE.Side> = {
   front: THREE.FrontSide,
   back: THREE.BackSide,
-  double: THREE.DoubleSide,
+  double: THREE.FrontSide,
 }
 
 const materialCache = new Map<string, THREE.Material>()
@@ -98,6 +106,14 @@ const surfaceRoleMaterialCache = new Map<string, THREE.Material>()
 const textureCache = new Map<string, THREE.Texture>()
 const textureLoadPromises = new Map<string, Promise<THREE.Texture | null>>()
 const textureLoader = new THREE.TextureLoader()
+
+// `.ktx2` finish maps transcode through the shared KTX2 loader (support is
+// detected once at viewer init); everything else loads as a normal image.
+function pickTextureLoader(url: string): THREE.TextureLoader {
+  // KTX2Loader's load/loadAsync are call-compatible with TextureLoader (url →
+  // Texture / Promise<Texture>); cast for typing.
+  return isKtx2Url(url) ? (ktx2Loader as unknown as THREE.TextureLoader) : textureLoader
+}
 const wrapMap = {
   Repeat: THREE.RepeatWrapping,
   ClampToEdge: THREE.ClampToEdgeWrapping,
@@ -176,7 +192,7 @@ function getTexture(material?: MaterialSchema): THREE.Texture | undefined {
   const cached = textureCache.get(cacheKey)
   if (cached) return cached
 
-  const texture = textureLoader.load(textureConfig.url)
+  const texture = pickTextureLoader(textureConfig.url).load(textureConfig.url)
   texture.wrapS = THREE.RepeatWrapping
   texture.wrapT = THREE.RepeatWrapping
 
@@ -244,7 +260,7 @@ function getPresetTexture(
   const cached = textureCache.get(cacheKey)
   if (cached) return cached
 
-  const texture = textureLoader.load(resolvedPath)
+  const texture = pickTextureLoader(resolvedPath).load(resolvedPath)
   applyTextureProperties(texture, props, slot)
   setTextureCacheKey(texture, cacheKey)
   textureCache.set(cacheKey, texture)
@@ -288,7 +304,7 @@ async function loadPresetTexture(
   const existingPromise = textureLoadPromises.get(cacheKey)
   if (existingPromise) return existingPromise
 
-  const promise = textureLoader
+  const promise = pickTextureLoader(resolvedPath)
     .loadAsync(resolvedPath)
     .then((texture) => {
       applyTextureProperties(texture, props, slot)
@@ -366,12 +382,13 @@ function applyMaterialMapProperties(
   }
   material.transparent = mapProperties.transparent
   material.opacity = mapProperties.opacity
-  material.side =
+  material.side = resolveNodeMaterialSide(
     mapProperties.side === 0
       ? THREE.FrontSide
       : mapProperties.side === 1
         ? THREE.BackSide
-        : THREE.DoubleSide
+        : THREE.DoubleSide,
+  )
   applyTexturePropertiesToMaterial(material, mapProperties)
   material.needsUpdate = true
 }
@@ -481,16 +498,55 @@ export function createMaterial(
   return threeMaterial
 }
 
+/**
+ * Resolve a MaterialRef ('library:<id>' | 'scene:<id>') to a three.js material.
+ * Returns null for an unknown / dangling ref so callers fall back to the
+ * slot's default (authored material, then themed default). Never throws.
+ */
+export function resolveMaterialRef(
+  ref: string | undefined,
+  sceneMaterials: Record<SceneMaterialId, SceneMaterial> | undefined,
+  shading: RenderShading = 'rendered',
+): THREE.Material | null {
+  const parsed = parseMaterialRef(ref)
+  if (!parsed) return null
+  if (parsed.kind === 'library') return createMaterialFromPresetRef(ref, shading)
+  const sceneMaterial = sceneMaterials?.[parsed.id as SceneMaterialId]
+  if (!sceneMaterial) return null
+  return createMaterial(sceneMaterial.material, shading)
+}
+
+/**
+ * Resolve a node kind's declared slot default — either a catalog `library:<id>`
+ * finish or a flat `#rrggbb` colour — to a renderable material. Shared by the
+ * procedural kinds whose colored-mode unpainted appearance comes from a
+ * declarative default (slab, wall).
+ */
+export function resolveSlotDefaultMaterial(
+  slotDefault: string,
+  shading: RenderShading = 'rendered',
+  roughness = 0.9,
+): THREE.Material {
+  if (parseMaterialRef(slotDefault)?.kind === 'library') {
+    return (
+      createMaterialFromPresetRef(slotDefault, shading) ??
+      createDefaultMaterial('#ffffff', roughness, shading)
+    )
+  }
+  return createDefaultMaterial(slotDefault, roughness, shading)
+}
+
 export function createDefaultMaterial(
   color = '#ffffff',
   roughness = 0.9,
   shading: RenderShading = 'rendered',
   side: THREE.Side = THREE.FrontSide,
 ): THREE.Material {
+  const resolvedSide = resolveNodeMaterialSide(side)
   if (shading === 'solid') {
     return new MeshLambertNodeMaterial({
       color,
-      side,
+      side: resolvedSide,
     })
   }
 
@@ -498,7 +554,7 @@ export function createDefaultMaterial(
     color,
     roughness,
     metalness: 0,
-    side,
+    side: resolvedSide,
   })
 }
 
@@ -532,7 +588,8 @@ export function createSurfaceRoleMaterial(
   // on both gable faces on the first frame). Callers that need both sides
   // visible (e.g. dormer back gable) must rotate the host mesh 180° so the
   // FrontSide faces the viewer.
-  const resolvedSide = role === 'glazing' ? THREE.FrontSide : side
+  const resolvedSide =
+    role === 'glazing' ? THREE.FrontSide : resolveNodeMaterialSide(side ?? THREE.FrontSide)
   const cacheKey = `${role}-${preset}-${resolvedSide}-${sceneThemeId ?? 'base'}`
   const cached = surfaceRoleMaterialCache.get(cacheKey)
   if (cached) return cached

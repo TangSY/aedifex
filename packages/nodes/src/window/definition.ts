@@ -2,19 +2,28 @@ import type {
   AnyNodeId,
   HandleDescriptor,
   NodeDefinition,
+  RoofSegmentNode,
   WallNode,
   WindowNode as WindowNodeType,
 } from '@aedifex/core'
+import { publishOpeningResizeGuides } from '../shared/opening-guides-runtime'
+import { readRoofFaceHeightMax, readRoofFaceWidthMax } from '../shared/roof-opening-host'
+import { buildRoofWallOpeningCut } from '../shared/roof-wall-opening-cut'
 import { buildWindowFloorplan } from './floorplan'
 import { windowWidthAffordance } from './floorplan-affordances'
 import { windowFloorplanMoveTarget } from './floorplan-move'
+import { windowPaint } from './paint'
 import { windowParametrics } from './parametrics'
 import { WindowNode } from './schema'
+import { windowSlots } from './slots'
 
 const SIDE_HANDLE_OFFSET = 0.24
 const HEIGHT_HANDLE_OFFSET = 0.24
 const MIN_WINDOW_HEIGHT = 0.3
 const MIN_WINDOW_WIDTH = 0.3
+// How far the move cross floats off the wall face (+Z, the window's facing
+// normal) so it's grabbable instead of buried in the sash/frame.
+const MOVE_HANDLE_LIFT = 0.12
 
 function readWallLength(w: WindowNodeType, scene: { get: (id: AnyNodeId) => unknown }): number {
   if (!w.wallId) return Number.POSITIVE_INFINITY
@@ -34,10 +43,20 @@ function windowWidthHandle(side: 'left' | 'right'): HandleDescriptor<WindowNodeT
   return {
     kind: 'linear-resize',
     axis: 'x',
+    // Stand the blade up into the wall face so it reads face-on from the
+    // front instead of edge-on (the window sits on a vertical wall).
+    faceNormal: true,
     anchor: side === 'right' ? 'min' : 'max',
     min: MIN_WINDOW_WIDTH,
-    max: (n, scene) => readWallLength(n, scene),
+    max: (n, scene) => {
+      // Roof-hosted windows clamp against the face profile (the
+      // wall-based limits read Infinity when wallId is unset).
+      const roofMax = readRoofFaceWidthMax(n, scene, sign)
+      if (roofMax !== null) return Math.max(MIN_WINDOW_WIDTH, roofMax)
+      return readWallLength(n, scene)
+    },
     currentValue: (n) => n.width,
+    onDrag: (node) => publishOpeningResizeGuides(node, true),
     apply: (initial, newWidth) => {
       const rotY = initial.rotation[1]
       const armX = Math.cos(rotY)
@@ -73,6 +92,8 @@ function windowHeightHandle(edge: 'top' | 'bottom'): HandleDescriptor<WindowNode
     anchor: edge === 'top' ? 'min' : 'max',
     min: MIN_WINDOW_HEIGHT,
     max: (n, scene) => {
+      const roofMax = readRoofFaceHeightMax(n, scene, sign)
+      if (roofMax !== null) return Math.max(MIN_WINDOW_HEIGHT, roofMax)
       // Maximum: distance from the anchored edge to the wall's allowed Y
       // bounds. Top arrow caps at wall.height - bottom; bottom arrow caps
       // at top (positive Y room above the floor).
@@ -83,6 +104,7 @@ function windowHeightHandle(edge: 'top' | 'bottom'): HandleDescriptor<WindowNode
         : Math.max(MIN_WINDOW_HEIGHT, anchored)
     },
     currentValue: (n) => n.height,
+    onDrag: (node) => publishOpeningResizeGuides(node, true),
     apply: (initial, newHeight) => {
       // Anchored edge stays in wall-local Y; opposite edge moves.
       const anchorY =
@@ -102,7 +124,26 @@ function windowHeightHandle(edge: 'top' | 'bottom'): HandleDescriptor<WindowNode
   }
 }
 
+// Press-drag move grip at the window centre, standing in the wall face. Routes
+// through the same move tool as the floating Move button (3D
+// `affordanceTools.move`, 2D `floorplanMoveTarget`) — slide within the wall
+// plane + re-host onto another wall — committing on release, no second click.
+function windowMoveHandle(): HandleDescriptor<WindowNodeType> {
+  return {
+    kind: 'tap-action',
+    shape: 'move-cross',
+    plane: 'node-normal',
+    portal: 'grandparent',
+    cursor: 'move',
+    onActivate: (node, _scene, editor) => editor.engageMoveDrag(node),
+    placement: {
+      position: () => [0, 0, MOVE_HANDLE_LIFT],
+    },
+  }
+}
+
 const windowHandles: HandleDescriptor<WindowNodeType>[] = [
+  windowMoveHandle(),
   windowWidthHandle('left'),
   windowWidthHandle('right'),
   windowHeightHandle('top'),
@@ -139,9 +180,22 @@ export const windowDefinition: NodeDefinition<typeof WindowNode> = {
     duplicable: true,
     deletable: true,
     wallOpeningPlacement: true,
-    // `wallId` is re-derived from the wall under the cursor at preset
-    // placement time — see the door capability for the same pattern.
-    hostRefFields: ['wallId'],
+    // Windows also host on roof-segment wall faces (base walls under the
+    // roof, gable ends) — same wiring as door; see the door capability
+    // for why `dirtyHandledByOwnSystem` is required.
+    roofAccessory: {
+      buildCut: (node, hostSegment) =>
+        buildRoofWallOpeningCut(node as WindowNodeType, hostSegment as RoofSegmentNode),
+      cutScope: 'wall',
+      dirtyHandledByOwnSystem: true,
+    },
+    // `wallId` / `roofSegmentId` are re-derived from the surface under
+    // the cursor at preset placement time — see door for the pattern.
+    hostRefFields: ['wallId', 'roofSegmentId', 'roofFace'],
+    // Frame / glass slots painted through the registry. The window system tags
+    // each mesh with its `userData.slotId`; paint writes `node.slots`.
+    slots: () => windowSlots(),
+    paint: windowPaint,
   },
 
   parametrics: windowParametrics,
@@ -177,13 +231,14 @@ export const windowDefinition: NodeDefinition<typeof WindowNode> = {
 
   toolHints: [
     { key: 'Left click', label: 'Place window on wall' },
+    { key: 'Shift', label: 'Free place' },
     { key: 'Esc', label: 'Cancel' },
   ],
 
   presentation: {
     label: 'Window',
     description: 'A window cut into a wall. Animated open/close for opening windows.',
-    icon: { kind: 'url', src: '/icons/window.png' },
+    icon: { kind: 'url', src: '/icons/window.webp' },
     paletteSection: 'structure',
     paletteOrder: 60,
   },

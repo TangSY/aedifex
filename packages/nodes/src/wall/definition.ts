@@ -6,6 +6,7 @@ import { wallFloorplanSiblingOverrides } from './floorplan-overrides'
 import { wallPaint } from './paint'
 import { wallParametrics } from './parametrics'
 import { WallNode } from './schema'
+import { wallSlots } from './slots'
 
 /**
  * Wall — the Phase 3 stress test of the registry-driven node model.
@@ -56,6 +57,11 @@ export const wallDefinition: NodeDefinition<typeof WallNode> = {
     // preview through this entry rather than carrying a kind-name
     // arm.
     paint: wallPaint,
+    // Declared paintable slots (interior / exterior) with their default
+    // appearance — the same `{ slotId, label, default }` contract every other
+    // paintable kind exposes. Paint still writes the legacy inline fields via
+    // `wallPaint`; migrating those into `node.slots` is a later step.
+    slots: () => wallSlots(),
   },
 
   relations: {
@@ -108,14 +114,14 @@ export const wallDefinition: NodeDefinition<typeof WallNode> = {
 
   toolHints: [
     { key: 'Left click', label: 'Set wall start / end' },
-    { key: 'Shift', label: 'Allow non-45° angles' },
+    { key: 'Shift', label: 'Free angle (no 15° snap)' },
     { key: 'Esc', label: 'Cancel' },
   ],
 
   presentation: {
     label: 'Wall',
     description: 'A straight or curved wall segment. Hosts doors, windows, and wall-mounted items.',
-    icon: { kind: 'url', src: '/icons/wall.png' },
+    icon: { kind: 'url', src: '/icons/wall.webp' },
     paletteSection: 'structure',
     paletteOrder: 10,
   },

@@ -30,6 +30,8 @@ export const siteDefinition: NodeDefinition<typeof SiteNode> = {
   },
 
   parametrics: siteParametrics,
+  // No dirty consumer rebuilds this kind — see NodeDefinition.dirtyTracking.
+  dirtyTracking: false,
 
   renderer: {
     kind: 'parametric',
@@ -39,7 +41,7 @@ export const siteDefinition: NodeDefinition<typeof SiteNode> = {
   presentation: {
     label: 'Site',
     description: 'The top-level container holding buildings, zones, and the property boundary.',
-    icon: { kind: 'url', src: '/icons/site-flag.png' },
+    icon: { kind: 'url', src: '/icons/site-flag.webp' },
     paletteSection: 'site',
     paletteOrder: 5,
   },
