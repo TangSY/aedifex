@@ -14,12 +14,12 @@ describe('doorDefinition — registry contract', () => {
 })
 
 describe('doorDefinition.capabilities — host-ref contract', () => {
-  test('hostRefFields includes "wallId" (host-bound preset-strip target)', () => {
+  test('hostRefFields includes wallId + roof-surface refs', () => {
     // Door is hosted on a wall — `wallId` is re-derived at preset
     // placement time, so host apps strip it via `getHostRefFields(def)`.
-    // The source schema today declares ONLY `wallId`. If a future migration
-    // adds parametric `wallT` as a host ref, update this test alongside.
-    expect(doorDefinition.capabilities.hostRefFields).toEqual(['wallId'])
+    // Upstream PR #438 added roof-surface placement, so the contract now
+    // covers `roofSegmentId` + `roofFace` too.
+    expect(doorDefinition.capabilities.hostRefFields).toEqual(['wallId', 'roofSegmentId', 'roofFace'])
   })
 
   test('selectable + duplicable + deletable + wallOpeningPlacement set', () => {
@@ -49,13 +49,14 @@ describe('doorDefinition.floorplanAffordances — 2D resize-width drag', () => {
   })
 })
 
-describe('doorDefinition.handles — width + height arrows', () => {
-  test('returns exactly three handle descriptors (left width, right width, height)', () => {
-    // Source: `doorHandles = [doorWidthHandle('left'), doorWidthHandle('right'), doorHeightHandle()]`.
+describe('doorDefinition.handles — width + height + roof-surface', () => {
+  test('returns four handle descriptors (left width, right width, height, roof-surface)', () => {
+    // Source: `doorHandles = [doorWidthHandle('left'), doorWidthHandle('right'), doorHeightHandle()]`
+    // plus a roof-surface handle added by upstream PR #438 for slope placement.
     const handles = Array.isArray(doorDefinition.handles)
       ? doorDefinition.handles
       : (doorDefinition.handles as any)({})
-    expect(handles).toHaveLength(3)
+    expect(handles).toHaveLength(4)
   })
 })
 
