@@ -30,6 +30,8 @@ export const guideDefinition: NodeDefinition<typeof GuideNode> = {
   },
 
   parametrics: guideParametrics,
+  // No dirty consumer rebuilds this kind — see NodeDefinition.dirtyTracking.
+  dirtyTracking: false,
 
   renderer: {
     kind: 'parametric',
@@ -43,7 +45,7 @@ export const guideDefinition: NodeDefinition<typeof GuideNode> = {
   presentation: {
     label: 'Guide',
     description: 'A measurement / reference annotation (linear, area, or arc).',
-    icon: { kind: 'url', src: '/icons/blueprint.png' },
+    icon: { kind: 'url', src: '/icons/blueprint.webp' },
     paletteSection: 'site',
     paletteOrder: 30,
   },

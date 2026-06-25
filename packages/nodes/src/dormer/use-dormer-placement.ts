@@ -6,7 +6,7 @@ import {
   type RoofSegmentNode,
   sceneRegistry,
 } from '@aedifex/core'
-import { triggerSFX } from '@aedifex/editor'
+import { consumePlacementDragRelease, triggerSFX } from '@aedifex/editor'
 import { useViewer } from '@aedifex/viewer'
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -58,13 +58,16 @@ export function useDormerPlacement(opts: {
   onCommit: (hit: DormerPlacementHit, rotation: number) => void
 }): {
   activeBuildingId: string | undefined
+  clearPreview: () => void
   segmentXform: DormerSegmentTransform | null
+  hitSegment: RoofSegmentNode | null
   hitLocal: [number, number, number] | null
   ghostRotation: number
 } {
   const activeBuildingId = useViewer((s) => s.selection.buildingId)
 
   const [segmentXform, setSegmentXform] = useState<DormerSegmentTransform | null>(null)
+  const [hitSegment, setHitSegment] = useState<RoofSegmentNode | null>(null)
   const [hitLocal, setHitLocal] = useState<[number, number, number] | null>(null)
   const [ghostRotation, setGhostRotation] = useState(opts.initialRotation ?? 0)
   const lastSnapRef = useRef<[number, number] | null>(null)
@@ -77,6 +80,12 @@ export function useDormerPlacement(opts: {
   // every time the parent rerenders).
   const onCommitRef = useRef(opts.onCommit)
   onCommitRef.current = opts.onCommit
+
+  const clearPreview = () => {
+    setSegmentXform(null)
+    setHitSegment(null)
+    setHitLocal(null)
+  }
 
   useEffect(() => {
     if (!activeBuildingId) return
@@ -99,6 +108,7 @@ export function useDormerPlacement(opts: {
     const roofDrag = relativeStartRef.current
       ? createRelativeRoofDrag(relativeStartRef.current)
       : null
+    let committed = false
     let lastRelativeHit: DormerPlacementHit | null = null
 
     const resolvePlacementHit = (event: RoofEvent): DormerPlacementHit | null => {
@@ -118,7 +128,7 @@ export function useDormerPlacement(opts: {
       const sx = Math.round(wx / DORMER_PLACEMENT_SNAP_M) * DORMER_PLACEMENT_SNAP_M
       const sz = Math.round(wz / DORMER_PLACEMENT_SNAP_M) * DORMER_PLACEMENT_SNAP_M
       const prev = lastSnapRef.current
-      if (!prev || prev[0] !== sx || prev[1] !== sz) {
+      if (event.nativeEvent?.shiftKey !== true && (!prev || prev[0] !== sx || prev[1] !== sz)) {
         triggerSFX('sfx:grid-snap')
         lastSnapRef.current = [sx, sz]
       }
@@ -129,6 +139,7 @@ export function useDormerPlacement(opts: {
       const xform = computeSegmentXform(hit.segment.id)
       if (!xform) return
       setSegmentXform(xform)
+      setHitSegment(hit.segment)
       // Lift the ghost to the actual roof-surface Y at the cursor so
       // it tracks the mouse along the slope. The CSG inside
       // `generateDormerGeometry` carves the dormer against the host
@@ -139,13 +150,25 @@ export function useDormerPlacement(opts: {
     }
 
     const onClick = (event: RoofEvent) => {
+      if (committed) return
       const hit = roofDrag
         ? (lastRelativeHit ?? resolvePlacementHit(event))
         : resolvePlacementHit(event)
       if (!hit) return
+      committed = true
       onCommitRef.current(hit, ghostRotationRef.current)
       triggerSFX('sfx:item-place')
       event.stopPropagation()
+    }
+
+    const onPlacementDragPointerUp = (event: PointerEvent) => {
+      if (committed) return
+      if (!consumePlacementDragRelease(event)) return
+      const hit = roofDrag ? lastRelativeHit : null
+      if (!hit) return
+      committed = true
+      onCommitRef.current(hit, ghostRotationRef.current)
+      triggerSFX('sfx:item-place')
     }
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -166,18 +189,22 @@ export function useDormerPlacement(opts: {
     emitter.on('roof:enter', updatePreview)
     emitter.on('roof:click', onClick)
     window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('pointerup', onPlacementDragPointerUp)
 
     return () => {
       emitter.off('roof:move', updatePreview)
       emitter.off('roof:enter', updatePreview)
       emitter.off('roof:click', onClick)
       window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('pointerup', onPlacementDragPointerUp)
     }
   }, [activeBuildingId])
 
   return {
     activeBuildingId: activeBuildingId ?? undefined,
+    clearPreview,
     segmentXform,
+    hitSegment,
     hitLocal,
     ghostRotation,
   }

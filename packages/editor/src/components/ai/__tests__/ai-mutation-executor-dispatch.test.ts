@@ -157,6 +157,8 @@ function payload(name: string): AIToolCall {
       return { tool: 'update_roof_material', nodeId: 'roof_1', role: 'top', materialPreset: 'roof-tile1' } as AIToolCall
     case 'update_stair_material':
       return { tool: 'update_stair_material', nodeId: 'stair_1', role: 'tread', materialPreset: 'stair-wood1' } as AIToolCall
+    case 'paint_slot':
+      return { tool: 'paint_slot', nodeId: 'wall_1', slotId: 'interior', materialRef: 'library:preset-charcoal' } as AIToolCall
     case 'batch_operations':
       return { tool: 'batch_operations', description: '', operations: [{ type: 'add_wall', start: [0, 0], end: [3, 0] }] } as AIToolCall
     case 'save_room_preset':
@@ -184,6 +186,7 @@ const MUTATION_TOOLS = [
   'update_item', 'move_building', 'clone_level',
   'add_fence', 'update_fence', 'add_cut_out',
   'update_wall_material', 'update_roof_material', 'update_stair_material',
+  'paint_slot',
   'batch_operations',
   'save_room_preset', 'insert_room_preset',
 ] as const

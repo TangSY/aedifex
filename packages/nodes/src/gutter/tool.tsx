@@ -11,7 +11,13 @@ import {
 import { triggerSFX } from '@aedifex/editor'
 import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { RoofAttachmentFallbackPreview } from '../shared/roof-attachment-fallback-preview'
 import { resolveRoofSegmentHit } from '../shared/roof-segment-hit'
+import {
+  clearRoofSurfacePlacementGuides,
+  publishRoofSurfacePlacementGuides,
+  roofSurfaceFootprintFromNode,
+} from '../shared/roof-surface-placement-guides'
 import { gutterDefinition } from './definition'
 import { type EaveSnap, resolveEaveSnap } from './eave-snap'
 import GutterPreview from './preview'
@@ -83,7 +89,7 @@ const GutterTool = () => {
       const sx = Math.round(snap.eaveX * 20) / 20
       const sz = Math.round(snap.eaveZ * 20) / 20
       const prev = lastSnapRef.current
-      if (!prev || prev[0] !== sx || prev[1] !== sz) {
+      if (event.nativeEvent?.shiftKey !== true && (!prev || prev[0] !== sx || prev[1] !== sz)) {
         triggerSFX('sfx:grid-snap')
         lastSnapRef.current = [sx, sz]
       }
@@ -98,6 +104,13 @@ const GutterTool = () => {
           rotation: hit.segment.rotation ?? 0,
         },
         snap,
+      })
+      publishRoofSurfacePlacementGuides({
+        roof,
+        segment: hit.segment,
+        center: [snap.eaveX, snap.eaveY, snap.eaveZ],
+        footprint: roofSurfaceFootprintFromNode({ ...previewNode, rotation: snap.rotation }),
+        mode: 'linear-edge',
       })
       event.stopPropagation()
     }
@@ -128,6 +141,7 @@ const GutterTool = () => {
       state.dirtyNodes.add(hit.segment.id as AnyNodeId)
       setSelection({ selectedIds: [gutter.id] })
       triggerSFX('sfx:item-place')
+      clearRoofSurfacePlacementGuides()
       event.stopPropagation()
     }
 
@@ -139,22 +153,33 @@ const GutterTool = () => {
       emitter.off('roof:move', updatePreview)
       emitter.off('roof:enter', updatePreview)
       emitter.off('roof:click', onClick)
+      clearRoofSurfacePlacementGuides()
     }
-  }, [activeBuildingId, setSelection])
-
-  if (!activeBuildingId || !target) return null
+  }, [activeBuildingId, setSelection, previewNode])
 
   return (
-    <group position={target.roof.position} rotation-y={target.roof.rotation}>
-      <group position={target.segment.position} rotation-y={target.segment.rotation}>
-        <group
-          position={[target.snap.eaveX, target.snap.eaveY, target.snap.eaveZ]}
-          rotation-y={target.snap.rotation}
-        >
-          <GutterPreview node={previewNode} />
+    <>
+      <RoofAttachmentFallbackPreview
+        activeBuildingId={activeBuildingId}
+        ghost={<GutterPreview node={previewNode} invalid />}
+        onInvalidTarget={() => {
+          setTarget(null)
+          clearRoofSurfacePlacementGuides()
+        }}
+      />
+      {activeBuildingId && target && (
+        <group position={target.roof.position} rotation-y={target.roof.rotation}>
+          <group position={target.segment.position} rotation-y={target.segment.rotation}>
+            <group
+              position={[target.snap.eaveX, target.snap.eaveY, target.snap.eaveZ]}
+              rotation-y={target.snap.rotation}
+            >
+              <GutterPreview node={previewNode} />
+            </group>
+          </group>
         </group>
-      </group>
-    </group>
+      )}
+    </>
   )
 }
 

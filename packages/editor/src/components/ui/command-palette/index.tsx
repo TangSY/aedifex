@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react'
 import { create } from 'zustand'
 import { useShallow } from 'zustand/shallow'
 import { Dialog, DialogContent, DialogTitle } from './../../../components/ui/primitives/dialog'
-import { getLevelDisplayName } from '../../../lib/level-name'
+import { getLevelDisplayName } from '@aedifex/core'
 import { useCommandRegistry } from '../../../store/use-command-registry'
 import { usePaletteViewRegistry } from '../../../store/use-palette-view-registry'
 
@@ -244,10 +244,11 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
     setOpen(false)
   }
 
-  const wallModeLabel: Record<'cutaway' | 'up' | 'down', string> = {
+  const wallModeLabel: Record<'cutaway' | 'up' | 'down' | 'translucent', string> = {
     cutaway: 'Cutaway',
     up: 'Up',
     down: 'Down',
+    translucent: 'Translucent',
   }
   const levelModeLabel: Record<'manual' | 'stacked' | 'exploded' | 'solo', string> = {
     manual: 'Manual',
@@ -373,7 +374,7 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
               {/* ── Wall Mode sub-page ────────────────────────────────────── */}
               {page === 'wall-mode' && (
                 <Command.Group heading="Wall Mode">
-                  {(['cutaway', 'up', 'down'] as const).map((mode) => (
+                  {(['cutaway', 'up', 'down', 'translucent'] as const).map((mode) => (
                     <OptionItem
                       isActive={wallMode === mode}
                       key={mode}

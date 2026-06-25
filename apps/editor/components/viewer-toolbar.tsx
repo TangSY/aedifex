@@ -40,6 +40,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import { type ReactNode, useCallback } from 'react'
+import { flushSync } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from './toolbar-tooltip'
 
@@ -48,6 +49,24 @@ const TOOLBAR_CONTAINER =
 
 const TOOLBAR_BTN =
   'flex w-8 items-center justify-center text-muted-foreground/80 transition-colors hover:bg-white/8 hover:text-foreground/90'
+
+function requestWalkthroughPointerLock() {
+  const canvas = document.querySelector<HTMLCanvasElement>('[data-pascal-viewer-3d] canvas')
+  if (!canvas) return
+
+  if (!canvas.hasAttribute('tabindex')) {
+    canvas.tabIndex = -1
+  }
+  canvas.focus({ preventScroll: true })
+
+  if (document.pointerLockElement === canvas) return
+
+  try {
+    canvas.requestPointerLock?.()
+  } catch {
+    return
+  }
+}
 
 function ToolbarTooltip({ children, label }: { children: ReactNode; label: string }) {
   return (
@@ -67,7 +86,7 @@ const VIEW_MODES: { id: ViewMode; label: string; icon: React.ReactNode }[] = [
         alt=""
         className="h-3.5 w-3.5 object-contain"
         height={14}
-        src="/icons/building.png"
+        src="/icons/building.webp"
         width={14}
       />
     ),
@@ -80,7 +99,7 @@ const VIEW_MODES: { id: ViewMode; label: string; icon: React.ReactNode }[] = [
         alt=""
         className="h-3.5 w-3.5 object-contain"
         height={14}
-        src="/icons/blueprint.png"
+        src="/icons/blueprint.webp"
         width={14}
       />
     ),
@@ -100,11 +119,12 @@ const levelModeLabels: Record<string, string> = {
   solo: 'Solo',
 }
 
-const wallModeOrder = ['cutaway', 'up', 'down'] as const
+const wallModeOrder = ['cutaway', 'up', 'down', 'translucent'] as const
 const wallModeConfig: Record<string, { icon: string; label: string }> = {
-  up: { icon: '/icons/room.png', label: 'Full height' },
-  cutaway: { icon: '/icons/wallcut.png', label: 'Cutaway' },
-  down: { icon: '/icons/walllow.png', label: 'Low' },
+  up: { icon: '/icons/room.webp', label: 'Full height' },
+  cutaway: { icon: '/icons/wallcut.webp', label: 'Cutaway' },
+  down: { icon: '/icons/walllow.webp', label: 'Low' },
+  translucent: { icon: '/icons/wall.webp', label: 'Translucent' },
 }
 
 const SHADING_OPTIONS = [
@@ -441,6 +461,15 @@ function DisplayMenu() {
 function WalkthroughButton() {
   const isFirstPersonMode = useEditor((state) => state.isFirstPersonMode)
   const setFirstPersonMode = useEditor((state) => state.setFirstPersonMode)
+  const handleClick = useCallback(() => {
+    if (isFirstPersonMode) {
+      setFirstPersonMode(false)
+      return
+    }
+
+    flushSync(() => setFirstPersonMode(true))
+    requestWalkthroughPointerLock()
+  }, [isFirstPersonMode, setFirstPersonMode])
 
   return (
     <ToolbarTooltip label="Walkthrough">
@@ -449,7 +478,7 @@ function WalkthroughButton() {
           TOOLBAR_BTN,
           isFirstPersonMode && 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/20',
         )}
-        onClick={() => setFirstPersonMode(!isFirstPersonMode)}
+        onClick={handleClick}
         type="button"
       >
         <Footprints className="h-4 w-4" />

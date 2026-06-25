@@ -58,12 +58,24 @@ export const GeometrySystem = () => {
   const textures = useViewer((s) => s.textures)
   const colorPreset = useViewer((s) => s.colorPreset)
   const sceneTheme = useViewer((s) => s.sceneTheme)
+  // The shared scene-material library, threaded into each builder's ctx so
+  // pure geometry builders can resolve `scene:<id>` slot refs without
+  // importing `useScene`.
+  const sceneMaterials = useScene((s) => s.materials)
   // Per-node cache of the last-built geometry key (for kinds that declare
   // `def.geometryKey`). Lets us skip a dispose+rebuild when a node is dirty
   // but its geometry inputs are unchanged — e.g. an item reparenting onto a
   // shelf dirties the shelf without altering its boards.
-  const builtGeometryKeyRef = useRef<Map<string, string>>(new Map())
+  const builtGeometryKeyRef = useRef<Map<string, GeometryBuildCacheEntry>>(new Map())
 
+  // Re-mark every geometry-backed node dirty whenever a viewer appearance
+  // value changes, so `def.geometry` builders re-run and pick up the new
+  // shading / texture / preset / theme. These four are deliberate re-run
+  // TRIGGERS, not values read in the body — the effect re-fires on any
+  // change. They're primitives (stable by value), so listing them is safe;
+  // biome flags them as "unnecessary" because the body doesn't reference
+  // them, but dropping them silently breaks appearance-mode switching.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: shading/textures/colorPreset/sceneTheme are intentional re-run triggers; removing them stops geometry from rebuilding on appearance change.
   useEffect(() => {
     const nodes = useScene.getState().nodes
     for (const node of Object.values(nodes)) {
@@ -73,6 +85,24 @@ export const GeometrySystem = () => {
       }
     }
   }, [shading, textures, colorPreset, sceneTheme])
+
+  // Editing a scene material must re-colour every geometry node that
+  // references it through a `scene:<id>` slot ref. Such a node's
+  // `geometryKey` is unchanged (only the referenced material's contents
+  // moved), so clear its cached key to defeat the skip in the rebuild loop,
+  // then mark it dirty. Scoped to nodes carrying a `scene:` ref so an
+  // unrelated material edit doesn't churn the whole scene.
+  useEffect(() => {
+    void sceneMaterials
+    const nodes = useScene.getState().nodes
+    for (const node of Object.values(nodes)) {
+      const def = nodeRegistry.get(node.type)
+      if (!def?.geometry) continue
+      if (!nodeReferencesSceneMaterial(node)) continue
+      builtGeometryKeyRef.current.delete(node.id)
+      useScene.getState().markDirty(node.id as AnyNodeId)
+    }
+  }, [sceneMaterials])
 
   useFrame(() => {
     if (dirtyNodes.size === 0) return
@@ -158,17 +188,16 @@ export const GeometrySystem = () => {
       // churn when an item reparents onto a shelf.
       if (def.geometryKey) {
         const builtKey = `${shading}|${textures}|${colorPreset}|${sceneTheme}|${def.geometryKey(effectiveNode)}`
-        if (builtGeometryKeyRef.current.get(id) === builtKey) {
+        if (shouldReuseGeometryBuild(builtGeometryKeyRef.current, id, group, builtKey)) {
           clearDirty(id as AnyNodeId)
           continue
         }
-        builtGeometryKeyRef.current.set(id, builtKey)
       }
 
       const parentId = (node.parentId ?? null) as AnyNodeId | null
       const key: BatchKey = `${node.type}::${parentId ?? ''}`
       const levelData = levelDataByBatch.get(key)
-      const ctx = buildGeometryContext(effectiveNode, nodes, levelData)
+      const ctx = buildGeometryContext(effectiveNode, nodes, levelData, sceneMaterials)
 
       // The builder is typed against the kind's specific node — at the
       // generic system level we lose that refinement, so the cast lands
@@ -221,10 +250,20 @@ export const GeometrySystem = () => {
   return null
 }
 
+function nodeReferencesSceneMaterial(node: AnyNode): boolean {
+  const slots = (node as { slots?: Record<string, string> }).slots
+  if (!slots) return false
+  for (const ref of Object.values(slots)) {
+    if (typeof ref === 'string' && ref.startsWith('scene:')) return true
+  }
+  return false
+}
+
 function buildGeometryContext(
   node: AnyNode,
   nodes: Record<string, AnyNode>,
   levelData: unknown,
+  materials: GeometryContext['materials'],
 ): GeometryContext {
   const resolve = <N = AnyNode>(id: AnyNodeId): N | undefined => nodes[id] as N | undefined
 
@@ -255,7 +294,7 @@ function buildGeometryContext(
     }
   }
 
-  return { resolve, children, siblings, parent, levelData }
+  return { resolve, children, siblings, parent, levelData, materials }
 }
 
 function disposeChildren(group: Group) {
@@ -341,3 +380,20 @@ function isCachedMaterial(value: unknown): boolean {
 }
 
 export default GeometrySystem
+
+export type GeometryBuildCacheEntry = {
+  group: Group
+  key: string
+}
+
+export function shouldReuseGeometryBuild(
+  cache: Map<string, GeometryBuildCacheEntry>,
+  id: string,
+  group: Group,
+  key: string,
+): boolean {
+  const cached = cache.get(id)
+  if (cached?.group === group && cached.key === key) return true
+  cache.set(id, { group, key })
+  return false
+}

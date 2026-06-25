@@ -134,6 +134,25 @@ export interface ValidatedUpdateRoofMaterial {
   errorReason?: string
 }
 
+/**
+ * Unified per-slot paint validated op. The validator looks up the node's kind
+ * and rejects unknown slot ids; valid ops write to `node.slots[slotId]`.
+ */
+export interface ValidatedPaintSlot {
+  type: 'paint_slot'
+  status: ValidatedOperationStatus
+  nodeId: AnyNodeId
+  slotId: string
+  /**
+   * MaterialRef written into `node.slots[slotId]`. Empty string is a sentinel
+   * for "clear back to slot default" and is passed through to the executor.
+   */
+  materialRef: string
+  /** Resolved kind of the target node (for downstream logging/preview). */
+  kind?: string
+  errorReason?: string
+}
+
 export interface ValidatedUpdateStairMaterial {
   type: 'update_stair_material'
   status: ValidatedOperationStatus
@@ -503,10 +522,12 @@ export interface ValidatedAddFence {
   end: [number, number]
   height: number
   thickness: number
-  style: 'slat' | 'rail' | 'privacy'
+  style: 'slat' | 'rail' | 'privacy' | 'horizontal'
   baseStyle: 'floating' | 'grounded'
   color: string
   postSpacing: number
+  postCap?: 'none' | 'flat' | 'pyramid'
+  slatGap?: number
   curveOffset?: number
   /** Resolved target level ID (from tool call or viewer selection at validation time). */
   levelId?: string
@@ -522,10 +543,12 @@ export interface ValidatedUpdateFence {
   end?: [number, number]
   height?: number
   thickness?: number
-  style?: 'slat' | 'rail' | 'privacy'
+  style?: 'slat' | 'rail' | 'privacy' | 'horizontal'
   baseStyle?: 'floating' | 'grounded'
   color?: string
   postSpacing?: number
+  postCap?: 'none' | 'flat' | 'pyramid'
+  slatGap?: number
   curveOffset?: number
   adjustmentReason?: string
   errorReason?: string
@@ -581,3 +604,4 @@ export type ValidatedOperation =
   | ValidatedUpdateWallMaterial
   | ValidatedUpdateRoofMaterial
   | ValidatedUpdateStairMaterial
+  | ValidatedPaintSlot

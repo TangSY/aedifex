@@ -63,7 +63,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'update_material',
-      description: 'Change the material/color of a furniture item, slab, ceiling, fence, or door/window. For walls use update_wall_material; for roofs use update_roof_material; for stairs use update_stair_material.',
+      description: 'Whole-node material/color change for furniture, slab, ceiling, fence, door/window. ⚠️ Per-part painting (e.g. window glass vs frame, door panel vs handle, fence rail vs infill) belongs to `paint_slot` — use that instead whenever you target a specific surface. For walls/roofs/stairs the legacy per-role tools (update_wall_material / update_roof_material / update_stair_material) remain for backward compatibility, but `paint_slot` is preferred.',
       parameters: {
         type: 'object',
         properties: {
@@ -79,7 +79,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'update_wall_material',
-      description: 'Change wall surface material. Walls have separate interior and exterior faces — use side="both" only when you intentionally want the legacy single-face material to drive both sides.',
+      description: 'Legacy whole-side wall material — writes `materialPreset` / `material` / interior/exterior single-fields. ⚠️ Prefer `paint_slot` with slotId="interior" or "exterior" for the unified paint-slots model. Use this tool only when you need to set the legacy single-face material (side="both") for backward compatibility with older scenes.',
       parameters: {
         type: 'object',
         properties: {
@@ -97,7 +97,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'update_roof_material',
-      description: 'Change roof surface material per role: top (sheet), edge (fascia), wall (gable wall under roof). Falls back through node defaults when a role-specific material is not set.',
+      description: 'Change roof surface material per role: top (sheet), edge (fascia), wall (gable wall under roof). Falls back through node defaults when a role-specific material is not set. Note: roof has not yet migrated to the paint-slots model, so `paint_slot` does not cover roofs — this tool remains the canonical way to paint roof surfaces.',
       parameters: {
         type: 'object',
         properties: {
@@ -115,7 +115,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'update_stair_material',
-      description: 'Change stair surface material per role: railing, tread (step surface), side (stringer). Falls back through node defaults when a role-specific material is not set.',
+      description: 'Legacy stair surface material per role: railing, tread (step surface), side (stringer). ⚠️ Prefer `paint_slot` with slotId="treads" / "railing" / "body" for the unified paint-slots model. This tool remains for backward compatibility.',
       parameters: {
         type: 'object',
         properties: {
@@ -126,6 +126,23 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
           reason: { type: 'string', description: 'Brief reason for the change.' },
         },
         required: ['nodeId', 'role'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'paint_slot',
+      description: 'Unified per-slot paint. Writes a single MaterialRef into node.slots[slotId]. Use this instead of update_*_material when painting per-part (window glass vs frame, stair treads vs railing, fence posts vs infill, door handle vs panel, etc.). Supported kinds and slots: wall (interior, exterior), slab (surface, side), ceiling (surface), stair (treads, body, railing), column (shaft, base, capital, frame), elevator (cab, doors, shaft, glass), fence (posts, infill, base, rail), shelf (shelves, frame, back), door (panel, frame, glass, hardware), window (frame, glass). For item nodes (furniture/GLB), slotId is the GLB mesh-defined name; any string is accepted and resolved at paint time.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'Target node ID. The node must already exist.' },
+          slotId: { type: 'string', description: 'Slot identifier within the node kind. See description for the per-kind enumeration.' },
+          materialRef: { type: 'string', description: 'MaterialRef. Use "library:<preset-id>" for a catalog preset (e.g. "library:preset-charcoal", "library:wall-wood1"), or "scene:<id>" for a previously minted scene material. Pass an empty string ("") to clear the slot back to its declared default.' },
+          reason: { type: 'string', description: 'Brief reason for the change.' },
+        },
+        required: ['nodeId', 'slotId', 'materialRef'],
       },
     },
   },
@@ -656,7 +673,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'add_fence',
-      description: 'Create a fence segment between two points. Fences are decorative/boundary elements with configurable style (slat, rail, privacy).',
+      description: 'Create a fence segment between two points. Fences are decorative/boundary elements with configurable style (slat, rail, privacy, horizontal).',
       parameters: {
         type: 'object',
         properties: {
@@ -664,10 +681,12 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
           end: { type: 'array', items: { type: 'number' }, description: 'End point [x, z] in meters.' },
           height: { type: 'number', description: 'Fence height in meters (default: 1.8).' },
           thickness: { type: 'number', description: 'Fence panel thickness in meters (default: 0.08).' },
-          style: { type: 'string', enum: ['slat', 'rail', 'privacy'], description: 'Fence style (default: slat). slat = spaced vertical boards, rail = horizontal rails, privacy = solid panels.' },
+          style: { type: 'string', enum: ['slat', 'rail', 'privacy', 'horizontal'], description: 'Fence style (default: slat). slat = spaced vertical boards, rail = horizontal rails, privacy = solid panels, horizontal = horizontal-board cladding between end posts.' },
           baseStyle: { type: 'string', enum: ['floating', 'grounded'], description: 'Base style (default: grounded). grounded = sits on ground, floating = raised above ground.' },
           color: { type: 'string', description: 'Fence color as hex string (default: #ffffff).' },
           postSpacing: { type: 'number', description: 'Distance between fence posts in meters (default: 2).' },
+          postCap: { type: 'string', enum: ['none', 'flat', 'pyramid'], description: 'Topper drawn on each fence post (default: pyramid). Pairs well with style="horizontal".' },
+          slatGap: { type: 'number', description: 'For style="horizontal" only: reveal between boards in meters (default: 0.01). Set to 0 for flush cladding.' },
           curveOffset: { type: 'number', description: 'Optional sagitta offset (meters) at the fence midpoint to bend it into an arc. Omit for a straight fence.' },
           levelId: { type: 'string', description: 'Target level ID (from scene context). Required for multi-level buildings when targeting a level other than the currently selected one.' },
           description: { type: 'string', description: 'Brief description.' },
@@ -680,7 +699,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'update_fence',
-      description: 'Update properties of an existing fence (position, height, style, color, curveOffset, etc.).',
+      description: 'Update properties of an existing fence (position, height, style, color, curveOffset, postCap, slatGap, etc.).',
       parameters: {
         type: 'object',
         properties: {
@@ -689,10 +708,12 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
           end: { type: 'array', items: { type: 'number' }, description: 'New end point [x, z] in meters.' },
           height: { type: 'number', description: 'New fence height in meters.' },
           thickness: { type: 'number', description: 'New fence panel thickness in meters.' },
-          style: { type: 'string', enum: ['slat', 'rail', 'privacy'], description: 'New fence style.' },
+          style: { type: 'string', enum: ['slat', 'rail', 'privacy', 'horizontal'], description: 'New fence style. horizontal = horizontal-board cladding between end posts.' },
           baseStyle: { type: 'string', enum: ['floating', 'grounded'], description: 'New base style.' },
           color: { type: 'string', description: 'New fence color as hex string.' },
           postSpacing: { type: 'number', description: 'New post spacing in meters.' },
+          postCap: { type: 'string', enum: ['none', 'flat', 'pyramid'], description: 'New post-cap style (none = no topper, flat = flat slab, pyramid = traditional pointed cap).' },
+          slatGap: { type: 'number', description: 'For style="horizontal": new reveal between boards in meters (0 = flush).' },
           curveOffset: { type: 'number', description: 'New sagitta offset in meters (use 0 to straighten an arced fence).' },
           reason: { type: 'string', description: 'Brief reason for the change.' },
         },

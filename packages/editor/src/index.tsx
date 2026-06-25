@@ -12,7 +12,54 @@ export { default as Editor } from './components/editor'
 // surface uses the shorter, shell-friendly names from the unified
 // preset-system spec.
 export { FloatingActionMenu as FloatingMenu } from './components/editor/floating-action-menu'
-export { formatMeasurement, MeasurementPill } from './components/editor/measurement-pill'
+// Embed surface — the editor's real in-canvas affordances, so a host can mount
+// authentic selection handles, interactive build tools, and the mover on top
+// of a bare `<Viewer>` without the full `<Editor>` shell.
+//  - `NodeArrowHandles` renders the selected node's registry resize/rotate/move
+//    handles.
+//  - `MoveTool` runs the kind-owned mover once a translate handle arms
+//    `useEditor.movingNode`.
+//  - `ToolManager` mounts the active registry build tool (wall / door / window /
+//    …) for interactive placement when `useEditor` is in build mode with a
+//    tool, plus the snap/alignment guide layers. Mount it only while a tool is
+//    active to avoid its select-mode boundary editors.
+//  - `Grid` is the interactive drafting plane: it raycasts the pointer and
+//    emits the `grid:move` / `grid:click` events the build tools consume (the
+//    wall tool is driven entirely by them; door/window use them for free-follow
+//    alongside the viewer's `wall:*` mesh events). Without it the tools mount
+//    but their cursor never tracks the pointer. Mount it while a tool is active.
+// All read `useViewer` selection + `useEditor` state, and cooperate with host
+// camera controls via the `useViewer.inputDragging` / `useEditor.movingNode`
+// flags. Tools place onto `useViewer.selection.levelId`, so the host must set a
+// building + level selection first.
+export { Grid } from './components/editor/grid'
+export {
+  DimensionPill,
+  type DimensionPillPart,
+  formatMeasurement,
+  MeasurementPill,
+} from './components/editor/measurement-pill'
+// In-world arrow handle primitives (chevron geometry, invisible hit area,
+// shared material, palette + scale constants). Re-exported so kind-owned
+// 3D selection affordances in `@aedifex/nodes` (duct side-move / height /
+// extend arrows) reuse the same UI family as the wall / fence side handles.
+export {
+  ARROW_COLOR,
+  ARROW_HOVER_COLOR,
+  ARROW_SCALE,
+  createArrowHandleGeometry,
+  createArrowHitAreaGeometry,
+  HandleArrow,
+  type HandleArrowInputShape,
+  type HandleArrowPlacement,
+  type HandleArrowProps,
+  InvisibleHandleHitArea,
+  NO_RAYCAST,
+  NodeArrowHandles,
+  swallowNextClick,
+  useArrowMaterial,
+  useInvisibleHitAreaMaterial,
+} from './components/editor/node-arrow-handles'
 export {
   type SnapshotCameraData,
   ThumbnailGenerator,
@@ -35,6 +82,7 @@ export {
   type FencePlanPoint,
   snapFenceDraftPoint,
 } from './components/tools/fence/fence-drafting'
+export { MoveTool } from './components/tools/item/move-tool'
 // Placement-math helpers — shared by kind-owned placement tools in
 // `@aedifex/nodes` (wall curve sagitta snap, door / window placement,
 // item drop) so kinds don't reach into editor internals.
@@ -65,6 +113,7 @@ export { useFreshPlacementVisibility } from './components/tools/shared/fresh-pla
 // Phase 5 Stage D — PolygonEditor for slab/ceiling boundary + hole editors.
 export {
   PolygonEditor,
+  type PolygonEditorPlanPointSnapContext,
   type PolygonEditorProps,
 } from './components/tools/shared/polygon-editor'
 export {
@@ -95,6 +144,7 @@ export {
   DEFAULT_STAIR_TYPE,
   DEFAULT_STAIR_WIDTH,
 } from './components/tools/stair/stair-defaults'
+export { ToolManager } from './components/tools/tool-manager'
 export {
   createWallOnCurrentLevel,
   getSegmentGridStep,
@@ -103,11 +153,11 @@ export {
   snapScalarToGrid,
   snapWallDraftPoint,
   snapWallDraftPointDetailed,
-  WALL_FINE_GRID_STEP,
   WALL_GRID_STEP,
   type WallDraftSnapKind,
   type WallDraftSnapResult,
   type WallPlanPoint,
+  type WallSnapRadii,
 } from './components/tools/wall/wall-drafting'
 // `ToolbarLeft` / `ToolbarRight` are the headless-spec aliases for the
 // existing `ViewerToolbarLeft` / `ViewerToolbarRight` exports — the
@@ -164,6 +214,13 @@ export {
 } from './components/ui/sidebar/panels/settings-panel'
 export type { SitePanelProps } from './components/ui/sidebar/panels/site-panel'
 export type { SidebarTab } from './components/ui/sidebar/tab-bar'
+export {
+  resolveAssetSnapTarget,
+  resolveNodeSnapTarget,
+  type SnapTarget,
+  SnapTargetBadge,
+  SnapTargetIcon,
+} from './components/ui/snap-target-badge'
 export type { SaveStatus } from './hooks/use-auto-save'
 // useDragAction is the React-side glue for the registry's DragAction
 // primitive. Public so registry-driven kinds (Phase 5+ Stage D ports)
@@ -172,6 +229,13 @@ export { type UseDragActionArgs, useDragAction } from './hooks/use-drag-action'
 // Phase 5 Stage D — extras for kind-owned placement tools (FenceTool etc.).
 export { markToolCancelConsumed } from './hooks/use-keyboard'
 export { type Selection, useSelection } from './hooks/use-selection'
+export {
+  CEILING_ALIGNMENT_THRESHOLD_M,
+  type CeilingPlanSnapInput,
+  type CeilingPlanSnapResult,
+  clearCeilingSnapFeedback,
+  resolveCeilingPlanPointSnap,
+} from './lib/ceiling-plan-snap'
 export { EDITOR_LAYER } from './lib/constants'
 // Helper libs used by the kind-owned roof / stair / elevator panels.
 export {
@@ -206,10 +270,18 @@ export {
   buildRoofSurfaceMaterialPatch,
   buildSingleSurfaceMaterialPatch,
   buildStairSurfaceMaterialPatch,
-  buildWallSurfaceMaterialPatch,
   getActivePaintMaterialLabel,
   hasActivePaintMaterial,
 } from './lib/material-paint'
+export {
+  formatLinearMeasurement,
+  getLinearUnitLabel,
+  type LinearUnit,
+  linearControlValueToMeters,
+  linearUnitToMeters,
+  metersToLinearUnit,
+} from './lib/measurements'
+export { consumePlacementDragRelease } from './lib/placement-drag-release'
 export {
   addFreshPlacementMetadata,
   getPlacementMetadataRecord,
@@ -222,9 +294,20 @@ export {
   resolvePlanarCursorPosition,
 } from './lib/planar-cursor-placement'
 export { clearRoofDuplicateMetadata, duplicateRoofSubtree } from './lib/roof-duplication'
+// Roof wall-face hit resolution + overlap guard — shared by the
+// kind-owned door / window tools in `@aedifex/nodes` and the item
+// placement coordinator's roof-wall strategy.
+export { hasRoofFaceChildOverlap, type RoofWallHit, resolveRoofWallHit } from './lib/roof-wall-hit'
 export type { SceneGraph } from './lib/scene'
 export { applySceneGraphToEditor } from './lib/scene'
 export { triggerSFX } from './lib/sfx-bus'
+export {
+  clearSlabSnapFeedback,
+  resolveSlabPlanPointSnap,
+  SLAB_ALIGNMENT_THRESHOLD_M,
+  type SlabPlanSnapInput,
+  type SlabPlanSnapResult,
+} from './lib/slab-plan-snap'
 export { duplicateStairSubtree } from './lib/stair-duplication'
 export {
   getBuildingLevelsForLevel,
@@ -234,6 +317,13 @@ export {
   resolveStairPlacementLevelId,
   resolveStairToLevelId,
 } from './lib/stair-levels'
+export {
+  clearSurfacePlanSnapFeedback,
+  resolveSurfacePlanPointSnap,
+  SURFACE_ALIGNMENT_THRESHOLD_M,
+  type SurfacePlanSnapInput,
+  type SurfacePlanSnapResult,
+} from './lib/surface-plan-snap'
 // `cn` (twMerge + clsx) — used by kind-owned panels in `@aedifex/
 // nodes` so they don't need their own copy / their own tailwind-merge
 // dependency.
@@ -259,11 +349,17 @@ export type {
 } from './store/use-editor'
 export { default as useEditor } from './store/use-editor'
 export {
+  default as useOpeningGuides,
+  type OpeningGuide3D,
+  type OpeningGuideVec3,
+} from './store/use-opening-guides'
+export {
   type PaletteView,
   type PaletteViewProps,
   usePaletteViewRegistry,
 } from './store/use-palette-view-registry'
 export { default as usePlacementPreview } from './store/use-placement-preview'
+export { default as useSegmentDraftChain } from './store/use-segment-draft-chain'
 export { useUploadStore } from './store/use-upload'
 export { useWallMoveGhosts, type WallMoveGhostBridge } from './store/use-wall-move-ghosts'
 export {

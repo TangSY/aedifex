@@ -10,15 +10,26 @@ import {
   sceneRegistry,
   useScene,
 } from '@aedifex/core'
-import { markToolCancelConsumed, triggerSFX, useEditor } from '@aedifex/editor'
+import {
+  consumePlacementDragRelease,
+  markToolCancelConsumed,
+  triggerSFX,
+  useEditor,
+} from '@aedifex/editor'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
   createRelativeRoofDrag,
   type RelativeRoofDragTarget,
   roofSegmentLocalToBuildingLocal,
+  snapRelativeRoofDragTarget,
 } from '../shared/relative-roof-drag'
 import { getAnalyticalNormal, surfaceQuatFromNormal } from '../shared/roof-surface'
+import {
+  clearRoofSurfacePlacementGuides,
+  publishRoofSurfaceNodePlacementGuides,
+  snapRoofSurfaceNodeTarget,
+} from '../shared/roof-surface-placement-guides'
 import SkylightPreview from './preview'
 
 export default function MoveSkylightTool({ node }: { node: SkylightNode }) {
@@ -65,7 +76,24 @@ export default function MoveSkylightTool({ node }: { node: SkylightNode }) {
     let lastSnapX = 0
     let lastSnapZ = 0
     let lastTarget: RelativeRoofDragTarget | null = null
+    let committed = false
     const roofDrag = createRelativeRoofDrag(original)
+
+    const clearTarget = () => {
+      lastTarget = null
+      setHasHit(false)
+      clearRoofSurfacePlacementGuides()
+    }
+
+    const resolveSnappedTarget = (event: RoofEvent): RelativeRoofDragTarget | null => {
+      const rawTarget = roofDrag.resolve(event)
+      if (!rawTarget) return null
+      return snapRoofSurfaceNodeTarget({
+        target: snapRelativeRoofDragTarget(rawTarget, event.nativeEvent?.shiftKey === true),
+        node,
+        bypass: event.nativeEvent?.shiftKey === true,
+      })
+    }
 
     // Resolve which segment the cursor is over, then derive the same
     // preview transform stack the placement tool uses (`skylight/tool.tsx`):
@@ -75,9 +103,9 @@ export default function MoveSkylightTool({ node }: { node: SkylightNode }) {
     // same via its `if (!hit) return` guard.
     const updateFromHit = (event: RoofEvent) => {
       const roof = event.node as RoofNode
-      const target = roofDrag.resolve(event)
+      const target = resolveSnappedTarget(event)
       if (!target) {
-        setHasHit(false)
+        clearTarget()
         return false
       }
       lastTarget = target
@@ -92,13 +120,19 @@ export default function MoveSkylightTool({ node }: { node: SkylightNode }) {
         ]),
       )
       setHasHit(true)
+      publishRoofSurfaceNodePlacementGuides({
+        roof,
+        segment: target.segment,
+        center: [target.localX, target.localY, target.localZ],
+        node,
+      })
       return true
     }
 
     const onRoofMove = (event: RoofEvent) => {
       const sx = Math.round(event.position[0] * 20) / 20
       const sz = Math.round(event.position[2] * 20) / 20
-      if (sx !== lastSnapX || sz !== lastSnapZ) {
+      if (event.nativeEvent?.shiftKey !== true && (sx !== lastSnapX || sz !== lastSnapZ)) {
         triggerSFX('sfx:grid-snap')
         lastSnapX = sx
         lastSnapZ = sz
@@ -113,10 +147,12 @@ export default function MoveSkylightTool({ node }: { node: SkylightNode }) {
     }
 
     const onRoofClick = (event: RoofEvent) => {
+      if (committed) return
       const st = useScene.getState()
 
-      const target = lastTarget ?? roofDrag.resolve(event)
+      const target = lastTarget ?? resolveSnappedTarget(event)
       if (!target) return
+      committed = true
 
       const targetSegmentId = target.segment.id as AnyNodeId
       const finalRotation = original.rotation
@@ -163,6 +199,7 @@ export default function MoveSkylightTool({ node }: { node: SkylightNode }) {
       if (obj) obj.visible = true
 
       triggerSFX('sfx:item-place')
+      clearRoofSurfacePlacementGuides()
       exitMoveMode()
       event.stopPropagation()
     }
@@ -183,6 +220,7 @@ export default function MoveSkylightTool({ node }: { node: SkylightNode }) {
         }
         useScene.getState().deleteNode(node.id as AnyNodeId)
         markToolCancelConsumed()
+        clearRoofSurfacePlacementGuides()
         exitMoveMode()
         return
       }
@@ -203,22 +241,37 @@ export default function MoveSkylightTool({ node }: { node: SkylightNode }) {
 
       useScene.temporal.getState().resume()
       markToolCancelConsumed()
+      clearRoofSurfacePlacementGuides()
       exitMoveMode()
+    }
+
+    const onPlacementDragPointerUp = (event: PointerEvent) => {
+      if (!consumePlacementDragRelease(event)) return
+      if (!lastTarget) return
+      onRoofClick({
+        nativeEvent: event,
+        stopPropagation: () => event.stopPropagation(),
+      } as unknown as RoofEvent)
     }
 
     emitter.on('roof:move', onRoofMove)
     emitter.on('roof:enter', onRoofEnter)
     emitter.on('roof:click', onRoofClick)
+    emitter.on('roof:leave', clearTarget)
     emitter.on('tool:cancel', onCancel)
+    window.addEventListener('pointerup', onPlacementDragPointerUp)
 
     return () => {
       emitter.off('roof:move', onRoofMove)
       emitter.off('roof:enter', onRoofEnter)
       emitter.off('roof:click', onRoofClick)
+      emitter.off('roof:leave', clearTarget)
       emitter.off('tool:cancel', onCancel)
+      window.removeEventListener('pointerup', onPlacementDragPointerUp)
 
       const obj = sceneRegistry.nodes.get(node.id)
       if (obj) obj.visible = true
+      clearRoofSurfacePlacementGuides()
       useScene.temporal.getState().resume()
     }
   }, [exitMoveMode, node])

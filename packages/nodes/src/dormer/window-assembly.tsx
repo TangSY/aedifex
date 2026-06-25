@@ -28,6 +28,7 @@ const DormerWindowAssembly = ({
   frameMaterial: THREE.Material
   glassMaterial: THREE.Material
 }) => {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deps deliberately list the build inputs; depending on the whole object would rebuild on unrelated field changes.
   const skirtWin = useMemo(
     () => getDormerSkirtWindowDims(node),
     [
@@ -45,6 +46,7 @@ const DormerWindowAssembly = ({
   const winShape: DormerWindowShape = node.windowShape
   const resolvedRadii: [number, number, number, number] = [...node.windowCornerRadii]
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deps deliberately list the build inputs; depending on the whole object would rebuild on unrelated field changes.
   const winGeo = useMemo(
     () =>
       buildDormerWindowGeometries(
@@ -101,6 +103,7 @@ const DormerWindowAssembly = ({
   )
   useEffect(() => () => sillGeo?.dispose(), [sillGeo])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deps deliberately list the build inputs; depending on the whole object would rebuild on unrelated field changes.
   const exposed = useMemo(
     () => getDormerExposedFaces(node, segment),
     [
@@ -118,12 +121,10 @@ const DormerWindowAssembly = ({
       // non-zero yaw needs to recompute exposure to know which gable
       // is now poking above the slope.
       node.rotation,
-      // Window position + height feed `getDormerExposedFaces` now that
-      // it's gating on window-bottom-above-slope (not wall-top-above-
-      // slope) — dragging the window down via inspector or the new
-      // window-height/offset handles must re-evaluate which gable
-      // still has a fully-visible opening.
-      node.windowHeight,
+      // The window's vertical placement feeds `getDormerExposedFaces`
+      // (gates on the window CENTER clearing the host slope) — dragging
+      // the window down via inspector or the offset handle must
+      // re-evaluate which gable still exposes the opening.
       node.windowOffsetY,
       node.wallSkirtHeight,
     ],
@@ -144,7 +145,6 @@ const DormerWindowAssembly = ({
       {winGeo.glassPanes.map((pane, i) => (
         <mesh
           geometry={pane.geo}
-          // biome-ignore lint/suspicious/noArrayIndexKey: glass panes are derived from grid indices, no stable id.
           key={`${keyPrefix}-glass-${i}`}
           material={glassMaterial}
           name={`dormer-glass-${keyPrefix}-${i}`}
@@ -155,7 +155,6 @@ const DormerWindowAssembly = ({
         <mesh
           castShadow
           geometry={bar.geo}
-          // biome-ignore lint/suspicious/noArrayIndexKey: frame bars are derived from grid indices, no stable id.
           key={`${keyPrefix}-bar-${i}`}
           material={frameMaterial}
           name={`dormer-frame-${keyPrefix}-${i}`}

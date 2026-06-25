@@ -13,10 +13,12 @@ describe('windowDefinition — registry contract', () => {
 })
 
 describe('windowDefinition.capabilities — same host-ref contract as door', () => {
-  test('hostRefFields includes "wallId"', () => {
-    // Window mirrors the door's host-binding pattern: `wallId` is the only
-    // declared host ref today. Tests guard that the pair stays in lockstep.
-    expect(windowDefinition.capabilities.hostRefFields).toEqual(['wallId'])
+  test('hostRefFields includes wallId + roofSegmentId + roofFace', () => {
+    // Window mirrors the door's host-binding pattern. Upstream PR #438
+    // added roof-surface placement, so windows now also bind via
+    // `roofSegmentId` + `roofFace` when placed on a roof slope. Tests
+    // guard that the door pair stays in lockstep.
+    expect(windowDefinition.capabilities.hostRefFields).toEqual(['wallId', 'roofSegmentId', 'roofFace'])
   })
 
   test('selectable + duplicable + deletable + wallOpeningPlacement set', () => {
@@ -31,14 +33,15 @@ describe('windowDefinition.capabilities — same host-ref contract as door', () 
   })
 })
 
-describe('windowDefinition.handles — four arrows', () => {
-  test('returns four handle descriptors (left width, right width, top height, bottom height)', () => {
-    // Source: `windowHandles = [..., windowHeightHandle('top'), windowHeightHandle('bottom')]`.
-    // Two height arrows distinguish window from door (door has one).
+describe('windowDefinition.handles — five arrows post-upstream', () => {
+  test('returns five handle descriptors (left width, right width, top height, bottom height, roof-surface)', () => {
+    // Source: `windowHandles = [..., windowHeightHandle('top'), windowHeightHandle('bottom')]`
+    // plus a fifth roof-surface handle added by upstream PR #438. Two height
+    // arrows still distinguish window from door (door has one).
     const handles = Array.isArray(windowDefinition.handles)
       ? windowDefinition.handles
       : (windowDefinition.handles as any)({})
-    expect(handles).toHaveLength(4)
+    expect(handles).toHaveLength(5)
   })
 })
 

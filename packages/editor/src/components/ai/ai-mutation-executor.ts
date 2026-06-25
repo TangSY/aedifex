@@ -39,6 +39,7 @@ import {
   validateMoveBuilding,
   validateUpdateCeiling,
   validateUpdateRoof,
+  validatePaintSlot,
   validateUpdateRoofMaterial,
   validateUpdateSite,
   validateUpdateSlab,
@@ -155,6 +156,8 @@ export function validateToolCall(
       return [validateUpdateRoofMaterial(toolCall)]
     case 'update_stair_material':
       return [validateUpdateStairMaterial(toolCall)]
+    case 'paint_slot':
+      return [validatePaintSlot(toolCall)]
     case 'save_room_preset':
       // Host-async action (RoomPresetProvider.save). Validation resolves the
       // zone here; execution happens in ai-room-preset-executor.ts via the

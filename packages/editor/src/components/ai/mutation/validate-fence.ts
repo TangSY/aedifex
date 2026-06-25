@@ -18,8 +18,9 @@ import { resolveEffectiveLevelId } from './spatial-queries'
 // Fence & Cut-Out Validators
 // ============================================================================
 
-const VALID_FENCE_STYLES = new Set(['slat', 'rail', 'privacy'])
+const VALID_FENCE_STYLES = new Set(['slat', 'rail', 'privacy', 'horizontal'])
 const VALID_BASE_STYLES = new Set(['floating', 'grounded'])
+const VALID_POST_CAPS = new Set(['none', 'flat', 'pyramid'])
 
 export function validateAddFence(call: AddFenceToolCall): ValidatedAddFence {
   const effectiveLevel = resolveEffectiveLevelId(call.levelId)
@@ -72,11 +73,43 @@ export function validateAddFence(call: AddFenceToolCall): ValidatedAddFence {
       end,
       height: call.height ?? 1.8,
       thickness: call.thickness ?? 0.08,
-      style: 'slat',
+      style: 'slat' as 'slat' | 'rail' | 'privacy' | 'horizontal',
       baseStyle: call.baseStyle ?? 'grounded',
       color: call.color ?? '#ffffff',
       postSpacing: call.postSpacing ?? 2,
       errorReason: `Invalid fence style "${style}". Must be one of: slat, rail, privacy.`,
+    }
+  }
+
+  if (call.postCap && !VALID_POST_CAPS.has(call.postCap)) {
+    return {
+      type: 'add_fence',
+      status: 'invalid',
+      start,
+      end,
+      height: call.height ?? 1.8,
+      thickness: call.thickness ?? 0.08,
+      style: style as 'slat' | 'rail' | 'privacy' | 'horizontal',
+      baseStyle: call.baseStyle ?? 'grounded',
+      color: call.color ?? '#ffffff',
+      postSpacing: call.postSpacing ?? 2,
+      errorReason: `Invalid postCap "${call.postCap}". Must be one of: none, flat, pyramid.`,
+    }
+  }
+
+  if (call.slatGap !== undefined && (call.slatGap < 0 || call.slatGap > 0.5)) {
+    return {
+      type: 'add_fence',
+      status: 'invalid',
+      start,
+      end,
+      height: call.height ?? 1.8,
+      thickness: call.thickness ?? 0.08,
+      style: style as 'slat' | 'rail' | 'privacy' | 'horizontal',
+      baseStyle: call.baseStyle ?? 'grounded',
+      color: call.color ?? '#ffffff',
+      postSpacing: call.postSpacing ?? 2,
+      errorReason: `slatGap ${call.slatGap}m is out of range. Must be 0-0.5m.`,
     }
   }
 
@@ -133,10 +166,12 @@ export function validateAddFence(call: AddFenceToolCall): ValidatedAddFence {
     end,
     height,
     thickness: call.thickness ?? 0.08,
-    style: style as 'slat' | 'rail' | 'privacy',
+    style: style as 'slat' | 'rail' | 'privacy' | 'horizontal',
     baseStyle: baseStyle as 'floating' | 'grounded',
     color: call.color ?? '#ffffff',
     postSpacing: call.postSpacing ?? 2,
+    postCap: call.postCap,
+    slatGap: call.slatGap,
     curveOffset: finalCurveOffset,
     levelId: effectiveLevel ?? undefined,
     adjustmentReason: curveAdjustment,
@@ -160,6 +195,14 @@ export function validateUpdateFence(call: UpdateFenceToolCall): ValidatedUpdateF
 
   if (call.baseStyle && !VALID_BASE_STYLES.has(call.baseStyle)) {
     return { type: 'update_fence', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: `Invalid baseStyle "${call.baseStyle}".` }
+  }
+
+  if (call.postCap && !VALID_POST_CAPS.has(call.postCap)) {
+    return { type: 'update_fence', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: `Invalid postCap "${call.postCap}". Must be one of: none, flat, pyramid.` }
+  }
+
+  if (call.slatGap !== undefined && (call.slatGap < 0 || call.slatGap > 0.5)) {
+    return { type: 'update_fence', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: `slatGap ${call.slatGap}m is out of range. Must be 0-0.5m.` }
   }
 
   if (call.height !== undefined && (call.height < 0.3 || call.height > 5.0)) {
@@ -203,6 +246,8 @@ export function validateUpdateFence(call: UpdateFenceToolCall): ValidatedUpdateF
     baseStyle: call.baseStyle,
     color: call.color,
     postSpacing: call.postSpacing,
+    postCap: call.postCap,
+    slatGap: call.slatGap,
     curveOffset: finalCurveOffset,
     adjustmentReason: curveAdjustment,
   }

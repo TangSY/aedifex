@@ -83,6 +83,41 @@ export interface UpdateStairMaterialToolCall {
   reason?: string
 }
 
+/**
+ * Unified per-slot paint tool — writes a single slot on `node.slots`.
+ * Replaces the per-kind `update_*_material` tools for the 10 kinds that have
+ * migrated to the paint-slots model: wall, slab, ceiling, stair, column,
+ * elevator, fence, shelf, door, window. The old `update_*_material` tools
+ * remain for backward compatibility but only mutate legacy single-material
+ * fields — prefer `paint_slot` for per-part painting.
+ */
+export interface PaintSlotToolCall {
+  tool: 'paint_slot'
+  /** Target node ID. */
+  nodeId: string
+  /**
+   * Slot identifier within the node's kind. Valid values per kind:
+   * - wall: 'interior' | 'exterior'
+   * - slab: 'surface' | 'side'
+   * - ceiling: 'surface'
+   * - stair: 'treads' | 'body' | 'railing'
+   * - column: 'shaft' | 'base' | 'capital' | 'frame'
+   * - elevator: 'cab' | 'doors' | 'shaft' | 'glass'
+   * - fence: 'posts' | 'infill' | 'base' | 'rail'
+   * - shelf: 'shelves' | 'frame' | 'back'
+   * - door: 'panel' | 'frame' | 'glass' | 'hardware'
+   * - window: 'frame' | 'glass'
+   * For item nodes, any string is accepted (slot ids come from the GLB mesh names).
+   */
+  slotId: string
+  /**
+   * MaterialRef: `library:<preset>` (catalog material) or `scene:<id>` (minted
+   * scene material). Set to empty string to clear back to the slot default.
+   */
+  materialRef: string
+  reason?: string
+}
+
 export interface AddWallToolCall {
   tool: 'add_wall'
   start: [number, number]
@@ -424,10 +459,14 @@ export interface AddFenceToolCall {
   end: [number, number]
   height?: number
   thickness?: number
-  style?: 'slat' | 'rail' | 'privacy'
+  style?: 'slat' | 'rail' | 'privacy' | 'horizontal'
   baseStyle?: 'floating' | 'grounded'
   color?: string
   postSpacing?: number
+  /** Topper drawn on each fence post. Default 'pyramid'. */
+  postCap?: 'none' | 'flat' | 'pyramid'
+  /** For style='horizontal': reveal between boards in meters (default 0.01; 0 = flush). */
+  slatGap?: number
   /** Midpoint sagitta offset to bend the fence into an arc (positive/negative meters). */
   curveOffset?: number
   /** Target level ID. When omitted, uses the currently selected level in the viewer. */
@@ -443,10 +482,12 @@ export interface UpdateFenceToolCall {
   end?: [number, number]
   height?: number
   thickness?: number
-  style?: 'slat' | 'rail' | 'privacy'
+  style?: 'slat' | 'rail' | 'privacy' | 'horizontal'
   baseStyle?: 'floating' | 'grounded'
   color?: string
   postSpacing?: number
+  postCap?: 'none' | 'flat' | 'pyramid'
+  slatGap?: number
   curveOffset?: number
   reason?: string
 }
@@ -602,3 +643,4 @@ export type AIToolCall =
   | UpdateWallMaterialToolCall
   | UpdateRoofMaterialToolCall
   | UpdateStairMaterialToolCall
+  | PaintSlotToolCall

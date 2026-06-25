@@ -20,14 +20,15 @@ describe('itemDefinition — registry contract', () => {
 })
 
 describe('itemDefinition.capabilities — host-ref contract (pin reality)', () => {
-  test('hostRefFields is exactly ["wallId", "wallT"] — both stripped on preset save', () => {
-    // SOURCE TRUTH (definition.ts line 87): `hostRefFields: ['wallId', 'wallT']`.
-    // Items hosted on walls store both the wallId AND the parametric `wallT`
-    // (position along the wall span). When a wall-hosted item gets saved as
-    // a preset (sconce, hanging shelf), the host app strips BOTH via
-    // `getHostRefFields(def)` so the descendant re-attaches against the new
-    // wall geometry at placement time.
-    expect(itemDefinition.capabilities.hostRefFields).toEqual(['wallId', 'wallT'])
+  test('hostRefFields covers wall (wallId, wallT) AND roof-surface (roofSegmentId, roofFace) host refs', () => {
+    // SOURCE TRUTH: hostRefFields includes wall + roof bindings. Items
+    // hosted on walls store both the wallId AND the parametric `wallT`
+    // (position along the wall span). Upstream PR #438 added roof-surface
+    // placement (solar panels on slopes), so `roofSegmentId` + `roofFace`
+    // join the list. Host apps strip all four via `getHostRefFields(def)`
+    // so the descendant re-attaches against the new wall/roof geometry
+    // at preset placement time.
+    expect(itemDefinition.capabilities.hostRefFields).toEqual(['wallId', 'wallT', 'roofSegmentId', 'roofFace'])
   })
 
   test('selectable + duplicable + deletable; no movable (bespoke MoveItemContent)', () => {

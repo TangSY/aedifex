@@ -13,8 +13,14 @@ import { triggerSFX } from '@aedifex/editor'
 import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { RoofAttachmentFallbackPreview } from '../shared/roof-attachment-fallback-preview'
 import { resolveRoofSegmentHit } from '../shared/roof-segment-hit'
 import { getAnalyticalNormal, surfaceQuatFromNormal } from '../shared/roof-surface'
+import {
+  clearRoofSurfacePlacementGuides,
+  publishRoofSurfacePlacementGuides,
+  roofSurfaceFootprintFromNode,
+} from '../shared/roof-surface-placement-guides'
 import { solarPanelDefinition } from './definition'
 import SolarPanelPreview from './preview'
 
@@ -72,7 +78,7 @@ const SolarPanelTool = () => {
       const sx = Math.round(wx * 20) / 20
       const sz = Math.round(wz * 20) / 20
       const prev = lastSnapRef.current
-      if (!prev || prev[0] !== sx || prev[1] !== sz) {
+      if (event.nativeEvent?.shiftKey !== true && (!prev || prev[0] !== sx || prev[1] !== sz)) {
         triggerSFX('sfx:grid-snap')
         lastSnapRef.current = [sx, sz]
       }
@@ -84,6 +90,12 @@ const SolarPanelTool = () => {
       setPreviewSurfaceQuat(surfaceQuatFromNormal(normal, new THREE.Quaternion()))
       setPreviewYaw((event.node.rotation ?? 0) + (hit.segment.rotation ?? 0))
       setPreviewPos(worldToBuildingLocal(wx, wy, wz))
+      publishRoofSurfacePlacementGuides({
+        roof: event.node as RoofNode,
+        segment: hit.segment,
+        center: [hit.localX, hit.localY, hit.localZ],
+        footprint: roofSurfaceFootprintFromNode(previewNode),
+      })
       event.stopPropagation()
     }
 
@@ -116,6 +128,7 @@ const SolarPanelTool = () => {
       state.dirtyNodes.add(hit.segment.id as AnyNodeId)
       setSelection({ selectedIds: [panel.id] })
       triggerSFX('sfx:item-place')
+      clearRoofSurfacePlacementGuides()
       event.stopPropagation()
     }
 
@@ -127,19 +140,31 @@ const SolarPanelTool = () => {
       emitter.off('roof:move', updatePreview)
       emitter.off('roof:enter', updatePreview)
       emitter.off('roof:click', onClick)
+      clearRoofSurfacePlacementGuides()
     }
-  }, [activeBuildingId, setSelection])
-
-  if (!activeBuildingId || !previewPos || !previewSurfaceQuat) return null
+  }, [activeBuildingId, setSelection, previewNode])
 
   return (
-    <group position={previewPos}>
-      <group rotation-y={previewYaw}>
-        <group quaternion={previewSurfaceQuat}>
-          <SolarPanelPreview node={previewNode} />
+    <>
+      <RoofAttachmentFallbackPreview
+        activeBuildingId={activeBuildingId}
+        ghost={<SolarPanelPreview node={previewNode} invalid />}
+        onInvalidTarget={() => {
+          setPreviewPos(null)
+          setPreviewSurfaceQuat(null)
+          clearRoofSurfacePlacementGuides()
+        }}
+      />
+      {activeBuildingId && previewPos && previewSurfaceQuat && (
+        <group position={previewPos}>
+          <group rotation-y={previewYaw}>
+            <group quaternion={previewSurfaceQuat}>
+              <SolarPanelPreview node={previewNode} />
+            </group>
+          </group>
         </group>
-      </group>
-    </group>
+      )}
+    </>
   )
 }
 

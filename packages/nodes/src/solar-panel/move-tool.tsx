@@ -4,20 +4,33 @@ import {
   type AnyNodeId,
   emitter,
   type RoofEvent,
+  type RoofNode,
   type RoofSegmentNode,
   type SolarPanelNode,
   sceneRegistry,
   useScene,
 } from '@aedifex/core'
-import { EDITOR_LAYER, markToolCancelConsumed, triggerSFX, useEditor } from '@aedifex/editor'
+import {
+  consumePlacementDragRelease,
+  EDITOR_LAYER,
+  markToolCancelConsumed,
+  triggerSFX,
+  useEditor,
+} from '@aedifex/editor'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
   createRelativeRoofDrag,
   type RelativeRoofDragTarget,
   roofSegmentLocalToBuildingLocal,
+  snapRelativeRoofDragTarget,
 } from '../shared/relative-roof-drag'
 import { getAnalyticalNormal, surfaceQuatFromNormal } from '../shared/roof-surface'
+import {
+  clearRoofSurfacePlacementGuides,
+  publishRoofSurfaceNodePlacementGuides,
+  snapRoofSurfaceNodeTarget,
+} from '../shared/roof-surface-placement-guides'
 
 // MeshBasicMaterial: avoids the WebGPU "Color target has no corresponding
 // fragment stage output / writeMask not zero" error that fires when
@@ -91,16 +104,36 @@ export default function MoveSolarPanelTool({ node }: { node: SolarPanelNode }) {
     let lastSnapX = 0
     let lastSnapZ = 0
     let lastTarget: RelativeRoofDragTarget | null = null
+    let committed = false
     const roofDrag = createRelativeRoofDrag(original)
 
+    const clearTarget = () => {
+      lastTarget = null
+      setHasHit(false)
+      clearRoofSurfacePlacementGuides()
+    }
+
+    const resolveSnappedTarget = (event: RoofEvent): RelativeRoofDragTarget | null => {
+      const rawTarget = roofDrag.resolve(event)
+      if (!rawTarget) return null
+      return snapRoofSurfaceNodeTarget({
+        target: snapRelativeRoofDragTarget(rawTarget, event.nativeEvent?.shiftKey === true),
+        node,
+        bypass: event.nativeEvent?.shiftKey === true,
+      })
+    }
+
     const updateGhost = (event: RoofEvent) => {
-      const target = roofDrag.resolve(event)
-      if (!target) return
+      const target = resolveSnappedTarget(event)
+      if (!target) {
+        clearTarget()
+        return
+      }
       lastTarget = target
 
       const sx = Math.round(target.localX * 20) / 20
       const sz = Math.round(target.localZ * 20) / 20
-      if (sx !== lastSnapX || sz !== lastSnapZ) {
+      if (event.nativeEvent?.shiftKey !== true && (sx !== lastSnapX || sz !== lastSnapZ)) {
         triggerSFX('sfx:grid-snap')
         lastSnapX = sx
         lastSnapZ = sz
@@ -123,14 +156,22 @@ export default function MoveSolarPanelTool({ node }: { node: SolarPanelNode }) {
         ]),
       )
       setHasHit(true)
+      publishRoofSurfaceNodePlacementGuides({
+        roof: event.node as RoofNode,
+        segment: target.segment,
+        center: [target.localX, target.localY, target.localZ],
+        node,
+      })
       event.stopPropagation()
     }
 
     const onRoofClick = (event: RoofEvent) => {
+      if (committed) return
       const st = useScene.getState()
 
-      const target = lastTarget ?? roofDrag.resolve(event)
+      const target = lastTarget ?? resolveSnappedTarget(event)
       if (!target) return
+      committed = true
 
       const targetSegmentId = target.segment.id as AnyNodeId
 
@@ -184,6 +225,7 @@ export default function MoveSolarPanelTool({ node }: { node: SolarPanelNode }) {
       if (obj) obj.visible = true
 
       triggerSFX('sfx:item-place')
+      clearRoofSurfacePlacementGuides()
       exitMoveMode()
       event.stopPropagation()
     }
@@ -204,6 +246,7 @@ export default function MoveSolarPanelTool({ node }: { node: SolarPanelNode }) {
         }
         useScene.getState().deleteNode(node.id as AnyNodeId)
         markToolCancelConsumed()
+        clearRoofSurfacePlacementGuides()
         exitMoveMode()
         return
       }
@@ -224,22 +267,37 @@ export default function MoveSolarPanelTool({ node }: { node: SolarPanelNode }) {
 
       useScene.temporal.getState().resume()
       markToolCancelConsumed()
+      clearRoofSurfacePlacementGuides()
       exitMoveMode()
+    }
+
+    const onPlacementDragPointerUp = (event: PointerEvent) => {
+      if (!consumePlacementDragRelease(event)) return
+      if (!lastTarget) return
+      onRoofClick({
+        nativeEvent: event,
+        stopPropagation: () => event.stopPropagation(),
+      } as unknown as RoofEvent)
     }
 
     emitter.on('roof:move', updateGhost)
     emitter.on('roof:enter', updateGhost)
     emitter.on('roof:click', onRoofClick)
+    emitter.on('roof:leave', clearTarget)
     emitter.on('tool:cancel', onCancel)
+    window.addEventListener('pointerup', onPlacementDragPointerUp)
 
     return () => {
       emitter.off('roof:move', updateGhost)
       emitter.off('roof:enter', updateGhost)
       emitter.off('roof:click', onRoofClick)
+      emitter.off('roof:leave', clearTarget)
       emitter.off('tool:cancel', onCancel)
+      window.removeEventListener('pointerup', onPlacementDragPointerUp)
 
       const obj = sceneRegistry.nodes.get(node.id)
       if (obj) obj.visible = true
+      clearRoofSurfacePlacementGuides()
       useScene.temporal.getState().resume()
     }
   }, [exitMoveMode, node])

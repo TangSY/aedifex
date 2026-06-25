@@ -1,6 +1,7 @@
 import type { HandleDescriptor, NodeDefinition, SpawnNode as SpawnNodeType } from '@aedifex/core'
 import { buildSpawnFloorplan } from './floorplan'
 import { spawnRotateAffordance } from './floorplan-affordances'
+import { spawnFloorplanMoveTarget } from './floorplan-move'
 import { spawnParametrics } from './parametrics'
 import { SpawnNode } from './schema'
 
@@ -92,19 +93,21 @@ export const spawnDefinition: NodeDefinition<typeof SpawnNode> = {
   // delete. Legacy spawn click handlers in FloorplanNodeLayer become
   // dead code once Phase 6 cleanup removes the [] entries path.
   floorplan: buildSpawnFloorplan,
+  floorplanMoveTarget: spawnFloorplanMoveTarget,
   floorplanAffordances: {
     'spawn-rotate': spawnRotateAffordance,
   },
   tool: () => import('./tool'),
   toolHints: [
     { key: 'Left click', label: 'Place spawn point' },
+    { key: 'Shift', label: 'Free place' },
     { key: 'Esc', label: 'Cancel' },
   ],
 
   presentation: {
     label: 'Spawn Point',
     description: 'Player or camera origin within a level. One per level.',
-    icon: { kind: 'url', src: '/icons/spawn-point.png' },
+    icon: { kind: 'url', src: '/icons/spawn-point.webp' },
     paletteSection: 'structure',
     paletteOrder: 90, // bottom of structure list — matches legacy palette order
   },

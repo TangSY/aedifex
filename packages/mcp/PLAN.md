@@ -339,7 +339,7 @@ CLI `pascal-mcp` flags:
     "zod": "^4.3.5"
   },
   "devDependencies": {
-    "@pascal/typescript-config": "*",
+    "@repo/typescript-config": "*",
     "@types/node": "^25.5.0",
     "typescript": "5.9.3"
   }
@@ -350,11 +350,11 @@ Note: `@aedifex/core` is a **peer dependency**, but Bun workspaces auto-resolve 
 
 ## 10. tsconfig.json contract
 
-Extends `@pascal/typescript-config/base.json` (NOT react-library — no DOM).
+Extends `@repo/typescript-config/base.json` (NOT react-library — no DOM).
 
 ```jsonc
 {
-  "extends": "@pascal/typescript-config/base.json",
+  "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",

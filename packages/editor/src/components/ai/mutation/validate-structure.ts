@@ -2,6 +2,7 @@ import {
   type AnyNode,
   type AnyNodeId,
   getCatalogMaterialById,
+  nodeRegistry,
   useScene,
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
@@ -24,6 +25,7 @@ import type {
   UpdateRoofToolCall,
   UpdateSiteToolCall,
   UpdateSlabToolCall,
+  PaintSlotToolCall,
   UpdateStairMaterialToolCall,
   UpdateStairToolCall,
   UpdateZoneToolCall,
@@ -45,6 +47,7 @@ import type {
   ValidatedUpdateSite,
   ValidatedUpdateSlab,
   ValidatedUpdateStair,
+  ValidatedPaintSlot,
   ValidatedUpdateStairMaterial,
   ValidatedUpdateZone,
 } from '../types'
@@ -790,6 +793,127 @@ export function validateUpdateRoofMaterial(call: UpdateRoofMaterialToolCall): Va
     role: call.role,
     materialPreset: call.materialPreset,
     materialColor: call.materialColor,
+  }
+}
+
+/**
+ * Validate the unified `paint_slot` tool. Looks up the target node and asks
+ * the node registry which slots that kind declares. Rejects unknown slot ids
+ * with a helpful list so the model can self-correct on the next turn.
+ *
+ * For nodes whose registry definition has no `slots` declaration (item kinds
+ * whose slots come from GLB mesh names, or kinds not yet migrated), we accept
+ * any non-empty string — the executor downstream resolves the GLB-scan slots
+ * at paint time and will surface a real error if the slot can't be found.
+ */
+export function validatePaintSlot(call: PaintSlotToolCall): ValidatedPaintSlot {
+  const trimmedSlot = call.slotId?.trim() ?? ''
+  if (!trimmedSlot) {
+    return {
+      type: 'paint_slot',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      slotId: call.slotId,
+      materialRef: call.materialRef,
+      errorReason: 'slotId is required and cannot be empty.',
+    }
+  }
+
+  if (typeof call.materialRef !== 'string') {
+    return {
+      type: 'paint_slot',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      slotId: trimmedSlot,
+      materialRef: '',
+      errorReason: 'materialRef must be a string (e.g. "library:<preset-id>" or "scene:<id>"; "" clears to default).',
+    }
+  }
+
+  // Empty materialRef is a deliberate "clear to default" sentinel — accept.
+  // Non-empty refs must use the canonical prefix scheme.
+  if (call.materialRef && !call.materialRef.startsWith('library:') && !call.materialRef.startsWith('scene:')) {
+    return {
+      type: 'paint_slot',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      slotId: trimmedSlot,
+      materialRef: call.materialRef,
+      errorReason: `materialRef "${call.materialRef}" must start with "library:" (catalog preset) or "scene:" (minted scene material).`,
+    }
+  }
+
+  const { nodes } = useScene.getState()
+  const node = nodes[call.nodeId as AnyNodeId]
+  if (!node) {
+    return {
+      type: 'paint_slot',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      slotId: trimmedSlot,
+      materialRef: call.materialRef,
+      errorReason: `Node "${call.nodeId}" not found.`,
+    }
+  }
+
+  const def = nodeRegistry.get(node.type)
+  // No registry def → reject; AI shouldn't be painting unregistered kinds.
+  if (!def) {
+    return {
+      type: 'paint_slot',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      slotId: trimmedSlot,
+      materialRef: call.materialRef,
+      kind: node.type,
+      errorReason: `Node kind "${node.type}" is not registered.`,
+    }
+  }
+
+  // Registry-declared slots: enforce slotId is in the declared set.
+  const slotsDecl = def.capabilities.slots
+  if (slotsDecl) {
+    const declared = slotsDecl(node).map((s: { slotId: string }) => s.slotId)
+    if (!declared.includes(trimmedSlot)) {
+      return {
+        type: 'paint_slot',
+        status: 'invalid',
+        nodeId: call.nodeId as AnyNodeId,
+        slotId: trimmedSlot,
+        materialRef: call.materialRef,
+        kind: node.type,
+        errorReason: `Slot "${trimmedSlot}" is not declared for ${node.type}. Valid slots: ${declared.join(', ')}.`,
+      }
+    }
+  }
+  // No `def.slots` (e.g. item kinds whose slots come from GLB mesh names):
+  // pass through — the executor's paint capability resolves the slot at
+  // mutation time and will fail with a specific reason if it can't.
+
+  // Library refs: optionally cross-check the catalog so the model gets a
+  // fast "preset not found" instead of a silent render fallback.
+  if (call.materialRef.startsWith('library:')) {
+    const presetId = call.materialRef.slice('library:'.length)
+    if (presetId && !getCatalogMaterialById(presetId)) {
+      return {
+        type: 'paint_slot',
+        status: 'invalid',
+        nodeId: call.nodeId as AnyNodeId,
+        slotId: trimmedSlot,
+        materialRef: call.materialRef,
+        kind: node.type,
+        errorReason: `Catalog preset "${presetId}" not found.`,
+      }
+    }
+  }
+
+  return {
+    type: 'paint_slot',
+    status: 'valid',
+    nodeId: call.nodeId as AnyNodeId,
+    slotId: trimmedSlot,
+    materialRef: call.materialRef,
+    kind: node.type,
   }
 }
 

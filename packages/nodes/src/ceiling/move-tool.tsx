@@ -9,11 +9,13 @@ import {
   polygonAnchors,
   resolveAlignment,
   sceneRegistry,
+  snapScalar,
   useLiveTransforms,
   useScene,
 } from '@aedifex/core'
 import {
   CursorSphere,
+  consumePlacementDragRelease,
   markToolCancelConsumed,
   triggerSFX,
   useAlignmentGuides,
@@ -35,10 +37,10 @@ import { BufferGeometry, DoubleSide, Path, Shape, ShapeGeometry, Vector3 } from 
  * mesh's X/Z position on rebuild (`mesh.position.x = 0`,
  * `mesh.position.z = 0`) so the visual transitions smoothly.
  *
- * 0.5m grid snap (matches legacy).
+ * Snaps to the editor's configured grid step (Shift bypasses).
  */
 function snap(value: number) {
-  return Math.round(value * 2) / 2
+  return snapScalar(value, useEditor.getState().gridSnapStep)
 }
 
 /** Figma-style alignment-snap threshold (meters), matching the other tools. */
@@ -147,10 +149,12 @@ export const MoveCeilingTool: React.FC<{ node: CeilingNode }> = ({ node }) => {
 
     const onGridMove = (event: GridEvent) => {
       if (isFloorplanSourcedEvent(event)) return
-      const localX = snap(event.localPosition[0])
-      const localZ = snap(event.localPosition[2])
+      const bypassSnap = event.nativeEvent?.shiftKey === true
+      const localX = bypassSnap ? event.localPosition[0] : snap(event.localPosition[0])
+      const localZ = bypassSnap ? event.localPosition[2] : snap(event.localPosition[2])
 
       if (
+        !bypassSnap &&
         previousGridPosRef.current &&
         (localX !== previousGridPosRef.current[0] || localZ !== previousGridPosRef.current[1])
       ) {
@@ -166,8 +170,8 @@ export const MoveCeilingTool: React.FC<{ node: CeilingNode }> = ({ node }) => {
 
       // Figma-style alignment snap: align the ceiling's translated polygon
       // vertices to other objects' anchors; fold the snap into the delta and
-      // publish a guide. Alt bypasses.
-      const bypass = event.nativeEvent?.altKey === true
+      // publish a guide. Alt bypasses alignment; Shift bypasses all snap.
+      const bypass = event.nativeEvent?.altKey === true || bypassSnap
       if (!bypass && alignmentCandidates.length > 0) {
         const result = resolveAlignment({
           moving: polygonAnchors(ceilingId, translatePolygon(originalPolygon, deltaX, deltaZ)),
@@ -187,6 +191,7 @@ export const MoveCeilingTool: React.FC<{ node: CeilingNode }> = ({ node }) => {
     }
 
     const onGridClick = (event: GridEvent) => {
+      if (wasCommitted) return
       if (isFloorplanSourcedEvent(event)) return
       if (Date.now() - activatedAtRef.current < 150) {
         event.nativeEvent?.stopPropagation?.()
@@ -212,6 +217,12 @@ export const MoveCeilingTool: React.FC<{ node: CeilingNode }> = ({ node }) => {
       event.nativeEvent?.stopPropagation?.()
     }
 
+    const onPlacementDragPointerUp = (event: PointerEvent) => {
+      if (!consumePlacementDragRelease(event)) return
+      activatedAtRef.current = 0
+      onGridClick({ nativeEvent: event } as unknown as GridEvent)
+    }
+
     const onCancel = () => {
       clearPreview()
       useAlignmentGuides.getState().clear()
@@ -223,6 +234,7 @@ export const MoveCeilingTool: React.FC<{ node: CeilingNode }> = ({ node }) => {
     emitter.on('grid:move', onGridMove)
     emitter.on('grid:click', onGridClick)
     emitter.on('tool:cancel', onCancel)
+    window.addEventListener('pointerup', onPlacementDragPointerUp)
 
     return () => {
       useAlignmentGuides.getState().clear()
@@ -234,6 +246,7 @@ export const MoveCeilingTool: React.FC<{ node: CeilingNode }> = ({ node }) => {
       emitter.off('grid:move', onGridMove)
       emitter.off('grid:click', onGridClick)
       emitter.off('tool:cancel', onCancel)
+      window.removeEventListener('pointerup', onPlacementDragPointerUp)
     }
   }, [exitMoveMode, node.id])
 

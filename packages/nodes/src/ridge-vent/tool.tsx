@@ -14,7 +14,13 @@ import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { resolveRidgeSnap } from '../shared/ridge-snap'
+import { RoofAttachmentFallbackPreview } from '../shared/roof-attachment-fallback-preview'
 import { resolveRoofSegmentHit } from '../shared/roof-segment-hit'
+import {
+  clearRoofSurfacePlacementGuides,
+  publishRoofSurfacePlacementGuides,
+  roofSurfaceFootprintFromNode,
+} from '../shared/roof-surface-placement-guides'
 import { ridgeVentDefinition } from './definition'
 import RidgeVentPreview from './preview'
 
@@ -72,6 +78,7 @@ const RidgeVentTool = () => {
       const snap = resolveRidgeSnap(hit.segment, hit.localX, hit.localZ)
       if (!snap) {
         setPreviewPos(null)
+        clearRoofSurfacePlacementGuides()
         return
       }
       const segObj = sceneRegistry.nodes.get(hit.segment.id)
@@ -88,13 +95,20 @@ const RidgeVentTool = () => {
       const sx = Math.round(ridgeWorld[0] * 20) / 20
       const sz = Math.round(ridgeWorld[2] * 20) / 20
       const prev = lastSnapRef.current
-      if (!prev || prev[0] !== sx || prev[1] !== sz) {
+      if (event.nativeEvent?.shiftKey !== true && (!prev || prev[0] !== sx || prev[1] !== sz)) {
         triggerSFX('sfx:grid-snap')
         lastSnapRef.current = [sx, sz]
       }
 
       setPreviewYaw((event.node.rotation ?? 0) + (hit.segment.rotation ?? 0))
       setPreviewPos(worldToBuildingLocal(ridgeWorld[0], ridgeWorld[1], ridgeWorld[2]))
+      publishRoofSurfacePlacementGuides({
+        roof: event.node as RoofNode,
+        segment: hit.segment,
+        center: [snap.localX, hit.localY, snap.localZ],
+        footprint: roofSurfaceFootprintFromNode(previewNode),
+        mode: 'linear-edge',
+      })
       event.stopPropagation()
     }
 
@@ -121,6 +135,7 @@ const RidgeVentTool = () => {
       state.dirtyNodes.add(hit.segment.id as AnyNodeId)
       setSelection({ selectedIds: [vent.id] })
       triggerSFX('sfx:item-place')
+      clearRoofSurfacePlacementGuides()
       event.stopPropagation()
     }
 
@@ -132,17 +147,37 @@ const RidgeVentTool = () => {
       emitter.off('roof:move', updatePreview)
       emitter.off('roof:enter', updatePreview)
       emitter.off('roof:click', onClick)
+      clearRoofSurfacePlacementGuides()
     }
-  }, [activeBuildingId, setSelection])
-
-  if (!activeBuildingId || !previewPos) return null
+  }, [activeBuildingId, setSelection, previewNode])
 
   return (
-    <group position={previewPos}>
-      <group rotation-y={previewYaw}>
-        <RidgeVentPreview node={previewNode} />
-      </group>
-    </group>
+    <>
+      <RoofAttachmentFallbackPreview
+        activeBuildingId={activeBuildingId}
+        ghost={<RidgeVentPreview node={previewNode} invalid />}
+        isValidRoofTarget={(event) => {
+          const hit = resolveRoofSegmentHit(
+            event.node as RoofNode,
+            event.position[0],
+            event.position[1],
+            event.position[2],
+          )
+          return !!hit && !!resolveRidgeSnap(hit.segment, hit.localX, hit.localZ)
+        }}
+        onInvalidTarget={() => {
+          setPreviewPos(null)
+          clearRoofSurfacePlacementGuides()
+        }}
+      />
+      {activeBuildingId && previewPos && (
+        <group position={previewPos}>
+          <group rotation-y={previewYaw}>
+            <RidgeVentPreview node={previewNode} />
+          </group>
+        </group>
+      )}
+    </>
   )
 }
 
