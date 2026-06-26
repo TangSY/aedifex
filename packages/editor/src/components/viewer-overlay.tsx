@@ -106,7 +106,7 @@ const wallModeConfig = {
   },
   translucent: {
     icon: (props: any) => (
-      <img alt="Translucent" height={28} src="/icons/wall.png" width={28} {...props} />
+      <img alt="Translucent" height={28} src="/icons/wall.webp" width={28} {...props} />
     ),
     label: 'Translucent',
   },
