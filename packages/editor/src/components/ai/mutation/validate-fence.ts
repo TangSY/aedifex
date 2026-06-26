@@ -22,6 +22,20 @@ const VALID_FENCE_STYLES = new Set(['slat', 'rail', 'privacy', 'horizontal'])
 const VALID_BASE_STYLES = new Set(['floating', 'grounded'])
 const VALID_POST_CAPS = new Set(['none', 'flat', 'pyramid'])
 
+// Single source of truth for "invalid enum" error messages. Inlining the
+// allowed list keeps the LLM in the loop — it learned upstream PR #432's
+// new `horizontal` style by reading these messages, not by reading the
+// schema. Drift between this and the Set above is what hid `horizontal`
+// from the model in the first place.
+function buildStyleErrorMessage(
+  field: string,
+  value: unknown,
+  allowedSet: Set<string>,
+): string {
+  const allowed = [...allowedSet].join(', ')
+  return `Invalid ${field} "${String(value)}". Must be one of: ${allowed}.`
+}
+
 export function validateAddFence(call: AddFenceToolCall): ValidatedAddFence {
   const effectiveLevel = resolveEffectiveLevelId(call.levelId)
 
@@ -77,7 +91,7 @@ export function validateAddFence(call: AddFenceToolCall): ValidatedAddFence {
       baseStyle: call.baseStyle ?? 'grounded',
       color: call.color ?? '#ffffff',
       postSpacing: call.postSpacing ?? 2,
-      errorReason: `Invalid fence style "${style}". Must be one of: slat, rail, privacy.`,
+      errorReason: buildStyleErrorMessage('fence style', style, VALID_FENCE_STYLES),
     }
   }
 
@@ -93,7 +107,7 @@ export function validateAddFence(call: AddFenceToolCall): ValidatedAddFence {
       baseStyle: call.baseStyle ?? 'grounded',
       color: call.color ?? '#ffffff',
       postSpacing: call.postSpacing ?? 2,
-      errorReason: `Invalid postCap "${call.postCap}". Must be one of: none, flat, pyramid.`,
+      errorReason: buildStyleErrorMessage('postCap', call.postCap, VALID_POST_CAPS),
     }
   }
 
@@ -126,7 +140,7 @@ export function validateAddFence(call: AddFenceToolCall): ValidatedAddFence {
       baseStyle: 'grounded',
       color: call.color ?? '#ffffff',
       postSpacing: call.postSpacing ?? 2,
-      errorReason: `Invalid baseStyle "${baseStyle}". Must be one of: floating, grounded.`,
+      errorReason: buildStyleErrorMessage('baseStyle', baseStyle, VALID_BASE_STYLES),
     }
   }
 
@@ -159,9 +173,24 @@ export function validateAddFence(call: AddFenceToolCall): ValidatedAddFence {
     }
   }
 
+  // Horizontal-board fences (upstream PR #432) ship with `pyramid` post caps
+  // by default — the zod schema bakes that in via `.default('pyramid')`, but
+  // surfacing it here lets the LLM see the system choice in `adjustmentReason`
+  // and learn that horizontal pairs with post caps. Without this nudge the
+  // model can call horizontal without postCap and assume zero defaulting.
+  let finalPostCap = call.postCap
+  let postCapAdjustment: string | undefined
+  if (style === 'horizontal' && !call.postCap) {
+    finalPostCap = 'pyramid'
+    postCapAdjustment = `style="horizontal" — defaulted postCap to "pyramid" (matches upstream PR #432 default).`
+  }
+
+  const adjustmentParts = [curveAdjustment, postCapAdjustment].filter(Boolean) as string[]
+  const adjustmentReason = adjustmentParts.length ? adjustmentParts.join(' ') : undefined
+
   return {
     type: 'add_fence',
-    status: curveAdjustment ? 'adjusted' : 'valid',
+    status: adjustmentReason ? 'adjusted' : 'valid',
     start,
     end,
     height,
@@ -170,11 +199,11 @@ export function validateAddFence(call: AddFenceToolCall): ValidatedAddFence {
     baseStyle: baseStyle as 'floating' | 'grounded',
     color: call.color ?? '#ffffff',
     postSpacing: call.postSpacing ?? 2,
-    postCap: call.postCap,
+    postCap: finalPostCap,
     slatGap: call.slatGap,
     curveOffset: finalCurveOffset,
     levelId: effectiveLevel ?? undefined,
-    adjustmentReason: curveAdjustment,
+    adjustmentReason,
   }
 }
 
@@ -190,15 +219,15 @@ export function validateUpdateFence(call: UpdateFenceToolCall): ValidatedUpdateF
   }
 
   if (call.style && !VALID_FENCE_STYLES.has(call.style)) {
-    return { type: 'update_fence', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: `Invalid fence style "${call.style}".` }
+    return { type: 'update_fence', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: buildStyleErrorMessage('fence style', call.style, VALID_FENCE_STYLES) }
   }
 
   if (call.baseStyle && !VALID_BASE_STYLES.has(call.baseStyle)) {
-    return { type: 'update_fence', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: `Invalid baseStyle "${call.baseStyle}".` }
+    return { type: 'update_fence', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: buildStyleErrorMessage('baseStyle', call.baseStyle, VALID_BASE_STYLES) }
   }
 
   if (call.postCap && !VALID_POST_CAPS.has(call.postCap)) {
-    return { type: 'update_fence', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: `Invalid postCap "${call.postCap}". Must be one of: none, flat, pyramid.` }
+    return { type: 'update_fence', status: 'invalid', nodeId: call.nodeId as AnyNodeId, errorReason: buildStyleErrorMessage('postCap', call.postCap, VALID_POST_CAPS) }
   }
 
   if (call.slatGap !== undefined && (call.slatGap < 0 || call.slatGap > 0.5)) {
@@ -234,9 +263,25 @@ export function validateUpdateFence(call: UpdateFenceToolCall): ValidatedUpdateF
     }
   }
 
+  // Same horizontal-postCap default nudge as validateAddFence — triggers
+  // only when the caller is switching the existing fence INTO horizontal
+  // without also picking a postCap. Existing fences keep their stored cap.
+  let finalPostCap = call.postCap
+  let postCapAdjustment: string | undefined
+  if (call.style === 'horizontal' && !call.postCap) {
+    const fence = node as { postCap?: string }
+    if (!fence.postCap) {
+      finalPostCap = 'pyramid'
+      postCapAdjustment = `style="horizontal" — defaulted postCap to "pyramid" (matches upstream PR #432 default).`
+    }
+  }
+
+  const adjustmentParts = [curveAdjustment, postCapAdjustment].filter(Boolean) as string[]
+  const adjustmentReason = adjustmentParts.length ? adjustmentParts.join(' ') : undefined
+
   return {
     type: 'update_fence',
-    status: curveAdjustment ? 'adjusted' : 'valid',
+    status: adjustmentReason ? 'adjusted' : 'valid',
     nodeId: call.nodeId as AnyNodeId,
     start: call.start,
     end: call.end,
@@ -246,10 +291,10 @@ export function validateUpdateFence(call: UpdateFenceToolCall): ValidatedUpdateF
     baseStyle: call.baseStyle,
     color: call.color,
     postSpacing: call.postSpacing,
-    postCap: call.postCap,
+    postCap: finalPostCap as 'none' | 'flat' | 'pyramid' | undefined,
     slatGap: call.slatGap,
     curveOffset: finalCurveOffset,
-    adjustmentReason: curveAdjustment,
+    adjustmentReason,
   }
 }
 
