@@ -133,7 +133,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'paint_slot',
-      description: 'Unified per-slot paint. Writes a single MaterialRef into node.slots[slotId]. Use this instead of update_*_material when painting per-part (window glass vs frame, stair treads vs railing, fence posts vs infill, door handle vs panel, etc.). Supported kinds and slots: wall (interior, exterior), slab (surface, side), ceiling (surface), stair (treads, body, railing), column (shaft, base, capital, frame), elevator (cab, doors, shaft, glass), fence (posts, infill, base, rail), shelf (shelves, frame, back), door (panel, frame, glass, hardware), window (frame, glass). For item nodes (furniture/GLB), slotId is the GLB mesh-defined name; any string is accepted and resolved at paint time.',
+      description: 'Unified per-slot paint. Writes a single MaterialRef into node.slots[slotId]. Use this instead of update_*_material when painting per-part (window glass vs frame, stair treads vs railing, fence posts vs infill, door handle vs panel, etc.). Supported kinds and slots: wall (interior, exterior), slab (surface, side), ceiling (surface), stair (treads, body, railing), column (shaft, base, capital, frame), elevator (cab, doors, shaft, glass), fence (posts, infill, base, rail), shelf (shelves, frame, back), door (panel, frame, glass, hardware), window (frame, glass). For item nodes (furniture/GLB), slotId is the GLB mesh-defined name; any string is accepted and resolved at paint time. NOTE: Some slots are conditional on node properties (e.g. fence "base" only exists when baseStyle !== "floating"; column "frame" only when the column is structural; shelf "back" only when the shelf has a back panel). If the validator rejects your call with a "Valid slots" list, retry with one of the listed slot ids instead of guessing.',
       parameters: {
         type: 'object',
         properties: {
@@ -750,7 +750,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
             items: {
               type: 'object',
               properties: {
-                type: { type: 'string', enum: ['add_item', 'remove_item', 'move_item', 'update_material', 'update_item', 'add_wall', 'update_wall', 'update_wall_material', 'add_door', 'update_door', 'add_window', 'update_window', 'remove_node', 'add_level', 'add_slab', 'update_slab', 'add_ceiling', 'update_ceiling', 'add_roof', 'update_roof', 'update_roof_material', 'add_stair', 'update_stair', 'update_stair_material', 'add_elevator', 'add_zone', 'update_zone', 'add_building', 'update_site', 'add_scan', 'add_guide', 'move_building', 'clone_level', 'add_fence', 'update_fence', 'add_cut_out'] },
+                type: { type: 'string', enum: ['add_item', 'remove_item', 'move_item', 'update_material', 'update_item', 'add_wall', 'update_wall', 'update_wall_material', 'add_door', 'update_door', 'add_window', 'update_window', 'remove_node', 'add_level', 'add_slab', 'update_slab', 'add_ceiling', 'update_ceiling', 'add_roof', 'update_roof', 'update_roof_material', 'add_stair', 'update_stair', 'update_stair_material', 'add_elevator', 'add_zone', 'update_zone', 'add_building', 'update_site', 'add_scan', 'add_guide', 'move_building', 'clone_level', 'add_fence', 'update_fence', 'add_cut_out', 'add_roof_accessory', 'paint_slot'] },
                 catalogSlug: { type: 'string' }, nodeId: { type: 'string' },
                 position: { type: 'array', items: { type: 'number' } }, rotationY: { type: 'number' },
                 material: { type: 'string' },
