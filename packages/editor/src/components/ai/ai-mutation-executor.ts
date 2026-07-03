@@ -26,8 +26,17 @@ import { validateAddDoor, validateAddWindow, validateUpdateDoor, validateUpdateW
 import {
   validateAddBuilding,
   validateAddCeiling,
+  validateAddDuctFitting,
+  validateAddDuctSegment,
+  validateAddDuctTerminal,
   validateAddGuide,
+  validateAddHvacEquipment,
   validateAddLevel,
+  validateAddLineset,
+  validateAddLiquidLine,
+  validateAddPipeFitting,
+  validateAddPipeSegment,
+  validateAddPipeTrap,
   validateAddRoof,
   validateAddRoofAccessory,
   validateAddScan,
@@ -35,6 +44,7 @@ import {
   validateAddElevator,
   validateAddStair,
   validateAddZone,
+  validateAlignOpeningToNearest,
   validateCloneLevel,
   validateMoveBuilding,
   validateUpdateCeiling,
@@ -158,6 +168,26 @@ export function validateToolCall(
       return [validateUpdateStairMaterial(toolCall)]
     case 'paint_slot':
       return [validatePaintSlot(toolCall)]
+    case 'add_duct_segment':
+      return [validateAddDuctSegment(toolCall)]
+    case 'add_duct_fitting':
+      return [validateAddDuctFitting(toolCall)]
+    case 'add_duct_terminal':
+      return [validateAddDuctTerminal(toolCall)]
+    case 'add_pipe_segment':
+      return [validateAddPipeSegment(toolCall)]
+    case 'add_pipe_fitting':
+      return [validateAddPipeFitting(toolCall)]
+    case 'add_pipe_trap':
+      return [validateAddPipeTrap(toolCall)]
+    case 'add_hvac_equipment':
+      return [validateAddHvacEquipment(toolCall)]
+    case 'add_lineset':
+      return [validateAddLineset(toolCall)]
+    case 'add_liquid_line':
+      return [validateAddLiquidLine(toolCall)]
+    case 'align_opening_to_nearest':
+      return [validateAlignOpeningToNearest(toolCall)]
     case 'save_room_preset':
       // Host-async action (RoomPresetProvider.save). Validation resolves the
       // zone here; execution happens in ai-room-preset-executor.ts via the

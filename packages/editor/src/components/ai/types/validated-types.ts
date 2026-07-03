@@ -563,6 +563,129 @@ export interface ValidatedAddCutOut {
   errorReason?: string
 }
 
+// ============================================================================
+// MEP validated operations (Phase 2 §6.2)
+// ============================================================================
+
+export interface ValidatedAddDuctSegment {
+  type: 'add_duct_segment'
+  status: ValidatedOperationStatus
+  points: [number, number, number][]
+  crossSection: 'round' | 'rect'
+  diameter?: number
+  width?: number
+  height?: number
+  system: 'supply' | 'return'
+  levelId?: string
+  errorReason?: string
+}
+
+export interface ValidatedAddDuctFitting {
+  type: 'add_duct_fitting'
+  status: ValidatedOperationStatus
+  position: [number, number, number]
+  rotation: [number, number, number]
+  fittingType: 'elbow' | 'tee' | 'reducer' | 'cap'
+  diameter?: number
+  diameter2?: number
+  levelId?: string
+  errorReason?: string
+}
+
+export interface ValidatedAddDuctTerminal {
+  type: 'add_duct_terminal'
+  status: ValidatedOperationStatus
+  position: [number, number, number]
+  hostId?: string
+  terminalType: 'supply' | 'return' | 'diffuser'
+  rotation: number
+  levelId?: string
+  errorReason?: string
+}
+
+export interface ValidatedAddPipeSegment {
+  type: 'add_pipe_segment'
+  status: ValidatedOperationStatus
+  points: [number, number, number][]
+  diameter: number
+  pipeKind: 'dwv' | 'supply' | 'gas'
+  levelId?: string
+  errorReason?: string
+}
+
+export interface ValidatedAddPipeFitting {
+  type: 'add_pipe_fitting'
+  status: ValidatedOperationStatus
+  position: [number, number, number]
+  rotation: [number, number, number]
+  fittingType: 'elbow' | 'tee' | 'wye' | 'reducer'
+  diameter: number
+  levelId?: string
+  errorReason?: string
+}
+
+export interface ValidatedAddPipeTrap {
+  type: 'add_pipe_trap'
+  status: ValidatedOperationStatus
+  position: [number, number, number]
+  rotation: number
+  diameter: number
+  trapType: 'p-trap' | 's-trap'
+  levelId?: string
+  errorReason?: string
+}
+
+export interface ValidatedAddHvacEquipment {
+  type: 'add_hvac_equipment'
+  status: ValidatedOperationStatus
+  position: [number, number, number]
+  rotation: number
+  equipmentType: 'indoor-unit' | 'outdoor-unit' | 'ahu'
+  width: number
+  depth: number
+  height: number
+  levelId?: string
+  errorReason?: string
+}
+
+export interface ValidatedAddLineset {
+  type: 'add_lineset'
+  status: ValidatedOperationStatus
+  fromId: AnyNodeId
+  toId: AnyNodeId
+  route: [number, number, number][]
+  levelId?: string
+  errorReason?: string
+}
+
+export interface ValidatedAddLiquidLine {
+  type: 'add_liquid_line'
+  status: ValidatedOperationStatus
+  fromId: AnyNodeId
+  toId: AnyNodeId
+  route: [number, number, number][]
+  levelId?: string
+  errorReason?: string
+}
+
+// ============================================================================
+// Opening alignment (Phase 2 §6.4)
+// ============================================================================
+
+export interface ValidatedAlignOpeningToNearest {
+  type: 'align_opening_to_nearest'
+  status: ValidatedOperationStatus
+  nodeId: AnyNodeId
+  axis: 'horizontal' | 'vertical' | 'both'
+  originalPosition?: [number, number, number]
+  snappedPosition?: [number, number, number]
+  appliedSnaps?: {
+    alongWall?: { delta: number; feature: string; targetId: string }
+    vertical?: { delta: number; feature: string; targetId: string }
+  }
+  errorReason?: string
+}
+
 export type ValidatedOperation =
   | ValidatedAddItem
   | ValidatedRemoveItem
@@ -605,3 +728,13 @@ export type ValidatedOperation =
   | ValidatedUpdateRoofMaterial
   | ValidatedUpdateStairMaterial
   | ValidatedPaintSlot
+  | ValidatedAddDuctSegment
+  | ValidatedAddDuctFitting
+  | ValidatedAddDuctTerminal
+  | ValidatedAddPipeSegment
+  | ValidatedAddPipeFitting
+  | ValidatedAddPipeTrap
+  | ValidatedAddHvacEquipment
+  | ValidatedAddLineset
+  | ValidatedAddLiquidLine
+  | ValidatedAlignOpeningToNearest

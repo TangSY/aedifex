@@ -1,6 +1,7 @@
 import {
   type AnyNode,
   type AnyNodeId,
+  computeOpeningGuides,
   getCatalogMaterialById,
   nodeRegistry,
   useScene,
@@ -10,14 +11,24 @@ import { checkWallCollision } from './collision-detection'
 import type {
   AddBuildingToolCall,
   AddCeilingToolCall,
+  AddDuctFittingToolCall,
+  AddDuctSegmentToolCall,
+  AddDuctTerminalToolCall,
   AddGuideToolCall,
+  AddHvacEquipmentToolCall,
   AddLevelToolCall,
+  AddLinesetToolCall,
+  AddLiquidLineToolCall,
+  AddPipeFittingToolCall,
+  AddPipeSegmentToolCall,
+  AddPipeTrapToolCall,
   AddRoofToolCall,
   AddScanToolCall,
   AddSlabToolCall,
   AddElevatorToolCall,
   AddStairToolCall,
   AddZoneToolCall,
+  AlignOpeningToNearestToolCall,
   CloneLevelToolCall,
   MoveBuildingToolCall,
   UpdateCeilingToolCall,
@@ -31,14 +42,24 @@ import type {
   UpdateZoneToolCall,
   ValidatedAddBuilding,
   ValidatedAddCeiling,
+  ValidatedAddDuctFitting,
+  ValidatedAddDuctSegment,
+  ValidatedAddDuctTerminal,
   ValidatedAddGuide,
+  ValidatedAddHvacEquipment,
   ValidatedAddLevel,
+  ValidatedAddLineset,
+  ValidatedAddLiquidLine,
+  ValidatedAddPipeFitting,
+  ValidatedAddPipeSegment,
+  ValidatedAddPipeTrap,
   ValidatedAddRoof,
   ValidatedAddScan,
   ValidatedAddSlab,
   ValidatedAddElevator,
   ValidatedAddStair,
   ValidatedAddZone,
+  ValidatedAlignOpeningToNearest,
   ValidatedCloneLevel,
   ValidatedMoveBuilding,
   ValidatedUpdateCeiling,
@@ -1439,5 +1460,684 @@ export function validateAddRoofAccessory(
     width,
     depth,
     ...(kind === 'chimney' ? { heightAboveRidge: call.heightAboveRidge ?? 1.0 } : {}),
+  }
+}
+
+// ============================================================================
+// MEP validators — Phase 2 §6.2
+// Each add_* tool constructs one MEP node under the target level. All share a
+// helper that resolves the effective level id from the tool call or viewer
+// selection; every non-node field is range-checked against the underlying zod
+// schema so downstream ZodError parses do not leak into the LLM tool result.
+// ============================================================================
+
+/** Validate that a polyline path has ≥2 points and every point is a length-3
+ * numeric tuple. Returns a normalized tuple array or an errorReason string. */
+function normalizePolylinePath(
+  input: unknown,
+  fieldName: string,
+): { points: [number, number, number][] } | { errorReason: string } {
+  if (!Array.isArray(input) || input.length < 2) {
+    return { errorReason: `${fieldName} must be an array of at least 2 [x, y, z] points.` }
+  }
+  const points: [number, number, number][] = []
+  for (let i = 0; i < input.length; i++) {
+    const p = input[i]
+    if (
+      !Array.isArray(p) ||
+      p.length !== 3 ||
+      typeof p[0] !== 'number' ||
+      typeof p[1] !== 'number' ||
+      typeof p[2] !== 'number'
+    ) {
+      return { errorReason: `${fieldName}[${i}] must be a numeric [x, y, z] triple.` }
+    }
+    points.push([p[0], p[1], p[2]])
+  }
+  return { points }
+}
+
+export function validateAddDuctSegment(call: AddDuctSegmentToolCall): ValidatedAddDuctSegment {
+  const levelId = resolveEffectiveLevelId(call.levelId) ?? undefined
+  const crossSection = call.crossSection ?? 'round'
+  const system = call.system ?? 'supply'
+  const parsed = normalizePolylinePath(call.points, 'points')
+  if ('errorReason' in parsed) {
+    return {
+      type: 'add_duct_segment',
+      status: 'invalid',
+      points: [],
+      crossSection,
+      system,
+      levelId,
+      errorReason: parsed.errorReason,
+    }
+  }
+  if (crossSection === 'round') {
+    const diameter = call.diameter ?? 6
+    if (diameter < 2 || diameter > 48) {
+      return {
+        type: 'add_duct_segment',
+        status: 'invalid',
+        points: parsed.points,
+        crossSection,
+        diameter,
+        system,
+        levelId,
+        errorReason: `Round duct diameter ${diameter}" is out of range (2-48).`,
+      }
+    }
+    return {
+      type: 'add_duct_segment',
+      status: 'valid',
+      points: parsed.points,
+      crossSection,
+      diameter,
+      system,
+      levelId,
+    }
+  }
+  // rect
+  const width = call.width ?? 14
+  const height = call.height ?? 8
+  if (width < 4 || width > 60) {
+    return {
+      type: 'add_duct_segment',
+      status: 'invalid',
+      points: parsed.points,
+      crossSection,
+      width,
+      height,
+      system,
+      levelId,
+      errorReason: `Rect duct width ${width}" is out of range (4-60).`,
+    }
+  }
+  if (height < 3 || height > 40) {
+    return {
+      type: 'add_duct_segment',
+      status: 'invalid',
+      points: parsed.points,
+      crossSection,
+      width,
+      height,
+      system,
+      levelId,
+      errorReason: `Rect duct height ${height}" is out of range (3-40).`,
+    }
+  }
+  return {
+    type: 'add_duct_segment',
+    status: 'valid',
+    points: parsed.points,
+    crossSection,
+    width,
+    height,
+    system,
+    levelId,
+  }
+}
+
+const DUCT_FITTING_KINDS = new Set(['elbow', 'tee', 'reducer', 'cap'])
+
+export function validateAddDuctFitting(call: AddDuctFittingToolCall): ValidatedAddDuctFitting {
+  const levelId = resolveEffectiveLevelId(call.levelId) ?? undefined
+  const position = call.position ?? [0, 0, 0]
+  const rotation = call.rotation ?? [0, 0, 0]
+  if (!Array.isArray(position) || position.length !== 3) {
+    return {
+      type: 'add_duct_fitting',
+      status: 'invalid',
+      position: [0, 0, 0],
+      rotation,
+      fittingType: call.fittingType ?? 'elbow',
+      levelId,
+      errorReason: 'position must be a [x, y, z] numeric triple.',
+    }
+  }
+  if (!DUCT_FITTING_KINDS.has(call.fittingType)) {
+    return {
+      type: 'add_duct_fitting',
+      status: 'invalid',
+      position,
+      rotation,
+      fittingType: call.fittingType ?? 'elbow',
+      levelId,
+      errorReason: `fittingType "${call.fittingType}" is not one of: ${[...DUCT_FITTING_KINDS].join(', ')}.`,
+    }
+  }
+  const diameter = call.portSizes?.diameter
+  const diameter2 = call.portSizes?.diameter2
+  if (diameter !== undefined && (diameter < 2 || diameter > 48)) {
+    return {
+      type: 'add_duct_fitting',
+      status: 'invalid',
+      position,
+      rotation,
+      fittingType: call.fittingType,
+      diameter,
+      diameter2,
+      levelId,
+      errorReason: `portSizes.diameter ${diameter}" is out of range (2-48).`,
+    }
+  }
+  if (diameter2 !== undefined && (diameter2 < 2 || diameter2 > 48)) {
+    return {
+      type: 'add_duct_fitting',
+      status: 'invalid',
+      position,
+      rotation,
+      fittingType: call.fittingType,
+      diameter,
+      diameter2,
+      levelId,
+      errorReason: `portSizes.diameter2 ${diameter2}" is out of range (2-48).`,
+    }
+  }
+  return {
+    type: 'add_duct_fitting',
+    status: 'valid',
+    position,
+    rotation,
+    fittingType: call.fittingType,
+    diameter,
+    diameter2,
+    levelId,
+  }
+}
+
+const DUCT_TERMINAL_KINDS = new Set(['supply', 'return', 'diffuser'])
+
+export function validateAddDuctTerminal(call: AddDuctTerminalToolCall): ValidatedAddDuctTerminal {
+  const levelId = resolveEffectiveLevelId(call.levelId) ?? undefined
+  const position = call.position ?? [0, 0, 0]
+  const rotation = call.rotation ?? 0
+  if (!Array.isArray(position) || position.length !== 3) {
+    return {
+      type: 'add_duct_terminal',
+      status: 'invalid',
+      position: [0, 0, 0],
+      terminalType: call.terminalType ?? 'supply',
+      rotation,
+      levelId,
+      errorReason: 'position must be a [x, y, z] numeric triple.',
+    }
+  }
+  if (!DUCT_TERMINAL_KINDS.has(call.terminalType)) {
+    return {
+      type: 'add_duct_terminal',
+      status: 'invalid',
+      position,
+      terminalType: call.terminalType ?? 'supply',
+      rotation,
+      levelId,
+      errorReason: `terminalType "${call.terminalType}" is not one of: ${[...DUCT_TERMINAL_KINDS].join(', ')}.`,
+    }
+  }
+  if (call.hostId) {
+    const { nodes } = useScene.getState()
+    const host = nodes[call.hostId as AnyNodeId]
+    if (!host) {
+      return {
+        type: 'add_duct_terminal',
+        status: 'invalid',
+        position,
+        hostId: call.hostId,
+        terminalType: call.terminalType,
+        rotation,
+        levelId,
+        errorReason: `hostId "${call.hostId}" not found in scene.`,
+      }
+    }
+  }
+  return {
+    type: 'add_duct_terminal',
+    status: 'valid',
+    position,
+    hostId: call.hostId,
+    terminalType: call.terminalType,
+    rotation,
+    levelId,
+  }
+}
+
+export function validateAddPipeSegment(call: AddPipeSegmentToolCall): ValidatedAddPipeSegment {
+  const levelId = resolveEffectiveLevelId(call.levelId) ?? undefined
+  const pipeKind = call.pipeKind ?? 'dwv'
+  const diameter = call.diameter ?? 2
+  const parsed = normalizePolylinePath(call.points, 'points')
+  if ('errorReason' in parsed) {
+    return {
+      type: 'add_pipe_segment',
+      status: 'invalid',
+      points: [],
+      diameter,
+      pipeKind,
+      levelId,
+      errorReason: parsed.errorReason,
+    }
+  }
+  if (diameter < 1.25 || diameter > 8) {
+    return {
+      type: 'add_pipe_segment',
+      status: 'invalid',
+      points: parsed.points,
+      diameter,
+      pipeKind,
+      levelId,
+      errorReason: `diameter ${diameter}" is out of range (1.25-8).`,
+    }
+  }
+  return {
+    type: 'add_pipe_segment',
+    status: 'valid',
+    points: parsed.points,
+    diameter,
+    pipeKind,
+    levelId,
+  }
+}
+
+const PIPE_FITTING_KINDS = new Set(['elbow', 'tee', 'wye', 'reducer'])
+
+export function validateAddPipeFitting(call: AddPipeFittingToolCall): ValidatedAddPipeFitting {
+  const levelId = resolveEffectiveLevelId(call.levelId) ?? undefined
+  const position = call.position ?? [0, 0, 0]
+  const rotation = call.rotation ?? [0, 0, 0]
+  const diameter = call.diameter ?? 2
+  if (!Array.isArray(position) || position.length !== 3) {
+    return {
+      type: 'add_pipe_fitting',
+      status: 'invalid',
+      position: [0, 0, 0],
+      rotation,
+      fittingType: call.fittingType ?? 'elbow',
+      diameter,
+      levelId,
+      errorReason: 'position must be a [x, y, z] numeric triple.',
+    }
+  }
+  if (!PIPE_FITTING_KINDS.has(call.fittingType)) {
+    return {
+      type: 'add_pipe_fitting',
+      status: 'invalid',
+      position,
+      rotation,
+      fittingType: call.fittingType ?? 'elbow',
+      diameter,
+      levelId,
+      errorReason: `fittingType "${call.fittingType}" is not one of: ${[...PIPE_FITTING_KINDS].join(', ')}.`,
+    }
+  }
+  if (diameter < 1.25 || diameter > 8) {
+    return {
+      type: 'add_pipe_fitting',
+      status: 'invalid',
+      position,
+      rotation,
+      fittingType: call.fittingType,
+      diameter,
+      levelId,
+      errorReason: `diameter ${diameter}" is out of range (1.25-8).`,
+    }
+  }
+  return {
+    type: 'add_pipe_fitting',
+    status: 'valid',
+    position,
+    rotation,
+    fittingType: call.fittingType,
+    diameter,
+    levelId,
+  }
+}
+
+const PIPE_TRAP_KINDS = new Set(['p-trap', 's-trap'])
+
+export function validateAddPipeTrap(call: AddPipeTrapToolCall): ValidatedAddPipeTrap {
+  const levelId = resolveEffectiveLevelId(call.levelId) ?? undefined
+  const position = call.position ?? [0, 0, 0]
+  const rotation = call.rotation ?? 0
+  const diameter = call.diameter ?? 2
+  const trapType = call.trapType ?? 'p-trap'
+  if (!Array.isArray(position) || position.length !== 3) {
+    return {
+      type: 'add_pipe_trap',
+      status: 'invalid',
+      position: [0, 0, 0],
+      rotation,
+      diameter,
+      trapType,
+      levelId,
+      errorReason: 'position must be a [x, y, z] numeric triple.',
+    }
+  }
+  if (diameter < 1.25 || diameter > 4) {
+    return {
+      type: 'add_pipe_trap',
+      status: 'invalid',
+      position,
+      rotation,
+      diameter,
+      trapType,
+      levelId,
+      errorReason: `diameter ${diameter}" is out of range (1.25-4).`,
+    }
+  }
+  if (!PIPE_TRAP_KINDS.has(trapType)) {
+    return {
+      type: 'add_pipe_trap',
+      status: 'invalid',
+      position,
+      rotation,
+      diameter,
+      trapType,
+      levelId,
+      errorReason: `trapType "${trapType}" is not one of: p-trap, s-trap.`,
+    }
+  }
+  return {
+    type: 'add_pipe_trap',
+    status: 'valid',
+    position,
+    rotation,
+    diameter,
+    trapType,
+    levelId,
+  }
+}
+
+const HVAC_EQUIPMENT_KINDS = new Set(['indoor-unit', 'outdoor-unit', 'ahu'])
+
+export function validateAddHvacEquipment(call: AddHvacEquipmentToolCall): ValidatedAddHvacEquipment {
+  const levelId = resolveEffectiveLevelId(call.levelId) ?? undefined
+  const position = call.position ?? [0, 0, 0]
+  const rotation = call.rotation ?? 0
+  const width = call.width ?? 0.56
+  const depth = call.depth ?? 0.71
+  const height = call.height ?? 1.1
+  if (!Array.isArray(position) || position.length !== 3) {
+    return {
+      type: 'add_hvac_equipment',
+      status: 'invalid',
+      position: [0, 0, 0],
+      rotation,
+      equipmentType: call.equipmentType ?? 'indoor-unit',
+      width, depth, height,
+      levelId,
+      errorReason: 'position must be a [x, y, z] numeric triple.',
+    }
+  }
+  if (!HVAC_EQUIPMENT_KINDS.has(call.equipmentType)) {
+    return {
+      type: 'add_hvac_equipment',
+      status: 'invalid',
+      position,
+      rotation,
+      equipmentType: call.equipmentType ?? 'indoor-unit',
+      width, depth, height,
+      levelId,
+      errorReason: `equipmentType "${call.equipmentType}" is not one of: ${[...HVAC_EQUIPMENT_KINDS].join(', ')}.`,
+    }
+  }
+  if (width < 0.3 || width > 2) {
+    return {
+      type: 'add_hvac_equipment',
+      status: 'invalid',
+      position, rotation,
+      equipmentType: call.equipmentType,
+      width, depth, height,
+      levelId,
+      errorReason: `width ${width}m is out of range (0.3-2).`,
+    }
+  }
+  if (depth < 0.3 || depth > 2) {
+    return {
+      type: 'add_hvac_equipment',
+      status: 'invalid',
+      position, rotation,
+      equipmentType: call.equipmentType,
+      width, depth, height,
+      levelId,
+      errorReason: `depth ${depth}m is out of range (0.3-2).`,
+    }
+  }
+  if (height < 0.4 || height > 2.5) {
+    return {
+      type: 'add_hvac_equipment',
+      status: 'invalid',
+      position, rotation,
+      equipmentType: call.equipmentType,
+      width, depth, height,
+      levelId,
+      errorReason: `height ${height}m is out of range (0.4-2.5).`,
+    }
+  }
+  return {
+    type: 'add_hvac_equipment',
+    status: 'valid',
+    position, rotation,
+    equipmentType: call.equipmentType,
+    width, depth, height,
+    levelId,
+  }
+}
+
+/** Shared helper for add_lineset / add_liquid_line: both connect two
+ * hvac-equipment nodes, optionally along an explicit polyline route. */
+function resolveMepConnectionRoute(
+  call: { fromId: string; toId: string; route?: [number, number, number][] },
+): { fromId: AnyNodeId; toId: AnyNodeId; route: [number, number, number][]; levelId?: string } | { errorReason: string } {
+  const { nodes } = useScene.getState()
+  if (!call.fromId) return { errorReason: 'fromId is required.' }
+  if (!call.toId) return { errorReason: 'toId is required.' }
+  const from = nodes[call.fromId as AnyNodeId]
+  const to = nodes[call.toId as AnyNodeId]
+  if (!from) return { errorReason: `fromId "${call.fromId}" not found in scene.` }
+  if (!to) return { errorReason: `toId "${call.toId}" not found in scene.` }
+  if (from.type !== 'hvac-equipment') {
+    return { errorReason: `fromId "${call.fromId}" is a ${from.type}, not hvac-equipment.` }
+  }
+  if (to.type !== 'hvac-equipment') {
+    return { errorReason: `toId "${call.toId}" is a ${to.type}, not hvac-equipment.` }
+  }
+  const levelId = (from as { parentId?: string }).parentId ?? (to as { parentId?: string }).parentId
+  let route: [number, number, number][]
+  if (call.route && Array.isArray(call.route)) {
+    const parsed = normalizePolylinePath(call.route, 'route')
+    if ('errorReason' in parsed) return parsed
+    route = parsed.points
+  } else {
+    const fromPos = (from as { position?: [number, number, number] }).position ?? [0, 0, 0]
+    const toPos = (to as { position?: [number, number, number] }).position ?? [0, 0, 0]
+    route = [
+      [fromPos[0], fromPos[1], fromPos[2]],
+      [toPos[0], toPos[1], toPos[2]],
+    ]
+  }
+  return { fromId: call.fromId as AnyNodeId, toId: call.toId as AnyNodeId, route, levelId }
+}
+
+export function validateAddLineset(call: AddLinesetToolCall): ValidatedAddLineset {
+  const resolved = resolveMepConnectionRoute(call)
+  if ('errorReason' in resolved) {
+    return {
+      type: 'add_lineset',
+      status: 'invalid',
+      fromId: (call.fromId ?? '') as AnyNodeId,
+      toId: (call.toId ?? '') as AnyNodeId,
+      route: [],
+      errorReason: resolved.errorReason,
+    }
+  }
+  return {
+    type: 'add_lineset',
+    status: 'valid',
+    fromId: resolved.fromId,
+    toId: resolved.toId,
+    route: resolved.route,
+    levelId: resolved.levelId,
+  }
+}
+
+export function validateAddLiquidLine(call: AddLiquidLineToolCall): ValidatedAddLiquidLine {
+  const resolved = resolveMepConnectionRoute(call)
+  if ('errorReason' in resolved) {
+    return {
+      type: 'add_liquid_line',
+      status: 'invalid',
+      fromId: (call.fromId ?? '') as AnyNodeId,
+      toId: (call.toId ?? '') as AnyNodeId,
+      route: [],
+      errorReason: resolved.errorReason,
+    }
+  }
+  return {
+    type: 'add_liquid_line',
+    status: 'valid',
+    fromId: resolved.fromId,
+    toId: resolved.toId,
+    route: resolved.route,
+    levelId: resolved.levelId,
+  }
+}
+
+// ============================================================================
+// align_opening_to_nearest validator — Phase 2 §6.4
+// Uses the shared opening-guides service to find the nearest along-wall (or
+// vertical) sibling and returns the snap delta so the executor can rewrite
+// position via apply_patch.
+// ============================================================================
+
+const ALIGN_AXIS_KINDS = new Set(['horizontal', 'vertical', 'both'])
+
+export function validateAlignOpeningToNearest(
+  call: AlignOpeningToNearestToolCall,
+): ValidatedAlignOpeningToNearest {
+  const axis = call.axis ?? 'both'
+  if (!ALIGN_AXIS_KINDS.has(axis)) {
+    return {
+      type: 'align_opening_to_nearest',
+      status: 'invalid',
+      nodeId: (call.nodeId ?? '') as AnyNodeId,
+      axis,
+      errorReason: `axis "${axis}" is not one of: horizontal, vertical, both.`,
+    }
+  }
+  const { nodes } = useScene.getState()
+  const node = nodes[call.nodeId as AnyNodeId] as
+    | { type: string; wallId?: string; position?: [number, number, number]; width?: number; height?: number; id?: string }
+    | undefined
+  if (!node) {
+    return {
+      type: 'align_opening_to_nearest',
+      status: 'invalid',
+      nodeId: (call.nodeId ?? '') as AnyNodeId,
+      axis,
+      errorReason: `Node "${call.nodeId}" not found.`,
+    }
+  }
+  if (node.type !== 'door' && node.type !== 'window') {
+    return {
+      type: 'align_opening_to_nearest',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      axis,
+      errorReason: `Node "${call.nodeId}" is a ${node.type}, not a door or window.`,
+    }
+  }
+  const wall = node.wallId ? nodes[node.wallId as AnyNodeId] : undefined
+  if (!wall || wall.type !== 'wall') {
+    return {
+      type: 'align_opening_to_nearest',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      axis,
+      errorReason: `Opening "${call.nodeId}" is not hosted on a wall (wallId="${node.wallId ?? ''}").`,
+    }
+  }
+
+  const wallNode = wall as { start?: [number, number]; end?: [number, number]; height?: number; children?: string[] }
+  const start = wallNode.start ?? [0, 0]
+  const end = wallNode.end ?? [0, 0]
+  const wallLength = Math.hypot(end[0] - start[0], end[1] - start[1])
+  const wallHeight = wallNode.height ?? 2.5
+
+  const siblings: { id: string; centerS: number; width: number; centerY: number; height: number }[] = []
+  for (const childId of wallNode.children ?? []) {
+    if (childId === node.id) continue
+    const sib = nodes[childId as AnyNodeId] as
+      | { id: string; type: string; position?: [number, number, number]; width?: number; height?: number }
+      | undefined
+    if (!sib || (sib.type !== 'door' && sib.type !== 'window')) continue
+    siblings.push({
+      id: sib.id,
+      centerS: sib.position?.[0] ?? 0,
+      width: sib.width ?? 0,
+      centerY: sib.position?.[1] ?? 0,
+      height: sib.height ?? 0,
+    })
+  }
+
+  const originalPosition: [number, number, number] = node.position ?? [0, 0, 0]
+  const guides = computeOpeningGuides({
+    moving: {
+      id: node.id ?? call.nodeId,
+      centerS: originalPosition[0],
+      width: node.width ?? 0,
+      centerY: originalPosition[1],
+      height: node.height ?? 0,
+    },
+    siblings,
+    wall: { length: wallLength, height: wallHeight },
+    includeVertical: node.type === 'window',
+  })
+
+  let snapDeltaS = 0
+  let snapDeltaY = 0
+  const appliedSnaps: ValidatedAlignOpeningToNearest['appliedSnaps'] = {}
+
+  if ((axis === 'horizontal' || axis === 'both') && guides.alongWall) {
+    snapDeltaS = guides.alongWall.snap
+    appliedSnaps.alongWall = {
+      delta: guides.alongWall.snap,
+      feature: guides.alongWall.movingFeature,
+      targetId: guides.alongWall.targetId,
+    }
+  }
+  if ((axis === 'vertical' || axis === 'both') && guides.vertical) {
+    snapDeltaY = guides.vertical.snap
+    appliedSnaps.vertical = {
+      delta: guides.vertical.snap,
+      feature: guides.vertical.movingFeature,
+      targetId: guides.vertical.targetId,
+    }
+  }
+
+  if (!appliedSnaps.alongWall && !appliedSnaps.vertical) {
+    return {
+      type: 'align_opening_to_nearest',
+      status: 'invalid',
+      nodeId: call.nodeId as AnyNodeId,
+      axis,
+      originalPosition,
+      errorReason: 'No alignment target found within tolerance on this wall. Add sibling openings first or move the target closer.',
+    }
+  }
+
+  const snappedPosition: [number, number, number] = [
+    originalPosition[0] + snapDeltaS,
+    originalPosition[1] + snapDeltaY,
+    originalPosition[2],
+  ]
+
+  return {
+    type: 'align_opening_to_nearest',
+    status: 'valid',
+    nodeId: call.nodeId as AnyNodeId,
+    axis,
+    originalPosition,
+    snappedPosition,
+    appliedSnaps,
   }
 }

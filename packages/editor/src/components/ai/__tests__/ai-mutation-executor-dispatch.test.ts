@@ -29,6 +29,15 @@ vi.mock('@aedifex/core', () => ({
   nodeRegistry: {
     get: (_type: string) => ({ deletable: true, capabilities: { deletable: true } }),
   },
+  // align_opening_to_nearest calls this. Stub returns a canned "1 sibling to
+  // the right, at center-align" so dispatch reaches success.
+  computeOpeningGuides: vi.fn(() => ({
+    sillHead: null,
+    gaps: [],
+    alongWall: { s: 1.5, movingFeature: 'center', targetId: 'sibling_1', targetFeature: 'center', snap: 0.2 },
+    vertical: null,
+    equalSpacing: null,
+  })),
 }))
 
 vi.mock('@aedifex/viewer', () => ({
@@ -70,8 +79,14 @@ beforeEach(() => {
   mockNodes['stair_1'] = { id: 'stair_1', type: 'stair', visible: true, parentId: 'level_1' }
   mockNodes['zone_1'] = { id: 'zone_1', type: 'zone', visible: true, parentId: 'level_1', polygon: [[0, 0], [1, 0], [1, 1], [0, 1]] }
   mockNodes['fence_1'] = { id: 'fence_1', type: 'fence', visible: true, parentId: 'level_1', start: [0, 0], end: [2, 0] }
-  mockNodes['door_1'] = { id: 'door_1', type: 'door', visible: true, parentId: 'wall_1', position: [1, 1, 0], width: 0.9, height: 2.1, side: 'front' }
-  mockNodes['window_1'] = { id: 'window_1', type: 'window', visible: true, parentId: 'wall_1', position: [2, 1.2, 0], width: 1, height: 1, side: 'front' }
+  mockNodes['door_1'] = { id: 'door_1', type: 'door', visible: true, parentId: 'wall_1', wallId: 'wall_1', position: [1, 1, 0], width: 0.9, height: 2.1, side: 'front' }
+  mockNodes['window_1'] = { id: 'window_1', type: 'window', visible: true, parentId: 'wall_1', wallId: 'wall_1', position: [2, 1.2, 0], width: 1, height: 1, side: 'front' }
+  // Give the wall a sibling opening so the align validator's guides result
+  // has something to snap onto.
+  ;(mockNodes['wall_1'] as { children: string[] }).children = ['door_1', 'window_1']
+  // HVAC equipment endpoints so add_lineset / add_liquid_line dispatch resolves.
+  mockNodes['hvac_out'] = { id: 'hvac_out', type: 'hvac-equipment', visible: true, parentId: 'level_1', position: [5, 0, 0] }
+  mockNodes['hvac_in'] = { id: 'hvac_in', type: 'hvac-equipment', visible: true, parentId: 'level_1', position: [0, 0, 5] }
   vi.clearAllMocks()
 })
 
@@ -159,6 +174,26 @@ function payload(name: string): AIToolCall {
       return { tool: 'update_stair_material', nodeId: 'stair_1', role: 'tread', materialPreset: 'stair-wood1' } as AIToolCall
     case 'paint_slot':
       return { tool: 'paint_slot', nodeId: 'wall_1', slotId: 'interior', materialRef: 'library:preset-charcoal' } as AIToolCall
+    case 'add_duct_segment':
+      return { tool: 'add_duct_segment', points: [[0, 2.6, 0], [3, 2.6, 0]], crossSection: 'round', diameter: 6 } as AIToolCall
+    case 'add_duct_fitting':
+      return { tool: 'add_duct_fitting', position: [1, 2.6, 0], fittingType: 'elbow', portSizes: { diameter: 6 } } as AIToolCall
+    case 'add_duct_terminal':
+      return { tool: 'add_duct_terminal', position: [1, 0, 1], terminalType: 'supply' } as AIToolCall
+    case 'add_pipe_segment':
+      return { tool: 'add_pipe_segment', points: [[0, -0.2, 0], [3, -0.4, 0]], diameter: 2, pipeKind: 'dwv' } as AIToolCall
+    case 'add_pipe_fitting':
+      return { tool: 'add_pipe_fitting', position: [1, -0.3, 0], fittingType: 'elbow', diameter: 2 } as AIToolCall
+    case 'add_pipe_trap':
+      return { tool: 'add_pipe_trap', position: [1, -0.3, 0], diameter: 2 } as AIToolCall
+    case 'add_hvac_equipment':
+      return { tool: 'add_hvac_equipment', position: [2, 0, 2], equipmentType: 'indoor-unit' } as AIToolCall
+    case 'add_lineset':
+      return { tool: 'add_lineset', fromId: 'hvac_out', toId: 'hvac_in' } as AIToolCall
+    case 'add_liquid_line':
+      return { tool: 'add_liquid_line', fromId: 'hvac_out', toId: 'hvac_in' } as AIToolCall
+    case 'align_opening_to_nearest':
+      return { tool: 'align_opening_to_nearest', nodeId: 'door_1', axis: 'both' } as AIToolCall
     case 'batch_operations':
       return { tool: 'batch_operations', description: '', operations: [{ type: 'add_wall', start: [0, 0], end: [3, 0] }] } as AIToolCall
     case 'save_room_preset':
@@ -187,6 +222,10 @@ const MUTATION_TOOLS = [
   'add_fence', 'update_fence', 'add_cut_out',
   'update_wall_material', 'update_roof_material', 'update_stair_material',
   'paint_slot',
+  'add_duct_segment', 'add_duct_fitting', 'add_duct_terminal',
+  'add_pipe_segment', 'add_pipe_fitting', 'add_pipe_trap',
+  'add_hvac_equipment', 'add_lineset', 'add_liquid_line',
+  'align_opening_to_nearest',
   'batch_operations',
   'save_room_preset', 'insert_room_preset',
 ] as const

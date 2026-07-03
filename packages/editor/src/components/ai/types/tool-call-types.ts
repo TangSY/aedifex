@@ -597,6 +597,102 @@ export interface RejectPreviewToolCall {
   reason?: string
 }
 
+// ============================================================================
+// MEP tool call types (Phase 2 §6.2)
+// ============================================================================
+
+export interface AddDuctSegmentToolCall {
+  tool: 'add_duct_segment'
+  levelId?: string
+  points: [number, number, number][]
+  crossSection?: 'round' | 'rect'
+  diameter?: number
+  width?: number
+  height?: number
+  system?: 'supply' | 'return'
+  description?: string
+}
+
+export interface AddDuctFittingToolCall {
+  tool: 'add_duct_fitting'
+  levelId?: string
+  position: [number, number, number]
+  rotation?: [number, number, number]
+  fittingType: 'elbow' | 'tee' | 'reducer' | 'cap'
+  portSizes?: { diameter?: number; diameter2?: number }
+}
+
+export interface AddDuctTerminalToolCall {
+  tool: 'add_duct_terminal'
+  levelId?: string
+  position: [number, number, number]
+  hostId?: string
+  terminalType: 'supply' | 'return' | 'diffuser'
+  rotation?: number
+}
+
+export interface AddPipeSegmentToolCall {
+  tool: 'add_pipe_segment'
+  levelId?: string
+  points: [number, number, number][]
+  diameter?: number
+  pipeKind?: 'dwv' | 'supply' | 'gas'
+  description?: string
+}
+
+export interface AddPipeFittingToolCall {
+  tool: 'add_pipe_fitting'
+  levelId?: string
+  position: [number, number, number]
+  rotation?: [number, number, number]
+  fittingType: 'elbow' | 'tee' | 'wye' | 'reducer'
+  diameter?: number
+}
+
+export interface AddPipeTrapToolCall {
+  tool: 'add_pipe_trap'
+  levelId?: string
+  position: [number, number, number]
+  rotation?: number
+  diameter: number
+  trapType?: 'p-trap' | 's-trap'
+}
+
+export interface AddHvacEquipmentToolCall {
+  tool: 'add_hvac_equipment'
+  levelId?: string
+  position: [number, number, number]
+  rotation?: number
+  equipmentType: 'indoor-unit' | 'outdoor-unit' | 'ahu'
+  width?: number
+  depth?: number
+  height?: number
+}
+
+export interface AddLinesetToolCall {
+  tool: 'add_lineset'
+  fromId: string
+  toId: string
+  route?: [number, number, number][]
+}
+
+export interface AddLiquidLineToolCall {
+  tool: 'add_liquid_line'
+  fromId: string
+  toId: string
+  route?: [number, number, number][]
+}
+
+// ============================================================================
+// Opening alignment (Phase 2 §6.4)
+// ============================================================================
+
+export interface AlignOpeningToNearestToolCall {
+  tool: 'align_opening_to_nearest'
+  nodeId: string
+  axis?: 'horizontal' | 'vertical' | 'both'
+}
+
 export type AIToolCall =
   | AddItemToolCall
   | RemoveItemToolCall
@@ -644,3 +740,13 @@ export type AIToolCall =
   | UpdateRoofMaterialToolCall
   | UpdateStairMaterialToolCall
   | PaintSlotToolCall
+  | AddDuctSegmentToolCall
+  | AddDuctFittingToolCall
+  | AddDuctTerminalToolCall
+  | AddPipeSegmentToolCall
+  | AddPipeFittingToolCall
+  | AddPipeTrapToolCall
+  | AddHvacEquipmentToolCall
+  | AddLinesetToolCall
+  | AddLiquidLineToolCall
+  | AlignOpeningToNearestToolCall

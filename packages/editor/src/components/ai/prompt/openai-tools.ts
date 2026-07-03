@@ -97,7 +97,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'update_roof_material',
-      description: 'Change roof surface material per role: top (sheet), edge (fascia), wall (gable wall under roof). Falls back through node defaults when a role-specific material is not set. Note: roof has not yet migrated to the paint-slots model, so `paint_slot` does not cover roofs — this tool remains the canonical way to paint roof surfaces.',
+      description: '⚠️ 仅做整体上色（写 materialPreset 字段）。如需 per-part 上色（山墙面/檐口/披水板/瓦片单独），请改用 paint_slot。Change roof surface material per role: top (sheet), edge (fascia), wall (gable wall under roof). Falls back through node defaults when a role-specific material is not set. Note: roof now supports the paint-slots model via `paint_slot` with slotId="shingle" | "gable" | "fascia" | "soffit" — prefer that tool for per-part painting; this tool remains for whole-role material changes.',
       parameters: {
         type: 'object',
         properties: {
@@ -133,12 +133,12 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'paint_slot',
-      description: 'Unified per-slot paint. Writes a single MaterialRef into node.slots[slotId]. Use this instead of update_*_material when painting per-part (window glass vs frame, stair treads vs railing, fence posts vs infill, door handle vs panel, etc.). Supported kinds and slots: wall (interior, exterior), slab (surface, side), ceiling (surface), stair (treads, body, railing), column (shaft, base, capital, frame), elevator (cab, doors, shaft, glass), fence (posts, infill, base, rail), shelf (shelves, frame, back), door (panel, frame, glass, hardware), window (frame, glass). For item nodes (furniture/GLB), slotId is the GLB mesh-defined name; any string is accepted and resolved at paint time. NOTE: Some slots are conditional on node properties (e.g. fence "base" only exists when baseStyle !== "floating"; column "frame" only when the column is structural; shelf "back" only when the shelf has a back panel). If the validator rejects your call with a "Valid slots" list, retry with one of the listed slot ids instead of guessing.',
+      description: 'Unified per-slot paint. Writes a single MaterialRef into node.slots[slotId]. Use this instead of update_*_material when painting per-part (window glass vs frame, stair treads vs railing, fence posts vs infill, door handle vs panel, etc.). Supported kinds and slots: wall (interior, exterior), roof (shingle, gable, fascia, soffit), slab (surface, side), ceiling (surface), stair (treads, body, railing), column (shaft, base, capital, frame), elevator (cab, doors, shaft, glass), fence (posts, infill, base, rail), shelf (shelves, frame, back), door (panel, frame, glass, hardware), window (frame, glass). For item nodes (furniture/GLB), slotId is the GLB mesh-defined name; any string is accepted and resolved at paint time. NOTE: Some slots are conditional on node properties (e.g. fence "base" only exists when baseStyle !== "floating"; column "frame" only when the column is structural; shelf "back" only when the shelf has a back panel). If the validator rejects your call with a "Valid slots" list, retry with one of the listed slot ids instead of guessing.',
       parameters: {
         type: 'object',
         properties: {
           nodeId: { type: 'string', description: 'Target node ID. The node must already exist.' },
-          slotId: { type: 'string', description: 'Slot identifier within the node kind. See description for the per-kind enumeration.' },
+          slotId: { type: 'string', description: 'Slot identifier within the node kind. Per-kind enumeration: wall="interior"|"exterior"; roof="shingle"|"gable"|"fascia"|"soffit"; slab="surface"|"side"; ceiling="surface"; stair="treads"|"body"|"railing"; column="shaft"|"base"|"capital"|"frame"; elevator="cab"|"doors"|"shaft"|"glass"; fence="posts"|"infill"|"base"|"rail"; shelf="shelves"|"frame"|"back"; door="panel"|"frame"|"glass"|"hardware"; window="frame"|"glass". For item/GLB nodes, any mesh-name string is accepted.' },
           materialRef: { type: 'string', description: 'MaterialRef. Use "library:<preset-id>" for a catalog preset (e.g. "library:preset-charcoal", "library:wall-wood1"), or "scene:<id>" for a previously minted scene material. Pass an empty string ("") to clear the slot back to its declared default.' },
           reason: { type: 'string', description: 'Brief reason for the change.' },
         },
@@ -750,7 +750,7 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
             items: {
               type: 'object',
               properties: {
-                type: { type: 'string', enum: ['add_item', 'remove_item', 'move_item', 'update_material', 'update_item', 'add_wall', 'update_wall', 'update_wall_material', 'add_door', 'update_door', 'add_window', 'update_window', 'remove_node', 'add_level', 'add_slab', 'update_slab', 'add_ceiling', 'update_ceiling', 'add_roof', 'update_roof', 'update_roof_material', 'add_stair', 'update_stair', 'update_stair_material', 'add_elevator', 'add_zone', 'update_zone', 'add_building', 'update_site', 'add_scan', 'add_guide', 'move_building', 'clone_level', 'add_fence', 'update_fence', 'add_cut_out', 'add_roof_accessory', 'paint_slot'] },
+                type: { type: 'string', enum: ['add_item', 'remove_item', 'move_item', 'update_material', 'update_item', 'add_wall', 'update_wall', 'update_wall_material', 'add_door', 'update_door', 'add_window', 'update_window', 'remove_node', 'add_level', 'add_slab', 'update_slab', 'add_ceiling', 'update_ceiling', 'add_roof', 'update_roof', 'update_roof_material', 'add_stair', 'update_stair', 'update_stair_material', 'add_elevator', 'add_zone', 'update_zone', 'add_building', 'update_site', 'add_scan', 'add_guide', 'move_building', 'clone_level', 'add_fence', 'update_fence', 'add_cut_out', 'add_roof_accessory', 'paint_slot', 'add_duct_segment', 'add_duct_fitting', 'add_duct_terminal', 'add_pipe_segment', 'add_pipe_fitting', 'add_pipe_trap', 'add_hvac_equipment', 'add_lineset', 'add_liquid_line', 'align_opening_to_nearest'] },
                 catalogSlug: { type: 'string' }, nodeId: { type: 'string' },
                 position: { type: 'array', items: { type: 'number' } }, rotationY: { type: 'number' },
                 material: { type: 'string' },
@@ -901,6 +901,195 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
           position: { type: 'array', items: { type: 'number' }, description: 'Optional floor-plane anchor [x, z] in meters for the inserted room. Defaults to [0, 0]. Pick an empty area that does not overlap existing rooms.' },
         },
         required: ['presetName'],
+      },
+    },
+  },
+  // ==========================================================================
+  // MEP (mechanical/electrical/plumbing) node creation tools — Phase 2 §6.2.
+  // Each add_* tool constructs one MEP node under the target level: HVAC
+  // duct segments/fittings/terminals, DWV pipes/fittings/traps, HVAC cabinets,
+  // and refrigerant linesets / liquid lines.
+  // ==========================================================================
+  {
+    type: 'function',
+    function: {
+      name: 'add_duct_segment',
+      description: 'Add an HVAC duct segment (polyline) to the current level. Draw supply/return runs as an array of [x,y,z] points in level-local meters (Y is height above the floor). Use crossSection="round" for branch runs (default 6") or crossSection="rect" for trunks (default 14×8"). Diameter/width/height are in inches (US nominal duct sizing).',
+      parameters: {
+        type: 'object',
+        properties: {
+          levelId: { type: 'string', description: 'Target level ID (from scene context). When omitted, uses the currently selected level.' },
+          points: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'Polyline path — array of [x, y, z] points in level-local meters. Minimum 2 points.' },
+          crossSection: { type: 'string', enum: ['round', 'rect'], description: 'Duct cross-section. round = branch (uses diameter); rect = trunk (uses width×height). Default round.' },
+          diameter: { type: 'number', description: 'Round duct nominal inner diameter in inches (4-14 typical residential; range 2-48). Ignored for rect.' },
+          width: { type: 'number', description: 'Rect duct horizontal face in inches (4-60). Ignored for round.' },
+          height: { type: 'number', description: 'Rect duct vertical face in inches (3-40). Ignored for round.' },
+          system: { type: 'string', enum: ['supply', 'return'], description: 'Which side of the air loop. Default supply.' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['points'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_duct_fitting',
+      description: 'Add an HVAC duct junction (elbow, tee, reducer, cross, transition) at a level-local position. Rotation is an XYZ euler in radians. portSizes describes the collar diameters (in inches) — for reducer/transition pass both diameter (main/inlet) and diameter2 (secondary/outlet); for tee/cross diameter2 is the branch.',
+      parameters: {
+        type: 'object',
+        properties: {
+          levelId: { type: 'string', description: 'Target level ID. When omitted, uses the currently selected level.' },
+          position: { type: 'array', items: { type: 'number' }, description: 'Level-local [x, y, z] position of the fitting body in meters.' },
+          rotation: { type: 'array', items: { type: 'number' }, description: 'XYZ euler rotation in radians (default [0, 0, 0]).' },
+          fittingType: { type: 'string', enum: ['elbow', 'tee', 'reducer', 'cap'], description: 'Junction kind. cap = round end-cap (mapped to a straight 0° elbow that closes the run). Use add_duct_fitting again with fittingType="tee" for a branch, "reducer" for a diameter change.' },
+          portSizes: { type: 'object', description: 'Collar sizes in inches: { diameter?, diameter2? } where diameter = main/run/inlet and diameter2 = branch/reducer-outlet.', properties: { diameter: { type: 'number' }, diameter2: { type: 'number' } } },
+        },
+        required: ['position', 'fittingType'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_duct_terminal',
+      description: 'Add an HVAC terminal (supply register / return grille / ceiling diffuser) mounted on a host surface. position is the level-local center of the visible face. terminalType="supply" → supply-register; "return" → return-grille; "diffuser" → ceiling diffuser (defaults to ceiling mount).',
+      parameters: {
+        type: 'object',
+        properties: {
+          levelId: { type: 'string', description: 'Target level ID. When omitted, uses the currently selected level.' },
+          position: { type: 'array', items: { type: 'number' }, description: 'Level-local [x, y, z] center-of-face position in meters.' },
+          hostId: { type: 'string', description: 'Optional host node ID (wall / ceiling / slab) whose surface the terminal mounts on. When present the mount type is derived from the host kind.' },
+          terminalType: { type: 'string', enum: ['supply', 'return', 'diffuser'], description: 'Terminal role.' },
+          rotation: { type: 'number', description: 'Yaw rotation in radians (default 0).' },
+        },
+        required: ['position', 'terminalType'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_pipe_segment',
+      description: 'Add a DWV (drain/waste/vent) pipe segment as a polyline of level-local [x, y, z] points. pipeKind="dwv" is a waste run (sloped, Y may descend below the floor); "supply" and "gas" are provisional aliases mapped to a waste run (schema only exposes waste/vent today). diameter is nominal in inches (1.25-8).',
+      parameters: {
+        type: 'object',
+        properties: {
+          levelId: { type: 'string', description: 'Target level ID. When omitted, uses the currently selected level.' },
+          points: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'Polyline path — array of [x, y, z] points in level-local meters. Minimum 2 points.' },
+          diameter: { type: 'number', description: 'Nominal pipe size in inches. Residential DWV: 1.25 (lav tailpiece), 1.5, 2, 3, 4 (building drain).' },
+          pipeKind: { type: 'string', enum: ['dwv', 'supply', 'gas'], description: 'Pipe role. dwv = waste drain (default), supply/gas map to a waste run today.' },
+          description: { type: 'string', description: 'Brief description.' },
+        },
+        required: ['points'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_pipe_fitting',
+      description: 'Add a DWV pipe fitting (elbow, tee, wye, reducer, cross) at a level-local position. fittingType="tee" maps to sanitary-tee; "reducer" maps to a 0° elbow that transitions diameters. rotation is XYZ euler radians.',
+      parameters: {
+        type: 'object',
+        properties: {
+          levelId: { type: 'string', description: 'Target level ID. When omitted, uses the currently selected level.' },
+          position: { type: 'array', items: { type: 'number' }, description: 'Level-local [x, y, z] position of the fitting body in meters.' },
+          rotation: { type: 'array', items: { type: 'number' }, description: 'XYZ euler rotation in radians (default [0, 0, 0]).' },
+          fittingType: { type: 'string', enum: ['elbow', 'tee', 'wye', 'reducer'], description: 'Junction kind. tee → sanitary-tee (square branch); wye → 45° branch (code-preferred for horizontal drains); reducer → 0° elbow that steps diameter.' },
+          diameter: { type: 'number', description: 'Run nominal size in inches (1.25-8). For reducer this is the inlet.' },
+        },
+        required: ['position', 'fittingType'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_pipe_trap',
+      description: 'Add a DWV trap (P-trap or S-trap) at a level-local position. trapType="s-trap" is stored as a p-trap (the schema exposes only one trap kind) — the AI should still pass s-trap when the user explicitly asks for one so downstream logging is honest. rotation is yaw (radians).',
+      parameters: {
+        type: 'object',
+        properties: {
+          levelId: { type: 'string', description: 'Target level ID. When omitted, uses the currently selected level.' },
+          position: { type: 'array', items: { type: 'number' }, description: 'Level-local [x, y, z] position in meters.' },
+          rotation: { type: 'number', description: 'Yaw rotation in radians (trap-arm direction in plan). Default 0.' },
+          diameter: { type: 'number', description: 'Trap size in inches (1.25-4). Should match the fixture drain.' },
+          trapType: { type: 'string', enum: ['p-trap', 's-trap'], description: 'Trap kind. p-trap is code-compliant; s-trap is deprecated but accepted for legacy documentation.' },
+        },
+        required: ['position', 'diameter'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_hvac_equipment',
+      description: 'Add an HVAC equipment cabinet (furnace, air handler, or outdoor condenser) at a level-local position. equipmentType="indoor-unit" maps to air-handler; "outdoor-unit" maps to condenser; "ahu" maps to air-handler. rotation is yaw (radians). Dimensions in meters.',
+      parameters: {
+        type: 'object',
+        properties: {
+          levelId: { type: 'string', description: 'Target level ID. When omitted, uses the currently selected level.' },
+          position: { type: 'array', items: { type: 'number' }, description: 'Level-local [x, y, z] with Y at the cabinet base in meters.' },
+          rotation: { type: 'number', description: 'Yaw rotation in radians (default 0).' },
+          equipmentType: { type: 'string', enum: ['indoor-unit', 'outdoor-unit', 'ahu'], description: 'Cabinet role. indoor-unit / ahu → air-handler; outdoor-unit → condenser.' },
+          width: { type: 'number', description: 'Cabinet width in meters (0.3-2, default 0.56).' },
+          depth: { type: 'number', description: 'Cabinet depth in meters (0.3-2, default 0.71).' },
+          height: { type: 'number', description: 'Cabinet height in meters (0.4-2.5, default 1.1).' },
+        },
+        required: ['position', 'equipmentType'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_lineset',
+      description: 'Add a refrigerant lineset (copper suction + liquid pair) connecting an outdoor condenser to an indoor coil (air-handler or furnace). fromId and toId must both reference existing hvac-equipment nodes. route is an optional polyline of level-local [x, y, z] points; when omitted the validator wires a two-point straight run from the fromId cabinet to the toId cabinet.',
+      parameters: {
+        type: 'object',
+        properties: {
+          fromId: { type: 'string', description: 'Source hvac-equipment node ID (typically the outdoor condenser).' },
+          toId: { type: 'string', description: 'Destination hvac-equipment node ID (typically the indoor air-handler / furnace).' },
+          route: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'Optional [x, y, z] polyline path in level-local meters (min 2 points). When omitted, a straight run between the equipment positions is used.' },
+        },
+        required: ['fromId', 'toId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_liquid_line',
+      description: 'Add a standalone refrigerant liquid line (thin bare copper) from fromId to toId. Same connection semantics as add_lineset but drawn as a single polyline — used to visualise the liquid line separately from the suction line.',
+      parameters: {
+        type: 'object',
+        properties: {
+          fromId: { type: 'string', description: 'Source hvac-equipment node ID.' },
+          toId: { type: 'string', description: 'Destination hvac-equipment node ID.' },
+          route: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'Optional [x, y, z] polyline path in level-local meters (min 2 points). Defaults to a straight run between fromId and toId.' },
+        },
+        required: ['fromId', 'toId'],
+      },
+    },
+  },
+  // ==========================================================================
+  // Opening alignment tool — Phase 2 §6.4. Runs the opening-guides service to
+  // find the nearest door/window along-wall (or vertical) sibling and snaps
+  // the target opening onto that alignment feature.
+  // ==========================================================================
+  {
+    type: 'function',
+    function: {
+      name: 'align_opening_to_nearest',
+      description: 'Snap an existing door or window to its nearest alignment target on the same wall. Uses the shared opening-guides service (computeOpeningGuides) to detect the closest along-wall (center/edge) or vertical (sill/center/top) feature and rewrites the opening position to sit on it. axis="horizontal" snaps only along the wall; "vertical" snaps only in height; "both" applies whichever axes have a valid snap.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'Node ID of the door or window to align.' },
+          axis: { type: 'string', enum: ['horizontal', 'vertical', 'both'], description: 'Which axis (or both) the snap should apply on. Default both.' },
+        },
+        required: ['nodeId'],
       },
     },
   },

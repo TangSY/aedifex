@@ -10,14 +10,23 @@ import {
   DoorNode,
   DormerNode,
   DownspoutNode,
+  DuctFittingNode,
+  DuctSegmentNode,
+  DuctTerminalNode,
   ElevatorNode,
   EyebrowVentNode,
   FenceNode,
   generateId,
   GuideNode,
   GutterNode,
+  HvacEquipmentNode,
   ItemNode,
   LevelNode,
+  LinesetNode,
+  LiquidLineNode,
+  PipeFittingNode,
+  PipeSegmentNode,
+  PipeTrapNode,
   RidgeVentNode,
   RoofNode,
   RoofSegmentNode,
@@ -45,15 +54,25 @@ import type {
   ValidatedAddBuilding,
   ValidatedAddCeiling,
   ValidatedAddCutOut,
+  ValidatedAddDuctFitting,
+  ValidatedAddDuctSegment,
+  ValidatedAddDuctTerminal,
   ValidatedAddFence,
   ValidatedAddGuide,
+  ValidatedAddHvacEquipment,
   ValidatedAddLevel,
+  ValidatedAddLineset,
+  ValidatedAddLiquidLine,
+  ValidatedAddPipeFitting,
+  ValidatedAddPipeSegment,
+  ValidatedAddPipeTrap,
   ValidatedAddRoof,
   ValidatedAddScan,
   ValidatedAddSlab,
   ValidatedAddElevator,
   ValidatedAddStair,
   ValidatedAddZone,
+  ValidatedAlignOpeningToNearest,
   ValidatedOperation,
   ValidatedUpdateCeiling,
   ValidatedCloneLevel,
@@ -1128,6 +1147,181 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         if (updates) {
           useScene.getState().updateNode(uOp.nodeId, updates)
           affectedNodeIds.push(uOp.nodeId)
+        }
+        break
+      }
+      // --- MEP node creation (Phase 2 §6.2) ---
+      case 'add_duct_segment': {
+        const mOp = op as ValidatedAddDuctSegment
+        const node = DuctSegmentNode.parse({
+          path: mOp.points,
+          shape: mOp.crossSection,
+          ...(mOp.diameter !== undefined ? { diameter: mOp.diameter } : {}),
+          ...(mOp.width !== undefined ? { width: mOp.width } : {}),
+          ...(mOp.height !== undefined ? { height: mOp.height } : {}),
+          system: mOp.system,
+        })
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        batchCreates.push({ node, parentId })
+        affectedNodeIds.push(node.id as AnyNodeId)
+        createdNodeIds.push(node.id as AnyNodeId)
+        break
+      }
+      case 'add_duct_fitting': {
+        const mOp = op as ValidatedAddDuctFitting
+        // Map "cap" (round end-cap) → a straight 0° elbow that closes the run.
+        const schemaKind = mOp.fittingType === 'cap' ? 'elbow' : mOp.fittingType
+        const node = DuctFittingNode.parse({
+          position: mOp.position,
+          rotation: mOp.rotation,
+          fittingType: schemaKind,
+          ...(mOp.fittingType === 'cap' ? { angle: 0 } : {}),
+          ...(mOp.diameter !== undefined ? { diameter: mOp.diameter } : {}),
+          ...(mOp.diameter2 !== undefined ? { diameter2: mOp.diameter2 } : {}),
+        })
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        batchCreates.push({ node, parentId })
+        affectedNodeIds.push(node.id as AnyNodeId)
+        createdNodeIds.push(node.id as AnyNodeId)
+        break
+      }
+      case 'add_duct_terminal': {
+        const mOp = op as ValidatedAddDuctTerminal
+        // Map SaaS terminalType → schema enum + mount.
+        const schemaKind =
+          mOp.terminalType === 'supply' ? 'supply-register'
+          : mOp.terminalType === 'return' ? 'return-grille'
+          : 'diffuser'
+        // Derive mount from host kind if present; diffusers default to ceiling.
+        let mount: 'floor' | 'ceiling' | 'wall' = mOp.terminalType === 'diffuser' ? 'ceiling' : 'floor'
+        if (mOp.hostId) {
+          const host = nodes[mOp.hostId as AnyNodeId]
+          if (host?.type === 'ceiling') mount = 'ceiling'
+          else if (host?.type === 'wall') mount = 'wall'
+        }
+        const node = DuctTerminalNode.parse({
+          position: mOp.position,
+          rotation: mOp.rotation,
+          terminalType: schemaKind,
+          mount,
+        })
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        batchCreates.push({ node, parentId })
+        affectedNodeIds.push(node.id as AnyNodeId)
+        createdNodeIds.push(node.id as AnyNodeId)
+        break
+      }
+      case 'add_pipe_segment': {
+        const mOp = op as ValidatedAddPipeSegment
+        // PipeSegment schema only exposes waste / vent; map supply / gas to
+        // waste for now so the LLM's intent is preserved in the polyline
+        // while the geometry system stays consistent.
+        const system = mOp.pipeKind === 'dwv' ? 'waste' : 'waste'
+        const node = PipeSegmentNode.parse({
+          path: mOp.points,
+          diameter: mOp.diameter,
+          system,
+        })
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        batchCreates.push({ node, parentId })
+        affectedNodeIds.push(node.id as AnyNodeId)
+        createdNodeIds.push(node.id as AnyNodeId)
+        break
+      }
+      case 'add_pipe_fitting': {
+        const mOp = op as ValidatedAddPipeFitting
+        // Map alignment tool kinds → schema enum.
+        //   tee     → sanitary-tee (square branch)
+        //   reducer → 0° elbow that steps diameter
+        //   elbow / wye pass through.
+        const schemaKind: 'elbow' | 'wye' | 'sanitary-tee' | 'cross' =
+          mOp.fittingType === 'tee' ? 'sanitary-tee'
+          : mOp.fittingType === 'reducer' ? 'elbow'
+          : mOp.fittingType
+        const node = PipeFittingNode.parse({
+          position: mOp.position,
+          rotation: mOp.rotation,
+          fittingType: schemaKind,
+          diameter: mOp.diameter,
+          ...(mOp.fittingType === 'reducer' ? { angle: 0 } : {}),
+        })
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        batchCreates.push({ node, parentId })
+        affectedNodeIds.push(node.id as AnyNodeId)
+        createdNodeIds.push(node.id as AnyNodeId)
+        break
+      }
+      case 'add_pipe_trap': {
+        const mOp = op as ValidatedAddPipeTrap
+        // Schema only exposes one trap kind; s-trap is stored as p-trap
+        // geometry but the validator preserved the requested trapType for
+        // downstream logging.
+        const node = PipeTrapNode.parse({
+          position: mOp.position,
+          rotation: mOp.rotation,
+          diameter: mOp.diameter,
+        })
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        batchCreates.push({ node, parentId })
+        affectedNodeIds.push(node.id as AnyNodeId)
+        createdNodeIds.push(node.id as AnyNodeId)
+        break
+      }
+      case 'add_hvac_equipment': {
+        const mOp = op as ValidatedAddHvacEquipment
+        // Map SaaS kind → schema enum:
+        //   indoor-unit / ahu → air-handler
+        //   outdoor-unit      → condenser
+        const schemaKind: 'furnace' | 'air-handler' | 'condenser' =
+          mOp.equipmentType === 'outdoor-unit' ? 'condenser' : 'air-handler'
+        const node = HvacEquipmentNode.parse({
+          position: mOp.position,
+          rotation: mOp.rotation,
+          equipmentType: schemaKind,
+          width: mOp.width,
+          depth: mOp.depth,
+          height: mOp.height,
+        })
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        batchCreates.push({ node, parentId })
+        affectedNodeIds.push(node.id as AnyNodeId)
+        createdNodeIds.push(node.id as AnyNodeId)
+        break
+      }
+      case 'add_lineset': {
+        const mOp = op as ValidatedAddLineset
+        const node = LinesetNode.parse({
+          path: mOp.route,
+        })
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        batchCreates.push({ node, parentId })
+        affectedNodeIds.push(node.id as AnyNodeId)
+        createdNodeIds.push(node.id as AnyNodeId)
+        break
+      }
+      case 'add_liquid_line': {
+        const mOp = op as ValidatedAddLiquidLine
+        const node = LiquidLineNode.parse({
+          path: mOp.route,
+        })
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        batchCreates.push({ node, parentId })
+        affectedNodeIds.push(node.id as AnyNodeId)
+        createdNodeIds.push(node.id as AnyNodeId)
+        break
+      }
+      case 'align_opening_to_nearest': {
+        const aOp = op as ValidatedAlignOpeningToNearest
+        if (aOp.snappedPosition) {
+          const original = originalNodeStates.get(aOp.nodeId)
+          if (original) {
+            useScene.getState().updateNode(aOp.nodeId, { metadata: original.metadata })
+          }
+          useScene.getState().updateNode(aOp.nodeId, {
+            position: aOp.snappedPosition,
+            metadata: stripTransientMetadata(nodes[aOp.nodeId]?.metadata) as Record<string, never>,
+          })
+          affectedNodeIds.push(aOp.nodeId)
         }
         break
       }
