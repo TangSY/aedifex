@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -63,7 +63,7 @@ describe('createWallOnCurrentLevel', () => {
     seedLevel([makeWall([0, 0], [4, 0], 'wall_a')])
   })
 
-  test('endpoint near an existing corner attaches to the corner instead of splitting', () => {
+  it('endpoint near an existing corner attaches to the corner instead of splitting', () => {
     const created = createWallOnCurrentLevel([2, 2], [3.99, 0])
 
     expect(created?.end).toEqual([4, 0])
@@ -73,7 +73,7 @@ describe('createWallOnCurrentLevel', () => {
     expect(levelWalls()).toHaveLength(2)
   })
 
-  test('endpoint near the host start corner snaps there without splitting', () => {
+  it('endpoint near the host start corner snaps there without splitting', () => {
     const created = createWallOnCurrentLevel([2, 2], [0.015, 0])
 
     expect(created?.end).toEqual([0, 0])
@@ -81,7 +81,7 @@ describe('createWallOnCurrentLevel', () => {
     expect(levelWalls()).toHaveLength(2)
   })
 
-  test('genuine mid-wall endpoint still splits the host (T junction)', () => {
+  it('genuine mid-wall endpoint still splits the host (T junction)', () => {
     const created = createWallOnCurrentLevel([2, 2], [2, 0])
 
     expect(created?.end).toEqual([2, 0])
@@ -96,14 +96,14 @@ describe('createWallOnCurrentLevel', () => {
     ).toBe(true)
   })
 
-  test('exact duplicate segment is rejected', () => {
+  it('exact duplicate segment is rejected', () => {
     expect(createWallOnCurrentLevel([0, 0], [4, 0])).toBeNull()
     expect(levelWalls()).toHaveLength(1)
   })
 })
 
 describe('snapWallDraftPointDetailed', () => {
-  test('bypassSnap returns the raw point without endpoint or angle snap', () => {
+  it('bypassSnap returns the raw point without endpoint or angle snap', () => {
     const wall = makeWall([0, 0], [4, 0], 'wall_a')
     const result = snapWallDraftPointDetailed({
       point: [3.99, 0.03],

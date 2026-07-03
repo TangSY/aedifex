@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, it } from 'vitest'
 import {
   type AnyNode,
   type AnyNodeDefinition,
@@ -28,7 +28,7 @@ function registerTestDefinition(kind: string, overrides: Partial<AnyNodeDefiniti
 }
 
 describe('snapDirectRotationDelta', () => {
-  test('snaps rotation deltas to the default angle increment', () => {
+  it('snaps rotation deltas to the default angle increment', () => {
     expect(snapDirectRotationDelta(DEFAULT_ANGLE_STEP * 0.49, false)).toBe(0)
     expect(snapDirectRotationDelta(DEFAULT_ANGLE_STEP * 0.51, false)).toBeCloseTo(
       DEFAULT_ANGLE_STEP,
@@ -38,14 +38,14 @@ describe('snapDirectRotationDelta', () => {
     )
   })
 
-  test('keeps the raw rotation delta while free-rotating', () => {
+  it('keeps the raw rotation delta while free-rotating', () => {
     const rawDelta = DEFAULT_ANGLE_STEP * 0.42
     expect(snapDirectRotationDelta(rawDelta, true)).toBe(rawDelta)
   })
 })
 
 describe('resolveDirectRotationDragDelta', () => {
-  test('maps horizontal pointer motion to the direct rotation delta direction', () => {
+  it('maps horizontal pointer motion to the direct rotation delta direction', () => {
     const radiansPerPixel = DEFAULT_ANGLE_STEP / 12
 
     expect(resolveDirectRotationDragDelta(100, 112, radiansPerPixel, false)).toBeCloseTo(
@@ -56,7 +56,7 @@ describe('resolveDirectRotationDragDelta', () => {
     )
   })
 
-  test('keeps unsnapped drag deltas while free-rotating', () => {
+  it('keeps unsnapped drag deltas while free-rotating', () => {
     expect(resolveDirectRotationDragDelta(100, 103, 0.1, true)).toBeCloseTo(-0.3)
   })
 })
@@ -64,14 +64,14 @@ describe('resolveDirectRotationDragDelta', () => {
 describe('canDirectMoveNode', () => {
   // Accepts kinds with a 3D-mountable move tool (`movable` or
   // `affordanceTools.move`); floorplan-only movers (zone) are excluded.
-  test('rejects floorplan-only move targets (no 3D tool mounts)', () => {
+  it('rejects floorplan-only move targets (no 3D tool mounts)', () => {
     const kind = 'direct-move-floorplan-only-test'
     registerTestDefinition(kind, { floorplanMoveTarget: {} as never })
 
     expect(canDirectMoveNode({ id: 'node_1', type: kind } as unknown as AnyNode)).toBe(false)
   })
 
-  test('accepts kinds with a bespoke move tool', () => {
+  it('accepts kinds with a bespoke move tool', () => {
     const kind = 'direct-move-bespoke-tool-test'
     registerTestDefinition(kind, {
       affordanceTools: {
@@ -82,7 +82,7 @@ describe('canDirectMoveNode', () => {
     expect(canDirectMoveNode({ id: 'node_1', type: kind } as unknown as AnyNode)).toBe(true)
   })
 
-  test('accepts nodes with the generic movable capability', () => {
+  it('accepts nodes with the generic movable capability', () => {
     const kind = 'direct-move-movable-test'
     registerTestDefinition(kind, {
       capabilities: {
@@ -93,7 +93,7 @@ describe('canDirectMoveNode', () => {
     expect(canDirectMoveNode({ id: 'node_1', type: kind } as unknown as AnyNode)).toBe(true)
   })
 
-  test('rejects kinds with no registered move path', () => {
+  it('rejects kinds with no registered move path', () => {
     const kind = 'direct-move-none-test'
     registerTestDefinition(kind, {})
 

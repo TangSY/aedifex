@@ -1,10 +1,10 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, it } from 'vitest'
 import { resolvePlanarCursorPosition } from './planar-cursor-placement'
 
 const snapHalf = (value: number) => Math.round(value / 0.5) * 0.5
 
 describe('resolvePlanarCursorPosition', () => {
-  test('absolute mode places the point directly at the snapped cursor', () => {
+  it('absolute mode places the point directly at the snapped cursor', () => {
     const result = resolvePlanarCursorPosition({
       cursor: [1.24, -2.26],
       original: [10, 10],
@@ -17,7 +17,7 @@ describe('resolvePlanarCursorPosition', () => {
     expect(result.anchor).toBeNull()
   })
 
-  test('relative mode preserves the original grab offset from the first cursor sample', () => {
+  it('relative mode preserves the original grab offset from the first cursor sample', () => {
     const start = resolvePlanarCursorPosition({
       cursor: [4.1, 6.1],
       original: [10, 20],

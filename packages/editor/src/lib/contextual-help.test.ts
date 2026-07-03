@@ -1,8 +1,8 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, it } from 'vitest'
 import { resolveSelectModeHelpHints } from './contextual-help'
 
 describe('resolveSelectModeHelpHints', () => {
-  test('stays hidden in idle select mode with no selection', () => {
+  it('stays hidden in idle select mode with no selection', () => {
     expect(
       resolveSelectModeHelpHints({
         selectedCount: 0,
@@ -14,7 +14,7 @@ describe('resolveSelectModeHelpHints', () => {
     ).toEqual([])
   })
 
-  test('shows multi-select guidance when a modifier is held without selection', () => {
+  it('shows multi-select guidance when a modifier is held without selection', () => {
     expect(
       resolveSelectModeHelpHints({
         selectedCount: 0,
@@ -32,7 +32,7 @@ describe('resolveSelectModeHelpHints', () => {
     ])
   })
 
-  test('shows direct manipulation tips for selected movable and rotatable nodes', () => {
+  it('shows direct manipulation tips for selected movable and rotatable nodes', () => {
     const hints = resolveSelectModeHelpHints({
       selectedCount: 1,
       hasMovableSelection: true,
@@ -56,7 +56,7 @@ describe('resolveSelectModeHelpHints', () => {
     })
   })
 
-  test('switches direct manipulation labels while constraints are bypassed', () => {
+  it('switches direct manipulation labels while constraints are bypassed', () => {
     const hints = resolveSelectModeHelpHints({
       selectedCount: 1,
       hasMovableSelection: true,

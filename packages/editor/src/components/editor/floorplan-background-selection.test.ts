@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, it } from 'vitest'
 import { resolveFloorplanBackgroundSelection } from './floorplan-background-selection'
 
 const baseArgs = {
@@ -15,7 +15,7 @@ const baseArgs = {
 }
 
 describe('resolveFloorplanBackgroundSelection', () => {
-  test('shift-click on a floorplan node toggles into the current selection', () => {
+  it('shift-click on a floorplan node toggles into the current selection', () => {
     const result = resolveFloorplanBackgroundSelection({
       ...baseArgs,
       modifierKeys: { meta: false, ctrl: false, shift: true },
@@ -28,7 +28,7 @@ describe('resolveFloorplanBackgroundSelection', () => {
     })
   })
 
-  test('shift-click on selected floorplan node toggles it out', () => {
+  it('shift-click on selected floorplan node toggles it out', () => {
     const result = resolveFloorplanBackgroundSelection({
       ...baseArgs,
       currentSelectedIds: ['wall_1', 'door_1'],
@@ -42,7 +42,7 @@ describe('resolveFloorplanBackgroundSelection', () => {
     })
   })
 
-  test('shift-click on empty floorplan space preserves selection', () => {
+  it('shift-click on empty floorplan space preserves selection', () => {
     const result = resolveFloorplanBackgroundSelection({
       ...baseArgs,
       getFloorplanHitIdAtPoint: () => null,

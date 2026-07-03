@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, test } from 'bun:test'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import {
   type AnyNode,
   type AnyNodeDefinition,
@@ -53,7 +53,7 @@ describe('selectable candidates', () => {
     })
   })
 
-  test('includes building-scoped elevators for the active level building', () => {
+  it('includes building-scoped elevators for the active level building', () => {
     useScene.setState({
       nodes: {
         building_test: {
@@ -80,7 +80,7 @@ describe('selectable candidates', () => {
     expect(collectSelectableCandidateIds()).toContain('elevator_test')
   })
 
-  test('includes legacy level-parented elevators already loaded in the editor', () => {
+  it('includes legacy level-parented elevators already loaded in the editor', () => {
     useScene.setState({
       nodes: {
         building_test: {

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { AnyNode, AnyNodeId } from '@aedifex/core'
 import { useScene } from '@aedifex/core'
 import { commitFreshPlacementSubtree } from './fresh-planar-placement'
@@ -68,7 +68,7 @@ describe('commitFreshPlacementSubtree', () => {
     useScene.temporal.getState().resume()
   })
 
-  test('commits a fresh draft as one undoable clean subtree', () => {
+  it('commits a fresh draft as one undoable clean subtree', () => {
     useScene.temporal.getState().pause()
 
     const committedId = commitFreshPlacementSubtree(SHELF_ID, {

@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, it } from 'vitest'
 import type { WallNode } from '@aedifex/core'
 import {
   findWallSnapTarget,
@@ -25,21 +25,21 @@ function makeWall(start: WallPlanPoint, end: WallPlanPoint, id?: string): WallNo
 }
 
 describe('findWallSpecialPointSnap', () => {
-  test('snaps to a wall corner (endpoint) when near it', () => {
+  it('snaps to a wall corner (endpoint) when near it', () => {
     const walls = [makeWall([0, 0], [4, 0])]
     const result = findWallSpecialPointSnap([0.1, 0.1], walls)
     expect(result?.snap).toBe('endpoint')
     expect(result?.point).toEqual([0, 0])
   })
 
-  test('snaps to a wall midpoint when near it (not a corner)', () => {
+  it('snaps to a wall midpoint when near it (not a corner)', () => {
     const walls = [makeWall([0, 0], [4, 0])]
     const result = findWallSpecialPointSnap([2.1, 0.2], walls)
     expect(result?.snap).toBe('midpoint')
     expect(result?.point).toEqual([2, 0])
   })
 
-  test('snaps to the crossing of two walls (intersection)', () => {
+  it('snaps to the crossing of two walls (intersection)', () => {
     // A runs along z=0; B crosses it at x=1. B's own midpoint is [1,1], far
     // from the crossing, so the snap is the intersection, not a midpoint.
     const walls = [makeWall([0, 0], [4, 0], 'a'), makeWall([1, -1], [1, 3], 'b')]
@@ -49,21 +49,21 @@ describe('findWallSpecialPointSnap', () => {
     expect(result?.point[1]).toBeCloseTo(0, 6)
   })
 
-  test('corner wins over a midpoint when both are in range', () => {
+  it('corner wins over a midpoint when both are in range', () => {
     const walls = [makeWall([0, 0], [1, 0])]
     const result = findWallSpecialPointSnap([0.9, 0.1], walls)
     expect(result?.snap).toBe('endpoint')
     expect(result?.point).toEqual([1, 0])
   })
 
-  test('returns null when no special point is in range', () => {
+  it('returns null when no special point is in range', () => {
     const walls = [makeWall([0, 0], [4, 0])]
     // Near the wall body but far from corner/midpoint — that's an edge snap,
     // handled separately by findWallSnapTarget, not a special point.
     expect(findWallSpecialPointSnap([1.2, 0.1], walls)).toBeNull()
   })
 
-  test('honors tighter per-call radii without changing defaults', () => {
+  it('honors tighter per-call radii without changing defaults', () => {
     const walls = [makeWall([0, 0], [4, 0])]
 
     expect(findWallSpecialPointSnap([0.34, 0], walls)?.snap).toBe('endpoint')
@@ -72,19 +72,19 @@ describe('findWallSpecialPointSnap', () => {
 })
 
 describe('findWallSnapTarget (edge / along-wall)', () => {
-  test('projects onto a wall body within range', () => {
+  it('projects onto a wall body within range', () => {
     const walls = [makeWall([0, 0], [4, 0])]
     const result = findWallSnapTarget([1.2, 0.1], walls)
     expect(result?.[0]).toBeCloseTo(1.2, 6)
     expect(result?.[1]).toBeCloseTo(0, 6)
   })
 
-  test('returns null when too far from any wall', () => {
+  it('returns null when too far from any wall', () => {
     const walls = [makeWall([0, 0], [4, 0])]
     expect(findWallSnapTarget([1.2, 2], walls)).toBeNull()
   })
 
-  test('honors a tighter wall-body radius', () => {
+  it('honors a tighter wall-body radius', () => {
     const walls = [makeWall([0, 0], [4, 0])]
 
     expect(findWallSnapTarget([1.2, 0.1], walls, { radius: 0.08 })).toBeNull()

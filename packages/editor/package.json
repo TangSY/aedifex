@@ -13,7 +13,8 @@
   },
   "scripts": {
     "check-types": "tsc --noEmit",
-    "check-boundary": "bash ./scripts/check-oss-boundary.sh"
+    "check-boundary": "bash ./scripts/check-oss-boundary.sh",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "@aedifex/core": "^0.9.1",

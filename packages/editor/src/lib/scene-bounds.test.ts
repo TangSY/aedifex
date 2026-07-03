@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, it } from 'vitest'
 import type { AnyNode } from '@aedifex/core/schema'
 import { computeSceneBoundsXZ } from './scene-bounds'
 
@@ -46,11 +46,11 @@ function makeSite(points: [number, number][]): AnyNode {
 }
 
 describe('computeSceneBoundsXZ', () => {
-  test('returns null when given an empty array', () => {
+  it('returns null when given an empty array', () => {
     expect(computeSceneBoundsXZ([])).toBeNull()
   })
 
-  test('returns null when no geometry is found on any node', () => {
+  it('returns null when no geometry is found on any node', () => {
     const barren = [
       {
         object: 'node',
@@ -65,7 +65,7 @@ describe('computeSceneBoundsXZ', () => {
     expect(computeSceneBoundsXZ(barren)).toBeNull()
   })
 
-  test('computes bounds from wall endpoints', () => {
+  it('computes bounds from wall endpoints', () => {
     const nodes: AnyNode[] = [makeWall([0, 0], [4, 0]), makeWall([4, 0], [4, 3])]
     const bounds = computeSceneBoundsXZ(nodes)
     expect(bounds).not.toBeNull()
@@ -75,7 +75,7 @@ describe('computeSceneBoundsXZ', () => {
     expect(bounds!.center).toEqual([2, 1.5])
   })
 
-  test('includes zone polygons', () => {
+  it('includes zone polygons', () => {
     const nodes: AnyNode[] = [
       makeZone([
         [-10, -5],
@@ -91,7 +91,7 @@ describe('computeSceneBoundsXZ', () => {
     expect(bounds!.size).toEqual([20, 10])
   })
 
-  test('ignores the default 30×30 site bootstrap polygon', () => {
+  it('ignores the default 30×30 site bootstrap polygon', () => {
     const nodes: AnyNode[] = [
       makeSite([
         [-15, -15],
@@ -108,7 +108,7 @@ describe('computeSceneBoundsXZ', () => {
     expect(bounds!.max).toEqual([2, 2])
   })
 
-  test('honours a non-default site polygon', () => {
+  it('honours a non-default site polygon', () => {
     const nodes: AnyNode[] = [
       makeSite([
         [-25, -20],
@@ -123,7 +123,7 @@ describe('computeSceneBoundsXZ', () => {
     expect(bounds!.max).toEqual([25, 20])
   })
 
-  test('combines walls, zones and positions across the flat dict', () => {
+  it('combines walls, zones and positions across the flat dict', () => {
     const nodes: Record<string, AnyNode> = {
       wallA: makeWall([-8, -3], [4, -3]),
       wallB: makeWall([4, -3], [4, 6]),
@@ -163,7 +163,7 @@ describe('computeSceneBoundsXZ', () => {
     expect(bounds!.max).toEqual([7, 8])
   })
 
-  test('handles a single degenerate point with a minimum extent', () => {
+  it('handles a single degenerate point with a minimum extent', () => {
     const nodes: AnyNode[] = [makeWall([2, 2], [2, 2])]
     const bounds = computeSceneBoundsXZ(nodes)
     expect(bounds).not.toBeNull()
@@ -172,7 +172,7 @@ describe('computeSceneBoundsXZ', () => {
     expect(bounds!.center).toEqual([2, 2])
   })
 
-  test('skips non-finite coordinates', () => {
+  it('skips non-finite coordinates', () => {
     const nodes: AnyNode[] = [makeWall([Number.NaN, 0], [4, 2]), makeWall([0, 0], [1, 1])]
     const bounds = computeSceneBoundsXZ(nodes)
     expect(bounds).not.toBeNull()
