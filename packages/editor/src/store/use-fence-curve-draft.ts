@@ -1,5 +1,5 @@
 // Ephemeral store: how many points the in-progress curved-fence draft has
-// placed. Written by the 3D spline draft tool (`@pascal-app/nodes`
+// placed. Written by the 3D spline draft tool (`@aedifex/nodes`
 // fence/tool.tsx) and read by the contextual helper so the "finish curve" hint
 // only surfaces once the user has actually started drawing. Reset on commit,
 // cancel, and unmount — never persisted, never in undo history.

@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test'
-import type { AnyNode, ItemNode, SlabNode, Space } from '@pascal-app/core'
+import { describe, expect, it } from 'vitest'
+import type { AnyNode, ItemNode, SlabNode, Space } from '@aedifex/core'
 import {
   availablePaintScopes,
   cyclePaintScope,

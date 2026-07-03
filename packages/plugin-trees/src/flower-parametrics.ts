@@ -1,4 +1,4 @@
-import type { ParametricDescriptor } from '@pascal-app/core'
+import type { ParametricDescriptor } from '@aedifex/core'
 import type { FlowerNode } from './flower-schema'
 
 /** Inspector for a placed flower — rendered for free by the host's

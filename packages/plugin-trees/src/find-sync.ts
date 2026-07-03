@@ -1,4 +1,4 @@
-import { type AnyNode, emitter } from '@pascal-app/core'
+import { type AnyNode, emitter } from '@aedifex/core'
 import type { FlowerNode } from './flower-schema'
 import type { GrassNode } from './grass-schema'
 import type { TreeNode } from './schema'

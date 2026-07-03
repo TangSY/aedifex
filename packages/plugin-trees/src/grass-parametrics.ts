@@ -1,4 +1,4 @@
-import type { ParametricDescriptor } from '@pascal-app/core'
+import type { ParametricDescriptor } from '@aedifex/core'
 import type { GrassNode } from './grass-schema'
 
 /** Inspector for a placed grass tuft — rendered for free by the host's

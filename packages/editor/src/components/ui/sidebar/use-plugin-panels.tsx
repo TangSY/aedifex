@@ -1,7 +1,7 @@
 'use client'
 
 import { Icon } from '@iconify/react'
-import { type IconRef, panelRegistry, type PluginPanel } from '@pascal-app/core'
+import { type IconRef, panelRegistry, type PluginPanel } from '@aedifex/core'
 import { type ComponentType, lazy, type ReactNode, Suspense, useSyncExternalStore } from 'react'
 import useEditor from '../../../store/use-editor'
 import { ErrorBoundary } from '../primitives/error-boundary'

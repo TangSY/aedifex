@@ -1,7 +1,7 @@
 // @ts-expect-error — bun:test is provided by the Bun runtime; viewer does not
 // depend on @types/bun so the import type is unresolved at compile time.
 import { describe, expect, test } from 'bun:test'
-import { DoorNode } from '@pascal-app/core'
+import { DoorNode } from '@aedifex/core'
 import * as THREE from 'three'
 import { buildDoorPreviewMesh, poseDoorMovingParts } from '../../index'
 

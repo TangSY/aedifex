@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, test } from 'vitest'
 import type { AnyNode } from '@aedifex/core'
 import {
   resolveNodeSelectionTarget,

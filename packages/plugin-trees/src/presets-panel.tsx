@@ -1,7 +1,7 @@
 'use client'
 
-import { useScene } from '@pascal-app/core'
-import { SegmentedControl, SliderControl, ToggleControl, useEditor } from '@pascal-app/editor'
+import { useScene } from '@aedifex/core'
+import { SegmentedControl, SliderControl, ToggleControl, useEditor } from '@aedifex/editor'
 import { FLOWER_PRESET_LIST } from './flower-presets'
 import type { FlowerPreset } from './flower-schema'
 import { GRASS_PRESET_LIST } from './grass-presets'

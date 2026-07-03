@@ -54,7 +54,8 @@ import {
   ZoneNode as ZoneNodeSchema,
   type ZoneNode as ZoneNodeType,
 } from '@aedifex/core'
-import { useAlignmentGuides, useSegmentDraftChain, useWallSnapIndicator } from '@aedifex/editor'
+import useSegmentDraftChain from '../../store/use-segment-draft-chain'
+import useWallSnapIndicator from '../../store/use-wall-snap-indicator'
 import { getSceneTheme, useViewer } from '@aedifex/viewer'
 import { Command, Ruler } from 'lucide-react'
 import {

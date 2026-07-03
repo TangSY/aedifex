@@ -1,7 +1,7 @@
 'use client'
 
-import { emitter, type GridEvent, sceneRegistry, snapPointToGrid } from '@pascal-app/core'
-import { isGridSnapActive, useEditor } from '@pascal-app/editor'
+import { emitter, type GridEvent, sceneRegistry, snapPointToGrid } from '@aedifex/core'
+import { isGridSnapActive, useEditor } from '@aedifex/editor'
 import { useEffect, useRef, useState } from 'react'
 import { type Group, Vector3 } from 'three'
 
@@ -19,7 +19,7 @@ export function snapXZ(x: number, z: number): readonly [number, number] {
  * Convert a world-space grid hit into the active level's local frame, the way
  * the host stores node positions. Re-derived from the public `sceneRegistry`
  * because the built-in `floor-placement` helpers aren't part of the public
- * `@pascal-app/*` surface yet — a candidate for a future `@pascal-app/plugin-api`.
+ * `@aedifex/*` surface yet — a candidate for a future `@aedifex/plugin-api`.
  */
 export function toLevelLocal(
   levelId: string,

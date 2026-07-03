@@ -1,6 +1,6 @@
-import { afterEach, describe, expect, test } from 'bun:test'
-import { type AnyNode, DoorNode, sceneRegistry } from '@pascal-app/core'
-import { buildDoorPreviewMesh } from '@pascal-app/viewer'
+import { afterEach, describe, expect, test } from 'vitest'
+import { type AnyNode, DoorNode, sceneRegistry } from '@aedifex/core'
+import { buildDoorPreviewMesh } from '@aedifex/viewer'
 import * as THREE from 'three'
 import { prepareSceneForExport } from './glb-export'
 

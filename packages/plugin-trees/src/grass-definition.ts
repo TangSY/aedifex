@@ -1,4 +1,4 @@
-import type { NodeDefinition } from '@pascal-app/core'
+import type { NodeDefinition } from '@aedifex/core'
 import { buildGrassFloorplan } from './floorplan'
 import { grassParametrics } from './grass-parametrics'
 import { GrassNode } from './grass-schema'

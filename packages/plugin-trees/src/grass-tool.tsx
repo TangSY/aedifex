@@ -1,8 +1,8 @@
 'use client'
 
-import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
-import { triggerSFX } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNode, type AnyNodeId, useScene } from '@aedifex/core'
+import { triggerSFX } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useMemo } from 'react'
 import { GRASS_PRESETS, GRASS_SEED_POOL } from './grass-presets'
 import GrassPreview from './grass-preview'

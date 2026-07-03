@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, test } from 'vitest'
 import { resolvePlanarCursorPosition } from './planar-cursor-placement'
 
 const snapHalf = (value: number) => Math.round(value / 0.5) * 0.5

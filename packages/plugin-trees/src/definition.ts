@@ -1,4 +1,4 @@
-import type { HandleDescriptor, NodeDefinition } from '@pascal-app/core'
+import type { HandleDescriptor, NodeDefinition } from '@aedifex/core'
 import { buildTreeFloorplan, treeTrunkRadius } from './floorplan'
 import { treeParametrics } from './parametrics'
 import { TreeNode } from './schema'

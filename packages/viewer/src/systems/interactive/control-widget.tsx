@@ -1,6 +1,6 @@
 'use client'
 
-import type { Control, ControlValue } from '@pascal-app/core'
+import type { Control, ControlValue } from '@aedifex/core'
 
 /** One interactive control (toggle / slider / temperature) rendered inside the
  *  item controls overlay. Shared by the parametric `InteractiveSystem` and the

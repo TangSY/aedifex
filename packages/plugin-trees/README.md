@@ -1,11 +1,11 @@
-# @pascal-app/plugin-trees
+# @aedifex/plugin-trees
 
 The first-party **example plugin** for the Pascal editor. It contributes a
 procedural _trees_ node and a left-rail _presets_ panel, and exists to prove —
 and document — the minimal host surface every future plugin reuses.
 
 It is structurally identical to a third-party plugin: it peer-depends on
-`@pascal-app/{core,viewer,editor}` (plus `react`/`three`/`@react-three/fiber`/
+`@aedifex/{core,viewer,editor}` (plus `react`/`three`/`@react-three/fiber`/
 `zustand`) and bundles `@dgreenheck/ez-tree` for the geometry. It imports
 nothing private. Copy this folder as the starting point for a new plugin.
 
@@ -64,7 +64,7 @@ instancing pay off; a unique inspector seed just renders as its own variant.
 ## Manifest
 
 ```ts
-import { treesPlugin } from '@pascal-app/plugin-trees'
+import { treesPlugin } from '@aedifex/plugin-trees'
 // host:
 setPluginDiscovery(async () => [treesPlugin])
 ```
@@ -80,8 +80,8 @@ path as the built-ins.
   `as TreeNode`). The registry derives `AnyNode` post-migration.
 - The placement tool re-derives level-local conversion from the public
   `sceneRegistry` because the built-in `floor-placement` helpers aren't part of
-  the public `@pascal-app/*` surface yet — a candidate for a future
-  `@pascal-app/plugin-api` re-export package.
+  the public `@aedifex/*` surface yet — a candidate for a future
+  `@aedifex/plugin-api` re-export package.
 - The instance matrices fold in the parent level's world transform; a building
   move while plants are static won't refresh until a node of that kind next
   changes.

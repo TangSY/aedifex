@@ -1,4 +1,4 @@
-import type { AnyNodeDefinition, Plugin } from '@pascal-app/core'
+import type { AnyNodeDefinition, Plugin } from '@aedifex/core'
 // Side-effect: subscribes the panel store to `selection:find-node` so the
 // host's "find in catalog" lands on the right Nature section (see find-sync.ts).
 import './find-sync'
@@ -15,7 +15,7 @@ import { grassDefinition } from './grass-definition'
  * hand-maintained union today; the registry derives it post-migration.
  */
 export const treesPlugin: Plugin = {
-  id: 'pascal:trees',
+  id: 'aedifex:trees',
   apiVersion: 1,
   nodes: [
     treeDefinition as unknown as AnyNodeDefinition,

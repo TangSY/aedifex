@@ -1,4 +1,4 @@
-import type { FloorplanGeometry, GeometryContext } from '@pascal-app/core'
+import type { FloorplanGeometry, GeometryContext } from '@aedifex/core'
 import { flowerPetalColor } from './flower-geometry'
 import { FLOWER_PRESETS } from './flower-presets'
 import type { FlowerNode } from './flower-schema'

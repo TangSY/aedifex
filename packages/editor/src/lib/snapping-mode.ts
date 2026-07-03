@@ -1,4 +1,4 @@
-import type { SnapProfile } from '@pascal-app/core'
+import type { SnapProfile } from '@aedifex/core'
 import { GROUP_MOVE_DRAG_LABEL } from './contextual-help'
 
 /**

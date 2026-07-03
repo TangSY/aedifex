@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'bun:test'
-import type { AnyNode } from '@pascal-app/core'
+import { describe, expect, test } from 'vitest'
+import type { AnyNode } from '@aedifex/core'
 import { resolveOverlayPolicy } from './overlay-policy'
 import type { ActiveInteractionScope } from './scope'
 

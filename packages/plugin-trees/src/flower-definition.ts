@@ -1,4 +1,4 @@
-import type { NodeDefinition } from '@pascal-app/core'
+import type { NodeDefinition } from '@aedifex/core'
 import { buildFlowerFloorplan } from './floorplan'
 import { flowerParametrics } from './flower-parametrics'
 import { FlowerNode } from './flower-schema'

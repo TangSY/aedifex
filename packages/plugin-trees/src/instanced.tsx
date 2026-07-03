@@ -7,8 +7,8 @@ import {
   useLiveTransforms,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
-import { useNodeEvents, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useNodeEvents, useViewer } from '@aedifex/viewer'
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import { type BufferGeometry, type InstancedMesh, type Material, Matrix4, Object3D } from 'three'
 import { toStaticMaterial } from './wind-node'

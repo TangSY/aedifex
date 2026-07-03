@@ -1,4 +1,4 @@
-import { type AnyNodeId, type ParametricDescriptor, useScene } from '@pascal-app/core'
+import { type AnyNodeId, type ParametricDescriptor, useScene } from '@aedifex/core'
 import { defaultHeightOf, TREE_SEED_POOL } from './presets'
 import type { TreeNode } from './schema'
 

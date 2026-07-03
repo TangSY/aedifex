@@ -45,7 +45,7 @@ import {
 } from 'three'
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh'
 import '../../three-types'
-import { BVHEcctrl, type BVHEcctrlApi, type MovementInput } from '@pascal-app/viewer'
+import { BVHEcctrl, type BVHEcctrlApi, type MovementInput } from '@aedifex/viewer'
 import {
   closeDoorOpenState,
   DOOR_SWING_OPEN_ANGLE,

@@ -1,4 +1,4 @@
-import { BaseNode, nodeType, objectId } from '@pascal-app/core'
+import { BaseNode, nodeType, objectId } from '@aedifex/core'
 import { z } from 'zod'
 
 /** Grass tufts the plugin can place. The string persists in scene JSON. */

@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, test } from 'bun:test'
-import type { AnyNode } from '@pascal-app/core'
+import { afterEach, describe, expect, test } from 'vitest'
+import type { AnyNode } from '@aedifex/core'
 import {
   type ActiveInteractionScope,
   editingHoleInfo,

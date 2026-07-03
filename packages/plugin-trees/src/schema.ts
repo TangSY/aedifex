@@ -1,4 +1,4 @@
-import { BaseNode, nodeType, objectId } from '@pascal-app/core'
+import { BaseNode, nodeType, objectId } from '@aedifex/core'
 import { z } from 'zod'
 
 /** Tree species the plugin can place, each backed by an ez-tree preset family.
@@ -17,7 +17,7 @@ export type TreeType = z.infer<typeof TreeType>
 
 /**
  * Schema for a placed tree. Composed from the public `BaseNode` exactly the way
- * built-in node kinds are — `objectId`/`nodeType` come from `@pascal-app/core`,
+ * built-in node kinds are — `objectId`/`nodeType` come from `@aedifex/core`,
  * so a plugin needs no private host internals to mint a persistable node.
  *
  * `type` is the namespaced kind `trees:tree`. Every geometry-relevant field

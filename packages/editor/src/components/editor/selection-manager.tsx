@@ -32,6 +32,7 @@ import {
   getRoofMaterialArray,
   useViewer,
 } from '@aedifex/viewer'
+import { useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useRef } from 'react'
 import { type BufferGeometry, Color, type Material, type Mesh, type Object3D, Vector3 } from 'three'
 import {
