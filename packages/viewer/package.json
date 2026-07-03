@@ -38,6 +38,7 @@
     "@types/node": "^22",
     "@types/react": "^19.2.2",
     "@types/three": "^0.184.0",
+    "@webgpu/types": "^0.1.60",
     "typescript": "6.0.3"
   },
   "keywords": [
