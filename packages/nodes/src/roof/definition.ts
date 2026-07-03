@@ -10,6 +10,7 @@ import {
 import { buildRoofFloorplan } from './floorplan'
 import { roofParametrics } from './parametrics'
 import { RoofNode } from './schema'
+import { roofSlots } from './slots'
 
 const MOVE_FRONT_OFFSET = 0.35
 const MIN_ROOF_FOOTPRINT = 1
@@ -108,6 +109,12 @@ export const roofDefinition: NodeDefinition<typeof RoofNode> = {
     selectable: { hitVolume: 'bbox' },
     duplicable: true,
     deletable: true,
+    // Declared paintable slots (shingle / gable / fascia / soffit) with their
+    // default appearance — mirrors `wallSlots()` / `slabSlots()` on the same
+    // `{ slotId, label, default }` contract. The renderer's slot-first resolver
+    // reads `node.slots` and falls back to the legacy per-role fields, so
+    // pre-migration roofs keep rendering with `update_roof_material` finishes.
+    slots: () => roofSlots(),
     // Contribute a plan AABB to the alignment-guide candidate pool so a roof
     // (and any moving sibling) snaps against the roof's outer silhouette.
     // Roof has no centred-box footprint — it's the union of its

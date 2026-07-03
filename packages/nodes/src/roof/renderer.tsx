@@ -35,6 +35,9 @@ export const RoofRenderer = ({ node: rawNode }: { node: RoofNode }) => {
   const textures = useViewer((s) => s.textures)
   const colorPreset = useViewer((s) => s.colorPreset)
   const sceneTheme = useViewer((s) => s.sceneTheme)
+  // Subscribe to the scene-material palette so editing a `scene:` material a
+  // roof slot references re-renders the roof live — mirrors the wall renderer.
+  const sceneMaterials = useScene((s) => s.materials)
 
   // Collect roof element IDs (chimneys, skylights, etc.) hosted by any segment.
   // Rendered outside segments-wrapper (invisible during normal mode) so elements
@@ -85,8 +88,8 @@ export const RoofRenderer = ({ node: rawNode }: { node: RoofNode }) => {
   const placeholderGeometry = useMemo(() => createPlaceholderGeometry(4), [])
 
   const customMaterial = useMemo(
-    () => getRoofMaterialArray(node, shading, textures, colorPreset, sceneTheme),
-    [node, shading, textures, colorPreset, sceneTheme],
+    () => getRoofMaterialArray(node, shading, textures, colorPreset, sceneTheme, sceneMaterials),
+    [node, shading, textures, colorPreset, sceneTheme, sceneMaterials],
   )
 
   const material = debugColors

@@ -138,7 +138,18 @@ export { pipeSegmentDefinition } from './pipe-segment'
 export { pipeTrapDefinition } from './pipe-trap'
 export { ridgeVentDefinition } from './ridge-vent'
 export { roofDefinition } from './roof'
+export {
+  ROOF_SLOT_ORDER,
+  type RoofSlotId,
+  roofSlots,
+  SLOT_DEFAULTS as ROOF_SLOT_DEFAULTS,
+} from './roof/slots'
 export { roofSegmentDefinition } from './roof-segment'
+export {
+  type RoofSegmentSlotId,
+  roofSegmentSlots,
+  SEGMENT_SLOT_DEFAULTS as ROOF_SEGMENT_SLOT_DEFAULTS,
+} from './roof-segment/slots'
 export { scanDefinition } from './scan'
 export { shelfDefinition } from './shelf'
 export { siteDefinition } from './site'
