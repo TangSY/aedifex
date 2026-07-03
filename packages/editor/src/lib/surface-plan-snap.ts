@@ -6,7 +6,6 @@ import {
   getWallCurveFrameAt,
   getWallCurveLength,
   isCurvedWall,
-  resolveAlignment,
   resolveLevelId,
   useScene,
   type WallNode,
@@ -14,13 +13,15 @@ import {
 import {
   getSegmentGridStep,
   snapWallDraftPointDetailed,
+  WALL_CONNECT_SNAP_RADIUS,
   type WallDraftSnapKind,
   type WallPlanPoint,
   type WallSnapRadii,
 } from '../components/tools/wall/wall-drafting'
 import useAlignmentGuides from '../store/use-alignment-guides'
-import useEditor from '../store/use-editor'
+import { isMagneticSnapActive } from '../store/use-editor'
 import useWallSnapIndicator from '../store/use-wall-snap-indicator'
+import { resolveAlignmentForFloorplanView } from './world-grid-snap'
 
 const SURFACE_SNAP_MOVING_ID = '__surface_snap__'
 export const SURFACE_ALIGNMENT_THRESHOLD_M = 0.08
@@ -172,16 +173,10 @@ export function clearSurfacePlanSnapFeedback() {
 }
 
 export function resolveSurfacePlanPointSnap(input: SurfacePlanSnapInput): SurfacePlanSnapResult {
-  if (input.shiftKey) {
-    useWallSnapIndicator.getState().clear()
-    useAlignmentGuides.getState().clear()
-    return { point: input.rawPoint, wallSnap: null, guides: [], wallIds: [] }
-  }
-
   const nodes = input.nodes ?? useScene.getState().nodes
   const walls = getLevelWalls(nodes, input.levelId, input.walls)
   const fallbackPoint = input.fallbackPoint
-  const magnetic = input.magnetic ?? useEditor.getState().magneticSnap
+  const magnetic = input.magnetic ?? isMagneticSnapActive()
 
   const wallSnap = snapWallDraftPointDetailed({
     point: input.rawPoint,
@@ -209,6 +204,9 @@ export function resolveSurfacePlanPointSnap(input: SurfacePlanSnapInput): Surfac
 
   useWallSnapIndicator.getState().clear()
 
+  // Alignment "lines" are DISPLAYED in every mode (grid / lines / angles /
+  // off); the magnetic pull onto an axis is applied only when magnetic
+  // ('lines'). Shift / Alt / `align: false` fully bypass (no guides).
   const basePoint = fallbackPoint ?? wallSnap.point
   if (input.align === false || input.altKey) {
     useAlignmentGuides.getState().clear()
@@ -216,16 +214,30 @@ export function resolveSurfacePlanPointSnap(input: SurfacePlanSnapInput): Surfac
   }
 
   const movingId = input.movingId ?? SURFACE_SNAP_MOVING_ID
-  const candidates =
+  const allCandidates =
     input.candidates ??
     collectAlignmentAnchors(nodes, input.excludeId ?? movingId, input.levelId ?? null)
+
+  // In non-magnetic modes nothing pulls the point onto a guide, so restrict
+  // alignment to anchors already within connect distance — a corner then reads
+  // no differently from any other nearby point, and far corners stop lighting up
+  // from across the plan. Magnetic ('lines') keeps the full-range guides since
+  // its snap closes the gap. Mirrors the wall draft/endpoint tools. Filtering the
+  // candidates (both local-frame, like `basePoint`) rather than the resolved
+  // guides avoids the floor-plan view rotation baked into the guide coords.
+  const candidates = magnetic
+    ? allCandidates
+    : allCandidates.filter(
+        (candidate) =>
+          distanceSquared(basePoint, [candidate.x, candidate.z]) <= WALL_CONNECT_SNAP_RADIUS ** 2,
+      )
 
   if (candidates.length === 0) {
     useAlignmentGuides.getState().clear()
     return { point: basePoint, wallSnap: null, guides: [], wallIds: [] }
   }
 
-  const alignment = resolveAlignment({
+  const alignment = resolveAlignmentForFloorplanView({
     moving: [{ nodeId: movingId, kind: 'corner', x: basePoint[0], z: basePoint[1] }],
     candidates,
     threshold: input.threshold ?? SURFACE_ALIGNMENT_THRESHOLD_M,
@@ -233,7 +245,7 @@ export function resolveSurfacePlanPointSnap(input: SurfacePlanSnapInput): Surfac
 
   useAlignmentGuides.getState().set(alignment.guides)
 
-  if (!alignment.snap) {
+  if (!alignment.snap || !magnetic) {
     return { point: basePoint, wallSnap: null, guides: alignment.guides, wallIds: [] }
   }
 

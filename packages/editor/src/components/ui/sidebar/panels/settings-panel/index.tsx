@@ -1,7 +1,7 @@
 import { emitter, useScene, validateBuildJson } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { TreeView, VisualJson } from '@visual-json/react'
-import { Camera, Download, Save, Trash2, Upload } from 'lucide-react'
+import { Camera, Download, Map as MapIcon, Save, Trash2, Upload } from 'lucide-react'
 import {
   type KeyboardEvent,
   type SyntheticEvent,
@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { exportFloorplanPdf } from '../../../../../lib/floorplan/floorplan-export'
 import { Button } from './../../../../../components/ui/primitives/button'
 import {
   Dialog,
@@ -183,7 +184,6 @@ export function SettingsPanel({
   const clearScene = useScene((state) => state.clearScene)
   const resetSelection = useViewer((state) => state.resetSelection)
   const exportScene = useViewer((state) => state.exportScene)
-  const showGrid = useViewer((state) => state.showGrid)
   const shadows = useViewer((state) => state.shadows)
   const setPhase = useEditor((state) => state.setPhase)
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false)
@@ -333,16 +333,6 @@ export function SettingsPanel({
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-medium text-sm">Show Grid</div>
-              <div className="text-muted-foreground text-xs">Visible only in the editor</div>
-            </div>
-            <Switch
-              checked={showGrid}
-              onCheckedChange={(checked) => useViewer.getState().setShowGrid(checked)}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
               <div className="font-medium text-sm">Shadows</div>
               <div className="text-muted-foreground text-xs">Cast shadows from lights</div>
             </div>
@@ -355,32 +345,56 @@ export function SettingsPanel({
       )}
 
       {/* Export Section */}
-      <div className="space-y-2">
+      <div className="space-y-4">
         <label className="font-medium text-muted-foreground text-xs uppercase">Export</label>
-        <Button
-          className="w-full justify-start gap-2"
-          onClick={() => exportScene?.('glb')}
-          variant="outline"
-        >
-          <Download className="size-4" />
-          Export GLB
-        </Button>
-        <Button
-          className="w-full justify-start gap-2"
-          onClick={() => exportScene?.('stl')}
-          variant="outline"
-        >
-          <Download className="size-4" />
-          Export STL
-        </Button>
-        <Button
-          className="w-full justify-start gap-2"
-          onClick={() => exportScene?.('obj')}
-          variant="outline"
-        >
-          <Download className="size-4" />
-          Export OBJ
-        </Button>
+
+        <div className="space-y-2">
+          <div className="font-medium text-muted-foreground text-xs">3D model</div>
+          <Button
+            className="w-full justify-start gap-2"
+            onClick={() => exportScene?.('glb')}
+            variant="outline"
+          >
+            <Download className="size-4" />
+            Export GLB
+          </Button>
+          <Button
+            className="w-full justify-start gap-2"
+            onClick={() => exportScene?.('stl')}
+            variant="outline"
+          >
+            <Download className="size-4" />
+            Export STL
+          </Button>
+          <Button
+            className="w-full justify-start gap-2"
+            onClick={() => exportScene?.('obj')}
+            variant="outline"
+          >
+            <Download className="size-4" />
+            Export OBJ
+          </Button>
+        </div>
+
+        <div className="space-y-2">
+          <div className="font-medium text-muted-foreground text-xs">Floorplan</div>
+          <Button
+            className="w-full justify-start gap-2"
+            onClick={() => exportFloorplanPdf('full')}
+            variant="outline"
+          >
+            <MapIcon className="size-4" />
+            Full floorplan
+          </Button>
+          <Button
+            className="w-full justify-start gap-2"
+            onClick={() => exportFloorplanPdf('structure')}
+            variant="outline"
+          >
+            <MapIcon className="size-4" />
+            Structure only
+          </Button>
+        </div>
       </div>
 
       {/* Thumbnail Section (only for cloud projects) */}

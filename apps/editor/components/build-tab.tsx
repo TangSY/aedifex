@@ -4,7 +4,7 @@ import { nodeRegistry } from '@aedifex/core'
 import { MaterialPaintPanel, triggerSFX, useEditor } from '@aedifex/editor'
 import { useLiquidLineToolOptions } from '@aedifex/nodes'
 import Image from 'next/image'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   Tooltip,
   TooltipContent,
@@ -99,7 +99,6 @@ const MEP_ITEMS: MepItem[] = [
   { id: 'lineset', label: 'Lineset', iconSrc: '/icons/lineset.webp', kind: 'lineset' },
   { id: 'liquid-line', label: 'Liquid Line', iconSrc: '/icons/lineset.webp', kind: 'liquid-line' },
   { id: 'pipe-segment', label: 'DWV Pipe', iconSrc: '/icons/dwv-pipes.webp', kind: 'pipe-segment' },
-  { id: 'pipe-trap', label: 'Trap', iconSrc: '/icons/dwv-pipes.webp', kind: 'pipe-trap' },
 ]
 
 /**
@@ -152,15 +151,20 @@ function activateRoofFeatureTool(kind: string): void {
  * with the kind's own `def.defaults()`. The "Painting" type swaps in the
  * material-paint panel.
  */
+// MEP tool kinds that, when active, mean the MEP group tile (and its sub-grid)
+// is what the user is working in.
+const MEP_TOOL_KINDS = new Set<string>([
+  ...MEP_ITEMS.map((item) => item.kind),
+  'duct-fitting',
+  'pipe-fitting',
+  'pipe-trap',
+])
+
 export function BuildTab() {
   const activeTool = useEditor((s) => s.tool)
   const mode = useEditor((s) => s.mode)
   const follow = useLiquidLineToolOptions((s) => s.follow)
   const toggleFollow = useLiquidLineToolOptions((s) => s.toggleFollow)
-  // Which build tile's panel is showing. Roof (Features) and MEP (its tool
-  // sub-grid) are the tiles with a panel; others arm a tool and show nothing
-  // below.
-  const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
 
   // The fitting / follow tools are armed from a segment's panel, not a grid
   // tile — keep the segment tile lit so the panel (and the way back) stays
@@ -201,8 +205,23 @@ export function BuildTab() {
     return features
   }, [])
 
-  const isTypeActive = (type: BuildType) =>
-    type.mode === 'material-paint' ? mode === 'material-paint' : selectedTypeId === type.id
+  // Tile highlight derives from the single source of truth (the active tool /
+  // mode), never a separate local selection — so keyboard shortcuts and panel
+  // clicks always agree on which tile is lit.
+  // The roof Features sub-grid arms roof-accessory tools (skylight, chimney,
+  // …); keep the Roof tile lit (and its panel open) while any of them is the
+  // active tool, the same way MEP stays lit for its sub-grid tools.
+  const isRoofFeatureActive =
+    mode === 'build' && !!activeTool && roofFeatures.some((f) => f.kind === activeTool)
+  const isMepActive = mode === 'build' && !!activeTool && MEP_TOOL_KINDS.has(activeTool)
+
+  const isTypeActive = (type: BuildType) => {
+    if (type.mode === 'material-paint') return mode === 'material-paint'
+    if (type.id === 'mep') return isMepActive
+    if (type.id === 'roof')
+      return mode === 'build' && (activeTool === 'roof' || isRoofFeatureActive)
+    return mode === 'build' && activeTool === type.kind
+  }
 
   const handleTypeClick = useCallback((type: BuildType) => {
     if (type.mode === 'material-paint') {
@@ -214,15 +233,18 @@ export function BuildTab() {
     } else if (type.kind) {
       activateBuildTool(type.kind)
     }
-    setSelectedTypeId(type.id)
   }, [])
 
   // On open, land on the first build tool — parity with the community Build
-  // sidebar, so switching to Build immediately arms a usable tool.
+  // sidebar, so switching to Build immediately arms a usable tool. Skip when a
+  // build tool is already active (e.g. the B shortcut armed one before this
+  // panel mounted): the active tool is the source of truth, not this default.
   const didInitRef = useRef(false)
   useEffect(() => {
     if (didInitRef.current) return
     didInitRef.current = true
+    const ed = useEditor.getState()
+    if (ed.mode === 'build' && ed.tool) return
     const firstType = BUILD_TYPES.find((t) => t.kind)
     if (firstType) handleTypeClick(firstType)
   }, [handleTypeClick])
@@ -275,7 +297,9 @@ export function BuildTab() {
         <div className="min-h-0 flex-1 overflow-y-auto">
           <MaterialPaintPanel />
         </div>
-      ) : selectedTypeId === 'roof' && roofFeatures.length > 0 ? (
+      ) : mode === 'build' &&
+        (activeTool === 'roof' || isRoofFeatureActive) &&
+        roofFeatures.length > 0 ? (
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
           <div className="px-0.5 pt-1 font-medium text-muted-foreground text-xs">Features</div>
           <TooltipProvider delayDuration={0} disableHoverableContent>
@@ -320,7 +344,7 @@ export function BuildTab() {
             </div>
           </TooltipProvider>
         </div>
-      ) : selectedTypeId === 'mep' ? (
+      ) : isMepActive ? (
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
           <div className="px-0.5 pt-1 font-medium text-muted-foreground text-xs">MEP</div>
           <TooltipProvider delayDuration={0} disableHoverableContent>
@@ -441,7 +465,7 @@ export function BuildTab() {
                   aria-hidden
                   className="size-4 object-contain"
                   height={16}
-                  src="/icons/dwv-pipes.png"
+                  src="/icons/dwv-pipes.webp"
                   width={16}
                 />
                 Add Trap

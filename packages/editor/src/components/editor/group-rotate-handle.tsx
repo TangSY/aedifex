@@ -12,8 +12,13 @@ import { useViewer } from '@aedifex/viewer'
 import { createPortal, type ThreeEvent, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { OrthographicCamera, Plane, Vector2, Vector3 } from 'three'
+import { GROUP_MOVE_DRAG_LABEL, GROUP_ROTATE_DRAG_LABEL } from '../../lib/contextual-help'
 import { sfxEmitter } from '../../lib/sfx-bus'
 import useEditor from '../../store/use-editor'
+import useInteractionScope, {
+  useActiveHandleDrag,
+  useMovingNode,
+} from '../../store/use-interaction-scope'
 import { suppressBoxSelectForPointer } from '../tools/select/box-select-state'
 import {
   CORNER_OFFSET,
@@ -32,8 +37,6 @@ import {
   createRotateArrowHandleGeometry,
   createRotateArrowHitAreaGeometry,
   GuideRing,
-  InvisibleHandleHitArea,
-  NO_RAYCAST,
   RotationGuide,
   type RotationGuideData,
   swallowNextClick,
@@ -55,7 +58,8 @@ export function GroupRotateHandle() {
   const selectedIds = useViewer((s) => s.selection.selectedIds)
   const levelId = useViewer((s) => s.selection.levelId)
   const mode = useEditor((s) => s.mode)
-  const movingNode = useEditor((s) => s.movingNode)
+  const movingNode = useMovingNode()
+  const activeHandleDrag = useActiveHandleDrag()
   const isFloorplanHovered = useEditor((s) => s.isFloorplanHovered)
   // Re-derive participants whenever the scene mutates (e.g. after a commit).
   // Drags only touch `useLiveNodeOverrides`, so this does not fire mid-drag.
@@ -78,7 +82,13 @@ export function GroupRotateHandle() {
   )
 
   const shouldRender =
-    participantIds.length >= 2 && mode !== 'delete' && !movingNode && !isFloorplanHovered
+    participantIds.length >= 2 &&
+    mode !== 'delete' &&
+    !movingNode &&
+    !isFloorplanHovered &&
+    // Hide while the sibling move gizmo drags the group — the frozen corner
+    // this handle would sit at goes stale as the group slides under it.
+    activeHandleDrag?.label !== GROUP_MOVE_DRAG_LABEL
 
   if (!shouldRender) return null
   // Remount when the moving set changes so the rest pivot re-seeds cleanly.
@@ -130,6 +140,17 @@ function GroupRotateHandleInner({ ids }: { ids: string[] }) {
   if (!rest) return null
   const active = isDragging && frozenRest.current ? frozenRest.current : rest
   const corner = active.corner
+
+  const onHoverEnter = (event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation()
+    setIsHovered(true)
+    if (document.body.style.cursor !== 'grabbing') document.body.style.cursor = 'grab'
+  }
+  const onHoverLeave = (event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation()
+    setIsHovered(false)
+    if (document.body.style.cursor === 'grab') document.body.style.cursor = ''
+  }
 
   const activate = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation()
@@ -190,6 +211,11 @@ function GroupRotateHandleInner({ ids }: { ids: string[] }) {
     sfxEmitter.emit('sfx:item-pick')
     useViewer.getState().setInputDragging(true)
     useScene.temporal.getState().pause()
+    useInteractionScope.getState().begin({
+      kind: 'handle-drag',
+      nodeId: ids[0] ?? '',
+      handle: GROUP_ROTATE_DRAG_LABEL,
+    })
     setIsDragging(true)
 
     const onMove = (e: PointerEvent) => {
@@ -291,6 +317,9 @@ function GroupRotateHandleInner({ ids }: { ids: string[] }) {
       if (document.body.style.cursor === 'grabbing') document.body.style.cursor = ''
       useScene.temporal.getState().resume()
       useViewer.getState().setInputDragging(false)
+      useInteractionScope
+        .getState()
+        .endIf((s) => s.kind === 'handle-drag' && s.handle === GROUP_ROTATE_DRAG_LABEL)
       setIsDragging(false)
       setGuide(null)
       frozenRest.current = null
@@ -347,27 +376,26 @@ function GroupRotateHandleInner({ ids }: { ids: string[] }) {
         </group>
       )}
       <group position={[corner.x, corner.y, corner.z]}>
-        <InvisibleHandleHitArea
+        {/* Fat invisible grab target (torus wrapping the arrow). A plain
+            default-layer mesh with the standard raycast — the shared
+            `InvisibleHandleHitArea` (EDITOR_LAYER + custom raycast) never
+            received pointer events in this portalled context. */}
+        <mesh
+          frustumCulled={false}
           geometry={hitGeometry}
           material={hitMaterial}
           onPointerDown={activate}
-          onPointerEnter={(event) => {
-            event.stopPropagation()
-            setIsHovered(true)
-            if (document.body.style.cursor !== 'grabbing') document.body.style.cursor = 'grab'
-          }}
-          onPointerLeave={(event) => {
-            event.stopPropagation()
-            setIsHovered(false)
-            if (document.body.style.cursor === 'grab') document.body.style.cursor = ''
-          }}
+          onPointerEnter={onHoverEnter}
+          onPointerLeave={onHoverLeave}
           scale={baseScale}
         />
         <mesh
           frustumCulled={false}
           geometry={arrowGeometry}
           material={arrowMaterial}
-          raycast={NO_RAYCAST}
+          onPointerDown={activate}
+          onPointerEnter={onHoverEnter}
+          onPointerLeave={onHoverLeave}
           renderOrder={1010}
           scale={scale}
         />

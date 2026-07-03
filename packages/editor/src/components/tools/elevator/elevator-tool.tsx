@@ -9,11 +9,18 @@ import {
   resolveAlignment,
   useScene,
 } from '@aedifex/core'
-import { useAlignmentGuides } from '@aedifex/editor'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { resolveCurrentBuildingId, resolveElevatorSupportY } from '../../../lib/elevator-support'
 import { sfxEmitter } from '../../../lib/sfx-bus'
+
+import useAlignmentGuides from '../../../store/use-alignment-guides'
+import useEditor, {
+  isAlignmentGuideActive,
+  isGridSnapActive,
+  isMagneticSnapActive,
+} from '../../../store/use-editor'
+
 import usePlacementPreview from '../../../store/use-placement-preview'
 import { CursorSphere } from '../shared/cursor-sphere'
 import {
@@ -163,13 +170,16 @@ export const ElevatorTool: React.FC<ElevatorToolProps> = ({ buildingId, levelId,
     // point: resolving against the grid point would only ever catch anchors
     // that happen to sit on a grid line, so off-grid items (furniture, angled
     // walls) would never surface a guide. The matched axis locks exactly to the
-    // candidate's coordinate; the other axis keeps its grid snap. Alt bypasses.
+    // candidate's coordinate; the other axis keeps its grid snap. Guides are
+    // published in every snapping mode (including Off); the magnetic pull toward
+    // them (applySnap) applies only in 'lines' mode.
     const alignPoint = (
       gridX: number,
       gridZ: number,
       rawX: number,
       rawZ: number,
       bypass: boolean,
+      applySnap: boolean,
     ): [number, number] => {
       if (bypass || alignmentCandidates.length === 0) {
         useAlignmentGuides.getState().clear()
@@ -185,6 +195,7 @@ export const ElevatorTool: React.FC<ElevatorToolProps> = ({ buildingId, levelId,
         return [gridX, gridZ]
       }
       useAlignmentGuides.getState().set(ar.guides)
+      if (!applySnap) return [gridX, gridZ]
       let x = gridX
       let z = gridZ
       for (const guide of ar.guides) {
@@ -195,13 +206,20 @@ export const ElevatorTool: React.FC<ElevatorToolProps> = ({ buildingId, levelId,
     }
 
     const onGridMove = (event: GridEvent) => {
-      const bypassSnap = event.nativeEvent?.shiftKey === true
+      // Grid snap follows the global mode (live step so the HUD chip is
+      // honest); Off keeps the raw cursor. Shift cycles the mode centrally.
+      const step = useEditor.getState().gridSnapStep
       const [gridX, gridZ] = alignPoint(
-        bypassSnap ? event.localPosition[0] : Math.round(event.localPosition[0] * 2) / 2,
-        bypassSnap ? event.localPosition[2] : Math.round(event.localPosition[2] * 2) / 2,
+        isGridSnapActive()
+          ? Math.round(event.localPosition[0] / step) * step
+          : event.localPosition[0],
+        isGridSnapActive()
+          ? Math.round(event.localPosition[2] / step) * step
+          : event.localPosition[2],
         event.localPosition[0],
         event.localPosition[2],
-        event.nativeEvent?.altKey === true || bypassSnap,
+        !isAlignmentGuideActive(),
+        isMagneticSnapActive(),
       )
       const supportY = resolveElevatorSupportY({
         buildingId: currentBuildingId,
@@ -221,7 +239,7 @@ export const ElevatorTool: React.FC<ElevatorToolProps> = ({ buildingId, levelId,
       })
 
       if (
-        !bypassSnap &&
+        (isGridSnapActive() || isMagneticSnapActive()) &&
         previousGridPosRef.current &&
         (gridX !== previousGridPosRef.current[0] || gridZ !== previousGridPosRef.current[1])
       ) {
@@ -239,13 +257,18 @@ export const ElevatorTool: React.FC<ElevatorToolProps> = ({ buildingId, levelId,
       })
       if (!latestBuildingId) return
 
-      const bypassSnap = event.nativeEvent?.shiftKey === true
+      const step = useEditor.getState().gridSnapStep
       const [gridX, gridZ] = alignPoint(
-        bypassSnap ? event.localPosition[0] : Math.round(event.localPosition[0] * 2) / 2,
-        bypassSnap ? event.localPosition[2] : Math.round(event.localPosition[2] * 2) / 2,
+        isGridSnapActive()
+          ? Math.round(event.localPosition[0] / step) * step
+          : event.localPosition[0],
+        isGridSnapActive()
+          ? Math.round(event.localPosition[2] / step) * step
+          : event.localPosition[2],
         event.localPosition[0],
         event.localPosition[2],
-        event.nativeEvent?.altKey === true || bypassSnap,
+        !isAlignmentGuideActive(),
+        isMagneticSnapActive(),
       )
       commitElevatorPlacement(
         latestBuildingId,

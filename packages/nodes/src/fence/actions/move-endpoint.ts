@@ -11,6 +11,9 @@ import {
 } from '@aedifex/core'
 import {
   type FencePlanPoint,
+  isAlignmentGuideActive,
+  isAngleSnapActive,
+  isMagneticSnapActive,
   isSegmentLongEnough,
   snapFenceDraftPoint,
   useAlignmentGuides,
@@ -95,7 +98,7 @@ function snapshotLinked(
   const { nodes } = useScene.getState()
   const out: LinkedFenceSnapshot[] = []
   for (const node of Object.values(nodes)) {
-    if (!node || node.type !== 'fence') continue
+    if (node?.type !== 'fence') continue
     if (node.id === fenceId) continue
     if ((node.parentId ?? null) !== parentId) continue
     if (!samePoint(node.start, linkedPoint) && !samePoint(node.end, linkedPoint)) continue
@@ -163,28 +166,35 @@ export const moveFenceEndpointDragAction: DragAction<MoveFenceEndpointCtx, MoveF
 
     preview: (ctx, point, modifiers) => {
       const planPoint: FencePlanPoint = [point[0], point[1]]
-      // Endpoint move = grid snap only; the 45°-from-start angle snap
-      // is draft-only. Shift is a hard snap bypass.
+      // Endpoint move honours the active snapping mode (HUD chip): grid → lattice;
+      // lines → magnetic corner/alignment; angles → lock to 15° rays from the
+      // fixed corner; off → raw. No Shift bypass — Shift cycles the mode; Off is
+      // the bypass.
       const snapped = snapFenceDraftPoint({
         point: planPoint,
         walls: ctx.levelWalls,
         fences: ctx.levelFences,
         ignoreFenceIds: [ctx.fenceId as string],
-        bypassSnap: modifiers.shift,
+        start: ctx.fixedPoint,
+        angleSnap: isAngleSnapActive(),
+        magnetic: isMagneticSnapActive(),
       })
 
       // Figma-style alignment: nudge the dragged endpoint onto another wall /
       // fence endpoint or midpoint axis when within threshold, and publish a
       // guide. The resolver connects to the NEAREST real anchor, so the dot
-      // always sits on an actual point. Alt is reserved for detach.
+      // always sits on an actual point. Alt is reserved for detach. The guide is
+      // DISPLAYED in every mode except Off (isAlignmentGuideActive); the
+      // magnetic pull onto it is applied only in 'lines' mode
+      // (isMagneticSnapActive).
       let aligned = snapped
-      if (!modifiers.shift && ctx.alignCandidates.length > 0) {
+      if (isAlignmentGuideActive() && ctx.alignCandidates.length > 0) {
         const ar = resolveAlignment({
           moving: [{ nodeId: ctx.fenceId as string, kind: 'corner', x: snapped[0], z: snapped[1] }],
           candidates: ctx.alignCandidates,
           threshold: ALIGNMENT_THRESHOLD_M,
         })
-        if (ar.snap) {
+        if (ar.snap && isMagneticSnapActive()) {
           aligned = [snapped[0] + ar.snap.dx, snapped[1] + ar.snap.dz]
         }
         useAlignmentGuides.getState().set(ar.guides)

@@ -35,6 +35,7 @@ export type {
   ZoneEvent,
 } from './events/bus'
 export { emitter, eventSuffixes } from './events/bus'
+export { type ItemClipEntry, itemClipRegistry } from './hooks/scene-registry/item-clip-registry'
 export {
   sceneRegistry,
   useRegistry,
@@ -91,6 +92,7 @@ export {
   projectAutoSlabsForPlan,
   resumeSpaceDetection,
   type Space,
+  wallClosesRoom,
   wallTouchesOthers,
 } from './lib/space-detection'
 export {
@@ -193,6 +195,19 @@ export {
   resolveElevatorServiceLevelIds,
   resolveElevatorServiceLevels,
 } from './systems/elevator/elevator-service'
+export {
+  getFenceCenterlineFrameAt,
+  getFenceCenterlineLength,
+  sampleFenceCenterline,
+} from './systems/fence/fence-centerline'
+export {
+  getFenceControlHandle,
+  getFenceSplineFrameAt,
+  getFenceSplineLength,
+  getTwoPointFenceCurveTangents,
+  isSplineFence,
+  sampleFenceSpline,
+} from './systems/fence/fence-spline'
 export { type StairFootprintAABB, stairFootprintAABB } from './systems/stair/stair-footprint'
 export { createSurfaceOpeningPreviewController } from './systems/stair/stair-opening-preview'
 export { syncAutoStairOpenings } from './systems/stair/stair-opening-sync'

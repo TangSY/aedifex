@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
     '@aedifex/core',
     '@aedifex/editor',
     '@aedifex/mcp',
+    '@aedifex/plugin-trees',
+    '@dgreenheck/ez-tree',
   ],
   turbopack: {
     resolveAlias: {

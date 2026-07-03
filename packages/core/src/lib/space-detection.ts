@@ -64,6 +64,9 @@ const ROOM_CURVE_TOLERANCE = 0.04
 const MAX_CURVE_SUBDIVISION_DEPTH = 6
 const AUTO_SLAB_POLYGON_SIMPLIFY_TOLERANCE = 0.08
 const WALL_ROOM_BOUNDARY_TOLERANCE = 0.08
+// A wall endpoint within this distance of another wall's interior is treated as a
+// T-junction and splits that wall (see `splitStraightWallAtVertices`).
+const WALL_JUNCTION_TOLERANCE = 0.08
 
 export type AutoCeilingPlanningContext = {
   walls?: WallNode[]
@@ -362,9 +365,48 @@ function sampleWallPointsForRoomDetection(
   return subdivide(0, start, 1, end, 0)
 }
 
-function getDirectedWallBoundaryPoints(wall: WallNode, forward: boolean) {
-  const points = sampleWallPointsForRoomDetection(wall)
-  return forward ? points : [...points].reverse()
+function segmentProjection(point: Point2D, start: Point2D, end: Point2D) {
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+  const lengthSquared = dx * dx + dy * dy
+  if (lengthSquared < 1e-12) {
+    return { t: 0, distance: Math.hypot(point.x - start.x, point.y - start.y) }
+  }
+  const t = ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared
+  const clampedT = Math.max(0, Math.min(1, t))
+  const projX = start.x + clampedT * dx
+  const projY = start.y + clampedT * dy
+  return { t, distance: Math.hypot(point.x - projX, point.y - projY) }
+}
+
+// Break a straight wall at any junction vertex (another wall's endpoint) that
+// lands on its interior, returning the ordered polyline [start, …splits, end].
+// Splitting at the *vertex* position (not the projection) keeps the split node's
+// key identical to the touching wall's endpoint so the two share a graph node.
+function splitStraightWallAtVertices(start: Point2D, end: Point2D, vertices: Point2D[]) {
+  const length = Math.hypot(end.x - start.x, end.y - start.y)
+  if (length < 1e-9) return [start, end]
+
+  const interior: Array<{ point: Point2D; t: number }> = []
+  for (const vertex of vertices) {
+    const { t, distance } = segmentProjection(vertex, start, end)
+    if (distance > WALL_JUNCTION_TOLERANCE) continue
+    const along = t * length
+    if (along <= WALL_JUNCTION_TOLERANCE || along >= length - WALL_JUNCTION_TOLERANCE) continue
+    interior.push({ point: vertex, t })
+  }
+  interior.sort((a, b) => a.t - b.t)
+
+  const ordered: Point2D[] = [start]
+  let lastKey = pointKey(start)
+  for (const { point } of interior) {
+    const key = pointKey(point)
+    if (key === lastKey) continue
+    ordered.push(point)
+    lastKey = key
+  }
+  if (lastKey !== pointKey(end)) ordered.push(end)
+  return ordered
 }
 
 function extractRoomPolygons(walls: WallNode[]): Point2D[][] {
@@ -391,38 +433,70 @@ function extractRoomPolygons(walls: WallNode[]): Point2D[][] {
     return key
   }
 
+  // Planarize first: collect every wall endpoint as a candidate graph vertex so
+  // straight walls can be split at T-junctions where another wall ends mid-span.
+  // Without this the touching wall's endpoint is a dangling degree-1 node and the
+  // enclosed area (e.g. a room added against the middle of an existing wall)
+  // never forms a cycle.
+  const vertexByKey = new Map<string, Point2D>()
+  for (const wall of walls) {
+    for (const tuple of [wall.start, wall.end]) {
+      const point = pointFromTuple(tuple)
+      const key = pointKey(point)
+      if (!vertexByKey.has(key)) vertexByKey.set(key, point)
+    }
+  }
+  const vertices = [...vertexByKey.values()]
+
   for (const wall of walls) {
     const start = pointFromTuple(wall.start)
     const end = pointFromTuple(wall.end)
-    const startKey = upsertNode(start)
-    const endKey = upsertNode(end)
-    if (startKey === endKey) continue
+    if (samePointWithinTolerance(start, end)) continue
 
-    const forwardDirection = getWallDirection(wall)
-    const reverseDirection = getWallDirection({ start: wall.end, end: wall.start })
+    // Curved walls keep their sampled polyline as one edge; straight walls split
+    // into consecutive sub-edges at their interior junction vertices.
+    const subPolylines: Point2D[][] = isCurvedWall(wall)
+      ? [sampleWallPointsForRoomDetection(wall)]
+      : (() => {
+          const ordered = splitStraightWallAtVertices(start, end, vertices)
+          const parts: Point2D[][] = []
+          for (let index = 0; index < ordered.length - 1; index += 1) {
+            parts.push([ordered[index]!, ordered[index + 1]!])
+          }
+          return parts
+        })()
 
-    const forwardId = `${wall.id}:f`
-    const reverseId = `${wall.id}:r`
+    subPolylines.forEach((points, subIndex) => {
+      const from = points[0]!
+      const to = points[points.length - 1]!
+      const fromKey = upsertNode(from)
+      const toKey = upsertNode(to)
+      if (fromKey === toKey) return
 
-    halfEdges.set(forwardId, {
-      id: forwardId,
-      reverseId,
-      fromKey: startKey,
-      toKey: endKey,
-      angle: Math.atan2(forwardDirection.tangent.y, forwardDirection.tangent.x),
-      points: getDirectedWallBoundaryPoints(wall, true),
+      const reversePoints = [...points].reverse()
+      const forwardId = `${wall.id}#${subIndex}:f`
+      const reverseId = `${wall.id}#${subIndex}:r`
+
+      halfEdges.set(forwardId, {
+        id: forwardId,
+        reverseId,
+        fromKey,
+        toKey,
+        angle: Math.atan2(points[1]!.y - from.y, points[1]!.x - from.x),
+        points,
+      })
+      halfEdges.set(reverseId, {
+        id: reverseId,
+        reverseId: forwardId,
+        fromKey: toKey,
+        toKey: fromKey,
+        angle: Math.atan2(reversePoints[1]!.y - to.y, reversePoints[1]!.x - to.x),
+        points: reversePoints,
+      })
+
+      graph.get(fromKey)?.outgoing.push(forwardId)
+      graph.get(toKey)?.outgoing.push(reverseId)
     })
-    halfEdges.set(reverseId, {
-      id: reverseId,
-      reverseId: forwardId,
-      fromKey: endKey,
-      toKey: startKey,
-      angle: Math.atan2(reverseDirection.tangent.y, reverseDirection.tangent.x),
-      points: getDirectedWallBoundaryPoints(wall, false),
-    })
-
-    graph.get(startKey)?.outgoing.push(forwardId)
-    graph.get(endKey)?.outgoing.push(reverseId)
   }
 
   const sortedOutgoing = new Map<string, string[]>()
@@ -448,7 +522,9 @@ function extractRoomPolygons(walls: WallNode[]): Point2D[][] {
 
   const visitedDirected = new Set<string>()
   const faces: Point2D[][] = []
-  const maxSteps = Math.min(500, walls.length * 8 + 20)
+  // A single face cannot revisit a half-edge, so the half-edge count bounds the
+  // longest possible cycle. Splitting at junctions can multiply edges per wall.
+  const maxSteps = Math.min(2000, halfEdges.size + 10)
 
   for (const edgeId of halfEdges.keys()) {
     if (visitedDirected.has(edgeId)) continue
@@ -500,6 +576,20 @@ function extractRoomPolygons(walls: WallNode[]): Point2D[][] {
 
   faces.sort((a, b) => Math.abs(polygonArea(b)) - Math.abs(polygonArea(a)))
   return faces
+}
+
+/**
+ * True when `wall` lies on the boundary of a room enclosed by `walls`, using the
+ * same planar room graph the auto slab/ceiling sync uses. The wall builder's
+ * "Room (auto-close)" mode calls this so drafting stops the moment a segment
+ * closes a room — whether the chain loops back to its own start or seals a bay
+ * against the middle of an existing wall (a T-junction). Sharing one graph means
+ * auto-close and auto-slab detection can never disagree about what is "closed".
+ */
+export function wallClosesRoom(walls: WallNode[], wall: WallNode): boolean {
+  const roomPolygons = extractRoomPolygons(walls)
+  if (roomPolygons.length === 0) return false
+  return roomPolygons.some((polygon) => wallBoundsRoom(wall, polygon))
 }
 
 export function resolveWallSurfaceSides(
@@ -595,43 +685,25 @@ function levelWallSnapshot(walls: WallNode[]) {
   return walls.map(wallGeometrySignature).sort().join('||')
 }
 
-function slabGeometrySignature(slab: SlabNodeType) {
-  const polygon = slab.polygon
-    .map((point) => `${point[0].toFixed(4)},${point[1].toFixed(4)}`)
-    .join(';')
-  const holes = (slab.holes ?? [])
-    .map((hole) => hole.map((point) => `${point[0].toFixed(4)},${point[1].toFixed(4)}`).join(';'))
-    .join('/')
-
-  return [slab.id, (slab.elevation ?? DEFAULT_AUTO_SLAB_ELEVATION).toFixed(4), polygon, holes].join(
-    '|',
-  )
-}
-
-function levelSlabSnapshot(slabs: SlabNodeType[]) {
-  return slabs.map(slabGeometrySignature).sort().join('||')
-}
-
+// Trigger signature is wall-only on purpose: re-detection should fire on a
+// genuine remodel (wall geometry change), never when an auto-slab is edited or
+// deleted. Hashing slabs here created a feedback loop where deleting an
+// auto-slab re-fired detection and recreated it.
 function levelStructureSnapshots(nodes: Record<string, any>) {
-  const byLevel = new Map<string, { walls: WallNode[]; slabs: SlabNodeType[] }>()
-  const getEntry = (levelId: string) => {
-    const entry = byLevel.get(levelId) ?? { walls: [], slabs: [] }
-    byLevel.set(levelId, entry)
-    return entry
-  }
+  const byLevel = new Map<string, WallNode[]>()
 
   for (const node of Object.values(nodes)) {
     if (!(node && typeof node === 'object' && 'parentId' in node && node.parentId)) continue
-    if ((node as any).type === 'wall') {
-      getEntry((node as any).parentId).walls.push(node as WallNode)
-    } else if ((node as any).type === 'slab') {
-      getEntry((node as any).parentId).slabs.push(SlabNode.parse(node))
-    }
+    if ((node as any).type !== 'wall') continue
+    const levelId = (node as any).parentId as string
+    const walls = byLevel.get(levelId) ?? []
+    walls.push(node as WallNode)
+    byLevel.set(levelId, walls)
   }
 
   const snapshots = new Map<string, string>()
-  for (const [levelId, entry] of byLevel.entries()) {
-    snapshots.set(levelId, `${levelWallSnapshot(entry.walls)}##${levelSlabSnapshot(entry.slabs)}`)
+  for (const [levelId, walls] of byLevel.entries()) {
+    snapshots.set(levelId, levelWallSnapshot(walls))
   }
 
   return snapshots
@@ -692,13 +764,15 @@ export function planAutoSlabsForLevel(
   const matchedDetectedIdx = new Set<number>()
   const updatesById = new Map<string, [number, number][]>()
 
-  const autoBySignature = new Map<string, (typeof existingAutoMeta)[number]>()
+  const autoBySignature = new Map<string, Array<(typeof existingAutoMeta)[number]>>()
   for (const entry of existingAutoMeta) {
-    autoBySignature.set(entry.sig, entry)
+    const bucket = autoBySignature.get(entry.sig) ?? []
+    bucket.push(entry)
+    autoBySignature.set(entry.sig, bucket)
   }
 
   detected.forEach((room, index) => {
-    const existing = autoBySignature.get(room.sig)
+    const existing = autoBySignature.get(room.sig)?.shift()
     if (!existing) return
 
     matchedDetectedIdx.add(index)
@@ -875,13 +949,15 @@ export function planAutoCeilingsForLevel(
   const matchedDetectedIdx = new Set<number>()
   const updatesById = new Map<string, { polygon: [number, number][]; height: number }>()
 
-  const autoBySignature = new Map<string, (typeof existingAutoMeta)[number]>()
+  const autoBySignature = new Map<string, Array<(typeof existingAutoMeta)[number]>>()
   for (const entry of existingAutoMeta) {
-    autoBySignature.set(entry.sig, entry)
+    const bucket = autoBySignature.get(entry.sig) ?? []
+    bucket.push(entry)
+    autoBySignature.set(entry.sig, bucket)
   }
 
   detected.forEach((room, index) => {
-    const existing = autoBySignature.get(room.sig)
+    const existing = autoBySignature.get(room.sig)?.shift()
     if (!existing) return
 
     matchedDetectedIdx.add(index)

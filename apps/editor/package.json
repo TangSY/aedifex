@@ -8,7 +8,7 @@
     "build": "dotenv -e ../../.env.local -- next build",
     "start": "next start",
     "lint": "biome lint",
-    "check-types": "next typegen && tsc --noEmit"
+    "check-types": "next typegen && tsgo --noEmit"
   },
   "dependencies": {
     "@iconify/react": "^6.0.2",
@@ -17,6 +17,7 @@
     "@aedifex/editor": "*",
     "@aedifex/mcp": "*",
     "@aedifex/nodes": "*",
+    "@aedifex/plugin-trees": "*",
     "@aedifex/viewer": "*",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-three/drei": "^10.7.7",
@@ -25,7 +26,7 @@
     "clsx": "^2.1.1",
     "geist": "^1.7.0",
     "lucide-react": "^1.7.0",
-    "next": "16.2.6",
+    "next": "16.2.9",
     "openai": "^4.104.0",
     "postcss": "^8.5.6",
     "react": "^19.2.4",

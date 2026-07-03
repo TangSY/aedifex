@@ -8,6 +8,8 @@ export {
 export {
   clampPlanValue,
   doesPolygonIntersectSelectionBounds,
+  FLOORPLAN_VIEW_ROTATION_DEG,
+  floorplanLocalToWorldPoint,
   getDistanceToWallSegment,
   getFloorplanSelectionBounds,
   getPlanPointDistance,
@@ -20,6 +22,7 @@ export {
   movePlanPointTowards,
   pointMatchesWallPlanPoint,
   rotatePlanVector,
+  worldToFloorplanLocalPoint,
 } from './geometry'
 export {
   buildFloorplanItemEntry,

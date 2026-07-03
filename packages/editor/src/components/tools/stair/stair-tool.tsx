@@ -14,7 +14,6 @@ import {
   syncAutoStairOpenings,
   useScene,
 } from '@aedifex/core'
-import { useAlignmentGuides } from '@aedifex/editor'
 import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
@@ -23,6 +22,15 @@ import {
   resolveStairDestinationLevel,
   resolveStairPlacementLevelId,
 } from '../../../lib/stair-levels'
+
+import useAlignmentGuides from '../../../store/use-alignment-guides'
+import useEditor, {
+  isAlignmentGuideActive,
+  isGridSnapActive,
+  isMagneticSnapActive,
+} from '../../../store/use-editor'
+
+import useFacingPose from '../../../store/use-facing-pose'
 import { CursorSphere } from '../shared/cursor-sphere'
 import { getFloorStackPreviewPosition } from '../shared/floor-stack-preview'
 import {
@@ -36,6 +44,7 @@ import {
   DEFAULT_STAIR_FILL_TO_FLOOR,
   DEFAULT_STAIR_HEIGHT,
   DEFAULT_STAIR_LENGTH,
+  DEFAULT_STAIR_OPENING_OFFSET,
   DEFAULT_STAIR_RAILING_HEIGHT,
   DEFAULT_STAIR_RAILING_MODE,
   DEFAULT_STAIR_STEP_COUNT,
@@ -138,7 +147,7 @@ function createDefaultStairNode({
     fromLevelId: levelId,
     toLevelId: nextLevelId,
     slabOpeningMode: 'destination',
-    openingOffset: 0.08,
+    openingOffset: DEFAULT_STAIR_OPENING_OFFSET,
     width: DEFAULT_STAIR_WIDTH,
     totalRise: DEFAULT_STAIR_HEIGHT,
     stepCount: DEFAULT_STAIR_STEP_COUNT,
@@ -263,7 +272,19 @@ export const StairTool: React.FC = () => {
       return { placementLevelId, previewNodes, stair }
     }
 
+    // The preview rebuild (full-scene copy + destination-level resolution +
+    // auto-opening CSG) is expensive; `grid:move` fires it every pointer event
+    // but the placed position is grid-snapped, so within a cell every rebuild
+    // is identical. Dedupe on the snapped position + rotation so we rebuild
+    // only when the staircase would actually land somewhere new — this is the
+    // difference between a smooth and a stuttering stair tool (the elevator is
+    // cheap because it has no opening sync).
+    let lastPreviewKey: string | null = null
+
     const applyDraftPreview = (position: [number, number, number], rotation: number) => {
+      const key = `${position[0].toFixed(3)},${position[2].toFixed(3)},${rotation.toFixed(4)}`
+      if (key === lastPreviewKey) return
+      lastPreviewKey = key
       const preview = buildPreviewScene(position, rotation)
       const visualPosition = preview
         ? getFloorStackPreviewPosition({
@@ -286,6 +307,19 @@ export const StairTool: React.FC = () => {
         previewRef.current.position.set(...visualPosition)
         previewRef.current.rotation.y = rotation
       }
+
+      // Forward-facing triangle (editor-side overlay). The run ascends along
+      // local +Z from the entry at z≈0; the stair's front is the -Z entry side,
+      // so `reversed` points the triangle out of the entry (where you approach
+      // from), sitting just before it — not inside the footprint or at the
+      // elevated far end. Centre is the footprint mid-run (origin is the entry).
+      useFacingPose.getState().set({
+        position: visualPosition,
+        rotationY: rotation,
+        depth: DEFAULT_STAIR_LENGTH,
+        center: [0, DEFAULT_STAIR_LENGTH / 2],
+        reversed: true,
+      })
 
       if (!preview) {
         openingPreview.clear()
@@ -319,13 +353,16 @@ export const StairTool: React.FC = () => {
     // The probe is the RAW cursor, not the grid-snapped point: resolving
     // against the grid point would only catch anchors that happen to sit near
     // a grid line. Matched axes use the raw probe + snap delta; unmatched axes
-    // keep the normal grid snap. Alt bypasses.
+    // keep the normal grid snap. Guides are published in every snapping mode
+    // (including Off); the magnetic pull toward them (applySnap) applies only in
+    // 'lines' mode.
     const alignPoint = (
       gridX: number,
       gridZ: number,
       rawX: number,
       rawZ: number,
       bypass: boolean,
+      applySnap: boolean,
     ): [number, number] => {
       if (bypass || alignmentCandidates.length === 0) {
         useAlignmentGuides.getState().clear()
@@ -334,6 +371,10 @@ export const StairTool: React.FC = () => {
       const ar = resolveStairFootprintAlignment(rawX, rawZ, rotationRef.current)
       if (!ar || ar.guides.length === 0) {
         useAlignmentGuides.getState().clear()
+        return [gridX, gridZ]
+      }
+      if (!applySnap) {
+        useAlignmentGuides.getState().set(ar.guides)
         return [gridX, gridZ]
       }
       let x = gridX
@@ -348,20 +389,27 @@ export const StairTool: React.FC = () => {
     }
 
     const onGridMove = (event: GridEvent) => {
-      const bypassSnap = event.nativeEvent?.shiftKey === true
+      // Grid snap follows the global mode (live step so the HUD chip is
+      // honest); Off keeps the raw cursor. Shift cycles the mode centrally.
+      const step = useEditor.getState().gridSnapStep
       const [gridX, gridZ] = alignPoint(
-        bypassSnap ? event.localPosition[0] : Math.round(event.localPosition[0] * 2) / 2,
-        bypassSnap ? event.localPosition[2] : Math.round(event.localPosition[2] * 2) / 2,
+        isGridSnapActive()
+          ? Math.round(event.localPosition[0] / step) * step
+          : event.localPosition[0],
+        isGridSnapActive()
+          ? Math.round(event.localPosition[2] / step) * step
+          : event.localPosition[2],
         event.localPosition[0],
         event.localPosition[2],
-        event.nativeEvent?.altKey === true || bypassSnap,
+        !isAlignmentGuideActive(),
+        isMagneticSnapActive(),
       )
       const position: [number, number, number] = [gridX, 0, gridZ]
       lastCanonicalPositionRef.current = position
       applyDraftPreview(position, rotationRef.current)
 
       if (
-        !bypassSnap &&
+        (isGridSnapActive() || isMagneticSnapActive()) &&
         previousGridPosRef.current &&
         (gridX !== previousGridPosRef.current[0] || gridZ !== previousGridPosRef.current[1])
       ) {
@@ -372,13 +420,18 @@ export const StairTool: React.FC = () => {
     }
 
     const getAlignedGridPosition = (event: GridEvent): [number, number, number] => {
-      const bypassSnap = event.nativeEvent?.shiftKey === true
+      const step = useEditor.getState().gridSnapStep
       const [gridX, gridZ] = alignPoint(
-        bypassSnap ? event.localPosition[0] : Math.round(event.localPosition[0] * 2) / 2,
-        bypassSnap ? event.localPosition[2] : Math.round(event.localPosition[2] * 2) / 2,
+        isGridSnapActive()
+          ? Math.round(event.localPosition[0] / step) * step
+          : event.localPosition[0],
+        isGridSnapActive()
+          ? Math.round(event.localPosition[2] / step) * step
+          : event.localPosition[2],
         event.localPosition[0],
         event.localPosition[2],
-        event.nativeEvent?.altKey === true || bypassSnap,
+        !isAlignmentGuideActive(),
+        isMagneticSnapActive(),
       )
       return [gridX, 0, gridZ]
     }
@@ -398,8 +451,20 @@ export const StairTool: React.FC = () => {
 
       commitStairPlacement(currentLevelId, position, rotationRef.current)
       openingPreview.clear()
-      alignmentCandidates = collectAlignmentAnchors(useScene.getState().nodes, '', currentLevelId)
+      // Commit cleared the opening preview, so force the next hover (even on the
+      // same cell) to rebuild rather than dedupe against the just-placed key.
+      lastPreviewKey = null
       useAlignmentGuides.getState().clear()
+
+      // Single by default; the C-toggle ('point' context, shared with every
+      // other placement tool) opts into placing more. On single, drop the tool
+      // and the facing triangle so we fall back to select after one stair.
+      if (useEditor.getState().getContinuation('point') === 'repeat') {
+        alignmentCandidates = collectAlignmentAnchors(useScene.getState().nodes, '', currentLevelId)
+      } else {
+        useFacingPose.getState().clear()
+        useEditor.getState().setTool(null)
+      }
     }
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -444,6 +509,7 @@ export const StairTool: React.FC = () => {
       window.removeEventListener('keydown', onKeyDown)
       useAlignmentGuides.getState().clear()
       openingPreview.clear()
+      useFacingPose.getState().clear()
     }
   }, [currentLevelId])
 
@@ -451,7 +517,9 @@ export const StairTool: React.FC = () => {
     <group>
       <CursorSphere ref={cursorRef} />
 
-      {/* 3D ghost preview — position/rotation updated imperatively */}
+      {/* 3D ghost preview — position/rotation updated imperatively. The
+          forward-facing triangle is drawn by the editor-side overlay from the
+          pose published in `applyDraftPreview`. */}
       <group ref={previewRef}>
         <mesh castShadow geometry={previewGeometry}>
           <meshStandardMaterial color="#818cf8" depthWrite={false} opacity={0.35} transparent />

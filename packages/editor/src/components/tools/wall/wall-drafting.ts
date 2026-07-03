@@ -13,12 +13,14 @@ import {
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { sfxEmitter } from '../../../lib/sfx-bus'
-import useEditor from '../../../store/use-editor'
+import { resolveSnapFlags } from '../../../lib/snapping-mode'
+import useEditor, { getActiveSnappingMode, isMagneticSnapActive } from '../../../store/use-editor'
 import {
   distanceSquared,
   findWallSnapTarget,
   findWallSpecialPointSnap,
   projectPointOntoWall,
+  WALL_CONNECT_SNAP_RADIUS,
   WALL_JOIN_SNAP_RADIUS,
   type WallDraftSnapResult,
   type WallPlanPoint,
@@ -29,6 +31,7 @@ import {
 // existing importers (fence drafting, the editor barrel) keep their paths.
 export {
   findWallSnapTarget,
+  WALL_CONNECT_SNAP_RADIUS,
   WALL_JOIN_SNAP_RADIUS,
   type WallDraftSnapKind,
   type WallDraftSnapResult,
@@ -51,10 +54,15 @@ type WallSplitIntersection = {
 }
 
 export function getSegmentGridStep(): number {
-  return useEditor.getState().gridSnapStep
+  // A 0 step means "no grid lattice" — every grid-snap consumer guards on
+  // `step <= 0` and returns the raw value, so disabling grid here suppresses
+  // the lattice for walls, fences, and every node move/affordance that reads
+  // this choke point, without retuning their snap math.
+  return resolveSnapFlags(getActiveSnappingMode()).grid ? useEditor.getState().gridSnapStep : 0
 }
 
 export function snapScalarToGrid(value: number, step = WALL_GRID_STEP): number {
+  if (step <= 0) return value
   return Math.round(value / step) * step
 }
 
@@ -372,7 +380,27 @@ export function snapWallDraftPointDetailed(args: SnapWallDraftArgs): WallDraftSn
       radius: snapRadii?.wall,
     })
     if (wallSnap) return { point: wallSnap, snap: 'wall' }
+    return { point: basePoint, snap: null }
   }
+
+  // Non-magnetic modes (grid / off / angles): connectivity still sticks so a
+  // room can close, but only within a tight radius — placement elsewhere is left
+  // to the mode (grid quantise / angle lock / free). Snap from the already
+  // positioned `basePoint` so the mode's placement is respected right up to the
+  // wall, then the last few cm stick onto it (and the beacon shows).
+  const connectRadii: WallSnapRadii = {
+    endpoint: WALL_CONNECT_SNAP_RADIUS,
+    midpoint: WALL_CONNECT_SNAP_RADIUS,
+    intersection: WALL_CONNECT_SNAP_RADIUS,
+    wall: WALL_CONNECT_SNAP_RADIUS,
+  }
+  const connectSpecial = findWallSpecialPointSnap(basePoint, walls, ignoreWallIds, connectRadii)
+  if (connectSpecial) return connectSpecial
+  const connectWall = findWallSnapTarget(basePoint, walls, {
+    ignoreWallIds,
+    radius: WALL_CONNECT_SNAP_RADIUS,
+  })
+  if (connectWall) return { point: connectWall, snap: 'wall' }
 
   return { point: basePoint, snap: null }
 }
@@ -404,32 +432,38 @@ export function createWallOnCurrentLevel(
   let resolvedStart = start
   let resolvedEnd = end
 
-  const endIntersection = findWallIntersection(resolvedEnd, workingWalls)
-  const splitEnd = splitWallIfNeeded(
-    endIntersection,
-    workingWalls,
-    nodes,
-    createNodes,
-    updateNodes,
-    deleteNode,
-  )
-  if (splitEnd) {
-    workingWalls = splitEnd.walls
-    resolvedEnd = splitEnd.point
-  }
+  // The corner-join / wall-split snap on commit is a magnetic (line) snap, so
+  // it must be gated by the snapping mode like the draft preview is. Without
+  // this gate `'off'` (and `'angles'`) still snapped the committed endpoint to
+  // existing wall geometry — the residual snap the draft path no longer does.
+  if (isMagneticSnapActive()) {
+    const endIntersection = findWallIntersection(resolvedEnd, workingWalls)
+    const splitEnd = splitWallIfNeeded(
+      endIntersection,
+      workingWalls,
+      nodes,
+      createNodes,
+      updateNodes,
+      deleteNode,
+    )
+    if (splitEnd) {
+      workingWalls = splitEnd.walls
+      resolvedEnd = splitEnd.point
+    }
 
-  const startIntersection = findWallIntersection(resolvedStart, workingWalls)
-  const splitStart = splitWallIfNeeded(
-    startIntersection,
-    workingWalls,
-    nodes,
-    createNodes,
-    updateNodes,
-    deleteNode,
-  )
-  if (splitStart) {
-    workingWalls = splitStart.walls
-    resolvedStart = splitStart.point
+    const startIntersection = findWallIntersection(resolvedStart, workingWalls)
+    const splitStart = splitWallIfNeeded(
+      startIntersection,
+      workingWalls,
+      nodes,
+      createNodes,
+      updateNodes,
+      deleteNode,
+    )
+    if (splitStart) {
+      workingWalls = splitStart.walls
+      resolvedStart = splitStart.point
+    }
   }
 
   if (!isSegmentLongEnough(resolvedStart, resolvedEnd) || pointsEqual(resolvedStart, resolvedEnd)) {

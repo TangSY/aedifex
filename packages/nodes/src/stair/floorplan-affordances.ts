@@ -6,6 +6,7 @@ import {
   type StairSegmentNode,
   useScene,
 } from '@aedifex/core'
+import { rotateAffordanceDelta } from '../shared/rotate-affordance'
 
 // Minimums + max sweep mirror the 3D handles in
 // `packages/editor/src/components/editor/stair-segment-handles.tsx` so a 2D
@@ -56,7 +57,7 @@ export const segmentWidthAffordance: FloorplanAffordance<StairNode> = {
     const { segmentId, side, axisX } = payload as SegmentWidthPayload
     const segmentNodeId = segmentId as AnyNodeId
     const segment = nodes[segmentNodeId] as StairSegmentNode | undefined
-    if (!segment || segment.type !== 'stair-segment') return noopSession()
+    if (segment?.type !== 'stair-segment') return noopSession()
 
     const initialWidth = segment.width
     const sign = side === 'right' ? 1 : -1
@@ -95,7 +96,7 @@ export const segmentLengthAffordance: FloorplanAffordance<StairNode> = {
     const { segmentId, axisZ } = payload as SegmentLengthPayload
     const segmentNodeId = segmentId as AnyNodeId
     const segment = nodes[segmentNodeId] as StairSegmentNode | undefined
-    if (!segment || segment.type !== 'stair-segment') return noopSession()
+    if (segment?.type !== 'stair-segment') return noopSession()
 
     const initialLength = segment.length
     const az = axisZ[0]
@@ -232,12 +233,13 @@ export const stairRotateAffordance: FloorplanAffordance<StairNode> = {
 
     return {
       affectedIds: [stairId],
-      apply({ planPoint }) {
-        const currentAngle = Math.atan2(planPoint[1] - cz, planPoint[0] - cx)
-        let delta = currentAngle - initialAngle
-        // Wrap to [-π, π] so a drag crossing ±π doesn't flip sign mid-gesture.
-        while (delta > Math.PI) delta -= 2 * Math.PI
-        while (delta < -Math.PI) delta += 2 * Math.PI
+      apply({ planPoint, modifiers }) {
+        const delta = rotateAffordanceDelta({
+          center: [cx, cz],
+          initialAngle,
+          planPoint,
+          free: modifiers.shiftKey,
+        })
         const newRotation = initialRotation - delta
         lastRotation = newRotation
         useScene.getState().updateNode(stairId, { rotation: newRotation })
