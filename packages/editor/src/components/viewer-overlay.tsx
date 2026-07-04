@@ -55,7 +55,7 @@ type ProjectOwner = {
 }
 
 function requestWalkthroughPointerLock() {
-  const canvas = document.querySelector<HTMLCanvasElement>('[data-pascal-viewer-3d] canvas')
+  const canvas = document.querySelector<HTMLCanvasElement>('[data-aedifex-viewer-3d] canvas')
   if (!canvas) return
 
   if (!canvas.hasAttribute('tabindex')) {

@@ -1,6 +1,6 @@
 # @aedifex/plugin-trees
 
-The first-party **example plugin** for the Pascal editor. It contributes a
+The first-party **example plugin** for the Aedifex editor. It contributes a
 procedural _trees_ node and a left-rail _presets_ panel, and exists to prove —
 and document — the minimal host surface every future plugin reuses.
 

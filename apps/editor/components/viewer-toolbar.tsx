@@ -51,7 +51,7 @@ const TOOLBAR_BTN =
   'flex w-8 items-center justify-center text-muted-foreground/80 transition-colors hover:bg-white/8 hover:text-foreground/90'
 
 function requestWalkthroughPointerLock() {
-  const canvas = document.querySelector<HTMLCanvasElement>('[data-pascal-viewer-3d] canvas')
+  const canvas = document.querySelector<HTMLCanvasElement>('[data-aedifex-viewer-3d] canvas')
   if (!canvas) return
 
   if (!canvas.hasAttribute('tabindex')) {
