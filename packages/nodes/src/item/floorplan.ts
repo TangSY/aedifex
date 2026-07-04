@@ -67,7 +67,7 @@ function resolveItemTransform(
     const wallRotation = -Math.atan2(wall.end[1] - wall.start[1], wall.end[0] - wall.start[0])
     const wallLocalZ =
       item.asset.attachTo === 'wall-side'
-        ? ((wall.thickness ?? 0.1) / 2) * (item.side === 'back' ? -1 : 1)
+        ? ((wall.thickness ?? 0.1) / 2) * (item.side === 'front' ? 1 : -1)
         : item.position[2]
     const [offsetX, offsetY] = rotateVec(item.position[0], wallLocalZ, wallRotation)
     result = {
@@ -160,9 +160,12 @@ export function buildItemFloorplan(node: ItemNode, ctx: GeometryContext): Floorp
   const [width, , depth] = getScaledDimensions(node)
   if (width <= 0 || depth <= 0) return null
 
-  // Wall-side items are anchored at the front face — center their footprint
-  // half-a-depth back toward the wall surface.
-  const centerLocalZ = node.asset.attachTo === 'wall-side' ? -depth / 2 : 0
+  // Wall-side items are anchored at the mounted wall face; their body extends
+  // depth-ward AWAY from the wall (into the room), so push the footprint centre
+  // a half-depth out along the item's local +Z. After the front/back π flip in
+  // `transform.rotation`, +depth/2 always points off the wall for either side;
+  // a negative offset would lay the footprint across the wall onto the far side.
+  const centerLocalZ = node.asset.attachTo === 'wall-side' ? depth / 2 : 0
   const [centerOffsetX, centerOffsetY] = rotateVec(0, centerLocalZ, transform.rotation)
   const cx = transform.x + centerOffsetX
   const cy = transform.y + centerOffsetY
@@ -182,6 +185,7 @@ export function buildItemFloorplan(node: ItemNode, ctx: GeometryContext): Floorp
   })
 
   const isSelected = ctx.viewState?.selected ?? false
+  const isMoving = ctx.viewState?.moving ?? false
   const floorPlanUrl = node.asset.floorPlanUrl
   const children: FloorplanGeometry[] = [
     {
@@ -211,11 +215,17 @@ export function buildItemFloorplan(node: ItemNode, ctx: GeometryContext): Floorp
       center: [cx, cy],
       width,
       height: depth,
-      rotation: transform.rotation,
+      // `rotateVec` (the footprint polygon) applies R(-angle), but the renderer
+      // draws the image with SVG `rotate(+deg)` = R(+angle). Negate so the
+      // sprite rotates the same way as its footprint box (and 3D); otherwise the
+      // two counter-rotate and diverge by 2x the item's rotation.
+      rotation: -transform.rotation,
     })
   }
-  // Move handle — orange dot at the item center. Only when selected.
-  if (isSelected) {
+  // Move handle — orange dot at the item center. Only when selected and not
+  // already moving: during a move the dot sits under the cursor, so a release
+  // over it would re-arm the move (and re-enter edit) instead of committing.
+  if (isSelected && !isMoving) {
     children.push({
       kind: 'move-handle',
       point: [cx, cy],

@@ -2,6 +2,9 @@
 
 import { Icon } from '@iconify/react'
 import {
+  getCatalogMaterialById,
+  getLibraryMaterialIdFromRef,
+  getSceneMaterialIdFromRef,
   initSpaceDetectionSync,
   initSpatialGridSync,
   spatialGridManager,
@@ -19,6 +22,7 @@ import { ViewerOverlay } from '../../components/viewer-overlay'
 import { ViewerZoneSystem } from '../../components/viewer-zone-system'
 import { type SaveStatus, useAutoSave } from '../../hooks/use-auto-save'
 import { useKeyboard } from '../../hooks/use-keyboard'
+import { type ActivePaintMaterial, hasActivePaintMaterial } from '../../lib/material-paint'
 import {
   applySceneGraphToEditor,
   loadSceneFromLocalStorage,
@@ -53,9 +57,11 @@ import type { ExtraPanel } from '../ui/sidebar/icon-rail'
 import { SettingsPanel, type SettingsPanelProps } from '../ui/sidebar/panels/settings-panel'
 import { SitePanel, type SitePanelProps } from '../ui/sidebar/panels/site-panel'
 import type { SidebarTab } from '../ui/sidebar/tab-bar'
+import { usePluginPanels } from '../ui/sidebar/use-plugin-panels'
 import { CustomCameraControls } from './custom-camera-controls'
 import { EditorLayoutV2 } from './editor-layout-v2'
 import { ExportManager } from './export-manager'
+import { FenceTangentLines3D } from './fence-tangent-lines-3d'
 import { FirstPersonControls, FirstPersonOverlay } from './first-person-controls'
 import { FloatingActionMenu } from './floating-action-menu'
 import { FloatingBuildingActionMenu } from './floating-building-action-menu'
@@ -83,6 +89,7 @@ const PAINT_CURSOR_BADGE_DISABLED_COLOR = '#94a3b8'
 const PAINT_CURSOR_BADGE_OFFSET_X = 14
 const PAINT_CURSOR_BADGE_OFFSET_Y = 14
 const SCENE_READY_FALLBACK_MS = 8000
+type PaintCursorBadgeState = 'empty' | 'ready' | 'blocked'
 const EDITOR_HOVER_STYLES: HoverStyles = {
   default: { visibleColor: 0x00_aa_ff, hiddenColor: 0xf3_ff_47, strength: 5, pulse: true },
   delete: { visibleColor: 0xef_44_44, hiddenColor: 0x99_1b_1b, strength: 6, pulse: false },
@@ -537,14 +544,70 @@ function DeleteCursorBadge({ position }: { position: { x: number; y: number } })
   )
 }
 
+function getActivePaintMaterialSwatchColor(
+  material: ActivePaintMaterial | null,
+  sceneMaterials: ReturnType<typeof useScene.getState>['materials'],
+) {
+  const directColor = material?.material?.properties?.color
+  if (directColor) return directColor
+
+  const sceneMaterialId = getSceneMaterialIdFromRef(material?.materialPreset)
+  if (sceneMaterialId) {
+    const sceneMaterial = sceneMaterials[sceneMaterialId as keyof typeof sceneMaterials]
+    const sceneColor = sceneMaterial?.material.properties?.color
+    if (sceneColor) return sceneColor
+  }
+
+  const catalogId =
+    getLibraryMaterialIdFromRef(material?.materialPreset) ?? material?.material?.id ?? undefined
+  const catalogMaterial = getCatalogMaterialById(catalogId)
+  return (
+    catalogMaterial?.previewColor ??
+    catalogMaterial?.preset.mapProperties.color ??
+    PAINT_CURSOR_BADGE_COLOR
+  )
+}
+
+function getActivePaintMaterialSwatchImageUrl(
+  material: ActivePaintMaterial | null,
+  sceneMaterials: ReturnType<typeof useScene.getState>['materials'],
+) {
+  const directTextureUrl = material?.material?.texture?.url
+  if (directTextureUrl) return directTextureUrl
+
+  const sceneMaterialId = getSceneMaterialIdFromRef(material?.materialPreset)
+  if (sceneMaterialId) {
+    const sceneMaterial = sceneMaterials[sceneMaterialId as keyof typeof sceneMaterials]
+    const sceneTextureUrl = sceneMaterial?.material.texture?.url
+    if (sceneTextureUrl) return sceneTextureUrl
+  }
+
+  const catalogId =
+    getLibraryMaterialIdFromRef(material?.materialPreset) ?? material?.material?.id ?? undefined
+  const catalogMaterial = getCatalogMaterialById(catalogId)
+  return catalogMaterial?.previewThumbnailUrl ?? catalogMaterial?.preset.maps.albedoMap
+}
+
 function PaintCursorBadge({
   position,
-  disabled,
+  state,
+  swatchColor,
+  swatchImageUrl,
+  isEraser,
 }: {
   position: { x: number; y: number }
-  disabled: boolean
+  state: PaintCursorBadgeState
+  swatchColor: string
+  swatchImageUrl?: string
+  isEraser: boolean
 }) {
-  const accentColor = disabled ? PAINT_CURSOR_BADGE_DISABLED_COLOR : PAINT_CURSOR_BADGE_COLOR
+  const accentColor =
+    state === 'ready'
+      ? isEraser
+        ? PAINT_CURSOR_BADGE_COLOR
+        : swatchColor
+      : PAINT_CURSOR_BADGE_DISABLED_COLOR
+  const iconOpacity = state === 'ready' ? 1 : state === 'blocked' ? 0.62 : 0.42
   const lineHeight = 18
 
   return (
@@ -578,7 +641,48 @@ function PaintCursorBadge({
           aria-hidden="true"
           className="h-5 w-5 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
           src="/icons/paint.webp"
+          style={{
+            filter: state === 'ready' ? undefined : 'grayscale(1)',
+            opacity: iconOpacity,
+          }}
         />
+        {state === 'ready' ? (
+          isEraser ? (
+            <span className="-right-1 -bottom-1 absolute flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/35 bg-zinc-950 text-white shadow-[0_2px_6px_rgba(0,0,0,0.45)]">
+              <Icon
+                aria-hidden="true"
+                color="currentColor"
+                height={10}
+                icon="mdi:eraser-variant"
+                width={10}
+              />
+            </span>
+          ) : (
+            <span
+              className="-right-1 -bottom-1 absolute h-3.5 w-3.5 rounded-full border border-white/70 bg-cover bg-center shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
+              style={{
+                backgroundColor: swatchColor,
+                backgroundImage: swatchImageUrl
+                  ? `url(${JSON.stringify(swatchImageUrl)})`
+                  : undefined,
+              }}
+            />
+          )
+        ) : state === 'blocked' ? (
+          <span className="-right-1 -bottom-1 absolute flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/30 bg-zinc-950 text-rose-300 shadow-[0_2px_6px_rgba(0,0,0,0.45)]">
+            <Icon
+              aria-hidden="true"
+              color="currentColor"
+              height={12}
+              icon="mdi:cancel"
+              width={12}
+            />
+          </span>
+        ) : (
+          <span className="-right-1 -bottom-1 absolute flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/30 bg-zinc-950 font-semibold text-[9px] text-slate-300 shadow-[0_2px_6px_rgba(0,0,0,0.45)]">
+            ?
+          </span>
+        )}
       </div>
     </div>
   )
@@ -625,6 +729,7 @@ const ViewerSceneContent = memo(function ViewerSceneContent({
       {!noEditing && <WallOpeningHighlights />}
       {!noEditing && <SlabHoleHighlights />}
       {!noEditing && <WallMoveSideHandles />}
+      {!noEditing && <FenceTangentLines3D />}
       {!noEditing && <FloatingActionMenu />}
       {!noEditing && <FloatingBuildingActionMenu />}
       {!isFirstPersonMode && <WallMeasurementLabel />}
@@ -733,6 +838,9 @@ function PaintCursorLayer({
 }) {
   const mode = useEditor((s) => s.mode)
   const activePaintMaterial = useEditor((s) => s.activePaintMaterial)
+  const paintEraser = useEditor((s) => s.paintEraser)
+  const paintHover = useEditor((s) => s.paintHover)
+  const sceneMaterials = useScene((s) => s.materials)
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null)
   const active = mode === 'material-paint' && !isVersionPreviewMode
 
@@ -782,11 +890,14 @@ function PaintCursorLayer({
     }
   }, [active, containerRef])
 
-  const hasMaterial = Boolean(
-    activePaintMaterial &&
-      (activePaintMaterial.material !== undefined ||
-        activePaintMaterial.materialPreset !== undefined),
-  )
+  const hasPaint = paintEraser || hasActivePaintMaterial(activePaintMaterial)
+  const badgeState: PaintCursorBadgeState = !hasPaint
+    ? 'empty'
+    : paintHover != null
+      ? 'ready'
+      : 'blocked'
+  const swatchColor = getActivePaintMaterialSwatchColor(activePaintMaterial, sceneMaterials)
+  const swatchImageUrl = getActivePaintMaterialSwatchImageUrl(activePaintMaterial, sceneMaterials)
 
   if (!active || !position) return null
 
@@ -795,7 +906,13 @@ function PaintCursorLayer({
       className="pointer-events-none absolute z-40"
       style={{ left: 0, top: 0, transform: `translate(${position.x}px, ${position.y}px)` }}
     >
-      <PaintCursorBadge disabled={!hasMaterial} position={{ x: 0, y: 0 }} />
+      <PaintCursorBadge
+        isEraser={paintEraser}
+        position={{ x: 0, y: 0 }}
+        state={badgeState}
+        swatchColor={swatchColor}
+        swatchImageUrl={swatchImageUrl}
+      />
     </div>
   )
 }
@@ -1003,6 +1120,12 @@ export default function Editor({
   const sidebarWidth = useSidebarStore((s) => s.width)
   const isSidebarCollapsed = useSidebarStore((s) => s.isCollapsed)
 
+  // Plugin-contributed rail panels (registry-only). Called unconditionally so
+  // hook order is stable across the v1 / v2 layout branches below; the v1
+  // AppSidebar path merges its own copy internally, the v2 path merges these
+  // into its tab bar.
+  const pluginRailPanels = usePluginPanels()
+
   useEffect(() => {
     const teardown = initializeEditorRuntime()
     return teardown
@@ -1174,7 +1297,17 @@ export default function Editor({
 
   // ── V2 layout ──
   if (layoutVersion === 'v2') {
-    const tabMap = new Map(sidebarTabs?.map((t) => [t.id, t]) ?? [])
+    // Plugin panels join the host's `sidebarTabs` as first-class tabs. Host
+    // tabs keep precedence (already in the map first); a plugin panel id can't
+    // collide with a host tab because it's namespaced by plugin id.
+    const tabMap = new Map<string, SidebarTab & { component: React.ComponentType }>(
+      sidebarTabs?.map((t) => [t.id, t]) ?? [],
+    )
+    for (const p of pluginRailPanels) {
+      if (!tabMap.has(p.id)) {
+        tabMap.set(p.id, { id: p.id, label: p.label, icon: p.icon, component: p.component })
+      }
+    }
 
     const renderTabContent = (tabId: string) => {
       // Built-in panels
@@ -1191,14 +1324,24 @@ export default function Editor({
       return <Component />
     }
 
-    const tabBarTabs =
-      sidebarTabs?.map(({ id, label, mobileDefaultSnap, mobileIcon, icon }) => ({
+    const tabBarTabs = [
+      ...(sidebarTabs?.map(({ id, label, mobileDefaultSnap, mobileIcon, icon }) => ({
         id,
         label,
         mobileDefaultSnap,
         mobileIcon,
         icon,
-      })) ?? []
+      })) ?? []),
+      // Plugin panels appear after the host's tabs in the rail. The icon
+      // doubles as the mobile icon; a half-height sheet is a sensible default.
+      ...pluginRailPanels.map((p) => ({
+        id: p.id,
+        label: p.label,
+        mobileDefaultSnap: 0.5,
+        mobileIcon: p.icon,
+        icon: p.icon,
+      })),
+    ]
 
     return (
       <>

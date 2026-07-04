@@ -10,7 +10,6 @@ import {
   type FloorplanMoveTargetSession,
   nodeRegistry,
   pauseSceneHistory,
-  resolveAlignment,
   resumeSceneHistory,
   useLiveNodeOverrides,
   useLiveTransforms,
@@ -22,8 +21,14 @@ import { commitFreshPlacementSubtree } from '../../lib/fresh-planar-placement'
 import { isFreshPlacementMetadata, stripPlacementMetadataFlags } from '../../lib/placement-metadata'
 import { resolvePlanarCursorPosition } from '../../lib/planar-cursor-placement'
 import { sfxEmitter } from '../../lib/sfx-bus'
+import { resolveAlignmentForFloorplanView } from '../../lib/world-grid-snap'
 import useAlignmentGuides from '../../store/use-alignment-guides'
-import useEditor from '../../store/use-editor'
+import useEditor, {
+  isAlignmentGuideActive,
+  isGridSnapActive,
+  isMagneticSnapActive,
+} from '../../store/use-editor'
+import { useMovingNode } from '../../store/use-interaction-scope'
 import { useWallMoveGhosts } from '../../store/use-wall-move-ghosts'
 
 // Figma-style alignment snap threshold. Meters in world space; 8cm gives
@@ -53,7 +58,7 @@ const ALIGNMENT_THRESHOLD_M = 0.08
  * cursor → meters accounts for pan / zoom / building rotation.
  */
 export function FloorplanRegistryMoveOverlay() {
-  const movingNode = useEditor((s) => s.movingNode)
+  const movingNode = useMovingNode()
   const setMovingNode = useEditor((s) => s.setMovingNode)
   const setMovingNodeOrigin = useEditor((s) => s.setMovingNodeOrigin)
 
@@ -124,6 +129,10 @@ export function FloorplanRegistryMoveOverlay() {
       // to be consumed. That legacy flow is gone in the registry layer;
       // all entries use the action menu now.
       let hasMovedSinceStart = false
+      // Last resolved position of the moved node — drives the move "tick" SFX.
+      // Parity with the 3D move, which emits on any change of the resolved
+      // position (every snapping mode, not only grid).
+      let lastSnapKey: string | null = null
       // Live cursor location — updated on EVERY pointermove (even over the 3D
       // canvas) so R-key ownership can follow the pointer's CURRENT pane rather
       // than the sticky `hasMovedSinceStart`. Without this, once the user touched
@@ -154,6 +163,19 @@ export function FloorplanRegistryMoveOverlay() {
             metaKey: event.metaKey,
           },
         })
+        // Move "tick" — same feedback the 3D move gives, which fires whenever the
+        // resolved position changes (any snapping mode, not just grid), so it
+        // ticks as the item lands on each new snapped/free position.
+        const movedId = session.affectedIds[0]
+        const moved = movedId ? useScene.getState().nodes[movedId] : undefined
+        const pos = (moved as { position?: [number, number, number] } | undefined)?.position
+        if (pos) {
+          const key = `${pos[0]},${pos[2]}`
+          if (key !== lastSnapKey) {
+            lastSnapKey = key
+            sfxEmitter.emit('sfx:grid-snap')
+          }
+        }
       }
 
       const commitFinalStateOrRevert = () => {
@@ -306,6 +328,8 @@ export function FloorplanRegistryMoveOverlay() {
         // `hasMovedSinceStart`-only gate made the overlay claim R forever after
         // the first 2D move, killing the 3D flip.)
         if (event.key === 'r' || event.key === 'R') {
+          // Yield Cmd/Ctrl+R to the browser reload instead of flipping the side.
+          if (event.metaKey || event.ctrlKey) return
           if (!(session.flipSide && hasMovedSinceStart && pointerOverFloorplan)) return
           if (event.repeat) return
           const t = event.target as HTMLElement | null
@@ -435,11 +459,13 @@ export function FloorplanRegistryMoveOverlay() {
     // point by the cursor delta and commit the translated `path` instead.
     // The reference origin is the path centre so the SVG `translate` delta
     // matches the geometry's actual location (which isn't at [0,0,0]).
+    // Only 3D `[x, y, z]` polyline kinds (duct / pipe / lineset) are handled
+    // here. A spline fence also carries a `path`, but it is 2D (`[x, y]`) and
+    // moves through its own `floorplanMoveTarget`, so exclude shorter tuples.
+    const rawPath = (movingNode as { path?: unknown }).path
     const originalPath =
-      'path' in movingNode && Array.isArray((movingNode as { path?: unknown }).path)
-        ? (movingNode as { path: [number, number, number][] }).path.map(
-            (p) => [...p] as [number, number, number],
-          )
+      Array.isArray(rawPath) && Array.isArray(rawPath[0]) && rawPath[0].length >= 3
+        ? (rawPath as [number, number, number][]).map((p) => [...p] as [number, number, number])
         : null
     const originalPosition: [number, number, number] = originalPath
       ? (() => {
@@ -508,10 +534,12 @@ export function FloorplanRegistryMoveOverlay() {
       if (!m) return
 
       // 1) Grid snap baseline. Fresh catalog placement is absolute under
-      // the cursor; existing moves preserve the cursor's grab offset.
+      // the cursor; existing moves preserve the cursor's grab offset. Grid
+      // follows the active snapping mode (Shift cycles it); raw cursor in
+      // any non-grid mode.
       const gridStep = useEditor.getState().gridSnapStep
       const snap = (value: number) =>
-        event.shiftKey ? value : Math.round(value / gridStep) * gridStep
+        isGridSnapActive() ? Math.round(value / gridStep) * gridStep : value
       const resolved = resolvePlanarCursorPosition({
         cursor: [m[0], m[1]],
         original: [originalPosition[0], originalPosition[2]],
@@ -524,12 +552,13 @@ export function FloorplanRegistryMoveOverlay() {
 
       // 2) Alignment snap layered on top. Treat the grid-snapped point
       // as the "proposed" position so alignment competes from a stable
-      // base rather than the raw cursor jitter. Alt bypasses alignment
-      // entirely; Shift bypasses both grid and alignment
-      // hint chip.
+      // base rather than the raw cursor jitter. Alignment "lines" are
+      // DISPLAYED in every mode except Off (isAlignmentGuideActive); the
+      // magnetic pull toward them applies only in 'lines' mode. Alt is
+      // force-place, not a snap bypass.
       let finalX = gridX
       let finalZ = gridZ
-      if (!(event.altKey || event.shiftKey) && candidateAnchors.length > 0) {
+      if (isAlignmentGuideActive() && candidateAnchors.length > 0) {
         // Translate the cached local bbox to the proposed pos to get the
         // moving anchors at that location. The entry's untransformed
         // bbox is in world meters relative to the node's origin, so a
@@ -552,12 +581,12 @@ export function FloorplanRegistryMoveOverlay() {
         // store, which the 2D FloorplanAlignmentGuideLayer renders
         // inside the rotated scene <g>. The 3D pipeline uses a
         // separate store, so frames stay isolated per surface.
-        const result = resolveAlignment({
+        const result = resolveAlignmentForFloorplanView({
           moving: movingAnchors,
           candidates: candidateAnchors,
           threshold: ALIGNMENT_THRESHOLD_M,
         })
-        if (result.snap) {
+        if (result.snap && isMagneticSnapActive()) {
           finalX += result.snap.dx
           finalZ += result.snap.dz
         }

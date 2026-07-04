@@ -6,10 +6,12 @@ import {
   emitter,
   type FenceNode,
   type GridEvent,
+  getTwoPointFenceCurveTangents,
   getWallMiterBoundaryPoints,
   type LevelNode,
   type Point2D,
   resolveAlignment,
+  sampleFenceSpline,
   useScene,
   type WallMiterData,
   type WallNode,
@@ -17,6 +19,7 @@ import {
 import {
   CursorSphere,
   createFenceOnCurrentLevel,
+  createSplineFenceOnCurrentLevel,
   EDITOR_LAYER,
   type FencePlanPoint,
   formatAngleRadians,
@@ -24,14 +27,22 @@ import {
   getAngleArcToSegmentReference,
   getAngleToSegmentReference,
   getSegmentAngleReferenceAtPoint,
+  getSegmentGridStep,
+  isAlignmentGuideActive,
+  isAngleSnapActive,
+  isGridSnapActive,
+  isMagneticSnapActive,
   markToolCancelConsumed,
   type SegmentAngleReference,
   snapFenceDraftPoint,
+  snapScalarToGrid,
   triggerSFX,
   useAlignmentGuides,
   useEditor,
+  useFenceCurveDraft,
   useSegmentDraftChain,
 } from '@aedifex/editor'
+
 import { getSceneTheme, useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -416,7 +427,7 @@ function getCurrentLevelElements(): { walls: WallNode[]; fences: FenceNode[] } {
   const { nodes } = useScene.getState()
   if (!currentLevelId) return { walls: [], fences: [] }
   const levelNode = nodes[currentLevelId]
-  if (!levelNode || levelNode.type !== 'level') return { walls: [], fences: [] }
+  if (levelNode?.type !== 'level') return { walls: [], fences: [] }
   const children = (levelNode as LevelNode).children.map((childId) => nodes[childId])
   return {
     walls: children.filter((n): n is WallNode => n?.type === 'wall'),
@@ -425,6 +436,14 @@ function getCurrentLevelElements(): { walls: WallNode[]; fences: FenceNode[] } {
 }
 
 export const FenceTool: React.FC = () => {
+  const fenceMode = useEditor((s) => s.continuationByContext.fence)
+  if (fenceMode === 'curved') {
+    return <SplineFenceDraft />
+  }
+  return <StraightFenceTool />
+}
+
+const StraightFenceTool: React.FC = () => {
   const unit = useViewer((state) => state.unit)
   const isDark = useViewer((state) => getSceneTheme(state.sceneTheme).appearance === 'dark')
   // A placed preset seeds `toolDefaults.fence` before the tool mounts, so
@@ -445,7 +464,6 @@ export const FenceTool: React.FC = () => {
   const startingPoint = useRef(new Vector3(0, 0, 0))
   const endingPoint = useRef(new Vector3(0, 0, 0))
   const buildingState = useRef(0)
-  const shiftPressed = useRef(false)
   const [draftMeasurement, setDraftMeasurement] = useState<DraftMeasurementState>(null)
   const measurementColor = isDark ? '#ffffff' : '#111111'
   const measurementShadowColor = isDark ? '#111111' : '#ffffff'
@@ -466,10 +484,15 @@ export const FenceTool: React.FC = () => {
     }
 
     // Align the drafted point onto another object's nearest real anchor and
-    // publish the guide. Alt bypasses alignment; Shift bypasses all guided
-    // snapping. Returns the possibly snapped point.
-    const alignPoint = (point: FencePlanPoint, bypass: boolean): FencePlanPoint => {
-      if (bypass || alignmentCandidates.length === 0) {
+    // publish the guide. Returns the possibly snapped point.
+    const alignPoint = (
+      point: FencePlanPoint,
+      options?: { applySnap?: boolean },
+    ): FencePlanPoint => {
+      // Figma alignment lines onto existing corners / edges are DISPLAYED in
+      // every mode except Off (isAlignmentGuideActive); the magnetic pull onto
+      // them is applied only in 'lines' mode (isMagneticSnapActive).
+      if (!isAlignmentGuideActive() || alignmentCandidates.length === 0) {
         useAlignmentGuides.getState().clear()
         return point
       }
@@ -479,7 +502,9 @@ export const FenceTool: React.FC = () => {
         threshold: ALIGNMENT_THRESHOLD_M,
       })
       useAlignmentGuides.getState().set(ar.guides)
-      return ar.snap ? [point[0] + ar.snap.dx, point[1] + ar.snap.dz] : point
+      return ar.snap && options?.applySnap !== false && isMagneticSnapActive()
+        ? [point[0] + ar.snap.dx, point[1] + ar.snap.dz]
+        : point
     }
 
     const stopDrafting = () => {
@@ -494,13 +519,13 @@ export const FenceTool: React.FC = () => {
       if (!(cursorRef.current && previewRef.current)) return
       const { walls, fences } = getCurrentLevelElements()
       const localPoint: FencePlanPoint = [event.localPosition[0], event.localPosition[2]]
-      // While drafting, the segment locks to 15° rays from its start
-      // unless Shift is held. Shift also bypasses grid and magnetic snap.
-      const bypassSnap = shiftPressed.current || event.nativeEvent?.shiftKey === true
-      const bypassAlign = event.nativeEvent?.altKey === true || bypassSnap
+      // While drafting, the segment locks to 15° rays from its start.
+      // Snapping is governed by the snapping mode (`'off'` is the bypass);
+      // there is no Shift hold-to-bypass. Alignment follows the magnetic snap
+      // mode, not Alt (continuation is cycled through the HUD / C).
 
       if (buildingState.current === 1) {
-        const angleLocked = !bypassSnap
+        const angleLocked = isAngleSnapActive()
         const snappedLocal = alignPoint(
           snapFenceDraftPoint({
             point: localPoint,
@@ -508,15 +533,14 @@ export const FenceTool: React.FC = () => {
             fences,
             start: angleLocked ? [startingPoint.current.x, startingPoint.current.z] : undefined,
             angleSnap: angleLocked,
-            bypassSnap,
+            magnetic: isMagneticSnapActive(),
           }),
-          bypassAlign || angleLocked,
+          { applySnap: !angleLocked },
         )
         endingPoint.current.set(snappedLocal[0], event.localPosition[1], snappedLocal[1])
         cursorRef.current.position.copy(endingPoint.current)
         const currentFenceEnd: FencePlanPoint = [snappedLocal[0], snappedLocal[1]]
         if (
-          !bypassSnap &&
           previousFenceEnd &&
           (currentFenceEnd[0] !== previousFenceEnd[0] || currentFenceEnd[1] !== previousFenceEnd[1])
         ) {
@@ -543,8 +567,12 @@ export const FenceTool: React.FC = () => {
         )
       } else {
         const snappedPoint = alignPoint(
-          snapFenceDraftPoint({ point: localPoint, walls, fences, bypassSnap }),
-          bypassAlign,
+          snapFenceDraftPoint({
+            point: localPoint,
+            walls,
+            fences,
+            magnetic: isMagneticSnapActive(),
+          }),
         )
         cursorRef.current.position.set(snappedPoint[0], event.localPosition[1], snappedPoint[1])
         setDraftMeasurement(null)
@@ -552,6 +580,7 @@ export const FenceTool: React.FC = () => {
     }
 
     const onGridClick = (event: GridEvent) => {
+      if (!previewRef.current) return
       if (buildingState.current === 1 && event.nativeEvent.detail >= 2) {
         stopDrafting()
         return
@@ -559,13 +588,15 @@ export const FenceTool: React.FC = () => {
 
       const { walls, fences } = getCurrentLevelElements()
       const localClick: FencePlanPoint = [event.localPosition[0], event.localPosition[2]]
-      const bypassSnap = shiftPressed.current || event.nativeEvent?.shiftKey === true
-      const bypassAlign = event.nativeEvent?.altKey === true || bypassSnap
 
       if (buildingState.current === 0) {
         const snappedStart = alignPoint(
-          snapFenceDraftPoint({ point: localClick, walls, fences, bypassSnap }),
-          bypassAlign,
+          snapFenceDraftPoint({
+            point: localClick,
+            walls,
+            fences,
+            magnetic: isMagneticSnapActive(),
+          }),
         )
         startingPoint.current.set(snappedStart[0], event.localPosition[1], snappedStart[1])
         endingPoint.current.copy(startingPoint.current)
@@ -574,7 +605,7 @@ export const FenceTool: React.FC = () => {
         previewRef.current.visible = true
         setDraftMeasurement(null)
       } else {
-        const angleLocked = !bypassSnap
+        const angleLocked = isAngleSnapActive()
         const snappedEnd = alignPoint(
           snapFenceDraftPoint({
             point: localClick,
@@ -582,9 +613,9 @@ export const FenceTool: React.FC = () => {
             fences,
             start: angleLocked ? [startingPoint.current.x, startingPoint.current.z] : undefined,
             angleSnap: angleLocked,
-            bypassSnap,
+            magnetic: isMagneticSnapActive(),
           }),
-          bypassAlign || angleLocked,
+          { applySnap: !angleLocked },
         )
         const dx = snappedEnd[0] - startingPoint.current.x
         const dz = snappedEnd[1] - startingPoint.current.z
@@ -600,6 +631,13 @@ export const FenceTool: React.FC = () => {
         refreshAlignmentCandidates()
         useAlignmentGuides.getState().clear()
 
+        // Single mode commits one segment per click: stop drafting so the next
+        // click starts a fresh segment instead of chaining off this endpoint.
+        if (useEditor.getState().getContinuation('fence') === 'single') {
+          stopDrafting()
+          return
+        }
+
         const nextStart = createdFence.end
         // Publish the resolved chain start so the 2D floor-plan draft
         // chains its next segment from the same point (its own snap
@@ -614,20 +652,6 @@ export const FenceTool: React.FC = () => {
       }
     }
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') shiftPressed.current = true
-    }
-
-    const onKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') shiftPressed.current = false
-    }
-
-    // Cmd-tabbing away mid-draft never delivers the keyup — reset so the
-    // angle lock isn't stuck off when focus returns.
-    const onBlur = () => {
-      shiftPressed.current = false
-    }
-
     const onCancel = () => {
       if (buildingState.current === 1) {
         markToolCancelConsumed()
@@ -638,17 +662,11 @@ export const FenceTool: React.FC = () => {
     emitter.on('grid:move', onGridMove)
     emitter.on('grid:click', onGridClick)
     emitter.on('tool:cancel', onCancel)
-    window.addEventListener('keydown', onKeyDown)
-    window.addEventListener('keyup', onKeyUp)
-    window.addEventListener('blur', onBlur)
 
     return () => {
       emitter.off('grid:move', onGridMove)
       emitter.off('grid:click', onGridClick)
       emitter.off('tool:cancel', onCancel)
-      window.removeEventListener('keydown', onKeyDown)
-      window.removeEventListener('keyup', onKeyUp)
-      window.removeEventListener('blur', onBlur)
       useSegmentDraftChain.getState().clear('fence')
       useAlignmentGuides.getState().clear()
     }
@@ -688,6 +706,132 @@ export const FenceTool: React.FC = () => {
             </group>
           ))}
         </>
+      )}
+    </group>
+  )
+}
+
+const SPLINE_PREVIEW_COLOR = '#8381ed'
+const SPLINE_PREVIEW_SEGMENTS = 40
+
+const SplineFenceDraft: React.FC = () => {
+  const previewHeight =
+    typeof useEditor.getState().toolDefaults.fence?.height === 'number'
+      ? (useEditor.getState().toolDefaults.fence?.height as number)
+      : FENCE_PREVIEW_HEIGHT
+  const [draftPoints, setDraftPoints] = useState<FencePlanPoint[]>([])
+  const [cursor, setCursor] = useState<FencePlanPoint | null>(null)
+  const draftRef = useRef(draftPoints)
+
+  draftRef.current = draftPoints
+
+  // Mirror the draft length into the HUD store so the "finish curve" hint only
+  // shows once drafting has started; always clear it when the tool unmounts.
+  useEffect(() => {
+    useFenceCurveDraft.getState().setPointCount(draftPoints.length)
+  }, [draftPoints])
+  useEffect(() => () => useFenceCurveDraft.getState().reset(), [])
+
+  useEffect(() => () => useEditor.getState().setToolDefaults('fence', null), [])
+
+  useEffect(() => {
+    const snapPoint = (local: FencePlanPoint): FencePlanPoint => {
+      const step = isGridSnapActive() ? getSegmentGridStep() : 0
+      if (step <= 0) return local
+      return [snapScalarToGrid(local[0], step), snapScalarToGrid(local[1], step)]
+    }
+
+    const commit = () => {
+      const points = draftRef.current
+      if (points.length >= 2) {
+        const created = createSplineFenceOnCurrentLevel(points)
+        if (created) {
+          triggerSFX('sfx:item-place')
+          // Once the new curve fence is selected for direct editing, leave
+          // placement mode so the toolbar matches the active interaction.
+          useViewer.getState().setSelection({ selectedIds: [created.id] })
+          useEditor.getState().setTool(null)
+          useEditor.getState().setMode('select')
+        }
+      }
+      setDraftPoints([])
+      setCursor(null)
+    }
+
+    const onMove = (event: GridEvent) => {
+      setCursor(snapPoint([event.localPosition[0], event.localPosition[2]]))
+    }
+
+    const onClick = (event: GridEvent) => {
+      if (event.nativeEvent.detail >= 2) {
+        commit()
+        return
+      }
+      const point = snapPoint([event.localPosition[0], event.localPosition[2]])
+      triggerSFX('sfx:grid-snap')
+      setDraftPoints((prev) => [...prev, point])
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Enter') commit()
+    }
+    const onCancel = () => {
+      if (draftRef.current.length === 0) return
+      markToolCancelConsumed()
+      setDraftPoints((prev) => prev.slice(0, -1))
+    }
+
+    emitter.on('grid:move', onMove)
+    emitter.on('grid:click', onClick)
+    emitter.on('tool:cancel', onCancel)
+    window.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      emitter.off('grid:move', onMove)
+      emitter.off('grid:click', onClick)
+      emitter.off('tool:cancel', onCancel)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [])
+
+  const previewPoints = cursor ? [...draftPoints, cursor] : draftPoints
+  const curveGeometry = useMemo(() => {
+    if (previewPoints.length < 2) return null
+    const sampled = sampleFenceSpline(
+      previewPoints,
+      getTwoPointFenceCurveTangents(previewPoints),
+      SPLINE_PREVIEW_SEGMENTS,
+    )
+    return new BufferGeometry().setFromPoints(
+      sampled.map((point) => new Vector3(point.x, previewHeight, point.y)),
+    )
+  }, [previewHeight, previewPoints])
+
+  return (
+    <group>
+      {cursor && <CursorSphere height={previewHeight} position={[cursor[0], 0, cursor[1]]} />}
+      {draftPoints.map((point, index) => (
+        <mesh
+          key={`fence-spline-pt-${index}`}
+          layers={EDITOR_LAYER}
+          position={[point[0], previewHeight, point[1]]}
+        >
+          <sphereGeometry args={[0.07, 16, 12]} />
+          <meshBasicMaterial color={SPLINE_PREVIEW_COLOR} depthTest={false} />
+        </mesh>
+      ))}
+      {curveGeometry && (
+        // @ts-expect-error - R3F accepts Three line primitives here.
+        <line frustumCulled={false} geometry={curveGeometry} layers={EDITOR_LAYER} renderOrder={2}>
+          <lineBasicNodeMaterial
+            color={SPLINE_PREVIEW_COLOR}
+            depthTest={false}
+            depthWrite={false}
+            linewidth={2}
+            opacity={0.95}
+            transparent
+          />
+        </line>
       )}
     </group>
   )

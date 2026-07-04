@@ -41,15 +41,30 @@ describe('columnDefinition.capabilities', () => {
     expect(columnDefinition.capabilities.deletable).toBe(true)
   })
 
-  test('movable is OMITTED — bespoke MoveColumnTool keeps owning move', () => {
-    // Source comment: "column doesn't declare `movable` because its move is
-    // bespoke (legacy MoveColumnTool snaps to slab + free placement on the
-    // X/Z plane with rotation)."
-    expect(columnDefinition.capabilities.movable).toBeUndefined()
+  test('movable declares XZ axes + grid snap (generic MoveRegistryNodeTool path)', () => {
+    // Upstream migration (post-PR unified handle system): column now declares the
+    // generic `movable` so its 3D move runs through `MoveRegistryNodeTool`, giving
+    // it grid/line/off snapping, alignment, R/T rotation, slab-elevation lift, and
+    // the `collides` red/green placement box for free. 2D move still routes through
+    // `floorplanMoveTarget`.
+    expect(columnDefinition.capabilities.movable).toEqual({
+      axes: ['x', 'z'],
+      gridSnap: true,
+    })
   })
 
-  test('floorPlaced.footprint returns [width, height, depth] + Y-rotation tuple', () => {
-    const node = makeColumn({ width: 0.5, height: 3, depth: 0.6, rotation: Math.PI / 4 }) as any
+  test('floorPlaced.footprint returns visible-footprint dimensions + Y-rotation tuple', () => {
+    // Column dimensions surface as the VISIBLE footprint (round → radius,
+    // square → width, rectangular → width/depth, plus brace spread) so the
+    // slab-overlap box tracks the real column size rather than raw width/depth.
+    const node = makeColumn({
+      supportStyle: 'vertical',
+      crossSection: 'rectangular',
+      width: 0.5,
+      height: 3,
+      depth: 0.6,
+      rotation: Math.PI / 4,
+    }) as any
     const footprint = columnDefinition.capabilities.floorPlaced?.footprint?.(node) as any
     expect(footprint).toBeDefined()
     expect(footprint.dimensions).toEqual([0.5, 3, 0.6])
@@ -170,8 +185,10 @@ describe('columnDefinition.floorplanAffordances', () => {
 })
 
 describe('columnDefinition.affordanceTools', () => {
-  test('move is the only registered tool (registry-driven MoveColumnTool)', () => {
-    expect(columnDefinition.affordanceTools?.move).toBeDefined()
+  test('no bespoke affordance tools — generic MoveRegistryNodeTool owns move via `movable`', () => {
+    // Column no longer registers a bespoke `MoveColumnTool`; the generic
+    // `MoveRegistryNodeTool` is dispatched off `capabilities.movable`.
+    expect(columnDefinition.affordanceTools).toBeUndefined()
   })
 })
 

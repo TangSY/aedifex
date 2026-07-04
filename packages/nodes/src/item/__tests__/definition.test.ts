@@ -83,12 +83,14 @@ describe('itemDefinition — floorplan integration', () => {
 })
 
 describe('itemDefinition.toolHints', () => {
-  test('placement tool hints expose R / T / Shift / Esc', () => {
+  test('placement tool hints expose R / T, Shift, Alt, Esc', () => {
+    // Upstream merged R + T into a single 'R / T' rotate hint and added Alt
+    // (force place). Verify all functional keys still surface.
     const hints = itemDefinition.toolHints ?? []
     const keys = hints.map((h: any) => h.key)
-    expect(keys).toContain('R')
-    expect(keys).toContain('T')
+    expect(keys).toContain('R / T')
     expect(keys).toContain('Shift')
+    expect(keys).toContain('Alt')
     expect(keys).toContain('Esc')
   })
 })

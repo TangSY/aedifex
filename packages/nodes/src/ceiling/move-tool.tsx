@@ -16,6 +16,8 @@ import {
 import {
   CursorSphere,
   consumePlacementDragRelease,
+  isAlignmentGuideActive,
+  isMagneticSnapActive,
   markToolCancelConsumed,
   triggerSFX,
   useAlignmentGuides,
@@ -37,7 +39,7 @@ import { BufferGeometry, DoubleSide, Path, Shape, ShapeGeometry, Vector3 } from 
  * mesh's X/Z position on rebuild (`mesh.position.x = 0`,
  * `mesh.position.z = 0`) so the visual transitions smoothly.
  *
- * Snaps to the editor's configured grid step (Shift bypasses).
+ * Snaps to the editor's configured grid step.
  */
 function snap(value: number) {
   return snapScalar(value, useEditor.getState().gridSnapStep)
@@ -149,12 +151,10 @@ export const MoveCeilingTool: React.FC<{ node: CeilingNode }> = ({ node }) => {
 
     const onGridMove = (event: GridEvent) => {
       if (isFloorplanSourcedEvent(event)) return
-      const bypassSnap = event.nativeEvent?.shiftKey === true
-      const localX = bypassSnap ? event.localPosition[0] : snap(event.localPosition[0])
-      const localZ = bypassSnap ? event.localPosition[2] : snap(event.localPosition[2])
+      const localX = snap(event.localPosition[0])
+      const localZ = snap(event.localPosition[2])
 
       if (
-        !bypassSnap &&
         previousGridPosRef.current &&
         (localX !== previousGridPosRef.current[0] || localZ !== previousGridPosRef.current[1])
       ) {
@@ -169,16 +169,16 @@ export const MoveCeilingTool: React.FC<{ node: CeilingNode }> = ({ node }) => {
       let deltaZ = localZ - anchor[1]
 
       // Figma-style alignment snap: align the ceiling's translated polygon
-      // vertices to other objects' anchors; fold the snap into the delta and
-      // publish a guide. Alt bypasses alignment; Shift bypasses all snap.
-      const bypass = event.nativeEvent?.altKey === true || bypassSnap
-      if (!bypass && alignmentCandidates.length > 0) {
+      // vertices to other objects' anchors and publish a guide. Guides are
+      // DISPLAYED in every snapping mode (isAlignmentGuideActive); the magnetic
+      // pull into the delta applies only in 'lines' mode (isMagneticSnapActive).
+      if (isAlignmentGuideActive() && alignmentCandidates.length > 0) {
         const result = resolveAlignment({
           moving: polygonAnchors(ceilingId, translatePolygon(originalPolygon, deltaX, deltaZ)),
           candidates: alignmentCandidates,
           threshold: ALIGNMENT_THRESHOLD_M,
         })
-        if (result.snap) {
+        if (result.snap && isMagneticSnapActive()) {
           deltaX += result.snap.dx
           deltaZ += result.snap.dz
         }

@@ -10,7 +10,6 @@ import {
   type ZoneNode,
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
-import type { ThreeElements } from '@react-three/fiber'
 import { useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useRef } from 'react'
 import {
@@ -33,12 +32,6 @@ import useEditor from '../../../store/use-editor'
 import { CursorSphere } from '../shared/cursor-sphere'
 import { isBoxSelectPointerSuppressed, markBoxSelectHandled } from './box-select-state'
 import { collectSelectableCandidateIds } from './select-candidates'
-
-declare module 'react/jsx-runtime' {
-  namespace JSX {
-    interface IntrinsicElements extends ThreeElements {}
-  }
-}
 
 type Bounds = { minX: number; maxX: number; minZ: number; maxZ: number }
 
@@ -446,7 +439,7 @@ export const PlaneBoxSelectTool: React.FC = () => {
         }
 
         const ids = collectNodeIdsInPlaneBounds(bounds)
-        const shouldAppend = event.metaKey || event.ctrlKey
+        const shouldAppend = event.metaKey || event.ctrlKey || event.shiftKey
         const { phase, structureLayer } = useEditor.getState()
 
         if (phase === 'structure' && structureLayer === 'zones') {

@@ -99,6 +99,8 @@ export type HandleArrowProps = {
   onPointerLeave?: PointerHandler
   // Extrude the slimmer wall-handle chevron profile (chevron shape only).
   thin?: boolean
+  // Render the corner-picker disc as a smooth circle instead of a hexagon.
+  round?: boolean
 }
 
 function normalizeHandleArrowShape(shape: HandleArrowInputShape, cursor: Cursor): HandleArrowShape {
@@ -279,15 +281,27 @@ export function createArrowHitAreaGeometry() {
   return geometry
 }
 
+// The move cross is a plus, not a disk. A disk-shaped hit area fills the four
+// corner gaps between the arms, so a neighbouring node sitting next to the
+// selected node (a lamp by a door, a slab beside a wall) gets swallowed by the
+// invisible grip and can't be picked. Wrap the visible arms instead: two flat
+// arm boxes (length/width + margin) merged into a plus, leaving the corners
+// empty so co-located neighbours stay selectable while the grip stays grabbable.
 function createMoveCrossHitAreaGeometry() {
-  const geometry = new CylinderGeometry(
-    MOVE_CROSS_HALF_LENGTH + HIT_AREA_MARGIN,
-    MOVE_CROSS_HALF_LENGTH + HIT_AREA_MARGIN,
-    HIT_AREA_THICKNESS,
-    32,
-  )
-  geometry.computeBoundingSphere()
-  return geometry
+  const armLength = (MOVE_CROSS_HALF_LENGTH + HIT_AREA_MARGIN) * 2
+  const armWidth = (MOVE_CROSS_HEAD_HALF_WIDTH + HIT_AREA_MARGIN) * 2
+  const armX = new BoxGeometry(armLength, HIT_AREA_THICKNESS, armWidth)
+  const armZ = new BoxGeometry(armWidth, HIT_AREA_THICKNESS, armLength)
+  const merged = mergeGeometries([armX, armZ], false)
+  if (!merged) {
+    armZ.dispose()
+    armX.computeBoundingSphere()
+    return armX
+  }
+  armX.dispose()
+  armZ.dispose()
+  merged.computeBoundingSphere()
+  return merged
 }
 
 export function createRotateArrowHitAreaGeometry() {
@@ -324,7 +338,11 @@ export function createEndpointHitAreaGeometry(radius: number) {
   return geometry
 }
 
-function createHandleArrowGeometry(shape: HandleArrowShape, thin = false) {
+// Hexagon (6 segments) by default; a smooth circle (32 segments) when `round`.
+const CORNER_DISC_SEGMENTS = 6
+const CORNER_DISC_ROUND_SEGMENTS = 32
+
+function createHandleArrowGeometry(shape: HandleArrowShape, thin = false, round = false) {
   if (shape === 'chevron') return createArrowHandleGeometry(thin)
   if (shape === 'cross') return createMoveCrossHandleGeometry()
   if (shape === 'curved-arrow') return createRotateArrowHandleGeometry()
@@ -333,17 +351,23 @@ function createHandleArrowGeometry(shape: HandleArrowShape, thin = false) {
     geometry.computeBoundingSphere()
     return geometry
   }
-  const geometry = new CircleGeometry(CORNER_HEX_RADIUS, 6)
+  const geometry = new CircleGeometry(
+    CORNER_HEX_RADIUS,
+    round ? CORNER_DISC_ROUND_SEGMENTS : CORNER_DISC_SEGMENTS,
+  )
   geometry.computeBoundingSphere()
   return geometry
 }
 
-function createHandleArrowHitGeometry(shape: HandleArrowShape) {
+function createHandleArrowHitGeometry(shape: HandleArrowShape, round = false) {
   if (shape === 'chevron') return createArrowHitAreaGeometry()
   if (shape === 'cross') return createMoveCrossHitAreaGeometry()
   if (shape === 'curved-arrow') return createRotateArrowHitAreaGeometry()
   if (shape === 'tracker') return createTrackerHitAreaGeometry()
-  const geometry = new CircleGeometry(CORNER_HEX_RADIUS, 6)
+  const geometry = new CircleGeometry(
+    CORNER_HEX_RADIUS,
+    round ? CORNER_DISC_ROUND_SEGMENTS : CORNER_DISC_SEGMENTS,
+  )
   geometry.computeBoundingSphere()
   return geometry
 }
@@ -470,10 +494,17 @@ export function HandleArrow({
   onPointerEnter,
   onPointerLeave,
   thin = false,
+  round = false,
 }: HandleArrowProps) {
   const visualShape = normalizeHandleArrowShape(shape, cursor)
-  const geometry = useMemo(() => createHandleArrowGeometry(visualShape, thin), [visualShape, thin])
-  const hitGeometry = useMemo(() => createHandleArrowHitGeometry(visualShape), [visualShape])
+  const geometry = useMemo(
+    () => createHandleArrowGeometry(visualShape, thin, round),
+    [visualShape, thin, round],
+  )
+  const hitGeometry = useMemo(
+    () => createHandleArrowHitGeometry(visualShape, round),
+    [visualShape, round],
+  )
   const indicatorMaterial = useHandleArrowMaterial(visualShape)
   const hitMaterial = useInvisibleHitAreaMaterial()
   const rootRef = useRef<Group>(null)
