@@ -9,6 +9,18 @@ import {
   useRegistry,
   useScene,
 } from '@aedifex/core'
+
+// The upstream `hasSegmentMaterialOverride` predates paint-slots and only
+// checks the legacy `material*` / `topMaterial*` / `edgeMaterial*` /
+// `wallMaterial*` fields — a segment whose only override lives in `slots`
+// would be treated as unpainted and its material lost when the merged shell
+// swallows it. Extend the check locally (rather than patching upstream) so
+// slot-only painted segments render as painted-segments.
+const segmentHasSlotOverride = (seg: RoofSegmentNode): boolean =>
+  Object.keys(seg.slots ?? {}).length > 0
+
+const segmentIsPainted = (seg: RoofSegmentNode): boolean =>
+  segmentHasSlotOverride(seg) || hasSegmentMaterialOverride(seg)
 import { getRoofMaterialArray, NodeRenderer, useNodeEvents, useViewer } from '@aedifex/viewer'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import type * as THREE from 'three'
@@ -67,7 +79,7 @@ export const RoofRenderer = ({ node: rawNode }: { node: RoofNode }) => {
       for (const segmentId of node.children ?? []) {
         const seg = state.nodes[segmentId as AnyNodeId] as RoofSegmentNode | undefined
         if (!seg) continue
-        if (hasSegmentMaterialOverride(seg)) ids.push(segmentId as AnyNodeId)
+        if (segmentIsPainted(seg)) ids.push(segmentId as AnyNodeId)
       }
       return ids
     }),
@@ -78,7 +90,7 @@ export const RoofRenderer = ({ node: rawNode }: { node: RoofNode }) => {
       for (const segmentId of node.children ?? []) {
         const seg = state.nodes[segmentId as AnyNodeId] as RoofSegmentNode | undefined
         if (!seg) continue
-        if (!hasSegmentMaterialOverride(seg)) ids.push(segmentId as AnyNodeId)
+        if (!segmentIsPainted(seg)) ids.push(segmentId as AnyNodeId)
       }
       return ids
     }),

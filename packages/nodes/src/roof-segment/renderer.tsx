@@ -41,10 +41,20 @@ const ROOF_LEGACY_ROLE_BY_SLOT: Record<RoofSlotId, RoofSegmentSurfaceMaterialRol
 
 export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
   const ref = useRef<THREE.Mesh>(null!)
-  const nodes = useScene((state) => state.nodes)
-  // Subscribe to the scene-material palette so editing a `scene:` material a
-  // segment slot references re-renders the segment live.
-  const sceneMaterials = useScene((s) => s.materials)
+  // Narrow subscription: only re-render when *this* segment's parent roof
+  // node changes, not when any unrelated node in the scene mutates.
+  const parentNode = useScene((state) =>
+    node.parentId ? (state.nodes[node.parentId as AnyNodeId] as RoofNode | undefined) : undefined,
+  )
+  // Scene-material palette: only subscribe when this segment or its parent
+  // roof actually references a scene material via slots. Without slots the
+  // `resolveMaterialRef` path is never hit, so re-rendering on palette edits
+  // is wasted work.
+  const needsSceneMaterials = Boolean(
+    (node.slots && Object.keys(node.slots).length > 0) ||
+      (parentNode?.slots && Object.keys(parentNode.slots).length > 0),
+  )
+  const sceneMaterials = useScene((s) => (needsSceneMaterials ? s.materials : undefined))
 
   useRegistry(node.id, 'roof-segment', ref)
 
@@ -54,9 +64,6 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
   const textures = useViewer((s) => s.textures)
   const colorPreset = useViewer((s) => s.colorPreset)
   const sceneTheme = useViewer((s) => s.sceneTheme)
-  const parentNode = node.parentId
-    ? (nodes[node.parentId as AnyNodeId] as RoofNode | undefined)
-    : undefined
   // 4 groups map 1:1 to the roof's 4-material array (see getRoofMaterialArray).
   const placeholderGeometry = useMemo(() => createPlaceholderGeometry(4), [])
 

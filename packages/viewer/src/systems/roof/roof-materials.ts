@@ -55,7 +55,59 @@ const ROOF_DEFAULT_REFS: [string, string, string, string] = [
 
 export type RoofMaterialArray = [THREE.Material, THREE.Material, THREE.Material, THREE.Material]
 
+// LRU cap: the cache key includes scene-material *content* (see
+// roofSlotSignature) so every edit to a referenced scene material grows a new
+// entry — without a cap it leaks materials for the lifetime of the tab. Map
+// preserves insertion order in JS, so we evict the oldest (least-recently-set)
+// entry when we exceed the cap and dispose the four Three.js materials it
+// held onto so GPU resources aren't retained either.
+const ROOF_MATERIAL_ARRAY_CACHE_MAX = 200
 const roofMaterialArrayCache = new Map<string, RoofMaterialArray>()
+
+function disposeRoofMaterialArray(arr: RoofMaterialArray): void {
+  // Some entries (default/themed arrays) share the same THREE.Material
+  // instance across slots — dedupe before dispose to avoid double-disposal.
+  const seen = new Set<THREE.Material>()
+  for (const mat of arr) {
+    if (seen.has(mat)) continue
+    seen.add(mat)
+    const dispose = (mat as { dispose?: () => void }).dispose
+    if (typeof dispose === 'function') {
+      try {
+        dispose.call(mat)
+      } catch {
+        // dispose can throw if a texture is already gone — swallow, the entry
+        // is being evicted anyway.
+      }
+    }
+  }
+}
+
+function setCachedRoofMaterialArray(key: string, value: RoofMaterialArray): void {
+  // Re-insert on repeat write so LRU order tracks recency (delete first pops
+  // the old position, set appends to the end).
+  if (roofMaterialArrayCache.has(key)) {
+    roofMaterialArrayCache.delete(key)
+  } else if (roofMaterialArrayCache.size >= ROOF_MATERIAL_ARRAY_CACHE_MAX) {
+    const oldestKey = roofMaterialArrayCache.keys().next().value
+    if (oldestKey !== undefined) {
+      const evicted = roofMaterialArrayCache.get(oldestKey)
+      roofMaterialArrayCache.delete(oldestKey)
+      if (evicted) disposeRoofMaterialArray(evicted)
+    }
+  }
+  roofMaterialArrayCache.set(key, value)
+}
+
+function getCachedRoofMaterialArray(key: string): RoofMaterialArray | undefined {
+  const value = roofMaterialArrayCache.get(key)
+  if (value !== undefined) {
+    // Bump recency on read: re-insert to move it to the tail.
+    roofMaterialArrayCache.delete(key)
+    roofMaterialArrayCache.set(key, value)
+  }
+  return value
+}
 
 function getSurfaceMaterialSignature(
   spec: ReturnType<typeof getEffectiveRoofSurfaceMaterial>,
@@ -130,7 +182,7 @@ export function getRoofMaterialArray(
     ]),
   })
 
-  const cached = roofMaterialArrayCache.get(cacheKey)
+  const cached = getCachedRoofMaterialArray(cacheKey)
   if (cached) return cached
 
   // Themed role colours: roof top/edge use the 'roof' role, the soffit/underside
@@ -148,7 +200,7 @@ export function getRoofMaterialArray(
   // Textures-off (monochrome) is the guaranteed escape hatch: themed role
   // colours, no catalog finishes.
   if (!textures) {
-    roofMaterialArrayCache.set(cacheKey, roleArray)
+    setCachedRoofMaterialArray(cacheKey, roleArray)
     return roleArray
   }
 
@@ -189,6 +241,6 @@ export function getRoofMaterialArray(
   )
   const finalArray = anyOverride ? resolvedArray : defaultArray
 
-  roofMaterialArrayCache.set(cacheKey, finalArray)
+  setCachedRoofMaterialArray(cacheKey, finalArray)
   return finalArray
 }
