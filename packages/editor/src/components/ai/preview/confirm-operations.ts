@@ -241,6 +241,14 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
   // Step 3: Collect all node creations for batch execution (single undo record)
   const batchCreates: { node: import('@aedifex/core').AnyNode; parentId: AnyNodeId }[] = []
 
+  // Wrap the entire operation loop in try/catch/finally so that:
+  //   1. A single MEP Node.parse() ZodError does not abort the whole batch —
+  //      each per-op parse is guarded individually via try/catch below.
+  //   2. Any other unexpected throw (e.g. a race where a node was deleted
+  //      between validator and executor) still hits the finally block, which
+  //      guarantees resetPreviewState() runs — otherwise ghost nodes and
+  //      transient metadata would leak into the persistent scene.
+  try {
   for (const op of operations) {
     if (op.status === 'invalid') continue
 
@@ -1151,9 +1159,19 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
         break
       }
       // --- MEP node creation (Phase 2 §6.2) ---
+      // Each MEP case uses safeParse + explicit stale-parent guard: the
+      // validator resolves levelId, but the parent level may be deleted between
+      // validation and execution (undo/redo, cascade delete). A missing parent
+      // or a ZodError here would previously throw and abort the whole batch;
+      // now we skip the individual op and let the rest of the batch land.
       case 'add_duct_segment': {
         const mOp = op as ValidatedAddDuctSegment
-        const node = DuctSegmentNode.parse({
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        if (!useScene.getState().nodes[parentId]) {
+          console.warn(`[add_duct_segment] parent level ${parentId} no longer exists; skipping`)
+          break
+        }
+        const parsed = DuctSegmentNode.safeParse({
           path: mOp.points,
           shape: mOp.crossSection,
           ...(mOp.diameter !== undefined ? { diameter: mOp.diameter } : {}),
@@ -1161,17 +1179,25 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           ...(mOp.height !== undefined ? { height: mOp.height } : {}),
           system: mOp.system,
         })
-        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
-        batchCreates.push({ node, parentId })
-        affectedNodeIds.push(node.id as AnyNodeId)
-        createdNodeIds.push(node.id as AnyNodeId)
+        if (!parsed.success) {
+          console.warn('[add_duct_segment] parse failed, skipping op:', parsed.error.message)
+          break
+        }
+        batchCreates.push({ node: parsed.data, parentId })
+        affectedNodeIds.push(parsed.data.id as AnyNodeId)
+        createdNodeIds.push(parsed.data.id as AnyNodeId)
         break
       }
       case 'add_duct_fitting': {
         const mOp = op as ValidatedAddDuctFitting
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        if (!useScene.getState().nodes[parentId]) {
+          console.warn(`[add_duct_fitting] parent level ${parentId} no longer exists; skipping`)
+          break
+        }
         // Map "cap" (round end-cap) → a straight 0° elbow that closes the run.
         const schemaKind = mOp.fittingType === 'cap' ? 'elbow' : mOp.fittingType
-        const node = DuctFittingNode.parse({
+        const parsed = DuctFittingNode.safeParse({
           position: mOp.position,
           rotation: mOp.rotation,
           fittingType: schemaKind,
@@ -1179,14 +1205,22 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           ...(mOp.diameter !== undefined ? { diameter: mOp.diameter } : {}),
           ...(mOp.diameter2 !== undefined ? { diameter2: mOp.diameter2 } : {}),
         })
-        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
-        batchCreates.push({ node, parentId })
-        affectedNodeIds.push(node.id as AnyNodeId)
-        createdNodeIds.push(node.id as AnyNodeId)
+        if (!parsed.success) {
+          console.warn('[add_duct_fitting] parse failed, skipping op:', parsed.error.message)
+          break
+        }
+        batchCreates.push({ node: parsed.data, parentId })
+        affectedNodeIds.push(parsed.data.id as AnyNodeId)
+        createdNodeIds.push(parsed.data.id as AnyNodeId)
         break
       }
       case 'add_duct_terminal': {
         const mOp = op as ValidatedAddDuctTerminal
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        if (!useScene.getState().nodes[parentId]) {
+          console.warn(`[add_duct_terminal] parent level ${parentId} no longer exists; skipping`)
+          break
+        }
         // Map SaaS terminalType → schema enum + mount.
         const schemaKind =
           mOp.terminalType === 'supply' ? 'supply-register'
@@ -1199,37 +1233,53 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           if (host?.type === 'ceiling') mount = 'ceiling'
           else if (host?.type === 'wall') mount = 'wall'
         }
-        const node = DuctTerminalNode.parse({
+        const parsed = DuctTerminalNode.safeParse({
           position: mOp.position,
           rotation: mOp.rotation,
           terminalType: schemaKind,
           mount,
         })
-        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
-        batchCreates.push({ node, parentId })
-        affectedNodeIds.push(node.id as AnyNodeId)
-        createdNodeIds.push(node.id as AnyNodeId)
+        if (!parsed.success) {
+          console.warn('[add_duct_terminal] parse failed, skipping op:', parsed.error.message)
+          break
+        }
+        batchCreates.push({ node: parsed.data, parentId })
+        affectedNodeIds.push(parsed.data.id as AnyNodeId)
+        createdNodeIds.push(parsed.data.id as AnyNodeId)
         break
       }
       case 'add_pipe_segment': {
         const mOp = op as ValidatedAddPipeSegment
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        if (!useScene.getState().nodes[parentId]) {
+          console.warn(`[add_pipe_segment] parent level ${parentId} no longer exists; skipping`)
+          break
+        }
         // PipeSegment schema only exposes waste / vent; map supply / gas to
         // waste for now so the LLM's intent is preserved in the polyline
         // while the geometry system stays consistent.
         const system = mOp.pipeKind === 'dwv' ? 'waste' : 'waste'
-        const node = PipeSegmentNode.parse({
+        const parsed = PipeSegmentNode.safeParse({
           path: mOp.points,
           diameter: mOp.diameter,
           system,
         })
-        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
-        batchCreates.push({ node, parentId })
-        affectedNodeIds.push(node.id as AnyNodeId)
-        createdNodeIds.push(node.id as AnyNodeId)
+        if (!parsed.success) {
+          console.warn('[add_pipe_segment] parse failed, skipping op:', parsed.error.message)
+          break
+        }
+        batchCreates.push({ node: parsed.data, parentId })
+        affectedNodeIds.push(parsed.data.id as AnyNodeId)
+        createdNodeIds.push(parsed.data.id as AnyNodeId)
         break
       }
       case 'add_pipe_fitting': {
         const mOp = op as ValidatedAddPipeFitting
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        if (!useScene.getState().nodes[parentId]) {
+          console.warn(`[add_pipe_fitting] parent level ${parentId} no longer exists; skipping`)
+          break
+        }
         // Map alignment tool kinds → schema enum.
         //   tee     → sanitary-tee (square branch)
         //   reducer → 0° elbow that steps diameter
@@ -1238,43 +1288,59 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           mOp.fittingType === 'tee' ? 'sanitary-tee'
           : mOp.fittingType === 'reducer' ? 'elbow'
           : mOp.fittingType
-        const node = PipeFittingNode.parse({
+        const parsed = PipeFittingNode.safeParse({
           position: mOp.position,
           rotation: mOp.rotation,
           fittingType: schemaKind,
           diameter: mOp.diameter,
           ...(mOp.fittingType === 'reducer' ? { angle: 0 } : {}),
         })
-        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
-        batchCreates.push({ node, parentId })
-        affectedNodeIds.push(node.id as AnyNodeId)
-        createdNodeIds.push(node.id as AnyNodeId)
+        if (!parsed.success) {
+          console.warn('[add_pipe_fitting] parse failed, skipping op:', parsed.error.message)
+          break
+        }
+        batchCreates.push({ node: parsed.data, parentId })
+        affectedNodeIds.push(parsed.data.id as AnyNodeId)
+        createdNodeIds.push(parsed.data.id as AnyNodeId)
         break
       }
       case 'add_pipe_trap': {
         const mOp = op as ValidatedAddPipeTrap
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        if (!useScene.getState().nodes[parentId]) {
+          console.warn(`[add_pipe_trap] parent level ${parentId} no longer exists; skipping`)
+          break
+        }
         // Schema only exposes one trap kind; s-trap is stored as p-trap
         // geometry but the validator preserved the requested trapType for
         // downstream logging.
-        const node = PipeTrapNode.parse({
+        const parsed = PipeTrapNode.safeParse({
           position: mOp.position,
           rotation: mOp.rotation,
           diameter: mOp.diameter,
         })
-        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
-        batchCreates.push({ node, parentId })
-        affectedNodeIds.push(node.id as AnyNodeId)
-        createdNodeIds.push(node.id as AnyNodeId)
+        if (!parsed.success) {
+          console.warn('[add_pipe_trap] parse failed, skipping op:', parsed.error.message)
+          break
+        }
+        batchCreates.push({ node: parsed.data, parentId })
+        affectedNodeIds.push(parsed.data.id as AnyNodeId)
+        createdNodeIds.push(parsed.data.id as AnyNodeId)
         break
       }
       case 'add_hvac_equipment': {
         const mOp = op as ValidatedAddHvacEquipment
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        if (!useScene.getState().nodes[parentId]) {
+          console.warn(`[add_hvac_equipment] parent level ${parentId} no longer exists; skipping`)
+          break
+        }
         // Map SaaS kind → schema enum:
         //   indoor-unit / ahu → air-handler
         //   outdoor-unit      → condenser
         const schemaKind: 'furnace' | 'air-handler' | 'condenser' =
           mOp.equipmentType === 'outdoor-unit' ? 'condenser' : 'air-handler'
-        const node = HvacEquipmentNode.parse({
+        const parsed = HvacEquipmentNode.safeParse({
           position: mOp.position,
           rotation: mOp.rotation,
           equipmentType: schemaKind,
@@ -1282,32 +1348,51 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
           depth: mOp.depth,
           height: mOp.height,
         })
-        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
-        batchCreates.push({ node, parentId })
-        affectedNodeIds.push(node.id as AnyNodeId)
-        createdNodeIds.push(node.id as AnyNodeId)
+        if (!parsed.success) {
+          console.warn('[add_hvac_equipment] parse failed, skipping op:', parsed.error.message)
+          break
+        }
+        batchCreates.push({ node: parsed.data, parentId })
+        affectedNodeIds.push(parsed.data.id as AnyNodeId)
+        createdNodeIds.push(parsed.data.id as AnyNodeId)
         break
       }
       case 'add_lineset': {
         const mOp = op as ValidatedAddLineset
-        const node = LinesetNode.parse({
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        if (!useScene.getState().nodes[parentId]) {
+          console.warn(`[add_lineset] parent level ${parentId} no longer exists; skipping`)
+          break
+        }
+        const parsed = LinesetNode.safeParse({
           path: mOp.route,
         })
-        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
-        batchCreates.push({ node, parentId })
-        affectedNodeIds.push(node.id as AnyNodeId)
-        createdNodeIds.push(node.id as AnyNodeId)
+        if (!parsed.success) {
+          console.warn('[add_lineset] parse failed, skipping op:', parsed.error.message)
+          break
+        }
+        batchCreates.push({ node: parsed.data, parentId })
+        affectedNodeIds.push(parsed.data.id as AnyNodeId)
+        createdNodeIds.push(parsed.data.id as AnyNodeId)
         break
       }
       case 'add_liquid_line': {
         const mOp = op as ValidatedAddLiquidLine
-        const node = LiquidLineNode.parse({
+        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
+        if (!useScene.getState().nodes[parentId]) {
+          console.warn(`[add_liquid_line] parent level ${parentId} no longer exists; skipping`)
+          break
+        }
+        const parsed = LiquidLineNode.safeParse({
           path: mOp.route,
         })
-        const parentId = (mOp.levelId ?? levelId) as AnyNodeId
-        batchCreates.push({ node, parentId })
-        affectedNodeIds.push(node.id as AnyNodeId)
-        createdNodeIds.push(node.id as AnyNodeId)
+        if (!parsed.success) {
+          console.warn('[add_liquid_line] parse failed, skipping op:', parsed.error.message)
+          break
+        }
+        batchCreates.push({ node: parsed.data, parentId })
+        affectedNodeIds.push(parsed.data.id as AnyNodeId)
+        createdNodeIds.push(parsed.data.id as AnyNodeId)
         break
       }
       case 'align_opening_to_nearest': {
@@ -1337,9 +1422,16 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
       batchCreates.map(({ node, parentId }) => ({ op: 'create' as const, node, parentId })),
     )
   }
-
-  // Clean up state
-  resetPreviewState()
+  } catch (err) {
+    // A late throw here means one or more downstream mutations couldn't apply —
+    // log for debugging but keep partial progress. The finally block still runs
+    // resetPreviewState() so ghost/transient state doesn't leak.
+    console.error('[confirmGhostPreview] operation batch failed:', err)
+  } finally {
+    // Clean up state — MUST run whether success or failure, otherwise ghost
+    // nodes and transient metadata would remain in the scene indefinitely.
+    resetPreviewState()
+  }
 
   return {
     id: logId,

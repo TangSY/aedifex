@@ -7,6 +7,7 @@ import {
   useScene,
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
+import useAlignmentGuides from '../../../store/use-alignment-guides'
 import { checkWallCollision } from './collision-detection'
 import type {
   AddBuildingToolCall,
@@ -1497,10 +1498,40 @@ function normalizePolylinePath(
   return { points }
 }
 
+const DUCT_SEGMENT_CROSS_SECTIONS = new Set(['round', 'rect'])
+const DUCT_SEGMENT_SYSTEMS = new Set(['supply', 'return'])
+
 export function validateAddDuctSegment(call: AddDuctSegmentToolCall): ValidatedAddDuctSegment {
   const levelId = resolveEffectiveLevelId(call.levelId) ?? undefined
   const crossSection = call.crossSection ?? 'round'
   const system = call.system ?? 'supply'
+  // Runtime enum guard — validator must reject invalid enums BEFORE the
+  // executor calls DuctSegmentNode.parse() (which throws ZodError and would
+  // otherwise abort the whole batch). Schema only accepts round/rect and
+  // supply/return; upstream tool-call JSON is user-provided so we can't trust
+  // it to obey the schema.
+  if (!DUCT_SEGMENT_CROSS_SECTIONS.has(crossSection)) {
+    return {
+      type: 'add_duct_segment',
+      status: 'invalid',
+      points: [],
+      crossSection,
+      system,
+      levelId,
+      errorReason: `crossSection "${crossSection}" is not one of: round, rect.`,
+    }
+  }
+  if (!DUCT_SEGMENT_SYSTEMS.has(system)) {
+    return {
+      type: 'add_duct_segment',
+      status: 'invalid',
+      points: [],
+      crossSection,
+      system,
+      levelId,
+      errorReason: `system "${system}" is not one of: supply, return.`,
+    }
+  }
   const parsed = normalizePolylinePath(call.points, 'points')
   if ('errorReason' in parsed) {
     return {
@@ -1701,10 +1732,28 @@ export function validateAddDuctTerminal(call: AddDuctTerminalToolCall): Validate
   }
 }
 
+const PIPE_KIND_KINDS = new Set(['dwv', 'supply', 'gas'])
+
 export function validateAddPipeSegment(call: AddPipeSegmentToolCall): ValidatedAddPipeSegment {
   const levelId = resolveEffectiveLevelId(call.levelId) ?? undefined
   const pipeKind = call.pipeKind ?? 'dwv'
   const diameter = call.diameter ?? 2
+  // Runtime enum guard — validator rejects invalid pipeKind values BEFORE the
+  // executor calls PipeSegmentNode.parse(). Currently the executor collapses
+  // dwv/supply/gas → schema 'waste' (see confirm-operations.ts), so any
+  // non-canonical pipeKind is silently repurposed; that's fine at parse-time
+  // but we still need to reject genuinely invalid strings here.
+  if (!PIPE_KIND_KINDS.has(pipeKind)) {
+    return {
+      type: 'add_pipe_segment',
+      status: 'invalid',
+      points: [],
+      diameter,
+      pipeKind,
+      levelId,
+      errorReason: `pipeKind "${pipeKind}" is not one of: dwv, supply, gas.`,
+    }
+  }
   const parsed = normalizePolylinePath(call.points, 'points')
   if ('errorReason' in parsed) {
     return {
@@ -2063,6 +2112,22 @@ export function validateAlignOpeningToNearest(
   const wallLength = Math.hypot(end[0] - start[0], end[1] - start[1])
   const wallHeight = wallNode.height ?? 2.5
 
+  // Prefer siblings hinted by the live alignment-guides store when the user
+  // is mid-drag on this wall — the store's candidateNodeId tells us which
+  // openings the UI already considered relevant. This lets align_opening_to_nearest
+  // stay consistent with what's rendered on screen. When the store is empty
+  // (headless AI batch, no active drag) we fall back to enumerating wall.children
+  // so this path still works without any UI state.
+  const activeGuides = useAlignmentGuides.getState().guides
+  const hintedSiblingIds = new Set<string>()
+  if (activeGuides.length > 0) {
+    for (const g of activeGuides) {
+      if (g.candidateNodeId && g.candidateNodeId !== node.id) {
+        hintedSiblingIds.add(g.candidateNodeId)
+      }
+    }
+  }
+
   const siblings: { id: string; centerS: number; width: number; centerY: number; height: number }[] = []
   for (const childId of wallNode.children ?? []) {
     if (childId === node.id) continue
@@ -2079,6 +2144,13 @@ export function validateAlignOpeningToNearest(
     })
   }
 
+  // If the store hinted at specific candidates on this wall, prioritize them —
+  // computeOpeningGuides scores all siblings the same, but the drag UI has
+  // already narrowed focus. Filter siblings to the hinted set when any hint
+  // matches a real sibling; otherwise keep the full wall-child list.
+  const hintedSiblings = siblings.filter((s) => hintedSiblingIds.has(s.id))
+  const effectiveSiblings = hintedSiblings.length > 0 ? hintedSiblings : siblings
+
   const originalPosition: [number, number, number] = node.position ?? [0, 0, 0]
   const guides = computeOpeningGuides({
     moving: {
@@ -2088,7 +2160,7 @@ export function validateAlignOpeningToNearest(
       centerY: originalPosition[1],
       height: node.height ?? 0,
     },
-    siblings,
+    siblings: effectiveSiblings,
     wall: { length: wallLength, height: wallHeight },
     includeVertical: node.type === 'window',
   })
