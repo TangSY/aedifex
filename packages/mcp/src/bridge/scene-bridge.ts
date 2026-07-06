@@ -340,6 +340,32 @@ export class SceneBridge {
         if (!p.data || typeof p.data !== 'object') {
           throw new Error(`invalid patch: patches[${i}] update data is not an object`)
         }
+        // Reject `type` mutation — attacker could morph a wall into a duct
+        // and bypass geometry constraints. `id` and `parentId` are also
+        // protocol-level identifiers that must not change via a data patch.
+        if ('type' in p.data && (p.data as Record<string, unknown>).type !== undefined) {
+          throw new Error(
+            `invalid patch: patches[${i}] update cannot change node type via data`,
+          )
+        }
+        if ('id' in p.data && (p.data as Record<string, unknown>).id !== undefined) {
+          throw new Error(`invalid patch: patches[${i}] update cannot change node id via data`)
+        }
+        // Shadow-merge the update against the current node state and re-validate
+        // through `AnyNodeSchema`. Guards against enum-value tampering (e.g.
+        // wall `style`, roof `material` presets), impossible numeric values,
+        // and stray unknown fields that the loose `z.record(z.unknown())`
+        // patch schema lets slip through at the wire layer.
+        const existing = useScene.getState().nodes[p.id as AnyNodeId] as AnyNode | undefined
+        if (existing) {
+          const merged = { ...existing, ...(p.data as Partial<AnyNode>) } as AnyNode
+          const validated = AnyNodeSchema.safeParse(merged)
+          if (!validated.success) {
+            throw new Error(
+              `invalid patch: patches[${i}] update would produce schema-invalid node: ${validated.error.message}`,
+            )
+          }
+        }
       } else if (p.op === 'delete') {
         if (!simAvailable.has(p.id) || simDeleted.has(p.id)) {
           throw new Error(`invalid patch: patches[${i}] delete id "${p.id}" not found`)

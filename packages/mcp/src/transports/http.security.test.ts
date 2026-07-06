@@ -98,10 +98,49 @@ describe('http guard — origin allowlist', () => {
     expect(payload.error).toBe('origin_not_allowed')
   })
 
-  test('loopback origins are always allowed even without explicit allowlist', async () => {
+  test('cross-port loopback origins are rejected by default (CSRF hardening)', async () => {
+    // Previous behavior: any loopback origin was accepted. That let a
+    // malicious page on http://localhost:<other-port> mount CSRF against
+    // an MCP server. Default is now strict — cross-port loopback is
+    // treated the same as any other unlisted origin.
     handle = await connectHttp(server, 0, { authToken: 'secret' })
 
-    // No allowedOrigins configured, but loopback should still be OK.
+    const res = await fetch(`http://127.0.0.1:${handle.port}/mcp`, {
+      method: 'OPTIONS',
+      headers: {
+        origin: 'http://localhost:5173',
+        'access-control-request-method': 'POST',
+      },
+    })
+    expect(res.status).toBe(403)
+    expect(res.headers.get('access-control-allow-origin')).toBeNull()
+  })
+
+  test('cross-port loopback allowed when opted in via AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN', async () => {
+    const previous = process.env.AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN
+    process.env.AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN = 'true'
+    try {
+      handle = await connectHttp(server, 0, { authToken: 'secret' })
+      const res = await fetch(`http://127.0.0.1:${handle.port}/mcp`, {
+        method: 'OPTIONS',
+        headers: {
+          origin: 'http://localhost:5173',
+          'access-control-request-method': 'POST',
+        },
+      })
+      expect(res.status).toBe(204)
+      expect(res.headers.get('access-control-allow-origin')).toBe('http://localhost:5173')
+    } finally {
+      if (previous === undefined) delete process.env.AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN
+      else process.env.AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN = previous
+    }
+  })
+
+  test('cross-port loopback allowed when listed in allowedOrigins', async () => {
+    handle = await connectHttp(server, 0, {
+      authToken: 'secret',
+      allowedOrigins: ['http://localhost:5173'],
+    })
     const res = await fetch(`http://127.0.0.1:${handle.port}/mcp`, {
       method: 'OPTIONS',
       headers: {
@@ -176,12 +215,14 @@ describe('http guard — request routing', () => {
     expect(payload.error).toBe('not_found')
   })
 
-  test('OPTIONS preflight to a loopback origin returns 204 with CORS headers (no body)', async () => {
+  test('OPTIONS preflight from a same-origin request returns 204 with CORS headers (no body)', async () => {
+    // With strict-by-default CSRF hardening, only same-origin (Origin ==
+    // Host) requests are accepted without an explicit allowlist entry.
     handle = await connectHttp(server, 0)
     const res = await fetch(`http://127.0.0.1:${handle.port}/mcp`, {
       method: 'OPTIONS',
       headers: {
-        origin: 'http://127.0.0.1',
+        origin: `http://127.0.0.1:${handle.port}`,
         'access-control-request-method': 'POST',
       },
     })

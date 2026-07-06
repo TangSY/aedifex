@@ -193,11 +193,29 @@ function isOriginAllowed(
 ): boolean {
   const normalized = normalizeOrigin(origin)
   if (!normalized) return false
-  const parsed = new URL(normalized)
-  if (isLoopbackHost(parsed.hostname)) return true
+  // Explicit allowlist always wins.
+  if (allowedOrigins.has(normalized)) return true
+  // Same-origin request (Origin exactly matches Host) — always safe.
   if (requestHost && normalized === normalizeOrigin(`http://${requestHost}`)) return true
   if (requestHost && normalized === normalizeOrigin(`https://${requestHost}`)) return true
-  return allowedOrigins.has(normalized)
+  // Legacy behavior: ANY loopback origin was permitted, which lets a
+  // malicious page on http://localhost:<other-port> mount CSRF against
+  // this MCP server. Keep the permissive fallback only when the operator
+  // has explicitly opted in via `AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN`.
+  // Default is now strict — set the env var (any truthy value) if a local
+  // editor at a different port needs to reach the MCP without being
+  // added to `AEDIFEX_MCP_HTTP_ORIGINS`.
+  if (loopbackAnyOriginAllowed()) {
+    const parsed = new URL(normalized)
+    if (isLoopbackHost(parsed.hostname)) return true
+  }
+  return false
+}
+
+function loopbackAnyOriginAllowed(): boolean {
+  const v = process.env.AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN
+  if (!v) return false
+  return v !== '0' && v.toLowerCase() !== 'false'
 }
 
 function bearerToken(req: IncomingMessage): string | null {
