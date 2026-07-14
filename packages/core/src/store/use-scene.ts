@@ -25,6 +25,7 @@ import {
 } from '../schema/nodes/stair'
 import { StairSegmentNode as StairSegmentNodeSchema } from '../schema/nodes/stair-segment'
 import { getEffectiveWallSurfaceMaterial, type WallSurfaceSide } from '../schema/nodes/wall'
+import { WindowNode as WindowNodeSchema } from '../schema/nodes/window'
 import {
   generateSceneMaterialId,
   type SceneMaterial,
@@ -129,6 +130,14 @@ function normalizeStairSegmentNode(node: Record<string, unknown>) {
 
 function normalizeDoorNode(node: Record<string, unknown>) {
   const parsed = DoorNodeSchema.safeParse(node)
+  return parsed.success ? { ...node, ...parsed.data } : null
+}
+
+// Windows saved before a schema field existed (e.g. `columnRatios`/`rowRatios`/
+// `frameThickness`) load without it; the mesh builder then reads undefined and
+// throws every frame. Zod-parse on load so schema defaults land, like doors.
+function normalizeWindowNode(node: Record<string, unknown>) {
+  const parsed = WindowNodeSchema.safeParse(node)
   return parsed.success ? { ...node, ...parsed.data } : null
 }
 
@@ -640,6 +649,13 @@ function migrateNodes(nodes: Record<string, any>): {
       }
     }
 
+    if (node.type === 'window') {
+      const normalized = normalizeWindowNode(node)
+      if (normalized) {
+        patchedNodes[id] = normalized
+      }
+    }
+
     if (node.type === 'stair') {
       const normalized = normalizeStairNode(migrateStairSurfaceMaterials(node))
       if (normalized) {
@@ -657,6 +673,33 @@ function migrateNodes(nodes: Record<string, any>): {
 
     if (node.type === 'wall') {
       patchedNodes[id] = migrateWallSurfaceMaterials(patchedNodes[id], mintedMaterials)
+    }
+
+    // Cabinet v2→v3: node-level `doorStyle` was dead (geometry reads only the
+    // per-compartment `doorType`) and was removed from both cabinet schemas;
+    // `handlePosition: 'edge'` behaved identically to 'auto' and was dropped
+    // from the enum; the compartment stack became a discriminated union that
+    // rejects a `cooktopLayout` mismatched to its gas/induction type (the old
+    // loose schema ignored it).
+    if (node.type === 'cabinet' || node.type === 'cabinet-module') {
+      const { doorStyle: _doorStyle, ...rest } = node
+      const next: Record<string, any> = rest
+      if (next.handlePosition === 'edge') next.handlePosition = 'auto'
+      if (Array.isArray(next.stack)) {
+        next.stack = next.stack.map((compartment: any) => {
+          if (!compartment || typeof compartment !== 'object') return compartment
+          const layout = compartment.cooktopLayout
+          if (typeof layout !== 'string') return compartment
+          if (compartment.type === 'cooktop-gas' && !layout.startsWith('gas-')) {
+            return { ...compartment, cooktopLayout: 'gas-4burner' }
+          }
+          if (compartment.type === 'cooktop-induction' && !layout.startsWith('induction-')) {
+            return { ...compartment, cooktopLayout: 'induction-4zone' }
+          }
+          return compartment
+        })
+      }
+      patchedNodes[id] = next
     }
 
     if (node.type === 'slab' || node.type === 'ceiling') {

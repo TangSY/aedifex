@@ -24,6 +24,7 @@ import * as THREE from 'three'
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { ADDITION, Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg'
 import { computeBoundsTree } from 'three-mesh-bvh'
+import { applyWorldScaleBoxUVs } from '../../lib/box-uv'
 import { ensureRenderableGeometryAttributes } from '../../lib/csg-utils'
 
 function csgGeometry(brush: Brush): THREE.BufferGeometry {
@@ -125,6 +126,28 @@ const _surfaceV1 = new THREE.Vector3()
 const _surfaceV2 = new THREE.Vector3()
 const _surfaceFaceNormal = new THREE.Vector3()
 
+/**
+ * Degenerate placeholder for a roof mesh with nothing to draw (initial
+ * BoxGeometry swap-out, or a roof whose segments were all deleted/painted).
+ * Three zero-vertices (one invisible triangle), not an empty attribute: an
+ * empty position (count 0) leaves WebGPU vertex buffer slot 0 unbound if the
+ * mesh is ever drawn, and computeBoundsTree needs a real position buffer to
+ * index. Deliberately NO groups: count-0 groups crash MeshBVH's packed-tree
+ * build (it partitions roots by group), and a BoxGeometry's 6 groups against
+ * the 4 roof materials crash raycasts and GLTFExporter. Group-less + a
+ * zero-area triangle is safe everywhere — it draws nothing under an array
+ * material and can never be ray-hit.
+ */
+function createDegenerateRoofPlaceholder(): THREE.BufferGeometry {
+  const placeholder = new THREE.BufferGeometry()
+  placeholder.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(9), 3))
+  placeholder.setAttribute('normal', new THREE.Float32BufferAttribute(new Float32Array(9), 3))
+  placeholder.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(6), 2))
+  placeholder.setAttribute('uv2', new THREE.Float32BufferAttribute(new Float32Array(6), 2))
+  computeGeometryBoundsTree(placeholder)
+  return placeholder
+}
+
 // Pending merged-roof updates carried across frames (for throttling)
 const pendingRoofUpdates = new Set<AnyNodeId>()
 const warnedMergedRoofNaNIds = new Set<AnyNodeId>()
@@ -219,29 +242,7 @@ export const RoofSystem = () => {
             // so MeshBVH hits groups[4].materialIndex → undefined.side → crash.
             if (mesh.geometry.type === 'BoxGeometry') {
               mesh.geometry.dispose()
-              const placeholder = new THREE.BufferGeometry()
-              // Three zero-vertices (one degenerate, invisible triangle), not an
-              // empty attribute: an empty position (count 0) leaves WebGPU vertex
-              // buffer slot 0 unbound if the mesh is ever drawn, and computeBoundsTree
-              // needs a real position buffer to index.
-              placeholder.setAttribute(
-                'position',
-                new THREE.Float32BufferAttribute(new Float32Array(9), 3),
-              )
-              placeholder.setAttribute(
-                'normal',
-                new THREE.Float32BufferAttribute(new Float32Array(9), 3),
-              )
-              placeholder.setAttribute(
-                'uv',
-                new THREE.Float32BufferAttribute(new Float32Array(6), 2),
-              )
-              placeholder.setAttribute(
-                'uv2',
-                new THREE.Float32BufferAttribute(new Float32Array(6), 2),
-              )
-              computeGeometryBoundsTree(placeholder)
-              mesh.geometry = placeholder
+              mesh.geometry = createDegenerateRoofPlaceholder()
             }
             mesh.position.set(
               effectiveSegment.position[0],
@@ -497,8 +498,9 @@ function updateMergedRoofGeometry(
 
   if (children.length === 0) {
     mergedMesh.geometry.dispose()
-    // Keep a valid position attribute so Drei's BVH can index safely.
-    mergedMesh.geometry = new THREE.BoxGeometry(0, 0, 0)
+    // Not BoxGeometry: its 6 groups against the merged mesh's 4-material array
+    // crash GLTFExporter (materials[4] → undefined) when the roof bakes.
+    mergedMesh.geometry = createDegenerateRoofPlaceholder()
     return
   }
 
@@ -904,6 +906,23 @@ function hasSegmentTrim(node: RoofSegmentNode): boolean {
   )
 }
 
+// Material slot the freshly exposed trim plane is assigned to. Slot 0 is the
+// wall/trim band — the same finish the gable walls render with (concrete-drywall
+// by default, continuous with the walls below). `remapRoofShellFaces` does not
+// reclassify slot 0, so any new interior face CSG carves out of a BoxGeometry
+// cutter lands on the wall band regardless of which box face it came from.
+// Without this the box's default 6 groups (materialIndex 0..5) collapse via
+// mod-4 and `remapRoofShellFaces` would reshuffle the vertical ones across
+// slots. Accessories still clamp the slot via `useSegmentTrimClippedGeometry`
+// when they expose fewer material slots.
+const TRIM_CUT_MATERIAL_SLOT = 0
+
+function assignTrimCutterSlot(geometry: THREE.BufferGeometry): void {
+  geometry.clearGroups()
+  const count = geometry.index ? geometry.index.count : geometry.getAttribute('position').count
+  geometry.addGroup(0, count, TRIM_CUT_MATERIAL_SLOT)
+}
+
 function buildTrimCutBrush(
   minX: number,
   maxX: number,
@@ -919,6 +938,11 @@ function buildTrimCutBrush(
 
   const geometry = new THREE.BoxGeometry(width, height, depth)
   geometry.translate((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2)
+  // World-metre UVs on the cutter so the newly exposed interior faces produced
+  // by CSG inherit tiled UVs (1 uv unit per metre) instead of the box's default
+  // 0→1-per-face, which would stretch the finish to fit each cut face.
+  applyWorldScaleBoxUVs(geometry, width, height, depth)
+  assignTrimCutterSlot(geometry)
   ensureRenderableGeometryAttributes(geometry)
   computeGeometryBoundsTree(geometry)
 
@@ -973,6 +997,9 @@ function buildDiagonalTrimCutBrush(
   const geometry = new THREE.BoxGeometry(cutterLength, height, cutterDepth)
   geometry.rotateY(yaw)
   geometry.translate(centerX, (bounds.minY + bounds.maxY) / 2, centerZ)
+  // World-metre UVs so the diagonal cut's interior face inherits tiled UVs.
+  applyWorldScaleBoxUVs(geometry, cutterLength, height, cutterDepth)
+  assignTrimCutterSlot(geometry)
   ensureRenderableGeometryAttributes(geometry)
   computeGeometryBoundsTree(geometry)
 

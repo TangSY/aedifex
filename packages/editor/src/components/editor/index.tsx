@@ -57,7 +57,7 @@ import type { ExtraPanel } from '../ui/sidebar/icon-rail'
 import { SettingsPanel, type SettingsPanelProps } from '../ui/sidebar/panels/settings-panel'
 import { SitePanel, type SitePanelProps } from '../ui/sidebar/panels/site-panel'
 import type { SidebarTab } from '../ui/sidebar/tab-bar'
-import { usePluginPanels } from '../ui/sidebar/use-plugin-panels'
+import { useHostPanels } from '../ui/sidebar/use-plugin-panels'
 import { CustomCameraControls } from './custom-camera-controls'
 import { EditorLayoutV2 } from './editor-layout-v2'
 import { ExportManager } from './export-manager'
@@ -67,8 +67,9 @@ import { FloatingActionMenu } from './floating-action-menu'
 import { FloatingBuildingActionMenu } from './floating-building-action-menu'
 import { FloorplanPanel } from './floorplan-panel'
 import { Grid } from './grid'
-import { GroupMoveHandle } from './group-move-handle'
+import { GroupFloatingActionMenu } from './group-floating-action-menu'
 import { GroupRotateHandle } from './group-rotate-handle'
+import { GroupSelectionBox3D } from './group-selection-box-3d'
 import { NodeArrowHandles } from './node-arrow-handles'
 import { RiserDiagramPanel } from './riser-diagram-panel'
 import { SelectionManager } from './selection-manager'
@@ -140,6 +141,12 @@ export interface EditorProps {
   viewerToolbarLeft?: ReactNode
   viewerToolbarRight?: ReactNode
   /**
+   * Full-bleed surface swapped in over the 3D canvas (v2) — e.g. the studio
+   * gallery. The canvas stays mounted underneath (no WebGL re-init) and the
+   * viewer toolbar stays on top so the host's stage switch remains reachable.
+   */
+  stageOverlay?: ReactNode
+  /**
    * Docked below the node inspector (v2). Hosts mount the "save as preset"
    * affordance here so it reads as part of the inspector surface and shows
    * only while a node is selected.
@@ -160,6 +167,10 @@ export interface EditorProps {
 
   // Loading indicator (e.g. project fetching in community mode)
   isLoading?: boolean
+
+  // Fires when the full-screen scene loader shows/hides — lets hosts measure
+  // open-to-interactive time without reaching into internal loader state.
+  onLoaderChange?: (visible: boolean) => void
 
   // Thumbnail
   onThumbnailCapture?: (blob: Blob, cameraData: SnapshotCameraData) => void
@@ -725,12 +736,13 @@ const ViewerSceneContent = memo(function ViewerSceneContent({
       {!noEditing && <BoxSelectTool />}
       {!noEditing && <NodeArrowHandles />}
       {!noEditing && <GroupRotateHandle />}
-      {!noEditing && <GroupMoveHandle />}
+      {!noEditing && <GroupSelectionBox3D />}
       {!noEditing && <WallOpeningHighlights />}
       {!noEditing && <SlabHoleHighlights />}
       {!noEditing && <WallMoveSideHandles />}
       {!noEditing && <FenceTangentLines3D />}
       {!noEditing && <FloatingActionMenu />}
+      {!noEditing && <GroupFloatingActionMenu />}
       {!noEditing && <FloatingBuildingActionMenu />}
       {!isFirstPersonMode && <WallMeasurementLabel />}
       <ExportManager />
@@ -1081,6 +1093,7 @@ export default function Editor({
   sidebarTabs,
   viewerToolbarLeft,
   viewerToolbarRight,
+  stageOverlay,
   inspectorFooter,
   projectId,
   onLoad,
@@ -1090,6 +1103,7 @@ export default function Editor({
   previewScene,
   isVersionPreviewMode = false,
   isLoading = false,
+  onLoaderChange,
   onThumbnailCapture,
   sidebarOverlay,
   viewerBanner,
@@ -1120,15 +1134,20 @@ export default function Editor({
   const sidebarWidth = useSidebarStore((s) => s.width)
   const isSidebarCollapsed = useSidebarStore((s) => s.isCollapsed)
 
-  // Plugin-contributed rail panels (registry-only). Called unconditionally so
+  // Host-registered rail panels. Called unconditionally so
   // hook order is stable across the v1 / v2 layout branches below; the v1
   // AppSidebar path merges its own copy internally, the v2 path merges these
   // into its tab bar.
-  const pluginRailPanels = usePluginPanels()
+  const hostRailPanels = useHostPanels()
 
   useEffect(() => {
     const teardown = initializeEditorRuntime()
     return teardown
+  }, [])
+
+  useEffect(() => {
+    void useEditor.persist.rehydrate()
+    void useSidebarStore.persist.rehydrate()
   }, [])
 
   useEffect(() => {
@@ -1226,6 +1245,10 @@ export default function Editor({
 
   const showLoader = isLoading || isSceneLoading || !hasLoadedInitialScene || !isViewerSceneReady
 
+  useEffect(() => {
+    onLoaderChange?.(showLoader)
+  }, [showLoader, onLoaderChange])
+
   const firstPersonPreviousLevelRef = useRef(useViewer.getState().selection.levelId)
   const wasFirstPersonModeRef = useRef(isFirstPersonMode)
 
@@ -1297,13 +1320,12 @@ export default function Editor({
 
   // ── V2 layout ──
   if (layoutVersion === 'v2') {
-    // Plugin panels join the host's `sidebarTabs` as first-class tabs. Host
-    // tabs keep precedence (already in the map first); a plugin panel id can't
-    // collide with a host tab because it's namespaced by plugin id.
+    // Registered host panels join the host's `sidebarTabs` as first-class tabs.
+    // Explicit tabs keep precedence because they are already in the map first.
     const tabMap = new Map<string, SidebarTab & { component: React.ComponentType }>(
       sidebarTabs?.map((t) => [t.id, t]) ?? [],
     )
-    for (const p of pluginRailPanels) {
+    for (const p of hostRailPanels) {
       if (!tabMap.has(p.id)) {
         tabMap.set(p.id, { id: p.id, label: p.label, icon: p.icon, component: p.component })
       }
@@ -1332,9 +1354,9 @@ export default function Editor({
         mobileIcon,
         icon,
       })) ?? []),
-      // Plugin panels appear after the host's tabs in the rail. The icon
+      // Host panels appear after the explicit tabs in the rail. The icon
       // doubles as the mobile icon; a half-height sheet is a sensible default.
-      ...pluginRailPanels.map((p) => ({
+      ...hostRailPanels.map((p) => ({
         id: p.id,
         label: p.label,
         mobileDefaultSnap: 0.5,
@@ -1368,7 +1390,7 @@ export default function Editor({
               navbarSlot={navbarSlot}
               overlays={
                 <>
-                  {!isCaptureMode && <FloatingLevelSelector />}
+                  {!(isCaptureMode || stageOverlay) && <FloatingLevelSelector />}
                   {!(isVersionPreviewMode || isCaptureMode || isStudioMode) && (
                     <div className="pointer-events-auto">
                       <ActionMenu />
@@ -1396,6 +1418,7 @@ export default function Editor({
               renderTabContent={renderTabContent}
               sidebarOverlay={sidebarOverlay}
               sidebarTabs={tabBarTabs}
+              stageOverlay={stageOverlay}
               viewerContent={viewerCanvas}
               viewerToolbarLeft={viewerToolbarLeft}
               viewerToolbarRight={viewerToolbarRight}
