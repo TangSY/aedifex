@@ -95,6 +95,7 @@ function useActiveModifierKeys(): ActiveModifierKeys {
 export function HelperManager() {
   const mode = useEditor((s) => s.mode)
   const tool = useEditor((s) => s.tool)
+  const workspaceMode = useEditor((s) => s.workspaceMode)
   const scope = useInteractionScope((s) => s.scope)
   const movingNode = useMovingNode()
   const activeHandleDrag = useActiveHandleDrag()
@@ -146,6 +147,10 @@ export function HelperManager() {
   // Helpers are keyboard-driven hints (Esc, R, etc.) — irrelevant on touch.
   if (isMobile) return null
 
+  // The studio workspace (compose panel / gallery) has no scene selection or
+  // tools — editor shortcut hints would only mislead there.
+  if (workspaceMode === 'studio') return null
+
   // Rotating a node (or a multi-selection group) via its in-world gizmo:
   // advertise Shift = free rotation, the same angle-step bypass wall drafting
   // exposes. Takes priority over the idle select-mode hints since a handle
@@ -157,11 +162,16 @@ export function HelperManager() {
     return <ContextualHelperPanel hints={resolveRotateHandleHelpHints(modifiers.shift)} />
   }
 
-  // Group-move drag: the drag resolves to the 'item' snap context (see
-  // `snapContextOf`), so surface the snapping chips — mode + grid step, with
-  // their Shift / Ctrl cycle shortcuts — for the duration.
+  // Group-move drag / pick-up: the drag resolves to the 'item' snap context
+  // (see `snapContextOf`), so surface the snapping chips — mode + grid step,
+  // with their Shift / Ctrl cycle shortcuts — plus the mid-move R/T rotate.
   if (activeHandleDrag?.label === GROUP_MOVE_DRAG_LABEL) {
-    return <ContextualHelperPanel hints={[]} snapContext={snapContext} />
+    return (
+      <ContextualHelperPanel
+        hints={[{ keys: ['R / T'], label: 'Rotate the selection ±45°' }]}
+        snapContext={snapContext}
+      />
+    )
   }
 
   // Reshaping a node's geometry (endpoint / curve / polygon corner). Checked

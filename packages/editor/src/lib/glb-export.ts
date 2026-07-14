@@ -7,6 +7,7 @@ import {
   isOperationDoorType,
   itemClipRegistry,
   type LevelNode,
+  nodeRegistry,
   sceneRegistry,
   type WindowNode,
   type ZoneNode,
@@ -38,6 +39,16 @@ type SwingLeafMarker = { axis: 'y'; openRotationY: number }
 export type GlbExport = {
   scene: THREE.Object3D
   animations: THREE.AnimationClip[]
+}
+
+/** Resolve after the next couple of animation frames, giving React/R3F time to
+ * commit and mount export-only geometry (e.g. instanced kinds' real meshes)
+ * before the exporter clones the scene graph. Callers must set
+ * `useViewer.setExporting(true)` first and reset it after the export. */
+export function nextFrames(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  })
 }
 
 export async function exportSceneToGlb(
@@ -91,9 +102,9 @@ export async function exportSceneToGlb(
  *    `isMeshBasicMaterial`; the viewer's `MeshStandard/LambertNodeMaterial` set
  *    `isNodeMaterial` instead, so without this every surface exports as a blank
  *    default material.
- *  - Bakes each openable door/window's open motion into a glTF animation clip
- *    via the build-once + pose-at-t primitives (`pascalSwingLeaf` for doors,
- *    `poseWindowMovingParts` for windows).
+ *  - Bakes open motions into glTF animation clips via kind-owned registry
+ *    hooks, plus the legacy door/window build-once + pose-at-t primitives
+ *    (`pascalSwingLeaf` for doors, `poseWindowMovingParts` for windows).
  *  - Stamps `name` + `extras` identity from `sceneRegistry` so selection/hover
  *    survive the bake with no in-memory registry, and strips all other userData
  *    so editor/runtime ephemera never leak into glTF extras.
@@ -130,6 +141,7 @@ export function prepareSceneForExport(
   }
 
   pruneNonRenderableMeshes(scene, identityNodes)
+  sanitizeMaterialGroups(scene, identityNodes)
   convertMaterials(scene)
 
   const { clips, clipNamesByNode } = bakeAnimationClips(cloneByOriginal, nodes)
@@ -229,13 +241,78 @@ function pruneNonRenderableMeshes(root: THREE.Object3D, identityNodes: Set<THREE
   }
 }
 
+/**
+ * Repair meshes whose geometry groups don't line up with their material array —
+ * GLTFExporter reads `materials[group.materialIndex]` per group and crashes on
+ * undefined (`reading 'isShaderMaterial'`). The known producer is a roof
+ * placeholder (BoxGeometry's 6 groups vs the 4 roof materials), but any
+ * system/CSG output can end up here, so repair generically:
+ *  - groups indexing past the array (or drawing zero triangles) are dropped;
+ *  - null slots referenced by surviving groups get the hidden placeholder;
+ *  - a mesh left with no drawable group — including an array-material mesh
+ *    with no groups at all (three draws nothing for those, e.g. the roof
+ *    system's degenerate placeholder) — is neutralised like other
+ *    non-renderables (kept as a bare transform node, or removed if a leaf
+ *    that carries no node identity).
+ * Geometry/material refs are shared with the live scene (`clone(true)` is
+ * shallow for both), so repairs swap refs instead of mutating in place.
+ */
+function sanitizeMaterialGroups(root: THREE.Object3D, identityNodes: Set<THREE.Object3D>) {
+  const toRemove: THREE.Object3D[] = []
+  root.traverse((object) => {
+    const mesh = object as THREE.Mesh
+    if (!mesh.isMesh || !Array.isArray(mesh.material)) return
+    const materials = mesh.material
+    const groups = mesh.geometry.groups
+    const broken =
+      groups.length === 0 ||
+      groups.some((g) => (g.materialIndex ?? 0) >= materials.length || g.count === 0) ||
+      materials.some((m) => m == null)
+    if (!broken) return
+
+    const validGroups = groups.filter(
+      (g) => (g.materialIndex ?? 0) < materials.length && g.count !== 0,
+    )
+    if (validGroups.length === 0) {
+      if (mesh.children.length > 0 || identityNodes.has(mesh)) {
+        mesh.geometry = EMPTY_GEOMETRY
+        mesh.material = PLACEHOLDER_MATERIAL
+      } else {
+        toRemove.push(mesh)
+      }
+      return
+    }
+    // Only the group list needs repair — share the attribute/index refs
+    // instead of geometry.clone(), which deep-copies every vertex buffer.
+    if (validGroups.length !== groups.length) {
+      const geometry = new THREE.BufferGeometry()
+      geometry.index = mesh.geometry.index
+      for (const [name, attribute] of Object.entries(mesh.geometry.attributes)) {
+        geometry.setAttribute(name, attribute)
+      }
+      geometry.morphAttributes = mesh.geometry.morphAttributes
+      geometry.morphTargetsRelative = mesh.geometry.morphTargetsRelative
+      geometry.setDrawRange(mesh.geometry.drawRange.start, mesh.geometry.drawRange.count)
+      geometry.groups = validGroups.map((g) => ({ ...g }))
+      mesh.geometry = geometry
+    }
+    mesh.material = materials.map((m) => m ?? PLACEHOLDER_MATERIAL)
+  })
+  for (const object of toRemove) {
+    object.removeFromParent()
+  }
+}
+
 function isRenderableMesh(mesh: THREE.Mesh): boolean {
   const position = mesh.geometry?.getAttribute('position')
   if (!position || position.count === 0) return false
   const material = mesh.material
-  return Array.isArray(material)
-    ? material.some((m) => m?.visible !== false)
-    : material?.visible !== false
+  // `colorWrite: false` is how raycast-only colliders (e.g. instanced plants'
+  // proxy boxes) hide on the GPU — glTF has no equivalent, so exporting one
+  // yields an opaque white box. Treat it as non-renderable.
+  const renders = (m: THREE.Material | null | undefined) =>
+    m?.visible !== false && m?.colorWrite !== false
+  return Array.isArray(material) ? material.some(renders) : renders(material)
 }
 
 // --- Material conversion -------------------------------------------------
@@ -385,21 +462,33 @@ function bakeAnimationClips(
     if (!node || !target) continue
 
     const clip =
-      node.type === 'door'
+      bakeRegistryAnimationClips(node, target) ??
+      (node.type === 'door'
         ? bakeDoorClip(id, node, target)
         : node.type === 'window'
           ? bakeWindowClip(id, node as WindowNode, target)
           : node.type === 'item'
             ? bakeItemClip(id, target)
-            : null
+            : null)
 
     if (clip) {
-      clips.push(clip)
-      clipNamesByNode.set(id, [clip.name])
+      const nodeClips = Array.isArray(clip) ? clip : [clip]
+      clips.push(...nodeClips)
+      clipNamesByNode.set(
+        id,
+        nodeClips.map((c) => c.name),
+      )
     }
   }
 
   return { clips, clipNamesByNode }
+}
+
+function bakeRegistryAnimationClips(
+  node: AnyNode,
+  object: THREE.Object3D,
+): THREE.AnimationClip | THREE.AnimationClip[] | null | undefined {
+  return nodeRegistry.get(node.type)?.exportAnimation?.({ node, object })
 }
 
 /**
@@ -695,6 +784,9 @@ function nodeDisplayLabel(node: AnyNode): string {
       return 'Door'
     case 'window':
       return 'Window'
+    case 'cabinet':
+    case 'cabinet-module':
+      return 'Cabinet'
     case 'slab':
       return 'Slab'
     case 'ceiling':
@@ -744,10 +836,10 @@ function stampIdentity(
       extras.label = getLevelDisplayName(node as LevelNode)
       target.visible = true
     }
-    // Only doors/windows that actually baked an open clip are openable. A cased
-    // opening (no leaf) or a fixed window (no operable sash) produces no clip, so
-    // it stays unflagged — the file never claims a part opens when nothing moves.
-    if (node.type === 'door' || node.type === 'window') {
+    // Only nodes that actually baked an open clip are openable. A cased opening
+    // (no leaf), fixed window, or static cabinet produces no clip, so it stays
+    // unflagged — the file never claims a part opens when nothing moves.
+    if (clipNamesByNode.get(id)?.some((name) => name.endsWith(': open'))) {
       const clipNames = clipNamesByNode.get(id)
       if (clipNames?.length) {
         extras.openable = true

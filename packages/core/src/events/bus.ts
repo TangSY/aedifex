@@ -4,6 +4,8 @@ import type { Object3D } from 'three'
 import type {
   BoxVentNode,
   BuildingNode,
+  CabinetModuleNode,
+  CabinetNode,
   CeilingNode,
   ChimneyNode,
   ColumnNode,
@@ -89,6 +91,8 @@ export type FenceEvent = NodeEvent<FenceNode>
 export type ItemEvent = NodeEvent<ItemNode>
 export type SiteEvent = NodeEvent<SiteNode>
 export type BuildingEvent = NodeEvent<BuildingNode>
+export type CabinetEvent = NodeEvent<CabinetNode>
+export type CabinetModuleEvent = NodeEvent<CabinetModuleNode>
 export type LevelEvent = NodeEvent<LevelNode>
 export type ZoneEvent = NodeEvent<ZoneNode>
 export type ShelfEvent = NodeEvent<ShelfNode>
@@ -156,6 +160,11 @@ export interface ThumbnailGenerateEvent {
   projectId: string
   captureMode?: 'standard' | 'viewport' | 'area'
   cropRegion?: { x: number; y: number; width: number; height: number }
+  /**
+   * Output size for `standard` captures (center-crop target). Defaults to
+   * 1920×1080; the capture overlay passes other aspect presets (9:16, 4:3…).
+   */
+  standardSize?: { w: number; h: number }
   /**
    * When true, snap levels to their true positions before capturing (for a
    * consistent auto-thumbnail angle) and defer the capture if the tab is
@@ -246,9 +255,20 @@ type RoomPresetEvents = {
   'room-preset:create': RoomPresetCreateEvent
 }
 
+type SelectionEvents = {
+  /**
+   * "Reveal this node" intent — the editor's node action menu emits it with the
+   * selected node; whoever owns the node's catalog/panel (host browser, a
+   * plugin's presets panel) listens and reveals it.
+   */
+  'selection:find-node': AnyNode
+}
+
 type EditorEvents = GridEvents &
   NodeEvents<'wall', WallEvent> &
   NodeEvents<'fence', FenceEvent> &
+  NodeEvents<'cabinet', CabinetEvent> &
+  NodeEvents<'cabinet-module', CabinetModuleEvent> &
   NodeEvents<'item', ItemEvent> &
   NodeEvents<'site', SiteEvent> &
   NodeEvents<'building', BuildingEvent> &
@@ -296,6 +316,7 @@ type EditorEvents = GridEvents &
   ThumbnailEvents &
   SnapshotEvents &
   AIChatEvents &
-  RoomPresetEvents
+  RoomPresetEvents &
+  SelectionEvents
 
 export const emitter = mitt<EditorEvents>()

@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import { wallDefinition } from '../definition'
 
 describe('wallDefinition — registry contract', () => {
-  test('declares the wall kind with schemaVersion 1', () => {
+  test('declares the wall kind with schemaVersion 5', () => {
     expect(wallDefinition.kind).toBe('wall')
-    expect(wallDefinition.schemaVersion).toBe(1)
+    expect(wallDefinition.schemaVersion).toBe(5)
   })
 
   test('category is structure with wall surfaceRole', () => {

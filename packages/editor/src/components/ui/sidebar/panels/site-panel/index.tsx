@@ -38,6 +38,14 @@ import {
 } from './../../../../../lib/level-duplication'
 import { getDefaultLevelName } from '@aedifex/core'
 import { deleteLevelWithFallbackSelection } from './../../../../../lib/level-selection'
+import {
+  formatAreaLabel,
+  getAreaUnitLabel,
+  getLinearUnitLabel,
+  linearUnitToMeters,
+  metersToLinearUnit,
+  squareMetersToAreaUnit,
+} from './../../../../../lib/measurements'
 import { createLocalGuideImage } from './../../../../../lib/local-guide-image'
 import { cn } from './../../../../../lib/utils'
 import useEditor from './../../../../../store/use-editor'
@@ -93,6 +101,7 @@ const PropertyLineSection = memo(function PropertyLineSection() {
   const updateNode = useScene((state) => state.updateNode)
   const mode = useEditor((state) => state.mode)
   const setMode = useEditor((state) => state.setMode)
+  const viewerUnit = useViewer((state) => state.unit)
 
   if (!siteNode) return null
 
@@ -100,6 +109,14 @@ const PropertyLineSection = memo(function PropertyLineSection() {
   const area = calculatePolygonArea(points)
   const perimeter = calculatePerimeter(points)
   const isEditing = mode === 'edit'
+
+  // Property-line coordinates and readouts follow the metric/imperial toggle.
+  const isImperial = viewerUnit === 'imperial'
+  const linearLabel = getLinearUnitLabel(viewerUnit)
+  const toDisplayLinear = (meters: number) => metersToLinearUnit(meters, viewerUnit)
+  const toStoredLinear = (display: number) => linearUnitToMeters(display, viewerUnit)
+  const displayArea = squareMetersToAreaUnit(area, viewerUnit)
+  const displayPerimeter = toDisplayLinear(perimeter)
 
   const handleToggleEdit = () => {
     setMode(isEditing ? 'select' : 'edit')
@@ -166,10 +183,16 @@ const PropertyLineSection = memo(function PropertyLineSection() {
       {/* Measurements */}
       <div className="relative flex gap-3 pr-3 pb-2 pl-10">
         <div className="text-muted-foreground text-xs">
-          Area: <span className="text-foreground">{area.toFixed(1)} m²</span>
+          Area:{' '}
+          <span className="text-foreground">
+            {displayArea.toFixed(1)} {getAreaUnitLabel(viewerUnit)}
+          </span>
         </div>
         <div className="text-muted-foreground text-xs">
-          Perimeter: <span className="text-foreground">{perimeter.toFixed(1)} m</span>
+          Perimeter:{' '}
+          <span className="text-foreground">
+            {displayPerimeter.toFixed(1)} {linearLabel}
+          </span>
         </div>
       </div>
 
@@ -184,21 +207,21 @@ const PropertyLineSection = memo(function PropertyLineSection() {
                 <input
                   className="w-16 rounded border border-border/50 bg-accent/50 px-1.5 py-0.5 text-foreground text-xs focus:border-primary focus:outline-none"
                   onChange={(e) =>
-                    handlePointChange(index, 0, Number.parseFloat(e.target.value) || 0)
+                    handlePointChange(index, 0, toStoredLinear(Number.parseFloat(e.target.value) || 0))
                   }
                   step={0.5}
                   type="number"
-                  value={point[0]}
+                  value={Number(toDisplayLinear(point[0]).toFixed(2))}
                 />
                 <label className="shrink-0 text-muted-foreground">Z</label>
                 <input
                   className="w-16 rounded border border-border/50 bg-accent/50 px-1.5 py-0.5 text-foreground text-xs focus:border-primary focus:outline-none"
                   onChange={(e) =>
-                    handlePointChange(index, 1, Number.parseFloat(e.target.value) || 0)
+                    handlePointChange(index, 1, toStoredLinear(Number.parseFloat(e.target.value) || 0))
                   }
                   step={0.5}
                   type="number"
-                  value={point[1]}
+                  value={Number(toDisplayLinear(point[1]).toFixed(2))}
                 />
                 <button
                   className={cn(
@@ -1113,6 +1136,7 @@ const ZoneItem = memo(function ZoneItem({ zone, isLast }: { zone: ZoneNode; isLa
   const setHoveredId = useViewer((state) => state.setHoveredId)
   const setPhase = useEditor((state) => state.setPhase)
   const setMode = useEditor((state) => state.setMode)
+  const unit = useViewer((state) => state.unit)
 
   const isSelected = selectedZoneId === zone.id
   const isHovered = hoveredId === zone.id
@@ -1125,8 +1149,7 @@ const ZoneItem = memo(function ZoneItem({ zone, isLast }: { zone: ZoneNode; isLa
     }
   }, [isSelected])
 
-  const area = calculatePolygonArea(zone.polygon).toFixed(1)
-  const defaultName = `Zone (${area}m²)`
+  const defaultName = `Zone (${formatAreaLabel(calculatePolygonArea(zone.polygon), unit)})`
 
   const handleClick = () => {
     setSelection({ zoneId: zone.id })
