@@ -16,6 +16,7 @@ import { useViewer } from '@aedifex/viewer'
 import { Plane, Vector2, Vector3 } from 'three'
 import { GROUP_MOVE_DRAG_LABEL } from '../../lib/contextual-help'
 import { clientToPlan } from '../../lib/floorplan/plan-coords'
+import { bindWindowBlurCancel } from '../../lib/interaction/window-blur-cancel'
 import { duplicateNodesToLevel } from '../../lib/scene-clipboard'
 import { sfxEmitter } from '../../lib/sfx-bus'
 import useAlignmentGuides from '../../store/use-alignment-guides'
@@ -82,6 +83,7 @@ export function startGroupPickUp(
   opts: { onCancel?: () => void; scopeToSelection?: boolean } = {},
 ): boolean {
   const { selectedIds, levelId } = useViewer.getState().selection
+  let unbindBlurCancel = () => {}
   const participantIds = groupParticipantIds()
   if (participantIds.length === 0) return false
   const nodes = useScene.getState().nodes
@@ -295,6 +297,7 @@ export function startGroupPickUp(
     window.removeEventListener('pointerup', onPointerUp, true)
     window.removeEventListener('keydown', onKeyDown, true)
     window.removeEventListener('contextmenu', onContextMenu, true)
+    unbindBlurCancel()
   }
 
   // History resume pairs one-to-one with the pause above, on the commit and
@@ -409,6 +412,7 @@ export function startGroupPickUp(
   window.addEventListener('pointerup', onPointerUp, true)
   window.addEventListener('keydown', onKeyDown, true)
   window.addEventListener('contextmenu', onContextMenu, true)
+  unbindBlurCancel = bindWindowBlurCancel(cancel)
   return true
 }
 
