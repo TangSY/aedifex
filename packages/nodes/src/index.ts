@@ -60,7 +60,7 @@ import { zoneDefinition } from './zone'
  */
 export const builtinPlugin: Plugin = {
   id: 'aedifex:core',
-  apiVersion: 1,
+  apiVersion: 2,
   nodes: [
     // Stage E-complete (full registry path)
     shelfDefinition as unknown as AnyNodeDefinition,

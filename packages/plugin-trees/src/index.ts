@@ -10,14 +10,15 @@ import { grassDefinition } from './grass-definition'
 
 /**
  * The trees plugin manifest — the entire public surface of this package. A host
- * loads it through the same `loadPlugin` path the built-ins use: three node kinds
- * (`trees:tree`, `trees:flower`, `trees:grass`) and one left-rail panel
- * (`Trees`). Cast mirrors the built-in bundle: `AnyNodeDefinition` is the
- * hand-maintained union today; the registry derives it post-migration.
+ * loads it through the same `loadPlugin` path the built-ins use. The manifest
+ * contributes three node kinds (`trees:tree`, `trees:flower`, `trees:grass`);
+ * the separately exported `treesHostPanel` is registered by editor hosts.
+ * Cast mirrors the built-in bundle: `AnyNodeDefinition` is the hand-maintained
+ * union today; the registry derives it post-migration.
  */
 export const treesPlugin: Plugin = {
   id: 'aedifex:trees',
-  apiVersion: 1,
+  apiVersion: 2,
   nodes: [
     treeDefinition as unknown as AnyNodeDefinition,
     flowerDefinition as unknown as AnyNodeDefinition,

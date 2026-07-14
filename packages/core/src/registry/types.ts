@@ -715,7 +715,7 @@ export type FloorplanMoveTarget<N> = (args: {
 
 export type Plugin = {
   id: string
-  apiVersion: 1
+  apiVersion: 2
   nodes?: AnyNodeDefinition[]
 }
 
@@ -1325,7 +1325,7 @@ export type Capabilities = {
    * the editor AI layer, canDelete in parametric-inspector) consult this
    * field directly. NEVER maintain a parallel hardcoded list; the previous
    * iteration's drift cost real production bugs.
-  */
+   */
   deletable: boolean
   groupable?: boolean
   selectable?: SelectableConfig

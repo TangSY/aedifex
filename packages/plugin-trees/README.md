@@ -66,15 +66,20 @@ instancing pay off; a unique inspector seed just renders as its own variant.
 ## Manifest
 
 ```ts
-import { treesPlugin } from '@aedifex/plugin-trees'
-// host:
+import { setPluginDiscovery } from '@aedifex/core'
+import { registerEditorHostPanel } from '@aedifex/editor'
+import { treesHostPanel, treesPlugin } from '@aedifex/plugin-trees'
+
 setPluginDiscovery(async () => [treesPlugin])
+registerEditorHostPanel(treesHostPanel)
 ```
 
 `treesPlugin` exports three node kinds (`trees:tree`, `trees:flower`,
-`trees:grass`) for the core `loadPlugin` path. The editor app separately imports
-`treesHostPanel` to surface the Nature rail entry; panels are not part of the v1
-core plugin manifest.
+`trees:grass`) for the v2 core `loadPlugin` path. The editor app separately imports
+`treesHostPanel` and calls `registerEditorHostPanel(treesHostPanel)` to surface the
+Nature rail entry; panels are not part of the core plugin manifest. A v1 manifest
+is rejected explicitly so hosts never accept old panel metadata and then silently
+drop its UI.
 
 ## Notes / known gaps
 

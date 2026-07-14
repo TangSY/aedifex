@@ -110,7 +110,9 @@ describe('isPresettable', () => {
   })
 
   test('explicit true wins', () => {
-    const def = makeDefinition('explicit-true', { capabilities: { presettable: true, deletable: false } })
+    const def = makeDefinition('explicit-true', {
+      capabilities: { presettable: true, deletable: false },
+    })
     expect(isPresettable(def)).toBe(true)
   })
 
@@ -141,7 +143,9 @@ describe('isPresettable', () => {
 
 describe('getHostRefFields', () => {
   test('returns the declared hostRefFields verbatim', () => {
-    const def = makeDefinition('door', { capabilities: { hostRefFields: ['wallId'], deletable: false } })
+    const def = makeDefinition('door', {
+      capabilities: { hostRefFields: ['wallId'], deletable: false },
+    })
     expect(getHostRefFields(def)).toEqual(['wallId'])
   })
 
@@ -163,7 +167,11 @@ describe('isDrawnViaTool', () => {
 
   test('false when unset or not exactly true', () => {
     expect(isDrawnViaTool(makeDefinition('column'))).toBe(false)
-    expect(isDrawnViaTool(makeDefinition('off', { capabilities: { drawTool: false, deletable: false } }))).toBe(false)
+    expect(
+      isDrawnViaTool(
+        makeDefinition('off', { capabilities: { drawTool: false, deletable: false } }),
+      ),
+    ).toBe(false)
   })
 
   test('isDrawnViaToolKind looks up the registry', () => {
@@ -181,7 +189,7 @@ describe('loadPlugin', () => {
   test('registers all nodes from a plugin', async () => {
     const plugin: Plugin = {
       id: 'test:plugin',
-      apiVersion: 1,
+      apiVersion: 2,
       nodes: [makeDefinition('a'), makeDefinition('b')],
     }
     await loadPlugin(plugin)
@@ -191,28 +199,38 @@ describe('loadPlugin', () => {
   })
 
   test('handles plugin with no nodes', async () => {
-    await loadPlugin({ id: 'empty', apiVersion: 1 })
+    await loadPlugin({ id: 'empty', apiVersion: 2 })
     expect(nodeRegistry.size).toBe(0)
   })
 
   test('handles plugin with empty nodes array', async () => {
-    await loadPlugin({ id: 'empty', apiVersion: 1, nodes: [] })
+    await loadPlugin({ id: 'empty', apiVersion: 2, nodes: [] })
     expect(nodeRegistry.size).toBe(0)
   })
 
   test('throws on apiVersion mismatch', async () => {
     const plugin = {
       id: 'old-plugin',
-      apiVersion: 99 as unknown as 1,
+      apiVersion: 99 as unknown as 2,
       nodes: [],
     }
     await expect(loadPlugin(plugin)).rejects.toThrow(/apiVersion/)
   })
 
+  test('rejects the previous v1 manifest instead of silently accepting removed panel metadata', async () => {
+    const legacyPlugin = {
+      id: 'legacy-panel-plugin',
+      apiVersion: 1,
+      panels: [{ id: 'main' }],
+    } as unknown as Plugin
+
+    await expect(loadPlugin(legacyPlugin)).rejects.toThrow(/requires apiVersion 1; host supports 2/)
+  })
+
   test('propagates duplicate-kind error from a single plugin in production', async () => {
     const plugin: Plugin = {
       id: 'broken',
-      apiVersion: 1,
+      apiVersion: 2,
       nodes: [makeDefinition('dup'), makeDefinition('dup')],
     }
     await inProduction(() => expect(loadPlugin(plugin)).rejects.toThrow(/duplicate node kind/))
@@ -220,9 +238,9 @@ describe('loadPlugin', () => {
 
   test('propagates duplicate-kind error across plugins in production', async () => {
     await inProduction(async () => {
-      await loadPlugin({ id: 'a', apiVersion: 1, nodes: [makeDefinition('shared')] })
+      await loadPlugin({ id: 'a', apiVersion: 2, nodes: [makeDefinition('shared')] })
       await expect(
-        loadPlugin({ id: 'b', apiVersion: 1, nodes: [makeDefinition('shared')] }),
+        loadPlugin({ id: 'b', apiVersion: 2, nodes: [makeDefinition('shared')] }),
       ).rejects.toThrow(/duplicate node kind/)
     })
   })

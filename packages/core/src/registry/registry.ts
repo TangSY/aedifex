@@ -1,7 +1,7 @@
 import type { ZodObject } from 'zod'
 import type { AnyNodeDefinition, BakePolicy, NodeRegistry, Plugin } from './types'
 
-const HOST_API_VERSION = 1 as const
+const HOST_API_VERSION = 2 as const
 
 // True in dev / test builds, false in production. Tries Vite's
 // `import.meta.env.DEV` first (the editor app's bundler) and falls back
