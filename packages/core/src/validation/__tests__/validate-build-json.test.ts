@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { CabinetModuleNode, CabinetNode } from '../../schema/nodes/cabinet'
 import { validateBuildJson } from '../validate-build-json'
 
 /**
@@ -138,5 +139,53 @@ describe('validateBuildJson', () => {
       rootNodeIds: ['key_a'],
     })
     expect(result.warnings.some((w) => w.code === 'key_id_mismatch')).toBe(true)
+  })
+
+  test('accepts a level containing a cabinet run with modules and a linked corner leg', () => {
+    const sourceModule = CabinetModuleNode.parse({
+      id: 'cabinet-module_source',
+      parentId: 'cabinet_source',
+    })
+    const legModule = CabinetModuleNode.parse({
+      id: 'cabinet-module_leg',
+      parentId: 'cabinet_leg',
+    })
+    const leg = CabinetNode.parse({
+      id: 'cabinet_leg',
+      parentId: 'cabinet_source',
+      children: [legModule.id],
+    })
+    const source = {
+      ...CabinetNode.parse({
+        id: 'cabinet_source',
+        parentId: 'level_demo',
+        children: [sourceModule.id],
+      }),
+      children: [sourceModule.id, leg.id],
+    }
+    const level = {
+      object: 'node',
+      id: 'level_demo',
+      type: 'level',
+      parentId: null,
+      visible: true,
+      metadata: {},
+      children: [source.id],
+      level: 0,
+    }
+
+    const result = validateBuildJson({
+      nodes: {
+        [level.id]: level,
+        [source.id]: source,
+        [sourceModule.id]: sourceModule,
+        [leg.id]: leg,
+        [legModule.id]: legModule,
+      },
+      rootNodeIds: [level.id],
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.schemaIssues).toEqual([])
   })
 })

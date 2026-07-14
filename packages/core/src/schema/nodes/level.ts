@@ -1,6 +1,7 @@
 import dedent from 'dedent'
 import { z } from 'zod'
 import { BaseNode, nodeType, objectId } from '../base'
+import { CabinetNode } from './cabinet'
 import { CeilingNode } from './ceiling'
 import { ColumnNode } from './column'
 import { FenceNode } from './fence'
@@ -34,6 +35,7 @@ export const LevelNode = BaseNode.extend({
         GuideNode.shape.id,
         SpawnNode.shape.id,
         ShelfNode.shape.id,
+        CabinetNode.shape.id,
       ]),
     )
     .default([]),
