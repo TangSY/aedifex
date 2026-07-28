@@ -1037,7 +1037,7 @@ const ViewerCanvas = memo(function ViewerCanvas({
   return (
     <ErrorBoundary fallback={<EditorSceneCrashFallback />}>
       {/* `relative` so the floorplan compass (portaled here to stay visible in
-          2d / 3d / split alike) can anchor to this container's bottom-left. */}
+          2d / 3d / split alike) can anchor to this container's top-right. */}
       <div className="relative flex h-full" ref={setViewerAreaNode}>
         <QuickMeasurementHud />
         <DeleteConfirmationDialog />
