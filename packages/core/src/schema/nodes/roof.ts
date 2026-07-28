@@ -11,6 +11,20 @@ export type RoofSurfaceMaterialSpec = {
   materialPreset?: string
 }
 
+export type RoofSlotId = 'shingle' | 'gable' | 'fascia' | 'soffit'
+
+export const ROOF_SHINGLE_SLOT_DEFAULT = 'library:roof-terracottatiles'
+export const ROOF_GABLE_SLOT_DEFAULT = 'library:preset-softwhite'
+export const ROOF_FASCIA_SLOT_DEFAULT = 'library:concrete-drywall'
+export const ROOF_SOFFIT_SLOT_DEFAULT = 'library:preset-softwhite'
+
+export const ROOF_SLOT_DEFAULTS: Record<RoofSlotId, string> = {
+  shingle: ROOF_SHINGLE_SLOT_DEFAULT,
+  gable: ROOF_GABLE_SLOT_DEFAULT,
+  fascia: ROOF_FASCIA_SLOT_DEFAULT,
+  soffit: ROOF_SOFFIT_SLOT_DEFAULT,
+}
+
 export const RoofNode = BaseNode.extend({
   id: objectId('roof'),
   type: nodeType('roof'),
@@ -22,6 +36,7 @@ export const RoofNode = BaseNode.extend({
   edgeMaterialPreset: z.string().optional(),
   wallMaterial: MaterialSchema.optional(),
   wallMaterialPreset: z.string().optional(),
+  slots: z.record(z.string(), z.string()).optional(),
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   // Rotation around Y axis in radians
   rotation: z.number().default(0),

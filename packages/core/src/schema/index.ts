@@ -147,8 +147,20 @@ export {
   type RidgeVentLine,
   RidgeVentNode,
 } from './nodes/ridge-vent'
-export type { RoofSurfaceMaterialRole, RoofSurfaceMaterialSpec } from './nodes/roof'
-export { getEffectiveRoofSurfaceMaterial, RoofNode } from './nodes/roof'
+export type {
+  RoofSlotId,
+  RoofSurfaceMaterialRole,
+  RoofSurfaceMaterialSpec,
+} from './nodes/roof'
+export {
+  getEffectiveRoofSurfaceMaterial,
+  ROOF_FASCIA_SLOT_DEFAULT,
+  ROOF_GABLE_SLOT_DEFAULT,
+  ROOF_SHINGLE_SLOT_DEFAULT,
+  ROOF_SLOT_DEFAULTS,
+  ROOF_SOFFIT_SLOT_DEFAULT,
+  RoofNode,
+} from './nodes/roof'
 export type {
   DutchRoofMetrics,
   RoofSegmentSurfaceMaterialRole,
