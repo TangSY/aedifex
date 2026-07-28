@@ -22,6 +22,7 @@ import { create } from 'zustand'
 import { GROUP_MOVE_DRAG_LABEL, GROUP_ROTATE_DRAG_LABEL } from '../../lib/contextual-help'
 import { applyFloorplanAlignment } from '../../lib/floorplan/apply-alignment'
 import { clientToPlan } from '../../lib/floorplan/plan-coords'
+import { bindWindowBlurCancel } from '../../lib/interaction/window-blur-cancel'
 import { isHistoryShortcut } from '../../lib/history'
 import { formatLinearMeasurement } from '../../lib/measurements'
 import { sfxEmitter } from '../../lib/sfx-bus'
@@ -116,6 +117,7 @@ export function startFloorplanGroupMove(
     lastDelta: Vec2 | null
   }
   let session: Session | null = null
+  let unbindBlurCancel = () => {}
 
   const engage = (): Session | null => {
     const nodes = useScene.getState().nodes
@@ -272,6 +274,7 @@ export function startFloorplanGroupMove(
     window.removeEventListener('pointerup', onUp, true)
     window.removeEventListener('pointercancel', onPointerCancel)
     window.removeEventListener('keydown', onKeyDown, true)
+    unbindBlurCancel()
   }
 
   // History resume is NOT here — it pairs exactly one-to-one with the
@@ -382,6 +385,7 @@ export function startFloorplanGroupMove(
   window.addEventListener('pointerup', onUp, true)
   window.addEventListener('pointercancel', onPointerCancel)
   window.addEventListener('keydown', onKeyDown, true)
+  unbindBlurCancel = bindWindowBlurCancel(cancel)
 
   if (opts.immediate) {
     session = engage()
@@ -425,6 +429,7 @@ export function startFloorplanGroupRotate(event: {
   const angleOf = (p: readonly [number, number]) => Math.atan2(p[1] - pivot.z, p[0] - pivot.x)
   const initialAngle = angleOf(startPlan)
   const pointerId = event.pointerId
+  let unbindBlurCancel = () => {}
 
   for (const id of affectedIds) {
     useLiveTransforms.getState().clear(id)
@@ -489,6 +494,7 @@ export function startFloorplanGroupRotate(event: {
     window.removeEventListener('pointerup', onUp, true)
     window.removeEventListener('pointercancel', onPointerCancel)
     window.removeEventListener('keydown', onKeyDown, true)
+    unbindBlurCancel()
   }
 
   // History resume pairs one-to-one with the pause above, on the commit and
@@ -556,6 +562,7 @@ export function startFloorplanGroupRotate(event: {
   window.addEventListener('pointerup', onUp, true)
   window.addEventListener('pointercancel', onPointerCancel)
   window.addEventListener('keydown', onKeyDown, true)
+  unbindBlurCancel = bindWindowBlurCancel(cancel)
   return true
 }
 

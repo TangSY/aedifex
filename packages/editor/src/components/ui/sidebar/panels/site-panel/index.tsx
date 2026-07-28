@@ -483,6 +483,12 @@ const LevelReferences = memo(function LevelReferences({
     }
 
     if (isImage) {
+      if (onUploadAsset && projectId) {
+        clearUpload(levelId)
+        onUploadAsset(projectId, levelId, file, 'guide')
+        return
+      }
+
       useUploadStore.getState().startUpload(levelId, 'guide', file.name)
       useUploadStore.getState().setStatus(levelId, 'uploading')
 
@@ -519,7 +525,9 @@ const LevelReferences = memo(function LevelReferences({
     if (
       projectId &&
       refNode?.url &&
-      (refNode.url.startsWith('http://') || refNode.url.startsWith('https://'))
+      (refNode.url.startsWith('http://') ||
+        refNode.url.startsWith('https://') ||
+        (refNode.url.startsWith('/') && !refNode.url.startsWith('//')))
     ) {
       onDeleteAsset?.(projectId, refNode.url)
     }
