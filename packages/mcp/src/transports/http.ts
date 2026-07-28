@@ -27,7 +27,7 @@ export type HttpTransportOptions = {
   host?: string
   /** Bearer token for HTTP MCP calls. Defaults to PASCAL_MCP_HTTP_TOKEN. */
   authToken?: string
-  /** Exact CORS origins allowed to call this transport. Loopback origins are allowed. */
+  /** Exact CORS origins allowed to call this transport. */
   allowedOrigins?: string[]
   /** Per-client request cap per minute. Set <= 0 to disable. */
   rateLimitPerMinute?: number
@@ -193,11 +193,22 @@ function isOriginAllowed(
 ): boolean {
   const normalized = normalizeOrigin(origin)
   if (!normalized) return false
-  const parsed = new URL(normalized)
-  if (isLoopbackHost(parsed.hostname)) return true
+  if (allowedOrigins.has(normalized)) return true
   if (requestHost && normalized === normalizeOrigin(`http://${requestHost}`)) return true
   if (requestHost && normalized === normalizeOrigin(`https://${requestHost}`)) return true
-  return allowedOrigins.has(normalized)
+  if (loopbackAnyOriginAllowed()) {
+    const parsed = new URL(normalized)
+    if (isLoopbackHost(parsed.hostname)) return true
+  }
+  return false
+}
+
+function loopbackAnyOriginAllowed(): boolean {
+  const value =
+    process.env.AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN ??
+    process.env.PASCAL_MCP_HTTP_LOOPBACK_ANY_ORIGIN
+  if (!value) return false
+  return value !== '0' && value.toLowerCase() !== 'false'
 }
 
 function bearerToken(req: IncomingMessage): string | null {

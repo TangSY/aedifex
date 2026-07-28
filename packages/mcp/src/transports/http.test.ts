@@ -98,3 +98,60 @@ test('connectHttp handles allowed CORS preflight', async () => {
   expect(response.status).toBe(204)
   expect(response.headers.get('access-control-allow-origin')).toBe('https://app.example')
 })
+
+test('connectHttp rejects cross-port loopback origins by default', async () => {
+  handle = await connectHttp(server, 0, { authToken: 'secret' })
+
+  const response = await fetch(`http://127.0.0.1:${handle.port}/mcp`, {
+    method: 'OPTIONS',
+    headers: {
+      origin: 'http://localhost:5173',
+      'access-control-request-method': 'POST',
+    },
+  })
+
+  expect(response.status).toBe(403)
+  expect(response.headers.get('access-control-allow-origin')).toBeNull()
+})
+
+test('connectHttp accepts same-origin loopback preflight without a wildcard', async () => {
+  handle = await connectHttp(server, 0)
+
+  const response = await fetch(`http://127.0.0.1:${handle.port}/mcp`, {
+    method: 'OPTIONS',
+    headers: {
+      origin: `http://127.0.0.1:${handle.port}`,
+      'access-control-request-method': 'POST',
+    },
+  })
+
+  expect(response.status).toBe(204)
+  expect(response.headers.get('access-control-allow-origin')).toBe(
+    `http://127.0.0.1:${handle.port}`,
+  )
+})
+
+test('connectHttp can explicitly opt into cross-port loopback origins', async () => {
+  const previous = process.env.AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN
+  process.env.AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN = 'true'
+
+  try {
+    handle = await connectHttp(server, 0, { authToken: 'secret' })
+    const response = await fetch(`http://127.0.0.1:${handle.port}/mcp`, {
+      method: 'OPTIONS',
+      headers: {
+        origin: 'http://localhost:5173',
+        'access-control-request-method': 'POST',
+      },
+    })
+
+    expect(response.status).toBe(204)
+    expect(response.headers.get('access-control-allow-origin')).toBe('http://localhost:5173')
+  } finally {
+    if (previous === undefined) {
+      delete process.env.AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN
+    } else {
+      process.env.AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN = previous
+    }
+  }
+})
