@@ -10,7 +10,7 @@ import {
   useLiveNodeOverrides,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type ColorPreset,
   createMaterial,
@@ -19,7 +19,7 @@ import {
   getRoofMaterialArray,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { RIDGE_LIFT, resolveRidgeSnap } from '../shared/ridge-snap'

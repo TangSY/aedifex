@@ -1,5 +1,5 @@
-import { type AnyNodeId, sceneRegistry, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, sceneRegistry, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
 import { Color, type Material, type Mesh } from 'three'
 import useEditor from '../../../store/use-editor'

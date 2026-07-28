@@ -4,7 +4,7 @@ import {
   type ConstructionDrawingType,
   nodeRegistry,
   registerNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { z } from 'zod'
 import { resolveNodeForDrawingType } from './drawing-coordination'
 import { FLOORPLAN_NODE_EXTENSION_KEY } from './floorplan-extension'

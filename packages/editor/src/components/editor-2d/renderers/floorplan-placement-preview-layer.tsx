@@ -7,8 +7,8 @@ import {
   type GeometryContext,
   nodeRegistry,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { memo, useMemo } from 'react'
 import usePlacementPreview from '../../../store/use-placement-preview'
 import { useFloorplanRender } from '../floorplan-render-context'

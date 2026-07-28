@@ -6,7 +6,7 @@ import {
   getSegmentSlopeFrame,
   ROOF_SHAPE_DEFAULTS,
   type RoofSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 
 // ─── Roof-surface helpers ────────────────────────────────────────────

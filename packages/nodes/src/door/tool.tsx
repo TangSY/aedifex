@@ -13,7 +13,7 @@ import {
   type WallEvent,
   type WallNode,
   WallNode as WallNodeSchema,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   calculateCursorRotation,
   calculateItemRotation,
@@ -26,8 +26,8 @@ import {
   useEditor,
   useFacingPose,
   usePlacementPreview,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BoxGeometry, EdgesGeometry, type Group, type LineSegments, Vector3 } from 'three'
 import { LineBasicNodeMaterial } from 'three/webgpu'

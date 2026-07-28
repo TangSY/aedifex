@@ -6,8 +6,8 @@ import {
   type SceneMaterialId,
   toSceneMaterialRef,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Eraser, Plus, RotateCcw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import {

@@ -6,7 +6,7 @@ import {
   isNodeKindEnabled,
   nodeRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { type ComponentType, lazy, Suspense, useMemo } from 'react'
 
 const DEFAULT_PRIORITY = 5
@@ -34,7 +34,7 @@ function loadSystem(def: AnyNodeDefinition): ComponentType<RegisteredSystemProps
  *
  * Today the registry is empty so this component mounts nothing — coexists
  * with legacy `*-System` components in `<Viewer>`. Once kinds register via
- * `@pascal-app/nodes`, each kind's registry-driven system takes over and
+ * `@aedifex/nodes`, each kind's registry-driven system takes over and
  * its legacy counterpart short-circuits via the `nodeRegistry.has(kind)`
  * guard added to each legacy system.
  */

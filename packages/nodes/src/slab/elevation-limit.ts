@@ -8,7 +8,7 @@ import {
   type SlabElevationClamp,
   type SlabNode,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 type SlabLevelContext = {
   storeyHeight: number

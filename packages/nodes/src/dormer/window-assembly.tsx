@@ -1,6 +1,6 @@
 'use client'
 
-import type { DormerNode, RoofSegmentNode } from '@pascal-app/core'
+import type { DormerNode, RoofSegmentNode } from '@aedifex/core'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { TrimClippedMesh } from '../shared/use-segment-trim-clip'

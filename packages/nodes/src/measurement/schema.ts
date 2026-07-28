@@ -1,1 +1,1 @@
-export { MeasurementNode } from '@pascal-app/core'
+export { MeasurementNode } from '@aedifex/core'

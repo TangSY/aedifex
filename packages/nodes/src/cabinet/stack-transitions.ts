@@ -1,7 +1,7 @@
 import type {
   CabinetModuleNode as CabinetModuleNodeType,
   CabinetNode as CabinetNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { resolveCabinetType } from './run-ops'
 import {
   type CabinetCompartment,

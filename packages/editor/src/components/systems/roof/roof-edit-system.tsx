@@ -16,7 +16,7 @@ import {
   sceneRegistry,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   Brush,
   csgEvaluator,
@@ -24,7 +24,7 @@ import {
   INTERSECTION,
   prepareBrushForCSG,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { createPortal, type ThreeEvent, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'

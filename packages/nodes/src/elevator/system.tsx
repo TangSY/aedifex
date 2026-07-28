@@ -1,7 +1,7 @@
 'use client'
 
-import { ElevatorOpeningSystem, ElevatorRuntimeSystem } from '@pascal-app/core'
-import { ElevatorInteractionSystem } from '@pascal-app/viewer'
+import { ElevatorOpeningSystem, ElevatorRuntimeSystem } from '@aedifex/core'
+import { ElevatorInteractionSystem } from '@aedifex/viewer'
 
 /**
  * Composite system for elevator — bundles three per-frame systems:

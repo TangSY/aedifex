@@ -3,7 +3,7 @@ import {
   type BoxVentNode as BoxVentNodeType,
   type HandleDescriptor,
   type NodeDefinition,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { surfacePaintCapability } from '../shared/surface-paint'
 import { buildBoxVentFloorplan } from './floorplan'
 import { boxVentParametrics } from './parametrics'

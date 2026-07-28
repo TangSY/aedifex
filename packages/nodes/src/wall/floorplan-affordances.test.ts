@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { type AnyNodeId, useLiveNodeOverrides, useScene, WallNode } from '@pascal-app/core'
+import { type AnyNodeId, useLiveNodeOverrides, useScene, WallNode } from '@aedifex/core'
 import { wallCurveAffordance } from './floorplan-affordances'
 
 globalThis.requestAnimationFrame ??= (callback) => {

@@ -52,9 +52,9 @@ import {
   wallClosesRoom,
   ZoneNode as ZoneNodeSchema,
   type ZoneNode as ZoneNodeType,
-} from '@pascal-app/core'
-import { useSegmentDraftChain, useWallSnapIndicator } from '@pascal-app/editor'
-import { getSceneTheme, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useSegmentDraftChain, useWallSnapIndicator } from '@aedifex/editor'
+import { getSceneTheme, useViewer } from '@aedifex/viewer'
 import { Command, Ruler } from 'lucide-react'
 import {
   type ComponentProps,
@@ -7095,7 +7095,7 @@ export function FloorplanPanel({
   )
   const wallSelectionHatchId = useMemo(() => `floorplan-wall-selection-hatch-${isDark}`, [isDark])
   // Subset of the legacy palette surfaced to registry-driven kinds via
-  // <FloorplanRenderProvider>. Mirrors `FloorplanPalette` in `@pascal-app/
+  // <FloorplanRenderProvider>. Mirrors `FloorplanPalette` in `@aedifex/
   // core` — keep slot names + meanings in sync.
   const floorplanRegistryPalette = useMemo<FloorplanRenderContextValue['palette']>(
     () => ({

@@ -6,7 +6,7 @@ import {
   getWallPlanFootprint,
   getWallThickness,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { WallHit } from '../shared/wall-attach-target'
 import { findClosestWallInPlan, projectWallLocalPointToPlan } from '../shared/wall-attach-target'
 import { snapCabinetFootprintCenter } from './placement-snap'

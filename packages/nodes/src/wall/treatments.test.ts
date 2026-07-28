@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { WallNode, WallTrimConfig } from '@pascal-app/core'
+import type { WallNode, WallTrimConfig } from '@aedifex/core'
 import { buildWallTreatmentLevelData } from './treatment-level-data'
 import { buildTrimGeometry, wallTreatmentProudOffsets } from './treatments'
 

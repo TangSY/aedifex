@@ -6,7 +6,7 @@ import {
   type RoofNode as RoofNodeType,
   type RoofSegmentNode,
   type SceneApi,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildRoofFloorplan } from './floorplan'
 import { roofParametrics } from './parametrics'
 import { RoofNode } from './schema'

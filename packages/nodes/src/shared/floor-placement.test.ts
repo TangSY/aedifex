@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type GridEvent, type NodeEvent, ShelfNode } from '@pascal-app/core'
+import { type GridEvent, type NodeEvent, ShelfNode } from '@aedifex/core'
 import { Object3D } from 'three'
 import { getLevelLocalSnappedPosition, resolveAlignedFloorPlacement } from './floor-placement'
 

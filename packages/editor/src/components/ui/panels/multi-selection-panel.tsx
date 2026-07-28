@@ -1,7 +1,7 @@
 'use client'
 
-import { type AnyNodeId, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Copy, Trash2 } from 'lucide-react'
 import { deleteSelection, duplicateSelectionAndPickUp } from '../../editor/group-actions'
 import { ActionButton, ActionGroup } from '../controls/action-button'

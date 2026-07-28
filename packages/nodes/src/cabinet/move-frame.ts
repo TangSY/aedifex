@@ -5,7 +5,7 @@ import type {
   CabinetNode as CabinetNodeType,
   MovableParentFrame,
   ParentFrameSnapMatch,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { planToRunLocal, runLocalToPlan } from './run-layout'
 import { bumpCabinetRunLayoutRevision, syncCornerRunsFromSourceModule } from './run-ops'
 

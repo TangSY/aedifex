@@ -1,4 +1,4 @@
-# Cross-cutting changes touching packages outside `@pascal-app/mcp`
+# Cross-cutting changes touching packages outside `@aedifex/mcp`
 
 Integrator review required. Each entry documents:
 - **What** was changed
@@ -10,7 +10,7 @@ Integrator review required. Each entry documents:
 
 ### What
 
-Added these subpath entries to the `"exports"` map of `@pascal-app/core`:
+Added these subpath entries to the `"exports"` map of `@aedifex/core`:
 
 - `./schema` → `./dist/schema/index.js`
 - `./store` → `./dist/store/use-scene.js`
@@ -22,21 +22,21 @@ The existing `"."` and `"./clone-scene-graph"` entries are unchanged.
 
 ### Why
 
-The main entry (`.`) re-exports every `System*` (`WallSystem`, `SlabSystem`, `CeilingSystem`, `RoofSystem`, `ItemSystem`, `StairSystem`, `DoorSystem`, `WindowSystem`, `FenceSystem`) which side-effect-imports `three`, `three-mesh-bvh`, and `three-bvh-csg`. In Node (no browser), `three-mesh-bvh`'s CJS UMD build fails to resolve its `three.*` globals at module-load time, so merely `import { WallNode } from '@pascal-app/core'` crashes before any user code runs.
+The main entry (`.`) re-exports every `System*` (`WallSystem`, `SlabSystem`, `CeilingSystem`, `RoofSystem`, `ItemSystem`, `StairSystem`, `DoorSystem`, `WindowSystem`, `FenceSystem`) which side-effect-imports `three`, `three-mesh-bvh`, and `three-bvh-csg`. In Node (no browser), `three-mesh-bvh`'s CJS UMD build fails to resolve its `three.*` globals at module-load time, so merely `import { WallNode } from '@aedifex/core'` crashes before any user code runs.
 
 By adding subpath exports that point at modules which don't transitively pull graphics code, the MCP server package (and any future Node consumer) can import just the Zod schemas and the Zustand store without dragging in `three` and its GPU-bound dependencies.
 
 ### Impact
 
-**Zero** on existing consumers. This is purely additive. `apps/editor` and `@pascal-app/viewer` continue to import from the main entry and get the full surface — they currently don't use these subpaths and don't need to. No types, runtime behavior, or bundle composition is affected.
+**Zero** on existing consumers. This is purely additive. `apps/editor` and `@aedifex/viewer` continue to import from the main entry and get the full surface — they currently don't use these subpaths and don't need to. No types, runtime behavior, or bundle composition is affected.
 
 ### Reversibility
 
-Remove the 5 new entries from `exports` and the change is undone. `@pascal-app/mcp` would then have to ship its own shim or the core team would need to split `@pascal-app/core` into a "core-data" package and a "core-systems" package — a larger refactor.
+Remove the 5 new entries from `exports` and the change is undone. `@aedifex/mcp` would then have to ship its own shim or the core team would need to split `@aedifex/core` into a "core-data" package and a "core-systems" package — a larger refactor.
 
 ### Suggested follow-up (upstream)
 
-Long-term, consider moving `systems/` into a separate package `@pascal-app/systems` so that `@pascal-app/core` stays data-only. That's a breaking change and out of scope for this PR; the subpath exports are the non-breaking interim fix.
+Long-term, consider moving `systems/` into a separate package `@aedifex/systems` so that `@aedifex/core` stays data-only. That's a breaking change and out of scope for this PR; the subpath exports are the non-breaking interim fix.
 
 ---
 
@@ -77,7 +77,7 @@ Align `SiteNode.children` to `z.array(z.string())` + migration in `setScene.migr
 
 ### What
 
-Adds a CI workflow that runs on pushes to `main` and on pull requests touching `packages/mcp/`, `packages/core/`, the editor scene API surface, `.github/workflows/mcp-ci.yml`, or `bun.lock`. The job installs deps with Bun, builds `@pascal-app/core` then `@pascal-app/mcp`, runs `bun test` in the mcp package, runs focused editor scene API tests, and runs Biome over the MCP package plus the editor scene API files.
+Adds a CI workflow that runs on pushes to `main` and on pull requests touching `packages/mcp/`, `packages/core/`, the editor scene API surface, `.github/workflows/mcp-ci.yml`, or `bun.lock`. The job installs deps with Bun, builds `@aedifex/core` then `@aedifex/mcp`, runs `bun test` in the mcp package, runs focused editor scene API tests, and runs Biome over the MCP package plus the editor scene API files.
 
 ### Why
 
@@ -97,7 +97,7 @@ Delete `.github/workflows/mcp-ci.yml`.
 
 ### What
 
-Added `./storage` and `./operations` entries to the `"exports"` map of `@pascal-app/mcp`, pointing at the built `dist/storage/index.{js,d.ts}` and `dist/operations/index.{js,d.ts}`. The existing `"."` entry is unchanged.
+Added `./storage` and `./operations` entries to the `"exports"` map of `@aedifex/mcp`, pointing at the built `dist/storage/index.{js,d.ts}` and `dist/operations/index.{js,d.ts}`. The existing `"."` entry is unchanged.
 
 ### Why
 
@@ -115,7 +115,7 @@ Remove the `./storage`/`./operations` entries from `exports` and update `apps/ed
 
 ### Related
 
-- `apps/editor/package.json` adds `@pascal-app/mcp` as a workspace dependency so the subpath resolves.
+- `apps/editor/package.json` adds `@aedifex/mcp` as a workspace dependency so the subpath resolves.
 - `apps/editor/lib/scene-store-server.ts` and `apps/editor/app/api/scenes/**` consume these subpaths.
 - `packages/mcp/src/storage/sqlite-scene-store.ts` is the only production storage backend.
 
@@ -161,7 +161,7 @@ schema boundary.
   `src: 'data:model/gltf-binary;base64,'`) now fails because `data:model/` is
   not in the allowlist. Replaced with `asset://test/chair.glb` — the only
   sanctioned scheme for an in-repo ItemNode fixture.
-- **Other packages**: `@pascal-app/viewer`, `@pascal-app/editor`, and
+- **Other packages**: `@aedifex/viewer`, `@aedifex/editor`, and
   `material-library.ts` all continue to work because every built-in URL is a
   `/material/…` app-relative path (allowlisted).
 
@@ -179,7 +179,7 @@ schema boundary.
    in `packages/mcp/tsconfig.json`. Out of scope for A7 because tsconfig is
    not in the ownership list.
 3. **`bun:test` typing** — the test file uses `@ts-expect-error` on its
-   `bun:test` import because `@pascal-app/core` does not depend on
+   `bun:test` import because `@aedifex/core` does not depend on
    `@types/bun`. Adding it as a dev dep (or, preferred, excluding tests from
    the core tsc build per gap 2) would remove the directive.
 4. **`data:image/svg+xml` loophole** — passes the validator because it starts
@@ -221,12 +221,12 @@ are tied to the MCP scene workflow:
 The MCP package can save scenes without these editor changes, but the PR goal is
 to let contributors open and continue scenes saved by MCP. The API/UI pieces and
 auto-frame hook are the minimum editor-side bridge for that workflow. They do
-not change `@pascal-app/viewer` exports.
+not change `@aedifex/viewer` exports.
 
 ### Reversibility
 
 If maintainers want a narrower MCP-only PR, revert the editor app pages/routes
-and the auto-frame helper files, then keep only `@pascal-app/mcp`, the required
-`@pascal-app/core` subpath/schema changes, and `bun.lock`.
+and the auto-frame helper files, then keep only `@aedifex/mcp`, the required
+`@aedifex/core` subpath/schema changes, and `bun.lock`.
 
 ---

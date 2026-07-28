@@ -1,8 +1,8 @@
-import { type Kind, parseQuantity, quantity } from '@pascal-app/lingo'
+import { type Kind, parseQuantity, quantity } from '@aedifex/lingo'
 
 /**
  * Natural-language measurement parsing for editor property fields, backed by
- * `@pascal-app/lingo`. Lets a user type `6ft`, `180cm`, `1m80`, `5'11"`, `45°`
+ * `@aedifex/lingo`. Lets a user type `6ft`, `180cm`, `1m80`, `5'11"`, `45°`
  * or `1.57rad` into any measurement field and have it canonicalized to the
  * unit the field stores its value in — independent of the metric/imperial
  * display toggle.

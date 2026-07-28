@@ -17,7 +17,7 @@ import {
   WALL_SKIRTING_DEFAULT,
   type WallNode,
   type WallTrimProfile,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   ActionButton,
   ActionGroup,
@@ -32,8 +32,8 @@ import {
   SliderControl,
   triggerSFX,
   useInteractionScope,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Spline } from 'lucide-react'
 import { useCallback, useMemo, useRef } from 'react'
 import { resolveWallOpeningCeiling } from '../shared/wall-opening-ceiling'

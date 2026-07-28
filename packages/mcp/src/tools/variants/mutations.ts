@@ -1,5 +1,5 @@
-import type { SceneGraph } from '@pascal-app/core/clone-scene-graph'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core/schema'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
+import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
 
 /** Mutation kinds handled by `applyMutation`. */
 export type MutationKind =

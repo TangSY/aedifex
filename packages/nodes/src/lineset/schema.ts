@@ -1,1 +1,1 @@
-export { LinesetNode } from '@pascal-app/core'
+export { LinesetNode } from '@aedifex/core'

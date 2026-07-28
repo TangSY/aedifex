@@ -9,11 +9,11 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: [
     'three',
-    '@pascal-app/viewer',
-    '@pascal-app/core',
-    '@pascal-app/editor',
-    '@pascal-app/mcp',
-    '@pascal-app/plugin-trees',
+    '@aedifex/viewer',
+    '@aedifex/core',
+    '@aedifex/editor',
+    '@aedifex/mcp',
+    '@aedifex/plugin-trees',
     '@dgreenheck/ez-tree',
   ],
   turbopack: {

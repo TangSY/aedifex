@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, FenceNode, SlabNode } from '@pascal-app/core'
+import { type AnyNode, FenceNode, SlabNode } from '@aedifex/core'
 import { resolveFenceLiftElevation } from '../lift'
 
 const LEVEL_ID = 'level-1'

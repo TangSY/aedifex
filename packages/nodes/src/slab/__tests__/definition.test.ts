@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { pointInPolygon2D, SlabNode } from '@pascal-app/core'
+import { pointInPolygon2D, SlabNode } from '@aedifex/core'
 import { slabDefinition } from '../definition'
 
 function getHeightHandle(slab: SlabNode) {

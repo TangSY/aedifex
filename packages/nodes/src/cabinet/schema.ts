@@ -1,1 +1,1 @@
-export { CabinetModuleNode, CabinetNode } from '@pascal-app/core'
+export { CabinetModuleNode, CabinetNode } from '@aedifex/core'

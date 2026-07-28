@@ -1,5 +1,5 @@
-import type { SceneGraph } from '@pascal-app/core/clone-scene-graph'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core/schema'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
+import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
 
 /**
  * "Garden house" — a simplified take on the Casa del Sol layout used in the

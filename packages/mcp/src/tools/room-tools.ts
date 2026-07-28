@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { AnyNode, AnyNodeId, AssetInput } from '@pascal-app/core/schema'
+import type { AnyNode, AnyNodeId, AssetInput } from '@aedifex/core/schema'
 import {
   CeilingNode,
   DoorNode,
@@ -8,7 +8,7 @@ import {
   WallNode,
   WindowNode,
   ZoneNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { findCatalogItem, searchCatalogItems } from './asset-catalog'

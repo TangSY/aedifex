@@ -1,4 +1,4 @@
-import type { AnyNode, EditorApi } from '@pascal-app/core'
+import type { AnyNode, EditorApi } from '@aedifex/core'
 import useEditor from '../store/use-editor'
 import useInteractionScope from '../store/use-interaction-scope'
 import {

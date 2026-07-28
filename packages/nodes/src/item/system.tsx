@@ -1,6 +1,6 @@
 'use client'
 
-import { ItemLightSystem, ItemSystem } from '@pascal-app/viewer'
+import { ItemLightSystem, ItemSystem } from '@aedifex/viewer'
 
 /**
  * Registry-driven item system bundle.

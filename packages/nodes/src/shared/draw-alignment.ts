@@ -1,6 +1,6 @@
 'use client'
 
-import { alignFloorplanDraftPoint, useAlignmentGuides } from '@pascal-app/editor'
+import { alignFloorplanDraftPoint, useAlignmentGuides } from '@aedifex/editor'
 
 type Vec3 = [number, number, number]
 

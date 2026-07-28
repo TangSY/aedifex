@@ -1,5 +1,5 @@
 /**
- * Programmatic `@pascal-app/mcp` usage.
+ * Programmatic `@aedifex/mcp` usage.
  *
  * Runs a full MCP client/server pair over the in-memory transport inside a
  * single Bun process. Useful for agent frameworks and tests that want to
@@ -12,7 +12,7 @@
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { createPascalMcpServer, SceneBridge } from '@pascal-app/mcp'
+import { createPascalMcpServer, SceneBridge } from '@aedifex/mcp'
 
 async function main(): Promise<void> {
   // 1. Spin up the headless bridge. `loadDefault()` seeds a Site → Building →

@@ -238,5 +238,5 @@ Zustand store, the user can `undo` the change if they dislike it:
   the whole logical change.
 - Zones are not walls — they're polygon annotations that make later queries
   (`find_nodes({ zoneId })`) and planning steps much easier for the agent.
-- The agent never needs to speak to `@pascal-app/viewer`: everything the
+- The agent never needs to speak to `@aedifex/viewer`: everything the
   host sees flows through tools + resources + prompts.

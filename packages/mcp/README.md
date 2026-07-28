@@ -1,7 +1,7 @@
-# @pascal-app/mcp
+# @aedifex/mcp
 
 Model Context Protocol server for the Pascal 3D editor. Drives the
-`@pascal-app/core` scene graph from any MCP-compatible AI host.
+`@aedifex/core` scene graph from any MCP-compatible AI host.
 
 The server runs headlessly in Bun with no browser, WebGPU, React, or external
 database service. It exposes the same scene mutations used by the editor UI
@@ -11,10 +11,10 @@ and prompts.
 ## Install
 
 ```bash
-bun add @pascal-app/mcp
+bun add @aedifex/mcp
 ```
 
-`@pascal-app/core` is a peer dependency; Bun workspaces resolve it automatically.
+`@aedifex/core` is a peer dependency; Bun workspaces resolve it automatically.
 The MCP CLI is intended to run with Bun. When the storage package is consumed by
 the Next.js editor server, it opens the same local database through Node's
 built-in SQLite driver.
@@ -205,7 +205,7 @@ example below runs a full client/server pair inside a single script — useful
 for agent frameworks and tests.
 
 ```ts
-import { createPascalMcpServer, SceneBridge } from '@pascal-app/mcp'
+import { createPascalMcpServer, SceneBridge } from '@aedifex/mcp'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 
@@ -374,7 +374,7 @@ The vision tools require the MCP host to support the sampling capability
 - Systems (wall mitering, slab triangulation, CSG cutouts, roof / stair
   generation) run inside React hooks in the editor. Headless mode doesn't
   regenerate derived geometry — but all node data remains fully manipulable.
-  Consumers that need rendered geometry run `@pascal-app/viewer` in a browser
+  Consumers that need rendered geometry run `@aedifex/viewer` in a browser
   host.
 - Core's `loadAssetUrl` / `saveAsset` are browser-only; items that reference
   `asset://<id>` URLs aren't resolvable in Node. Supply absolute URLs or

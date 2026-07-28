@@ -1,4 +1,4 @@
-import { type CeilingNode, type FloorplanMoveTarget, resolveCeilingHeight } from '@pascal-app/core'
+import { type CeilingNode, type FloorplanMoveTarget, resolveCeilingHeight } from '@aedifex/core'
 import { createPolygonCentroidMoveTarget } from '../shared/polygon-centroid-move'
 
 /**

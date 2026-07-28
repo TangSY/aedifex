@@ -1,4 +1,4 @@
-import type { FloorplanGeometry, FloorplanPoint, GeometryContext } from '@pascal-app/core'
+import type { FloorplanGeometry, FloorplanPoint, GeometryContext } from '@aedifex/core'
 import type { SpawnNode } from './schema'
 
 const SPAWN_COLOR = '#818cf8'

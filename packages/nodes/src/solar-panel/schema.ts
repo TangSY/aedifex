@@ -1,1 +1,1 @@
-export { SolarPanelNode } from '@pascal-app/core'
+export { SolarPanelNode } from '@aedifex/core'

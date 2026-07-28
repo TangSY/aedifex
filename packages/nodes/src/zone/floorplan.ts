@@ -4,8 +4,8 @@ import {
   type GeometryContext,
   resolveAutoZonePolygon,
   type ZoneNode,
-} from '@pascal-app/core'
-import { floorplanGeometryMetadata, readFloorplanContext } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { floorplanGeometryMetadata, readFloorplanContext } from '@aedifex/editor'
 import {
   type ConstructionLengthProfile,
   formatConstructionLength,

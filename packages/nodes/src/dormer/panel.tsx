@@ -8,7 +8,7 @@ import {
   type RoofSegmentNode,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   cn,
   PanelSection,
@@ -16,8 +16,8 @@ import {
   SliderControl,
   triggerSFX,
   useEditor,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useState } from 'react'
 import { DormerActionsSection } from './panel-actions-section'
 import { DormerPositionSection } from './panel-position-section'

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { SlabNode } from '@pascal-app/core'
+import { SlabNode } from '@aedifex/core'
 import {
   applySlabElevationPreset,
   applySlabTopChange,

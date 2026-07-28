@@ -6,7 +6,7 @@ import {
   useLiveNodeOverrides,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   backdropGradient,
   deepSkyColor,
@@ -16,7 +16,7 @@ import {
   unionPolygons,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useEffect, useMemo, useRef } from 'react'
 import {
   BufferGeometry,

@@ -1,4 +1,4 @@
-import type { MeasurementPoint } from '@pascal-app/core'
+import type { MeasurementPoint } from '@aedifex/core'
 
 export type LinearUnit = 'metric' | 'imperial'
 export type MetricNotation = 'meters' | 'millimeters'

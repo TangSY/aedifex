@@ -13,7 +13,7 @@ import {
   SiteNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from 'three'
 import { buildFirstPersonColliderWorldFromRegistry } from './build-collider-world'
 

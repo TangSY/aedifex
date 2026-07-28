@@ -4,7 +4,7 @@ import {
   type GeometryContext,
   getMaterialPresetByRef,
   type MaterialSchema,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   applyMaterialPresetToMaterials,
   applyWorldScaleBoxUVs,
@@ -16,7 +16,7 @@ import {
   type RenderShading,
   resolveMaterialRef,
   resolveSlotDefaultMaterial,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import {
   BoxGeometry,
   CylinderGeometry,

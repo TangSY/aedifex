@@ -4,7 +4,7 @@ import {
   type GroupMoveSnapArgs,
   type HandleDescriptor,
   type NodeDefinition,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   collectStructuralGridAxes,
   resolveStructuralGridSnap,

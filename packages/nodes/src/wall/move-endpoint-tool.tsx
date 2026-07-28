@@ -15,7 +15,7 @@ import {
   useLiveNodeOverrides,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CursorSphere,
   formatAngleRadians,
@@ -35,8 +35,8 @@ import {
   useWallSnapIndicator,
   WALL_CONNECT_SNAP_RADIUS,
   type WallPlanPoint,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { resolveWallOpeningCeiling } from '../shared/wall-opening-ceiling'

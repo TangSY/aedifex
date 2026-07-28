@@ -3,7 +3,7 @@ import {
   type NodeDefinition,
   pointInPolygon2D,
   type SlabNode as SlabNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { polygonMeasurementFeatures } from '../shared/polygon-measurement'
 import { applySlabTopChange, slabElevationUpperBound } from './elevation-limit'
 import { buildSlabFloorplan } from './floorplan'

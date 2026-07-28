@@ -1,6 +1,6 @@
 'use client'
 
-import type { ZoneNode as ZoneNodeType } from '@pascal-app/core'
+import type { ZoneNode as ZoneNodeType } from '@aedifex/core'
 import type { WallPlanPoint } from '../tools/wall/wall-drafting'
 
 type ModifierKeys = {

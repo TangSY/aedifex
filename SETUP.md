@@ -34,8 +34,8 @@ The editor works fully without any environment variables.
 ├── apps/
 │   └── editor/          # Next.js editor application
 ├── packages/
-│   ├── core/            # @pascal-app/core — Scene schema, state, systems
-│   ├── viewer/          # @pascal-app/viewer — 3D rendering
+│   ├── core/            # @aedifex/core — Scene schema, state, systems
+│   ├── viewer/          # @aedifex/viewer — 3D rendering
 │   └── ui/              # Shared UI components
 └── tooling/             # Build & release tooling
 ```

@@ -1,5 +1,5 @@
 'use client'
 
-import { StairSystem } from '@pascal-app/viewer'
+import { StairSystem } from '@aedifex/viewer'
 
 export default StairSystem

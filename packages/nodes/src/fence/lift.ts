@@ -1,4 +1,4 @@
-import type { AnyNode, SlabNode } from '@pascal-app/core'
+import type { AnyNode, SlabNode } from '@aedifex/core'
 import type { FenceNode } from './schema'
 
 /**

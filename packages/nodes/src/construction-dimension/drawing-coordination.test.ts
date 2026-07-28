@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, ConstructionDimensionNode } from '@pascal-app/core'
+import { type AnyNode, ConstructionDimensionNode } from '@aedifex/core'
 import { resolveConstructionDimensionForDrawing } from './drawing-coordination'
 
 const foundation = ConstructionDimensionNode.parse({

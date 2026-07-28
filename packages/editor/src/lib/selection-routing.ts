@@ -4,7 +4,7 @@ import {
   type ItemNode,
   nodeRegistry,
   resolveSelectionProxyId,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export type SelectionModifierKeys = {
   meta: boolean

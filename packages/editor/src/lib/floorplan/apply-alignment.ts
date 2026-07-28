@@ -3,7 +3,7 @@ import {
   type AlignmentGuide,
   collectAlignmentAnchors,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import useAlignmentGuides from '../../store/use-alignment-guides'
 import { resolveAlignmentForFloorplanView } from '../world-grid-snap'
 

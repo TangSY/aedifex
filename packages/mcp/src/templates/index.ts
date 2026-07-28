@@ -1,4 +1,4 @@
-import type { SceneGraph } from '@pascal-app/core/clone-scene-graph'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
 import * as emptyStudio from './empty-studio'
 import * as gardenHouse from './garden-house'
 import * as twoBedroom from './two-bedroom'

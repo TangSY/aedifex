@@ -1,8 +1,8 @@
 'use client'
 
-import type { AnyNode, AnyNodeId } from '@pascal-app/core'
-import { useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import type { AnyNode, AnyNodeId } from '@aedifex/core'
+import { useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 
 /**
  * Resolved current selection — selected node IDs plus a convenience

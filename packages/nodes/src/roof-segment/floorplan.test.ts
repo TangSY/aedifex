@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { RoofSegmentNode } from '@pascal-app/core'
+import type { RoofSegmentNode } from '@aedifex/core'
 import { getRoofSegmentPlanLinework } from './floorplan'
 
 function dutchSegment(overrides: Partial<RoofSegmentNode> = {}): RoofSegmentNode {

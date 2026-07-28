@@ -1,5 +1,5 @@
-import type { NodeDefinition } from '@pascal-app/core'
-import type { FloorplanNodeExtension } from '@pascal-app/editor'
+import type { NodeDefinition } from '@aedifex/core'
+import type { FloorplanNodeExtension } from '@aedifex/editor'
 import { buildStructuralGridFloorplan } from './floorplan'
 import { StructuralGridNode } from './schema'
 

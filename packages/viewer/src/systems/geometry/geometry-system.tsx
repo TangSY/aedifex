@@ -10,7 +10,7 @@ import {
   sceneRegistry,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import { FrontSide, type Group, type Material, type Mesh, type Object3D } from 'three'

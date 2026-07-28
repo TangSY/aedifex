@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { AnyNode, WallNode } from '@pascal-app/core'
+import type { AnyNode, WallNode } from '@aedifex/core'
 import { resolveSurfacePlanPointSnap } from './surface-plan-snap'
 
 const wall = (id: string, start: [number, number], end: [number, number]): WallNode =>

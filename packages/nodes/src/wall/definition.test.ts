@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core'
-import { getFloorplanNodeExtension } from '@pascal-app/editor'
+import type { AnyNode, AnyNodeId } from '@aedifex/core'
+import { getFloorplanNodeExtension } from '@aedifex/editor'
 import { wallDefinition } from './definition'
 
 test('wallDefinition records the retired assembly field migration', () => {

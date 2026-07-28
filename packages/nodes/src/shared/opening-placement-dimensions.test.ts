@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { DoorNode, type FloorplanGeometry, type GeometryContext, WallNode } from '@pascal-app/core'
+import { DoorNode, type FloorplanGeometry, type GeometryContext, WallNode } from '@aedifex/core'
 import { buildOpeningPlacementDimensions } from './opening-placement-dimensions'
 
 function dimensionTexts(geometry: FloorplanGeometry[]): string[] {

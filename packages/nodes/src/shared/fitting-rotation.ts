@@ -1,5 +1,5 @@
-import { type AnyNode, useScene } from '@pascal-app/core'
-import { triggerSFX, useEditor } from '@pascal-app/editor'
+import { type AnyNode, useScene } from '@aedifex/core'
+import { triggerSFX, useEditor } from '@aedifex/editor'
 import { Euler, Quaternion, Vector3 } from 'three'
 import type { DuctFittingNode } from '../duct-fitting/schema'
 

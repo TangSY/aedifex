@@ -1,7 +1,7 @@
 'use client'
 
-import { getLinearUnitLabel, linearUnitToMeters, metersToLinearUnit } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+import { getLinearUnitLabel, linearUnitToMeters, metersToLinearUnit } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 
 type OpeningDocumentationPatch = {
   mark?: string

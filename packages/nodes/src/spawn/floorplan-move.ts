@@ -6,8 +6,8 @@ import {
   snapScalar,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { getSegmentGridStep, isGridSnapActive } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { getSegmentGridStep, isGridSnapActive } from '@aedifex/editor'
 
 export const spawnFloorplanMoveTarget: FloorplanMoveTarget<SpawnNode> = ({ node }) => {
   const spawnId = node.id as AnyNodeId

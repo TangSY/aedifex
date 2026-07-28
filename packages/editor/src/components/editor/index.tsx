@@ -10,14 +10,14 @@ import {
   initSpatialGridSync,
   spatialGridManager,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type HoverStyles,
   InteractiveSystem,
   SceneEnvironment,
   useViewer,
   Viewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { memo, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { ViewerOverlay } from '../../components/viewer-overlay'
 import { ViewerZoneSystem } from '../../components/viewer-zone-system'

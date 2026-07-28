@@ -1,6 +1,6 @@
 'use client'
 
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { isActive } from '../../lib/interaction/scope'

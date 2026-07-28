@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId, ParametricDescriptor, PipeSegmentNode } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, ParametricDescriptor, PipeSegmentNode } from '@aedifex/core'
 import { getPipeFittingPorts } from './ports'
 import type { PipeFittingNode } from './schema'
 

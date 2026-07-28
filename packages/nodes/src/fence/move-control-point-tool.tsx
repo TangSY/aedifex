@@ -9,7 +9,7 @@ import {
   resumeSceneHistory,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CursorSphere,
   getSegmentGridStep,
@@ -18,8 +18,8 @@ import {
   snapScalarToGrid,
   triggerSFX,
   useInteractionScope,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useState } from 'react'
 
 export const MoveFenceControlPointTool: React.FC<{

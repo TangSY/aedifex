@@ -1,4 +1,4 @@
-import type { AnyNode, CabinetModuleNode, CabinetNode, GeometryContext } from '@pascal-app/core'
+import type { AnyNode, CabinetModuleNode, CabinetNode, GeometryContext } from '@aedifex/core'
 
 /**
  * Straight-line run layout math — the single home for the "modules sit on the

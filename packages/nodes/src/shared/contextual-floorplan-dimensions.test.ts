@@ -6,8 +6,8 @@ import {
   WallNode,
   WindowNode,
   ZoneNode,
-} from '@pascal-app/core'
-import { createFloorplanContextExtensions } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { createFloorplanContextExtensions } from '@aedifex/editor'
 import { buildDoorContextualDimensions } from '../door/contextual-dimensions'
 import { buildItemContextualDimensions } from '../item/floorplan'
 import { buildWallContextualDimensions } from '../wall/contextual-dimensions'

@@ -9,7 +9,7 @@ import {
   type SceneApi,
   selectionProxyIdFromMetadata,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { MAX_CABINET_WIDTH, MIN_CABINET_WIDTH } from './resize-limits'
 import {
   moduleMaxX,

@@ -6,7 +6,7 @@ import {
   useScene,
   type WallNode,
   type WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 const MIN_WINDOW_WIDTH = 0.3
 

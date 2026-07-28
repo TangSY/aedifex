@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { AnyNode, loadPlugin, nodeRegistry } from '@pascal-app/core'
+import { AnyNode, loadPlugin, nodeRegistry } from '@aedifex/core'
 import { builtinPlugin } from './index'
 
 describe('builtinPlugin', () => {

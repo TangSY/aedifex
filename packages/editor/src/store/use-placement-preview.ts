@@ -7,11 +7,11 @@
 //
 // Editor-only: the read-only viewer route never places nodes. Lives here
 // rather than in `core` for that reason; node-kind tools (e.g. column) reach
-// it through the `@pascal-app/editor` public surface, the same way they
+// it through the `@aedifex/editor` public surface, the same way they
 // already consume `triggerSFX`. Producers clear on commit, cancel, and
 // unmount.
 
-import type { AnyNode } from '@pascal-app/core'
+import type { AnyNode } from '@aedifex/core'
 import { create } from 'zustand'
 
 type PlacementPreviewState = {

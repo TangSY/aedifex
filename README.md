@@ -3,8 +3,8 @@
 A 3D building editor built with React Three Fiber and WebGPU.
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![npm @pascal-app/core](https://img.shields.io/npm/v/@pascal-app/core?label=%40pascal-app%2Fcore)](https://www.npmjs.com/package/@pascal-app/core)
-[![npm @pascal-app/viewer](https://img.shields.io/npm/v/@pascal-app/viewer?label=%40pascal-app%2Fviewer)](https://www.npmjs.com/package/@pascal-app/viewer)
+[![npm @aedifex/core](https://img.shields.io/npm/v/@aedifex/core?label=%40pascal-app%2Fcore)](https://www.npmjs.com/package/@aedifex/core)
+[![npm @aedifex/viewer](https://img.shields.io/npm/v/@aedifex/viewer?label=%40pascal-app%2Fviewer)](https://www.npmjs.com/package/@aedifex/viewer)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white)](https://discord.gg/SaBRA9t2)
 [![X (Twitter)](https://img.shields.io/badge/follow-%40pascal__app-black?logo=x&logoColor=white)](https://x.com/pascal_app)
 
@@ -16,17 +16,17 @@ The viewer runtime and built-in node definitions are separate packages. Install 
 viewer set, then load the built-in plugin once before mounting `<Viewer>`:
 
 ```bash
-npm install @pascal-app/core @pascal-app/viewer @pascal-app/editor @pascal-app/nodes
+npm install @aedifex/core @aedifex/viewer @aedifex/editor @aedifex/nodes
 ```
 
 ```typescript
-import { loadPlugin } from '@pascal-app/core'
-import { builtinPlugin } from '@pascal-app/nodes'
+import { loadPlugin } from '@aedifex/core'
+import { builtinPlugin } from '@aedifex/nodes'
 
 await loadPlugin(builtinPlugin)
 ```
 
-See the [`@pascal-app/viewer` quick start](packages/viewer/README.md#usage) for a React example.
+See the [`@aedifex/viewer` quick start](packages/viewer/README.md#usage) for a React example.
 
 
 ## Repository Architecture
@@ -49,10 +49,10 @@ editor/
 
 | Package | Responsibility |
 |---------|---------------|
-| **@pascal-app/core** | Node schemas, scene state (Zustand), registry contracts, spatial queries, and event bus |
-| **@pascal-app/viewer** | 3D rendering via React Three Fiber, shared render systems, default camera/controls, and post-processing |
-| **@pascal-app/editor** | Editing tools, panels, selection, and direct-manipulation UI |
-| **@pascal-app/nodes** | Built-in registry plugin with node definitions, renderers, geometry, and systems |
+| **@aedifex/core** | Node schemas, scene state (Zustand), registry contracts, spatial queries, and event bus |
+| **@aedifex/viewer** | 3D rendering via React Three Fiber, shared render systems, default camera/controls, and post-processing |
+| **@aedifex/editor** | Editing tools, panels, selection, and direct-manipulation UI |
+| **@aedifex/nodes** | Built-in registry plugin with node definitions, renderers, geometry, and systems |
 | **apps/editor** | Standalone Next.js host for the editor packages |
 
 The **viewer** renders the scene with sensible defaults. The **editor** extends it with interactive tools, selection management, and editing capabilities.
@@ -63,8 +63,8 @@ Each package has its own Zustand store for managing state:
 
 | Store | Package | Responsibility |
 |-------|---------|----------------|
-| `useScene` | `@pascal-app/core` | Scene data: nodes, root IDs, dirty nodes, CRUD operations. Persisted to IndexedDB with undo/redo via Zundo. |
-| `useViewer` | `@pascal-app/viewer` | Viewer state: current selection (building/level/zone IDs), level display mode (stacked/exploded/solo), camera mode. |
+| `useScene` | `@aedifex/core` | Scene data: nodes, root IDs, dirty nodes, CRUD operations. Persisted to IndexedDB with undo/redo via Zundo. |
+| `useViewer` | `@aedifex/viewer` | Viewer state: current selection (building/level/zone IDs), level display mode (stacked/exploded/solo), camera mode. |
 | `useEditor` | `apps/editor` | Editor state: active tool, structure layer visibility, panel states, editor-specific preferences. |
 
 **Access patterns:**
@@ -120,7 +120,7 @@ Nodes are stored in a **flat dictionary** (`Record<id, Node>`), not a nested tre
 
 ### Scene State (Zustand Store)
 
-The scene is managed by a Zustand store in `@pascal-app/core`:
+The scene is managed by a Zustand store in `@aedifex/core`:
 
 ```typescript
 useScene.getState() = {
@@ -210,7 +210,7 @@ const WallRenderer = ({ node }) => {
 
 Systems are React components that run in the render loop (`useFrame`) to update geometry and transforms. They process **dirty nodes** marked by the store.
 
-**Core Systems (in `@pascal-app/core`):**
+**Core Systems (in `@aedifex/core`):**
 
 | System | Responsibility |
 |--------|---------------|
@@ -220,7 +220,7 @@ Systems are React components that run in the render loop (`useFrame`) to update 
 | `RoofSystem` | Generates roof geometry |
 | `ItemSystem` | Positions items on walls, ceilings, or floors (slab elevation) |
 
-**Viewer Systems (in `@pascal-app/viewer`):**
+**Viewer Systems (in `@aedifex/viewer`):**
 
 | System | Responsibility |
 |--------|---------------|
@@ -393,7 +393,7 @@ bun install
 bun dev
 
 # This will:
-# 1. Build @pascal-app/core and @pascal-app/viewer
+# 1. Build @aedifex/core and @aedifex/viewer
 # 2. Start watching both packages for changes
 # 3. Start the Next.js editor dev server
 # Open http://localhost:3002
@@ -408,18 +408,18 @@ bun dev
 turbo build
 
 # Build specific package
-turbo build --filter=@pascal-app/core
+turbo build --filter=@aedifex/core
 ```
 
 ### Publishing Packages
 
 ```bash
 # Build packages
-turbo build --filter=@pascal-app/core --filter=@pascal-app/viewer
+turbo build --filter=@aedifex/core --filter=@aedifex/viewer
 
 # Publish to npm
-npm publish --workspace=@pascal-app/core --access public
-npm publish --workspace=@pascal-app/viewer --access public
+npm publish --workspace=@aedifex/core --access public
+npm publish --workspace=@aedifex/viewer --access public
 ```
 
 ---

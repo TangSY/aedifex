@@ -15,14 +15,14 @@ import {
   useFloorplanMode,
   useSidebarStore,
   type ViewMode,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import {
   CLAY_PALETTE,
   type EdgeMode,
   getSceneTheme,
   SCENE_THEMES,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import {
   Box,
   Check,

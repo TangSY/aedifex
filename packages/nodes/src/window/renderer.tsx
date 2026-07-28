@@ -1,12 +1,12 @@
 'use client'
 
-import { useLiveNodeOverrides, useRegistry, useScene, type WindowNode } from '@pascal-app/core'
+import { useLiveNodeOverrides, useRegistry, useScene, type WindowNode } from '@aedifex/core'
 import {
   createMaterial,
   DEFAULT_WINDOW_MATERIAL,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import type { Mesh } from 'three'
 import { RoofFaceHostFrame } from '../shared/roof-face-host'

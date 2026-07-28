@@ -1,5 +1,5 @@
-import { type AnyNodeId, sceneRegistry, spatialGridManager } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, sceneRegistry, spatialGridManager } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { type Camera, Vector3 } from 'three'
 
 const originScratch = new Vector3()

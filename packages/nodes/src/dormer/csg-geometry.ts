@@ -4,7 +4,7 @@ import {
   getRoofSegmentSurfaceY,
   ROOF_SHAPE_DEFAULTS,
   type RoofSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   ADDITION,
   Brush,
@@ -18,7 +18,7 @@ import {
   remapRoofShellFaces,
   roofCsgDummyMats,
   SUBTRACTION,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 

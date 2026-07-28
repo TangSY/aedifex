@@ -1,5 +1,5 @@
 {
-  "name": "@pascal-app/mcp",
+  "name": "@aedifex/mcp",
   "version": "0.3.2",
   "description": "Model Context Protocol server for Pascal 3D editor",
   "type": "module",
@@ -55,16 +55,16 @@
     "prepublishOnly": "bun run build && bun test"
   },
   "peerDependencies": {
-    "@pascal-app/core": "^0.9.2"
+    "@aedifex/core": "^0.9.2"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@pascal-app/lingo": "^0.2.0",
+    "@aedifex/lingo": "npm:@pascal-app/lingo@^0.2.0",
     "zod": "^4.3.5"
   },
   "devDependencies": {
-    "@pascal-app/core": "^0.9.2",
-    "@pascal/typescript-config": "*",
+    "@aedifex/core": "^0.9.2",
+    "@repo/typescript-config": "*",
     "@types/node": "^22.19.20",
     "typescript": "6.0.3"
   },

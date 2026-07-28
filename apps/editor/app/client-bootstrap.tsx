@@ -1,6 +1,6 @@
 'use client'
 
-// Loads `@pascal-app/nodes`' built-in plugin into the node registry on the
+// Loads `@aedifex/nodes`' built-in plugin into the node registry on the
 // client. Mounted from `layout.tsx` so every page in the standalone
 // editor gets the registry populated before its first `<Viewer>` /
 // `<Editor>` mounts — without this the registry is empty on the client

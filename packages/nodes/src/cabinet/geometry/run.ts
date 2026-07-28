@@ -1,5 +1,5 @@
-import type { CabinetModuleNode, CabinetNode, GeometryContext } from '@pascal-app/core'
-import type { ColorPreset, RenderShading } from '@pascal-app/viewer'
+import type { CabinetModuleNode, CabinetNode, GeometryContext } from '@aedifex/core'
+import type { ColorPreset, RenderShading } from '@aedifex/viewer'
 import { Group, type Mesh } from 'three'
 import { getRunSpanEnds, getRunSpans } from '../run-layout'
 import { compartmentSinkLayout, stackForCabinet } from '../stack'

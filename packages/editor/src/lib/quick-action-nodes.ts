@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId, NodeQuickActionNodeScope } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, NodeQuickActionNodeScope } from '@aedifex/core'
 
 export function collectQuickActionNodeScope(
   nodes: Record<AnyNodeId, AnyNode>,

@@ -6,7 +6,7 @@ import {
   type DuplicableConfig,
   nodeRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { getPlacementMetadataRecord, stripPlacementMetadataFlags } from './placement-metadata'
 
 function cleanPlacementMetadata<N extends AnyNode>(node: N): N {

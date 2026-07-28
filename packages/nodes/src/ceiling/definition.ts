@@ -7,7 +7,7 @@ import {
   resolveCeilingHeight,
   type SceneApi,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { polygonMeasurementFeatures } from '../shared/polygon-measurement'
 import { buildCeilingFloorplan } from './floorplan'
 import {

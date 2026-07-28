@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId, GeometryContext } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, GeometryContext } from '@aedifex/core'
 import {
   BufferGeometry,
   ExtrudeGeometry,

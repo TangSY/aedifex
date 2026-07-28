@@ -7,7 +7,7 @@ import {
   type ScanNode,
   saveAsset,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   Eye,
   EyeOff,

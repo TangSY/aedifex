@@ -4,8 +4,8 @@ import type {
   GeometryContext,
   RoofNode,
   RoofSegmentNode,
-} from '@pascal-app/core'
-import { unionPolygons } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { unionPolygons } from '@aedifex/viewer'
 import { getRoofSegmentPlanLinework } from '../roof-segment/floorplan'
 
 type Pt = [number, number]

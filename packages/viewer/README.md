@@ -1,11 +1,11 @@
-# @pascal-app/viewer
+# @aedifex/viewer
 
 3D viewer component for Pascal building editor.
 
 ## Installation
 
 ```bash
-npm install @pascal-app/core @pascal-app/viewer @pascal-app/editor @pascal-app/nodes
+npm install @aedifex/core @aedifex/viewer @aedifex/editor @aedifex/nodes
 ```
 
 ## Peer Dependencies
@@ -17,7 +17,7 @@ npm install next react react-dom three @react-three/fiber @react-three/drei luci
 ## What's Included
 
 - **Viewer Component** - WebGPU-powered 3D viewer with camera controls
-- **Node Rendering Runtime** - Registry-driven dispatch for node renderers supplied by `@pascal-app/nodes`
+- **Node Rendering Runtime** - Registry-driven dispatch for node renderers supplied by `@aedifex/nodes`
 - **Post-Processing** - SSGI (ambient occlusion + global illumination), TRAA (anti-aliasing), outline effects
 - **Level System** - Level visibility and positioning (stacked/exploded/solo modes)
 - **Wall Cutout System** - Dynamic wall hiding based on camera position
@@ -26,9 +26,9 @@ npm install next react react-dom three @react-three/fiber @react-three/drei luci
 ## Usage
 
 ```typescript
-import { loadPlugin } from '@pascal-app/core'
-import { builtinPlugin } from '@pascal-app/nodes'
-import { Viewer } from '@pascal-app/viewer'
+import { loadPlugin } from '@aedifex/core'
+import { builtinPlugin } from '@aedifex/nodes'
+import { Viewer } from '@aedifex/viewer'
 import { useEffect, useState } from 'react'
 
 const registryReady = loadPlugin(builtinPlugin)
@@ -56,7 +56,7 @@ definitions and scene nodes cannot render. Host-provided plugins use the same `l
 ## Custom Camera Controls
 
 ```typescript
-import { Viewer } from '@pascal-app/viewer'
+import { Viewer } from '@aedifex/viewer'
 import { CameraControls } from '@react-three/drei'
 
 function App() {
@@ -71,7 +71,7 @@ function App() {
 ## Viewer State
 
 ```typescript
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 
 function ViewerControls() {
   const levelMode = useViewer(s => s.levelMode)
@@ -93,7 +93,7 @@ function ViewerControls() {
 ## Asset CDN Helpers
 
 ```typescript
-import { resolveCdnUrl, ASSETS_CDN_URL } from '@pascal-app/viewer'
+import { resolveCdnUrl, ASSETS_CDN_URL } from '@aedifex/viewer'
 
 // Resolves relative paths to CDN URLs
 const url = resolveCdnUrl('/items/chair/model.glb')

@@ -5,7 +5,7 @@ import {
   type RoofSegmentNode,
   SkylightNode as SkylightNodeSchema,
   type SkylightNode as SkylightNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildSkylightFloorplan } from './floorplan'
 import {
   closeSkylightOpenState,

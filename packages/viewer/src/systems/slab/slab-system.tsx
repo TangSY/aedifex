@@ -5,7 +5,7 @@ import {
   polygonsIntersect,
   type SlabNode,
   type SlabPolygonContext,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 import { subtractPolygonsFromPolygon } from '../../lib/polygon-union'
 import { mergeSurfaceHolePolygons } from '../surface-hole-geometry'

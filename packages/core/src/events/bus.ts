@@ -190,7 +190,7 @@ export interface ThumbnailGenerateEvent {
 export interface CameraControlFitSceneEvent {
   /**
    * XZ-plane axis-aligned bounds of the scene's geometry, computed from the
-   * scene graph (see `@pascal-app/editor`'s `computeSceneBoundsXZ`). The
+   * scene graph (see `@aedifex/editor`'s `computeSceneBoundsXZ`). The
    * viewer's camera-controls listener frames the camera onto this box.
    * Omitted values fall back to the camera's default pose.
    */

@@ -4,8 +4,8 @@ import {
   type SpawnNode,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { isAngleSnapActive } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { isAngleSnapActive } from '@aedifex/editor'
 import { rotateAffordanceDelta } from '../shared/rotate-affordance'
 
 export const spawnRotateAffordance: FloorplanAffordance<SpawnNode> = {

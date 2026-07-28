@@ -1,4 +1,4 @@
-import type { RoofSegmentNode, RoofType } from '@pascal-app/core'
+import type { RoofSegmentNode, RoofType } from '@aedifex/core'
 
 /**
  * Shared eave-snap math for the gutter's placement + move tools.

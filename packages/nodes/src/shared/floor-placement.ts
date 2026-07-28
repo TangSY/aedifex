@@ -8,7 +8,7 @@ import {
   resolveAlignment,
   sceneRegistry,
   snapPointToGrid,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Vector3 } from 'three'
 
 export const FLOOR_PLACEMENT_ALIGNMENT_THRESHOLD_M = 0.08

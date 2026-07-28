@@ -1,4 +1,4 @@
-import type { ParametricDescriptor } from '@pascal-app/core'
+import type { ParametricDescriptor } from '@aedifex/core'
 import { dormerSupportsArch } from './geometry'
 import type { DormerNode } from './schema'
 

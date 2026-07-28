@@ -7,7 +7,7 @@ import {
   type NodeDefinition,
   type RoofSegmentNode as RoofSegmentNodeType,
   type SceneApi,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildDormerRoofCut, getDormerExposedFaces } from './csg-geometry'
 import { buildDormerFloorplan } from './floorplan'
 import { dormerPaint } from './paint'

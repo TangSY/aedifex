@@ -3,7 +3,7 @@ import {
   measurementArea,
   measurementCentroid,
   measurementPerimeter,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 type PolygonPoint = readonly [number, number]
 

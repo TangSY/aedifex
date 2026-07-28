@@ -5,9 +5,9 @@ import {
   getWallPlaneTop,
   resolveStairTotalRise,
   resolveWallEffectiveHeight,
-} from '@pascal-app/core'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core/schema'
-import { computeWallSlabSupport } from '@pascal-app/core/spatial-grid'
+} from '@aedifex/core'
+import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
+import { computeWallSlabSupport } from '@aedifex/core/spatial-grid'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import {

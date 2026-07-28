@@ -1,5 +1,5 @@
 {
-  "name": "@pascal-app/viewer",
+  "name": "@aedifex/viewer",
   "version": "0.9.2",
   "description": "3D viewer component for Pascal building editor",
   "type": "module",
@@ -22,7 +22,7 @@
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
-    "@pascal-app/core": "^0.9.2",
+    "@aedifex/core": "^0.9.2",
     "@react-three/drei": "^10",
     "@react-three/fiber": "^9",
     "react": "^18 || ^19",
@@ -34,7 +34,7 @@
     "zustand": "^5"
   },
   "devDependencies": {
-    "@pascal/typescript-config": "*",
+    "@repo/typescript-config": "*",
     "@types/node": "^22",
     "@types/react": "^19.2.2",
     "@types/three": "^0.184.0",

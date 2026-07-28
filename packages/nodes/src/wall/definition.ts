@@ -1,5 +1,5 @@
-import type { AnyNodeId, NodeDefinition } from '@pascal-app/core'
-import type { FloorplanNodeExtension } from '@pascal-app/editor'
+import type { AnyNodeId, NodeDefinition } from '@aedifex/core'
+import type { FloorplanNodeExtension } from '@aedifex/editor'
 import { buildWallContextualDimensions } from './contextual-dimensions'
 import { buildWallFloorplan, computeWallFloorplanLevelData } from './floorplan'
 import { wallCurveAffordance, wallMoveEndpointAffordance } from './floorplan-affordances'

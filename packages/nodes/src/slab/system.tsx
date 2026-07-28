@@ -6,7 +6,7 @@ import {
   type SlabNode,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useEffect } from 'react'
 
 /**

@@ -11,8 +11,8 @@ import {
   useScene,
   type WallNode,
   type WindowNode,
-} from '@pascal-app/core'
-import { readFloorplanContext } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { readFloorplanContext } from '@aedifex/editor'
 import { formatConstructionLength } from './construction-length'
 import { resolveWallOpeningCeiling } from './wall-opening-ceiling'
 

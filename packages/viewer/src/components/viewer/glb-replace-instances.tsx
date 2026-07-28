@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNode, type BakeReplaceRenderer, nodeRegistry } from '@pascal-app/core'
+import { type AnyNode, type BakeReplaceRenderer, nodeRegistry } from '@aedifex/core'
 import { createPortal } from '@react-three/fiber'
 import { type ComponentType, Fragment, lazy, memo, type ReactNode, Suspense, useMemo } from 'react'
 import type { Object3D } from 'three'

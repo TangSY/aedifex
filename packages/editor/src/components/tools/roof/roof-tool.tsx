@@ -13,9 +13,9 @@ import {
   useScene,
   type WallNode,
   wallSegmentAnchors,
-} from '@pascal-app/core'
-import { clearSurfacePlanSnapFeedback, resolveSurfacePlanPointSnap } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { clearSurfacePlanSnapFeedback, resolveSurfacePlanPointSnap } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {

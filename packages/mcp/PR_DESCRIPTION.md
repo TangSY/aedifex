@@ -1,8 +1,8 @@
-# feat(mcp): add `@pascal-app/mcp` — Model Context Protocol server
+# feat(mcp): add `@aedifex/mcp` — Model Context Protocol server
 
 ## Summary
 
-Introduces a new workspace package `@pascal-app/mcp` (v0.1.0) that exposes the Pascal scene graph (`@pascal-app/core`) as MCP **tools**, **resources**, and **prompts** so any MCP-compatible AI host — Claude Desktop, Claude Code, Codex CLI, Cursor, or a custom agent — can read, mutate, save, and reopen Pascal projects programmatically with full Zod validation, atomic patches, undo-safe mutations, multimodal image inputs, and local SQLite persistence.
+Introduces a new workspace package `@aedifex/mcp` (v0.1.0) that exposes the Pascal scene graph (`@aedifex/core`) as MCP **tools**, **resources**, and **prompts** so any MCP-compatible AI host — Claude Desktop, Claude Code, Codex CLI, Cursor, or a custom agent — can read, mutate, save, and reopen Pascal projects programmatically with full Zod validation, atomic patches, undo-safe mutations, multimodal image inputs, and local SQLite persistence.
 
 The branch is now local-first: scenes persist to `~/.pascal/data/pascal.db` through SQLite, using `bun:sqlite` in the MCP CLI and `node:sqlite` when the Next.js editor server imports the storage package. The earlier Supabase adapter, SQL migrations, and committed `test-reports/` artifacts have been removed.
 
@@ -85,7 +85,7 @@ Issue [#74 "Viewer component API definition"](https://github.com/pascalorg/edito
 │   └──────────────────────────────────────────────────────┘  │
 │                          │                                 │
 │                          ▼                                 │
-│            @pascal-app/core (unchanged, new subpath exports) │
+│            @aedifex/core (unchanged, new subpath exports) │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -107,7 +107,7 @@ bun run --cwd packages/mcp smoke
 bunx biome check packages/mcp
 
 # Turbo build
-bunx turbo build --filter=@pascal-app/mcp
+bunx turbo build --filter=@aedifex/mcp
 ```
 
 ### Try it with Claude Desktop, Claude Code, or Codex
@@ -143,7 +143,7 @@ and `save_scene`; the scene is openable at `/scene/<id>`.
 
 1. **GLB export is not implemented.** Three.js is browser-only; headless GLB export would require a significant additional effort. `export_glb` returns a structured `{ status: 'not_implemented' }` response.
 2. **Vision tools require host sampling support.** `analyze_floorplan_image` / `analyze_room_photo` defer the vision work to the host via MCP sampling. Hosts without sampling capability get a structured `sampling_unavailable` error. No vision model is bundled.
-3. **Headless mode doesn't regenerate geometry.** Wall mitering, slab triangulation, CSG cutouts, etc. run only in the browser renderer. MCP clients can manipulate node data freely, but derived geometry (mitered wall corners, cut-out walls with door/window holes) is recomputed only when a browser loads the scene via `@pascal-app/viewer`.
+3. **Headless mode doesn't regenerate geometry.** Wall mitering, slab triangulation, CSG cutouts, etc. run only in the browser renderer. MCP clients can manipulate node data freely, but derived geometry (mitered wall corners, cut-out walls with door/window holes) is recomputed only when a browser loads the scene via `@aedifex/viewer`.
 4. **`loadAssetUrl`/`saveAsset` are browser-only.** Items with `asset://<id>` URLs can't be resolved in Node. Supply absolute URLs or `data:` URIs if you need them usable outside the browser.
 5. **`SiteNode.children` inconsistency.** Site's children hold full node objects while every other container holds ID strings (see `CROSS_CUTTING.md` §2). MCP works around this by traversing via the flat `nodes` dict. Upstream alignment proposed as a follow-up.
 6. **Catalog unavailable in headless mode.** `pascal://catalog/items` and `place_item`'s catalog resolution fall back to a placeholder asset payload until the core exposes a Node-consumable catalog.
@@ -153,7 +153,7 @@ and `save_scene`; the scene is openable at `/scene/<id>`.
 
 Documented in [`packages/mcp/CROSS_CUTTING.md`](./CROSS_CUTTING.md):
 
-1. **`packages/core/package.json` — additive subpath exports.** Adds `./schema`, `./store`, `./material-library`, `./spatial-grid`, `./wall`. Needed because the main entry re-exports browser-only systems; subpath entries let Node consumers skip them. Zero impact on existing consumers (`apps/editor`, `@pascal-app/viewer` still use the main entry).
+1. **`packages/core/package.json` — additive subpath exports.** Adds `./schema`, `./store`, `./material-library`, `./spatial-grid`, `./wall`. Needed because the main entry re-exports browser-only systems; subpath entries let Node consumers skip them. Zero impact on existing consumers (`apps/editor`, `@aedifex/viewer` still use the main entry).
 2. **`.github/workflows/mcp-ci.yml` — new CI.** Kept because the repo otherwise only has manual release CI. It runs on PRs touching MCP/core/editor scene API code; installs with Bun 1.3.0, builds MCP, runs MCP tests, runs focused editor scene API tests, and biome-checks the touched surface.
 3. **`apps/editor` scene routes.** Adds scene API routes and pages that read from the same SQLite-backed `SceneOperations` layer as MCP.
 4. (Observation, not fixed) **`SiteNode.children` inconsistency.** Detailed in CROSS_CUTTING §2.
@@ -162,7 +162,7 @@ Documented in [`packages/mcp/CROSS_CUTTING.md`](./CROSS_CUTTING.md):
 
 - ✅ `bunx biome check packages/mcp` — clean
 - ✅ `bun run --cwd packages/mcp build` — tsc OK
-- ✅ `bunx turbo build --filter=@pascal-app/mcp` — 2/2 tasks successful
+- ✅ `bunx turbo build --filter=@aedifex/mcp` — 2/2 tasks successful
 - ✅ `bun test --cwd packages/mcp` — 248/248 tests pass across 40 files (965 expects)
 - ✅ `bun run --cwd packages/mcp smoke` — spawns stdio server, registers 30 tools, exercises `get_scene` / `create_level` / `validate_scene` / `undo` end-to-end
 - ✅ `bun test apps/editor/lib/scene-store-server.test.ts` — editor store singleton test passes
@@ -196,7 +196,7 @@ fix(mcp): remove Supabase backend and committed test reports
 
 - Align `SiteNode.children` to IDs-only (with `setScene` migration) — CROSS_CUTTING §2.
 - Extract shared operation/service layer so MCP, CLI, and future REST/OpenAPI adapters do not duplicate business validation.
-- Expose a Node-consumable item catalog from `@pascal-app/core` so `place_item` can resolve real catalog IDs.
+- Expose a Node-consumable item catalog from `@aedifex/core` so `place_item` can resolve real catalog IDs.
 - Surface real spatial-grid collision detection (currently a simple AABB pass in `check_collisions`).
 - Post-build `chmod +x dist/bin/pascal-mcp.js` step so fresh installs get an executable bin without a manual chmod.
-- Consider a separate `@pascal-app/systems` package so `@pascal-app/core` can go data-only (breaking change, larger refactor).
+- Consider a separate `@aedifex/systems` package so `@aedifex/core` can go data-only (breaking change, larger refactor).

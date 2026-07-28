@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
-import { type AnyNode, type RoofSegmentNode, useScene } from '@pascal-app/core'
+import { type AnyNode, type RoofSegmentNode, useScene } from '@aedifex/core'
 import { getRoofSurfaceFaceBoundsAt } from './roof-surface'
 
 // bun's mock.module is process-global: it replaces the mocked module for
 // every test file that runs after this one in the same `bun test` invocation.
-// Do NOT stub the '@pascal-app/editor' / '@pascal-app/viewer' stores here —
+// Do NOT stub the '@aedifex/editor' / '@aedifex/viewer' stores here —
 // the real ones work for this test (guides publish into the real
 // useOpeningGuides store; `useViewer.getState().selection.buildingId` reads
 // the store default), while a stubbed `getState` blinds every later suite

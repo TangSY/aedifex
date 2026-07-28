@@ -1,5 +1,5 @@
 {
-  "name": "@pascal-app/editor",
+  "name": "@aedifex/editor",
   "version": "0.9.2",
   "description": "Pascal building editor component",
   "type": "module",
@@ -11,8 +11,8 @@
     "check-types": "tsgo --noEmit"
   },
   "peerDependencies": {
-    "@pascal-app/core": "^0.9.2",
-    "@pascal-app/viewer": "^0.9.2",
+    "@aedifex/core": "^0.9.2",
+    "@aedifex/viewer": "^0.9.2",
     "@react-three/drei": "^10",
     "@react-three/fiber": "^9",
     "next": ">=15",
@@ -26,7 +26,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@iconify/react": "^6.0.2",
     "@number-flow/react": "^0.6.0",
-    "@pascal-app/lingo": "^0.2.0",
+    "@aedifex/lingo": "npm:@pascal-app/lingo@^0.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-context-menu": "^2.2.16",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -56,9 +56,9 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "@pascal-app/core": "^0.9.2",
-    "@pascal-app/viewer": "^0.9.2",
-    "@pascal/typescript-config": "*",
+    "@aedifex/core": "^0.9.2",
+    "@aedifex/viewer": "^0.9.2",
+    "@repo/typescript-config": "*",
     "@types/blob-stream": "^0.1.33",
     "@types/bun": "^1.3.0",
     "@types/howler": "^2.2.12",

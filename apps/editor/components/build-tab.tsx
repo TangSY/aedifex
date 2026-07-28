@@ -1,6 +1,6 @@
 'use client'
 
-import { nodeRegistry } from '@pascal-app/core'
+import { nodeRegistry } from '@aedifex/core'
 import {
   type FloorplanMode,
   getFloorplanNodeExtension,
@@ -9,8 +9,8 @@ import {
   triggerSFX,
   useEditor,
   useFloorplanMode,
-} from '@pascal-app/editor'
-import { useLiquidLineToolOptions } from '@pascal-app/nodes'
+} from '@aedifex/editor'
+import { useLiquidLineToolOptions } from '@aedifex/nodes'
 import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {

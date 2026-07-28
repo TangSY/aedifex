@@ -5,8 +5,8 @@ import {
   resolveSupportSlabPatch,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useMemo, useRef } from 'react'
 import type { Vector3 } from 'three'
 import usePlacementPreview from '../../../store/use-placement-preview'

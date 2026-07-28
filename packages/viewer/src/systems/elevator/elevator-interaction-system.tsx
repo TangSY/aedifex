@@ -5,7 +5,7 @@ import {
   resolveElevatorDispatchTarget,
   useInteractive,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import { type Object3D, Raycaster, Vector2 } from 'three'
