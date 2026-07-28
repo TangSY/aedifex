@@ -281,6 +281,7 @@ export class SqliteSceneStore implements SceneStore {
   private readonly projectPlaceholders = new Map<string, ProjectPlaceholder>()
   private db: SqliteDatabase | null = null
   private dbPromise: Promise<SqliteDatabase> | null = null
+  private writeQueue: Promise<void> = Promise.resolve()
 
   constructor(opts: SqliteSceneStoreOptions = {}) {
     const env = opts.env ?? process.env
@@ -656,21 +657,29 @@ export class SqliteSceneStore implements SceneStore {
     `)
   }
 
-  private async withWriteTransaction<T>(fn: (db: SqliteDatabase) => T | Promise<T>): Promise<T> {
-    const db = await this.database()
-    db.exec('BEGIN IMMEDIATE')
-    try {
-      const result = await fn(db)
-      db.exec('COMMIT')
-      return result
-    } catch (err) {
+  private withWriteTransaction<T>(fn: (db: SqliteDatabase) => T | Promise<T>): Promise<T> {
+    const operation = this.writeQueue.then(async () => {
+      const db = await this.database()
+      db.exec('BEGIN IMMEDIATE')
       try {
-        db.exec('ROLLBACK')
-      } catch {
-        // Ignore rollback errors so the original failure is preserved.
+        const result = await fn(db)
+        db.exec('COMMIT')
+        return result
+      } catch (err) {
+        try {
+          db.exec('ROLLBACK')
+        } catch {
+          // Ignore rollback errors so the original failure is preserved.
+        }
+        throw err
       }
-      throw err
-    }
+    })
+
+    this.writeQueue = operation.then(
+      () => undefined,
+      () => undefined,
+    )
+    return operation
   }
 
   private getRow(db: SqliteDatabase, id: string): SceneRow | null {
