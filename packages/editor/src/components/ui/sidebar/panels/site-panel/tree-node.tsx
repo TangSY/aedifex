@@ -100,6 +100,7 @@ import { SlabTreeNode } from './slab-tree-node'
 import { SolarPanelTreeNode } from './solar-panel-tree-node'
 import { SpawnTreeNode } from './spawn-tree-node'
 import { StairTreeNode } from './stair-tree-node'
+import { resolveRegisteredTreeNodeComponent } from './tree-node-resolution'
 import { WallTreeNode } from './wall-tree-node'
 import { WindowTreeNode } from './window-tree-node'
 import { ZoneTreeNode } from './zone-tree-node'
@@ -117,10 +118,13 @@ interface TreeNodeProps {
 // outside the registry; future work moves these to a
 // `def.presentation`-driven generic tree-node and removes this map
 // entirely).
-const treeNodeByType: Record<
-  string,
-  React.ComponentType<{ depth: number; isLast?: boolean; nodeId: AnyNodeId }>
-> = {
+type TreeNodeComponent = React.ComponentType<{
+  depth: number
+  isLast?: boolean
+  nodeId: AnyNodeId
+}>
+
+const treeNodeByType: Record<string, TreeNodeComponent> = {
   building: BuildingTreeNode as React.ComponentType<{
     depth: number
     isLast?: boolean
@@ -184,7 +188,12 @@ export const TreeNode = memo(function TreeNode({ nodeId, depth = 0, isLast }: Tr
   const nodeType = useScene((state) => state.nodes[nodeId]?.type)
   if (shouldHide) return null
   if (!nodeType) return null
-  const Component = treeNodeByType[nodeType]
+  const Component = resolveRegisteredTreeNodeComponent<TreeNodeComponent>({
+    nodeType,
+    components: treeNodeByType,
+    isRegistered: (kind) => nodeRegistry.has(kind),
+    fallback: RegistryTreeNode,
+  })
   if (!Component) return null
   return <Component depth={depth} isLast={isLast} nodeId={nodeId} />
 })

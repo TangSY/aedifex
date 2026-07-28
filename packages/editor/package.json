@@ -1,6 +1,6 @@
 {
   "name": "@aedifex/editor",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "Aedifex building editor component",
   "type": "module",
   "exports": {
@@ -19,8 +19,8 @@
     "test:ai": "vitest run"
   },
   "peerDependencies": {
-    "@aedifex/core": "^0.9.2",
-    "@aedifex/viewer": "^0.9.2",
+    "@aedifex/core": "^0.10.0",
+    "@aedifex/viewer": "^0.10.0",
     "@react-three/drei": "^10",
     "@react-three/fiber": "^9",
     "next": ">=15",
@@ -65,8 +65,8 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "@aedifex/core": "^0.9.2",
-    "@aedifex/viewer": "^0.9.2",
+    "@aedifex/core": "^0.10.0",
+    "@aedifex/viewer": "^0.10.0",
     "@aedifex/mcp": "^0.3.2",
     "@repo/typescript-config": "*",
     "@types/blob-stream": "^0.1.33",
