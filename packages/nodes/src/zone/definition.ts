@@ -32,7 +32,7 @@ export const zoneDefinition: NodeDefinition<typeof ZoneNode> = {
   schema: ZoneNode,
   category: 'site',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       contextualDimensions: buildZoneContextualDimensions,
       schedule: buildRoomFloorplanSchedule,
     } satisfies FloorplanNodeExtension<ZoneNode>,

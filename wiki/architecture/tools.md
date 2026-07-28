@@ -40,7 +40,7 @@ See `apps/editor/components/tools/tool-manager.tsx`.
 
 ```tsx
 // apps/editor/components/tools/my-tool/index.tsx
-import { useScene } from '@pascal-app/core'
+import { useScene } from '@aedifex/core'
 import { useEditor } from '../../store/use-editor'
 
 export function MyTool() {
@@ -105,7 +105,7 @@ export function MyTool() {
   The HUD is driven by the active interaction scope, so it shows only the current context's controls.
 - **Preview geometry is local** — transient meshes shown while a tool is active live in the tool component, not in the scene store.
 - **Clean up on unmount** — remove any pending/incomplete nodes *and* any live transforms/mesh offsets when the tool unmounts.
-- **Tools must not import from `@pascal-app/viewer`** — use the scene store and core hooks only. `sceneRegistry` is exported from `@pascal-app/core` and is the allowed door into the Three.js graph for the narrow purposes above.
+- **Tools must not import from `@aedifex/viewer`** — use the scene store and core hooks only. `sceneRegistry` is exported from `@aedifex/core` and is the allowed door into the Three.js graph for the narrow purposes above.
 - Each tool should handle a single, well-scoped interaction. Split complex tools (e.g. "draw + move") into separate components selected by `useEditor`.
 
 ## Adding a New Tool
@@ -164,7 +164,7 @@ Anything that subscribes to `useLiveTransforms` to inform 2D rendering needs to 
 
 ## Data-driven live drag: `useLiveNodeOverrides`, never per-tick `useScene`
 
-`useLiveTransforms` (above) carries a rigid position/rotation offset — right when the renderer can preview the move by transforming the node's group. It's **wrong** when the geometry is *recomputed from data fields* (a wall re-miters from its `start`/`end`, an opening re-cuts its host wall, an endpoint drag reshapes the segment and cascades to linked walls): the shape itself changes, so there's no rigid offset to apply. Those preview via **`useLiveNodeOverrides`** (`@pascal-app/core`) — the tool publishes the changed fields per tick (`set(id, patch)` / `setMany(...)`) and the geometry systems merge them (`getEffectiveWall` in 3D, the floor-plan sibling-override merge in 2D, `getEffectiveNode` in panels). The scene store stays untouched during the drag; on commit the tool clears overrides and writes it **once** (`resumeSceneHistory → updateNodes([...]) → pauseSceneHistory`), so the gesture is a single undo step. Esc/unmount just clears overrides — cancel is free.
+`useLiveTransforms` (above) carries a rigid position/rotation offset — right when the renderer can preview the move by transforming the node's group. It's **wrong** when the geometry is *recomputed from data fields* (a wall re-miters from its `start`/`end`, an opening re-cuts its host wall, an endpoint drag reshapes the segment and cascades to linked walls): the shape itself changes, so there's no rigid offset to apply. Those preview via **`useLiveNodeOverrides`** (`@aedifex/core`) — the tool publishes the changed fields per tick (`set(id, patch)` / `setMany(...)`) and the geometry systems merge them (`getEffectiveWall` in 3D, the floor-plan sibling-override merge in 2D, `getEffectiveNode` in panels). The scene store stays untouched during the drag; on commit the tool clears overrides and writes it **once** (`resumeSceneHistory → updateNodes([...]) → pauseSceneHistory`), so the gesture is a single undo step. Esc/unmount just clears overrides — cancel is free.
 
 **Writing `useScene.updateNodes`/`updateNode` per `grid:move` tick is a blocker:** it replaces the `nodes` map ref, so every `useScene(s => s.nodes)` subscriber app-wide (panels, HUD, tooltips, floor plan, catalog) re-renders each frame → FPS collapse. (`markDirty` per tick is fine — it never calls `set()`.) Reference: `packages/nodes/src/wall/{move-tool,move-endpoint-tool}.tsx`.
 

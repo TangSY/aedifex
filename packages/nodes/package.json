@@ -1,7 +1,7 @@
 {
   "name": "@aedifex/nodes",
   "version": "0.1.1",
-  "description": "Built-in node bundles for the Pascal 3D editor — one folder per kind, exported as `builtinPlugin`",
+  "description": "Built-in node bundles for the Aedifex 3D editor — one folder per kind, exported as `builtinPlugin`",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -45,17 +45,17 @@
     "typescript": "6.0.3"
   },
   "keywords": [
-    "pascal",
+    "aedifex",
     "3d",
     "editor",
     "node-registry"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/pascalorg/editor.git",
+    "url": "https://github.com/TangSY/aedifex.git",
     "directory": "packages/nodes"
   },
   "license": "MIT",
-  "homepage": "https://github.com/pascalorg/editor/tree/main/packages/nodes#readme",
-  "bugs": "https://github.com/pascalorg/editor/issues"
+  "homepage": "https://github.com/TangSY/aedifex/tree/main/packages/nodes#readme",
+  "bugs": "https://github.com/TangSY/aedifex/issues"
 }

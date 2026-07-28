@@ -1,6 +1,6 @@
 # @aedifex/nodes
 
-Built-in node definitions for the Pascal viewer and editor.
+Built-in node definitions for the Aedifex viewer and editor.
 
 ## Installation
 
@@ -13,7 +13,7 @@ dependencies. Install any peers reported by your package manager.
 
 ## Usage
 
-Load `builtinPlugin` once before mounting a Pascal viewer or editor:
+Load `builtinPlugin` once before mounting a Aedifex viewer or editor:
 
 ```typescript
 import { loadPlugin } from '@aedifex/core'
@@ -26,7 +26,7 @@ The plugin registers the built-in schemas, renderers, geometry builders, tools, 
 can load additional plugins through the same `loadPlugin` API.
 
 See the
-[`@aedifex/viewer` quick start](https://github.com/pascalorg/editor/tree/main/packages/viewer#usage)
+[`@aedifex/viewer` quick start](https://github.com/TangSY/aedifex/tree/main/packages/viewer#usage)
 for bootstrap ordering in a React application.
 
 ## License

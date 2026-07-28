@@ -200,7 +200,7 @@ export {
 // `ToolbarLeft` / `ToolbarRight` are the headless-spec aliases for the
 // existing `ViewerToolbarLeft` / `ViewerToolbarRight` exports — the
 // underlying components are the same; the alias just matches the names
-// used in `pascalorg/private-editor:plans/community-preset-system.md`
+// used in `aedifex-saas:plans/community-preset-system.md`
 // so consumer code stays close to the spec vocabulary.
 export {
   CameraActions as ToolbarRight,

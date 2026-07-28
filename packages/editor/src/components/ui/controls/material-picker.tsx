@@ -30,7 +30,7 @@ export type MaterialPickerProps = {
 
 const SOURCE_FILTERS: { id: MaterialSourceFilter; label: string }[] = [
   { id: 'all', label: 'All' },
-  { id: 'pascal', label: 'Pascal' },
+  { id: 'aedifex', label: 'Aedifex' },
   { id: 'mine', label: 'Mine' },
   { id: 'workspace', label: 'Workspace' },
   { id: 'community', label: 'Community' },
@@ -42,7 +42,7 @@ function getCategoryLabel(category: (typeof MATERIAL_CATEGORIES)[number]) {
 
 function filterBySource(items: MaterialCatalogItem[], filter: MaterialSourceFilter) {
   if (filter === 'all') return items
-  return items.filter((item) => (item.source ?? 'pascal') === filter)
+  return items.filter((item) => (item.source ?? 'aedifex') === filter)
 }
 
 /**

@@ -37,7 +37,7 @@ function makeGraph(overrides: Partial<SceneGraph> = {}): SceneGraph {
 }
 
 async function mkTmpRoot(): Promise<string> {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'pascal-sqlite-test-'))
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aedifex-sqlite-test-'))
 }
 
 async function rmrf(p: string): Promise<void> {
@@ -46,34 +46,34 @@ async function rmrf(p: string): Promise<void> {
 
 function createStore(rootDir: string, opts: Partial<SqliteSceneStoreOptions> = {}) {
   return new SqliteSceneStore({
-    databasePath: path.join(rootDir, 'pascal.db'),
+    databasePath: path.join(rootDir, 'aedifex.db'),
     ...opts,
   })
 }
 
 describe('resolveDefaultDatabasePath', () => {
-  test('respects PASCAL_DB_PATH when set', () => {
-    expect(resolveDefaultDatabasePath({ PASCAL_DB_PATH: '/tmp/custom.db' })).toBe('/tmp/custom.db')
+  test('respects AEDIFEX_DB_PATH when set', () => {
+    expect(resolveDefaultDatabasePath({ AEDIFEX_DB_PATH: '/tmp/custom.db' })).toBe('/tmp/custom.db')
   })
 
-  test('resolves PASCAL_DATA_DIR to pascal.db', () => {
-    expect(resolveDefaultDatabasePath({ PASCAL_DATA_DIR: '/tmp/pascal-data' })).toBe(
-      path.join('/tmp/pascal-data', 'pascal.db'),
+  test('resolves AEDIFEX_DATA_DIR to aedifex.db', () => {
+    expect(resolveDefaultDatabasePath({ AEDIFEX_DATA_DIR: '/tmp/pascal-data' })).toBe(
+      path.join('/tmp/pascal-data', 'aedifex.db'),
     )
   })
 
   test('falls back to XDG_DATA_HOME on Unix', () => {
     if (process.platform === 'win32') return
     expect(resolveDefaultDatabasePath({ XDG_DATA_HOME: '/xdg/share' })).toBe(
-      path.join('/xdg/share', 'pascal', 'data', 'pascal.db'),
+      path.join('/xdg/share', 'pascal', 'data', 'aedifex.db'),
     )
   })
 
-  test('falls back to homedir + .pascal/data/pascal.db', () => {
+  test('falls back to homedir + .pascal/data/aedifex.db', () => {
     if (process.platform === 'win32') return
-    expect(resolveDefaultDatabasePath({}).endsWith(path.join('.pascal', 'data', 'pascal.db'))).toBe(
-      true,
-    )
+    expect(
+      resolveDefaultDatabasePath({}).endsWith(path.join('.pascal', 'data', 'aedifex.db')),
+    ).toBe(true)
   })
 })
 
@@ -202,7 +202,7 @@ describe('SqliteSceneStore', () => {
     await store.save({ id: 'rev', name: 'Rev', graph: makeGraph() })
     await store.rename('rev', 'Renamed', { expectedVersion: 1 })
 
-    const dbPath = path.join(rootDir, 'pascal.db')
+    const dbPath = path.join(rootDir, 'aedifex.db')
     const db = new Database(dbPath)
     try {
       const beforeDelete = db
@@ -295,7 +295,7 @@ describe('SqliteSceneStore', () => {
   test('load returns null for missing scenes and errors on corrupt graph rows', async () => {
     expect(await store.load('missing')).toBeNull()
 
-    const db = new Database(path.join(rootDir, 'pascal.db'), { create: true })
+    const db = new Database(path.join(rootDir, 'aedifex.db'), { create: true })
     try {
       db.exec(`
         CREATE TABLE IF NOT EXISTS scenes (

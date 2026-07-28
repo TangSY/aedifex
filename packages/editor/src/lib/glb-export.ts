@@ -13,7 +13,7 @@ import {
   type ZoneNode,
 } from '@aedifex/core'
 import {
-  getPascalTextureRef,
+  getAedifexTextureRef,
   poseDoorMovingParts,
   poseWindowMovingParts,
   SCENE_LAYER,
@@ -82,24 +82,24 @@ export function writeTextureReferenceExtras(
   texture: THREE.Texture,
   textureDef: Record<string, unknown>,
 ) {
-  const ref = getPascalTextureRef(texture)
+  const ref = getAedifexTextureRef(texture)
   if (!ref) return
 
   const imageIndex = getExportedImageIndex(textureDef)
   const imageDef =
     imageIndex === null ? undefined : (writer as TextureReferenceWriter).json.images?.[imageIndex]
   if (!imageDef) {
-    throw new Error('GLTFExporter did not expose an image for a referenced Pascal texture')
+    throw new Error('GLTFExporter did not expose an image for a referenced Aedifex texture')
   }
 
   const textureWithExtras = textureDef as GltfExtrasDef
   textureWithExtras.extras = {
     ...textureWithExtras.extras,
-    pascalTextureRef: ref,
+    aedifexTextureRef: ref,
   }
   imageDef.extras = {
     ...imageDef.extras,
-    pascalTextureRef: ref,
+    aedifexTextureRef: ref,
   }
 }
 
@@ -160,7 +160,7 @@ export async function exportSceneToGlb(
 /**
  * Build an engine-agnostic export tree from the live scene graph. The result is
  * a standalone three.js scene plus glTF animation clips, ready for
- * `GLTFExporter` — it carries no Pascal runtime dependency.
+ * `GLTFExporter` — it carries no Aedifex runtime dependency.
  *
  *  - Clones the source so live objects are never mutated.
  *  - Converts WebGPU NodeMaterials to classic glTF-standard materials.
@@ -253,7 +253,7 @@ const PLACEHOLDER_MATERIAL = new THREE.MeshBasicMaterial({ visible: false })
 /**
  * Strip everything that must not bake into the model:
  *  - Renderer-owned presentation geometry explicitly marked
- *    `userData.pascalExport = 'strip'` (for example the site's 800 m horizon
+ *    `userData.aedifexExport = 'strip'` (for example the site's 800 m horizon
  *    disc). These meshes make the authoring viewport look grounded but aren't
  *    part of the portable scene artifact.
  *  - Editor overlays on non-scene layers (gizmos, selection handles, ground
@@ -270,7 +270,7 @@ const PLACEHOLDER_MATERIAL = new THREE.MeshBasicMaterial({ visible: false })
 function pruneNonRenderableMeshes(root: THREE.Object3D, identityNodes: Set<THREE.Object3D>) {
   const toRemove: THREE.Object3D[] = []
   root.traverse((object) => {
-    if (object.userData.pascalExport === 'strip') {
+    if (object.userData.aedifexExport === 'strip') {
       toRemove.push(object)
       return
     }
@@ -573,7 +573,7 @@ function replaceReferencedTextures(
   const textureMaterial = material as THREE.Material & Record<string, unknown>
   for (const slot of REFERENCE_MAP_SLOTS) {
     const texture = textureMaterial[slot]
-    if (!(texture instanceof THREE.Texture) || !getPascalTextureRef(texture)) continue
+    if (!(texture instanceof THREE.Texture) || !getAedifexTextureRef(texture)) continue
 
     let placeholder = placeholderCache.get(texture)
     if (!placeholder) {
@@ -607,8 +607,8 @@ function createPlaceholderCanvas(): OffscreenCanvas | HTMLCanvasElement | null {
 }
 
 function createReferencePlaceholder(texture: THREE.Texture): THREE.Texture {
-  const ref = getPascalTextureRef(texture)
-  if (!ref) throw new Error('Cannot create a placeholder for an invalid Pascal texture reference')
+  const ref = getAedifexTextureRef(texture)
+  if (!ref) throw new Error('Cannot create a placeholder for an invalid Aedifex texture reference')
 
   const canvas = createPlaceholderCanvas()
   const placeholder = canvas
@@ -639,7 +639,7 @@ function createReferencePlaceholder(texture: THREE.Texture): THREE.Texture {
   placeholder.flipY = texture.flipY
   placeholder.unpackAlignment = texture.unpackAlignment
   placeholder.colorSpace = texture.colorSpace
-  placeholder.userData = { pascalTextureRef: ref }
+  placeholder.userData = { aedifexTextureRef: ref }
   placeholder.needsUpdate = true
   return placeholder
 }
@@ -888,7 +888,7 @@ function bakeSwingDoorClip(
  * to a single action and a trigger on one would animate another. The
  * human-readable name lives in `extras.label` instead. glTF has no core loop
  * flag — the player decides — so we stamp `extras.loop = false` (via the clip's
- * userData, which `GLTFExporter` serialises onto the animation): Pascal's
+ * userData, which `GLTFExporter` serialises onto the animation): Aedifex's
  * `/viewer` and any extras-aware consumer play it once and hold the open pose; a
  * dumb glTF player still loops. Consumers map a clip back to its node by walking
  * up from a channel's target to the nearest ancestor carrying `extras.pascalId`.

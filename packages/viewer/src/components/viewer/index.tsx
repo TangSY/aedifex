@@ -17,10 +17,7 @@ import {
   useState,
 } from 'react'
 import * as THREE from 'three/webgpu'
-import {
-  clearScreenshotRenderer,
-  setScreenshotRenderer,
-} from '../../lib/capture-screenshot'
+import { clearScreenshotRenderer, setScreenshotRenderer } from '../../lib/capture-screenshot'
 import { hasDrawableGeometry } from '../../lib/drawable-geometry'
 import { PERF_OVERLAY_ENABLED, pushGpuSample } from '../../lib/gpu-perf'
 import { applyIsolation, clearIsolation } from '../../lib/isolation'
@@ -115,7 +112,7 @@ function UnsupportedGpuViewerFallback() {
       <div className="max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
         <h2 className="font-semibold text-lg">3D viewer unavailable</h2>
         <p className="mt-2 text-neutral-600 text-sm">
-          This browser or environment does not expose WebGPU or WebGL, so Pascal cannot render the
+          This browser or environment does not expose WebGPU or WebGL, so Aedifex cannot render the
           3D scene here. Try opening the editor in a browser with hardware acceleration enabled.
         </p>
       </div>

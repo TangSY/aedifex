@@ -80,7 +80,7 @@ describe('prepareSceneForExport', () => {
     stamped.flipY = false
     stamped.colorSpace = THREE.SRGBColorSpace
     stamped.updateMatrix()
-    stamped.userData.pascalTextureRef = {
+    stamped.userData.aedifexTextureRef = {
       v: 1,
       kind: 'library-material',
       src: `${STORAGE_ORIGIN}/storage/v1/object/public/materials/user/material/oak_basecolor_512.ktx2`,
@@ -113,7 +113,7 @@ describe('prepareSceneForExport', () => {
     expect(placeholder.rotation).toBe(stamped.rotation)
     expect(placeholder.flipY).toBe(stamped.flipY)
     expect(placeholder.colorSpace).toBe(stamped.colorSpace)
-    expect(placeholder.userData.pascalTextureRef).toEqual(stamped.userData.pascalTextureRef)
+    expect(placeholder.userData.aedifexTextureRef).toEqual(stamped.userData.aedifexTextureRef)
     expect(material.normalMap).toBe(unstamped)
     const sharedMaterial = (scene.children[1] as THREE.Mesh).material as THREE.MeshStandardMaterial
     expect(sharedMaterial.map).toBe(placeholder)
@@ -129,16 +129,16 @@ describe('prepareSceneForExport', () => {
       map: 'normal',
       colorSpace: 'linear',
     }
-    texture.userData.pascalTextureRef = ref
+    texture.userData.aedifexTextureRef = ref
     const imageDef: { extras?: Record<string, unknown> } = {}
     const textureDef: { source: number; extras?: Record<string, unknown> } = { source: 0 }
     const writer = { json: { images: [imageDef] } } as unknown as GLTFWriter
 
     writeTextureReferenceExtras(writer, texture, textureDef)
 
-    expect(textureDef.extras?.pascalTextureRef).toEqual(ref)
-    expect(imageDef.extras?.pascalTextureRef).toEqual(ref)
-    expect(textureDef.extras?.pascalTextureRef).toEqual(imageDef.extras?.pascalTextureRef)
+    expect(textureDef.extras?.aedifexTextureRef).toEqual(ref)
+    expect(imageDef.extras?.aedifexTextureRef).toEqual(ref)
+    expect(textureDef.extras?.aedifexTextureRef).toEqual(imageDef.extras?.aedifexTextureRef)
   })
 
   test('strips editor overlays that live off the scene layer', () => {
@@ -161,7 +161,7 @@ describe('prepareSceneForExport', () => {
     const root = new THREE.Group()
     const siteGround = meshWithNodeMaterial(nodeMaterial())
     const horizonDisc = meshWithNodeMaterial(nodeMaterial())
-    horizonDisc.userData.pascalExport = 'strip'
+    horizonDisc.userData.aedifexExport = 'strip'
     root.add(siteGround, horizonDisc)
 
     const { scene } = prepareSceneForExport(root, {})

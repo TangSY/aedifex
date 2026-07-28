@@ -14,26 +14,26 @@ describe('scene plugin installation state', () => {
 
   test('loads an explicit installed plugin list with the scene', () => {
     useScene.getState().setScene({}, [], {
-      installedPlugins: ['pascal:trees'],
+      installedPlugins: ['aedifex:trees'],
       hasExplicitPluginInstallState: true,
     })
 
-    expect(useScene.getState().installedPlugins).toEqual(['pascal:trees'])
+    expect(useScene.getState().installedPlugins).toEqual(['aedifex:trees'])
     expect(useScene.getState().hasExplicitPluginInstallState).toBe(true)
   })
 
   test('install changes are de-duplicated and become explicit', () => {
-    useScene.getState().setInstalledPlugins(['pascal:trees', 'pascal:trees'], { explicit: true })
+    useScene.getState().setInstalledPlugins(['aedifex:trees', 'aedifex:trees'], { explicit: true })
 
-    expect(useScene.getState().installedPlugins).toEqual(['pascal:trees'])
+    expect(useScene.getState().installedPlugins).toEqual(['aedifex:trees'])
     expect(useScene.getState().hasExplicitPluginInstallState).toBe(true)
   })
 
   test('clearing geometry preserves project plugin installs', () => {
-    useScene.getState().setInstalledPlugins(['pascal:trees'], { explicit: true })
+    useScene.getState().setInstalledPlugins(['aedifex:trees'], { explicit: true })
     useScene.getState().clearScene()
 
-    expect(useScene.getState().installedPlugins).toEqual(['pascal:trees'])
+    expect(useScene.getState().installedPlugins).toEqual(['aedifex:trees'])
     expect(useScene.getState().hasExplicitPluginInstallState).toBe(true)
   })
 

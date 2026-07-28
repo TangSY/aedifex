@@ -7,7 +7,7 @@
 // overlay instead.
 
 import { type AnyNode, type AnyNodeId, sceneRegistry, useScene } from '@aedifex/core'
-import type { PascalSceneGraph } from '@aedifex/ifc-converter'
+import type { AedifexSceneGraph } from '@aedifex/ifc-converter'
 import { useViewer, Viewer } from '@aedifex/viewer'
 import { CameraControls } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
@@ -34,8 +34,8 @@ type CameraControlsImpl = {
 
 import { FitSceneButton, LevelSelector, PreviewToolbar } from './PreviewToolbar'
 
-interface PascalSceneViewerProps {
-  sceneGraph: PascalSceneGraph
+interface AedifexSceneViewerProps {
+  sceneGraph: AedifexSceneGraph
   className?: string
   /** Fired when the user clicks a node in the 3D view. */
   onSelectNode?: (nodeId: string | null) => void
@@ -112,11 +112,11 @@ function LevelFocus() {
   return null
 }
 
-export default function PascalSceneViewer({
+export default function AedifexSceneViewer({
   sceneGraph,
   className,
   onSelectNode,
-}: PascalSceneViewerProps) {
+}: AedifexSceneViewerProps) {
   const setScene = useScene((s) => s.setScene)
   const setSelection = useViewer((s) => s.setSelection)
   const [fitTrigger, setFitTrigger] = useState(0)

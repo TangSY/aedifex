@@ -16,7 +16,7 @@ export const constructionDimensionDefinition: NodeDefinition<typeof Construction
   schema: ConstructionDimensionNode,
   category: 'analysis',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       tool: () => import('./floorplan-tool'),
       availableModes: ['expert'],
       resolveForDrawing: resolveConstructionDimensionForDrawing,

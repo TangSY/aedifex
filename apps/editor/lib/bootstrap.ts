@@ -49,14 +49,14 @@ function loadBuiltinsSync(): void {
     const kinds = Array.from(nodeRegistry.entries(), ([k]) => k)
     if (typeof console !== 'undefined') {
       console.info(
-        `[pascal:registry] loaded ${builtinPlugin.id} v${builtinPlugin.apiVersion} (${kinds.length} kinds: ${kinds.join(', ') || '∅'})`,
+        `[aedifex:registry] loaded ${builtinPlugin.id} v${builtinPlugin.apiVersion} (${kinds.length} kinds: ${kinds.join(', ') || '∅'})`,
       )
     }
     // Expose the registry on globalThis for ad-hoc dev inspection. In
     // prod the registry is reachable through @aedifex/core's
     // exports only.
     if (typeof globalThis !== 'undefined') {
-      ;(globalThis as { __pascalNodeRegistry?: typeof nodeRegistry }).__pascalNodeRegistry =
+      ;(globalThis as { __aedifexNodeRegistry?: typeof nodeRegistry }).__aedifexNodeRegistry =
         nodeRegistry
     }
   }
@@ -76,7 +76,7 @@ export async function loadExternalPlugins(): Promise<void> {
     await loadPlugin(plugin)
   }
   if (isDev() && externals.length > 0 && typeof console !== 'undefined') {
-    console.info(`[pascal:registry] + ${externals.length} discovered plugin(s)`)
+    console.info(`[aedifex:registry] + ${externals.length} discovered plugin(s)`)
   }
 }
 

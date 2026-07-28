@@ -2,7 +2,7 @@ import type { ZodObject } from 'zod'
 import type { AnyNodeDefinition, BakePolicy, NodeRegistry, Plugin } from './types'
 
 const HOST_API_VERSION = 1 as const
-const BUILTIN_PLUGIN_ID = 'pascal:core'
+const BUILTIN_PLUGIN_ID = 'aedifex:core'
 
 const pluginIdsByKind = new Map<string, string>()
 

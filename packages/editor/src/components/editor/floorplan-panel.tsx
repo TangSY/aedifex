@@ -1,6 +1,5 @@
 'use client'
 
-import { Icon } from '@iconify/react'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -55,6 +54,7 @@ import {
 } from '@aedifex/core'
 import { useSegmentDraftChain, useWallSnapIndicator } from '@aedifex/editor'
 import { getSceneTheme, useViewer } from '@aedifex/viewer'
+import { Icon } from '@iconify/react'
 import { Command, Ruler } from 'lucide-react'
 import {
   type ComponentProps,
@@ -11244,7 +11244,7 @@ export function FloorplanPanel({
           // panel, so pan/zoom is preserved across the toggle.
           <svg
             className="h-full w-full touch-none"
-            data-pascal-floorplan-2d
+            data-aedifex-floorplan-2d
             onClick={isMarqueeSelectionToolActive ? undefined : handleSvgClick}
             onContextMenu={(event) => event.preventDefault()}
             onDoubleClick={isMarqueeSelectionToolActive ? undefined : handleBackgroundDoubleClick}

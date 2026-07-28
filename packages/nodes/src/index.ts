@@ -46,7 +46,7 @@ import { windowDefinition } from './window'
 import { zoneDefinition } from './zone'
 
 /**
- * Built-in plugin bundling every node kind shipped with the Pascal editor.
+ * Built-in plugin bundling every node kind shipped with the Aedifex editor.
  *
  * Apps load this once at bootstrap (`loadPlugin(builtinPlugin)`) before
  * mounting the viewer. New built-in nodes are added by creating a folder
@@ -62,7 +62,7 @@ import { zoneDefinition } from './zone'
  * gone — every kind dispatches through the registry.
  */
 export const builtinPlugin: Plugin = {
-  id: 'pascal:core',
+  id: 'aedifex:core',
   apiVersion: 1,
   nodes: [
     // Stage E-complete (full registry path)

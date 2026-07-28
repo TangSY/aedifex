@@ -1,6 +1,5 @@
 'use client'
 
-import { Icon } from '@iconify/react'
 import {
   acquireSceneReadOnlyLease,
   getCatalogMaterialById,
@@ -18,6 +17,7 @@ import {
   useViewer,
   Viewer,
 } from '@aedifex/viewer'
+import { Icon } from '@iconify/react'
 import { memo, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { ViewerOverlay } from '../../components/viewer-overlay'
 import { ViewerZoneSystem } from '../../components/viewer-zone-system'
@@ -1065,7 +1065,7 @@ const ViewerCanvas = memo(function ViewerCanvas({
         {/* 3D viewer — always mounted, hidden via CSS to avoid destroying the WebGL context */}
         <div
           className="relative min-w-0 flex-1 overflow-hidden"
-          data-pascal-viewer-3d
+          data-aedifex-viewer-3d
           ref={viewer3dRef}
           style={{ display: show3d ? undefined : 'none' }}
         >
@@ -1408,7 +1408,7 @@ export default function Editor({
             ) : (
               <ViewerOverlay onBack={() => useEditor.getState().setPreviewMode(false)} />
             )}
-            <div className="h-full w-full" data-pascal-viewer-3d>
+            <div className="h-full w-full" data-aedifex-viewer-3d>
               {previewViewerContent}
             </div>
           </div>
@@ -1484,7 +1484,7 @@ export default function Editor({
           ) : (
             <ViewerOverlay onBack={() => useEditor.getState().setPreviewMode(false)} />
           )}
-          <div className="h-full w-full" data-pascal-viewer-3d>
+          <div className="h-full w-full" data-aedifex-viewer-3d>
             {previewViewerContent}
           </div>
         </>

@@ -430,7 +430,7 @@ export const stairDefinition: NodeDefinition<typeof StairNode> = {
   schema: StairNode,
   category: 'structure',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       linkedLevelIds: (node) =>
         node.toLevelId && node.toLevelId !== node.parentId ? [node.toLevelId as AnyNodeId] : [],
     } satisfies FloorplanNodeExtension<StairNodeType>,

@@ -1,6 +1,6 @@
 # @aedifex/core
 
-Core library for Pascal 3D building editor.
+Core library for Aedifex 3D building editor.
 
 ## Installation
 
@@ -75,7 +75,7 @@ await loadPlugin(builtinPlugin)
 ```
 
 Load the plugin before mounting `@aedifex/viewer`. See the
-[`@aedifex/viewer` quick start](https://github.com/pascalorg/editor/tree/main/packages/viewer#usage)
+[`@aedifex/viewer` quick start](https://github.com/TangSY/aedifex/tree/main/packages/viewer#usage)
 for a React example.
 
 ## License

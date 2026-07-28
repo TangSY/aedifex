@@ -3,23 +3,23 @@
  *
  * Runs a full MCP client/server pair over the in-memory transport inside a
  * single Bun process. Useful for agent frameworks and tests that want to
- * drive Pascal without spawning a subprocess.
+ * drive Aedifex without spawning a subprocess.
  *
  * Compile with the package's `tsc --build`, or run directly with Bun:
  *
  *   bun run packages/mcp/examples/embed-in-agent.ts
  */
 
+import { createAedifexMcpServer, SceneBridge } from '@aedifex/mcp'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { createPascalMcpServer, SceneBridge } from '@aedifex/mcp'
 
 async function main(): Promise<void> {
   // 1. Spin up the headless bridge. `loadDefault()` seeds a Site → Building →
   //    Level stack so the client has something to query immediately.
   const bridge = new SceneBridge()
   bridge.loadDefault()
-  const server = createPascalMcpServer({ bridge })
+  const server = createAedifexMcpServer({ bridge })
 
   // 2. Link the server to an in-memory client. Exactly the same API surface
   //    as the stdio / HTTP transports, but without any process boundary.

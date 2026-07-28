@@ -1,7 +1,7 @@
 {
   "name": "@aedifex/editor",
   "version": "0.9.2",
-  "description": "Pascal building editor component",
+  "description": "Aedifex building editor component",
   "type": "module",
   "exports": {
     ".": "./src/index.tsx",

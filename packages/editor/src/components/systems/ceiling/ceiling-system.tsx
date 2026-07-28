@@ -6,8 +6,8 @@ import useEditor from '../../../store/use-editor'
 import useInteractionScope, { useMovingNode } from '../../../store/use-interaction-scope'
 
 const CEILING_GRID_HIGHLIGHT_COLOR = '#ffffff'
-const CEILING_GRID_BASE_MATERIAL_KEY = '__pascalCeilingGridBaseMaterial'
-const CEILING_GRID_HIGHLIGHT_MATERIAL_KEY = '__pascalCeilingGridHighlightMaterial'
+const CEILING_GRID_BASE_MATERIAL_KEY = '__aedifexCeilingGridBaseMaterial'
+const CEILING_GRID_HIGHLIGHT_MATERIAL_KEY = '__aedifexCeilingGridHighlightMaterial'
 
 type CeilingGridUserData = {
   [CEILING_GRID_BASE_MATERIAL_KEY]?: Material | Material[]

@@ -384,8 +384,8 @@ function getMaterialSide(material: Material | Material[]): Material['side'] {
 
 function isCachedMaterial(value: unknown): boolean {
   return Boolean(
-    (value as { userData?: { __pascalCachedMaterial?: boolean } } | null)?.userData
-      ?.__pascalCachedMaterial,
+    (value as { userData?: { __aedifexCachedMaterial?: boolean } } | null)?.userData
+      ?.__aedifexCachedMaterial,
   )
 }
 

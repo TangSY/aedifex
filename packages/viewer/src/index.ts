@@ -60,8 +60,8 @@ export { ASSETS_CDN_URL, resolveAssetUrl, resolveCdnUrl } from './lib/asset-url'
 export { backdropGradient, deepSkyColor, horizonHazeColor } from './lib/backdrop'
 export { applyWorldScaleBoxUVs } from './lib/box-uv'
 export {
-  captureScreenshot,
   type CaptureScreenshotOptions,
+  captureScreenshot,
 } from './lib/capture-screenshot'
 // CSG primitives — used by chimney's roof-trim and other kinds whose
 // geometry subtracts pieces against their host. Lives in viewer
@@ -142,11 +142,11 @@ export {
   THUMBNAIL_WIDTH,
 } from './lib/snapshot-pipeline'
 export {
-  getPascalTextureRef,
-  type PascalTextureColorSpace,
-  type PascalTextureMap,
-  type PascalTextureRef,
-  stampPascalTextureRef,
+  type AedifexTextureColorSpace,
+  type AedifexTextureMap,
+  type AedifexTextureRef,
+  getAedifexTextureRef,
+  stampAedifexTextureRef,
   textureMapForSlot,
 } from './lib/texture-reference'
 export { packNormalToRGB, unpackRGBToNormal } from './lib/tsl-compat'

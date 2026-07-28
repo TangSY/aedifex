@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   const enableDevDiagnostics =
-    process.env.NODE_ENV === 'development' && process.env.PASCAL_DEV_DIAGNOSTICS === '1'
+    process.env.NODE_ENV === 'development' && process.env.AEDIFEX_DEV_DIAGNOSTICS === '1'
 
   return (
     <html

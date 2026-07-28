@@ -103,11 +103,11 @@ Added `./storage` and `./operations` entries to the `"exports"` map of `@aedifex
 
 The Next.js editor (`apps/editor`) needs access to `createSceneStore()`, `SceneStore` types/errors, and the shared `SceneOperations` service layer in server-only code (API route handlers + `lib/scene-store-server.ts`). The main entry `.` pulls in the full MCP server surface (tools, transports, MCP SDK), which is overkill for a consumer that only needs storage/operations. The subpath exports let `apps/editor` dynamically import storage and operations without re-declaring either contract.
 
-The concrete backend is now `SqliteSceneStore`, backed by built-in SQLite drivers (`bun:sqlite` for the MCP CLI and `node:sqlite` for the Next.js editor server). It writes to `~/.pascal/data/pascal.db` by default and also supports `PASCAL_DATA_DIR`, `PASCAL_DB_PATH`, and `PASCAL_MAX_SCENE_BYTES`.
+The concrete backend is now `SqliteSceneStore`, backed by built-in SQLite drivers (`bun:sqlite` for the MCP CLI and `node:sqlite` for the Next.js editor server). It writes to `~/.pascal/data/aedifex.db` by default and also supports `AEDIFEX_DATA_DIR`, `AEDIFEX_DB_PATH`, and `AEDIFEX_MAX_SCENE_BYTES`.
 
 ### Impact
 
-Zero on existing consumers. Purely additive. The `.` entry continues to export `SceneBridge`, `createPascalMcpServer`, etc., exactly as before.
+Zero on existing consumers. Purely additive. The `.` entry continues to export `SceneBridge`, `createAedifexMcpServer`, etc., exactly as before.
 
 ### Reversibility
 
@@ -137,7 +137,7 @@ on every URL-bearing field in core's schemas:
 
 The validator accepts `asset://…`, `blob:…`, `data:image/…`, `/…` app-relative
 paths, `https://…`, and `http://localhost|127.0.0.1/…`. Optional origin
-narrowing via `process.env.PASCAL_ALLOWED_ASSET_ORIGINS` (comma-separated).
+narrowing via `process.env.AEDIFEX_ALLOWED_ASSET_ORIGINS` (comma-separated).
 Rejects `javascript:`, `file:`, `ftp:`, `ws:`, `data:text/html`,
 `data:application/*`, link-local / private IPs over bare `http`, empty strings,
 and non-URL garbage.

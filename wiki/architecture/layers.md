@@ -10,17 +10,17 @@ Three.js `Layers` control which objects each camera and render pass sees. We use
 
 | Constant | Value | Package | Purpose |
 |---|---|---|---|
-| `SCENE_LAYER` | `0` | `@pascal-app/viewer` | Default Three.js layer — all regular scene geometry |
-| `OVERLAY_LAYER` | `1` | `@pascal-app/viewer` | Editor overlays: gizmos, move handles, tool previews, cursor meshes, snap guides. Composited on top in its own pass. |
-| `ZONE_LAYER` | `2` | `@pascal-app/viewer` | Zone floor fills and wall borders — composited in a separate post-processing pass |
-| `GRID_LAYER` | `3` | `@pascal-app/viewer` | The editor ground grid — rendered *in* the scene pass for correct depth occlusion |
-| `SHADOW_ONLY_LAYER` | `4` | `@pascal-app/viewer` | Shadow-caster-only geometry: hidden roofs/levels in cutaway/solo views. No color pass or camera enables it — only the sun's shadow camera (`lights.tsx`), so the geometry keeps shadowing interiors. Applied per-object via `lib/shadow-only.ts` (`applyShadowOnly`/`clearShadowOnly`). |
+| `SCENE_LAYER` | `0` | `@aedifex/viewer` | Default Three.js layer — all regular scene geometry |
+| `OVERLAY_LAYER` | `1` | `@aedifex/viewer` | Editor overlays: gizmos, move handles, tool previews, cursor meshes, snap guides. Composited on top in its own pass. |
+| `ZONE_LAYER` | `2` | `@aedifex/viewer` | Zone floor fills and wall borders — composited in a separate post-processing pass |
+| `GRID_LAYER` | `3` | `@aedifex/viewer` | The editor ground grid — rendered *in* the scene pass for correct depth occlusion |
+| `SHADOW_ONLY_LAYER` | `4` | `@aedifex/viewer` | Shadow-caster-only geometry: hidden roofs/levels in cutaway/solo views. No color pass or camera enables it — only the sun's shadow camera (`lights.tsx`), so the geometry keeps shadowing interiors. Applied per-object via `lib/shadow-only.ts` (`applyShadowOnly`/`clearShadowOnly`). |
 
 `apps/editor` exposes `EDITOR_LAYER` for editor-helper meshes; it **re-exports** `OVERLAY_LAYER` (`EDITOR_LAYER === OVERLAY_LAYER`) so the editor stays decoupled from the viewer's pass numbering while landing on the same layer.
 
 ```ts
 // In viewer code
-import { SCENE_LAYER, OVERLAY_LAYER, ZONE_LAYER, GRID_LAYER } from '@pascal-app/viewer'
+import { SCENE_LAYER, OVERLAY_LAYER, ZONE_LAYER, GRID_LAYER } from '@aedifex/viewer'
 
 // In editor code (alias of OVERLAY_LAYER)
 import { EDITOR_LAYER } from '@/lib/constants'
@@ -63,7 +63,7 @@ The ground grid is a flat, depth-non-writing plane that must be **occluded by wa
 ## Rules
 
 - **Never hardcode layer numbers.** Always use the named constants.
-- **All four layer constants belong in `@pascal-app/viewer`** — they are renderer concerns. `apps/editor`'s `EDITOR_LAYER` is an alias re-export of `OVERLAY_LAYER`.
+- **All four layer constants belong in `@aedifex/viewer`** — they are renderer concerns. `apps/editor`'s `EDITOR_LAYER` is an alias re-export of `OVERLAY_LAYER`.
 - **Zone meshes must set `layers={ZONE_LAYER}`** so they are picked up by `zonePass` and excluded from `scenePass` depth buffers.
 - **Overlay/helper meshes must set `layers={EDITOR_LAYER}`** (= `OVERLAY_LAYER`) so they render on top, stay out of the ink/SSGI buffers, and are invisible to the thumbnail camera.
 - **The grid uses `GRID_LAYER`**, not the overlay layer, because it needs scene-depth occlusion.

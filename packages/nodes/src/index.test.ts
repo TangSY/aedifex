@@ -8,7 +8,7 @@ describe('builtinPlugin', () => {
   })
 
   test('has the expected manifest shape', () => {
-    expect(builtinPlugin.id).toBe('pascal:core')
+    expect(builtinPlugin.id).toBe('aedifex:core')
     expect(builtinPlugin.apiVersion).toBe(1)
     expect(Array.isArray(builtinPlugin.nodes)).toBe(true)
   })

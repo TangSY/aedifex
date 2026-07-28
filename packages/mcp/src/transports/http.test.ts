@@ -3,7 +3,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { SceneBridge } from '../bridge/scene-bridge'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 import { connectHttp, type HttpTransportHandle } from './http'
 
 let bridge: SceneBridge
@@ -13,7 +13,7 @@ let handle: HttpTransportHandle | null = null
 beforeEach(() => {
   bridge = new SceneBridge()
   bridge.loadDefault()
-  server = createPascalMcpServer({ bridge })
+  server = createAedifexMcpServer({ bridge })
 })
 
 afterEach(async () => {
@@ -65,7 +65,7 @@ test('connectHttp close() stops the server', async () => {
 
 test('connectHttp requires auth when binding a non-loopback host', async () => {
   await expect(connectHttp(server, 0, { host: '0.0.0.0' })).rejects.toThrow(
-    /requires PASCAL_MCP_HTTP_TOKEN/,
+    /requires AEDIFEX_MCP_HTTP_TOKEN/,
   )
 })
 
@@ -79,6 +79,21 @@ test('connectHttp rejects unauthenticated requests when a token is configured', 
   })
 
   expect(response.status).toBe(401)
+})
+
+test('connectHttp preserves the legacy x-pascal-mcp-token compatibility header', async () => {
+  handle = await connectHttp(server, 0, { authToken: 'secret' })
+
+  const response = await fetch(`http://127.0.0.1:${handle.port}/mcp`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-pascal-mcp-token': 'secret',
+    },
+    body: '{}',
+  })
+
+  expect(response.status).not.toBe(401)
 })
 
 test('connectHttp handles allowed CORS preflight', async () => {

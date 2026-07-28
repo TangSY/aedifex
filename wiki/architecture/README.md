@@ -16,7 +16,7 @@ Canonical rules for code that touches `packages/core`, `packages/viewer`, `packa
 | [tools](tools.md) | Editor tools structure, 2D↔3D behavioral parity, manipulation constraints, and Shift bypass defaults |
 | [measurements](measurements.md) | Persistent measurement data, 2D/3D draft ownership, snapping, units, and visibility |
 | [interaction-scope](interaction-scope.md) | The authoritative interaction state machine ("the spine"): `InteractionScope` union, the begin/update/end/endIf contract, the raycast hot-set, and the overlay scope matrix |
-| [viewer-isolation](viewer-isolation.md) | Keeping `@pascal-app/viewer` editor-agnostic |
+| [viewer-isolation](viewer-isolation.md) | Keeping `@aedifex/viewer` editor-agnostic |
 | [selection-managers](selection-managers.md) | Two-layer selection (viewer + editor), events, outliner |
 | [scene-registry](scene-registry.md) | Global node ID → Object3D map and `useRegistry` |
 | [spatial-queries](spatial-queries.md) | Placement validation (`canPlaceOnFloor`/`Wall`/`Ceiling`) for tools |

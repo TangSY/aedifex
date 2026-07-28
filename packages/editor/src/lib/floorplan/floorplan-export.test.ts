@@ -284,14 +284,14 @@ describe('floor plan export policy', () => {
       isFloorplanExportAnnotationGeometry({
         kind: 'group',
         children: [],
-        metadata: { 'pascal:editor/floorplan': { annotationRole: 'measurement' } },
+        metadata: { 'aedifex:editor/floorplan': { annotationRole: 'measurement' } },
       }),
     ).toBe(true)
     expect(
       isFloorplanExportAnnotationGeometry({
         kind: 'group',
         children: [],
-        metadata: { 'pascal:editor/floorplan': { annotationRole: 'manual-dimension' } },
+        metadata: { 'aedifex:editor/floorplan': { annotationRole: 'manual-dimension' } },
       }),
     ).toBe(true)
     expect(isFloorplanExportAnnotationGeometry({ kind: 'polygon', points: [] })).toBe(false)

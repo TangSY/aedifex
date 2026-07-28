@@ -39,7 +39,7 @@ export const wallDefinition: NodeDefinition<typeof WallNode> = {
   category: 'structure',
   surfaceRole: 'wall',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       contextualDimensions: buildWallContextualDimensions,
       actionMenu: {
         canCurve: ({ node, nodes }) =>

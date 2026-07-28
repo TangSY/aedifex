@@ -17,7 +17,7 @@ import { SCENE_LAYER, SHADOW_ONLY_LAYER } from './layers'
  * idempotent and cheap to reapply.
  */
 
-const ORIGINAL_LAYERS = Symbol('pascal:shadow-only:original-layers')
+const ORIGINAL_LAYERS = Symbol('aedifex:shadow-only:original-layers')
 
 type ShadowOnlyCarrier = Object3D & { [ORIGINAL_LAYERS]?: number }
 

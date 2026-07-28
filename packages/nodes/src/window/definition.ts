@@ -171,7 +171,7 @@ export const windowDefinition: NodeDefinition<typeof WindowNode> = {
   schema: WindowNode,
   category: 'structure',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       contextualDimensions: buildWindowContextualDimensions,
       schedule: buildWindowFloorplanSchedule,
     } satisfies FloorplanNodeExtension<WindowNodeType>,

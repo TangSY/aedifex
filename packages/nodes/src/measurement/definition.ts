@@ -42,7 +42,7 @@ export const measurementDefinition: NodeDefinition<typeof MeasurementNode> = {
   floorplan: buildMeasurementFloorplan,
   floorplanDependencies: (node) => measurementReferenceNodeIds(node.measurement),
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       referencedSelectionAnnotationRole: 'measurement',
     } satisfies FloorplanNodeExtension,
   },

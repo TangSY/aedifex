@@ -10,7 +10,7 @@ export const structuralGridDefinition: NodeDefinition<typeof StructuralGridNode>
   schema: StructuralGridNode,
   category: 'structure',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       tool: () => import('./floorplan-tool'),
       availableModes: ['expert'],
       preferredView: '2d',

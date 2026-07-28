@@ -1,6 +1,6 @@
 'use client'
 
-import { convertIfcToPascal, type PascalSceneGraph } from '@aedifex/ifc-converter'
+import { type AedifexSceneGraph, convertIfcToAedifex } from '@aedifex/ifc-converter'
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { availableTestFiles, exampleFileUrl, testFiles } from '@/lib/test-files'
@@ -8,7 +8,7 @@ import { availableTestFiles, exampleFileUrl, testFiles } from '@/lib/test-files'
 // The viewer uses three's WebGPU renderer + the registry-driven scene
 // store, neither of which run during SSR — dynamic-import with ssr:false
 // so the bundle doesn't hit the server.
-const PascalViewer = dynamic(() => import('./PascalSceneViewer'), { ssr: false })
+const AedifexViewer = dynamic(() => import('./AedifexSceneViewer'), { ssr: false })
 
 type Status = 'idle' | 'loading' | 'converting' | 'ready' | 'error'
 
@@ -32,7 +32,7 @@ function meta(node: { metadata?: unknown } | null | undefined): ConverterMetadat
 }
 
 export default function IfcConverter() {
-  const [pascalData, setPascalData] = useState<PascalSceneGraph | null>(null)
+  const [aedifexData, setAedifexData] = useState<AedifexSceneGraph | null>(null)
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -49,21 +49,21 @@ export default function IfcConverter() {
   const [conversionMessage, setConversionMessage] = useState<string>('')
 
   const levels = useMemo(() => {
-    if (!pascalData) return []
-    return Object.values(pascalData.nodes)
+    if (!aedifexData) return []
+    return Object.values(aedifexData.nodes)
       .filter((n) => n.type === 'level')
       .sort((a, b) => (meta(a).elevation ?? 0) - (meta(b).elevation ?? 0))
       .map((n) => ({ id: n.id, name: n.name ?? n.id, elevation: meta(n).elevation ?? 0 }))
-  }, [pascalData])
+  }, [aedifexData])
 
   const typeCounts = useMemo(() => {
-    if (!pascalData) return {}
+    if (!aedifexData) return {}
     const counts: Record<string, number> = {}
-    for (const n of Object.values(pascalData.nodes)) {
+    for (const n of Object.values(aedifexData.nodes)) {
       counts[n.type] = (counts[n.type] || 0) + 1
     }
     return counts
-  }, [pascalData])
+  }, [aedifexData])
 
   const elementTypes = useMemo(() => {
     const order = ['wall', 'slab', 'door', 'window', 'stair', 'roof', 'column', 'item']
@@ -83,10 +83,10 @@ export default function IfcConverter() {
   }, [elementTypes])
 
   const searchResults = useMemo(() => {
-    if (!pascalData || !searchQuery.trim()) return []
+    if (!aedifexData || !searchQuery.trim()) return []
     const q = searchQuery.toLowerCase()
     const results: { id: string; name: string; type: string; match: string }[] = []
-    for (const node of Object.values(pascalData.nodes)) {
+    for (const node of Object.values(aedifexData.nodes)) {
       if (['site', 'building', 'level'].includes(node.type)) continue
       const m = meta(node)
       let match: string | null = null
@@ -113,7 +113,7 @@ export default function IfcConverter() {
       }
     }
     return results
-  }, [pascalData, searchQuery])
+  }, [aedifexData, searchQuery])
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs once on mount to load the initial file from the URL.
   useEffect(() => {
@@ -136,11 +136,11 @@ export default function IfcConverter() {
     setConversionMessage('Starting conversion...')
 
     try {
-      const result = await convertIfcToPascal(data, (message, percent) => {
+      const result = await convertIfcToAedifex(data, (message, percent) => {
         setConversionMessage(message)
         setConversionProgress(percent)
       })
-      setPascalData(result)
+      setAedifexData(result)
       setStatus('ready')
       setConversionProgress(100)
       setConversionMessage('Conversion complete!')
@@ -229,14 +229,14 @@ export default function IfcConverter() {
     if (file) handleFile(file)
   }
 
-  const downloadPascalJson = () => {
-    if (!pascalData) return
-    const json = JSON.stringify(pascalData, null, 2)
+  const downloadAedifexJson = () => {
+    if (!aedifexData) return
+    const json = JSON.stringify(aedifexData, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${fileName.replace('.ifc', '')}_pascal.json`
+    a.download = `${fileName.replace('.ifc', '')}_aedifex.json`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -253,8 +253,8 @@ export default function IfcConverter() {
   }
 
   const copyJsonToClipboard = () => {
-    if (!pascalData) return
-    const json = JSON.stringify(pascalData, null, 2)
+    if (!aedifexData) return
+    const json = JSON.stringify(aedifexData, null, 2)
     navigator.clipboard.writeText(json)
   }
 
@@ -345,19 +345,19 @@ export default function IfcConverter() {
       )}
 
       {/* Results — always rendered once we have data, with loading overlay */}
-      {(pascalData || isWorking) && (
+      {(aedifexData || isWorking) && (
         <div className="space-y-4">
           {/* Header with stats and download buttons */}
-          {pascalData && (
+          {aedifexData && (
             <>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <h2 className="text-lg font-semibold text-gray-900">{fileName}</h2>
                   <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
-                    {Object.keys(pascalData.nodes).length} nodes
+                    {Object.keys(aedifexData.nodes).length} nodes
                   </span>
                   <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
-                    {new Set(Object.values(pascalData.nodes).map((n) => n.type)).size} types
+                    {new Set(Object.values(aedifexData.nodes).map((n) => n.type)).size} types
                   </span>
                 </div>
 
@@ -369,10 +369,10 @@ export default function IfcConverter() {
                     Download IFC
                   </button>
                   <button
-                    onClick={downloadPascalJson}
+                    onClick={downloadAedifexJson}
                     className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    Download Pascal JSON
+                    Download Aedifex JSON
                   </button>
                 </div>
               </div>
@@ -518,7 +518,7 @@ export default function IfcConverter() {
             </>
           )}
 
-          {/* Pascal 3D Viewer */}
+          {/* Aedifex 3D Viewer */}
           <div className="flex gap-4">
             <div className="flex-1 min-w-0 relative">
               {/* Loading overlay */}
@@ -526,7 +526,7 @@ export default function IfcConverter() {
                 <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-3">
                   <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-blue-600"></div>
                   <p className="font-medium text-gray-900 text-sm">
-                    {status === 'loading' ? 'Loading file...' : 'Converting to Pascal'}
+                    {status === 'loading' ? 'Loading file...' : 'Converting to Aedifex'}
                   </p>
                   {status === 'converting' && (
                     <div className="w-48 space-y-1">
@@ -544,20 +544,20 @@ export default function IfcConverter() {
                   )}
                 </div>
               )}
-              {pascalData && (
-                <PascalViewer sceneGraph={pascalData} onSelectNode={setSelectedNodeId} />
+              {aedifexData && (
+                <AedifexViewer sceneGraph={aedifexData} onSelectNode={setSelectedNodeId} />
               )}
-              {!pascalData && <div className="w-full h-[600px] bg-gray-900 rounded-lg" />}
+              {!aedifexData && <div className="w-full h-[600px] bg-gray-900 rounded-lg" />}
               <p className="text-xs text-gray-400 mt-1">
                 Orbit (left click) / Pan (right click) / Zoom (scroll) / Click element to inspect
               </p>
             </div>
             {selectedNodeId &&
               Boolean(
-                (pascalData?.nodes as Record<string, unknown> | undefined)?.[selectedNodeId],
+                (aedifexData?.nodes as Record<string, unknown> | undefined)?.[selectedNodeId],
               ) &&
               (() => {
-                const node = (pascalData!.nodes as Record<string, any>)[selectedNodeId] as any
+                const node = (aedifexData!.nodes as Record<string, any>)[selectedNodeId] as any
                 const meta = node.metadata ?? {}
                 const Row = ({ k, v }: { k: string; v: string }) => (
                   <div className="flex justify-between text-xs gap-2">
@@ -593,7 +593,7 @@ export default function IfcConverter() {
                         {meta.levelId && (
                           <Row
                             k="Level"
-                            v={pascalData!.nodes[meta.levelId]?.name ?? meta.levelId}
+                            v={aedifexData!.nodes[meta.levelId]?.name ?? meta.levelId}
                           />
                         )}
                       </div>
@@ -681,10 +681,10 @@ export default function IfcConverter() {
       )}
 
       {/* JSON Drawer - fixed position from top (shows when ready and showJson is true) */}
-      {status === 'ready' && pascalData && showJson && (
+      {status === 'ready' && aedifexData && showJson && (
         <div className="fixed right-0 top-0 h-screen w-96 bg-gray-900 shadow-2xl z-50 flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-gray-700">
-            <h3 className="text-sm font-semibold text-gray-300">Pascal JSON</h3>
+            <h3 className="text-sm font-semibold text-gray-300">Aedifex JSON</h3>
             <div className="flex items-center gap-2">
               <button
                 onClick={copyJsonToClipboard}
@@ -717,14 +717,14 @@ export default function IfcConverter() {
           </div>
           <div className="flex-1 overflow-auto p-4">
             <pre className="text-green-400 text-xs font-mono">
-              {JSON.stringify(pascalData, null, 2)}
+              {JSON.stringify(aedifexData, null, 2)}
             </pre>
           </div>
         </div>
       )}
 
       {/* JSON toggle button - fixed position (shows when ready and showJson is false) */}
-      {status === 'ready' && pascalData && !showJson && (
+      {status === 'ready' && aedifexData && !showJson && (
         <button
           onClick={() => setShowJson(true)}
           className="fixed right-6 top-24 bg-gray-900 text-white shadow-xl hover:bg-gray-800 transition-all z-10 group rounded-lg px-4 py-2"

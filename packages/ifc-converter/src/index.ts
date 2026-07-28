@@ -23,15 +23,15 @@ export type {
   IfcConversionSimplificationStats,
 } from './cleanup'
 
-export type PascalNode = AnyNode
+export type AedifexNode = AnyNode
 
-export interface PascalSceneGraph {
+export interface AedifexSceneGraph {
   nodes: Record<AnyNodeId, AnyNode>
   rootNodeIds: AnyNodeId[]
   collections?: Record<string, unknown>
 }
 
-// Pascal's BaseNode.metadata is typed as `JSONType` (z.json()) — a loose
+// Aedifex's BaseNode.metadata is typed as `JSONType` (z.json()) — a loose
 // JSON value. The converter writes a fixed shape; this typed accessor
 // keeps dot-access ergonomics without spraying `as any` through the
 // post-processing loops. Read-side only — writes still inline literals.
@@ -51,7 +51,7 @@ function meta(node: { metadata?: unknown } | null | undefined): ConverterMetadat
   return (node?.metadata ?? {}) as ConverterMetadata
 }
 
-// Pascal's `BaseNode.metadata` is `z.json()` — a recursive JSON value
+// Aedifex's `BaseNode.metadata` is `z.json()` — a recursive JSON value
 // type that doesn't accept `undefined` (JSON has `null`, not undefined).
 // The converter pulls many fields from optional IFC properties that
 // often return `undefined`; stripping them at the boundary keeps the
@@ -661,11 +661,11 @@ export const VARIANT_PRESETS: Record<string, ConversionOptions> = {
   },
 }
 
-export async function convertIfcToPascal(
+export async function convertIfcToAedifex(
   ifcData: Uint8Array,
   onProgress?: (message: string, percent: number) => void,
   options?: ConversionOptions,
-): Promise<PascalSceneGraph> {
+): Promise<AedifexSceneGraph> {
   const opts = {
     swapYZ: options?.swapYZ ?? true,
     extrusionDepthIsHeight: options?.extrusionDepthIsHeight ?? true,
@@ -679,7 +679,7 @@ export async function convertIfcToPascal(
         : undefined
 
   const progress = (msg: string, pct: number) => {
-    console.log(`[IFC→Pascal] ${msg} (${pct}%)`)
+    console.log(`[IFC→Aedifex] ${msg} (${pct}%)`)
     onProgress?.(msg, pct)
   }
 
@@ -692,9 +692,9 @@ export async function convertIfcToPascal(
   const modelID = ifcApi.OpenModel(ifcData)
 
   console.log(
-    `[IFC→Pascal] Model opened, ID: ${modelID}, File size: ${(ifcData.length / 1024).toFixed(1)} KB`,
+    `[IFC→Aedifex] Model opened, ID: ${modelID}, File size: ${(ifcData.length / 1024).toFixed(1)} KB`,
   )
-  const nodes: Record<string, PascalNode> = {}
+  const nodes: Record<string, AedifexNode> = {}
   const rootNodeIds: string[] = []
 
   // Maps to track relationships
@@ -795,7 +795,7 @@ export async function convertIfcToPascal(
   progress('Processing sites...', 30)
   // Process sites
   const sites = ifcApi.GetLineIDsWithType(modelID, WebIFC.IFCSITE)
-  console.log(`[IFC→Pascal] Found ${sites.size()} sites`)
+  console.log(`[IFC→Aedifex] Found ${sites.size()} sites`)
   for (let i = 0; i < sites.size(); i++) {
     const siteExpressID = sites.get(i)
     const site = ifcApi.GetLine(modelID, siteExpressID)
@@ -812,7 +812,7 @@ export async function convertIfcToPascal(
       parentId: null,
       visible: true,
       polygon: {
-        // Pascal SiteNode requires a property-line polygon. The
+        // Aedifex SiteNode requires a property-line polygon. The
         // converter doesn't read IFC site geometry yet, so seed the
         // editor's default 30x30 square here.
         // TODO(ifc-fix): derive from IfcSite.SiteAddress or building footprints.
@@ -838,7 +838,7 @@ export async function convertIfcToPascal(
   progress('Processing buildings...', 40)
   // Process buildings
   const buildings = ifcApi.GetLineIDsWithType(modelID, WebIFC.IFCBUILDING)
-  console.log(`[IFC→Pascal] Found ${buildings.size()} buildings`)
+  console.log(`[IFC→Aedifex] Found ${buildings.size()} buildings`)
   for (let i = 0; i < buildings.size(); i++) {
     const buildingExpressID = buildings.get(i)
     const building = ifcApi.GetLine(modelID, buildingExpressID)
@@ -876,7 +876,7 @@ export async function convertIfcToPascal(
   progress('Processing levels...', 50)
   // Process building storeys (levels)
   const storeys = ifcApi.GetLineIDsWithType(modelID, WebIFC.IFCBUILDINGSTOREY)
-  console.log(`[IFC→Pascal] Found ${storeys.size()} levels`)
+  console.log(`[IFC→Aedifex] Found ${storeys.size()} levels`)
   for (let i = 0; i < storeys.size(); i++) {
     const storeyExpressID = storeys.get(i)
     const storey = ifcApi.GetLine(modelID, storeyExpressID)
@@ -1233,7 +1233,7 @@ export async function convertIfcToPascal(
 
           // TODO(ifc-fix): same scalar-vs-tuple position issue as door above.
           // sillHeight stays read-only metadata until we resolve the window
-          // schema (Pascal's WindowNode doesn't have sillHeight today —
+          // schema (Aedifex's WindowNode doesn't have sillHeight today —
           // moved to metadata for now so we don't lose the value).
           const windowPosition: [number, number, number] = [
             position ?? 0,
@@ -1442,7 +1442,7 @@ export async function convertIfcToPascal(
 
   // Process slabs
   const slabs = ifcApi.GetLineIDsWithType(modelID, WebIFC.IFCSLAB)
-  console.log(`[IFC→Pascal] Found ${slabs.size()} slabs`)
+  console.log(`[IFC→Aedifex] Found ${slabs.size()} slabs`)
   for (let i = 0; i < slabs.size(); i++) {
     const slabExpressID = slabs.get(i)
     const slab = ifcApi.GetLine(modelID, slabExpressID)
@@ -1525,7 +1525,7 @@ export async function convertIfcToPascal(
       polygon,
       holes: [],
       elevation,
-      // TODO(ifc-fix): Pascal SlabNode has no `thickness` field — moved
+      // TODO(ifc-fix): Aedifex SlabNode has no `thickness` field — moved
       // to metadata so the IFC value isn't lost.
       metadata: buildMetadata({
         ifcType: 'IFCSLAB',
@@ -1628,7 +1628,7 @@ export async function convertIfcToPascal(
       visible: true,
       position,
       children: [],
-      // TODO(ifc-fix): Pascal StairNode is parametric (segments / treads /
+      // TODO(ifc-fix): Aedifex StairNode is parametric (segments / treads /
       // risers). The converter only knows the bounding box right now;
       // keep it in metadata until we map IFC stairs onto the parametric
       // shape (or extend StairNode with a raw-geometry escape hatch).
@@ -1718,7 +1718,7 @@ export async function convertIfcToPascal(
       parentId: parentNodeId || null,
       visible: true,
       elevation,
-      // TODO(ifc-fix): Pascal RoofNode is composed of roof-segments. The
+      // TODO(ifc-fix): Aedifex RoofNode is composed of roof-segments. The
       // converter only has the flat polygon + height; pass them through
       // metadata until we map the IFC roof onto the segment-based shape.
       metadata: buildMetadata({
@@ -1842,7 +1842,7 @@ export async function convertIfcToPascal(
     }
   }
 
-  // Beams: skipped for now — Pascal has no `beam` node type yet. When it
+  // Beams: skipped for now — Aedifex has no `beam` node type yet. When it
   // lands in @aedifex/core, restore the IFCBEAM → BeamNode mapping
   // (axis polyline → start/end [x,y,z], profile XDim/YDim → width/depth,
   // extrusion depth → axis length). Reference implementation lives in
@@ -1865,11 +1865,11 @@ export async function convertIfcToPascal(
   }
   if (skippedBeamCount > 0) {
     console.warn(
-      `[IFC→Pascal] Skipped ${skippedBeamCount} beam${skippedBeamCount === 1 ? '' : 's'} — Pascal has no beam node yet.`,
+      `[IFC→Aedifex] Skipped ${skippedBeamCount} beam${skippedBeamCount === 1 ? '' : 's'} — Aedifex has no beam node yet.`,
     )
   }
 
-  // Items: skipped for now — Pascal's ItemNode requires a full `asset`
+  // Items: skipped for now — Aedifex's ItemNode requires a full `asset`
   // (catalog reference with id/src/dimensions/etc.) that the converter
   // can't synthesise from raw IFC geometry. When the editor grows a
   // raw-geometry escape hatch (or we add a placeholder-asset registry),
@@ -1896,7 +1896,7 @@ export async function convertIfcToPascal(
   }
   if (skippedItemCount > 0) {
     console.warn(
-      `[IFC→Pascal] Skipped ${skippedItemCount} item${skippedItemCount === 1 ? '' : 's'} — Pascal items require a catalog asset the converter can't synthesise yet.`,
+      `[IFC→Aedifex] Skipped ${skippedItemCount} item${skippedItemCount === 1 ? '' : 's'} — Aedifex items require a catalog asset the converter can't synthesise yet.`,
     )
   }
 
@@ -1912,7 +1912,7 @@ export async function convertIfcToPascal(
 
   // Post-process: extract property sets and materials
   const elementExpressIds = new Set<number>()
-  const expressIdToNode = new Map<number, PascalNode>()
+  const expressIdToNode = new Map<number, AedifexNode>()
   for (const node of Object.values(nodes)) {
     const m = meta(node)
     if (m.expressID != null) {
@@ -2069,7 +2069,7 @@ export async function convertIfcToPascal(
     simplificationStats.removedMergedWalls > 0 ||
     simplificationStats.removedDuplicateOpenings > 0
   ) {
-    console.log('[IFC→Pascal] Simplification:', simplificationStats)
+    console.log('[IFC→Aedifex] Simplification:', simplificationStats)
   }
 
   ifcApi.CloseModel(modelID)
@@ -2077,8 +2077,8 @@ export async function convertIfcToPascal(
   progress('Building scene graph...', 95)
 
   const totalNodes = Object.keys(nodes).length
-  console.log(`[IFC→Pascal] Conversion complete! Generated ${totalNodes} nodes`)
-  console.log(`[IFC→Pascal] Node breakdown:`, {
+  console.log(`[IFC→Aedifex] Conversion complete! Generated ${totalNodes} nodes`)
+  console.log(`[IFC→Aedifex] Node breakdown:`, {
     sites: Object.values(nodes).filter((n) => n.type === 'site').length,
     buildings: Object.values(nodes).filter((n) => n.type === 'building').length,
     levels: Object.values(nodes).filter((n) => n.type === 'level').length,

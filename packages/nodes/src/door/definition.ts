@@ -174,7 +174,7 @@ export const doorDefinition: NodeDefinition<typeof DoorNode> = {
   schema: DoorNode,
   category: 'structure',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       contextualDimensions: buildDoorContextualDimensions,
       schedule: buildDoorFloorplanSchedule,
     } satisfies FloorplanNodeExtension<DoorNodeType>,

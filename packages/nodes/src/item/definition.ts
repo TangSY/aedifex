@@ -174,7 +174,7 @@ export const itemDefinition: NodeDefinition<typeof ItemNode> = {
   category: 'furnish',
   surfaceRole: 'furnishing',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       contextualDimensions: buildItemContextualDimensions,
     } satisfies FloorplanNodeExtension<ItemNodeType>,
   },
