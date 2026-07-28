@@ -18,7 +18,7 @@ import { grassDefinition } from './grass-definition'
  */
 export const treesPlugin: Plugin = {
   id: 'aedifex:trees',
-  apiVersion: 1,
+  apiVersion: 2,
   nodes: [
     treeDefinition as unknown as AnyNodeDefinition,
     flowerDefinition as unknown as AnyNodeDefinition,
@@ -28,6 +28,9 @@ export const treesPlugin: Plugin = {
 
 export const treesHostPanel: EditorHostPanel = {
   id: 'aedifex:trees:trees',
+  pluginId: 'aedifex:trees',
+  kinds: ['trees:tree', 'trees:flower', 'trees:grass'],
+  defaultInstalled: true,
   label: 'Nature',
   icon: { kind: 'url', src: NATURE_ICON },
   component: () => import('./presets-panel'),

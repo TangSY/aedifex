@@ -29,7 +29,7 @@ function registerColliderDefinition(
     schemaVersion: 1,
     category,
     surfaceRole,
-    capabilities: {},
+    capabilities: { deletable: false },
   } as AnyNodeDefinition)
 }
 

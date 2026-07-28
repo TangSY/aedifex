@@ -861,7 +861,7 @@ export type FloorplanMoveTarget<N> = (args: {
 
 export type Plugin = {
   id: string
-  apiVersion: 1
+  apiVersion: 2
   nodes?: AnyNodeDefinition[]
 }
 
@@ -1469,7 +1469,7 @@ export type Capabilities = {
   snappable?: SnappableConfig
   surfaces?: SurfacesConfig
   duplicable?: boolean | DuplicableConfig
-  deletable?: boolean
+  deletable: boolean
   groupable?: boolean
   selectable?: SelectableConfig
   interactive?: boolean

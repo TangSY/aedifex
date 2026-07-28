@@ -143,7 +143,7 @@ export function ParametricInspector({
   const title = presentation?.label ?? nodeType ?? ''
   const iconNode = renderIcon(presentation?.icon)
   const canMove = !!def.capabilities.movable
-  const canDelete = def.capabilities.deletable !== false
+  const canDelete = def.capabilities.deletable
   const isZone = nodeType === 'zone'
 
   const TrailingSection = parametrics.trailingSection

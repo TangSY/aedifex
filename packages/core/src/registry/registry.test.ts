@@ -38,7 +38,7 @@ function makeDefinition(
     schema: z.object({ type: z.literal(kind) }) as any,
     category: 'utility',
     defaults: () => ({}) as any,
-    capabilities: {},
+    capabilities: { deletable: false },
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
     ...overrides,
   }
@@ -183,7 +183,7 @@ describe('loadPlugin', () => {
   test('registers all nodes from a plugin', async () => {
     const plugin: Plugin = {
       id: 'test:plugin',
-      apiVersion: 1,
+      apiVersion: 2,
       nodes: [makeDefinition('a'), makeDefinition('b')],
     }
     await loadPlugin(plugin)
@@ -195,7 +195,11 @@ describe('loadPlugin', () => {
   })
 
   test('enables plugin kinds only when the project has the plugin installed', async () => {
-    await loadPlugin({ id: 'test:plugin', apiVersion: 1, nodes: [makeDefinition('plugin:node')] })
+    await loadPlugin({
+      id: 'test:plugin',
+      apiVersion: 2,
+      nodes: [makeDefinition('plugin:node')],
+    })
 
     expect(isNodeKindEnabled('plugin:node', [])).toBe(false)
     expect(isNodeKindEnabled('plugin:node', ['test:plugin'])).toBe(true)
@@ -204,26 +208,31 @@ describe('loadPlugin', () => {
   })
 
   test('keeps built-in plugin kinds enabled independently of project installs', async () => {
-    await loadPlugin({ id: 'aedifex:core', apiVersion: 1, nodes: [makeDefinition('wall')] })
+    await loadPlugin({
+      id: 'aedifex:core',
+      apiVersion: 2,
+      nodes: [makeDefinition('wall')],
+    })
 
     expect(isNodeKindEnabled('wall', [])).toBe(true)
   })
 
   test('handles plugin with no nodes', async () => {
-    await loadPlugin({ id: 'empty', apiVersion: 1 })
+    await loadPlugin({ id: 'empty', apiVersion: 2 })
     expect(nodeRegistry.size).toBe(0)
   })
 
   test('handles plugin with empty nodes array', async () => {
-    await loadPlugin({ id: 'empty', apiVersion: 1, nodes: [] })
+    await loadPlugin({ id: 'empty', apiVersion: 2, nodes: [] })
     expect(nodeRegistry.size).toBe(0)
   })
 
-  test('throws on apiVersion mismatch', async () => {
+  test('rejects legacy v1 manifests instead of silently ignoring removed panel metadata', async () => {
     const plugin = {
-      id: 'old-plugin',
-      apiVersion: 99 as unknown as 1,
+      id: 'legacy-plugin',
+      apiVersion: 1,
       nodes: [],
+      panels: [{ id: 'legacy-panel' }],
     }
     await expect(loadPlugin(plugin)).rejects.toThrow(/apiVersion/)
   })
@@ -231,7 +240,7 @@ describe('loadPlugin', () => {
   test('propagates duplicate-kind error from a single plugin in production', async () => {
     const plugin: Plugin = {
       id: 'broken',
-      apiVersion: 1,
+      apiVersion: 2,
       nodes: [makeDefinition('dup'), makeDefinition('dup')],
     }
     await inProduction(() => expect(loadPlugin(plugin)).rejects.toThrow(/duplicate node kind/))
@@ -239,9 +248,17 @@ describe('loadPlugin', () => {
 
   test('propagates duplicate-kind error across plugins in production', async () => {
     await inProduction(async () => {
-      await loadPlugin({ id: 'a', apiVersion: 1, nodes: [makeDefinition('shared')] })
+      await loadPlugin({
+        id: 'a',
+        apiVersion: 2,
+        nodes: [makeDefinition('shared')],
+      })
       await expect(
-        loadPlugin({ id: 'b', apiVersion: 1, nodes: [makeDefinition('shared')] }),
+        loadPlugin({
+          id: 'b',
+          apiVersion: 2,
+          nodes: [makeDefinition('shared')],
+        }),
       ).rejects.toThrow(/duplicate node kind/)
     })
   })

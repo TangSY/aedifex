@@ -252,7 +252,7 @@ export function FloorplanRegistryActionMenu() {
   const canMove =
     !!def.capabilities.movable || !!def.floorplanMoveTarget || !!def.affordanceTools?.move
   const canDuplicate = def.capabilities.duplicable !== false
-  const canDelete = def.capabilities.deletable !== false
+  const canDelete = def.capabilities.deletable
   const canAddHole = node.type === 'slab' || node.type === 'ceiling'
 
   const handleMove = () => {

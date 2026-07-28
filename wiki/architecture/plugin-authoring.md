@@ -15,7 +15,7 @@ import type { Plugin } from '@aedifex/core'
 
 export const myPlugin: Plugin = {
   id: 'acme:furniture-pack',
-  apiVersion: 1,
+  apiVersion: 2,
   nodes: [
     couchDefinition,
     armchairDefinition,
@@ -27,7 +27,7 @@ export const myPlugin: Plugin = {
 | Field | Required | Notes |
 |---|---|---|
 | `id` | yes | Globally unique. Use `vendor:pack-name` to avoid collisions. The host treats it as opaque. |
-| `apiVersion` | yes | Currently `1`. The host throws on mismatch — bumping breaks plugins, intentionally. |
+| `apiVersion` | yes | Currently `2`. The host throws on mismatch — bumping breaks plugins, intentionally. |
 | `nodes` | optional | Array of `AnyNodeDefinition`. |
 
 The in-repo [`@aedifex/plugin-trees`](../../packages/plugin-trees) package is the worked example. Copy it as a starting point.
@@ -36,7 +36,7 @@ The same shape powers the built-in `aedifex:core` plugin in `@aedifex/nodes` —
 
 ## What a `NodeDefinition` can contribute
 
-A plugin's `nodes` array is the only meaningful contribution point in v1. Each entry is a `NodeDefinition<S extends ZodObject>` that the registry stamps with `kind`, `schemaVersion`, `schema`, and any combination of:
+A plugin's `nodes` array is the only core contribution point in v2. Each entry is a `NodeDefinition<S extends ZodObject>` that the registry stamps with `kind`, `schemaVersion`, `schema`, and any combination of:
 
 - `defaults` — initial field values for new instances.
 - `capabilities` — `selectable` / `duplicable` / `deletable` / `surfaces` / `relations` flags consumed by the framework.
@@ -85,7 +85,7 @@ graph TD
   LoadEach --> Ready["Registry frozen for the session"]
 ```
 
-`loadPlugin` is **add-only** for v1. Hot-removing a kind would require tearing down every mounted instance in the scene — out of scope. Plugins are loaded once at boot.
+`loadPlugin` is **add-only** for v2. Hot-removing a kind would require tearing down every mounted instance in the scene — out of scope. Plugins are loaded once at boot.
 
 `registerNode` throws on duplicate `kind`, so two plugins shipping a `kind: 'couch'` is a startup-time error, not a silent overwrite.
 
@@ -142,7 +142,7 @@ Host panels mount lazily inside an error boundary. Use host CSS variables, keep 
 
 ## Versioning
 
-`apiVersion: 1` covers the surface above. The host bumps the major when it removes or changes the shape of an existing field. New optional fields don't bump. The plan is to keep additions backwards-compatible as long as possible — the bump is the escape hatch, not the default.
+`apiVersion: 2` covers the surface above. Version 1 manifests may still contain the removed core-level `panels` field, so the host rejects them instead of silently dropping editor metadata. The host bumps the major when it removes or changes the shape of an existing field. New optional fields don't bump. The plan is to keep additions backwards-compatible as long as possible — the bump is the escape hatch, not the default.
 
 A plugin's own data versioning is `schemaVersion` on each `NodeDefinition`. The host doesn't migrate; the plugin's `migrate(node, fromVersion)` (future) handles its own legacy persisted nodes.
 
@@ -151,7 +151,7 @@ A plugin's own data versioning is `schemaVersion` on each `NodeDefinition`. The 
 - **Materials** — there's no `plugin.materials` slot. Use `createMaterial` from `@aedifex/viewer` inside your `def.renderer` / `def.system`.
 - **Floor-plan primitives** — the `FloorplanGeometry` union is host-owned. To draw something the union can't express, fall back to `def.renderer` and render through a different 2D mount (or open an issue).
 - **Panels / sidebar UI in the core manifest** — host-specific. Export an `EditorHostPanel` separately for hosts that use `@aedifex/editor`.
-- **Stores** — plugins create their own Zustand stores; they don't extend `useScene`, `useEditor`, or `useViewer`. Host stores are not part of the v1 plugin surface.
+- **Stores** — plugins create their own Zustand stores; they don't extend `useScene`, `useEditor`, or `useViewer`. Host stores are not part of the v2 plugin surface.
 - **Routes / pages** — plugins are visualisation + interaction code, not full app surfaces. Hosting a settings page belongs to the app.
 
 The boundary stays narrow on purpose so the contract is shippable. Each "not yet" item is a plan, not a "never."

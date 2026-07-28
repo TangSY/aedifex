@@ -395,7 +395,7 @@ describe('scene commit boundary', () => {
     const kind = 'test:operation-forward-compatible'
     if (!nodeRegistry.has(kind)) {
       nodeRegistry._register({
-        capabilities: {},
+        capabilities: { deletable: false },
         category: 'utility',
         defaults: () => ({}),
         kind,
