@@ -17,6 +17,7 @@ import {
 import { customAlphabet } from 'nanoid'
 import * as WebIFC from 'web-ifc'
 import { type IfcConversionSimplificationOptions, simplifyConvertedSceneGraph } from './cleanup'
+import { collectPlacementChain } from './placement-chain'
 
 export type {
   IfcConversionSimplificationOptions,
@@ -266,16 +267,10 @@ function buildAxis2Placement3DMatrix(
 // --- Placement chain resolver ---
 
 function resolveWorldTransform(ifcApi: WebIFC.IfcAPI, modelID: number, placementId: number): Mat4 {
-  const chain: number[] = []
-  let current: number | null = placementId
-
-  while (current) {
-    const placement = ifcApi.GetLine(modelID, current)
-    if (placement.RelativePlacement?.value) {
-      chain.push(placement.RelativePlacement.value)
-    }
-    current = placement.PlacementRelTo?.value ?? null
-  }
+  const chain = collectPlacementChain({
+    placementId,
+    getPlacement: (current) => ifcApi.GetLine(modelID, current),
+  })
 
   // Multiply from root to leaf
   let result = identity()
