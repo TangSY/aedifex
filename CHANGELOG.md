@@ -1,5 +1,34 @@
 # Changelog
 
+## Unreleased
+
+### Breaking changes
+
+- **`@aedifex/core` 0.10.0** — plugin manifests now require `apiVersion: 2`; legacy
+  manifest-level `panels` metadata is rejected instead of being silently ignored.
+  Register editor panels through the editor host-panel registry and declare
+  `pluginId`, contributed `kinds`, and `defaultInstalled` there. Node definitions
+  must now declare `capabilities.deletable` explicitly. The removed
+  `DEFAULT_ELEVATOR_LEVEL_HEIGHT` and `getElevatorLevelHeight` exports are replaced
+  by `DEFAULT_LEVEL_HEIGHT` and `getStoredLevelHeight`.
+- **`@aedifex/viewer` 0.10.0** — the legacy `WalkthroughControls` and `SlabSystem`
+  exports are removed. Use the current GLB walkthrough controller for walkthrough
+  playback and load slab behavior from the `@aedifex/nodes` registry definition.
+- **`@aedifex/nodes` 0.2.0** — the private door implementation module is no longer
+  exposed as `@aedifex/nodes/door/door-math`. Consumers should use registered door
+  capabilities and editor tools instead of importing node internals.
+
+### Fixes
+
+- **`@aedifex/editor` 0.9.3** — require explicit delete capability semantics in
+  registry-driven UI and show registered kinds through a generic scene-tree row.
+- **`@aedifex/mcp` 0.3.3** — serialize SQLite writes on each store connection while
+  preserving optimistic version checks and queue progress after a rejected write.
+- **`@aedifex/ifc-converter` 0.1.3** — restore bounded IFC placement traversal for
+  malformed `PlacementRelTo` cycles.
+- **`@aedifex/plugin-trees` 0.1.1** — restore Nature panel ownership, contributed
+  kinds, and default-install metadata for the v2 plugin contract.
+
 ## 0.6.0 (2026-04-21)
 
 ### Features
