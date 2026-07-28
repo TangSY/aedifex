@@ -1,0 +1,678 @@
+import type { ItemNode, WallNode } from '@aedifex/core'
+import { useScene } from '@aedifex/core'
+import { getPlacementMeta, PLACEMENT_METADATA } from './furniture-placement-metadata'
+import type { ValidatedAddItem, ValidatedMoveItem, ValidatedOperation } from './types'
+
+// ============================================================================
+// Layout Optimizer
+// Post-validation optimizer for AI-generated placement operations:
+// wall snapping, functional group spacing, walkway clearance, symmetry correction.
+// Runs after mutation executor validation, before ghost preview.
+// ============================================================================
+
+/** Wall snap threshold in meters */
+const WALL_SNAP_THRESHOLD = 0.3
+/** Standard gap between item and wall surface (meters), used for flush placement */
+const WALL_OFFSET = 0.05
+
+// ============================================================================
+// Functional Group Spacing Rules
+// ============================================================================
+
+interface SpacingRule {
+  /** Primary item's category or catalogSlug keywords */
+  primary: string[]
+  /** Companion item's category or catalogSlug keywords */
+  companion: string[]
+  /** Ideal edge-to-edge gap in meters */
+  idealDistance: number
+  /** Allowed deviation in meters */
+  tolerance: number
+}
+
+const SPACING_RULES: SpacingRule[] = [
+  {
+    primary: ['sofa', 'couch'],
+    companion: ['coffee-table', 'tea-table'],
+    idealDistance: 0.4,
+    tolerance: 0.15,
+  },
+  {
+    primary: ['sofa', 'couch'],
+    companion: ['tv-stand', 'tv-cabinet'],
+    idealDistance: 2.5,
+    tolerance: 0.5,
+  },
+  {
+    primary: ['bed'],
+    companion: ['nightstand', 'bedside'],
+    idealDistance: 0.0,
+    tolerance: 0.15,
+  },
+  {
+    primary: ['dining-table'],
+    companion: ['dining-chair', 'chair'],
+    idealDistance: 0.55,
+    tolerance: 0.1,
+  },
+]
+
+// ============================================================================
+// Against-Wall Item Categories
+// Now driven by furniture-placement-metadata.ts for richer semantics.
+// ============================================================================
+
+// ============================================================================
+// Public API
+// ============================================================================
+
+/**
+ * Optimize a set of validated operations for better layout.
+ * Only adjusts valid/adjusted add_item and move_item operations.
+ */
+export function optimizeLayout(operations: ValidatedOperation[]): ValidatedOperation[] {
+  return operations.map((op) => {
+    if (op.status === 'invalid') return op
+
+    if (op.type === 'add_item') {
+      return optimizeAddItem(op, operations)
+    }
+    if (op.type === 'move_item') {
+      return optimizeMoveItem(op, operations)
+    }
+    return op
+  })
+}
+
+// ============================================================================
+// Per-Item Optimization
+// ============================================================================
+
+function optimizeAddItem(
+  op: ValidatedAddItem,
+  allOps: ValidatedOperation[],
+): ValidatedAddItem {
+  if (op.status === 'invalid' || !op.asset) return op
+
+  let position = [...op.position] as [number, number, number]
+  let rotation = [...op.rotation] as [number, number, number]
+  const reasons: string[] = []
+
+  const meta = getPlacementMeta(op.asset.id, op.asset.category)
+
+  // 1. Against-wall / corner items -> wall snap alignment
+  if (meta.placementType === 'against-wall' || meta.placementType === 'corner') {
+    const dims: [number, number, number] = [
+      op.asset.dimensions?.[0] ?? 1,
+      op.asset.dimensions?.[1] ?? 1,
+      op.asset.dimensions?.[2] ?? 1,
+    ]
+    // Fetch walls once and reuse for both snap and orientation checks
+    const walls = getAllWalls()
+    const wallSnap = snapToNearestWall(position, dims, rotation, walls)
+    if (wallSnap) {
+      position = wallSnap.position
+      rotation = wallSnap.rotation
+      reasons.push('snapped to nearest wall')
+    }
+
+    // Orientation enforcement: ensure against-wall items face room interior.
+    // snapToNearestWall has a small threshold (0.3m) — most correctly placed items won't trigger it.
+    // This uses a larger threshold to correct orientation only, without changing position.
+    const orientFix = enforceAgainstWallOrientation(position, dims, rotation, walls)
+    if (orientFix) {
+      rotation = orientFix.rotation
+      reasons.push('orientation corrected to face room interior')
+    }
+  }
+
+  // 2. Functional group spacing check (relative to other items in the same batch)
+  const spacingAdj = adjustForGroupSpacing(
+    op.asset.id,
+    op.asset.category,
+    position,
+    [op.asset.dimensions?.[0] ?? 1, op.asset.dimensions?.[1] ?? 1, op.asset.dimensions?.[2] ?? 1],
+    allOps,
+  )
+  if (spacingAdj) {
+    position = spacingAdj.position
+    reasons.push(spacingAdj.reason)
+  }
+
+  if (reasons.length === 0) return op
+
+  return {
+    ...op,
+    position,
+    rotation,
+    status: 'adjusted',
+    adjustmentReason: [op.adjustmentReason, ...reasons].filter(Boolean).join(' '),
+  }
+}
+
+function optimizeMoveItem(
+  op: ValidatedMoveItem,
+  _allOps: ValidatedOperation[],
+): ValidatedMoveItem {
+  if (op.status === 'invalid') return op
+
+  // move_item optimization is conservative — wall snapping only
+  const { nodes } = useScene.getState()
+  const node = nodes[op.nodeId]
+  if (!node || node.type !== 'item') return op
+
+  let position = [...op.position] as [number, number, number]
+  let rotation = [...op.rotation] as [number, number, number]
+  const reasons: string[] = []
+
+  // A rotation that differs from the node's current rotation is an explicit
+  // user/LLM intent ("rotate the sofa 90°") — wall snap and interior-facing
+  // enforcement must not silently revert it, or the move reports success
+  // while the item visibly never turns.
+  const currentRotY = node.rotation?.[1] ?? 0
+  const rotationDelta = Math.abs(Math.atan2(Math.sin(rotation[1] - currentRotY), Math.cos(rotation[1] - currentRotY)))
+  const explicitRotation = rotationDelta > 0.01
+
+  const moveMeta = getPlacementMeta(node.asset.id, node.asset.category)
+  if (moveMeta.placementType === 'against-wall' || moveMeta.placementType === 'corner') {
+    // Fetch walls once and reuse for both snap and orientation checks
+    const walls = getAllWalls()
+    const wallSnap = snapToNearestWall(position, node.asset.dimensions, rotation, walls)
+    if (wallSnap) {
+      position = wallSnap.position
+      if (!explicitRotation) rotation = wallSnap.rotation
+      reasons.push('snapped to nearest wall')
+    }
+
+    if (!explicitRotation) {
+      const orientFix = enforceAgainstWallOrientation(position, node.asset.dimensions, rotation, walls)
+      if (orientFix) {
+        rotation = orientFix.rotation
+        reasons.push('orientation corrected to face room interior')
+      }
+    }
+  }
+
+  if (reasons.length === 0) return op
+
+  return {
+    ...op,
+    position,
+    rotation,
+    status: 'adjusted',
+    adjustmentReason: [op.adjustmentReason, ...reasons].filter(Boolean).join(' '),
+  }
+}
+
+// ============================================================================
+// Wall Snap Alignment
+// ============================================================================
+
+/**
+ * Check if an item position along a wall overlaps with any door or window on that wall.
+ * Returns true if the item would be blocked by an opening.
+ */
+function isBlockedByOpening(
+  wall: WallNode,
+  itemPositionAlongWall: number,
+  itemHalfWidth: number,
+): boolean {
+  if (!wall.children || wall.children.length === 0) return false
+
+  const { nodes } = useScene.getState()
+  const wallDx = wall.end[0] - wall.start[0]
+  const wallDz = wall.end[1] - wall.start[1]
+  const wallLen = Math.hypot(wallDx, wallDz)
+  if (wallLen < 0.01) return false
+
+  for (const childId of wall.children) {
+    const child = nodes[childId as import('@aedifex/core').AnyNodeId]
+    if (!child) continue
+    if (child.type !== 'door' && child.type !== 'window') continue
+
+    const opening = child as { position: [number, number, number]; width: number }
+    const openingLocalX = opening.position[0]
+    const openingHalfWidth = (opening.width ?? 0.9) / 2
+
+    // Check overlap between item extent and opening extent along wall
+    const itemMin = itemPositionAlongWall - itemHalfWidth
+    const itemMax = itemPositionAlongWall + itemHalfWidth
+    const openingMin = openingLocalX - openingHalfWidth
+    const openingMax = openingLocalX + openingHalfWidth
+
+    if (itemMax > openingMin && itemMin < openingMax) {
+      return true // Overlap with door/window
+    }
+  }
+
+  return false
+}
+
+function snapToNearestWall(
+  position: [number, number, number],
+  dimensions: [number, number, number],
+  _rotation: [number, number, number],
+  walls?: WallNode[],
+): { position: [number, number, number]; rotation: [number, number, number] } | null {
+  const resolvedWalls = walls ?? getAllWalls()
+  if (resolvedWalls.length === 0) return null
+
+  const [px, py, pz] = position
+
+  // Collect all candidate walls sorted by distance, then pick the first
+  // that is not blocked by a door/window at the snap position.
+  const candidates: { wall: WallNode; closestPoint: [number, number]; distance: number }[] = []
+
+  for (const wall of resolvedWalls) {
+    const { closestPoint, distance } = closestPointOnSegment(
+      px, pz,
+      wall.start[0], wall.start[1],
+      wall.end[0], wall.end[1],
+    )
+
+    if (distance < WALL_SNAP_THRESHOLD) {
+      candidates.push({ wall, closestPoint, distance })
+    }
+  }
+
+  // Sort by distance (closest first)
+  candidates.sort((a, b) => a.distance - b.distance)
+
+  let bestWall: WallNode | null = null
+  let bestClosestPoint: [number, number] = [0, 0]
+
+  for (const candidate of candidates) {
+    const wallDx = candidate.wall.end[0] - candidate.wall.start[0]
+    const wallDz = candidate.wall.end[1] - candidate.wall.start[1]
+    const wallLen = Math.hypot(wallDx, wallDz)
+    if (wallLen < 0.01) continue
+
+    // Compute item's position along the wall
+    const wallDirX = wallDx / wallLen
+    const wallDirZ = wallDz / wallLen
+    const t = (px - candidate.wall.start[0]) * wallDirX + (pz - candidate.wall.start[1]) * wallDirZ
+
+    // Estimate item half-width along wall
+    const [w, , d] = dimensions
+    const wallAngle = Math.atan2(wallDz, wallDx)
+    const normalX = -wallDz / wallLen
+    const normalZ = wallDx / wallLen
+    const toCenterX = px - candidate.closestPoint[0]
+    const toCenterZ = pz - candidate.closestPoint[1]
+    const side = Math.sign(toCenterX * normalX + toCenterZ * normalZ) || 1
+    const faceAngle = Math.atan2(side * normalX, side * normalZ)
+    const angleDiff = Math.abs(normalizeAngle(faceAngle - wallAngle))
+    const halfWidth = (angleDiff < Math.PI / 4 || angleDiff > (3 * Math.PI) / 4) ? w / 2 : d / 2
+
+    // Check if blocked by a door/window
+    if (isBlockedByOpening(candidate.wall, t, halfWidth)) {
+      continue // Skip this wall, try the next closest
+    }
+
+    bestWall = candidate.wall
+    bestClosestPoint = candidate.closestPoint
+    break
+  }
+
+  if (!bestWall) return null
+
+  // Compute wall normal direction
+  const wallDx = bestWall.end[0] - bestWall.start[0]
+  const wallDz = bestWall.end[1] - bestWall.start[1]
+  const wallLen = Math.hypot(wallDx, wallDz)
+  if (wallLen < 0.01) return null
+
+  // Normal = wall direction rotated 90 degrees
+  const normalX = -wallDz / wallLen
+  const normalZ = wallDx / wallLen
+
+  // Determine which side of the normal the item is on (keep item on its current side)
+  const toCenterX = px - bestClosestPoint[0]
+  const toCenterZ = pz - bestClosestPoint[1]
+  const side = Math.sign(toCenterX * normalX + toCenterZ * normalZ) || 1
+
+  // Compute item facing direction: face along normal (toward room interior).
+  // Renderer convention: at rotY=0 the item's forward vector is +Z. This is the SAME
+  // contract the system prompt hands the LLM (Furniture Orientation section) and the same
+  // one adjustForGroupSpacing relies on below. ItemRenderer wraps the GLB Clone in a group
+  // whose rotation is the node's rotation, and asset.rotation has already normalized the GLB
+  // so its canonical front is +Z. Rotating +Z by θ about Y gives forward = (sin θ, cos θ).
+  // To make forward = (side*normalX, side*normalZ), solve (sin θ, cos θ) = side*normal →
+  // θ = atan2(side*normalX, side*normalZ).
+  // Must compute faceAngle first, then use final rotation for dimension projection.
+  // Otherwise halfDepth/halfWidth use original rotation but we return a new one, causing wall-clamping inaccuracy.
+  const faceAngle = Math.atan2(side * normalX, side * normalZ)
+
+  const [w, , d] = dimensions
+  const wallAngle = Math.atan2(wallDz, wallDx)
+  // Use final rotation angle (faceAngle) instead of original for dimension projection
+  const angleDiff = Math.abs(normalizeAngle(faceAngle - wallAngle))
+  // Pick w or d as depth (perpendicular to wall) based on item orientation
+  const halfDepth = (angleDiff < Math.PI / 4 || angleDiff > (3 * Math.PI) / 4)
+    ? d / 2
+    : w / 2
+
+  const thickness = bestWall.thickness ?? 0.2
+  const offset = thickness / 2 + halfDepth + WALL_OFFSET
+
+  // New position: offset from closest point along normal direction
+  let newX = bestClosestPoint[0] + normalX * side * offset
+  let newZ = bestClosestPoint[1] + normalZ * side * offset
+
+  // Clamp item along wall direction so it doesn't overshoot wall endpoints.
+  // Item half-width (parallel to wall) must not exceed wall bounds.
+  const halfWidth = (angleDiff < Math.PI / 4 || angleDiff > (3 * Math.PI) / 4)
+    ? w / 2
+    : d / 2
+  const wallDirX = wallDx / wallLen
+  const wallDirZ = wallDz / wallLen
+  // Project item center onto wall segment; t = position along wall (0=start, wallLen=end)
+  const t = (newX - bestWall.start[0]) * wallDirX + (newZ - bestWall.start[1]) * wallDirZ
+  const margin = halfWidth + thickness / 2
+  // If item is wider than wall, skip endpoint clamping (zone boundary check handles this)
+  if (margin * 2 > wallLen) return { position: [newX, py, newZ], rotation: [0, faceAngle, 0] }
+  const clampedT = Math.max(margin, Math.min(wallLen - margin, t))
+  if (Math.abs(clampedT - t) > 0.01) {
+    // Slide item along wall to stay within endpoints
+    newX += wallDirX * (clampedT - t)
+    newZ += wallDirZ * (clampedT - t)
+  }
+
+  return {
+    position: [newX, py, newZ],
+    rotation: [0, faceAngle, 0],
+  }
+}
+
+// ============================================================================
+// Against-Wall Item Orientation Enforcement
+// ============================================================================
+
+/**
+ * Enforce correct orientation for against-wall items, ensuring front (+Z) faces room interior.
+ * Unlike snapToNearestWall:
+ * - Uses a larger threshold (item depth + margin) to cover normally placed items
+ * - Only corrects rotation, does not change position
+ * - Only corrects when facing is clearly wrong (toward wall instead of room)
+ */
+function enforceAgainstWallOrientation(
+  position: [number, number, number],
+  dimensions: [number, number, number],
+  rotation: [number, number, number],
+  walls?: WallNode[],
+): { rotation: [number, number, number] } | null {
+  const resolvedWalls = walls ?? getAllWalls()
+  if (resolvedWalls.length === 0) return null
+
+  const [px, , pz] = position
+  const [, , depth] = dimensions
+
+  // Threshold: item depth + margin, ensuring normally placed against-wall items are detected
+  const threshold = Math.max(depth, 1.5) + 0.5
+  let bestWall: WallNode | null = null
+  let bestDist = threshold
+  let bestClosestPoint: [number, number] = [0, 0]
+
+  for (const wall of resolvedWalls) {
+    const { closestPoint, distance } = closestPointOnSegment(
+      px, pz,
+      wall.start[0], wall.start[1],
+      wall.end[0], wall.end[1],
+    )
+    if (distance < bestDist) {
+      bestDist = distance
+      bestWall = wall
+      bestClosestPoint = closestPoint
+    }
+  }
+
+  if (!bestWall) return null
+
+  // Compute wall normal
+  const wallDx = bestWall.end[0] - bestWall.start[0]
+  const wallDz = bestWall.end[1] - bestWall.start[1]
+  const wallLen = Math.hypot(wallDx, wallDz)
+  if (wallLen < 0.01) return null
+
+  const normalX = -wallDz / wallLen
+  const normalZ = wallDx / wallLen
+
+  // Determine which side of the wall the item is on
+  const toCenterX = px - bestClosestPoint[0]
+  const toCenterZ = pz - bestClosestPoint[1]
+  const side = Math.sign(toCenterX * normalX + toCenterZ * normalZ) || 1
+
+  // Correct orientation: front faces away from wall, toward room interior.
+  // See faceAngle in snapToNearestWall for the +Z forward convention rationale.
+  const correctAngle = Math.atan2(side * normalX, side * normalZ)
+
+  // For against-wall items the front must face the room interior, not along the wall.
+  // Tolerance: 45° — anything beyond that is corrected. The previous 90° tolerance let
+  // "along the wall" orientations slip through (regression caught by QA-AI 2026-05-01 v3).
+  const currentAngle = rotation[1]
+  const angleDiff = Math.abs(normalizeAngle(currentAngle - correctAngle))
+
+  if (angleDiff <= Math.PI / 4) {
+    // Within 45° of correct — assume intentional / good enough
+    return null
+  }
+
+  // Orientation deviates ≥ 45° from "face room interior", correct it
+  return { rotation: [0, correctAngle, 0] }
+}
+
+// ============================================================================
+// Functional Group Spacing
+// ============================================================================
+
+/**
+ * Compute item half-extent along a given axis direction, accounting for rotation.
+ * rotationY affects how width(X) and depth(Z) project onto world axes.
+ */
+function halfExtentAlongAxis(
+  dimensions: [number, number, number],
+  rotationY: number,
+  axisX: number,
+  axisZ: number,
+): number {
+  const [w, , d] = dimensions
+  const cosR = Math.abs(Math.cos(rotationY))
+  const sinR = Math.abs(Math.sin(rotationY))
+  // Item projection onto world X/Z axes
+  const worldHalfX = (w * cosR + d * sinR) / 2
+  const worldHalfZ = (w * sinR + d * cosR) / 2
+  // Project onto the specified axis direction
+  const axisLen = Math.hypot(axisX, axisZ)
+  if (axisLen < 0.001) return Math.max(worldHalfX, worldHalfZ)
+  const nx = Math.abs(axisX / axisLen)
+  const nz = Math.abs(axisZ / axisLen)
+  return worldHalfX * nx + worldHalfZ * nz
+}
+
+/**
+ * Represents a candidate primary item for spacing adjustment.
+ */
+interface SpacingCandidate {
+  slug: string
+  category: string
+  position: [number, number, number]
+  rotation: [number, number, number]
+  dimensions: [number, number, number]
+}
+
+/**
+ * Build dynamic spacing rules from companionOf metadata.
+ * This supplements the hardcoded SPACING_RULES with relationships
+ * defined in PLACEMENT_METADATA, ensuring companionOf is actually used.
+ */
+function buildDynamicSpacingRules(): SpacingRule[] {
+  const dynamicRules: SpacingRule[] = []
+  for (const [keyword, meta] of Object.entries(PLACEMENT_METADATA)) {
+    if (!meta.companionOf) continue
+    // Check if this relationship is already covered by a hardcoded rule
+    const alreadyCovered = SPACING_RULES.some((rule) =>
+      rule.companion.some((c) => keyword.includes(c) || c.includes(keyword)) &&
+      rule.primary.some((p) => meta.companionOf!.some((co) => p.includes(co) || co.includes(p)))
+    )
+    if (alreadyCovered) continue
+    // Generate a rule: this item is a companion of its companionOf targets
+    dynamicRules.push({
+      primary: meta.companionOf,
+      companion: [keyword],
+      idealDistance: meta.minClearance.front > 0 ? meta.minClearance.front : 0.3,
+      tolerance: 0.2,
+    })
+  }
+  return dynamicRules
+}
+
+/** Cached combined rules (hardcoded + dynamic from companionOf metadata) */
+let _allSpacingRules: SpacingRule[] | null = null
+function getAllSpacingRules(): SpacingRule[] {
+  if (!_allSpacingRules) {
+    _allSpacingRules = [...SPACING_RULES, ...buildDynamicSpacingRules()]
+  }
+  return _allSpacingRules
+}
+
+function adjustForGroupSpacing(
+  assetId: string,
+  category: string,
+  position: [number, number, number],
+  dimensions: [number, number, number],
+  allOps: ValidatedOperation[],
+): { position: [number, number, number]; reason: string } | null {
+  const slug = assetId.toLowerCase()
+  const cat = category.toLowerCase()
+
+  // Collect candidates from both the current batch AND existing scene items
+  const candidates: SpacingCandidate[] = []
+
+  // Candidates from the current batch
+  for (const op of allOps) {
+    if (op.type !== 'add_item' || op.status === 'invalid' || !op.asset) continue
+    candidates.push({
+      slug: op.asset.id.toLowerCase(),
+      category: op.asset.category.toLowerCase(),
+      position: op.position,
+      rotation: op.rotation,
+      dimensions: [op.asset.dimensions?.[0] ?? 1, op.asset.dimensions?.[1] ?? 1, op.asset.dimensions?.[2] ?? 1],
+    })
+  }
+
+  // Candidates from existing scene items
+  const existingNodes = Object.values(useScene.getState().nodes)
+  for (const node of existingNodes) {
+    if (node.type !== 'item') continue
+    const itemNode = node as unknown as ItemNode
+    candidates.push({
+      slug: itemNode.asset.id.toLowerCase(),
+      category: itemNode.asset.category.toLowerCase(),
+      position: [...itemNode.position] as [number, number, number],
+      rotation: [...itemNode.rotation] as [number, number, number],
+      dimensions: [...itemNode.asset.dimensions] as [number, number, number],
+    })
+  }
+
+  const allRules = getAllSpacingRules()
+
+  for (const rule of allRules) {
+    // Check if current item is a companion
+    const isCompanion = rule.companion.some((k) => slug.includes(k) || cat.includes(k))
+    if (!isCompanion) continue
+
+    // Find primary item in candidates
+    for (const candidate of candidates) {
+      const isPrimary = rule.primary.some((k) => candidate.slug.includes(k) || candidate.category.includes(k))
+      if (!isPrimary) continue
+
+      // Compute along primary item's facing direction (front = +Z after rotation)
+      const primaryRotY = candidate.rotation[1]
+      const facingX = Math.sin(primaryRotY)
+      const facingZ = Math.cos(primaryRotY)
+
+      // Project companion-to-primary offset onto facing axis
+      const dx = position[0] - candidate.position[0]
+      const dz = position[2] - candidate.position[2]
+      const projectedDist = dx * facingX + dz * facingZ
+
+      // Compute half-extents of both items along facing axis
+      const primaryHalf = halfExtentAlongAxis(
+        candidate.dimensions,
+        primaryRotY, facingX, facingZ,
+      )
+      const companionRotY = 0
+      const companionHalf = halfExtentAlongAxis(dimensions, companionRotY, facingX, facingZ)
+
+      // Edge-to-edge gap = center distance - both half-extents
+      const absDist = Math.abs(projectedDist)
+      const edgeGap = absDist - primaryHalf - companionHalf
+      const diff = edgeGap - rule.idealDistance
+
+      if (Math.abs(diff) <= rule.tolerance) continue
+      if (absDist < 0.01) continue // overlapping, skip
+
+      // Target center distance = both half-extents + ideal edge gap
+      const targetCenterDist = primaryHalf + rule.idealDistance + companionHalf
+      const sign = projectedDist >= 0 ? 1 : -1
+      const lateralX = dx - projectedDist * facingX
+      const lateralZ = dz - projectedDist * facingZ
+      const newX = candidate.position[0] + lateralX + facingX * sign * targetCenterDist
+      const newZ = candidate.position[2] + lateralZ + facingZ * sign * targetCenterDist
+
+      return {
+        position: [newX, position[1], newZ],
+        reason: `adjusted edge gap to ${rule.primary[0]} to ${rule.idealDistance}m`,
+      }
+    }
+  }
+
+  return null
+}
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+// isAgainstWall / isCornerItem are now used directly via metadata.placementType
+// in optimizeAddItem and optimizeMoveItem — no wrapper functions needed.
+
+function getAllWalls(): WallNode[] {
+  const { nodes } = useScene.getState()
+  const walls: WallNode[] = []
+  for (const node of Object.values(nodes)) {
+    if ((node as { type: string }).type === 'wall') {
+      walls.push(node as WallNode)
+    }
+  }
+  return walls
+}
+
+function closestPointOnSegment(
+  px: number,
+  pz: number,
+  ax: number,
+  az: number,
+  bx: number,
+  bz: number,
+): { closestPoint: [number, number]; distance: number } {
+  const dx = bx - ax
+  const dz = bz - az
+  const lenSq = dx * dx + dz * dz
+  if (lenSq === 0) {
+    return { closestPoint: [ax, az], distance: Math.hypot(px - ax, pz - az) }
+  }
+
+  let t = ((px - ax) * dx + (pz - az) * dz) / lenSq
+  t = Math.max(0, Math.min(1, t))
+  const cx = ax + t * dx
+  const cz = az + t * dz
+  return { closestPoint: [cx, cz], distance: Math.hypot(px - cx, pz - cz) }
+}
+
+/** Normalize angle to [-PI, PI] range */
+function normalizeAngle(angle: number): number {
+  while (angle > Math.PI) angle -= 2 * Math.PI
+  while (angle < -Math.PI) angle += 2 * Math.PI
+  return angle
+}

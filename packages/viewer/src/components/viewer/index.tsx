@@ -17,6 +17,10 @@ import {
   useState,
 } from 'react'
 import * as THREE from 'three/webgpu'
+import {
+  clearScreenshotRenderer,
+  setScreenshotRenderer,
+} from '../../lib/capture-screenshot'
 import { hasDrawableGeometry } from '../../lib/drawable-geometry'
 import { PERF_OVERLAY_ENABLED, pushGpuSample } from '../../lib/gpu-perf'
 import { applyIsolation, clearIsolation } from '../../lib/isolation'
@@ -117,6 +121,18 @@ function UnsupportedGpuViewerFallback() {
       </div>
     </div>
   )
+}
+
+function ScreenshotRendererBridge() {
+  const renderer = useThree((state) => state.gl)
+  const scene = useThree((state) => state.scene)
+
+  useEffect(() => {
+    setScreenshotRenderer(renderer, scene)
+    return () => clearScreenshotRenderer(renderer)
+  }, [renderer, scene])
+
+  return null
 }
 
 /**
@@ -579,6 +595,7 @@ const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
         enabled: shadowsEnabled,
       }}
     >
+      <ScreenshotRendererBridge />
       <FrameLimiter fps={50} />
       <ViewerCamera />
       <GPUDeviceWatcher />

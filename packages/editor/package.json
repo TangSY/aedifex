@@ -5,10 +5,18 @@
   "type": "module",
   "exports": {
     ".": "./src/index.tsx",
-    "./catalog": "./src/components/ui/item-catalog/catalog-items.tsx"
+    "./catalog": "./src/components/ui/item-catalog/catalog-items.tsx",
+    "./ai/prompt": "./src/components/ai/prompt/index.ts",
+    "./ai/contracts": "./src/components/ai/contracts/index.ts",
+    "./ai/stream-client": "./src/components/ai/ai-stream-client.ts",
+    "./components/ai": "./src/components/ai/index.ts"
   },
   "scripts": {
-    "check-types": "tsgo --noEmit"
+    "check-types": "tsgo --noEmit",
+    "check-boundary": "bash ./scripts/check-oss-boundary.sh",
+    "test": "bun run test:upstream && bun run test:ai",
+    "test:upstream": "bun test --path-ignore-patterns='src/components/ai/**'",
+    "test:ai": "vitest run"
   },
   "peerDependencies": {
     "@aedifex/core": "^0.9.2",
@@ -18,7 +26,8 @@
     "next": ">=15",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",
-    "three": "^0.185"
+    "three": "^0.185",
+    "@aedifex/mcp": "^0.3.2"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -58,6 +67,7 @@
   "devDependencies": {
     "@aedifex/core": "^0.9.2",
     "@aedifex/viewer": "^0.9.2",
+    "@aedifex/mcp": "^0.3.2",
     "@repo/typescript-config": "*",
     "@types/blob-stream": "^0.1.33",
     "@types/bun": "^1.3.0",
