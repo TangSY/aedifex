@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        We love hearing ideas from the community! Please describe what you'd like to see in Pascal Editor.
+        We love hearing ideas from the community! Please describe what you'd like to see in Aedifex.
 
   - type: textarea
     id: problem
