@@ -25,14 +25,14 @@ const ALL_NODE_TYPES = [
   'guide',
 ] as const
 
-export const findNodesInput: any = {
+export const findNodesInput = {
   type: z.enum(ALL_NODE_TYPES).optional(),
   parentId: NodeIdSchema.optional(),
   levelId: NodeIdSchema.optional(),
   zoneId: NodeIdSchema.optional(),
 }
 
-export const findNodesOutput: any = {
+export const findNodesOutput = {
   nodes: z.array(z.record(z.string(), z.unknown())),
 }
 

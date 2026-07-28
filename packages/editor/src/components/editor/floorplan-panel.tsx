@@ -1,6 +1,5 @@
 'use client'
 
-import { Icon } from '@iconify/react'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -35,10 +34,8 @@ import {
   type SiteNode,
   type SlabNode,
   SlabNode as SlabNodeSchema,
-  type SpawnNode,
   type StairNode,
   StairNode as StairNodeSchema,
-  type StairSegmentNode,
   StairSegmentNode as StairSegmentNodeSchema,
   sampleWallCenterline,
   sceneRegistry,
@@ -51,17 +48,19 @@ import {
   WallNode as WallNodeSchema,
   type WindowNode,
   WindowNode as WindowNodeSchema,
+  wallClosesRoom,
   ZoneNode as ZoneNodeSchema,
   type ZoneNode as ZoneNodeType,
 } from '@aedifex/core'
-import useSegmentDraftChain from '../../store/use-segment-draft-chain'
-import useWallSnapIndicator from '../../store/use-wall-snap-indicator'
+import { useSegmentDraftChain, useWallSnapIndicator } from '@aedifex/editor'
 import { getSceneTheme, useViewer } from '@aedifex/viewer'
+import { Icon } from '@iconify/react'
 import { Command, Ruler } from 'lucide-react'
 import {
   type ComponentProps,
   memo,
   type MouseEvent as ReactMouseEvent,
+  type ReactNode,
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
@@ -87,12 +86,14 @@ import {
   worldToFloorplanLocalPoint,
 } from '../../lib/floorplan'
 import { guideEmitter } from '../../lib/guide-events'
+import { measurementHint, parseMeasurement } from '../../lib/measurement-parser'
 import { formatLinearMeasurement, linearUnitToMeters } from '../../lib/measurements'
 import { sfxEmitter } from '../../lib/sfx-bus'
 import { SITE_BOUNDARY_DRAG_LABEL } from '../../lib/site-boundary'
 import { resolveSlabPlanPointSnap } from '../../lib/slab-plan-snap'
 import { cn } from '../../lib/utils'
 import { snapBuildingLocalToWorldGrid } from '../../lib/world-grid-snap'
+import { subscribeNavigationSyncPose } from '../../store/navigation-sync-pose-store'
 import useAlignmentGuides from '../../store/use-alignment-guides'
 import type { GuideUiState, NavigationSyncPose } from '../../store/use-editor'
 import useEditor, {
@@ -115,6 +116,8 @@ import { FloorplanAlignmentGuideLayer } from '../editor-2d/floorplan-alignment-g
 import { FloorplanCursorIndicatorOverlay as Editor2dFloorplanCursorIndicatorOverlay } from '../editor-2d/floorplan-cursor-indicator-overlay'
 import { FloorplanGroupActionMenu } from '../editor-2d/floorplan-group-action-menu'
 import { FloorplanSiteKeyHandler } from '../editor-2d/floorplan-hotkey-handlers'
+import { FloorplanMeasurementToolLayer } from '../editor-2d/floorplan-measurement-tool-layer'
+import { FloorplanRegisteredToolLayer } from '../editor-2d/floorplan-registered-tool-layer'
 import { FloorplanRegistryActionMenu } from '../editor-2d/floorplan-registry-action-menu'
 import { FloorplanRegistryMoveOverlay } from '../editor-2d/floorplan-registry-move-overlay'
 import {
@@ -127,7 +130,10 @@ import { FloorplanDraftLayer } from '../editor-2d/renderers/floorplan-draft-laye
 import { FloorplanGeometryRenderer } from '../editor-2d/renderers/floorplan-geometry-renderer'
 import { FloorplanMarqueeLayer } from '../editor-2d/renderers/floorplan-marquee-layer'
 import { FloorplanPlacementPreviewLayer } from '../editor-2d/renderers/floorplan-placement-preview-layer'
-import { FloorplanRegistryLayer } from '../editor-2d/renderers/floorplan-registry-layer'
+import {
+  FloorplanRegistryLayer,
+  RotationAngleOverlay,
+} from '../editor-2d/renderers/floorplan-registry-layer'
 import { FloorplanStairLayer } from '../editor-2d/renderers/floorplan-stair-layer'
 import { FloorplanVoronoiLayer } from '../editor-2d/renderers/floorplan-voronoi-layer'
 import { buildSvgPolylinePath, formatPolygonPath, getArcPlanPoint } from '../editor-2d/svg-paths'
@@ -170,6 +176,7 @@ import {
   DEFAULT_STAIR_WIDTH,
 } from '../tools/stair/stair-defaults'
 import {
+  chainEndJoinsExistingWall,
   createWallOnCurrentLevel,
   isSegmentLongEnough,
   snapWallDraftPoint,
@@ -183,6 +190,23 @@ import {
 import { PALETTE_COLORS } from '../ui/primitives/color-dot'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/primitives/tooltip'
 import { resolveFloorplanBackgroundSelection } from './floorplan-background-selection'
+import {
+  subscribeFloorplanCameraNavigation,
+  useFloorplanCameraSyncBridge,
+} from './floorplan-camera-sync'
+import {
+  canApplyFloorplanNavigationSync,
+  canZoomFloorplanDuringNavigation,
+  createFloorplanNavigationSyncScheduler,
+  type FloorplanNavigationSyncScheduler,
+  type FloorplanPresentationViewBox,
+  finalizeFloorplanNavigation,
+  flushFloorplanRotationPresentationRestore,
+  getFloorplanRotationOverscanViewBox,
+  queueFloorplanRotationPresentationRestore,
+  resolveFloorplanPresentationViewBox,
+  setFloorplanCompassRotation,
+} from './floorplan-navigation-presentation'
 import { useFloorplanBackgroundPlacement } from './use-floorplan-background-placement'
 import { useFloorplanHitTesting } from './use-floorplan-hit-testing'
 import { useFloorplanSceneData } from './use-floorplan-scene-data'
@@ -312,6 +336,36 @@ type FloorplanRotationState = {
   startClientX: number
   initialUserRotationDeg: number
   viewportCenterLocal: SvgPoint
+  svg: SVGSVGElement
+  svgStyle: {
+    transform: string
+    transformOrigin: string
+    willChange: string
+  }
+  latestUserRotationDeg: number
+  latestViewport: FloorplanViewport
+}
+
+type FloorplanNavigationSyncPresentationState = {
+  initialUserRotationDeg: number
+  initialSceneRotationDeg: number
+  latestUserRotationDeg: number
+  latestSceneRotationDeg: number
+  latestViewport: FloorplanViewport
+  svg: SVGSVGElement
+  svgStyle: {
+    transform: string
+    transformOrigin: string
+    willChange: string
+  }
+}
+
+function restoreFloorplanNavigationSyncPresentation(
+  presentationState: FloorplanNavigationSyncPresentationState,
+) {
+  presentationState.svg.style.transform = presentationState.svgStyle.transform
+  presentationState.svg.style.transformOrigin = presentationState.svgStyle.transformOrigin
+  presentationState.svg.style.willChange = presentationState.svgStyle.willChange
 }
 
 type FloorplanScreenSelectionState = {
@@ -406,21 +460,6 @@ type PendingFenceDragState = {
   fenceId: FenceNode['id']
   startClientX: number
   startClientY: number
-}
-
-type ElevatorResizeHandle =
-  | 'width-negative'
-  | 'width-positive'
-  | 'depth-negative'
-  | 'depth-positive'
-
-type ElevatorResizeDragState = {
-  center: Point2D
-  elevatorId: ElevatorNode['id']
-  handle: ElevatorResizeHandle
-  pointerId: number
-  rotation: number
-  shaftWallThickness: number
 }
 
 const GUIDE_CORNERS = ['nw', 'ne', 'se', 'sw'] as const
@@ -587,20 +626,9 @@ type SitePolygonEntry = {
   points: string
 }
 
-type ZonePolygonEntry = {
-  zone: ZoneNodeType
-  polygon: Point2D[]
-  points: string
-}
-
 type FloorplanLineSegment = {
   start: Point2D
   end: Point2D
-}
-
-type FloorplanPolygonEntry = {
-  points: string
-  polygon: Point2D[]
 }
 
 type FloorplanItemEntry = {
@@ -616,52 +644,6 @@ type FloorplanItemEntry = {
   rotation: number
   width: number
   depth: number
-}
-
-type FloorplanSpawnEntry = {
-  spawn: SpawnNode
-  position: Point2D
-  rotation: number
-}
-
-type FloorplanColumnEntry = {
-  column: ColumnNode
-  points: string
-  polygon: Point2D[]
-}
-
-type FloorplanElevatorServedLevel = {
-  id: LevelNode['id']
-  isCurrent: boolean
-  isDisabled: boolean
-  isQueued: boolean
-  isServiceOnly: boolean
-  isTarget: boolean
-  label: string
-}
-
-type FloorplanElevatorEntry = {
-  cabCenterLocalY: number
-  cabDepth: number
-  cabWidth: number
-  center: Point2D
-  doorStyle: ElevatorNode['doorStyle']
-  doorWidth: number
-  elevator: ElevatorNode
-  frontEdge: FloorplanLineSegment
-  frontNormal: Point2D
-  isCarOnLevel: boolean
-  isQueuedLevel: boolean
-  isTargetLevel: boolean
-  outerHalfDepth: number
-  outerHalfWidth: number
-  points: string
-  polygon: Point2D[]
-  rotation: number
-  servedLevels: FloorplanElevatorServedLevel[]
-  shaftDepth: number
-  shaftWallThickness: number
-  shaftWidth: number
 }
 
 type ReferenceFloorData = {
@@ -707,42 +689,6 @@ const REFERENCE_REGISTRY_KINDS = new Set<AnyNode['type']>([
   'spawn',
   'elevator',
 ])
-
-type FloorplanStairSegmentEntry = {
-  centerLine: FloorplanLineSegment | null
-  innerPoints: string
-  innerPolygon: Point2D[]
-  segment: StairSegmentNode
-  points: string
-  polygon: Point2D[]
-  treadBars: FloorplanPolygonEntry[]
-  treadThickness: number
-}
-
-type FloorplanStairArrowEntry = {
-  head: Point2D[]
-  polyline: Point2D[]
-}
-
-type FloorplanStairEntry = {
-  arrow: FloorplanStairArrowEntry | null
-  hitPolygons: Point2D[][]
-  stair: StairNode
-  segments: FloorplanStairSegmentEntry[]
-}
-
-type FloorplanRoofSegmentEntry = {
-  segment: RoofSegmentNode
-  polygon: Point2D[]
-  points: string
-  ridgeLine: FloorplanLineSegment | null
-}
-
-type FloorplanRoofEntry = {
-  roof: RoofNode
-  center: Point2D
-  segments: FloorplanRoofSegmentEntry[]
-}
 
 type FloorplanPalette = {
   surface: string
@@ -886,18 +832,6 @@ function resolveFloorplanViewWidth(
   const maxWidth = fittedViewport.width * MAX_VIEWPORT_WIDTH_RATIO
 
   return clamp(requestedWidth, Math.min(minWidth, currentWidth), Math.max(maxWidth, currentWidth))
-}
-
-function roundPlanMeters(value: number) {
-  return Math.round(value * 100) / 100
-}
-
-function getElevatorResizeAxis(handle: ElevatorResizeHandle) {
-  return handle.startsWith('width') ? 'width' : 'depth'
-}
-
-function getElevatorResizeSign(handle: ElevatorResizeHandle) {
-  return handle.endsWith('positive') ? 1 : -1
 }
 
 function getSelectionModifierKeys(event?: {
@@ -1410,6 +1344,44 @@ function buildGuideRotationDraft(
     position: toPlanPointFromSvgPoint(interaction.centerSvg),
     scale: interaction.scale,
     rotation: getGuideSceneRotationFromSvgRotation(snappedRotationSvg),
+  }
+}
+
+/** Live rotation readout for a guide rotate drag — feeds the registry
+ *  layer's wedge + degree chip so guides read the same as every other
+ *  rotate affordance. Sweeps from the grabbed corner's bearing at grab to
+ *  its current (snapped) bearing; suppressed below ~0.5° so a fresh grab
+ *  doesn't flash a zero-width sliver. */
+function buildGuideRotationReadout(
+  interaction: GuideInteractionState | null,
+  draft: GuideTransformDraft | null,
+) {
+  if (
+    !(
+      interaction &&
+      draft &&
+      interaction.mode === 'rotate' &&
+      draft.guideId === interaction.guideId
+    )
+  ) {
+    return null
+  }
+
+  const delta = normalizeAngle(getGuideSvgRotation(draft.rotation) - interaction.rotationSvg)
+  if (Math.abs(delta) < 0.0087) {
+    return null
+  }
+
+  const width = getGuideWidth(interaction.scale)
+  const height = getGuideHeight(width, interaction.aspectRatio)
+  const startAngle = interaction.rotationSvg + interaction.cornerBaseAngle
+
+  return {
+    pivot: [interaction.centerSvg.x, interaction.centerSvg.y] as const,
+    startAngle,
+    endAngle: startAngle + delta,
+    radius: Math.hypot(width, height) / 2,
+    sweep: Math.abs(delta),
   }
 }
 
@@ -2674,9 +2646,10 @@ function formatMeasurement(
   value: number,
   unit: 'metric' | 'imperial',
   metersPerUnit: number | null = null,
+  metricNotation: 'meters' | 'millimeters' = 'meters',
 ) {
   const measuredValue = metersPerUnit && metersPerUnit > 0 ? value * metersPerUnit : value
-  return formatLinearMeasurement(measuredValue, unit)
+  return formatLinearMeasurement(measuredValue, unit, metricNotation)
 }
 
 function formatNumber(value: number, fractionDigits = 2) {
@@ -2694,6 +2667,39 @@ function convertReferenceLengthToMeters(value: number, unit: ReferenceScaleUnit)
     default:
       return value
   }
+}
+
+const REFERENCE_SCALE_LINGO_UNIT: Record<ReferenceScaleUnit, 'm' | 'cm' | 'ft' | 'in'> = {
+  meters: 'm',
+  centimeters: 'cm',
+  feet: 'ft',
+  inches: 'in',
+}
+
+/** Lingo-parse the free-text real-length input in the dropdown's unit — a
+ * bare number means the dropdown unit, while `180cm`, `1m80` or `5'11"`
+ * override it. Returns `null` when the text isn't a readable length. */
+function parseReferenceScaleLength(raw: string, unit: ReferenceScaleUnit): number | null {
+  const unitId = REFERENCE_SCALE_LINGO_UNIT[unit]
+  return parseMeasurement(
+    raw,
+    { kind: 'length', unitId },
+    { bareUnit: unitId, system: unit === 'feet' || unit === 'inches' ? 'us' : 'metric' },
+  )
+}
+
+function referenceScaleLengthHint(raw: string, unit: ReferenceScaleUnit): string | null {
+  const unitId = REFERENCE_SCALE_LINGO_UNIT[unit]
+  return measurementHint(
+    raw,
+    { kind: 'length', unitId },
+    {
+      bareUnit: unitId,
+      system: unit === 'feet' || unit === 'inches' ? 'us' : 'metric',
+      displayUnit: unitId,
+      precision: 2,
+    },
+  )
 }
 
 function getReferenceScaleUnitLabel(unit: ReferenceScaleUnit) {
@@ -3150,10 +3156,17 @@ function FloorplanGuideImage({
           }}
           onPointerDown={(event) => {
             if (event.button === 0) {
-              event.stopPropagation()
-              if (isSelected && !isLocked) {
-                onGuideTranslateStart(guide, event)
+              // Only a selected, unlocked guide consumes the pointer-down (it
+              // starts a translate drag). Every other guide lets it bubble to
+              // the <svg> root so box select arms exactly as on empty canvas.
+              // A non-drag release still fires onClick (a committed box-select
+              // drag swallows the trailing click), so click-to-select → panel
+              // keeps working for locked and unselected guides alike.
+              if (isLocked || !isSelected) {
+                return
               }
+              event.stopPropagation()
+              onGuideTranslateStart(guide, event)
             }
           }}
           pointerEvents="all"
@@ -3529,6 +3542,7 @@ function FloorplanReferenceScaleDraftLine({
   unitsPerPixel: number
 }) {
   const cursor = useFloorplanDraftPreview((s) => s.cursorPoint)
+  const metricNotation = useViewer((state) => state.metricNotation)
   if (!cursor) {
     return null
   }
@@ -3540,6 +3554,8 @@ function FloorplanReferenceScaleDraftLine({
       label={`Ref ${formatMeasurement(
         Math.hypot(cursor[0] - start[0], cursor[1] - start[1]),
         unit,
+        null,
+        metricNotation,
       )}`}
       palette={palette}
       start={start}
@@ -3921,6 +3937,7 @@ const FloorplanSiteEdgeLabelLayer = memo(function FloorplanSiteEdgeLabelLayer({
   unit: 'metric' | 'imperial'
   unitsPerPixel: number
 }) {
+  const metricNotation = useViewer((state) => state.metricNotation)
   if (!(shouldShow && sitePolygon && sitePolygon.polygon.length >= 2)) {
     return null
   }
@@ -3969,7 +3986,7 @@ const FloorplanSiteEdgeLabelLayer = memo(function FloorplanSiteEdgeLabelLayer({
       labelAngleDeg += 180
     }
 
-    const label = formatMeasurement(length, unit)
+    const label = formatMeasurement(length, unit, null, metricNotation)
     const width = Math.max(label.length * upx * 6.4 + padX * 2, minWidth)
     const height = fontSize + padY * 2
 
@@ -4024,262 +4041,6 @@ const FloorplanSiteEdgeLabelLayer = memo(function FloorplanSiteEdgeLabelLayer({
     </g>
   )
 })
-
-const FloorplanZoneLayer = memo(function FloorplanZoneLayer({
-  canSelectZones,
-  hoveredZoneId,
-  isDeleteMode,
-  onZoneHoverChange,
-  onZoneSelect,
-  palette,
-  selectedZoneId,
-  zonePolygons,
-}: {
-  canSelectZones: boolean
-  hoveredZoneId: ZoneNodeType['id'] | null
-  isDeleteMode: boolean
-  onZoneHoverChange: (zoneId: ZoneNodeType['id'] | null) => void
-  onZoneSelect: (zoneId: ZoneNodeType['id'], event: ReactMouseEvent<SVGElement>) => void
-  palette: FloorplanPalette
-  selectedZoneId: ZoneNodeType['id'] | null
-  zonePolygons: ZonePolygonEntry[]
-}) {
-  return (
-    <>
-      {zonePolygons.map(({ zone, points }) => {
-        const isSelected = selectedZoneId === zone.id
-        const isHovered = hoveredZoneId === zone.id
-        const isDeleteHovered = isDeleteMode && isHovered
-
-        return (
-          <g key={zone.id}>
-            <polygon
-              fill={isDeleteHovered ? palette.deleteFill : zone.color}
-              fillOpacity={isDeleteHovered ? 0.22 : isSelected ? 0.28 : 0.16}
-              pointerEvents="none"
-              points={points}
-              stroke={
-                isDeleteHovered
-                  ? palette.deleteStroke
-                  : isSelected
-                    ? palette.selectedStroke
-                    : zone.color
-              }
-              strokeLinejoin="round"
-              strokeOpacity={isDeleteHovered || isSelected ? 0.96 : 0.72}
-              strokeWidth={isDeleteHovered || isSelected ? '0.08' : '0.05'}
-              vectorEffect="non-scaling-stroke"
-            />
-            {canSelectZones && (
-              <polygon
-                fill="none"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  onZoneSelect(zone.id, event)
-                }}
-                onPointerEnter={() => onZoneHoverChange(zone.id)}
-                onPointerLeave={() => onZoneHoverChange(null)}
-                pointerEvents="stroke"
-                points={points}
-                stroke="transparent"
-                strokeLinejoin="round"
-                strokeWidth={FLOORPLAN_WALL_HIT_STROKE_WIDTH}
-                style={{ cursor: EDITOR_CURSOR }}
-                vectorEffect="non-scaling-stroke"
-              />
-            )}
-          </g>
-        )
-      })}
-    </>
-  )
-})
-
-const FLOORPLAN_ZONE_LABEL_FONT_SIZE = 0.2
-
-function FloorplanZoneLabelInput({
-  centroid,
-  svgRef,
-  viewBox,
-  zone,
-  onDone,
-}: {
-  centroid: { x: number; y: number }
-  svgRef: React.RefObject<SVGSVGElement | null>
-  viewBox: { minX: number; minY: number; width: number; height: number }
-  zone: ZoneNodeType
-  onDone: () => void
-}) {
-  const updateNode = useScene((s) => s.updateNode)
-  const [value, setValue] = useState(zone.name)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    requestAnimationFrame(() => {
-      inputRef.current?.focus()
-      inputRef.current?.select()
-    })
-  }, [])
-
-  const save = useCallback(() => {
-    const trimmed = value.trim()
-    if (trimmed && trimmed !== zone.name) {
-      updateNode(zone.id, { name: trimmed })
-    }
-    onDone()
-  }, [value, zone.id, zone.name, updateNode, onDone])
-
-  // Convert SVG coordinates to screen pixel position
-  const svgEl = svgRef.current
-  if (!svgEl) return null
-  const rect = svgEl.getBoundingClientRect()
-  const screenX = ((centroid.x - viewBox.minX) / viewBox.width) * rect.width + rect.left
-  const screenY = ((centroid.y - viewBox.minY) / viewBox.height) * rect.height + rect.top
-
-  return createPortal(
-    <input
-      onBlur={save}
-      onChange={(e) => setValue(e.target.value)}
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => {
-        e.stopPropagation()
-        if (e.key === 'Enter') {
-          e.preventDefault()
-          save()
-        }
-        if (e.key === 'Escape') {
-          e.preventDefault()
-          onDone()
-        }
-      }}
-      onMouseDown={(e) => e.stopPropagation()}
-      onPointerDown={(e) => e.stopPropagation()}
-      ref={inputRef}
-      style={{
-        position: 'fixed',
-        left: screenX,
-        top: screenY,
-        transform: 'translate(-50%, -50%)',
-        border: 'none',
-        borderBottom: `1px solid ${zone.color}`,
-        background: 'transparent',
-        color: 'white',
-        textShadow: `-1px -1px 0 ${zone.color}, 1px -1px 0 ${zone.color}, -1px 1px 0 ${zone.color}, 1px 1px 0 ${zone.color}`,
-        outline: 'none',
-        textAlign: 'center',
-        fontSize: '14px',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        padding: '2px 4px',
-        margin: 0,
-        zIndex: 100,
-        width: `${Math.max((value || zone.name || '').length + 2, 6)}ch`,
-      }}
-      type="text"
-      value={value}
-    />,
-    document.body,
-  )
-}
-
-// Pencil icon as an SVG path (Lucide pencil simplified), rendered relative to the label
-const PENCIL_ICON_SIZE = FLOORPLAN_ZONE_LABEL_FONT_SIZE * 0.6
-
-function FloorplanZoneLabel({
-  centroid,
-  onHoverChange,
-  onLabelClick,
-  zone,
-}: {
-  centroid: { x: number; y: number }
-  onHoverChange: (zoneId: ZoneNodeType['id'] | null) => void
-  onLabelClick: (zoneId: ZoneNodeType['id'], event: ReactMouseEvent<SVGElement>) => void
-  zone: ZoneNodeType
-}) {
-  const [hovered, setHovered] = useState(false)
-  const textRef = useRef<SVGTextElement>(null)
-  const [textWidth, setTextWidth] = useState(0)
-  const mode = useEditor((s) => s.mode)
-  const deleteNode = useScene((s) => s.deleteNode)
-  const setSelection = useViewer((s) => s.setSelection)
-
-  useEffect(() => {
-    if (textRef.current) {
-      setTextWidth(textRef.current.getComputedTextLength())
-    }
-  }, [])
-
-  const isDeleteMode = mode === 'delete'
-
-  return (
-    <g
-      cursor="pointer"
-      onClick={(e) => {
-        e.stopPropagation()
-        if (isDeleteMode) {
-          sfxEmitter.emit('sfx:structure-delete')
-          deleteNode(zone.id as AnyNodeId)
-          setSelection({ zoneId: null })
-          return
-        }
-        onLabelClick(zone.id, e)
-      }}
-      onPointerEnter={() => {
-        setHovered(true)
-        onHoverChange(zone.id)
-      }}
-      onPointerLeave={() => {
-        setHovered(false)
-        onHoverChange(null)
-      }}
-      pointerEvents="auto"
-      style={{ userSelect: 'none' }}
-    >
-      <text
-        dominantBaseline="central"
-        fill={isDeleteMode && hovered ? '#fecaca' : 'white'}
-        fontFamily="system-ui, -apple-system, sans-serif"
-        fontSize={FLOORPLAN_ZONE_LABEL_FONT_SIZE}
-        fontWeight="500"
-        paintOrder="stroke"
-        ref={textRef}
-        stroke={isDeleteMode && hovered ? '#dc2626' : zone.color}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={FLOORPLAN_ZONE_LABEL_FONT_SIZE * 0.35}
-        textAnchor="middle"
-        x={centroid.x}
-        y={centroid.y}
-      >
-        {zone.name}
-      </text>
-      {/* Pencil icon — visible on hover */}
-      {hovered && textWidth > 0 && (
-        <g
-          transform={`translate(${centroid.x + textWidth / 2 + PENCIL_ICON_SIZE * 0.5}, ${centroid.y - PENCIL_ICON_SIZE / 2})`}
-        >
-          <g transform={`scale(${PENCIL_ICON_SIZE / 24})`}>
-            <path
-              d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"
-              fill="none"
-              paintOrder="stroke"
-              stroke={zone.color}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={3}
-            />
-            <path
-              d="m15 5 4 4"
-              fill="none"
-              stroke={zone.color}
-              strokeLinecap="round"
-              strokeWidth={3}
-            />
-          </g>
-        </g>
-      )}
-    </g>
-  )
-}
 
 const FloorplanPolygonHandleLayer = memo(function FloorplanPolygonHandleLayer({
   edgeHandles = [],
@@ -4944,6 +4705,7 @@ function FloorplanLinearDraftLayer({
   unitsPerPixel: number
   sceneRotationDeg: number
 }) {
+  const metricNotation = useViewer((state) => state.metricNotation)
   const wallDraftEnd = useFloorplanDraftPreview((s) => s.wallDraftEnd)
   const fenceDraftEnd = useFloorplanDraftPreview((s) => s.fenceDraftEnd)
   const roofDraftEnd = useFloorplanDraftPreview((s) => s.roofDraftEnd)
@@ -5062,7 +4824,7 @@ function FloorplanLinearDraftLayer({
     }
 
     return {
-      lengthLabel: formatMeasurement(length, unit),
+      lengthLabel: formatMeasurement(length, unit, null, metricNotation),
       midpoint: [
         (wallDraftStart[0] + wallDraftEnd[0]) / 2,
         (wallDraftStart[1] + wallDraftEnd[1]) / 2,
@@ -5070,10 +4832,84 @@ function FloorplanLinearDraftLayer({
       direction: [dx / length, dy / length] as WallPlanPoint,
       angleLabels,
     }
-  }, [isWallBuildActive, unit, wallDraftEnd, wallDraftStart, walls])
+  }, [isWallBuildActive, metricNotation, unit, wallDraftEnd, wallDraftStart, walls])
+
+  // Axis guides for wall and fence drafts — parity with the 3D tools'
+  // `DraftAxisGuides`: an X/Z cross through the draft start, and a single
+  // long line PERPENDICULAR to the segment through the moving endpoint (a
+  // second cross would collide with the start cross on axis-aligned
+  // segments). Long solid lines in world space — cheap for the SVG renderer,
+  // unlike dashed strokes which tessellate per dash over 2000 m. Stroke
+  // width is budgeted in screen pixels via `unitsPerPixel`, matching the
+  // alignment-guide layer.
+  const draftAxisGuideLines = useMemo(() => {
+    const lines: Array<{ x1: number; y1: number; x2: number; y2: number }> = []
+    const pushCross = (point: WallPlanPoint) => {
+      lines.push(
+        {
+          x1: point[0] - DRAFT_AXIS_GUIDE_EXTENT,
+          y1: point[1],
+          x2: point[0] + DRAFT_AXIS_GUIDE_EXTENT,
+          y2: point[1],
+        },
+        {
+          x1: point[0],
+          y1: point[1] - DRAFT_AXIS_GUIDE_EXTENT,
+          x2: point[0],
+          y2: point[1] + DRAFT_AXIS_GUIDE_EXTENT,
+        },
+      )
+    }
+    const pushDraft = (start: WallPlanPoint, end: WallPlanPoint) => {
+      pushCross(start)
+      const dx = end[0] - start[0]
+      const dy = end[1] - start[1]
+      const length = Math.hypot(dx, dy)
+      if (length < 1e-6) return
+      const nx = -dy / length
+      const ny = dx / length
+      lines.push({
+        x1: end[0] - nx * DRAFT_AXIS_GUIDE_EXTENT,
+        y1: end[1] - ny * DRAFT_AXIS_GUIDE_EXTENT,
+        x2: end[0] + nx * DRAFT_AXIS_GUIDE_EXTENT,
+        y2: end[1] + ny * DRAFT_AXIS_GUIDE_EXTENT,
+      })
+    }
+    if (isWallBuildActive && wallDraftStart && wallDraftEnd) {
+      pushDraft(wallDraftStart, wallDraftEnd)
+    }
+    if (isFenceBuildActive && fenceDraftStart && fenceDraftEnd) {
+      pushDraft(fenceDraftStart, fenceDraftEnd)
+    }
+    return lines.length > 0 ? lines : null
+  }, [
+    isFenceBuildActive,
+    isWallBuildActive,
+    fenceDraftEnd,
+    fenceDraftStart,
+    wallDraftEnd,
+    wallDraftStart,
+  ])
 
   return (
     <>
+      {draftAxisGuideLines && (
+        <g pointerEvents="none">
+          {draftAxisGuideLines.map((line, index) => (
+            <line
+              key={index}
+              stroke="#818cf8"
+              strokeOpacity={0.5}
+              strokeWidth={unitsPerPixel}
+              x1={line.x1}
+              x2={line.x2}
+              y1={line.y1}
+              y2={line.y2}
+            />
+          ))}
+        </g>
+      )}
+
       <FloorplanDraftLayer
         anchorFill={draftStroke}
         draftAnchorPoints={EMPTY_DRAFT_ANCHOR_POINTS}
@@ -5102,6 +4938,8 @@ function FloorplanLinearDraftLayer({
 }
 
 const EMPTY_DRAFT_ANCHOR_POINTS: Array<{ x: number; y: number; isPrimary: boolean }> = []
+/** World-space half-length of the 2D draft axis guide lines (matches the 3D tools' 2000 m guides). */
+const DRAFT_AXIS_GUIDE_EXTENT = 1000
 
 export function FloorplanPanel({
   /**
@@ -5111,15 +4949,20 @@ export function FloorplanPanel({
    * in 2d, 3d, and split modes, while this panel itself may be display:none.
    */
   compassHost,
+  floorplanSceneSlot,
 }: {
   compassHost?: HTMLElement | null
+  floorplanSceneSlot?: ReactNode
 }) {
+  useFloorplanCameraSyncBridge()
   const viewportHostRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
+  const floorplanBackgroundRef = useRef<SVGRectElement>(null)
   const floorplanSceneRef = useRef<SVGGElement>(null)
   const floorplanContentRef = useRef<SVGGElement>(null)
   const panStateRef = useRef<PanState | null>(null)
   const floorplanRotationStateRef = useRef<FloorplanRotationState | null>(null)
+  const pendingFloorplanRotationRestoreRef = useRef<FloorplanRotationState | null>(null)
   const floorplanSpacePanPressedRef = useRef(false)
   const floorplanNavigationClickSuppressedRef = useRef(false)
   const guideInteractionRef = useRef<GuideInteractionState | null>(null)
@@ -5143,6 +4986,31 @@ export function FloorplanPanel({
   const latestFittedViewportRef = useRef<FloorplanViewport | null>(null)
   const floorplanViewAnimationFrameRef = useRef<number | null>(null)
   const floorplanViewAnimationTargetRef = useRef<FloorplanViewAnimationTarget | null>(null)
+  const floorplanZoomCommitTimerRef = useRef<number | null>(null)
+  const floorplanRenderScaleCommitTimerRef = useRef<number | null>(null)
+  const floorplanViewportInteractionInProgressRef = useRef(false)
+  const floorplanImperativeViewBoxRef = useRef<FloorplanPresentationViewBox | null>(null)
+  const floorplanNavigationSyncPresentationRef =
+    useRef<FloorplanNavigationSyncPresentationState | null>(null)
+  const applyFloorplanNavigationSyncPresentationRef = useRef<(pose: NavigationSyncPose) => void>(
+    () => {},
+  )
+  const commitFloorplanNavigationSyncPresentationRef = useRef<(pose: NavigationSyncPose) => void>(
+    () => {},
+  )
+  const floorplanNavigationSyncSchedulerRef =
+    useRef<FloorplanNavigationSyncScheduler<NavigationSyncPose> | null>(null)
+  const latestFloorplanRenderUnitsPerPixelRef = useRef(1)
+  const floorplanZoomPoseRef = useRef<{
+    localCenter: SvgPoint
+    userRotationDeg: number
+    viewWidth: number
+  } | null>(null)
+  const floorplanPanPoseRef = useRef<{
+    localCenter: SvgPoint
+    userRotationDeg: number
+    viewWidth: number
+  } | null>(null)
   const latestNavigationSyncPoseRef = useRef<NavigationSyncPose | null>(
     useEditor.getState().navigationSyncPose,
   )
@@ -5157,6 +5025,7 @@ export function FloorplanPanel({
   const setPreviewSelectedIds = useViewer((state) => state.setPreviewSelectedIds)
   const isDark = useViewer((state) => getSceneTheme(state.sceneTheme).appearance === 'dark')
   const unit = useViewer((state) => state.unit)
+  const metricNotation = useViewer((state) => state.metricNotation)
   const showGrid = useViewer((state) => state.showGrid)
   const showGuides = useViewer((state) => state.showGuides)
   const setShowGuides = useViewer((state) => state.setShowGuides)
@@ -5247,9 +5116,14 @@ export function FloorplanPanel({
   const buildingRotationDeg = (buildingRotationY * 180) / Math.PI
   const floorplanSceneRotationDeg =
     FLOORPLAN_VIEW_ROTATION_DEG + floorplanUserRotationDeg - buildingRotationDeg
+  const getFloorplanSceneRotationDeg = useCallback(
+    () =>
+      FLOORPLAN_VIEW_ROTATION_DEG + latestFloorplanUserRotationDegRef.current - buildingRotationDeg,
+    [buildingRotationDeg],
+  )
   // Only sync ref from state when floorplan is open (state is source of truth).
   // When hidden, the imperative 3D path owns the ref and must not be clobbered.
-  if (isFloorplanOpenRef.current) {
+  if (isFloorplanOpenRef.current && !floorplanViewportInteractionInProgressRef.current) {
     latestFloorplanUserRotationDegRef.current = floorplanUserRotationDeg
   }
 
@@ -5259,6 +5133,9 @@ export function FloorplanPanel({
   // Shims keep the `setXDraftEnd(value | prev => …)` call sites unchanged.
   const [draftStart, setDraftStart] = useState<WallPlanPoint | null>(null)
   const [wallChainFirstVertex, setWallChainFirstVertex] = useState<WallPlanPoint | null>(null)
+  // Walls committed by the current 2D-only chain — exclusion set for the
+  // T-junction chain-termination test (mirrors the 3D tool's `chainWallIds`).
+  const wallChainWallIdsRef = useRef<string[]>([])
   const setDraftEnd = useCallback(
     (next: WallPlanPoint | null | ((prev: WallPlanPoint | null) => WallPlanPoint | null)) => {
       const store = useFloorplanDraftPreview.getState()
@@ -5284,6 +5161,18 @@ export function FloorplanPanel({
   )
   const [ceilingDraftPoints, setCeilingDraftPoints] = useState<WallPlanPoint[]>([])
   const [slabDraftPoints, setSlabDraftPoints] = useState<WallPlanPoint[]>([])
+  // Mirror the per-click draft START anchors into the shared draft store so
+  // out-of-tree consumers (such as host-owned preview publishers) see the whole open
+  // segment without subscribing to this panel's state.
+  useEffect(() => {
+    useFloorplanDraftPreview.getState().setWallDraftStart(draftStart)
+  }, [draftStart])
+  useEffect(() => {
+    useFloorplanDraftPreview.getState().setFenceDraftStart(fenceDraftStart)
+  }, [fenceDraftStart])
+  useEffect(() => {
+    useFloorplanDraftPreview.getState().setRoofDraftStart(roofDraftStart)
+  }, [roofDraftStart])
   const [zoneDraftPoints, setZoneDraftPoints] = useState<WallPlanPoint[]>([])
   const [siteBoundaryDraft, setSiteBoundaryDraft] = useState<SiteBoundaryDraft | null>(null)
   const [siteVertexDragState, setSiteVertexDragState] = useState<SiteVertexDragState | null>(null)
@@ -5337,24 +5226,7 @@ export function FloorplanPanel({
   )
   const [wallEndpointDraft, setWallEndpointDraft] = useState<WallEndpointDraft | null>(null)
   const [wallCurveDraft, setWallCurveDraft] = useState<WallCurveDraft | null>(null)
-  const [hoveredOpeningId, setHoveredOpeningId] = useState<OpeningNode['id'] | null>(null)
-  const [hoveredWallId, setHoveredWallId] = useState<WallNode['id'] | null>(null)
-  const [hoveredFenceId, setHoveredFenceId] = useState<FenceNode['id'] | null>(null)
-  const [hoveredSlabId, setHoveredSlabId] = useState<SlabNode['id'] | null>(null)
-  const [hoveredCeilingId, setHoveredCeilingId] = useState<CeilingNode['id'] | null>(null)
-  const [hoveredItemId, setHoveredItemId] = useState<ItemNode['id'] | null>(null)
-  const [hoveredSpawnId, setHoveredSpawnId] = useState<SpawnNode['id'] | null>(null)
-  const [hoveredStairId, setHoveredStairId] = useState<StairNode['id'] | null>(null)
-  const [hoveredElevatorId, setHoveredElevatorId] = useState<ElevatorNode['id'] | null>(null)
-  const [elevatorResizeDragState, setElevatorResizeDragState] =
-    useState<ElevatorResizeDragState | null>(null)
-  const [hoveredZoneId, setHoveredZoneId] = useState<ZoneNodeType['id'] | null>(null)
-  const [hoveredEndpointId, setHoveredEndpointId] = useState<string | null>(null)
-  const [hoveredWallCurveHandleId, setHoveredWallCurveHandleId] = useState<string | null>(null)
   const [hoveredSiteHandleId, setHoveredSiteHandleId] = useState<string | null>(null)
-  const [hoveredSlabHandleId, setHoveredSlabHandleId] = useState<string | null>(null)
-  const [hoveredCeilingHandleId, setHoveredCeilingHandleId] = useState<string | null>(null)
-  const [hoveredZoneHandleId, setHoveredZoneHandleId] = useState<string | null>(null)
   const [hoveredGuideCorner, setHoveredGuideCorner] = useState<GuideCorner | null>(null)
   const floorplanSelectionTool = useEditor((s) => s.floorplanSelectionTool)
   const setFloorplanSelectionTool = useEditor((s) => s.setFloorplanSelectionTool)
@@ -5443,12 +5315,15 @@ export function FloorplanPanel({
   const [isPanelReady, setIsPanelReady] = useState(false)
   const [surfaceSize, setSurfaceSize] = useState({ width: 1, height: 1 })
   const [viewport, setViewport] = useState<FloorplanViewport | null>(null)
-  latestViewportRef.current = viewport
-  // Tight bbox of the painted floor-plan scene (the rotation `<g>`'s
-  // children), read via SVG `getBBox()` after each render. The legacy
-  // polygon arrays (`wallPolygons`, `displaySlabPolygons`, etc.) are now
-  // empty stubs because rendering moved to the registry layer, so
-  // measuring the DOM is how `fittedViewport` learns where content lives.
+  const [floorplanRenderUnitsPerPixel, setFloorplanRenderUnitsPerPixel] = useState<number | null>(
+    null,
+  )
+  if (!floorplanViewportInteractionInProgressRef.current) {
+    latestViewportRef.current = viewport
+  }
+  // Tight bbox of the registry-rendered floor-plan content, read via SVG
+  // `getBBox()` after geometry changes settle. `fittedViewport` combines it
+  // with the editor-owned site boundary below.
   const [measuredSceneBBox, setMeasuredSceneBBox] = useState<{
     x: number
     y: number
@@ -5618,6 +5493,10 @@ export function FloorplanPanel({
   const activeGuideInteractionMode = guideTransformDraft
     ? (guideInteractionRef.current?.mode ?? null)
     : null
+  const guideRotationReadout = buildGuideRotationReadout(
+    guideInteractionRef.current,
+    guideTransformDraft,
+  )
   const floorplanWalls = useMemo(() => walls.map(getFloorplanWall), [walls])
   const wallMiterData = useMemo(() => calculateLevelMiters(floorplanWalls), [floorplanWalls])
   const wallById = useMemo(() => new Map(walls.map((wall) => [wall.id, wall] as const)), [walls])
@@ -5685,28 +5564,9 @@ export function FloorplanPanel({
 
     return hasPreviewWalls ? nextFloorplanWallById : floorplanWallById
   }, [displayWallById, floorplanWallById, wallCurveDraft, wallEndpointDraft])
-  // Fence is fully registry-driven (`def.floorplan` + `buildFenceFloorplan`).
-  // The legacy entry list is permanently empty; kept as a typed stable
-  // reference so downstream prop sites stay typed without each having to
-  // declare its own `[]`.
-  const floorplanFenceEntries = useMemo<FloorplanFenceEntry[]>(() => [], [])
-  // Wall is fully registry-driven. Empty stable arrays for the legacy
-  // entry lists; consumers' map / iteration paths become no-ops.
-  const wallPolygons = useMemo<WallPolygonEntry[]>(() => [], [])
-  const displayWallPolygons = useMemo<WallPolygonEntry[]>(() => [], [])
-
-  // Doors + windows fully registry-driven via `def.floorplan`.
-  const openingsPolygons = useMemo<OpeningPolygonEntry[]>(() => [], [])
-  // Slab + ceiling fully registry-driven via `def.floorplan`. Same
-  // empty-stable-array pattern.
-  const slabPolygons = useMemo<SlabPolygonEntry[]>(() => [], [])
-  const displaySlabPolygons = useMemo<SlabPolygonEntry[]>(() => [], [])
-  const ceilingPolygons = useMemo<CeilingPolygonEntry[]>(() => [], [])
-  const displayCeilingPolygons = useMemo<CeilingPolygonEntry[]>(() => [], [])
   // Ceilings on the active level, projected to 2D polygons for hit-testing
-  // ceiling-item placement clicks/moves. The legacy `ceilingPolygons` above
-  // is intentionally empty (ceilings render via the registry layer); this
-  // memo is the placement-side counterpart, separate from rendering.
+  // ceiling-item placement clicks/moves. Committed ceilings render through
+  // the registry; this memo is placement data, not a rendering fallback.
   const ceilingHitEntries = useMemo(
     () =>
       ceilings.map((ceiling) => ({
@@ -5718,11 +5578,6 @@ export function FloorplanPanel({
       })),
     [ceilings],
   )
-  // Zone fully registry-driven via `def.floorplan`.
-  const zonePolygons = useMemo<ZonePolygonEntry[]>(() => [], [])
-  const displayZonePolygons = useMemo<ZonePolygonEntry[]>(() => [], [])
-  // Column fully registry-driven via `def.floorplan`.
-  const floorplanColumnEntries = useMemo<FloorplanColumnEntry[]>(() => [], [])
   const levelDescendantNodeById = useMemo(
     () => new Map(levelDescendantNodes.map((node) => [node.id, node] as const)),
     [levelDescendantNodes],
@@ -5745,11 +5600,6 @@ export function FloorplanPanel({
       ),
     [levelDescendantNodes],
   )
-  // Spawn + item fully registry-driven.
-  const floorplanSpawnEntries = useMemo<FloorplanSpawnEntry[]>(() => [], [])
-  const floorplanItemEntries = useMemo<FloorplanItemEntry[]>(() => [], [])
-  // Elevator fully registry-driven via `def.floorplan`.
-  const floorplanElevatorEntries = useMemo<FloorplanElevatorEntry[]>(() => [], [])
   const referenceFloorLevel = useMemo(() => {
     if (!(showReferenceFloor && levelNode)) {
       return null
@@ -5837,7 +5687,12 @@ export function FloorplanPanel({
       const holes = (slab.holes ?? [])
         .map((hole) => toFloorplanPolygon(hole))
         .filter((hole) => hole.length >= 3)
-      const visualPolygon = toFloorplanPolygon(getRenderableSlabPolygon(slab))
+      const visualPolygon = toFloorplanPolygon(
+        getRenderableSlabPolygon(slab, {
+          walls: referenceWalls,
+          siblingSlabs: referenceSlabs.filter((other) => other.id !== slab.id),
+        }),
+      )
       const visualHoles = holes
 
       return [
@@ -5987,26 +5842,6 @@ export function FloorplanPanel({
       wallPolygons,
     }
   }, [referenceFloorDescendants, referenceFloorLevel])
-  // Pending-mesh check was a flag the legacy active-level item entries
-  // raised when their polygon was the dimension fallback (waiting for
-  // the GLB to load to produce a tighter convex hull). Items are now
-  // registry-rendered, so the active-level entry list is always empty
-  // and this flag is permanently false.
-  const hasPendingItemMeshFootprints = false
-  // Stair fully registry-driven via `def.floorplan` (the parent walks
-  // its `stair-segment` children inside `buildStairFloorplan` to handle
-  // the cumulative-transform chain). `FloorplanRegistryLayer` renders
-  // the result; this legacy list stays empty.
-  const floorplanStairEntries = useMemo<FloorplanStairEntry[]>(() => [], [])
-  // Roof / roof-segment fully registry-driven via def.floorplan.
-  const floorplanRoofEntries = useMemo<FloorplanRoofEntry[]>(() => [], [])
-  // Slab / ceiling / zone are registry-driven; the polygon-handle, hole
-  // editor, and boundary-edit affordances live on `def.floorplanAffordances`.
-  // These legacy lookups stay as null stubs so the hole-editing fallbacks
-  // that still reference them compile cleanly.
-  const selectedSlabEntry = null as SlabPolygonEntry | null
-  const selectedCeilingEntry = null as CeilingPolygonEntry | null
-  const selectedZoneEntry = null as ZonePolygonEntry | null
   const slabById = useMemo(() => new Map(slabs.map((slab) => [slab.id, slab] as const)), [slabs])
   const zoneById = useMemo(() => new Map(zones.map((zone) => [zone.id, zone] as const)), [zones])
   const ceilingById = useMemo(
@@ -6227,7 +6062,6 @@ export function FloorplanPanel({
     Boolean(visibleSitePolygon) &&
     activeHandleDrag?.nodeId === visibleSitePolygon?.site.id &&
     activeHandleDrag?.label === SITE_BOUNDARY_DRAG_LABEL
-  const visibleZonePolygons = displayZonePolygons
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds])
   const highlightedFloorplanIdSet = useMemo(
     () => new Set([...selectedIds, ...previewSelectedIds]),
@@ -6306,38 +6140,60 @@ export function FloorplanPanel({
     slabDraftPoints,
     zoneDraftPoints,
   ])
+  const activePolygonDraftType = isCeilingBuildActive
+    ? 'ceiling'
+    : isZoneBuildActive
+      ? 'zone'
+      : isSlabBuildActive
+        ? 'slab'
+        : null
+  useEffect(() => {
+    useFloorplanDraftPreview
+      .getState()
+      .setPolygonDraft(activePolygonDraftType, activePolygonDraftPoints)
+  }, [activePolygonDraftPoints, activePolygonDraftType])
   // The cursor-following polygon-draft preview (slab / zone / ceiling) moved into
   // `FloorplanDraftCursorLayer`, which reads the live cursor from the draft store
   // so it re-renders per move without re-rendering this panel.
 
   const svgAspectRatio = surfaceSize.width / surfaceSize.height || 1
+  const applyFloorplanViewportImperatively = useCallback(
+    (nextViewport: FloorplanViewport) => {
+      const nextHeight = nextViewport.width / svgAspectRatio
+      const nextMinX = nextViewport.centerX - nextViewport.width / 2
+      const nextMinY = nextViewport.centerY - nextHeight / 2
+      const nextViewBox = {
+        minX: nextMinX,
+        minY: nextMinY,
+        width: nextViewport.width,
+        height: nextHeight,
+      }
+      const nextPaintViewBox = getFloorplanRotationOverscanViewBox(nextViewBox)
+      floorplanImperativeViewBoxRef.current = nextViewBox
+      hasUserAdjustedViewportRef.current = true
+      latestViewportRef.current = nextViewport
+      svgRef.current?.setAttribute(
+        'viewBox',
+        `${nextMinX} ${nextMinY} ${nextViewport.width} ${nextHeight}`,
+      )
+      const background = floorplanBackgroundRef.current
+      if (background) {
+        background.setAttribute('x', String(nextPaintViewBox.minX))
+        background.setAttribute('y', String(nextPaintViewBox.minY))
+        background.setAttribute('width', String(nextPaintViewBox.width))
+        background.setAttribute('height', String(nextPaintViewBox.height))
+      }
+    },
+    [svgAspectRatio],
+  )
 
   const fittedViewport = useMemo(() => {
-    // Collect bounds from the legacy polygon arrays first. Most are empty
-    // stubs (rendering moved to the registry layer), but we still honor
-    // anything that does emit points so the fit is correct during the
-    // brief window before `measuredSceneBBox` is populated.
-    const legacyPoints = [
-      ...(visibleSitePolygon ? visibleSitePolygon.polygon : []),
-      ...displayCeilingPolygons.flatMap((entry) => entry.polygon),
-      ...displaySlabPolygons.flatMap((entry) => entry.polygon),
-      ...floorplanElevatorEntries.flatMap((entry) => entry.polygon),
-      ...floorplanFenceEntries.flatMap((entry) => entry.centerline),
-      ...floorplanItemEntries.flatMap((entry) => entry.polygon),
-      ...floorplanRoofEntries.flatMap((entry) =>
-        entry.segments.flatMap((segmentEntry) => segmentEntry.polygon),
-      ),
-      ...floorplanStairEntries.flatMap((entry) => entry.hitPolygons.flat()),
-      ...visibleZonePolygons.flatMap((entry) => entry.polygon),
-      ...wallPolygons.flatMap((entry) => entry.polygon),
-    ]
-
     let minX = Number.POSITIVE_INFINITY
     let maxX = Number.NEGATIVE_INFINITY
     let minY = Number.POSITIVE_INFINITY
     let maxY = Number.NEGATIVE_INFINITY
 
-    for (const point of legacyPoints) {
+    for (const point of visibleSitePolygon?.polygon ?? []) {
       const svgPoint = rotateSvgPoint(toSvgPoint(point), floorplanSceneRotationDeg)
       minX = Math.min(minX, svgPoint.x)
       maxX = Math.max(maxX, svgPoint.x)
@@ -6385,59 +6241,74 @@ export function FloorplanPanel({
       centerY,
       width,
     }
-  }, [
-    displayCeilingPolygons,
-    displaySlabPolygons,
-    floorplanElevatorEntries,
-    floorplanFenceEntries,
-    floorplanItemEntries,
-    floorplanRoofEntries,
-    floorplanSceneRotationDeg,
-    floorplanStairEntries,
-    measuredSceneBBox,
-    svgAspectRatio,
-    visibleSitePolygon,
-    visibleZonePolygons,
-    wallPolygons,
-  ])
+  }, [floorplanSceneRotationDeg, measuredSceneBBox, svgAspectRatio, visibleSitePolygon])
   latestFittedViewportRef.current = fittedViewport
 
-  // Measure the painted floor-plan scene after each render. `getBBox()`
-  // gives us the tight bounds of whatever the registry layer emitted,
-  // even for kinds whose legacy entry arrays are empty stubs. Bail out
-  // when nothing has painted (empty group throws in some browsers).
-  // We measure the content-only sub-group (not the full scene group) to
-  // exclude the grid layer, whose extent tracks the viewBox and would
-  // otherwise create a measure→fit→measure update loop.
+  // Measure the content-only subtree after its geometry settles. ViewBox-only
+  // navigation does not change these bounds and must not force `getBBox()` on
+  // every animation frame.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: visibility remounts the observed SVG subtree.
   useLayoutEffect(() => {
     const el = floorplanContentRef.current
     if (!el) return
-    let bbox: { x: number; y: number; width: number; height: number }
-    try {
-      const measured = el.getBBox()
-      bbox = {
-        x: measured.x,
-        y: measured.y,
-        width: measured.width,
-        height: measured.height,
+    let scheduledFrame: number | null = null
+    let mutationVersion = 0
+    let observedVersion = 0
+    const measure = () => {
+      let bbox: { x: number; y: number; width: number; height: number }
+      try {
+        const measured = el.getBBox()
+        bbox = {
+          x: measured.x,
+          y: measured.y,
+          width: measured.width,
+          height: measured.height,
+        }
+      } catch {
+        return
       }
-    } catch {
-      return
+      if (bbox.width <= 0 && bbox.height <= 0) return
+      setMeasuredSceneBBox((prev) => {
+        if (
+          prev &&
+          prev.x === bbox.x &&
+          prev.y === bbox.y &&
+          prev.width === bbox.width &&
+          prev.height === bbox.height
+        ) {
+          return prev
+        }
+        return bbox
+      })
     }
-    if (bbox.width <= 0 && bbox.height <= 0) return
-    setMeasuredSceneBBox((prev) => {
-      if (
-        prev &&
-        prev.x === bbox.x &&
-        prev.y === bbox.y &&
-        prev.width === bbox.width &&
-        prev.height === bbox.height
-      ) {
-        return prev
+    const flushWhenSettled = () => {
+      if (observedVersion !== mutationVersion) {
+        observedVersion = mutationVersion
+        scheduledFrame = requestAnimationFrame(flushWhenSettled)
+        return
       }
-      return bbox
+      scheduledFrame = null
+      measure()
+    }
+    const observer = new MutationObserver(() => {
+      mutationVersion += 1
+      if (scheduledFrame !== null) return
+      observedVersion = mutationVersion - 1
+      scheduledFrame = requestAnimationFrame(flushWhenSettled)
     })
-  })
+
+    measure()
+    observer.observe(el, {
+      attributes: true,
+      characterData: true,
+      childList: true,
+      subtree: true,
+    })
+    return () => {
+      observer.disconnect()
+      if (scheduledFrame !== null) cancelAnimationFrame(scheduledFrame)
+    }
+  }, [isFloorplanOpen])
 
   const applyFloorplanNavigationState = useCallback(
     (nextViewport: FloorplanViewport, userRotationDeg: number) => {
@@ -6453,6 +6324,136 @@ export function FloorplanPanel({
     },
     [],
   )
+
+  const applyFloorplanNavigationSyncPresentation = useCallback(
+    (pose: NavigationSyncPose) => {
+      const currentViewport = latestViewportRef.current ?? latestFittedViewportRef.current
+      const svg = svgRef.current
+      if (!(currentViewport && svg)) return
+
+      let presentationState = floorplanNavigationSyncPresentationRef.current
+      if (!presentationState) {
+        const initialUserRotationDeg = latestFloorplanUserRotationDegRef.current
+        const initialSceneRotationDeg =
+          FLOORPLAN_VIEW_ROTATION_DEG + initialUserRotationDeg - buildingRotationDeg
+        presentationState = {
+          initialUserRotationDeg,
+          initialSceneRotationDeg,
+          latestUserRotationDeg: initialUserRotationDeg,
+          latestSceneRotationDeg: initialSceneRotationDeg,
+          latestViewport: currentViewport,
+          svg,
+          svgStyle: {
+            transform: svg.style.transform,
+            transformOrigin: svg.style.transformOrigin,
+            willChange: svg.style.willChange,
+          },
+        }
+        floorplanNavigationSyncPresentationRef.current = presentationState
+        floorplanViewportInteractionInProgressRef.current = true
+        svg.style.transformOrigin = 'center'
+        svg.style.willChange = 'transform'
+      }
+
+      const nextUserRotationDeg = floorplanRotationFromCameraAzimuth(
+        pose.azimuth,
+        presentationState.latestUserRotationDeg,
+      )
+      const localCenter = worldToFloorplanLocalPoint(
+        pose.target[0],
+        pose.target[2],
+        buildingPosition,
+        buildingRotationY,
+      )
+      const nextWidth = resolveFloorplanViewWidth(
+        pose.viewWidth,
+        currentViewport.width,
+        latestFittedViewportRef.current,
+        false,
+      )
+      const nextSceneRotationDeg =
+        FLOORPLAN_VIEW_ROTATION_DEG + nextUserRotationDeg - buildingRotationDeg
+      const nextCenterSvg = rotateSvgPoint(localCenter, nextSceneRotationDeg)
+      const nextViewport = {
+        centerX: nextCenterSvg.x,
+        centerY: nextCenterSvg.y,
+        width: nextWidth,
+      }
+      const presentationCenterSvg = rotateSvgPoint(
+        localCenter,
+        presentationState.initialSceneRotationDeg,
+      )
+
+      applyFloorplanViewportImperatively({
+        centerX: presentationCenterSvg.x,
+        centerY: presentationCenterSvg.y,
+        width: nextWidth,
+      })
+      svg.style.transform = `rotate(${
+        nextUserRotationDeg - presentationState.initialUserRotationDeg
+      }deg)`
+      latestFloorplanUserRotationDegRef.current = nextUserRotationDeg
+      latestViewportRef.current = nextViewport
+      presentationState.latestUserRotationDeg = nextUserRotationDeg
+      presentationState.latestSceneRotationDeg = nextSceneRotationDeg
+      presentationState.latestViewport = nextViewport
+    },
+    [applyFloorplanViewportImperatively, buildingPosition, buildingRotationDeg, buildingRotationY],
+  )
+
+  const commitFloorplanNavigationSyncPresentation = useCallback(
+    (_pose: NavigationSyncPose) => {
+      const presentationState = floorplanNavigationSyncPresentationRef.current
+      if (!presentationState) return
+
+      applyFloorplanViewportImperatively(presentationState.latestViewport)
+      const scene = floorplanSceneRef.current
+      if (scene) {
+        if (presentationState.latestSceneRotationDeg === 0) {
+          scene.removeAttribute('transform')
+        } else {
+          scene.setAttribute('transform', `rotate(${presentationState.latestSceneRotationDeg})`)
+        }
+      }
+      restoreFloorplanNavigationSyncPresentation(presentationState)
+      floorplanNavigationSyncPresentationRef.current = null
+      floorplanViewportInteractionInProgressRef.current = false
+      floorplanImperativeViewBoxRef.current = null
+      setFloorplanUserRotationDeg((current) =>
+        current === presentationState.latestUserRotationDeg
+          ? current
+          : presentationState.latestUserRotationDeg,
+      )
+      setViewport((current) =>
+        floorplanViewportEquals(current, presentationState.latestViewport)
+          ? current
+          : presentationState.latestViewport,
+      )
+    },
+    [applyFloorplanViewportImperatively],
+  )
+
+  applyFloorplanNavigationSyncPresentationRef.current = applyFloorplanNavigationSyncPresentation
+  commitFloorplanNavigationSyncPresentationRef.current = commitFloorplanNavigationSyncPresentation
+  if (!floorplanNavigationSyncSchedulerRef.current) {
+    floorplanNavigationSyncSchedulerRef.current = createFloorplanNavigationSyncScheduler({
+      applyPresentation: (pose: NavigationSyncPose) =>
+        applyFloorplanNavigationSyncPresentationRef.current(pose),
+      commit: (pose: NavigationSyncPose) =>
+        commitFloorplanNavigationSyncPresentationRef.current(pose),
+    })
+  }
+  const floorplanNavigationSyncScheduler = floorplanNavigationSyncSchedulerRef.current
+  const discardFloorplanNavigationSyncPresentation = useCallback(() => {
+    floorplanNavigationSyncScheduler.discard()
+    const presentationState = floorplanNavigationSyncPresentationRef.current
+    if (presentationState) {
+      restoreFloorplanNavigationSyncPresentation(presentationState)
+      floorplanNavigationSyncPresentationRef.current = null
+    }
+    floorplanViewportInteractionInProgressRef.current = false
+    floorplanImperativeViewBoxRef.current = null
+  }, [floorplanNavigationSyncScheduler])
 
   const stopFloorplanViewAnimation = useCallback(() => {
     if (floorplanViewAnimationFrameRef.current !== null) {
@@ -6583,39 +6584,26 @@ export function FloorplanPanel({
 
   const syncFloorplanViewportToNavigationPose = useCallback(
     (pose: NavigationSyncPose) => {
-      // Skip the viewport sync while the 2D panel is hidden (3D mode). It writes
-      // React state (`setViewport`) that re-renders the whole floorplan SVG, so
-      // doing it every camera-zoom frame for an invisible panel was a needless
-      // per-frame stall. The catch-up effect below re-syncs on reopen.
+      // The transient camera stream owns refs + imperative SVG presentation.
+      // React state is committed only by the scheduler after the stream settles.
       if (!isFloorplanOpenRef.current) {
         return
       }
-      if (floorplanRotationStateRef.current) {
+      const localNavigationInProgress =
+        floorplanViewportInteractionInProgressRef.current &&
+        floorplanNavigationSyncPresentationRef.current === null
+      if (!canApplyFloorplanNavigationSync(localNavigationInProgress)) {
         return
       }
-
-      const nextUserRotationDeg = floorplanRotationFromCameraAzimuth(
-        pose.azimuth,
-        latestFloorplanUserRotationDegRef.current,
-      )
-      const localCenter = worldToFloorplanLocalPoint(
-        pose.target[0],
-        pose.target[2],
-        buildingPosition,
-        buildingRotationY,
-      )
-
-      applyFloorplanNavigationView(localCenter, nextUserRotationDeg, pose.viewWidth, {
-        clampViewWidth: false,
-      })
+      floorplanNavigationSyncScheduler.update(pose)
     },
-    [applyFloorplanNavigationView, buildingPosition, buildingRotationY],
+    [floorplanNavigationSyncScheduler],
   )
 
   useEffect(() => {
     if (!isFloorplanOpen) return
 
-    const pose = useEditor.getState().navigationSyncPose
+    const pose = latestNavigationSyncPoseRef.current
     if (!pose) {
       return
     }
@@ -6626,6 +6614,18 @@ export function FloorplanPanel({
     }
   }, [syncFloorplanViewportToNavigationPose, isFloorplanOpen])
 
+  useEffect(() => {
+    if (isFloorplanOpen) return
+    discardFloorplanNavigationSyncPresentation()
+  }, [discardFloorplanNavigationSyncPresentation, isFloorplanOpen])
+
+  useEffect(
+    () => () => {
+      discardFloorplanNavigationSyncPresentation()
+    },
+    [discardFloorplanNavigationSyncPresentation],
+  )
+
   const cancelHiddenCompassAnimation = useCallback(() => {
     if (hiddenCompassAnimationRef.current !== null) {
       cancelAnimationFrame(hiddenCompassAnimationRef.current)
@@ -6633,11 +6633,9 @@ export function FloorplanPanel({
     }
   }, [])
 
-  // Align-north while the panel is hidden publishes a single '2d' pose that
-  // the 3D camera applies through the echo-suppressed pending-pose path — it
-  // never publishes '3d' frames back, so the needle must animate itself.
-  // Same time constant as the 2D view animation and the camera's effective
-  // smoothTime, so all three stay visually in step.
+  // Align-north while the panel is hidden publishes one 2D pose through the
+  // generic camera bridge. Camera application suppresses its own pose stream,
+  // so the needle animates itself with the same time constant.
   const animateHiddenCompassNeedle = useCallback(
     (targetDeg: number) => {
       cancelHiddenCompassAnimation()
@@ -6656,9 +6654,7 @@ export function FloorplanPanel({
           nextDeg = targetDeg
         }
         latestFloorplanUserRotationDegRef.current = nextDeg
-        if (compassNeedleRef.current) {
-          compassNeedleRef.current.style.transform = `rotate(${nextDeg}deg)`
-        }
+        setFloorplanCompassRotation(compassNeedleRef.current, nextDeg)
         if (nextDeg !== targetDeg) {
           hiddenCompassAnimationRef.current = requestAnimationFrame(tick)
         }
@@ -6668,10 +6664,10 @@ export function FloorplanPanel({
     [cancelHiddenCompassAnimation],
   )
 
-  useEffect(() => {
-    const unsubscribe = useEditor.subscribe((state) => {
-      const pose = state.navigationSyncPose
-      if (!pose || latestNavigationSyncPoseRef.current?.revision === pose.revision) {
+  const receiveFloorplanNavigationPose = useCallback(
+    (pose: NavigationSyncPose) => {
+      const previousPose = latestNavigationSyncPoseRef.current
+      if (previousPose?.source === pose.source && previousPose.revision === pose.revision) {
         return
       }
 
@@ -6689,9 +6685,7 @@ export function FloorplanPanel({
           // owns the needle, so any local animation yields to it.
           cancelHiddenCompassAnimation()
           latestFloorplanUserRotationDegRef.current = nextDeg
-          if (compassNeedleRef.current) {
-            compassNeedleRef.current.style.transform = `rotate(${nextDeg}deg)`
-          }
+          setFloorplanCompassRotation(compassNeedleRef.current, nextDeg)
         } else {
           animateHiddenCompassNeedle(nextDeg)
         }
@@ -6701,24 +6695,45 @@ export function FloorplanPanel({
       if (pose.source === '3d') {
         syncFloorplanViewportToNavigationPose(pose)
       }
-    })
-    return () => {
-      unsubscribe()
-      cancelHiddenCompassAnimation()
+    },
+    [
+      animateHiddenCompassNeedle,
+      cancelHiddenCompassAnimation,
+      syncFloorplanViewportToNavigationPose,
+    ],
+  )
+
+  useEffect(
+    () => subscribeFloorplanCameraNavigation(receiveFloorplanNavigationPose),
+    [receiveFloorplanNavigationPose],
+  )
+
+  useEffect(() => {
+    const receiveStoredNavigationPose = (pose: NavigationSyncPose | null) => {
+      if (pose?.source === '2d') {
+        receiveFloorplanNavigationPose(pose)
+      }
     }
-  }, [
-    syncFloorplanViewportToNavigationPose,
-    animateHiddenCompassNeedle,
-    cancelHiddenCompassAnimation,
-  ])
+    return subscribeNavigationSyncPose(receiveStoredNavigationPose)
+  }, [receiveFloorplanNavigationPose])
+
+  useEffect(
+    () => () => {
+      cancelHiddenCompassAnimation()
+    },
+    [cancelHiddenCompassAnimation],
+  )
 
   // When the panel is hidden the imperative path owns the compass needle.
   // React re-renders can overwrite the needle's inline transform with stale
   // state; this layout effect restores the authoritative ref value before
   // the browser paints so the needle never visibly snaps to a stale angle.
   useLayoutEffect(() => {
-    if (!isFloorplanOpen && compassNeedleRef.current) {
-      compassNeedleRef.current.style.transform = `rotate(${latestFloorplanUserRotationDegRef.current}deg)`
+    if (!isFloorplanOpen) {
+      setFloorplanCompassRotation(
+        compassNeedleRef.current,
+        latestFloorplanUserRotationDegRef.current,
+      )
     }
   })
 
@@ -6768,35 +6783,6 @@ export function FloorplanPanel({
       window.removeEventListener('resize', update)
     }
   }, [])
-
-  // Reset to auto-fit each time the 2D editor re-opens. The panel stays
-  // mounted across close/open (hidden via `display: none`), so without
-  // this the user's last pan/zoom — and any stale `measuredSceneBBox`
-  // captured before they closed it — would survive and the reopened
-  // editor would show the same off-screen viewport instead of fitting
-  // to the current scene.
-  useEffect(() => {
-    if (!isFloorplanOpen) {
-      stopFloorplanViewAnimation()
-      floorplanSpacePanPressedRef.current = false
-      panStateRef.current = null
-      floorplanRotationStateRef.current = null
-      setIsSpacePanPressed(false)
-      setIsPanning(false)
-      setIsRotatingFloorplan(false)
-      return
-    }
-    setMeasuredSceneBBox(null)
-
-    if (!latestNavigationSyncPoseRef.current) {
-      stopFloorplanViewAnimation()
-      hasUserAdjustedViewportRef.current = false
-      latestFloorplanUserRotationDegRef.current = 0
-      latestViewportRef.current = null
-      setFloorplanUserRotationDeg(0)
-      setViewport(null)
-    }
-  }, [isFloorplanOpen, stopFloorplanViewAnimation])
 
   useEffect(() => {
     const levelChanged = previousLevelIdRef.current !== (levelId ?? null)
@@ -6856,19 +6842,32 @@ export function FloorplanPanel({
       height,
     }
   }, [fittedViewport, svgAspectRatio, viewport])
+  const presentationViewBox = resolveFloorplanPresentationViewBox(
+    viewBox,
+    floorplanImperativeViewBoxRef.current,
+    floorplanViewportInteractionInProgressRef.current,
+  )
+  const presentationPaintViewBox = getFloorplanRotationOverscanViewBox(presentationViewBox)
   const floorplanWorldUnitsPerPixel = useMemo(() => {
     const widthUnitsPerPixel = viewBox.width / Math.max(surfaceSize.width, 1)
     const heightUnitsPerPixel = viewBox.height / Math.max(surfaceSize.height, 1)
 
     return (widthUnitsPerPixel + heightUnitsPerPixel) / 2
   }, [surfaceSize.height, surfaceSize.width, viewBox.height, viewBox.width])
-  const floorplanWallHitTolerance = useMemo(
-    () => floorplanWorldUnitsPerPixel * (FLOORPLAN_WALL_HIT_STROKE_WIDTH / 2),
-    [floorplanWorldUnitsPerPixel],
+  const getLiveFloorplanWorldUnitsPerPixel = useCallback(() => {
+    const width = latestViewportRef.current?.width ?? viewBox.width
+    const height = width / svgAspectRatio
+    const widthUnitsPerPixel = width / Math.max(surfaceSize.width, 1)
+    const heightUnitsPerPixel = height / Math.max(surfaceSize.height, 1)
+    return (widthUnitsPerPixel + heightUnitsPerPixel) / 2
+  }, [surfaceSize.height, surfaceSize.width, svgAspectRatio, viewBox.width])
+  const getFloorplanWallHitTolerance = useCallback(
+    () => getLiveFloorplanWorldUnitsPerPixel() * (FLOORPLAN_WALL_HIT_STROKE_WIDTH / 2),
+    [getLiveFloorplanWorldUnitsPerPixel],
   )
-  const floorplanOpeningHitTolerance = useMemo(
-    () => floorplanWorldUnitsPerPixel * (FLOORPLAN_OPENING_HIT_STROKE_WIDTH / 2),
-    [floorplanWorldUnitsPerPixel],
+  const getFloorplanOpeningHitTolerance = useCallback(
+    () => getLiveFloorplanWorldUnitsPerPixel() * (FLOORPLAN_OPENING_HIT_STROKE_WIDTH / 2),
+    [getLiveFloorplanWorldUnitsPerPixel],
   )
   const wallSelectionHatchSpacing = useMemo(
     () => Math.max(floorplanWorldUnitsPerPixel * 12, 0.0001),
@@ -7124,7 +7123,11 @@ export function FloorplanPanel({
     [surfaceSize.width, viewBox.width],
   )
   const gridBounds = useMemo(
-    () => getRotatedViewBoxBounds(viewBox, floorplanSceneRotationDeg),
+    () =>
+      getRotatedViewBoxBounds(
+        getFloorplanRotationOverscanViewBox(viewBox),
+        floorplanSceneRotationDeg,
+      ),
     [floorplanSceneRotationDeg, viewBox],
   )
 
@@ -7153,7 +7156,9 @@ export function FloorplanPanel({
       ),
     [gridBounds, gridSteps.majorStep],
   )
-  const floorplanUnitsPerPixel = viewBox.width / Math.max(surfaceSize.width, 1)
+  const liveFloorplanUnitsPerPixel = viewBox.width / Math.max(surfaceSize.width, 1)
+  const floorplanUnitsPerPixel = floorplanRenderUnitsPerPixel ?? liveFloorplanUnitsPerPixel
+  latestFloorplanRenderUnitsPerPixelRef.current = floorplanUnitsPerPixel
 
   useEffect(() => {
     setReferenceScaleUnit(unit === 'imperial' ? 'feet' : 'meters')
@@ -7240,8 +7245,8 @@ export function FloorplanPanel({
       return
     }
 
-    const displayLength = Number(referenceScaleValue)
-    if (!(displayLength > 0)) {
+    const displayLength = parseReferenceScaleLength(referenceScaleValue, referenceScaleUnit)
+    if (!(displayLength && displayLength > 0)) {
       return
     }
 
@@ -7337,120 +7342,6 @@ export function FloorplanPanel({
       return toPlanPointFromSvgPoint(svgPoint)
     },
     [getSvgPointFromClientPoint, buildingRotationY],
-  )
-
-  const previewElevatorResize = useCallback(
-    (dragState: ElevatorResizeDragState, planPoint: WallPlanPoint) => {
-      const localDeltaX = planPoint[0] - dragState.center.x
-      const localDeltaY = planPoint[1] - dragState.center.y
-      const [localX, localY] = rotatePlanVector(localDeltaX, localDeltaY, -dragState.rotation)
-      const axis = getElevatorResizeAxis(dragState.handle)
-      const sign = getElevatorResizeSign(dragState.handle)
-      const localDistance = sign * (axis === 'width' ? localX : localY)
-      const nextOuterSize = Math.max(0.1, localDistance) * 2
-
-      if (axis === 'width') {
-        const nextShaftWidth = roundPlanMeters(
-          Math.max(0.8, nextOuterSize - dragState.shaftWallThickness * 2),
-        )
-        const nextCabWidth = nextShaftWidth
-        useLiveNodeOverrides
-          .getState()
-          .set(dragState.elevatorId, { shaftWidth: nextShaftWidth, width: nextCabWidth })
-        setCursorPoint(planPoint)
-        return { shaftWidth: nextShaftWidth, width: nextCabWidth } satisfies Partial<ElevatorNode>
-      }
-
-      const nextShaftDepth = roundPlanMeters(
-        Math.max(0.8, nextOuterSize - dragState.shaftWallThickness * 2),
-      )
-      const nextCabDepth = nextShaftDepth
-      useLiveNodeOverrides
-        .getState()
-        .set(dragState.elevatorId, { depth: nextCabDepth, shaftDepth: nextShaftDepth })
-      setCursorPoint(planPoint)
-      return { depth: nextCabDepth, shaftDepth: nextShaftDepth } satisfies Partial<ElevatorNode>
-    },
-    [setCursorPoint],
-  )
-
-  const handleElevatorResizePointerDown = useCallback(
-    (
-      entry: FloorplanElevatorEntry,
-      handle: ElevatorResizeHandle,
-      event: ReactPointerEvent<SVGCircleElement>,
-    ) => {
-      if (event.button !== 0 || mode !== 'select') {
-        return
-      }
-
-      event.preventDefault()
-      event.stopPropagation()
-      event.currentTarget.setPointerCapture(event.pointerId)
-      setHoveredElevatorId(null)
-      setSelection({ selectedIds: [entry.elevator.id] })
-
-      setElevatorResizeDragState({
-        center: entry.center,
-        elevatorId: entry.elevator.id,
-        handle,
-        pointerId: event.pointerId,
-        rotation: entry.rotation,
-        shaftWallThickness: entry.shaftWallThickness,
-      })
-    },
-    [mode, setSelection],
-  )
-
-  const handleElevatorResizePointerMove = useCallback(
-    (event: ReactPointerEvent<SVGCircleElement>) => {
-      const dragState = elevatorResizeDragState
-      if (!dragState || dragState.pointerId !== event.pointerId) {
-        return
-      }
-
-      const planPoint = getPlanPointFromClientPoint(event.clientX, event.clientY)
-      if (!planPoint) {
-        return
-      }
-
-      event.preventDefault()
-      event.stopPropagation()
-      previewElevatorResize(dragState, planPoint)
-    },
-    [elevatorResizeDragState, getPlanPointFromClientPoint, previewElevatorResize],
-  )
-
-  const handleElevatorResizePointerUp = useCallback(
-    (event: ReactPointerEvent<SVGCircleElement>) => {
-      const dragState = elevatorResizeDragState
-      if (!dragState || dragState.pointerId !== event.pointerId) {
-        return
-      }
-
-      const planPoint = getPlanPointFromClientPoint(event.clientX, event.clientY)
-      const updates = planPoint ? previewElevatorResize(dragState, planPoint) : {}
-
-      event.preventDefault()
-      event.stopPropagation()
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId)
-      }
-
-      useLiveNodeOverrides.getState().clear(dragState.elevatorId)
-      if (Object.keys(updates).length > 0) {
-        updateNode(dragState.elevatorId as AnyNodeId, updates)
-      }
-      setElevatorResizeDragState(null)
-      setCursorPoint(null)
-    },
-    [
-      elevatorResizeDragState,
-      getPlanPointFromClientPoint,
-      previewElevatorResize,
-      updateNode,
-      setCursorPoint,
-    ],
   )
 
   useEffect(() => {
@@ -7681,8 +7572,77 @@ export function FloorplanPanel({
     [beginPanelInteraction, panelRect],
   )
 
+  const applyFloorplanRotationImperatively = useCallback(
+    (rotationState: FloorplanRotationState, nextUserRotationDeg: number) => {
+      const currentViewport = latestViewportRef.current ?? rotationState.latestViewport
+      const nextSceneRotationDeg =
+        FLOORPLAN_VIEW_ROTATION_DEG + nextUserRotationDeg - buildingRotationDeg
+      const nextCenterSvg = rotateSvgPoint(rotationState.viewportCenterLocal, nextSceneRotationDeg)
+      const nextViewport = {
+        centerX: nextCenterSvg.x,
+        centerY: nextCenterSvg.y,
+        width: currentViewport.width,
+      }
+
+      hasUserAdjustedViewportRef.current = true
+      latestFloorplanUserRotationDegRef.current = nextUserRotationDeg
+      latestViewportRef.current = nextViewport
+      setFloorplanCompassRotation(compassNeedleRef.current, nextUserRotationDeg)
+      // Transform the already-painted SVG as one compositor layer. Mutating the
+      // scene rotation/viewBox here forces the heavy vector plan to rerasterize.
+      rotationState.svg.style.transform = `rotate(${nextUserRotationDeg - rotationState.initialUserRotationDeg}deg)`
+
+      rotationState.latestUserRotationDeg = nextUserRotationDeg
+      rotationState.latestViewport = nextViewport
+    },
+    [buildingRotationDeg],
+  )
+
+  const commitFloorplanZoom = useCallback(() => {
+    if (floorplanZoomCommitTimerRef.current !== null) {
+      window.clearTimeout(floorplanZoomCommitTimerRef.current)
+      floorplanZoomCommitTimerRef.current = null
+    }
+    const nextViewport = latestViewportRef.current
+    const pendingPose = floorplanZoomPoseRef.current
+    floorplanZoomPoseRef.current = null
+    floorplanViewportInteractionInProgressRef.current = false
+    floorplanImperativeViewBoxRef.current = null
+    if (!nextViewport) return
+    setFloorplanRenderUnitsPerPixel(
+      (current) => current ?? latestFloorplanRenderUnitsPerPixelRef.current,
+    )
+    setViewport((current) =>
+      floorplanViewportEquals(current, nextViewport) ? current : nextViewport,
+    )
+    if (floorplanRenderScaleCommitTimerRef.current !== null) {
+      window.clearTimeout(floorplanRenderScaleCommitTimerRef.current)
+    }
+    floorplanRenderScaleCommitTimerRef.current = window.setTimeout(() => {
+      floorplanRenderScaleCommitTimerRef.current = null
+      setFloorplanRenderUnitsPerPixel(null)
+    }, 350)
+    if (pendingPose) {
+      publishFloorplanNavigationPose(
+        pendingPose.localCenter,
+        pendingPose.userRotationDeg,
+        pendingPose.viewWidth,
+      )
+    }
+  }, [publishFloorplanNavigationPose])
+
+  const scheduleFloorplanZoomCommit = useCallback(() => {
+    if (floorplanZoomCommitTimerRef.current !== null) {
+      window.clearTimeout(floorplanZoomCommitTimerRef.current)
+    }
+    floorplanZoomCommitTimerRef.current = window.setTimeout(commitFloorplanZoom, 300)
+  }, [commitFloorplanZoom])
+
   const zoomViewportAtClientPoint = useCallback(
     (clientX: number, clientY: number, widthFactor: number) => {
+      if (!canZoomFloorplanDuringNavigation(floorplanRotationStateRef.current !== null)) {
+        return
+      }
       if (!Number.isFinite(widthFactor) || widthFactor <= 0) {
         return
       }
@@ -7696,14 +7656,27 @@ export function FloorplanPanel({
       if (!localPoint) {
         return
       }
-      const svgPoint = rotateSvgPoint(localPoint, floorplanSceneRotationDeg)
+      const currentSceneRotationDeg =
+        FLOORPLAN_VIEW_ROTATION_DEG +
+        latestFloorplanUserRotationDegRef.current -
+        buildingRotationDeg
+      const svgPoint = rotateSvgPoint(localPoint, currentSceneRotationDeg)
 
-      const currentViewport = viewport ?? fittedViewport
-      const currentViewBox = viewBox
+      const currentViewport = latestViewportRef.current ?? latestFittedViewportRef.current
+      if (!currentViewport) {
+        return
+      }
+      const currentViewBox = {
+        minX: currentViewport.centerX - currentViewport.width / 2,
+        minY: currentViewport.centerY - currentViewport.width / svgAspectRatio / 2,
+        width: currentViewport.width,
+        height: currentViewport.width / svgAspectRatio,
+      }
+      const fitted = latestFittedViewportRef.current
       const nextWidth = resolveFloorplanViewWidth(
         currentViewport.width * widthFactor,
         currentViewport.width,
-        fittedViewport,
+        fitted,
         true,
       )
       const nextHeight = nextWidth / svgAspectRatio
@@ -7716,34 +7689,149 @@ export function FloorplanPanel({
         x: nextMinX + nextWidth / 2,
         y: nextMinY + nextHeight / 2,
       }
-      const localCenter = rotateSvgPoint(nextCenterSvg, -floorplanSceneRotationDeg)
+      const localCenter = rotateSvgPoint(nextCenterSvg, -currentSceneRotationDeg)
+      const nextViewport = {
+        centerX: nextCenterSvg.x,
+        centerY: nextCenterSvg.y,
+        width: nextWidth,
+      }
 
-      smoothFloorplanNavigationView(
-        localCenter,
-        latestFloorplanUserRotationDegRef.current,
-        nextWidth,
-      )
-      publishFloorplanNavigationPose(
-        localCenter,
-        latestFloorplanUserRotationDegRef.current,
-        nextWidth,
-      )
+      stopFloorplanViewAnimation()
+      if (floorplanRenderScaleCommitTimerRef.current !== null) {
+        window.clearTimeout(floorplanRenderScaleCommitTimerRef.current)
+        floorplanRenderScaleCommitTimerRef.current = null
+      }
+      floorplanViewportInteractionInProgressRef.current = true
+      applyFloorplanViewportImperatively(nextViewport)
+      scheduleFloorplanZoomCommit()
+      const userRotationDeg = latestFloorplanUserRotationDegRef.current
+      floorplanZoomPoseRef.current = { localCenter, userRotationDeg, viewWidth: nextWidth }
+      if (useEditor.getState().viewMode === 'split') {
+        publishFloorplanNavigationPose(localCenter, userRotationDeg, nextWidth)
+      }
     },
     [
-      fittedViewport,
-      floorplanSceneRotationDeg,
+      applyFloorplanViewportImperatively,
+      buildingRotationDeg,
       getSvgPointFromClientPoint,
       publishFloorplanNavigationPose,
-      smoothFloorplanNavigationView,
+      scheduleFloorplanZoomCommit,
+      stopFloorplanViewAnimation,
       svgAspectRatio,
-      viewBox,
-      viewport,
     ],
   )
+
+  useEffect(
+    () => () => {
+      if (floorplanZoomCommitTimerRef.current !== null) {
+        window.clearTimeout(floorplanZoomCommitTimerRef.current)
+      }
+      if (floorplanRenderScaleCommitTimerRef.current !== null) {
+        window.clearTimeout(floorplanRenderScaleCommitTimerRef.current)
+      }
+      floorplanViewportInteractionInProgressRef.current = false
+      floorplanImperativeViewBoxRef.current = null
+    },
+    [],
+  )
+
+  const commitFloorplanPan = useCallback(() => {
+    const nextViewport = latestViewportRef.current
+    const pendingPose = floorplanPanPoseRef.current
+    floorplanPanPoseRef.current = null
+    floorplanViewportInteractionInProgressRef.current = false
+    floorplanImperativeViewBoxRef.current = null
+    if (nextViewport) {
+      setViewport((current) =>
+        floorplanViewportEquals(current, nextViewport) ? current : nextViewport,
+      )
+    }
+    if (pendingPose) {
+      publishFloorplanNavigationPose(
+        pendingPose.localCenter,
+        pendingPose.userRotationDeg,
+        pendingPose.viewWidth,
+      )
+    }
+  }, [publishFloorplanNavigationPose])
+
+  const commitFloorplanRotation = useCallback(
+    (rotationState: FloorplanRotationState) => {
+      floorplanViewportInteractionInProgressRef.current = false
+      floorplanImperativeViewBoxRef.current = null
+      queueFloorplanRotationPresentationRestore(pendingFloorplanRotationRestoreRef, rotationState)
+      setFloorplanUserRotationDeg((current) =>
+        current === rotationState.latestUserRotationDeg
+          ? current
+          : rotationState.latestUserRotationDeg,
+      )
+      setViewport((current) =>
+        floorplanViewportEquals(current, rotationState.latestViewport)
+          ? current
+          : rotationState.latestViewport,
+      )
+      publishFloorplanNavigationPose(
+        rotationState.viewportCenterLocal,
+        rotationState.latestUserRotationDeg,
+        rotationState.latestViewport.width,
+      )
+    },
+    [publishFloorplanNavigationPose],
+  )
+
+  useLayoutEffect(() => {
+    flushFloorplanRotationPresentationRestore(pendingFloorplanRotationRestoreRef)
+  })
+
+  // Finalize imperative navigation when the floorplan closes so reopening
+  // restores the last visible pose instead of stale React state.
+  useEffect(() => {
+    if (isFloorplanOpen) return
+    stopFloorplanViewAnimation()
+    const rotationState = floorplanRotationStateRef.current
+    finalizeFloorplanNavigation({
+      zoomPending:
+        floorplanZoomCommitTimerRef.current !== null || floorplanZoomPoseRef.current !== null,
+      panActive: panStateRef.current !== null,
+      rotationState,
+      commitZoom: commitFloorplanZoom,
+      commitPan: commitFloorplanPan,
+      commitRotation: commitFloorplanRotation,
+    })
+    floorplanSpacePanPressedRef.current = false
+    panStateRef.current = null
+    floorplanRotationStateRef.current = null
+    floorplanViewportInteractionInProgressRef.current = false
+    floorplanImperativeViewBoxRef.current = null
+    setIsSpacePanPressed(false)
+    setIsPanning(false)
+    setIsRotatingFloorplan(false)
+  }, [
+    commitFloorplanPan,
+    commitFloorplanRotation,
+    commitFloorplanZoom,
+    isFloorplanOpen,
+    stopFloorplanViewAnimation,
+  ])
+
+  useEffect(() => {
+    if (!isFloorplanOpen) return
+    setMeasuredSceneBBox(null)
+
+    if (!latestNavigationSyncPoseRef.current) {
+      stopFloorplanViewAnimation()
+      hasUserAdjustedViewportRef.current = false
+      latestFloorplanUserRotationDegRef.current = 0
+      latestViewportRef.current = null
+      setFloorplanUserRotationDeg(0)
+      setViewport(null)
+    }
+  }, [isFloorplanOpen, stopFloorplanViewAnimation])
 
   const clearWallPlacementDraft = useCallback(() => {
     setDraftStart(null)
     setWallChainFirstVertex(null)
+    wallChainWallIdsRef.current = []
     setDraftEnd(null)
     useSegmentDraftChain.getState().clear('wall')
   }, [setDraftEnd])
@@ -7768,13 +7856,11 @@ export function FloorplanPanel({
   const clearWallEndpointDrag = useCallback(() => {
     wallEndpointDragRef.current = null
     setWallEndpointDraft(null)
-    setHoveredEndpointId(null)
     useWallSnapIndicator.getState().clear()
   }, [])
   const clearWallCurveDrag = useCallback(() => {
     wallCurveDragRef.current = null
     setWallCurveDraft(null)
-    setHoveredWallCurveHandleId(null)
   }, [])
   const clearSiteBoundaryInteraction = useCallback(() => {
     const draft = siteBoundaryDraftRef.current
@@ -7982,14 +8068,6 @@ export function FloorplanPanel({
     }
   }, [isItemPlacementPreviewActive, scheduleMovingFloorplanNodeRefresh])
 
-  useEffect(() => {
-    if (!hasPendingItemMeshFootprints) {
-      return
-    }
-
-    scheduleMovingFloorplanNodeRefresh()
-  }, [scheduleMovingFloorplanNodeRefresh])
-
   // Subscribe to the live-transforms store so rotation/position changes that
   // *don't* go through pointer events still refresh the floorplan — e.g. R/T
   // keyboard rotation during placement updates `useLiveTransforms` but emits
@@ -8143,9 +8221,17 @@ export function FloorplanPanel({
         setShiftPressed(true)
       }
 
-      if (isStairBuildActive && (event.key === 'r' || event.key === 'R')) {
+      if (
+        isStairBuildActive &&
+        useEditor.getState().viewMode === '2d' &&
+        (event.key === 'r' || event.key === 'R')
+      ) {
         useStairBuildPreview.getState().rotateBy(Math.PI / 4)
-      } else if (isStairBuildActive && (event.key === 't' || event.key === 'T')) {
+      } else if (
+        isStairBuildActive &&
+        useEditor.getState().viewMode === '2d' &&
+        (event.key === 't' || event.key === 'T')
+      ) {
         useStairBuildPreview.getState().rotateBy(-Math.PI / 4)
       }
 
@@ -8689,8 +8775,13 @@ export function FloorplanPanel({
         event.preventDefault()
         event.stopPropagation()
 
+        floorplanNavigationSyncScheduler.flush()
+        if (floorplanZoomCommitTimerRef.current !== null) commitFloorplanZoom()
+        stopFloorplanViewAnimation()
         floorplanNavigationClickSuppressedRef.current = true
-        const currentViewport = viewport ?? fittedViewport
+        const currentViewport = latestViewportRef.current ?? latestFittedViewportRef.current
+        if (!currentViewport) return
+        floorplanViewportInteractionInProgressRef.current = true
         panStateRef.current = {
           pointerId: event.pointerId,
           clientX: event.clientX,
@@ -8715,17 +8806,36 @@ export function FloorplanPanel({
       event.preventDefault()
       event.stopPropagation()
 
-      const currentViewport = viewport ?? fittedViewport
+      floorplanNavigationSyncScheduler.flush()
+      if (floorplanZoomCommitTimerRef.current !== null) commitFloorplanZoom()
+      stopFloorplanViewAnimation()
+      const currentViewport = latestViewportRef.current ?? latestFittedViewportRef.current
+      const svg = svgRef.current
+      if (!(currentViewport && svg)) return
+      const currentUserRotationDeg = latestFloorplanUserRotationDegRef.current
+      const currentSceneRotationDeg =
+        FLOORPLAN_VIEW_ROTATION_DEG + currentUserRotationDeg - buildingRotationDeg
       const viewportCenterLocal = rotateSvgPoint(
         { x: currentViewport.centerX, y: currentViewport.centerY },
-        -floorplanSceneRotationDeg,
+        -currentSceneRotationDeg,
       )
-
+      const svgStyle = {
+        transform: svg.style.transform,
+        transformOrigin: svg.style.transformOrigin,
+        willChange: svg.style.willChange,
+      }
+      floorplanViewportInteractionInProgressRef.current = true
+      svg.style.transformOrigin = 'center'
+      svg.style.willChange = 'transform'
       floorplanRotationStateRef.current = {
         pointerId: event.pointerId,
         startClientX: event.clientX,
-        initialUserRotationDeg: floorplanUserRotationDeg,
+        initialUserRotationDeg: currentUserRotationDeg,
         viewportCenterLocal,
+        svg,
+        svgStyle,
+        latestUserRotationDeg: currentUserRotationDeg,
+        latestViewport: currentViewport,
       }
       setIsRotatingFloorplan(true)
       setCursorPoint(null)
@@ -8734,12 +8844,12 @@ export function FloorplanPanel({
       event.currentTarget.setPointerCapture(event.pointerId)
     },
     [
-      fittedViewport,
-      floorplanSceneRotationDeg,
-      floorplanUserRotationDeg,
-      viewport,
+      commitFloorplanZoom,
+      buildingRotationDeg,
+      floorplanNavigationSyncScheduler,
       setFloorplanCursorPosition,
       setCursorPoint,
+      stopFloorplanViewAnimation,
     ],
   )
 
@@ -8779,24 +8889,31 @@ export function FloorplanPanel({
     [isScreenSelectionToolActive, setPreviewSelectedIds],
   )
 
-  const endFloorplanNavigation = useCallback((event?: ReactPointerEvent<SVGSVGElement>) => {
-    if (
-      event &&
-      (panStateRef.current || floorplanRotationStateRef.current) &&
-      event.currentTarget.hasPointerCapture(event.pointerId)
-    ) {
-      event.currentTarget.releasePointerCapture(event.pointerId)
-    }
+  const endFloorplanNavigation = useCallback(
+    (event?: ReactPointerEvent<SVGSVGElement>) => {
+      const wasPanning = panStateRef.current !== null
+      const rotationState = floorplanRotationStateRef.current
+      if (
+        event &&
+        (panStateRef.current || floorplanRotationStateRef.current) &&
+        event.currentTarget.hasPointerCapture(event.pointerId)
+      ) {
+        event.currentTarget.releasePointerCapture(event.pointerId)
+      }
 
-    panStateRef.current = null
-    floorplanRotationStateRef.current = null
-    setIsPanning(false)
-    setIsRotatingFloorplan(false)
+      panStateRef.current = null
+      floorplanRotationStateRef.current = null
+      if (wasPanning) commitFloorplanPan()
+      if (rotationState) commitFloorplanRotation(rotationState)
+      setIsPanning(false)
+      setIsRotatingFloorplan(false)
 
-    window.setTimeout(() => {
-      floorplanNavigationClickSuppressedRef.current = false
-    }, 0)
-  }, [])
+      window.setTimeout(() => {
+        floorplanNavigationClickSuppressedRef.current = false
+      }, 0)
+    },
+    [commitFloorplanPan, commitFloorplanRotation],
+  )
 
   const hoveredWallIdRef = useRef<string | null>(null)
   const hoveredCeilingIdRef = useRef<string | null>(null)
@@ -8996,9 +9113,14 @@ export function FloorplanPanel({
           (rotationState.startClientX - event.clientX) * FLOORPLAN_ROTATION_DEGREES_PER_PIXEL
         const nextUserRotationDeg = rotationState.initialUserRotationDeg + angleDeltaDeg
 
-        smoothFloorplanNavigationView(rotationState.viewportCenterLocal, nextUserRotationDeg)
-        publishFloorplanNavigationPose(rotationState.viewportCenterLocal, nextUserRotationDeg)
-        setCursorPoint(null)
+        applyFloorplanRotationImperatively(rotationState, nextUserRotationDeg)
+        if (useEditor.getState().viewMode === 'split') {
+          publishFloorplanNavigationPose(
+            rotationState.viewportCenterLocal,
+            nextUserRotationDeg,
+            rotationState.latestViewport.width,
+          )
+        }
         return
       }
 
@@ -9008,8 +9130,11 @@ export function FloorplanPanel({
 
         const deltaX = event.clientX - panStateRef.current.clientX
         const deltaY = event.clientY - panStateRef.current.clientY
-        const worldPerPixelX = viewBox.width / surfaceSize.width
-        const worldPerPixelY = viewBox.height / surfaceSize.height
+        const currentViewport = latestViewportRef.current ?? latestFittedViewportRef.current
+        if (!currentViewport) return
+        const currentHeight = currentViewport.width / svgAspectRatio
+        const worldPerPixelX = currentViewport.width / surfaceSize.width
+        const worldPerPixelY = currentHeight / surfaceSize.height
 
         const nextCenterSvg = {
           x: panStateRef.current.centerSvg.x - deltaX * worldPerPixelX,
@@ -9020,8 +9145,20 @@ export function FloorplanPanel({
           FLOORPLAN_VIEW_ROTATION_DEG + currentUserRotationDeg - buildingRotationDeg
         const localCenter = rotateSvgPoint(nextCenterSvg, -currentSceneRotationDeg)
 
-        smoothFloorplanNavigationView(localCenter, currentUserRotationDeg)
-        publishFloorplanNavigationPose(localCenter, currentUserRotationDeg)
+        const nextViewport = {
+          centerX: nextCenterSvg.x,
+          centerY: nextCenterSvg.y,
+          width: currentViewport.width,
+        }
+        applyFloorplanViewportImperatively(nextViewport)
+        floorplanPanPoseRef.current = {
+          localCenter,
+          userRotationDeg: currentUserRotationDeg,
+          viewWidth: currentViewport.width,
+        }
+        if (useEditor.getState().viewMode === 'split') {
+          publishFloorplanNavigationPose(localCenter, currentUserRotationDeg, currentViewport.width)
+        }
 
         panStateRef.current = {
           pointerId: event.pointerId,
@@ -9034,10 +9171,6 @@ export function FloorplanPanel({
       }
 
       if (guideInteractionRef.current?.pointerId === event.pointerId) {
-        return
-      }
-
-      if (elevatorResizeDragState?.pointerId === event.pointerId) {
         return
       }
 
@@ -9361,6 +9494,8 @@ export function FloorplanPanel({
     },
     [
       buildingRotationDeg,
+      applyFloorplanViewportImperatively,
+      applyFloorplanRotationImperatively,
       draftStart,
       ceilingDraftPoints,
       emitFloorplanWallLeave,
@@ -9389,15 +9524,12 @@ export function FloorplanPanel({
       isWallBuildActive,
       levelId,
       publishFloorplanNavigationPose,
-      smoothFloorplanNavigationView,
       referenceScaleDraft,
       roofDraftStart,
-      elevatorResizeDragState,
       siteVertexDragState,
       surfaceSize.height,
       surfaceSize.width,
-      viewBox.height,
-      viewBox.width,
+      svgAspectRatio,
       walls,
       setCursorPoint,
       setDraftEnd,
@@ -9588,8 +9720,11 @@ export function FloorplanPanel({
       // `display:none`, so the tool never commits. Mirror the slab /
       // ceiling 2D-only committers: create locally here, gated on the
       // view, so split / 3D keep their single-owner tool commit.
-      const createdWall =
-        useEditor.getState().viewMode === '2d' ? createWallOnCurrentLevel(draftStart, point) : null
+      const viewIs2DOnly = useEditor.getState().viewMode === '2d'
+      const createdWall = viewIs2DOnly ? createWallOnCurrentLevel(draftStart, point) : null
+      if (createdWall) {
+        wallChainWallIdsRef.current.push(createdWall.id)
+      }
 
       // Chain the next segment from the resolved commit endpoint (it may
       // have corner-snapped or split-adjusted): the wall we just made in
@@ -9609,28 +9744,51 @@ export function FloorplanPanel({
         return
       }
 
+      if (createdWall) {
+        // 2D-only committer: mirror the 3D tool's auto-close. Stop when the
+        // segment seals a room against the wall network, or when its resolved
+        // end tees into wall geometry outside the chain — continuing from a
+        // T-junction only drafts on top of existing walls.
+        const levelWalls = Object.values(useScene.getState().nodes).filter(
+          (node): node is WallNode => node?.type === 'wall' && node.parentId === levelId,
+        )
+        if (
+          chainEndJoinsExistingWall(
+            createdWall.end as WallPlanPoint,
+            levelWalls,
+            wallChainWallIdsRef.current,
+          ) ||
+          wallClosesRoom(levelWalls, createdWall)
+        ) {
+          clearWallPlacementDraft()
+          setCursorPoint(null)
+          return
+        }
+      } else if (!(viewIs2DOnly || publishedNextStart)) {
+        // Split view: the 3D tool owns both the commit and the continuation
+        // decision, and it clears the published chain start whenever it stops
+        // drafting (room close, T-junction, single). Mirror that here instead
+        // of chaining the 2D draft from a dead point.
+        clearWallPlacementDraft()
+        setCursorPoint(null)
+        return
+      }
+
       setDraftStart(nextStart)
       setDraftEnd(nextStart)
       setCursorPoint(nextStart)
     },
-    [clearWallPlacementDraft, draftStart, wallChainFirstVertex, setDraftEnd, setCursorPoint],
+    [
+      clearWallPlacementDraft,
+      draftStart,
+      levelId,
+      wallChainFirstVertex,
+      setDraftEnd,
+      setCursorPoint,
+    ],
   )
   const { getFloorplanHitIdAtPoint, getFloorplanSelectionIdsInBounds } = useFloorplanHitTesting({
-    ceilingPolygons: displayCeilingPolygons,
-    columnPolygons: floorplanColumnEntries,
-    displaySlabPolygons,
-    displayWallPolygons,
-    floorplanElevatorEntries,
-    floorplanItemEntries,
-    floorplanOpeningHitTolerance,
-    floorplanRoofEntries,
-    floorplanStairEntries,
-    floorplanWallHitTolerance,
-    getOpeningCenterLine,
-    isFloorplanItemContextActive,
-    openingsPolygons,
-    phase,
-    toPoint2D,
+    sceneRef: floorplanSceneRef,
   })
   // Wall-commit snap for the placement hook. Mirrors the move-preview branch:
   // it honours the Magnetic snap toggle so a click never snaps to geometry the
@@ -9770,8 +9928,6 @@ export function FloorplanPanel({
         modifierKeys,
         planPoint,
         structureLayer,
-        toPoint2D,
-        visibleZonePolygons,
       })
 
       if (backgroundSelection.handled) {
@@ -9836,7 +9992,6 @@ export function FloorplanPanel({
       structureLayer,
       getFloorplanHitIdAtPoint,
       unit,
-      visibleZonePolygons,
       emitFloorplanGridEvent,
       setCursorPoint,
     ],
@@ -10486,7 +10641,6 @@ export function FloorplanPanel({
         !panStateRef.current &&
         !floorplanRotationStateRef.current &&
         !guideInteractionRef.current &&
-        !elevatorResizeDragState &&
         !wallEndpointDragRef.current &&
         !siteVertexDragState
       ) {
@@ -10514,7 +10668,6 @@ export function FloorplanPanel({
       handlePointerMove,
       hasFloorplanCursorIndicator,
       isSpacePanPressed,
-      elevatorResizeDragState,
       siteVertexDragState,
       setFloorplanCursorPosition,
     ],
@@ -10742,11 +10895,13 @@ export function FloorplanPanel({
       event.preventDefault()
       event.stopPropagation()
 
+      floorplanNavigationSyncScheduler.flush()
       const widthFactor = Math.exp(event.deltaY * (event.ctrlKey ? 0.003 : 0.0015))
       zoomViewportAtClientPoint(event.clientX, event.clientY, widthFactor)
     }
 
     const handleGestureStart = (event: Event) => {
+      floorplanNavigationSyncScheduler.flush()
       const gestureEvent = event as GestureLikeEvent
       gestureScaleRef.current = gestureEvent.scale ?? 1
       event.preventDefault()
@@ -10773,6 +10928,7 @@ export function FloorplanPanel({
 
     const handleGestureEnd = (event: Event) => {
       gestureScaleRef.current = 1
+      commitFloorplanZoom()
       event.preventDefault()
       event.stopPropagation()
     }
@@ -10792,7 +10948,7 @@ export function FloorplanPanel({
       svg.removeEventListener('gesturechange', handleGestureChange)
       svg.removeEventListener('gestureend', handleGestureEnd)
     }
-  }, [zoomViewportAtClientPoint])
+  }, [commitFloorplanZoom, floorplanNavigationSyncScheduler, zoomViewportAtClientPoint])
 
   const restoreGroundLevelStructureSelection = useCallback(() => {
     const sceneNodes = useScene.getState().nodes
@@ -10874,7 +11030,8 @@ export function FloorplanPanel({
   const floorplanNavigationCursor =
     isPanning || isRotatingFloorplan ? 'grabbing' : isSpacePanPressed ? 'grab' : null
   const isFloorplanNavigationOverlayVisible = isSpacePanPressed || isPanning || isRotatingFloorplan
-  const pendingReferenceDisplayLength = Number(referenceScaleValue)
+  const pendingReferenceDisplayLength =
+    parseReferenceScaleLength(referenceScaleValue, referenceScaleUnit) ?? Number.NaN
   const pendingReferenceRealLengthMeters =
     pendingReferenceScale && pendingReferenceDisplayLength > 0
       ? convertReferenceLengthToMeters(pendingReferenceDisplayLength, referenceScaleUnit)
@@ -10890,9 +11047,14 @@ export function FloorplanPanel({
   const referenceScaleInputError =
     referenceScaleValue.trim() === ''
       ? 'Enter the real length of the line.'
-      : pendingReferenceDisplayLength > 0
-        ? null
-        : 'Length must be greater than 0.'
+      : Number.isNaN(pendingReferenceDisplayLength)
+        ? `Enter a length like 3.5, 180cm or 5'11".`
+        : pendingReferenceDisplayLength > 0
+          ? null
+          : 'Length must be greater than 0.'
+  const referenceScaleHint = referenceScaleInputError
+    ? null
+    : referenceScaleLengthHint(referenceScaleValue, referenceScaleUnit)
   return (
     <div
       className="pointer-events-auto flex h-full w-full flex-col overflow-hidden bg-background/95"
@@ -10904,7 +11066,7 @@ export function FloorplanPanel({
       ref={containerRef}
     >
       <FloorplanSiteKeyHandler onRestoreGroundLevel={restoreGroundLevelStructureSelection} />
-      <div className="relative min-h-0 flex-1" ref={viewportHostRef}>
+      <div className="relative min-h-0 flex-1 bg-white" ref={viewportHostRef}>
         <FloorplanCursorIndicator
           cursorColor={floorplanCursorColor}
           floorplanSelectionTool={floorplanSelectionTool}
@@ -10991,7 +11153,12 @@ export function FloorplanPanel({
                 Drawn line
               </div>
               <div className="mt-1 font-medium text-sm">
-                {formatMeasurement(pendingReferenceScale.measuredLengthUnits, unit)}
+                {formatMeasurement(
+                  pendingReferenceScale.measuredLengthUnits,
+                  unit,
+                  null,
+                  metricNotation,
+                )}
               </div>
             </div>
 
@@ -11006,16 +11173,9 @@ export function FloorplanPanel({
                     'h-9 rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-foreground/40',
                     referenceScaleInputError ? 'border-destructive/60' : 'border-border',
                   )}
-                  inputMode="decimal"
-                  onBlur={() => {
-                    const value = Number(referenceScaleValue)
-                    if (!(value > 0)) {
-                      setReferenceScaleValue('0.0001')
-                    }
-                  }}
                   onChange={(event) => setReferenceScaleValue(event.target.value)}
-                  step="any"
-                  type="number"
+                  placeholder={`e.g. 3.5, 180cm or 5'11"`}
+                  type="text"
                   value={referenceScaleValue}
                 />
                 <select
@@ -11038,6 +11198,7 @@ export function FloorplanPanel({
                 )}
               >
                 {referenceScaleInputError ??
+                  referenceScaleHint ??
                   'Any decimal works. Use the known real length, not the drawn value.'}
               </span>
             </label>
@@ -11083,6 +11244,7 @@ export function FloorplanPanel({
           // panel, so pan/zoom is preserved across the toggle.
           <svg
             className="h-full w-full touch-none"
+            data-aedifex-floorplan-2d
             onClick={isMarqueeSelectionToolActive ? undefined : handleSvgClick}
             onContextMenu={(event) => event.preventDefault()}
             onDoubleClick={isMarqueeSelectionToolActive ? undefined : handleBackgroundDoubleClick}
@@ -11096,8 +11258,9 @@ export function FloorplanPanel({
             style={{
               cursor:
                 floorplanNavigationCursor ?? (referenceScaleDraft ? 'crosshair' : EDITOR_CURSOR),
+              overflow: 'visible',
             }}
-            viewBox={`${viewBox.minX} ${viewBox.minY} ${viewBox.width} ${viewBox.height}`}
+            viewBox={`${presentationViewBox.minX} ${presentationViewBox.minY} ${presentationViewBox.width} ${presentationViewBox.height}`}
           >
             <defs>
               <pattern
@@ -11135,10 +11298,11 @@ export function FloorplanPanel({
             </defs>
             <rect
               fill={palette.surface}
-              height={viewBox.height}
-              width={viewBox.width}
-              x={viewBox.minX}
-              y={viewBox.minY}
+              height={presentationPaintViewBox.height}
+              ref={floorplanBackgroundRef}
+              width={presentationPaintViewBox.width}
+              x={presentationPaintViewBox.minX}
+              y={presentationPaintViewBox.minY}
             />
 
             <g
@@ -11200,7 +11364,7 @@ export function FloorplanPanel({
               {isMarqueeSelectionToolActive && (
                 <rect
                   fill="transparent"
-                  height={viewBox.height}
+                  height={presentationViewBox.height}
                   onClick={(event) => {
                     event.preventDefault()
                     event.stopPropagation()
@@ -11214,25 +11378,18 @@ export function FloorplanPanel({
                   onPointerMove={handleMarqueePointerMove}
                   onPointerUp={handleMarqueePointerUp}
                   style={{ cursor: EDITOR_CURSOR }}
-                  width={viewBox.width}
-                  x={viewBox.minX}
-                  y={viewBox.minY}
+                  width={presentationViewBox.width}
+                  x={presentationViewBox.minX}
+                  y={presentationViewBox.minY}
                 />
               )}
 
-              {/* Registry-driven floor-plan layer. Iterates kinds whose
-                  NodeDefinition supplies a `floorplan` builder and renders
-                  their SVG via <FloorplanGeometryRenderer>. Sits above the
-                  legacy inline content so newly-registered kinds (shelf
-                  today) overlay on top until their inline equivalent is
-                  removed in their Phase 5 migration PR.
-
-                  Wrapped in <FloorplanRenderProvider> so registry-driven
-                  kinds receive the same themed palette / units-per-pixel
-                  the legacy layers compute. The hatch pattern id is the
-                  legacy wall hatch — kinds that opt into selection hatch
-                  fills reuse this <defs> pattern via fill="url(...)". */}
+              {/* Registry-driven floor-plan layer. Every committed node kind
+                  supplies its geometry through `NodeDefinition.floorplan`.
+                  The provider carries editor presentation data—palette,
+                  scale, rotation, and the shared selection-hatch pattern. */}
               <FloorplanRenderProvider
+                getSceneRotationDeg={getFloorplanSceneRotationDeg}
                 hatchPatternId={wallSelectionHatchId}
                 palette={floorplanRegistryPalette}
                 sceneRotationDeg={floorplanSceneRotationDeg}
@@ -11258,6 +11415,9 @@ export function FloorplanPanel({
                       `floorplan-wall-move-ghost-layer.tsx`. */}
                   <FloorplanWallMoveGhostLayer />
                 </g>
+                <FloorplanMeasurementToolLayer />
+                <FloorplanRegisteredToolLayer />
+                {floorplanSceneSlot}
               </FloorplanRenderProvider>
               {/* Cursor-driven placement ghost for movingNode when the
                   active kind is registry-driven. Renders via a portal
@@ -11368,13 +11528,6 @@ export function FloorplanPanel({
                 walls={walls}
               />
 
-              {/* Wall / fence endpoint, wall curve, slab / ceiling /
-                  zone vertex+midpoint+edge handles are all driven by the
-                  registry's `def.floorplanAffordances` and rendered as
-                  part of `FloorplanRegistryLayer`. The legacy handle
-                  layers that lived here received empty handle arrays
-                  post-migration and rendered nothing. */}
-
               {selectedGuide && showGuides && (
                 <FloorplanGuideSelectionOverlay
                   guide={selectedGuide}
@@ -11384,6 +11537,19 @@ export function FloorplanPanel({
                   rotationModifierPressed={rotationModifierPressed}
                   sceneRotationDeg={floorplanSceneRotationDeg}
                   showHandles={canInteractWithGuides && guideUi[selectedGuide.id]?.locked !== true}
+                />
+              )}
+
+              {guideRotationReadout && (
+                <RotationAngleOverlay
+                  overlay={guideRotationReadout}
+                  palette={{
+                    measurementLabelBackground: isDark ? '#0f172a' : '#ffffff',
+                    measurementLabelText: isDark ? '#e2e8f0' : '#171717',
+                    measurementStroke: palette.measurementStroke,
+                  }}
+                  sceneRotationDeg={floorplanSceneRotationDeg}
+                  unitsPerPixel={floorplanUnitsPerPixel}
                 />
               )}
 
@@ -11413,12 +11579,12 @@ export function FloorplanPanel({
             {isFloorplanNavigationOverlayVisible && (
               <rect
                 fill="transparent"
-                height={viewBox.height}
+                height={presentationViewBox.height}
                 pointerEvents="all"
                 style={{ cursor: floorplanNavigationCursor ?? 'grab' }}
-                width={viewBox.width}
-                x={viewBox.minX}
-                y={viewBox.minY}
+                width={presentationViewBox.width}
+                x={presentationViewBox.minX}
+                y={presentationViewBox.minY}
               />
             )}
           </svg>

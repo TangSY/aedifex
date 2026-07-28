@@ -1,6 +1,12 @@
 'use client'
 
-import { type CeilingNode, resolveLevelId, useLiveNodeOverrides, useScene } from '@aedifex/core'
+import {
+  type CeilingNode,
+  resolveCeilingHeight,
+  resolveLevelId,
+  useLiveNodeOverrides,
+  useScene,
+} from '@aedifex/core'
 import { PolygonEditor } from '@aedifex/editor'
 import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect } from 'react'
@@ -64,7 +70,7 @@ export const CeilingHoleEditor: React.FC<{
       onPolygonChange={handlePolygonChange}
       onPolygonPreview={handlePolygonPreview}
       polygon={hole}
-      surfaceHeight={ceiling.height ?? 2.5}
+      surfaceHeight={resolveCeilingHeight(ceiling, useScene.getState().nodes)}
     />
   )
 }

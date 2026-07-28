@@ -41,7 +41,6 @@ function wall(
     metadata: {},
     children,
     thickness: WALL_THICKNESS,
-    height: WALL_HEIGHT,
     start,
     end,
     frontSide: 'unknown',
@@ -250,6 +249,7 @@ function buildTemplate(): SceneGraph {
     visible: true,
     metadata: {},
     level: 0,
+    height: WALL_HEIGHT,
     children: [
       'wall_n',
       'wall_e',
@@ -262,8 +262,6 @@ function buildTemplate(): SceneGraph {
       'fence_w',
     ],
   } as unknown as AnyNode
-
-  ;(nodes.site_garden as unknown as { children: string[] }).children = ['building_garden']
 
   return {
     nodes: nodes as Record<AnyNodeId, AnyNode>,

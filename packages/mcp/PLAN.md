@@ -174,7 +174,7 @@ packages/mcp/
 ├── tsconfig.json
 ├── src/
 │   ├── index.ts                  # programmatic API re-exports
-│   ├── server.ts                 # createPascalMcpServer() factory
+│   ├── server.ts                 # createAedifexMcpServer() factory
 │   ├── bridge/
 │   │   ├── node-shims.ts         # RAF polyfill (load FIRST)
 │   │   ├── scene-bridge.ts       # SceneBridge class
@@ -222,7 +222,7 @@ packages/mcp/
 │   │   ├── stdio.ts
 │   │   └── http.ts
 │   └── bin/
-│       └── pascal-mcp.ts         # CLI entry; shebang #!/usr/bin/env node
+│       └── aedifex-mcp.ts         # CLI entry; shebang #!/usr/bin/env node
 ├── scripts/
 │   └── smoke.ts                  # end-to-end client test
 ├── examples/
@@ -298,7 +298,7 @@ Register via `server.registerResource(...)` with `readResource` handlers.
 - **stdio** (default) — `StdioServerTransport` from `@modelcontextprotocol/sdk/server/stdio.js`.
 - **HTTP** — `StreamableHTTPServerTransport` from `@modelcontextprotocol/sdk/server/streamableHttp.js`, bound to a `node:http` server on `--port`.
 
-CLI `pascal-mcp` flags:
+CLI `aedifex-mcp` flags:
 - `--stdio` (default) — stdio transport
 - `--http --port <n>` — HTTP transport
 - `--scene <path>` — load initial scene from JSON file via `setScene`
@@ -321,12 +321,12 @@ CLI `pascal-mcp` flags:
       "default": "./dist/index.js"
     }
   },
-  "bin": { "pascal-mcp": "./dist/bin/pascal-mcp.js" },
+  "bin": { "aedifex-mcp": "./dist/bin/aedifex-mcp.js" },
   "files": ["dist", "README.md", "CHANGELOG.md"],
   "scripts": {
     "build": "tsc --build",
     "dev": "tsc --build --watch",
-    "start": "bun dist/bin/pascal-mcp.js",
+    "start": "bun dist/bin/aedifex-mcp.js",
     "test": "bun test",
     "smoke": "bun run scripts/smoke.ts",
     "prepublishOnly": "bun run build && bun test"
@@ -399,7 +399,7 @@ The existing `turbo.json` globs `packages/*` implicitly via Bun workspaces and p
 | Root `turbo.json` / CI workflows          | H (only if strictly needed) |
 | `packages/mcp/biome.jsonc` (if any)       | H     |
 
-*Server.ts coordination: **Agent A writes a minimal `server.ts` stub exporting `createPascalMcpServer(bridge)` that returns an empty `McpServer`**. Agents C, D, E each export `register<Tools|Resources|Prompts|VisionTools>(server, bridge)` functions from their subtrees. Integration (me) wires them up in the final `server.ts` during Phase 2.
+*Server.ts coordination: **Agent A writes a minimal `server.ts` stub exporting `createAedifexMcpServer(bridge)` that returns an empty `McpServer`**. Agents C, D, E each export `register<Tools|Resources|Prompts|VisionTools>(server, bridge)` functions from their subtrees. Integration (me) wires them up in the final `server.ts` during Phase 2.
 
 ## 13. Known limitations (Phase 3 will surface these)
 

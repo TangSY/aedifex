@@ -18,7 +18,7 @@ npm install react three @react-three/fiber @react-three/drei
 
 - **Node Schemas** - Zod schemas for all building primitives (walls, slabs, items, etc.)
 - **Scene State** - Zustand store with IndexedDB persistence and undo/redo
-- **Systems** - Geometry generation for walls, floors, ceilings, roofs
+- **Registry Contracts** - Plugin and node-definition APIs shared by renderers and editor tools
 - **Scene Registry** - Fast lookup from node IDs to Three.js objects
 - **Spatial Grid** - Collision detection and placement validation
 - **Event Bus** - Typed event emitter for inter-component communication
@@ -27,11 +27,12 @@ npm install react three @react-three/fiber @react-three/drei
 ## Usage
 
 ```typescript
-import { useScene, WallNode, ItemNode } from '@aedifex/core'
+import { useScene, WallNode } from '@aedifex/core'
 
 // Create a wall
 const wall = WallNode.parse({
-  points: [[0, 0], [5, 0]],
+  start: [0, 0],
+  end: [5, 0],
   height: 3,
   thickness: 0.2,
 })
@@ -61,15 +62,21 @@ function MyComponent() {
 - `ScanNode` - 3D scan reference
 - `GuideNode` - 2D guide image reference
 
-## Systems
+## Built-in Node Definitions
 
-Systems process dirty nodes each frame to update geometry:
+Core contains the schemas, scene state, and registry contracts. The built-in node definitions,
+renderers, geometry builders, tools, and systems ship in `@aedifex/nodes`:
 
-- `WallSystem` - Wall geometry with mitering and CSG cutouts
-- `SlabSystem` - Floor polygon generation
-- `CeilingSystem` - Ceiling geometry
-- `RoofSystem` - Roof generation
-- `ItemSystem` - Item positioning on walls/ceilings/floors
+```typescript
+import { loadPlugin } from '@aedifex/core'
+import { builtinPlugin } from '@aedifex/nodes'
+
+await loadPlugin(builtinPlugin)
+```
+
+Load the plugin before mounting `@aedifex/viewer`. See the
+[`@aedifex/viewer` quick start](https://github.com/TangSY/aedifex/tree/main/packages/viewer#usage)
+for a React example.
 
 ## License
 

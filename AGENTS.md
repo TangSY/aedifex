@@ -15,7 +15,7 @@ Public, open-source home of `@aedifex/{core,viewer,editor,mcp}` and the standalo
 ## Where to look
 
 - **Architecture rules** — `wiki/architecture/` (read on demand; index in `wiki/architecture/README.md`).
-- **Skills (ready workflows)** — `.agents/skills/<name>/SKILL.md`. Same content is reachable as `.claude/skills/`, `.cursor/skills/`, `.codex/skills/` (symlinks to `.agents/skills/`).
+- **Skills (ready workflows)** — `.agents/skills/<name>/SKILL.md`. The `.cursor/skills/` and `.codex/skills/` paths are symlinks to `.agents/skills/`.
 - **Repo orientation for humans** — `README.md`, `SETUP.md`, `CONTRIBUTING.md`.
 
 `CLAUDE.md`, `GEMINI.md`, and `.github/copilot-instructions.md` are symlinks to this file. Codex reads this file directly.

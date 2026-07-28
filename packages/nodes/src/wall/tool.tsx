@@ -2,6 +2,7 @@ import {
   type AnyNode,
   calculateLevelMiters,
   collectAlignmentAnchors,
+  DEFAULT_LEVEL_HEIGHT,
   emitter,
   type GridEvent,
   getWallMiterBoundaryPoints,
@@ -16,6 +17,8 @@ import {
 } from '@aedifex/core'
 import {
   CursorSphere,
+  chainEndJoinsExistingWall,
+  clearPlacementSurface,
   createWallOnCurrentLevel,
   EDITOR_LAYER,
   formatAngleRadians,
@@ -27,11 +30,14 @@ import {
   isAngleSnapActive,
   isMagneticSnapActive,
   markToolCancelConsumed,
+  publishPlacementSurface,
+  resolvePointerSupportSurface,
   type SegmentAngleReference,
   snapWallDraftPointDetailed,
   triggerSFX,
   useAlignmentGuides,
   useEditor,
+  useFloorplanDraftPreview,
   useSegmentDraftChain,
   useWallSnapIndicator,
   WALL_CONNECT_SNAP_RADIUS,
@@ -39,9 +45,17 @@ import {
   type WallPlanPoint,
 } from '@aedifex/editor'
 import { getSceneTheme, useViewer } from '@aedifex/viewer'
-import { Html } from '@react-three/drei'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { BoxGeometry, BufferGeometry, DoubleSide, type Group, type Mesh, Vector3 } from 'three'
+import { useThree } from '@react-three/fiber'
+import { useEffect, useRef, useState } from 'react'
+import { BoxGeometry, DoubleSide, type Group, type Mesh, Vector3 } from 'three'
+import {
+  DraftAngleArc,
+  type DraftAngleLabel,
+  type DraftAxisGuideState,
+  DraftAxisGuides,
+  DraftMeasurementLabel,
+  getNearestAxisAngleLabel,
+} from '../shared/draft-axis-guides'
 
 /**
  * Phase 5 Stage D — wall placement tool (kind-owned).
@@ -56,7 +70,6 @@ import { BoxGeometry, BufferGeometry, DoubleSide, type Group, type Mesh, Vector3
  *
  * Mounted via `def.tool` from `wall/definition.ts`.
  */
-const WALL_HEIGHT = 2.5
 const DRAFT_WALL_THICKNESS = 0.1
 /** Figma-style alignment-snap threshold (meters), matching the move tools. */
 const ALIGNMENT_THRESHOLD_M = 0.08
@@ -67,53 +80,17 @@ const DRAFT_ANGLE_LABEL_Y_OFFSET = 0.08
 const DRAFT_ANGLE_ARC_Y_OFFSET = 0.012
 const DRAFT_ANGLE_ARC_MIN_RADIUS = 0.32
 const DRAFT_ANGLE_ARC_MAX_RADIUS = 0.72
-const DRAFT_ANGLE_ARC_SEGMENTS = 24
-const DRAFT_AXIS_GUIDE_LENGTH = 2000
-const DRAFT_AXIS_GUIDE_WIDTH = 0.035
-const DRAFT_AXIS_GUIDE_HEIGHT = 0.004
-const DRAFT_AXIS_GUIDE_Y_OFFSET = 0.026
-const DRAFT_AXIS_ANGLE_ARC_Y_OFFSET = 0.05
-const DRAFT_AXIS_ANGLE_LABEL_Y_OFFSET = 0.16
-const DRAFT_AXIS_ANGLE_ARC_MIN_RADIUS = 0.36
-const DRAFT_AXIS_ANGLE_ARC_MAX_RADIUS = 0.82
-const AXIS_ANGLE_REFERENCES: SegmentAngleReference[] = [
-  { vector: [1, 0], orientation: 'axis' },
-  { vector: [0, 1], orientation: 'axis' },
-]
 
-type DraftAngleLabel = {
-  id: string
-  label: string
-  position: [number, number, number]
-  arc: {
-    center: WallPlanPoint
-    radius: number
-    startAngle: number
-    endAngle: number
-    y: number
-  }
-}
+// Grid-plane surface publish (pointer-decided): scratch + constant normal so
+// per-move publishes don't allocate.
+const SURFACE_UP = new Vector3(0, 1, 0)
+const surfacePointScratch = new Vector3()
 
 type DraftMeasurementState = {
   lengthLabel: string
   lengthPosition: [number, number, number]
   angleLabels: DraftAngleLabel[]
 } | null
-
-type DraftAxisGuideState = {
-  origin: WallPlanPoint
-  y: number
-  angleLabel: DraftAngleLabel | null
-} | null
-
-type AxisAngleCandidate = {
-  angle: number
-  arc: {
-    startAngle: number
-    endAngle: number
-    midAngle: number
-  }
-}
 
 type FaceAngleCandidate = {
   index: number
@@ -153,53 +130,6 @@ function isWithinWallJoinSnapRadius(point: WallPlanPoint, vertex: Vector3) {
   const dz = point[1] - vertex.z
 
   return dx * dx + dz * dz <= WALL_JOIN_SNAP_RADIUS * WALL_JOIN_SNAP_RADIUS
-}
-
-function getNearestAxisAngleLabel(
-  start: WallPlanPoint,
-  end: WallPlanPoint,
-  y: number,
-): DraftAngleLabel | null {
-  const dx = end[0] - start[0]
-  const dz = end[1] - start[1]
-  const length = Math.hypot(dx, dz)
-  if (length < 0.01) return null
-
-  const draftVector: WallPlanPoint = [dx, dz]
-  const axisCandidates: AxisAngleCandidate[] = []
-  for (const reference of AXIS_ANGLE_REFERENCES) {
-    const angle = getAngleToSegmentReference(draftVector, reference)
-    const arc = getAngleArcToSegmentReference(draftVector, reference)
-    if (!(angle === null || arc === null)) {
-      axisCandidates.push({ angle, arc })
-    }
-  }
-  const nearestAxisAngle = axisCandidates.sort((a, b) => a.angle - b.angle)[0]
-  if (!nearestAxisAngle) return null
-
-  const radius = clamp(
-    length * 0.22,
-    DRAFT_AXIS_ANGLE_ARC_MIN_RADIUS,
-    DRAFT_AXIS_ANGLE_ARC_MAX_RADIUS,
-  )
-  const { angle, arc } = nearestAxisAngle
-
-  return {
-    id: 'axis',
-    label: formatAngleRadians(angle),
-    position: [
-      start[0] + Math.cos(arc.midAngle) * (radius + 0.16),
-      y + DRAFT_AXIS_ANGLE_LABEL_Y_OFFSET,
-      start[1] + Math.sin(arc.midAngle) * (radius + 0.16),
-    ],
-    arc: {
-      center: start,
-      radius,
-      startAngle: arc.startAngle,
-      endAngle: arc.endAngle,
-      y: y + DRAFT_AXIS_ANGLE_ARC_Y_OFFSET,
-    },
-  }
 }
 
 function toWallPlanPoint(point: Point2D): WallPlanPoint {
@@ -511,13 +441,24 @@ function getBelowLevelWalls(): WallNode[] {
 export const WallTool: React.FC = () => {
   const unit = useViewer((state) => state.unit)
   const isDark = useViewer((state) => getSceneTheme(state.sceneTheme).appearance === 'dark')
+  const activeLevelId = useViewer((state) => state.selection.levelId)
+  const activeLevelHeight = useScene((state) => {
+    const level = activeLevelId ? state.nodes[activeLevelId] : undefined
+    return level?.type === 'level' ? (level.height ?? DEFAULT_LEVEL_HEIGHT) : DEFAULT_LEVEL_HEIGHT
+  })
   // A placed wall preset seeds `toolDefaults.wall` (height / thickness …)
   // before the tool mounts, so the draft preview is drawn at the preset's
   // dimensions rather than the generic fallbacks — matching the wall that
   // will be created. Read through refs so the live event handlers below see
   // the latest values without re-subscribing.
   const wallDefaults = useEditor((s) => s.toolDefaults.wall)
-  const previewHeight = typeof wallDefaults?.height === 'number' ? wallDefaults.height : WALL_HEIGHT
+  // Camera for the pointer-support resolution (deck top vs floor) — read
+  // through a ref so the event handlers below see the live camera.
+  const camera = useThree((state) => state.camera)
+  const cameraRef = useRef(camera)
+  cameraRef.current = camera
+  const previewHeight =
+    typeof wallDefaults?.height === 'number' ? wallDefaults.height : activeLevelHeight
   const previewThickness =
     typeof wallDefaults?.thickness === 'number' ? wallDefaults.thickness : DRAFT_WALL_THICKNESS
   const previewHeightRef = useRef(previewHeight)
@@ -529,6 +470,10 @@ export const WallTool: React.FC = () => {
   const startingPoint = useRef(new Vector3(0, 0, 0))
   const endingPoint = useRef(new Vector3(0, 0, 0))
   const chainFirstVertex = useRef<Vector3 | null>(null)
+  // Ids of the walls committed by the current chain — the exclusion set for
+  // the "segment tees into an existing wall" chain-termination test, so
+  // snapping onto the chain's own segments never reads as a join.
+  const chainWallIds = useRef<string[]>([])
   const buildingState = useRef(0)
   const [draftMeasurement, setDraftMeasurement] = useState<DraftMeasurementState>(null)
   const [axisGuide, setAxisGuide] = useState<DraftAxisGuideState>(null)
@@ -585,9 +530,23 @@ export const WallTool: React.FC = () => {
         : point
     }
 
+    // The walking surface the pointer actually aims at (deck top when over
+    // the deck, floor/ground underneath it) — only for genuine 3D pointer
+    // events. The 2D floor plan emits synthetic grid events with no camera
+    // ray behind them; those keep the uncapped max election and leave the
+    // grid plane alone.
+    const pointedSurfaceFor = (event: GridEvent) =>
+      event.nativeEvent?.target instanceof HTMLCanvasElement
+        ? resolvePointerSupportSurface(cameraRef.current, event.position)
+        : null
+
     const stopDrafting = () => {
       buildingState.current = 0
       chainFirstVertex.current = null
+      chainWallIds.current = []
+      const draftPreview = useFloorplanDraftPreview.getState()
+      draftPreview.setWallDraftStart(null)
+      draftPreview.setWallDraftEnd(null)
       if (wallPreviewRef.current) {
         wallPreviewRef.current.visible = false
       }
@@ -600,6 +559,19 @@ export const WallTool: React.FC = () => {
 
     const onGridMove = (event: GridEvent) => {
       if (!(cursorRef.current && wallPreviewRef.current)) return
+
+      // Ride the grid event plane on the pointed surface: aiming at an
+      // elevated deck lifts the plane to the deck top, so the draft's XZ
+      // lands where the cursor points and the preview/cursor Y
+      // (`event.localPosition[1]`) sits at the base the committed wall
+      // will elect. Aiming past the deck edge drops it back to the floor.
+      const pointed = pointedSurfaceFor(event)
+      if (pointed) {
+        publishPlacementSurface(
+          surfacePointScratch.set(event.position[0], pointed.worldY, event.position[2]),
+          SURFACE_UP,
+        )
+      }
 
       const walls = getCurrentLevelWalls()
       // Add walls on the floor below as extra snap references so the new wall
@@ -631,9 +603,13 @@ export const WallTool: React.FC = () => {
       if (buildingState.current === 1) {
         const snappedLocal = gridPosition
         endingPoint.current.set(snappedLocal[0], event.localPosition[1], snappedLocal[1])
+        const draftPreview = useFloorplanDraftPreview.getState()
+        draftPreview.setWallDraftStart([startingPoint.current.x, startingPoint.current.z])
+        draftPreview.setWallDraftEnd(snappedLocal)
         cursorRef.current.position.copy(endingPoint.current)
         setAxisGuide({
           origin: [startingPoint.current.x, startingPoint.current.z],
+          endOrigin: snappedLocal,
           y: startingPoint.current.y,
           angleLabel: getNearestAxisAngleLabel(
             [startingPoint.current.x, startingPoint.current.z],
@@ -700,8 +676,12 @@ export const WallTool: React.FC = () => {
         chainFirstVertex.current = startingPoint.current.clone()
         endingPoint.current.copy(startingPoint.current)
         buildingState.current = 1
+        const draftPreview = useFloorplanDraftPreview.getState()
+        draftPreview.setWallDraftStart(snappedStart)
+        draftPreview.setWallDraftEnd(snappedStart)
         setAxisGuide({
           origin: snappedStart,
+          endOrigin: null,
           y: event.localPosition[1],
           angleLabel: null,
         })
@@ -729,12 +709,15 @@ export const WallTool: React.FC = () => {
         const dx = snappedEnd[0] - startingPoint.current.x
         const dz = snappedEnd[1] - startingPoint.current.z
         if (dx * dx + dz * dz < 0.01 * 0.01) return
+        const pointed = pointedSurfaceFor(event)
         // Both start and end are building-local ✓
         const createdWall = createWallOnCurrentLevel(
           [startingPoint.current.x, startingPoint.current.z],
           snappedEnd,
+          { supportCap: pointed ? pointed.elevation : null },
         )
         if (!createdWall) return
+        chainWallIds.current.push(createdWall.id)
 
         // The new segment is now a real node — make it an alignment target
         // for the next segment, and drop the just-shown guide.
@@ -755,7 +738,16 @@ export const WallTool: React.FC = () => {
         // existing wall network (e.g. a bay closed onto the middle of another
         // wall), not just when the chain loops back to its own start. Shares the
         // room graph with auto slab/ceiling detection so the two never disagree.
-        if (closedToChainStart || wallClosesRoom(getCurrentLevelWalls(), createdWall)) {
+        // A resolved end that tees into wall geometry outside the chain also
+        // terminates even without an enclosed room — nobody continues drawing
+        // from a T-junction into an existing wall; a dead end in free space
+        // keeps the chain going.
+        const levelWalls = getCurrentLevelWalls()
+        if (
+          closedToChainStart ||
+          chainEndJoinsExistingWall(createdWall.end, levelWalls, chainWallIds.current) ||
+          wallClosesRoom(levelWalls, createdWall)
+        ) {
           stopDrafting()
           return
         }
@@ -767,10 +759,15 @@ export const WallTool: React.FC = () => {
         useSegmentDraftChain.getState().setChainStart('wall', [nextStart[0], nextStart[1]])
         startingPoint.current.set(nextStart[0], event.localPosition[1], nextStart[1])
         endingPoint.current.copy(startingPoint.current)
+        const draftPreview = useFloorplanDraftPreview.getState()
+        draftPreview.setWallDraftEnd(null)
+        draftPreview.setWallDraftStart(nextStart)
+        draftPreview.setWallDraftEnd(nextStart)
         cursorRef.current?.position.copy(startingPoint.current)
         buildingState.current = 1
         setAxisGuide({
           origin: nextStart,
+          endOrigin: null,
           y: event.localPosition[1],
           angleLabel: null,
         })
@@ -801,15 +798,19 @@ export const WallTool: React.FC = () => {
       emitter.off('grid:move', onGridMove)
       emitter.off('grid:click', onGridClick)
       emitter.off('tool:cancel', onCancel)
+      clearPlacementSurface()
       useAlignmentGuides.getState().clear()
       useWallSnapIndicator.getState().clear()
       useSegmentDraftChain.getState().clear('wall')
+      const draftPreview = useFloorplanDraftPreview.getState()
+      draftPreview.setWallDraftStart(null)
+      draftPreview.setWallDraftEnd(null)
     }
   }, [unit])
 
   return (
     <group>
-      <WallAxisGuides
+      <DraftAxisGuides
         guide={axisGuide}
         labelColor={measurementColor}
         labelShadowColor={measurementShadowColor}
@@ -848,129 +849,6 @@ export const WallTool: React.FC = () => {
         </>
       )}
     </group>
-  )
-}
-
-function WallAxisGuides({
-  guide,
-  labelColor,
-  labelShadowColor,
-}: {
-  guide: DraftAxisGuideState
-  labelColor: string
-  labelShadowColor: string
-}) {
-  if (!guide) return null
-
-  const [x, z] = guide.origin
-
-  return (
-    <>
-      <group position={[x, guide.y + DRAFT_AXIS_GUIDE_Y_OFFSET, z]}>
-        <WallAxisGuideLine axis="x" />
-        <WallAxisGuideLine axis="z" />
-      </group>
-      {guide.angleLabel && (
-        <>
-          <DraftAngleArc arc={guide.angleLabel.arc} color="#818cf8" />
-          <DraftMeasurementLabel
-            color={labelColor}
-            label={guide.angleLabel.label}
-            position={guide.angleLabel.position}
-            shadowColor={labelShadowColor}
-          />
-        </>
-      )}
-    </>
-  )
-}
-
-function WallAxisGuideLine({ axis }: { axis: 'x' | 'z' }) {
-  return (
-    <mesh
-      frustumCulled={false}
-      layers={EDITOR_LAYER}
-      renderOrder={0}
-      rotation={[0, axis === 'z' ? Math.PI / 2 : 0, 0]}
-    >
-      <boxGeometry
-        args={[DRAFT_AXIS_GUIDE_LENGTH, DRAFT_AXIS_GUIDE_HEIGHT, DRAFT_AXIS_GUIDE_WIDTH]}
-      />
-      <meshBasicMaterial
-        color="#818cf8"
-        depthTest={false}
-        depthWrite={false}
-        opacity={0.36}
-        transparent
-      />
-    </mesh>
-  )
-}
-
-function DraftAngleArc({ arc, color }: { arc: DraftAngleLabel['arc']; color: string }) {
-  const geometry = useMemo(() => {
-    const segmentCount = Math.max(
-      8,
-      Math.ceil((Math.abs(arc.endAngle - arc.startAngle) / Math.PI) * DRAFT_ANGLE_ARC_SEGMENTS),
-    )
-
-    const points = Array.from({ length: segmentCount + 1 }, (_, index) => {
-      const t = index / segmentCount
-      const angle = arc.startAngle + (arc.endAngle - arc.startAngle) * t
-
-      return new Vector3(
-        arc.center[0] + Math.cos(angle) * arc.radius,
-        arc.y,
-        arc.center[1] + Math.sin(angle) * arc.radius,
-      )
-    })
-
-    return new BufferGeometry().setFromPoints(points)
-  }, [arc])
-
-  return (
-    // @ts-expect-error - R3F accepts Three line primitives, matching the other editor drawing tools.
-    <line frustumCulled={false} geometry={geometry} layers={EDITOR_LAYER} renderOrder={2}>
-      <lineBasicNodeMaterial
-        color={color}
-        depthTest={false}
-        depthWrite={false}
-        linewidth={2}
-        opacity={0.95}
-        transparent
-      />
-    </line>
-  )
-}
-
-function DraftMeasurementLabel({
-  color,
-  label,
-  position,
-  shadowColor,
-}: {
-  color: string
-  label: string
-  position: [number, number, number]
-  shadowColor: string
-}) {
-  return (
-    <Html
-      center
-      position={position}
-      style={{ pointerEvents: 'none', userSelect: 'none' }}
-      zIndexRange={[100, 0]}
-    >
-      <div
-        className="whitespace-nowrap font-bold font-mono text-[15px]"
-        style={{
-          color,
-          textShadow: `-1.5px -1.5px 0 ${shadowColor}, 1.5px -1.5px 0 ${shadowColor}, -1.5px 1.5px 0 ${shadowColor}, 1.5px 1.5px 0 ${shadowColor}, 0 0 4px ${shadowColor}, 0 0 4px ${shadowColor}`,
-        }}
-      >
-        {label}
-      </div>
-    </Html>
   )
 }
 

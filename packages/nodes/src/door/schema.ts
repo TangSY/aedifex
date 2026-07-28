@@ -1,1 +1,5 @@
-export { DoorNode } from '@aedifex/core'
+export {
+  DoorNode,
+  OpeningConstructionType,
+  OpeningDimensionReference,
+} from '@aedifex/core'

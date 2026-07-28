@@ -10,14 +10,14 @@ import { publishLiveSceneSnapshot } from './live-sync'
 import { measurement } from './measurement'
 import { NodeIdSchema, Vec3Schema } from './schemas'
 
-export const placeItemInput: any = {
+export const placeItemInput = {
   catalogItemId: z.string().min(1),
   targetNodeId: NodeIdSchema,
   position: Vec3Schema,
   rotation: measurement('angle', 'rad', { description: 'Y-axis rotation.' }).optional(),
 }
 
-export const placeItemOutput: any = {
+export const placeItemOutput = {
   itemId: z.string(),
   status: z.string().optional(),
 }

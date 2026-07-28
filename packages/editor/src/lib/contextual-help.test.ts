@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'bun:test'
 import { resolveSelectModeHelpHints } from './contextual-help'
 
 describe('resolveSelectModeHelpHints', () => {
-  it('stays hidden in idle select mode with no selection', () => {
+  test('stays hidden in idle select mode with no selection', () => {
     expect(
       resolveSelectModeHelpHints({
         selectedCount: 0,
@@ -14,7 +14,7 @@ describe('resolveSelectModeHelpHints', () => {
     ).toEqual([])
   })
 
-  it('shows multi-select guidance when a modifier is held without selection', () => {
+  test('shows multi-select guidance when a modifier is held without selection', () => {
     expect(
       resolveSelectModeHelpHints({
         selectedCount: 0,
@@ -32,7 +32,7 @@ describe('resolveSelectModeHelpHints', () => {
     ])
   })
 
-  it('shows direct manipulation tips for selected movable and rotatable nodes', () => {
+  test('shows direct manipulation tips for selected movable and rotatable nodes', () => {
     const hints = resolveSelectModeHelpHints({
       selectedCount: 1,
       hasMovableSelection: true,
@@ -58,7 +58,7 @@ describe('resolveSelectModeHelpHints', () => {
     })
   })
 
-  it('multi-selection advertises the group move + rotate gestures', () => {
+  test('multi-selection advertises the group move + rotate gestures', () => {
     const hints = resolveSelectModeHelpHints({
       selectedCount: 3,
       hasMovableSelection: true,
@@ -82,7 +82,7 @@ describe('resolveSelectModeHelpHints', () => {
     ])
   })
 
-  it('holding a modifier keeps the same rows and only lights the selection one', () => {
+  test('holding a modifier keeps the same rows and only lights the selection one', () => {
     // Guides/snapping are governed by the snapping mode (Shift toggles it),
     // so no modifier-specific "freely / with guides / bypass" variants exist.
     const hints = resolveSelectModeHelpHints({

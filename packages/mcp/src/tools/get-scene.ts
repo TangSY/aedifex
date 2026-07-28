@@ -2,9 +2,9 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 
-export const getSceneInput: any = {}
+export const getSceneInput = {}
 
-export const getSceneOutput: any = {
+export const getSceneOutput = {
   nodes: z.record(z.string(), z.unknown()),
   rootNodeIds: z.array(z.string()),
   collections: z.record(z.string(), z.unknown()).optional(),

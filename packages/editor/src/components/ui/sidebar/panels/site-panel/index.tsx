@@ -2,6 +2,7 @@ import {
   type AnyNode,
   type AnyNodeId,
   type BuildingNode,
+  DEFAULT_LEVEL_HEIGHT,
   emitter,
   type GuideNode,
   LevelNode,
@@ -482,10 +483,6 @@ const LevelReferences = memo(function LevelReferences({
     }
 
     if (isImage) {
-      // When the host provides an upload pipeline and a project is active,
-      // route guide images through it (same as scans) so upload progress is
-      // driven by the host via useUploadStore. Otherwise fall back to the
-      // local data-URL guide so the standalone experience keeps working.
       if (onUploadAsset && projectId) {
         clearUpload(levelId)
         onUploadAsset(projectId, levelId, file, 'guide')
@@ -525,10 +522,6 @@ const LevelReferences = memo(function LevelReferences({
       | GuideNode
       | undefined
 
-    // Host-managed assets carry http(s) or app-relative URLs; local-only
-    // references (data:/blob:/asset:) never reach the host. Protocol-relative
-    // URLs ('//host/path') are remote, not app-relative — exclude them so we
-    // don't fire a meaningless DELETE against the host.
     if (
       projectId &&
       refNode?.url &&
@@ -942,6 +935,7 @@ const LevelsSection = memo(function LevelsSection({
   const handleAddLevel = () => {
     const newLevel = LevelNode.parse({
       level: levels.length,
+      height: DEFAULT_LEVEL_HEIGHT,
       children: [],
       parentId: building.id,
     })

@@ -95,6 +95,8 @@ function useActiveModifierKeys(): ActiveModifierKeys {
 export function HelperManager() {
   const mode = useEditor((s) => s.mode)
   const tool = useEditor((s) => s.tool)
+  const isFirstPersonMode = useEditor((s) => s.isFirstPersonMode)
+  const measurementToolKind = useEditor((s) => s.toolDefaults.measurement?.kind)
   const workspaceMode = useEditor((s) => s.workspaceMode)
   const scope = useInteractionScope((s) => s.scope)
   const movingNode = useMovingNode()
@@ -146,6 +148,10 @@ export function HelperManager() {
 
   // Helpers are keyboard-driven hints (Esc, R, etc.) — irrelevant on touch.
   if (isMobile) return null
+
+  // First-person walkthrough has its own HUD; editor shortcut hints (e.g. the
+  // Ctrl multi-select hint — Ctrl is crouch there) don't apply while walking.
+  if (isFirstPersonMode) return null
 
   // The studio workspace (compose panel / gallery) has no scene selection or
   // tools — editor shortcut hints would only mislead there.
@@ -212,6 +218,18 @@ export function HelperManager() {
   // the idle selection hints.
   if (mode === 'select' && scope.kind === 'idle') {
     return <ContextualHelperPanel hints={selectModeHints} />
+  }
+
+  if (tool === 'measurement' && measurementToolKind === 'smart') {
+    return (
+      <ContextualHelperPanel
+        hints={[
+          { keys: ['Hover'], label: 'Inspect surface dimensions' },
+          { keys: ['Click'], label: 'Pin measurement lens' },
+          { keys: ['Esc'], label: 'Exit smart measure' },
+        ]}
+      />
+    )
   }
 
   // Legacy fallback — only `roof` remains because it hasn't migrated to

@@ -1,5 +1,3 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
 import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
 import type { AnyNodeId, AnyNode as AnyNodeT } from '@aedifex/core/schema'
 import {
@@ -10,6 +8,8 @@ import {
   WallNode,
   ZoneNode,
 } from '@aedifex/core/schema'
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import type { SceneOperations } from '../../operations'
 import { appendLiveSceneEvent } from '../live-sync'
@@ -19,7 +19,7 @@ import { measurement } from '../measurement'
  * Input shape for the `photo_to_scene` orchestrator. `image` matches the
  * contract documented on `analyze_floorplan_image` — base64 or http(s) URL.
  */
-export const photoToSceneInput: any = {
+export const photoToSceneInput = {
   image: z.string().describe('Base64 or https URL of the floor-plan photo'),
   scaleHint: z.string().optional().describe('e.g. "1 cm = 1 m" or "approx 80 m²"'),
   name: z.string().default('Scene from photo'),
@@ -34,7 +34,7 @@ export const photoToSceneInput: any = {
   }).default(2.6),
 }
 
-export const photoToSceneOutput: any = {
+export const photoToSceneOutput = {
   sceneId: z.string().optional(),
   url: z.string().optional(),
   walls: z.number(),
@@ -55,6 +55,7 @@ const VisionResponseSchema = z.object({
       start: z.tuple([z.number(), z.number()]),
       end: z.tuple([z.number(), z.number()]),
       thickness: z.number().optional(),
+      height: z.number().positive().optional(),
     }),
   ),
   rooms: z.array(
@@ -82,13 +83,14 @@ const SYSTEM_PROMPT = `You are a vision assistant that extracts structured floor
 Your ONLY job: return a JSON object that exactly matches this schema — no prose, no markdown fences.
 
 {
-  "walls": [{ "start": [x, z], "end": [x, z], "thickness": number? }, ...],
+  "walls": [{ "start": [x, z], "end": [x, z], "thickness": number?, "height": number? }, ...],
   "rooms": [{ "name": string, "polygon": [[x,z], ...], "approximateAreaSqM": number? }, ...],
   "approximateDimensions": { "widthM": number, "depthM": number },
   "confidence": number 0..1
 }
 
 Coordinates are in metres. Origin can be the floor plan's centre or bottom-left — be consistent.
+Only include a wall height when it is visibly measured or annotated in the image.
 If the image is unclear, lower the confidence score but still produce your best attempt.
 DO NOT wrap the JSON in markdown. DO NOT explain. Just output the raw JSON.`
 
@@ -235,7 +237,7 @@ function buildSceneGraphFromVision(
 
   // Build the skeleton: site → building → level.
   const building = BuildingNode.parse({})
-  const level = LevelNode.parse({ level: 0 })
+  const level = LevelNode.parse({ level: 0, height: defaultWallHeight })
   const site = SiteNode.parse({ children: [building.id] })
 
   // Link parent ids so downstream traversal works.
@@ -283,7 +285,7 @@ function buildSceneGraphFromVision(
         start: w.start,
         end: w.end,
         thickness: w.thickness ?? defaultWallThickness,
-        height: defaultWallHeight,
+        ...(w.height !== undefined ? { height: w.height } : {}),
       })
       const linkedWall: AnyNodeT = {
         ...(wall as AnyNodeT),
@@ -353,7 +355,7 @@ export function registerPhotoToScene(server: McpServer, bridge: SceneOperations)
     {
       title: 'Photo to Aedifex scene',
       description:
-        'Orchestrator: analyse a floor-plan photo via MCP sampling, translate the structured vision result into an Aedifex SceneGraph (site → building → level with walls and zones), optionally save it, and swap the bridge to the new scene. Requires host support for sampling.',
+        'Orchestrator: analyse a floor-plan photo via MCP sampling, translate the structured vision result into a Aedifex SceneGraph (site → building → level with walls and zones), optionally save it, and swap the bridge to the new scene. Requires host support for sampling.',
       inputSchema: photoToSceneInput,
       outputSchema: photoToSceneOutput,
     },

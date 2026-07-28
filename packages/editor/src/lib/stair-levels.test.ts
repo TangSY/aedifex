@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'bun:test'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -16,7 +16,7 @@ import {
 } from './stair-levels'
 
 describe('stair level helpers', () => {
-  it('creates a missing upper level in the same building', () => {
+  test('creates a missing upper level in the same building', () => {
     const ground = LevelNode.parse({ level: 0, children: [] })
     const building = BuildingNode.parse({ children: [ground.id] })
     const nodes = {
@@ -37,7 +37,7 @@ describe('stair level helpers', () => {
     expect(plan?.createdLevel?.parentId).toBe(building.id)
   })
 
-  it('uses the nearest higher sibling level instead of creating one', () => {
+  test('uses the nearest higher sibling level instead of creating one', () => {
     const building = BuildingNode.parse({})
     const ground = LevelNode.parse({ level: 0, parentId: building.id })
     const second = LevelNode.parse({ level: 1, parentId: building.id })
@@ -59,7 +59,7 @@ describe('stair level helpers', () => {
     expect(plan?.toLevel.id).toBe(second.id)
   })
 
-  it('ignores levels from other buildings', () => {
+  test('ignores levels from other buildings', () => {
     const buildingA = BuildingNode.parse({})
     const buildingB = BuildingNode.parse({})
     const groundA = LevelNode.parse({ level: 0, parentId: buildingA.id })
@@ -83,7 +83,7 @@ describe('stair level helpers', () => {
     ).toBe(upperA.id)
   })
 
-  it('includes source and parent-linked sibling levels when building children are stale', () => {
+  test('includes source and parent-linked sibling levels when building children are stale', () => {
     const building = BuildingNode.parse({ children: [] })
     const ground = LevelNode.parse({ level: 0, parentId: building.id })
     const upper = LevelNode.parse({ level: 1, parentId: building.id })
@@ -105,7 +105,7 @@ describe('stair level helpers', () => {
     expect(plan?.toLevel.id).toBe(upper.id)
   })
 
-  it('falls back from stale placement level ids to a valid level in the selected building', () => {
+  test('falls back from stale placement level ids to a valid level in the selected building', () => {
     const buildingA = BuildingNode.parse({})
     const groundA = LevelNode.parse({ level: 0, parentId: buildingA.id })
     const buildingB = BuildingNode.parse({})
@@ -120,7 +120,7 @@ describe('stair level helpers', () => {
     expect(resolveStairPlacementLevelId(nodes, 'level_missing', buildingB.id)).toBe(groundB.id)
   })
 
-  it('repairs panel level ids for stairs with stale from-level data', () => {
+  test('repairs panel level ids for stairs with stale from-level data', () => {
     const building = BuildingNode.parse({})
     const ground = LevelNode.parse({ level: 0, parentId: building.id })
     const upper = LevelNode.parse({ level: 1, parentId: building.id })

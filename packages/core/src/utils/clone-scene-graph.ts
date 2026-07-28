@@ -1,3 +1,8 @@
+import { GROUND_SUPPORT_ID } from '../hooks/spatial-grid/floor-placed-elevation'
+import {
+  remapConstructionDimensionReferences,
+  remapMeasurementReferences,
+} from '../lib/measurement-geometry'
 import type { AnyNode, AnyNodeId } from '../schema'
 import { generateId } from '../schema/base'
 import type { Collection, CollectionId } from '../schema/collections'
@@ -6,6 +11,7 @@ export type SceneGraph = {
   nodes: Record<AnyNodeId, AnyNode>
   rootNodeIds: AnyNodeId[]
   collections?: Record<CollectionId, Collection>
+  installedPlugins?: string[]
 }
 
 /**
@@ -26,7 +32,7 @@ function extractIdPrefix(id: string): string {
  * - Multi-scene in-memory scenarios
  */
 export function cloneSceneGraph(sceneGraph: SceneGraph): SceneGraph {
-  const { nodes, rootNodeIds, collections } = sceneGraph
+  const { nodes, rootNodeIds, collections, installedPlugins } = sceneGraph
 
   // Build ID mapping: old ID -> new ID
   const idMap = new Map<string, string>()
@@ -42,7 +48,7 @@ export function cloneSceneGraph(sceneGraph: SceneGraph): SceneGraph {
 
   for (const [oldId, node] of Object.entries(nodes)) {
     const newId = idMap.get(oldId)! as AnyNodeId
-    const clonedNode = structuredClone({ ...node, id: newId }) as AnyNode
+    let clonedNode = structuredClone({ ...node, id: newId }) as AnyNode
 
     // Remap parentId
     if (clonedNode.parentId && typeof clonedNode.parentId === 'string') {
@@ -83,6 +89,30 @@ export function cloneSceneGraph(sceneGraph: SceneGraph): SceneGraph {
       ) as string | undefined
     }
 
+    // Remap supportSlabId (persisted slab-support hosts). The 'ground'
+    // sentinel is not a node id — keep it as-is.
+    if (
+      'supportSlabId' in clonedNode &&
+      typeof clonedNode.supportSlabId === 'string' &&
+      clonedNode.supportSlabId !== GROUND_SUPPORT_ID
+    ) {
+      ;(clonedNode as Record<string, unknown>).supportSlabId = idMap.get(
+        clonedNode.supportSlabId,
+      ) as string | undefined
+    }
+
+    if ('deckSlabId' in clonedNode && typeof clonedNode.deckSlabId === 'string') {
+      ;(clonedNode as Record<string, unknown>).deckSlabId = idMap.get(clonedNode.deckSlabId) as
+        | string
+        | undefined
+    }
+
+    if (clonedNode.type === 'measurement') {
+      clonedNode.measurement = remapMeasurementReferences(clonedNode.measurement, idMap)
+    }
+    if (clonedNode.type === 'construction-dimension') {
+      clonedNode = remapConstructionDimensionReferences(clonedNode, idMap)
+    }
     clonedNodes[newId] = clonedNode
   }
 
@@ -134,6 +164,7 @@ export function cloneSceneGraph(sceneGraph: SceneGraph): SceneGraph {
     nodes: clonedNodes,
     rootNodeIds: clonedRootNodeIds,
     ...(clonedCollections && { collections: clonedCollections }),
+    ...(installedPlugins && { installedPlugins: [...installedPlugins] }),
   }
 }
 
@@ -195,7 +226,7 @@ export function cloneLevelSubtree(
     const newId = idMap.get(oldId)! as AnyNodeId
 
     // JSON roundtrip: safely strips functions, Object3D, circular refs, etc.
-    const cloned = JSON.parse(JSON.stringify(node)) as AnyNode
+    let cloned = JSON.parse(JSON.stringify(node)) as AnyNode
     ;(cloned as Record<string, unknown>).id = newId
 
     // Remap parentId — but only for descendants, not the level node itself
@@ -233,6 +264,24 @@ export function cloneLevelSubtree(
         idMap.get(cloned.roofSegmentId) ?? cloned.roofSegmentId
     }
 
+    // Remap supportSlabId when the host slab is inside the cloned subtree;
+    // preserve it otherwise (like wallId, the reference may point outside).
+    if ('supportSlabId' in cloned && typeof cloned.supportSlabId === 'string') {
+      ;(cloned as Record<string, unknown>).supportSlabId =
+        idMap.get(cloned.supportSlabId) ?? cloned.supportSlabId
+    }
+
+    if ('deckSlabId' in cloned && typeof cloned.deckSlabId === 'string') {
+      ;(cloned as Record<string, unknown>).deckSlabId =
+        idMap.get(cloned.deckSlabId) ?? cloned.deckSlabId
+    }
+
+    if (cloned.type === 'measurement') {
+      cloned.measurement = remapMeasurementReferences(cloned.measurement, idMap)
+    }
+    if (cloned.type === 'construction-dimension') {
+      cloned = remapConstructionDimensionReferences(cloned, idMap)
+    }
     clonedNodes.push(cloned)
   }
 
@@ -255,7 +304,7 @@ export function forkSceneGraph(
     return cloneSceneGraph(sceneGraph)
   }
 
-  const { nodes, rootNodeIds, collections } = sceneGraph
+  const { nodes, rootNodeIds, collections, installedPlugins } = sceneGraph
 
   // First, identify scan and guide node IDs to exclude (user-uploaded imagery)
   const excludedNodeIds = new Set<string>()
@@ -317,5 +366,6 @@ export function forkSceneGraph(
     nodes: filteredNodes,
     rootNodeIds: filteredRootNodeIds,
     ...(filteredCollections && { collections: filteredCollections }),
+    ...(installedPlugins && { installedPlugins }),
   })
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import type { AnyNodeId } from '@aedifex/core'
-import { LevelNode, useScene } from '@aedifex/core'
+import { DEFAULT_LEVEL_HEIGHT, LevelNode, useScene } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import {
   AppWindow,
@@ -196,6 +196,7 @@ export function EditorCommands() {
             ).length
             const newLevel = LevelNode.parse({
               level: levelCount,
+              height: DEFAULT_LEVEL_HEIGHT,
               children: [],
               parentId: building.id,
             })

@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 import {
   getHostRefFields,
+  getNodePluginId,
   isDrawnViaTool,
   isDrawnViaToolKind,
+  isNodeKindEnabled,
   isPresettable,
   isPresettableKind,
   loadPlugin,
@@ -36,7 +38,7 @@ function makeDefinition(
     schema: z.object({ type: z.literal(kind) }) as any,
     category: 'utility',
     defaults: () => ({}) as any,
-    capabilities: { deletable: false },
+    capabilities: {},
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
     ...overrides,
   }
@@ -110,15 +112,13 @@ describe('isPresettable', () => {
   })
 
   test('explicit true wins', () => {
-    const def = makeDefinition('explicit-true', {
-      capabilities: { presettable: true, deletable: false },
-    })
+    const def = makeDefinition('explicit-true', { capabilities: { presettable: true } })
     expect(isPresettable(def)).toBe(true)
   })
 
   test('explicit false wins even with parametrics', () => {
     const def = makeDefinition('explicit-false', {
-      capabilities: { presettable: false, deletable: false },
+      capabilities: { presettable: false },
       parametrics: { groups: [] } as any,
     })
     expect(isPresettable(def)).toBe(false)
@@ -143,9 +143,7 @@ describe('isPresettable', () => {
 
 describe('getHostRefFields', () => {
   test('returns the declared hostRefFields verbatim', () => {
-    const def = makeDefinition('door', {
-      capabilities: { hostRefFields: ['wallId'], deletable: false },
-    })
+    const def = makeDefinition('door', { capabilities: { hostRefFields: ['wallId'] } })
     expect(getHostRefFields(def)).toEqual(['wallId'])
   })
 
@@ -161,21 +159,17 @@ describe('isDrawnViaTool', () => {
   })
 
   test('true when capability set', () => {
-    const def = makeDefinition('fence', { capabilities: { drawTool: true, deletable: false } })
+    const def = makeDefinition('fence', { capabilities: { drawTool: true } })
     expect(isDrawnViaTool(def)).toBe(true)
   })
 
   test('false when unset or not exactly true', () => {
     expect(isDrawnViaTool(makeDefinition('column'))).toBe(false)
-    expect(
-      isDrawnViaTool(
-        makeDefinition('off', { capabilities: { drawTool: false, deletable: false } }),
-      ),
-    ).toBe(false)
+    expect(isDrawnViaTool(makeDefinition('off', { capabilities: { drawTool: false } }))).toBe(false)
   })
 
   test('isDrawnViaToolKind looks up the registry', () => {
-    registerNode(makeDefinition('fence', { capabilities: { drawTool: true, deletable: false } }))
+    registerNode(makeDefinition('fence', { capabilities: { drawTool: true } }))
     expect(isDrawnViaToolKind('fence')).toBe(true)
     expect(isDrawnViaToolKind('unknown')).toBe(false)
   })
@@ -189,48 +183,55 @@ describe('loadPlugin', () => {
   test('registers all nodes from a plugin', async () => {
     const plugin: Plugin = {
       id: 'test:plugin',
-      apiVersion: 2,
+      apiVersion: 1,
       nodes: [makeDefinition('a'), makeDefinition('b')],
     }
     await loadPlugin(plugin)
     expect(nodeRegistry.size).toBe(2)
     expect(nodeRegistry.has('a')).toBe(true)
     expect(nodeRegistry.has('b')).toBe(true)
+    expect(getNodePluginId('a')).toBe('test:plugin')
+    expect(getNodePluginId('b')).toBe('test:plugin')
+  })
+
+  test('enables plugin kinds only when the project has the plugin installed', async () => {
+    await loadPlugin({ id: 'test:plugin', apiVersion: 1, nodes: [makeDefinition('plugin:node')] })
+
+    expect(isNodeKindEnabled('plugin:node', [])).toBe(false)
+    expect(isNodeKindEnabled('plugin:node', ['test:plugin'])).toBe(true)
+    expect(isNodeKindEnabled('plugin:node')).toBe(true)
+    expect(isNodeKindEnabled('host:node', [])).toBe(true)
+  })
+
+  test('keeps built-in plugin kinds enabled independently of project installs', async () => {
+    await loadPlugin({ id: 'aedifex:core', apiVersion: 1, nodes: [makeDefinition('wall')] })
+
+    expect(isNodeKindEnabled('wall', [])).toBe(true)
   })
 
   test('handles plugin with no nodes', async () => {
-    await loadPlugin({ id: 'empty', apiVersion: 2 })
+    await loadPlugin({ id: 'empty', apiVersion: 1 })
     expect(nodeRegistry.size).toBe(0)
   })
 
   test('handles plugin with empty nodes array', async () => {
-    await loadPlugin({ id: 'empty', apiVersion: 2, nodes: [] })
+    await loadPlugin({ id: 'empty', apiVersion: 1, nodes: [] })
     expect(nodeRegistry.size).toBe(0)
   })
 
   test('throws on apiVersion mismatch', async () => {
     const plugin = {
       id: 'old-plugin',
-      apiVersion: 99 as unknown as 2,
+      apiVersion: 99 as unknown as 1,
       nodes: [],
     }
     await expect(loadPlugin(plugin)).rejects.toThrow(/apiVersion/)
   })
 
-  test('rejects the previous v1 manifest instead of silently accepting removed panel metadata', async () => {
-    const legacyPlugin = {
-      id: 'legacy-panel-plugin',
-      apiVersion: 1,
-      panels: [{ id: 'main' }],
-    } as unknown as Plugin
-
-    await expect(loadPlugin(legacyPlugin)).rejects.toThrow(/requires apiVersion 1; host supports 2/)
-  })
-
   test('propagates duplicate-kind error from a single plugin in production', async () => {
     const plugin: Plugin = {
       id: 'broken',
-      apiVersion: 2,
+      apiVersion: 1,
       nodes: [makeDefinition('dup'), makeDefinition('dup')],
     }
     await inProduction(() => expect(loadPlugin(plugin)).rejects.toThrow(/duplicate node kind/))
@@ -238,9 +239,9 @@ describe('loadPlugin', () => {
 
   test('propagates duplicate-kind error across plugins in production', async () => {
     await inProduction(async () => {
-      await loadPlugin({ id: 'a', apiVersion: 2, nodes: [makeDefinition('shared')] })
+      await loadPlugin({ id: 'a', apiVersion: 1, nodes: [makeDefinition('shared')] })
       await expect(
-        loadPlugin({ id: 'b', apiVersion: 2, nodes: [makeDefinition('shared')] }),
+        loadPlugin({ id: 'b', apiVersion: 1, nodes: [makeDefinition('shared')] }),
       ).rejects.toThrow(/duplicate node kind/)
     })
   })

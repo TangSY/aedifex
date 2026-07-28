@@ -27,7 +27,7 @@ function makeItem(idStr: string, attachTo?: 'wall' | 'wall-side' | 'ceiling'): A
 
 function makeDef(
   kind: string,
-  capabilities: Partial<Capabilities> = {},
+  capabilities: Capabilities = {},
   overrides: Partial<AnyNodeDefinition> = {},
 ): AnyNodeDefinition {
   return {
@@ -36,7 +36,7 @@ function makeDef(
     schema: z.object({ type: z.literal(kind) }) as any,
     category: 'utility',
     defaults: () => ({}) as any,
-    capabilities: { deletable: true, ...capabilities },
+    capabilities,
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
     ...overrides,
   }

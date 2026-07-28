@@ -37,17 +37,17 @@ const ROOM_TYPES = [
   'storage',
 ] as const
 
-export const searchAssetsInput: any = {
+export const searchAssetsInput = {
   query: z.string().min(1),
   category: z.string().optional(),
 }
 
-export const searchAssetsOutput: any = {
+export const searchAssetsOutput = {
   results: z.array(z.record(z.string(), z.unknown())),
   total: z.number(),
 }
 
-export const createRoomInput: any = {
+export const createRoomInput = {
   levelId: NodeIdSchema,
   name: z.string().min(1),
   polygon: z.array(Vec2Schema).min(3),
@@ -62,7 +62,7 @@ export const createRoomInput: any = {
   }).optional(),
 }
 
-export const createRoomOutput: any = {
+export const createRoomOutput = {
   zoneId: z.string(),
   slabId: z.string(),
   ceilingId: z.string(),
@@ -70,7 +70,7 @@ export const createRoomOutput: any = {
   areaSqMeters: z.number(),
 }
 
-export const addDoorInput: any = {
+export const addDoorInput = {
   wallId: NodeIdSchema,
   t: z.number().min(0).max(1).optional(),
   position: z.number().min(0).max(1).optional(),
@@ -80,7 +80,7 @@ export const addDoorInput: any = {
   swingDirection: z.enum(['inward', 'outward']).optional(),
 }
 
-export const addDoorOutput: any = {
+export const addDoorOutput = {
   doorId: z.string(),
   localX: z.number(),
   t: z.number(),
@@ -90,7 +90,7 @@ export const addDoorOutput: any = {
   coordinateSystem: z.literal('wall-local-meters'),
 }
 
-export const addWindowInput: any = {
+export const addWindowInput = {
   wallId: NodeIdSchema,
   t: z.number().min(0).max(1).optional(),
   position: z.number().min(0).max(1).optional(),
@@ -102,7 +102,7 @@ export const addWindowInput: any = {
   }).optional(),
 }
 
-export const addWindowOutput: any = {
+export const addWindowOutput = {
   windowId: z.string(),
   localX: z.number(),
   t: z.number(),
@@ -113,7 +113,7 @@ export const addWindowOutput: any = {
   sillHeight: z.number(),
 }
 
-export const furnishRoomInput: any = {
+export const furnishRoomInput = {
   levelId: NodeIdSchema.optional(),
   zoneId: NodeIdSchema.optional(),
   roomType: z.enum(ROOM_TYPES),
@@ -121,7 +121,7 @@ export const furnishRoomInput: any = {
   doorWallIndex: z.number().int().min(0).optional(),
 }
 
-export const furnishRoomOutput: any = {
+export const furnishRoomOutput = {
   placed: z.number(),
   itemIds: z.array(z.string()),
   skipped: z.array(z.string()),

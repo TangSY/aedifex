@@ -1,1 +1,5 @@
-export { WindowNode } from '@aedifex/core'
+export {
+  WindowConstructionType,
+  WindowDimensionReference,
+  WindowNode,
+} from '@aedifex/core'

@@ -1,10 +1,18 @@
-import type { NodeDefinition } from '@aedifex/core'
+import type { AnyNodeId, NodeDefinition } from '@aedifex/core'
+import type { FloorplanNodeExtension } from '@aedifex/editor'
+import { buildWallContextualDimensions } from './contextual-dimensions'
 import { buildWallFloorplan, computeWallFloorplanLevelData } from './floorplan'
 import { wallCurveAffordance, wallMoveEndpointAffordance } from './floorplan-affordances'
 import { wallFloorplanMoveTarget } from './floorplan-move'
 import { wallFloorplanSiblingOverrides } from './floorplan-overrides'
+import {
+  matchWallMeasurementFeature,
+  resolveWallMeasurementFeature,
+  wallMeasurementFeatures,
+} from './measurement'
 import { wallPaint } from './paint'
 import { wallParametrics } from './parametrics'
+import { wallQuickMeasurement } from './quick-measurement'
 import { WallNode } from './schema'
 import { wallSlots } from './slots'
 
@@ -26,10 +34,25 @@ import { wallSlots } from './slots'
 export const wallDefinition: NodeDefinition<typeof WallNode> = {
   kind: 'wall',
   snapProfile: 'structural',
-  schemaVersion: 5,
+  schemaVersion: 7,
   schema: WallNode,
   category: 'structure',
   surfaceRole: 'wall',
+  extensions: {
+    'aedifex:editor/floorplan': {
+      contextualDimensions: buildWallContextualDimensions,
+      actionMenu: {
+        canCurve: ({ node, nodes }) =>
+          !node.children.some((childId) => {
+            const child = nodes[childId as AnyNodeId]
+            if (!child) return false
+            if (child.type === 'door' || child.type === 'window') return true
+            if (child.type !== 'item') return false
+            return child.asset?.attachTo === 'wall' || child.asset?.attachTo === 'wall-side'
+          }),
+      },
+    } satisfies FloorplanNodeExtension<WallNode>,
+  },
 
   defaults: () => ({
     object: 'node',
@@ -85,6 +108,7 @@ export const wallDefinition: NodeDefinition<typeof WallNode> = {
   // auto-slab live preview, history dances). Placement is wired via
   // `def.tool`.
   tool: () => import('./tool'),
+  preview: () => import('./preview'),
   affordanceTools: {
     curve: () => import('./curve-tool'),
     'move-endpoint': () => import('./move-endpoint-tool'),
@@ -104,6 +128,13 @@ export const wallDefinition: NodeDefinition<typeof WallNode> = {
   // per render pass, then the builder reads its own junctions by wall id.
   computeFloorplanLevelData: computeWallFloorplanLevelData,
   floorplan: buildWallFloorplan,
+  measurement: {
+    features: (node) => wallMeasurementFeatures(node),
+    quickMeasure: (node) => wallQuickMeasurement(node),
+    match: (node, _ctx, point, maxDistance) =>
+      matchWallMeasurementFeature(node, point, maxDistance),
+    resolve: (node, _ctx, reference) => resolveWallMeasurementFeature(node, reference),
+  },
   floorplanDependsOnSiblings: true,
   // 2D drag affordances triggered by `endpoint-handle` primitives in
   // `def.floorplan`'s output. Sister to `affordanceTools` (3D) — the

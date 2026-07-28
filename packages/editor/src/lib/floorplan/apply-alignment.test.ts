@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, test } from 'bun:test'
 import useAlignmentGuides from '../../store/use-alignment-guides'
 import { applyFloorplanAlignment } from './apply-alignment'
 
@@ -7,7 +7,7 @@ describe('applyFloorplanAlignment', () => {
     useAlignmentGuides.getState().clear()
   })
 
-  it('can publish passive guides without applying snap', () => {
+  test('can publish passive guides without applying snap', () => {
     useAlignmentGuides.getState().clear()
 
     const result = applyFloorplanAlignment(

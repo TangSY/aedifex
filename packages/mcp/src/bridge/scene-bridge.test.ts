@@ -294,6 +294,57 @@ describe('SceneBridge', () => {
       )
     })
 
+    test('rejects attempts to mutate protocol identity fields', () => {
+      const wall = WallNode.parse({ start: [0, 0], end: [2, 0] })
+      const level = bridge.findNodes({ type: 'level' })[0]!
+      bridge.createNode(wall, level.id)
+
+      expect(() =>
+        bridge.applyPatch([{ op: 'update', id: wall.id, data: { type: 'door' } as never }]),
+      ).toThrow(/cannot change node type/)
+      expect(() =>
+        bridge.applyPatch([{ op: 'update', id: wall.id, data: { id: 'wall_replaced' } as never }]),
+      ).toThrow(/cannot change node id/)
+      expect(bridge.getNode(wall.id)?.type).toBe('wall')
+    })
+
+    test('validates the shadow result of every update before applying the batch', () => {
+      const wall = WallNode.parse({ start: [0, 0], end: [2, 0] })
+      const level = bridge.findNodes({ type: 'level' })[0]!
+      bridge.createNode(wall, level.id)
+
+      expect(() =>
+        bridge.applyPatch([{ op: 'update', id: wall.id, data: { start: [0] } as never }]),
+      ).toThrow(/schema-invalid/)
+      expect((bridge.getNode(wall.id) as typeof wall).start).toEqual([0, 0])
+    })
+
+    test('validates updates to nodes created earlier in the same batch', () => {
+      const level = bridge.findNodes({ type: 'level' })[0]!
+      const wall = WallNode.parse({ id: 'wall_shadow', start: [0, 0], end: [2, 0] })
+
+      expect(() =>
+        bridge.applyPatch([
+          { op: 'create', node: wall, parentId: level.id },
+          { op: 'update', id: wall.id, data: { end: ['invalid', 0] } as never },
+        ]),
+      ).toThrow(/schema-invalid/)
+      expect(bridge.getNode(wall.id)).toBeNull()
+    })
+
+    test('rejects duplicate create ids before mutating the scene', () => {
+      const level = bridge.findNodes({ type: 'level' })[0]!
+      const wall = WallNode.parse({ id: 'wall_duplicate', start: [0, 0], end: [2, 0] })
+
+      expect(() =>
+        bridge.applyPatch([
+          { op: 'create', node: wall, parentId: level.id },
+          { op: 'create', node: wall, parentId: level.id },
+        ]),
+      ).toThrow(/already exists/)
+      expect(bridge.getNode(wall.id)).toBeNull()
+    })
+
     test('rejects undefined patch entry', () => {
       expect(() => bridge.applyPatch([undefined as any])).toThrow(/invalid patch/)
     })
@@ -430,6 +481,21 @@ describe('SceneBridge', () => {
       bridge.setScene({}, [])
       bridge.loadJSON(str)
       expect(Object.keys(bridge.getNodes()).length).toBe(Object.keys(snap.nodes).length)
+    })
+
+    test('loadJSON preserves explicit plugin installs', () => {
+      const snap = bridge.exportJSON()
+      bridge.loadJSON({ ...snap, installedPlugins: ['aedifex:trees'] })
+
+      expect(bridge.exportJSON().installedPlugins).toEqual(['aedifex:trees'])
+    })
+
+    test('legacy graphs do not become explicitly uninstalled on export', () => {
+      const snap = bridge.exportJSON()
+      const { installedPlugins: _installedPlugins, ...legacy } = snap
+      bridge.loadJSON(legacy)
+
+      expect(Object.hasOwn(bridge.exportJSON(), 'installedPlugins')).toBe(false)
     })
 
     test('loadJSON throws on malformed JSON string', () => {

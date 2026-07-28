@@ -1,6 +1,6 @@
 'use client'
 
-import { convertIfcToAedifex, type AedifexSceneGraph } from '@aedifex/ifc-converter'
+import { type AedifexSceneGraph, convertIfcToAedifex } from '@aedifex/ifc-converter'
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { availableTestFiles, exampleFileUrl, testFiles } from '@/lib/test-files'

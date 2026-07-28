@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'bun:test'
+import { ROTATE_HANDLE_DRAG_LABEL } from './contextual-help'
 import {
   cycleSnappingModeIn,
   DEFAULT_SNAPPING_MODE,
@@ -84,16 +85,34 @@ describe('snapContextOf (profile-driven, node-declared)', () => {
     zone: 'structural',
   }
   const profileOf = (t: string) => declared[t]
+  const profileOfNode = (id: string) =>
+    id === 'cabinet-module_1' ? declared.item : id === 'wall_1' ? declared.wall : undefined
   const ctx = (
-    scope: { kind: string; nodeType?: string; reshape?: string; tool?: string },
+    scope: {
+      kind: string
+      nodeType?: string
+      reshape?: string
+      nodeId?: string
+      tool?: string
+      handle?: string
+    },
     mode = 'select',
     tool: string | null = null,
-  ) => snapContextOf({ scope, mode, tool, profileOf })
+  ) => snapContextOf({ scope, mode, tool, profileOf, profileOfNode })
 
   it('translating a whole structural node has no angle (polygon, not wall)', () => {
     expect(ctx({ kind: 'moving', nodeType: 'wall' })).toBe('polygon')
     expect(ctx({ kind: 'moving', nodeType: 'slab' })).toBe('polygon')
     expect(ctx({ kind: 'placing', nodeType: 'item' }, 'build', 'item')).toBe('item')
+  })
+
+  it('resolves handle drags from the target node profile', () => {
+    expect(ctx({ kind: 'handle-drag', nodeId: 'cabinet-module_1' })).toBe('item')
+    expect(ctx({ kind: 'handle-drag', nodeId: 'wall_1' })).toBe('polygon')
+    expect(ctx({ kind: 'handle-drag', nodeId: 'unknown_1' })).toBeNull()
+    expect(
+      ctx({ kind: 'handle-drag', nodeId: 'cabinet-module_1', handle: ROTATE_HANDLE_DRAG_LABEL }),
+    ).toBeNull()
   })
 
   it('endpoint reshape is angle-bearing (wall); curve + polygon vertex edits are not', () => {
@@ -113,6 +132,14 @@ describe('snapContextOf (profile-driven, node-declared)', () => {
   it('an undeclared kind (no snapProfile) gets no snap context', () => {
     expect(ctx({ kind: 'moving', nodeType: 'door' })).toBeNull()
     expect(ctx({ kind: 'idle' }, 'build', 'shelf')).toBeNull()
+  })
+
+  it('the room-preset stamp tool (not a node kind) resolves to polygon', () => {
+    // The host app's room stamp drives placement with `tool='room'`, which has
+    // no registry entry — the tool map must still give it the no-angle set so
+    // Shift cycling and the HUD chip work during preset placement.
+    expect(ctx({ kind: 'idle' }, 'build', 'room')).toBe('polygon')
+    expect(ctx({ kind: 'idle' }, 'select', 'room')).toBeNull()
   })
 
   it('drafting a non-directional structural kind is angle-less (polygon, not wall)', () => {

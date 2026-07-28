@@ -18,6 +18,7 @@ import {
 import { useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
 import { commitFreshPlacementSubtree } from '../../lib/fresh-planar-placement'
+import { isHistoryShortcut } from '../../lib/history'
 import { isFreshPlacementMetadata, stripPlacementMetadataFlags } from '../../lib/placement-metadata'
 import { resolvePlanarCursorPosition } from '../../lib/planar-cursor-placement'
 import { movementSfxStepKey } from '../../lib/sfx/movement-tick'
@@ -196,6 +197,10 @@ export function FloorplanRegistryMoveOverlay() {
 
       const commitFinalStateOrRevert = () => {
         const commitValid = session.canCommit()
+        const freshPlacement = isFreshPlacementMetadata(
+          (useScene.getState().nodes[movingNode.id] as { metadata?: unknown } | undefined)
+            ?.metadata,
+        )
 
         // Claim ownership of the drag teardown so the 3D move tool's
         // unmount-time cleanup skips its restore-from-snapshot — see
@@ -209,6 +214,29 @@ export function FloorplanRegistryMoveOverlay() {
         // planner). For those we still do Phase 1 (revert to baseline)
         // and Phase 2's resume — but Phase 2's write is delegated, and
         // we skip the snapshot-diff finalUpdates path.
+        if (commitValid && freshPlacement) {
+          session.commit?.()
+          const stagedNode = useScene.getState().nodes[movingNode.id]
+          const committedId = stagedNode
+            ? commitFreshPlacementSubtree(
+                movingNode.id as AnyNodeId,
+                {
+                  metadata: stripPlacementMetadataFlags(stagedNode.metadata),
+                  visible: true,
+                } as Partial<AnyNode>,
+              )
+            : null
+          if (historyPaused) {
+            resumeSceneHistory(useScene)
+            historyPaused = false
+          }
+          if (committedId) {
+            sfxEmitter.emit('sfx:item-place')
+            useViewer.getState().setSelection({ selectedIds: [committedId] })
+          }
+          return
+        }
+
         if (commitValid && session.commit) {
           useScene.getState().updateNodes(snapshotsToUpdates(snapshots))
           if (historyPaused) {
@@ -358,7 +386,13 @@ export function FloorplanRegistryMoveOverlay() {
           sfxEmitter.emit('sfx:item-rotate')
           return
         }
-        if (event.key !== 'Escape') return
+        if (event.key !== 'Escape' && !isHistoryShortcut(event)) return
+        if (isHistoryShortcut(event)) {
+          // ⌘Z mid-move cancels like Escape — keep it from reaching the
+          // global undo arm (this handler is capture-phase, that one bubbles).
+          event.preventDefault()
+          event.stopImmediatePropagation()
+        }
         // Claim teardown ownership so the 3D move tool's cleanup skips
         // its own restore — without this, both sides would race to
         // write the same baseline, harmless but wasteful.
@@ -701,31 +735,36 @@ export function FloorplanRegistryMoveOverlay() {
     }
 
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setMovingNodeOrigin('2d')
-        if (isFreshPlacement) {
-          emitter.emit('tool:cancel')
-          const temporal = useScene.temporal.getState()
-          const wasTracking = (temporal as { isTracking?: boolean }).isTracking !== false
-          if (wasTracking) temporal.pause()
-          useScene.getState().deleteNode(movingNode.id as AnyNodeId)
-          if (wasTracking) temporal.resume()
-        }
-        for (const relatedEntry of relatedEntries) {
-          relatedEntry.removeAttribute('transform')
-        }
-        useAlignmentGuides.getState().clear()
-        setMovingNode(null)
+      if (event.key !== 'Escape' && !isHistoryShortcut(event)) return
+      if (isHistoryShortcut(event)) {
+        // ⌘Z mid-move cancels like Escape — keep it from reaching the
+        // global undo arm (this handler is capture-phase, that one bubbles).
+        event.preventDefault()
+        event.stopImmediatePropagation()
       }
+      setMovingNodeOrigin('2d')
+      if (isFreshPlacement) {
+        emitter.emit('tool:cancel')
+        const temporal = useScene.temporal.getState()
+        const wasTracking = (temporal as { isTracking?: boolean }).isTracking !== false
+        if (wasTracking) temporal.pause()
+        useScene.getState().deleteNode(movingNode.id as AnyNodeId)
+        if (wasTracking) temporal.resume()
+      }
+      for (const relatedEntry of relatedEntries) {
+        relatedEntry.removeAttribute('transform')
+      }
+      useAlignmentGuides.getState().clear()
+      setMovingNode(null)
     }
 
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onPointerUp)
-    window.addEventListener('keydown', onKey)
+    window.addEventListener('keydown', onKey, true)
     return () => {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onPointerUp)
-      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('keydown', onKey, true)
       for (const relatedEntry of relatedEntries) {
         relatedEntry.removeAttribute('transform')
       }

@@ -267,23 +267,9 @@ function buildAxis2Placement3DMatrix(
 
 function resolveWorldTransform(ifcApi: WebIFC.IfcAPI, modelID: number, placementId: number): Mat4 {
   const chain: number[] = []
-  // Cycle guard: a malformed IFC with a self-referencing or two-step
-  // PlacementRelTo chain would otherwise spin this loop forever and hang
-  // the browser tab. Track every placement id we walk through and bail
-  // out the first time we revisit one — the chain we accumulated so far
-  // is still applied (best-effort transform) and we log a warning so
-  // upstream import code surfaces the malformed input.
-  const visited = new Set<number>()
   let current: number | null = placementId
 
   while (current) {
-    if (visited.has(current)) {
-      console.warn(
-        `[IFC→Aedifex] PlacementRelTo cycle detected at placement #${current}; stopping chain walk (chain length so far: ${chain.length})`,
-      )
-      break
-    }
-    visited.add(current)
     const placement = ifcApi.GetLine(modelID, current)
     if (placement.RelativePlacement?.value) {
       chain.push(placement.RelativePlacement.value)

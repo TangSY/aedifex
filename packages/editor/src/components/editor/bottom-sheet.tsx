@@ -132,10 +132,6 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(funct
   return (
     <motion.div
       className="absolute right-0 bottom-0 left-0 z-40 flex flex-col overflow-hidden rounded-t-2xl bg-sidebar text-sidebar-foreground shadow-[0_-4px_16px_rgba(0,0,0,0.12)]"
-      // initial 显式声明 first-paint 高度 = initialHeightPx，避免 motion
-      // 首次 mount 时从默认值（0 或未设）跳到 initialHeightPx 引发 layout
-      // 联动（viewer column 高度由 sheet 高度反算，跳变即触发 CLS）。
-      // 实测 RUM CLS 1.001 → 预期 <0.1。
       initial={{ height: initialHeightPx }}
       style={{ height }}
     >

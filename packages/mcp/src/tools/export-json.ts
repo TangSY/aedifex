@@ -2,11 +2,11 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 
-export const exportJsonInput: any = {
+export const exportJsonInput = {
   pretty: z.boolean().optional(),
 }
 
-export const exportJsonOutput: any = {
+export const exportJsonOutput = {
   json: z.string(),
 }
 

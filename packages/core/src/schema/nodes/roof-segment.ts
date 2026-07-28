@@ -98,12 +98,6 @@ export const RoofSegmentNode = BaseNode.extend({
   edgeMaterialPreset: z.string().optional(),
   wallMaterial: MaterialSchema.optional(),
   wallMaterialPreset: z.string().optional(),
-  // Per-slot material overrides on the unified slot model. Slot ids match the
-  // parent roof's slot list (`shingle` / `gable` / `fascia` / `soffit`) so a
-  // segment-level override wins over the parent roof's slot and both legacy
-  // catch-alls. Absent = fall back through: segment role → segment catch-all →
-  // parent roof slot → parent roof role → parent roof catch-all → the declared
-  // default (`ROOF_SLOT_DEFAULTS`).
   slots: z.record(z.string(), z.string()).optional(),
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   // Rotation around Y axis in radians
@@ -756,6 +750,7 @@ export function getEffectiveSegmentSurfaceMaterial(
  */
 export function hasSegmentMaterialOverride(node: RoofSegmentNode): boolean {
   return (
+    Object.keys(node.slots ?? {}).length > 0 ||
     node.material !== undefined ||
     typeof node.materialPreset === 'string' ||
     node.topMaterial !== undefined ||

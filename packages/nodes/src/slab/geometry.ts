@@ -1,4 +1,9 @@
-import { type GeometryContext, getMaterialPresetByRef, type SlabNode } from '@aedifex/core'
+import {
+  type GeometryContext,
+  getMaterialPresetByRef,
+  type SlabNode,
+  slabPolygonContextFromGeometry,
+} from '@aedifex/core'
 import {
   applyMaterialPresetToMaterials,
   type ColorPreset,
@@ -122,7 +127,10 @@ function splitSlabFacesByFacing(geometry: BufferGeometry): {
   const build = (data: { pos: number[]; uv: number[] }) => {
     const geo = new BufferGeometry()
     geo.setAttribute('position', new Float32BufferAttribute(data.pos, 3))
-    if (data.uv.length > 0) geo.setAttribute('uv', new Float32BufferAttribute(data.uv, 2))
+    if (data.uv.length > 0) {
+      geo.setAttribute('uv', new Float32BufferAttribute(data.uv, 2))
+      geo.setAttribute('uv2', new Float32BufferAttribute(data.uv.slice(), 2))
+    }
     geo.computeVertexNormals()
     return geo
   }
@@ -177,7 +185,7 @@ export function buildSlabGeometry(
   sceneTheme?: string,
 ): Group {
   const group = new Group()
-  const merged = generateSlabGeometry(node)
+  const merged = generateSlabGeometry(node, slabPolygonContextFromGeometry(ctx))
   const { top, side } = splitSlabFacesByFacing(merged)
   merged.dispose()
 
@@ -201,7 +209,10 @@ export function buildSlabGeometry(
     mesh.castShadow = true
     mesh.receiveShadow = true
     mesh.userData.slotId = slotId
-    if (elevation < 0) mesh.position.y = elevation
+    // Solid slabs bake [elevation − thickness, elevation] into the geometry;
+    // recessed shells are authored at local Y=0 and sink so the recess floor
+    // sits at `elevation` (< 0) with the shell rim on the level plane.
+    if (node.recessed) mesh.position.y = elevation
     group.add(mesh)
   }
   return group

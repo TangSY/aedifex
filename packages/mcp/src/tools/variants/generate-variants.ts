@@ -16,7 +16,7 @@ const MUTATION_KINDS = [
   'fence-style',
 ] as const
 
-export const generateVariantsInput: any = {
+export const generateVariantsInput = {
   baseSceneId: z
     .string()
     .optional()
@@ -30,7 +30,7 @@ export const generateVariantsInput: any = {
     .describe('If true, also save each variant via SceneStore and return ids.'),
 }
 
-export const generateVariantsOutput: any = {
+export const generateVariantsOutput = {
   variants: z.array(
     z.object({
       index: z.number(),

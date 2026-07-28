@@ -1,4 +1,4 @@
-import { describe, expect, it, test } from 'vitest'
+import { describe, expect, test } from 'bun:test'
 import {
   type AnyNode,
   type AnyNodeDefinition,
@@ -11,6 +11,7 @@ import {
   canDirectMoveNode,
   resolveDirectManipulationNode,
   resolveDirectRotationDragDelta,
+  resolveMoveActionNode,
   snapDirectRotationDelta,
 } from './direct-manipulation'
 
@@ -29,7 +30,7 @@ function registerTestDefinition(kind: string, overrides: Partial<AnyNodeDefiniti
 }
 
 describe('snapDirectRotationDelta', () => {
-  it('snaps rotation deltas to the default angle increment', () => {
+  test('snaps rotation deltas to the default angle increment', () => {
     expect(snapDirectRotationDelta(DEFAULT_ANGLE_STEP * 0.49, false)).toBe(0)
     expect(snapDirectRotationDelta(DEFAULT_ANGLE_STEP * 0.51, false)).toBeCloseTo(
       DEFAULT_ANGLE_STEP,
@@ -39,14 +40,14 @@ describe('snapDirectRotationDelta', () => {
     )
   })
 
-  it('keeps the raw rotation delta while free-rotating', () => {
+  test('keeps the raw rotation delta while free-rotating', () => {
     const rawDelta = DEFAULT_ANGLE_STEP * 0.42
     expect(snapDirectRotationDelta(rawDelta, true)).toBe(rawDelta)
   })
 })
 
 describe('resolveDirectRotationDragDelta', () => {
-  it('maps horizontal pointer motion to the direct rotation delta direction', () => {
+  test('maps horizontal pointer motion to the direct rotation delta direction', () => {
     const radiansPerPixel = DEFAULT_ANGLE_STEP / 12
 
     expect(resolveDirectRotationDragDelta(100, 112, radiansPerPixel, false)).toBeCloseTo(
@@ -57,7 +58,7 @@ describe('resolveDirectRotationDragDelta', () => {
     )
   })
 
-  it('keeps unsnapped drag deltas while free-rotating', () => {
+  test('keeps unsnapped drag deltas while free-rotating', () => {
     expect(resolveDirectRotationDragDelta(100, 103, 0.1, true)).toBeCloseTo(-0.3)
   })
 })
@@ -65,14 +66,14 @@ describe('resolveDirectRotationDragDelta', () => {
 describe('canDirectMoveNode', () => {
   // Accepts kinds with a 3D-mountable move tool (`movable` or
   // `affordanceTools.move`); floorplan-only movers (zone) are excluded.
-  it('rejects floorplan-only move targets (no 3D tool mounts)', () => {
+  test('rejects floorplan-only move targets (no 3D tool mounts)', () => {
     const kind = 'direct-move-floorplan-only-test'
     registerTestDefinition(kind, { floorplanMoveTarget: {} as never })
 
     expect(canDirectMoveNode({ id: 'node_1', type: kind } as unknown as AnyNode)).toBe(false)
   })
 
-  it('rejects MEP kinds that own move through bespoke selection affordances', () => {
+  test('rejects MEP kinds that own move through bespoke selection affordances', () => {
     for (const kind of [
       'duct-segment',
       'duct-fitting',
@@ -85,7 +86,7 @@ describe('canDirectMoveNode', () => {
     }
   })
 
-  it('accepts kinds with a bespoke move tool', () => {
+  test('accepts kinds with a bespoke move tool', () => {
     const kind = 'direct-move-bespoke-tool-test'
     registerTestDefinition(kind, {
       affordanceTools: {
@@ -96,7 +97,7 @@ describe('canDirectMoveNode', () => {
     expect(canDirectMoveNode({ id: 'node_1', type: kind } as unknown as AnyNode)).toBe(true)
   })
 
-  it('accepts nodes with the generic movable capability', () => {
+  test('accepts nodes with the generic movable capability', () => {
     const kind = 'direct-move-movable-test'
     registerTestDefinition(kind, {
       capabilities: {
@@ -107,7 +108,7 @@ describe('canDirectMoveNode', () => {
     expect(canDirectMoveNode({ id: 'node_1', type: kind } as unknown as AnyNode)).toBe(true)
   })
 
-  it('rejects kinds with no registered move path', () => {
+  test('rejects kinds with no registered move path', () => {
     const kind = 'direct-move-none-test'
     registerTestDefinition(kind, {})
 
@@ -188,5 +189,87 @@ describe('resolveDirectManipulationNode', () => {
         [child.id]: child,
       }),
     ).toBe(parent)
+  })
+})
+
+describe('resolveMoveActionNode', () => {
+  test('routes a nested same-kind child move to its host', () => {
+    const kind = 'move-action-nested-kind-test'
+    registerTestDefinition(kind, {
+      capabilities: {
+        movable: {
+          axes: ['x', 'z'],
+          parentFrame: {
+            resolveParent: (node: AnyNode, nodes: Readonly<Record<string, AnyNode>>) =>
+              (node.parentId ? nodes[node.parentId] : null) ?? null,
+            parentRotationY: () => 0,
+            localToPlan: (_parent: AnyNode, local: readonly [number, number, number]) => [
+              local[0],
+              local[1],
+              local[2],
+            ],
+            planToLocal: (_parent: AnyNode, planX: number, localY: number, planZ: number) => [
+              planX,
+              localY,
+              planZ,
+            ],
+          },
+        },
+      },
+    })
+    const parent = { id: 'move_action_parent', type: kind } as unknown as AnyNode
+    const child = {
+      id: 'move_action_child',
+      type: kind,
+      parentId: parent.id,
+    } as unknown as AnyNode
+
+    expect(
+      resolveMoveActionNode(child, {
+        [parent.id]: parent,
+        [child.id]: child,
+      }),
+    ).toBe(parent)
+  })
+
+  test('keeps a child independently movable when its parent is a different kind', () => {
+    const parentKind = 'move-action-parent-kind-test'
+    const childKind = 'move-action-child-kind-test'
+    registerTestDefinition(parentKind, {})
+    registerTestDefinition(childKind, {
+      capabilities: {
+        movable: {
+          axes: ['x', 'z'],
+          parentFrame: {
+            resolveParent: (node: AnyNode, nodes: Readonly<Record<string, AnyNode>>) =>
+              (node.parentId ? nodes[node.parentId] : null) ?? null,
+            parentRotationY: () => 0,
+            localToPlan: (_parent: AnyNode, local: readonly [number, number, number]) => [
+              local[0],
+              local[1],
+              local[2],
+            ],
+            planToLocal: (_parent: AnyNode, planX: number, localY: number, planZ: number) => [
+              planX,
+              localY,
+              planZ,
+            ],
+          },
+        },
+      },
+    })
+    const parent = { id: 'move_action_run', type: parentKind } as unknown as AnyNode
+    const child = {
+      id: 'move_action_module',
+      type: childKind,
+      parentId: parent.id,
+    } as unknown as AnyNode
+
+    expect(
+      resolveMoveActionNode(child, {
+        [parent.id]: parent,
+        [child.id]: child,
+      }),
+    ).toBe(child)
   })
 })

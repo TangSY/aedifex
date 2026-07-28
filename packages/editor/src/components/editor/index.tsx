@@ -1,7 +1,7 @@
 'use client'
 
-import { Icon } from '@iconify/react'
 import {
+  acquireSceneReadOnlyLease,
   getCatalogMaterialById,
   getLibraryMaterialIdFromRef,
   getSceneMaterialIdFromRef,
@@ -17,6 +17,7 @@ import {
   useViewer,
   Viewer,
 } from '@aedifex/viewer'
+import { Icon } from '@iconify/react'
 import { memo, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { ViewerOverlay } from '../../components/viewer-overlay'
 import { ViewerZoneSystem } from '../../components/viewer-zone-system'
@@ -29,10 +30,9 @@ import {
   type SceneGraph,
   writePersistedSelection,
 } from '../../lib/scene'
-import { initSFXBus } from '../../lib/sfx-bus'
+import { disposeSFXBus, initSFXBus } from '../../lib/sfx-bus'
 import useEditor from '../../store/use-editor'
-import { CameraAzimuthSync } from './compass-hud'
-import { CompassOverlay } from './compass-overlay'
+import useFloorplanMode from '../../store/use-floorplan-mode'
 import { CeilingSelectionAffordanceSystem } from '../systems/ceiling/ceiling-selection-affordance-system'
 import { CeilingSystem } from '../systems/ceiling/ceiling-system'
 import { RoofEditSystem } from '../systems/roof/roof-edit-system'
@@ -59,18 +59,21 @@ import { SitePanel, type SitePanelProps } from '../ui/sidebar/panels/site-panel'
 import type { SidebarTab } from '../ui/sidebar/tab-bar'
 import { useHostPanels } from '../ui/sidebar/use-plugin-panels'
 import { CustomCameraControls } from './custom-camera-controls'
+import { DeleteConfirmationDialog } from './delete-confirmation-dialog'
 import { EditorLayoutV2 } from './editor-layout-v2'
 import { ExportManager } from './export-manager'
 import { FenceTangentLines3D } from './fence-tangent-lines-3d'
 import { FirstPersonControls, FirstPersonOverlay } from './first-person-controls'
 import { FloatingActionMenu } from './floating-action-menu'
 import { FloatingBuildingActionMenu } from './floating-building-action-menu'
+import { FloorplanModeCoordinator } from './floorplan-mode-coordinator'
 import { FloorplanPanel } from './floorplan-panel'
 import { Grid } from './grid'
 import { GroupFloatingActionMenu } from './group-floating-action-menu'
 import { GroupRotateHandle } from './group-rotate-handle'
 import { GroupSelectionBox3D } from './group-selection-box-3d'
 import { NodeArrowHandles } from './node-arrow-handles'
+import { QuickMeasurementHud } from './quick-measurement-hud'
 import { RiserDiagramPanel } from './riser-diagram-panel'
 import { SelectionManager } from './selection-manager'
 import { SiteEdgeLabels } from './site-edge-labels'
@@ -121,6 +124,7 @@ function initializeEditorRuntime(): () => void {
     unsubscribeSpaceDetection?.()
 
     spatialGridManager.clear()
+    disposeSFXBus()
 
     const outliner = useViewer.getState().outliner
     outliner.selectedObjects.length = 0
@@ -152,6 +156,17 @@ export interface EditorProps {
    * only while a node is selected.
    */
   inspectorFooter?: ReactNode
+  /**
+   * Docked below the multi-selection panel (v2). Hosts mount whole-selection
+   * affordances here (e.g. "Save to my catalog"); shows only while more than
+   * one node is selected.
+   */
+  multiSelectionFooter?: ReactNode
+
+  /** Host-owned content mounted inside the editor's React Three Fiber scene. */
+  viewerSceneSlot?: ReactNode
+  /** Host-owned SVG content mounted in the transformed floor-plan scene. */
+  floorplanSceneSlot?: ReactNode
 
   projectId?: string | null
 
@@ -715,12 +730,14 @@ const ViewerSceneContent = memo(function ViewerSceneContent({
   isFirstPersonMode,
   isStudioMode,
   onThumbnailCapture,
+  viewerSceneSlot,
 }: {
   isVersionPreviewMode: boolean
   isLoading: boolean
   isFirstPersonMode: boolean
   isStudioMode: boolean
   onThumbnailCapture?: (blob: Blob, cameraData: SnapshotCameraData) => void
+  viewerSceneSlot?: ReactNode
 }) {
   // Studio mode is a clean render/snapshot surface — no selection or editing
   // affordances. It mirrors version-preview's chrome gating on the canvas.
@@ -759,7 +776,7 @@ const ViewerSceneContent = memo(function ViewerSceneContent({
       <ThumbnailGenerator onThumbnailCapture={onThumbnailCapture} />
       {!isFirstPersonMode && <SiteEdgeLabels />}
       <InteractiveSystem />
-      <CameraAzimuthSync />
+      {!noEditing && viewerSceneSlot}
     </>
   )
 })
@@ -942,6 +959,8 @@ const ViewerCanvas = memo(function ViewerCanvas({
   sceneReadyKey,
   onSceneReadyChange,
   onThumbnailCapture,
+  viewerSceneSlot,
+  floorplanSceneSlot,
 }: {
   isVersionPreviewMode: boolean
   isLoading: boolean
@@ -952,6 +971,8 @@ const ViewerCanvas = memo(function ViewerCanvas({
   sceneReadyKey: number
   onSceneReadyChange: (ready: boolean) => void
   onThumbnailCapture?: (blob: Blob, cameraData: SnapshotCameraData) => void
+  viewerSceneSlot?: ReactNode
+  floorplanSceneSlot?: ReactNode
 }) {
   const viewMode = useEditor((s) => s.viewMode)
   const floorplanPaneRatio = useEditor((s) => s.floorplanPaneRatio)
@@ -1018,6 +1039,8 @@ const ViewerCanvas = memo(function ViewerCanvas({
       {/* `relative` so the floorplan compass (portaled here to stay visible in
           2d / 3d / split alike) can anchor to this container's bottom-left. */}
       <div className="relative flex h-full" ref={setViewerAreaNode}>
+        <QuickMeasurementHud />
+        <DeleteConfirmationDialog />
         {/* 2D floorplan — always mounted once shown, hidden via CSS to preserve state */}
         <div
           className="relative h-full flex-shrink-0"
@@ -1027,7 +1050,7 @@ const ViewerCanvas = memo(function ViewerCanvas({
           }}
         >
           <div className="h-full w-full overflow-hidden">
-            <FloorplanPanel compassHost={viewerAreaEl} />
+            <FloorplanPanel compassHost={viewerAreaEl} floorplanSceneSlot={floorplanSceneSlot} />
           </div>
           {viewMode === 'split' && (
             <div
@@ -1075,9 +1098,9 @@ const ViewerCanvas = memo(function ViewerCanvas({
               isStudioMode={isStudioMode}
               isVersionPreviewMode={isVersionPreviewMode}
               onThumbnailCapture={onThumbnailCapture}
+              viewerSceneSlot={viewerSceneSlot}
             />
           </Viewer>
-          {!isFirstPersonMode && <CompassOverlay />}
         </div>
       </div>
       {!(showLoader || isVersionPreviewMode) && <ZoneLabelEditorSystem />}
@@ -1095,6 +1118,9 @@ export default function Editor({
   viewerToolbarRight,
   stageOverlay,
   inspectorFooter,
+  multiSelectionFooter,
+  viewerSceneSlot,
+  floorplanSceneSlot,
   projectId,
   onLoad,
   onSave,
@@ -1152,9 +1178,11 @@ export default function Editor({
 
   useEffect(() => {
     useViewer.getState().setProjectId(projectId ?? null)
+    useFloorplanMode.getState().setProjectId(projectId ?? null)
 
     return () => {
       useViewer.getState().setProjectId(null)
+      useFloorplanMode.getState().setProjectId(null)
     }
   }, [projectId])
 
@@ -1210,13 +1238,10 @@ export default function Editor({
 
   // Lock scene graph and reset to select mode when entering version preview
   useEffect(() => {
-    useScene.getState().setReadOnly(isVersionPreviewMode)
-    if (isVersionPreviewMode) {
-      useEditor.getState().setMode('select')
-    }
-    return () => {
-      useScene.getState().setReadOnly(false)
-    }
+    if (!isVersionPreviewMode) return
+    const releaseReadOnly = acquireSceneReadOnlyLease()
+    useEditor.getState().setMode('select')
+    return releaseReadOnly
   }, [isVersionPreviewMode])
 
   useEffect(() => {
@@ -1315,6 +1340,8 @@ export default function Editor({
       onThumbnailCapture={onThumbnailCapture}
       sceneReadyKey={sceneReadyKey}
       showLoader={showLoader}
+      viewerSceneSlot={viewerSceneSlot}
+      floorplanSceneSlot={floorplanSceneSlot}
     />
   )
 
@@ -1367,6 +1394,7 @@ export default function Editor({
 
     return (
       <>
+        <FloorplanModeCoordinator />
         {showLoader && (
           <div className="fixed inset-0 z-60">
             <SceneLoader className="bg-background" />
@@ -1398,7 +1426,10 @@ export default function Editor({
                   )}
                   {!(isVersionPreviewMode || isCaptureMode || isStudioMode) && (
                     <div className="pointer-events-auto">
-                      <PanelManager inspectorFooter={inspectorFooter} />
+                      <PanelManager
+                        inspectorFooter={inspectorFooter}
+                        multiSelectionFooter={multiSelectionFooter}
+                      />
                     </div>
                   )}
                   {!isCaptureMode && (
@@ -1439,6 +1470,7 @@ export default function Editor({
 
   return (
     <div className="dark flex h-full w-full gap-3 bg-neutral-100 p-3 text-foreground">
+      <FloorplanModeCoordinator />
       {showLoader && (
         <div className="fixed inset-0 z-60">
           <SceneLoader className="bg-background" />

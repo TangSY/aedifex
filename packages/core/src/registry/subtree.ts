@@ -1,10 +1,14 @@
+import {
+  remapConstructionDimensionReferences,
+  remapMeasurementReferences,
+} from '../lib/measurement-geometry'
 import { generateId } from '../schema/base'
 import type { AnyNode, AnyNodeId } from '../schema/types'
 
 // Generic, opinion-free primitives the host app composes to implement
 // catalog / paste / duplicate / preset flows.
 //
-// Design intent (see TangSY/aedifex#340 redesign):
+// Design intent (see pascalorg/editor#340 redesign):
 //   - The editor exposes a *pure* live-scene walk + a generic clone-and-
 //     insert helper. It owns nothing about storage shape, position
 //     re-anchoring policy, or host-ref re-derivation.
@@ -140,7 +144,7 @@ export function cloneNodesInto(
   const out: AnyNode[] = []
   let root: AnyNode | null = null
   for (const original of nodes) {
-    const cloned = JSON.parse(JSON.stringify(original)) as AnyNode
+    let cloned = JSON.parse(JSON.stringify(original)) as AnyNode
     const freshId = idMap.get(original.id)!
     ;(cloned as { id: AnyNodeId }).id = freshId
     // parentId: root's parentId becomes opts.parentId (or preserved
@@ -165,6 +169,12 @@ export function cloneNodesInto(
         .filter((cid): cid is AnyNodeId => cid !== undefined)
     }
 
+    if (cloned.type === 'measurement') {
+      cloned.measurement = remapMeasurementReferences(cloned.measurement, idMap)
+    }
+    if (cloned.type === 'construction-dimension') {
+      cloned = remapConstructionDimensionReferences(cloned, idMap)
+    }
     if (original.id === opts.rootId) {
       if (opts.position) {
         ;(cloned as { position: [number, number, number] }).position = [

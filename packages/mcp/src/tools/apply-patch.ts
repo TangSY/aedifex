@@ -7,11 +7,11 @@ import { ErrorCode, throwMcpError } from './errors'
 import { publishLiveSceneSnapshot } from './live-sync'
 import { PatchSchema } from './schemas'
 
-export const applyPatchInput: any = {
+export const applyPatchInput = {
   patches: z.array(PatchSchema),
 }
 
-export const applyPatchOutput: any = {
+export const applyPatchOutput = {
   appliedOps: z.number(),
   deletedIds: z.array(z.string()),
   createdIds: z.array(z.string()),

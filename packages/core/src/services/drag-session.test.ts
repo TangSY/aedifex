@@ -65,7 +65,7 @@ function makeDef(kind: string, relations?: Relations): AnyNodeDefinition {
     schema: z.object({ type: z.literal(kind) }) as any,
     category: 'utility',
     defaults: () => ({}) as any,
-    capabilities: { deletable: true },
+    capabilities: {},
     relations,
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
   }

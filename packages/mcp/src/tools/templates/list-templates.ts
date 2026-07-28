@@ -2,9 +2,9 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { TEMPLATES } from '../../templates'
 
-export const listTemplatesInput: any = {} as const
+export const listTemplatesInput = {} as const
 
-export const listTemplatesOutput: any = {
+export const listTemplatesOutput = {
   templates: z.array(
     z.object({
       id: z.string(),

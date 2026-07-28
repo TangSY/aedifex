@@ -34,21 +34,35 @@ export {
   GlbScene,
   type GlbWalkthrough,
 } from './components/viewer/glb-scene'
-export { GlbWalkthroughController } from './components/viewer/glb-walkthrough-controller'
+export {
+  CROUCH_CAPSULE,
+  CROUCH_EYE_OFFSET,
+  CROUCH_FLOAT_HEIGHT,
+  CROUCH_RUN_SPEED,
+  CROUCH_WALK_SPEED,
+  EYE_LERP_SPEED,
+  GlbWalkthroughController,
+  STAND_CAPSULE,
+  STAND_CLEARANCE,
+  STAND_FLOAT_HEIGHT,
+  WALKTHROUGH_FOV,
+} from './components/viewer/glb-walkthrough-controller'
 export type { HoverStyle, HoverStyles } from './components/viewer/post-processing'
 export {
   DEFAULT_HOVER_STYLES,
   SSGI_PARAMS,
 } from './components/viewer/post-processing'
 export { SceneEnvironment } from './components/viewer/scene-environment'
-export { WalkthroughControls } from './components/viewer/walkthrough-controls'
 export { useAssetUrl } from './hooks/use-asset-url'
 export { useGLTFKTX2 } from './hooks/use-gltf-ktx2'
 export { useNodeEvents } from './hooks/use-node-events'
 export { ASSETS_CDN_URL, resolveAssetUrl, resolveCdnUrl } from './lib/asset-url'
-export { captureScreenshot } from './lib/capture-screenshot'
 export { backdropGradient, deepSkyColor, horizonHazeColor } from './lib/backdrop'
 export { applyWorldScaleBoxUVs } from './lib/box-uv'
+export {
+  type CaptureScreenshotOptions,
+  captureScreenshot,
+} from './lib/capture-screenshot'
 // CSG primitives — used by chimney's roof-trim and other kinds whose
 // geometry subtracts pieces against their host. Lives in viewer
 // because three-bvh-csg / three-mesh-bvh are viewer-only deps.
@@ -65,11 +79,20 @@ export {
 } from './lib/csg-utils'
 export type { EdgeMode } from './lib/edge-style'
 export {
+  computeHeroFraming,
+  DEFAULT_FRAMING_EXCLUDED_TYPES,
+  type HeroFraming,
+  heroCameraPose,
+  temporarilyHideNodeTypes,
+  unionRegisteredNodeBounds,
+} from './lib/hero-pose'
+export {
   applyIsolation,
   clearIsolation,
   collectIsolationSubtree,
   isIsolationActive,
 } from './lib/isolation'
+export { configureKtx2Support, ensureKtx2Support } from './lib/ktx2-loader'
 export { GRID_LAYER, OVERLAY_LAYER, SCENE_LAYER, ZONE_LAYER } from './lib/layers'
 export {
   applyMaterialPresetToMaterials,
@@ -108,8 +131,31 @@ export {
   SCENE_THEMES,
   type SceneTheme,
 } from './lib/scene-themes'
+export {
+  createSnapshotPipeline,
+  type SnapshotCaptureMode,
+  type SnapshotCaptureResult,
+  type SnapshotCropRegion,
+  type SnapshotPipeline,
+  type SnapshotSize,
+  THUMBNAIL_HEIGHT,
+  THUMBNAIL_WIDTH,
+} from './lib/snapshot-pipeline'
+export {
+  type AedifexTextureColorSpace,
+  type AedifexTextureMap,
+  type AedifexTextureRef,
+  getAedifexTextureRef,
+  stampAedifexTextureRef,
+  textureMapForSlot,
+} from './lib/texture-reference'
+export { packNormalToRGB, unpackRGBToNormal } from './lib/tsl-compat'
 export { useItemLightPool } from './store/use-item-light-pool'
-export { default as useViewer } from './store/use-viewer'
+export {
+  applyCountryUnitDefault,
+  default as useViewer,
+  type MetricNotation,
+} from './store/use-viewer'
 export { CeilingSystem } from './systems/ceiling/ceiling-system'
 export {
   createColumnBoxGeometry,
@@ -160,10 +206,9 @@ export {
   type SurfaceFrame,
 } from './systems/roof/roof-system'
 export { ScanSystem } from './systems/scan/scan-system'
-// Slab system follows the wall + fence re-export pattern — composed into
-// the registry-driven slab definition's `def.system`. Removed in Phase 6
-// alongside the legacy slab mount point.
-export { generateSlabGeometry, SlabSystem } from './systems/slab/slab-system'
+// Pure slab geometry generator — composed into the registry-driven slab
+// definition's `def.geometry` in `@aedifex/nodes`.
+export { generateSlabGeometry } from './systems/slab/slab-system'
 export {
   getStairBodyMaterials,
   getStairRailingMaterial,
@@ -176,6 +221,7 @@ export { StairSystem } from './systems/stair/stair-system'
 // (arch / rounded / frameless opening) identical across both hosts.
 export {
   buildOpeningCutoutGeometry,
+  getOpeningCutoutBottomPadding,
   hasFlatOpeningCutoutBottom,
 } from './systems/wall/opening-cutout-geometry'
 export { WallCutout } from './systems/wall/wall-cutout'

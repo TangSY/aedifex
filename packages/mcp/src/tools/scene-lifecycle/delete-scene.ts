@@ -4,12 +4,12 @@ import type { SceneOperations } from '../../operations'
 import { SceneNotFoundError, SceneVersionConflictError } from '../../storage/types'
 import { ErrorCode, throwMcpError } from '../errors'
 
-export const deleteSceneInput: any = {
+export const deleteSceneInput = {
   id: z.string().min(1).max(64),
   expectedVersion: z.number().int().positive().optional(),
 }
 
-export const deleteSceneOutput: any = {
+export const deleteSceneOutput = {
   deleted: z.boolean(),
 }
 

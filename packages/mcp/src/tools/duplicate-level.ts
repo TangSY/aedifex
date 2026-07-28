@@ -8,11 +8,11 @@ import { ErrorCode, throwMcpError } from './errors'
 import { publishLiveSceneSnapshot } from './live-sync'
 import { NodeIdSchema } from './schemas'
 
-export const duplicateLevelInput: any = {
+export const duplicateLevelInput = {
   levelId: NodeIdSchema,
 }
 
-export const duplicateLevelOutput: any = {
+export const duplicateLevelOutput = {
   newLevelId: z.string(),
   newNodeIds: z.array(z.string()),
 }

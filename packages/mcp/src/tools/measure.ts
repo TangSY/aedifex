@@ -5,12 +5,12 @@ import type { SceneOperations } from '../operations'
 import { ErrorCode, throwMcpError } from './errors'
 import { NodeIdSchema } from './schemas'
 
-export const measureInput: any = {
+export const measureInput = {
   fromId: NodeIdSchema,
   toId: NodeIdSchema,
 }
 
-export const measureOutput: any = {
+export const measureOutput = {
   distanceMeters: z.number(),
   areaSqMeters: z.number().optional(),
   units: z.literal('meters'),

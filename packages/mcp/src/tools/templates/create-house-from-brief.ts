@@ -9,7 +9,7 @@ import { ErrorCode, throwMcpError } from '../errors'
 import { appendLiveSceneEvent } from '../live-sync'
 import { currentLevelContext, sceneMetaPayload } from '../scene-lifecycle/metadata'
 
-export const createHouseFromBriefInput: any = {
+export const createHouseFromBriefInput = {
   brief: z.string().min(1),
   projectId: z.string().optional(),
   projectName: z.string().min(1).max(200).optional(),
@@ -20,7 +20,7 @@ export const createHouseFromBriefInput: any = {
   constraints: z.string().optional(),
 }
 
-export const createHouseFromBriefOutput: any = {
+export const createHouseFromBriefOutput = {
   projectId: z.string().nullable(),
   editorUrl: z.string().nullable(),
   url: z.string().nullable(),

@@ -11,19 +11,6 @@ export type RoofSurfaceMaterialSpec = {
   materialPreset?: string
 }
 
-// Roof paint-slot ids on the unified slot model. Mirrors the 4 material
-// groups of the merged-roof mesh in the viewer (see
-// `packages/viewer/src/systems/roof/roof-materials.ts`):
-//
-//   fascia  → group 0 (rake/edge trim)
-//   soffit  → group 2 (interior underside)
-//   gable   → group 1 (wall/deck under the roof surface)
-//   shingle → group 3 (top surface — the visible cladding)
-//
-// The legacy `topMaterial*` / `edgeMaterial*` / `wallMaterial*` fields above and
-// the catch-all `material` / `materialPreset` remain readable for backward
-// compatibility; the viewer's slot-first resolver falls back onto them when a
-// slot is unset. New paint operations should write into `node.slots` instead.
 export type RoofSlotId = 'shingle' | 'gable' | 'fascia' | 'soffit'
 
 export const ROOF_SHINGLE_SLOT_DEFAULT = 'library:roof-terracottatiles'
@@ -49,12 +36,6 @@ export const RoofNode = BaseNode.extend({
   edgeMaterialPreset: z.string().optional(),
   wallMaterial: MaterialSchema.optional(),
   wallMaterialPreset: z.string().optional(),
-  // Per-slot material overrides on the unified slot model, mirroring
-  // `WallNode.slots` / `SlabNode.slots`. Key = slot id
-  // (`shingle` / `gable` / `fascia` / `soffit`), value = a `MaterialRef`
-  // (`library:<id>` / `scene:<id>`). Absent = the declared slot default
-  // (`ROOF_SLOT_DEFAULTS`). The legacy `*Material*` fields above stay readable
-  // by the viewer's fallback so pre-migration roofs keep their finish.
   slots: z.record(z.string(), z.string()).optional(),
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   // Rotation around Y axis in radians

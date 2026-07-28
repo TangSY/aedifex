@@ -9,7 +9,7 @@ import { publishLiveSceneSnapshot } from './live-sync'
 import { measurement } from './measurement'
 import { NodeIdSchema } from './schemas'
 
-export const cutOpeningInput: any = {
+export const cutOpeningInput = {
   wallId: NodeIdSchema,
   type: z.enum(['door', 'window']),
   position: z.number().min(0).max(1),
@@ -17,7 +17,7 @@ export const cutOpeningInput: any = {
   height: measurement('length', 'm', { positive: true, description: 'Opening height.' }),
 }
 
-export const cutOpeningOutput: any = {
+export const cutOpeningOutput = {
   openingId: z.string(),
 }
 

@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, test } from 'bun:test'
 import { type AnyNode, type AnyNodeDefinition, nodeRegistry, registerNode } from '@aedifex/core'
 import { z } from 'zod'
 import {
@@ -46,7 +46,7 @@ describe('group transform participants', () => {
     registerElevatorTestKind()
   })
 
-  it('includes building-scoped positioned nodes for the active level building', () => {
+  test('includes building-scoped positioned nodes for the active level building', () => {
     const nodes = {
       building_test: {
         id: 'building_test',
@@ -81,7 +81,7 @@ describe('group transform participants', () => {
     ])
   })
 
-  it('excludes building-scoped positioned nodes from other buildings', () => {
+  test('excludes building-scoped positioned nodes from other buildings', () => {
     const nodes = {
       building_active: {
         id: 'building_active',
@@ -112,7 +112,7 @@ describe('group transform participants', () => {
     expect(collectParticipants(['elevator_test'], nodes, 'level_test').starts).toEqual([])
   })
 
-  it('uses current elevator defaults for legacy elevators with no saved rotation', () => {
+  test('uses current elevator defaults for legacy elevators with no saved rotation', () => {
     const nodes = {
       building_test: {
         id: 'building_test',
@@ -144,7 +144,7 @@ describe('group transform participants', () => {
     ])
   })
 
-  it('resolves building-scoped elevators when legacy level parentId is missing', () => {
+  test('resolves building-scoped elevators when legacy level parentId is missing', () => {
     const nodes = {
       building_test: {
         id: 'building_test',
@@ -176,7 +176,7 @@ describe('group transform participants', () => {
     ])
   })
 
-  it('classifies and transforms polygon kinds (slab / ceiling / zone)', () => {
+  test('classifies and transforms polygon kinds (slab / ceiling / zone)', () => {
     const nodes = {
       building_test: {
         id: 'building_test',
@@ -320,7 +320,7 @@ describe('group transform participants', () => {
     })
   })
 
-  it('polygon hosts carry their attached positioned children (ceiling items)', () => {
+  test('polygon hosts carry their attached positioned children (ceiling items)', () => {
     const nodes = {
       building_test: { id: 'building_test', type: 'building', children: ['level_test'] },
       level_test: {
@@ -362,7 +362,7 @@ describe('group transform participants', () => {
     expect(lampPatch.position).toEqual([3, 2.4, 2])
   })
 
-  it('supports legacy level-parented elevators already loaded in the editor', () => {
+  test('supports legacy level-parented elevators already loaded in the editor', () => {
     const nodes = {
       building_test: {
         id: 'building_test',

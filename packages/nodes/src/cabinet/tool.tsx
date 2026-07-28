@@ -1,16 +1,21 @@
 'use client'
 
 import {
+  type AnyNode,
   type AnyNodeId,
   CabinetModuleNode,
   CabinetNode,
+  collectAlignmentAnchors,
   createSceneApi,
   emitter,
   type GridEvent,
   getFloorPlacedFootprints,
   getWallThickness,
   isCurvedWall,
+  movingFootprintAnchors,
   nodeRegistry,
+  resolveAlignment,
+  resolveSupportSlabPatch,
   spatialGridManager,
   useScene,
   type WallEvent,
@@ -20,6 +25,7 @@ import {
   clearPlacementSurface,
   getFloorStackPreviewPosition,
   getSideFromNormal,
+  isAlignmentGuideActive,
   isGridSnapActive,
   isMagneticSnapActive,
   isValidWallSideFace,
@@ -28,6 +34,7 @@ import {
   PlacementBox,
   publishPlacementSurface,
   triggerSFX,
+  useAlignmentGuides,
   useEditor,
   useFacingPose,
   usePlacementPreview,
@@ -38,6 +45,7 @@ import { useFrame } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type Group, Mesh, Quaternion, Vector3 } from 'three'
 import {
+  FLOOR_PLACEMENT_ALIGNMENT_THRESHOLD_M,
   type FloorPlacementClickTriggerEvent,
   getLevelLocalSnappedPosition,
   stopPlacementCommitPropagation,
@@ -65,6 +73,7 @@ import {
   cabinetRunFootprint,
 } from './definition'
 import { buildCabinetGeometry } from './geometry'
+import { resolveCabinetGridPosition } from './placement-snap'
 import useCabinetPlacementStatus from './placement-status'
 import useCabinetPlacementType from './placement-type'
 import { cabinetPresetById } from './presets'
@@ -169,11 +178,6 @@ function buildCabinetPlacementPreviewNode({
   })
 }
 
-function snap(value: number, step: number): number {
-  if (step <= 0) return value
-  return Math.round(value / step) * step
-}
-
 // Cabinet wall attachment is a placement affordance, separate from floor-grid
 // quantization. Keep the long-standing behavior in grid and magnetic modes;
 // Off remains the explicit way to place without wall attachment.
@@ -269,6 +273,7 @@ const CabinetTool = () => {
   const previousWasWallSnapRef = useRef(false)
   const previousTickFrameRef = useRef(-1)
   const draftAnchorRef = useRef<DraftAnchorState | null>(null)
+  const lastRawPositionRef = useRef<[number, number, number] | null>(null)
   const activeGhostRef = useRef<Group | null>(null)
   const surfacePointRef = useRef(new Vector3())
   const surfaceNormalRef = useRef(new Vector3(0, 1, 0))
@@ -394,6 +399,11 @@ const CabinetTool = () => {
     previousWasWallSnapRef.current = false
     previousTickFrameRef.current = -1
     draftAnchorRef.current = null
+    let alignmentCandidates = collectAlignmentAnchors(
+      useScene.getState().nodes,
+      previewNode.id,
+      activeLevelId,
+    )
     let lastWallEventTime = -1
     let wallOwnedPointerAt = Number.NEGATIVE_INFINITY
     const WALL_OWNS_POINTER_MS = 64
@@ -417,6 +427,7 @@ const CabinetTool = () => {
       previousTickFrameRef.current = -1
       clearPlacementSurface()
       useFacingPose.getState().clear()
+      useAlignmentGuides.getState().clear()
       useCabinetPlacementStatus.getState().setBlocked(false)
     }
 
@@ -461,7 +472,59 @@ const CabinetTool = () => {
       bypassGrid = false,
     ): [number, number, number] => {
       const step = !bypassGrid && isGridSnapActive() ? useEditor.getState().gridSnapStep : 0
-      return [snap(raw[0], step), 0, snap(raw[2], step)]
+      return resolveCabinetGridPosition({
+        raw,
+        dimensions: placementDimensions,
+        yaw: yawRef.current,
+        step,
+      })
+    }
+
+    const resolveAlignedCabinetPosition = ({
+      applyAlignmentSnap,
+      position,
+      width,
+      yaw,
+    }: {
+      applyAlignmentSnap: boolean
+      position: [number, number, number]
+      width?: number
+      yaw: number
+    }): [number, number, number] => {
+      if (!isAlignmentGuideActive()) {
+        useAlignmentGuides.getState().clear()
+        return position
+      }
+
+      const alignmentNode = buildCabinetPlacementPreviewNode({
+        island: islandModeRef.current,
+        position,
+        previewModule: previewNode,
+        yaw,
+      })
+      const moving = movingFootprintAnchors(
+        {
+          ...alignmentNode,
+          ...(width != null ? { width } : null),
+        } as AnyNode,
+        position[0],
+        position[2],
+        yaw,
+      )
+      if (moving.length === 0 || alignmentCandidates.length === 0) {
+        useAlignmentGuides.getState().clear()
+        return position
+      }
+
+      const result = resolveAlignment({
+        moving,
+        candidates: alignmentCandidates,
+        threshold: FLOOR_PLACEMENT_ALIGNMENT_THRESHOLD_M,
+      })
+      useAlignmentGuides.getState().set(result.guides)
+
+      if (!applyAlignmentSnap || !result.snap) return position
+      return [position[0] + result.snap.dx, position[1], position[2] + result.snap.dz]
     }
 
     const withPlacementValidity = (
@@ -552,12 +615,30 @@ const CabinetTool = () => {
 
     const resolvePlacement = (event: FloorPlacementClickTriggerEvent): CabinetPlacement => {
       const raw = resolveRawPosition(event)
+      lastRawPositionRef.current = raw
       const forcePlacement = isForcePlacementEvent(event)
       const wallPlacement = islandModeRef.current ? null : resolveWallPlacement(raw)
-      if (wallPlacement) return withPlacementValidity(wallPlacement, forcePlacement)
+      if (wallPlacement) {
+        return withPlacementValidity(
+          {
+            ...wallPlacement,
+            position: resolveAlignedCabinetPosition({
+              applyAlignmentSnap: false,
+              position: wallPlacement.position,
+              yaw: wallPlacement.yaw,
+            }),
+          },
+          forcePlacement,
+        )
+      }
+      const position = resolveAlignedCabinetPosition({
+        applyAlignmentSnap: isMagneticSnapActive(),
+        position: resolveGridPosition(raw),
+        yaw: yawRef.current,
+      })
       return withPlacementValidity(
         {
-          position: resolveGridPosition(raw),
+          position,
           yaw: yawRef.current,
           snappedToWall: false,
         },
@@ -571,6 +652,7 @@ const CabinetTool = () => {
       anchor: StretchAnchor,
       event: FloorPlacementClickTriggerEvent,
     ): CabinetPlacement => {
+      useAlignmentGuides.getState().clear()
       const raw = resolveRawPosition(event)
       let stretch = planCabinetContinuousStretch({
         anchor,
@@ -716,6 +798,7 @@ const CabinetTool = () => {
         name: island ? 'Kitchen Island' : 'Modular Cabinet',
         position,
         rotation: yaw,
+        parentId: activeLevelId,
         depth: patch.depth ?? cabinetDefinition.defaults().depth,
         carcassHeight: patch.carcassHeight ?? cabinetDefinition.defaults().carcassHeight,
         ...(island && {
@@ -760,11 +843,16 @@ const CabinetTool = () => {
             buildModule(m.x, m.width, index),
           )
           for (const module of modules) sceneApi.upsert(module, cabinet.id as AnyNodeId)
+          const liveRun = sceneApi.get<CabinetNode>(cabinet.id as AnyNodeId) ?? cabinet
+          sceneApi.update(
+            liveRun.id as AnyNodeId,
+            resolveSupportSlabPatch(liveRun, sceneApi.nodes()),
+          )
           bumpCabinetRunsNearNewRun(cabinet.id as AnyNodeId)
           sceneApi.resumeHistory()
           return {
             endModule: modules[modules.length - 1]!,
-            run: sceneApi.get<CabinetNode>(cabinet.id as AnyNodeId) ?? cabinet,
+            run: sceneApi.get<CabinetNode>(cabinet.id as AnyNodeId) ?? liveRun,
           }
         }
 
@@ -808,6 +896,19 @@ const CabinetTool = () => {
         }
 
         bumpCabinetRunsNearNewRun(nextRun.id as AnyNodeId)
+        const liveNextRun = sceneApi.get<CabinetNode>(nextRun.id as AnyNodeId) ?? nextRun
+        sceneApi.update(
+          liveNextRun.id as AnyNodeId,
+          resolveSupportSlabPatch(liveNextRun, sceneApi.nodes()),
+        )
+        const rootRun = chainRootRunRef.current
+        if (rootRun) {
+          const liveRoot = sceneApi.get<CabinetNode>(rootRun.id as AnyNodeId) ?? rootRun
+          sceneApi.update(
+            liveRoot.id as AnyNodeId,
+            resolveSupportSlabPatch(liveRoot, sceneApi.nodes()),
+          )
+        }
         sceneApi.resumeHistory()
         return {
           endModule: anchorModule,
@@ -915,14 +1016,20 @@ const CabinetTool = () => {
       }
       const { cabinet, buildModule } = buildRunNodes(next.position, next.yaw)
       const module = buildModule(0, previewNode.width, 0)
+      const nodes = { ...useScene.getState().nodes, [cabinet.id]: cabinet, [module.id]: module }
+      const committedCabinet = CabinetNode.parse({
+        ...cabinet,
+        ...resolveSupportSlabPatch(cabinet, nodes),
+      })
       useScene.getState().createNodes([
-        { node: cabinet, parentId: activeLevelId },
-        { node: module, parentId: cabinet.id },
+        { node: committedCabinet, parentId: activeLevelId },
+        { node: module, parentId: committedCabinet.id },
       ])
-      bumpCabinetRunsNearNewRun(cabinet.id as AnyNodeId)
+      bumpCabinetRunsNearNewRun(committedCabinet.id as AnyNodeId)
       useViewer.getState().setSelection({ selectedIds: [module.id] })
       useEditor.getState().setMode('select')
       triggerSFX('sfx:item-place')
+      useAlignmentGuides.getState().clear()
       usePlacementPreview.getState().clear()
       clearPlacementSurface()
       useFacingPose.getState().clear()
@@ -950,7 +1057,23 @@ const CabinetTool = () => {
         !placementRef.current.snappedToWall &&
         !placementRef.current.stretch
       ) {
-        const next = { ...placementRef.current, yaw: yawRef.current }
+        const current = placementRef.current
+        const { conflictIds: _conflictIds, valid: _valid, ...placementBase } = current
+        const raw = lastRawPositionRef.current ?? current.position
+        const position = resolveAlignedCabinetPosition({
+          applyAlignmentSnap: isMagneticSnapActive(),
+          position: resolveCabinetGridPosition({
+            raw,
+            dimensions: placementDimensions,
+            yaw: yawRef.current,
+            step: isGridSnapActive() ? useEditor.getState().gridSnapStep : 0,
+          }),
+          yaw: yawRef.current,
+        })
+        const next = withPlacementValidity(
+          { ...placementBase, position, yaw: yawRef.current },
+          false,
+        )
         placementRef.current = next
         setPlacement(next)
         publishFloorplanPreview(next)
@@ -985,6 +1108,7 @@ const CabinetTool = () => {
       usePlacementPreview.getState().clear()
       clearPlacementSurface()
       useFacingPose.getState().clear()
+      useAlignmentGuides.getState().clear()
       useCabinetPlacementStatus.getState().setBlocked(false)
     }
   }, [activeLevelId, placementDimensions, previewNode, publishFloorplanPreview])

@@ -24,14 +24,8 @@ import * as THREE from 'three'
 import { getRoofDebugMaterials, getRoofMaterials } from '../roof/roof-materials'
 import { createPlaceholderGeometry } from '../shared/placeholder-geometry'
 
-// The 4 material groups the merged-roof mesh renders with map 1:1 to these
-// roof slots. Kept in sync with `getRoofMaterialArray`'s slot order in the
-// viewer — the segment mesh reuses that array's shape.
 const ROOF_SLOT_ORDER: readonly RoofSlotId[] = ['fascia', 'gable', 'soffit', 'shingle']
 
-// Slot ↔ legacy role mapping — used to fall back onto the pre-migration
-// `topMaterial*` / `edgeMaterial*` / `wallMaterial*` fields when a slot is
-// unset on both the segment and its parent roof.
 const ROOF_LEGACY_ROLE_BY_SLOT: Record<RoofSlotId, RoofSegmentSurfaceMaterialRole> = {
   fascia: 'edge',
   gable: 'wall',
@@ -41,20 +35,14 @@ const ROOF_LEGACY_ROLE_BY_SLOT: Record<RoofSlotId, RoofSegmentSurfaceMaterialRol
 
 export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
   const ref = useRef<THREE.Mesh>(null!)
-  // Narrow subscription: only re-render when *this* segment's parent roof
-  // node changes, not when any unrelated node in the scene mutates.
   const parentNode = useScene((state) =>
     node.parentId ? (state.nodes[node.parentId as AnyNodeId] as RoofNode | undefined) : undefined,
   )
-  // Scene-material palette: only subscribe when this segment or its parent
-  // roof actually references a scene material via slots. Without slots the
-  // `resolveMaterialRef` path is never hit, so re-rendering on palette edits
-  // is wasted work.
   const needsSceneMaterials = Boolean(
     (node.slots && Object.keys(node.slots).length > 0) ||
       (parentNode?.slots && Object.keys(parentNode.slots).length > 0),
   )
-  const sceneMaterials = useScene((s) => (needsSceneMaterials ? s.materials : undefined))
+  const sceneMaterials = useScene((state) => (needsSceneMaterials ? state.materials : undefined))
 
   useRegistry(node.id, 'roof-segment', ref)
 
@@ -67,55 +55,38 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
   // 4 groups map 1:1 to the roof's 4-material array (see getRoofMaterialArray).
   const placeholderGeometry = useMemo(() => createPlaceholderGeometry(4), [])
 
-  // Segment material precedence, per slot:
-  //   1. Segment's `node.slots[slotId]` override.
-  //   2. Segment's legacy role-specific override (topMaterial, edgeMaterial, wallMaterial).
-  //   3. Segment's catch-all `material` (legacy single-slot paint).
-  //   4. Parent roof's `node.slots[slotId]` override.
-  //   5. Parent roof's legacy role-specific material.
-  //   6. Parent roof's catch-all material.
-  //   7. Default `roofMaterials` (handled at the `material =` line below).
-  //
-  // The 4-slot layout matches getRoofMaterialArray:
-  //   slot 0 → 'fascia'  (rake / edge trim)
-  //   slot 1 → 'gable'   (wall band under the roof surface)
-  //   slot 2 → 'soffit'  (interior underside)
-  //   slot 3 → 'shingle' (top cladding)
   // biome-ignore lint/correctness/useExhaustiveDependencies: deps deliberately list the build inputs; depending on the whole object would rebuild on unrelated field changes.
   const customMaterial = useMemo(() => {
     const resolveSlot = (slotId: RoofSlotId): THREE.Material | null => {
-      // 1. Segment slot ref.
-      const segRef = node.slots?.[slotId]
-      if (segRef) {
-        const resolved = resolveMaterialRef(segRef, sceneMaterials, shading)
+      const segmentRef = node.slots?.[slotId]
+      if (segmentRef) {
+        const resolved = resolveMaterialRef(segmentRef, sceneMaterials, shading)
         if (resolved) return resolved
       }
-      // 2-3. Segment legacy role + catch-all.
+
       const role = ROOF_LEGACY_ROLE_BY_SLOT[slotId]
-      const segSpec = getEffectiveSegmentSurfaceMaterial(node, role, undefined)
-      if (typeof segSpec.materialPreset === 'string') {
-        const resolved = createMaterialFromPresetRef(segSpec.materialPreset, shading)
+      const segmentSpec = getEffectiveSegmentSurfaceMaterial(node, role)
+      if (typeof segmentSpec.materialPreset === 'string') {
+        const resolved = createMaterialFromPresetRef(segmentSpec.materialPreset, shading)
         if (resolved) return resolved
       }
-      if (segSpec.material !== undefined) {
-        return createMaterial(segSpec.material, shading)
+      if (segmentSpec.material !== undefined) {
+        return createMaterial(segmentSpec.material, shading)
       }
-      // 4. Parent roof slot ref.
+
       const parentRef = parentNode?.slots?.[slotId]
       if (parentRef) {
         const resolved = resolveMaterialRef(parentRef, sceneMaterials, shading)
         if (resolved) return resolved
       }
-      // 5-6. Parent roof legacy per-role + catch-all.
+
       const parentSpec = parentNode ? getEffectiveRoofSurfaceMaterial(parentNode, role) : undefined
-      if (parentSpec) {
-        if (typeof parentSpec.materialPreset === 'string') {
-          const resolved = createMaterialFromPresetRef(parentSpec.materialPreset, shading)
-          if (resolved) return resolved
-        }
-        if (parentSpec.material !== undefined) {
-          return createMaterial(parentSpec.material, shading)
-        }
+      if (typeof parentSpec?.materialPreset === 'string') {
+        const resolved = createMaterialFromPresetRef(parentSpec.materialPreset, shading)
+        if (resolved) return resolved
+      }
+      if (parentSpec?.material !== undefined) {
+        return createMaterial(parentSpec.material, shading)
       }
       return null
     }
@@ -123,29 +94,18 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
     // Themed parent-roof array (per-role scene-theme colours) — used both as the
     // full fallback and to fill any individual untextured slot below.
     const themedArray = parentNode
-      ? getRoofMaterialArray(
-          parentNode,
-          shading,
-          textures,
-          colorPreset,
-          sceneTheme,
-          sceneMaterials,
-        )
+      ? getRoofMaterialArray(parentNode, shading, textures, colorPreset, sceneTheme, sceneMaterials)
       : null
 
     const resolved = ROOF_SLOT_ORDER.map((slotId) => resolveSlot(slotId))
-    const anyResolved = resolved.some((entry) => entry !== null)
 
-    if (!anyResolved) {
+    if (!resolved.some((entry) => entry !== null)) {
       return themedArray
     }
 
-    // Some slots have explicit materials; fill the rest from the themed array so
-    // an untextured slot still picks up the scene-theme role colour, not blank white.
-    // Per-slot only, then the themed parent slot — no cross-slot fallback.
-    const fillFromArray = (i: number): THREE.Material =>
-      themedArray?.[i] ?? new THREE.MeshStandardMaterial()
-    return resolved.map((entry, i) => entry ?? fillFromArray(i)) as THREE.Material[]
+    const fallbackAt = (index: number): THREE.Material =>
+      themedArray?.[index] ?? new THREE.MeshStandardMaterial()
+    return resolved.map((entry, index) => entry ?? fallbackAt(index)) as THREE.Material[]
   }, [
     node.material,
     node.materialPreset,

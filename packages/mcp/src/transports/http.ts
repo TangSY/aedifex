@@ -27,7 +27,7 @@ export type HttpTransportOptions = {
   host?: string
   /** Bearer token for HTTP MCP calls. Defaults to AEDIFEX_MCP_HTTP_TOKEN. */
   authToken?: string
-  /** Exact CORS origins allowed to call this transport. Loopback origins are allowed. */
+  /** Exact CORS origins allowed to call this transport. */
   allowedOrigins?: string[]
   /** Per-client request cap per minute. Set <= 0 to disable. */
   rateLimitPerMinute?: number
@@ -72,7 +72,7 @@ export async function connectHttp(
     if (!guard(req, res)) return
     transport.handleRequest(req, res).catch((err) => {
       // Log to stderr; never touch stdout (stdio transport uses it).
-      console.error('[pascal-mcp] http transport error', err)
+      console.error('[aedifex-mcp] http transport error', err)
       if (!res.writableEnded) {
         try {
           res.writeHead(500).end()
@@ -193,18 +193,9 @@ function isOriginAllowed(
 ): boolean {
   const normalized = normalizeOrigin(origin)
   if (!normalized) return false
-  // Explicit allowlist always wins.
   if (allowedOrigins.has(normalized)) return true
-  // Same-origin request (Origin exactly matches Host) — always safe.
   if (requestHost && normalized === normalizeOrigin(`http://${requestHost}`)) return true
   if (requestHost && normalized === normalizeOrigin(`https://${requestHost}`)) return true
-  // Legacy behavior: ANY loopback origin was permitted, which lets a
-  // malicious page on http://localhost:<other-port> mount CSRF against
-  // this MCP server. Keep the permissive fallback only when the operator
-  // has explicitly opted in via `AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN`.
-  // Default is now strict — set the env var (any truthy value) if a local
-  // editor at a different port needs to reach the MCP without being
-  // added to `AEDIFEX_MCP_HTTP_ORIGINS`.
   if (loopbackAnyOriginAllowed()) {
     const parsed = new URL(normalized)
     if (isLoopbackHost(parsed.hostname)) return true
@@ -213,9 +204,9 @@ function isOriginAllowed(
 }
 
 function loopbackAnyOriginAllowed(): boolean {
-  const v = process.env.AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN
-  if (!v) return false
-  return v !== '0' && v.toLowerCase() !== 'false'
+  const value = process.env.AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN
+  if (!value) return false
+  return value !== '0' && value.toLowerCase() !== 'false'
 }
 
 function bearerToken(req: IncomingMessage): string | null {

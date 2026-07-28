@@ -1,7 +1,8 @@
-import { describe, expect, it, test } from 'vitest'
-import { type AnyNode, nodeRegistry, registerNode } from '@aedifex/core'
+import { describe, expect, test } from 'bun:test'
+import { type AnyNode, emitter, nodeRegistry, registerNode } from '@aedifex/core'
 import { z } from 'zod'
 import {
+  emitCanvasNodeSelection,
   resolveCanvasSelectionNode,
   resolveNodeSelectionTarget,
   resolveSelectedIdsForNodeClick,
@@ -24,7 +25,7 @@ function registerTestDefinition(kind: string, overrides: Record<string, unknown>
 }
 
 describe('resolveSelectedIdsForNodeClick', () => {
-  it('preserves the pre-routing selection when a phase switch clears current ids', () => {
+  test('preserves the pre-routing selection when a phase switch clears current ids', () => {
     expect(
       resolveSelectedIdsForNodeClick({
         baseSelectedIds: ['wall_1'],
@@ -35,7 +36,7 @@ describe('resolveSelectedIdsForNodeClick', () => {
     ).toEqual(['wall_1', 'item_1'])
   })
 
-  it('toggles from the pre-routing selection while a modifier is held', () => {
+  test('toggles from the pre-routing selection while a modifier is held', () => {
     expect(
       resolveSelectedIdsForNodeClick({
         baseSelectedIds: ['wall_1', 'item_1'],
@@ -47,8 +48,22 @@ describe('resolveSelectedIdsForNodeClick', () => {
   })
 })
 
+describe('emitCanvasNodeSelection', () => {
+  test('publishes the accepted canvas node once', () => {
+    const node = { id: 'wall_1', type: 'wall' } as unknown as AnyNode
+    const received: AnyNode[] = []
+    const onSelection = (selectedNode: AnyNode) => received.push(selectedNode)
+    emitter.on('selection:canvas-node-click', onSelection)
+
+    emitCanvasNodeSelection(node)
+
+    emitter.off('selection:canvas-node-click', onSelection)
+    expect(received).toEqual([node])
+  })
+})
+
 describe('selectionModifiersFromEvent', () => {
-  it('falls back to tracked modifier state when the click event omits keys', () => {
+  test('falls back to tracked modifier state when the click event omits keys', () => {
     expect(selectionModifiersFromEvent({}, { meta: false, ctrl: true, shift: false })).toEqual({
       meta: false,
       ctrl: true,
@@ -56,7 +71,7 @@ describe('selectionModifiersFromEvent', () => {
     })
   })
 
-  it('prefers explicit event key state over stale tracked modifiers', () => {
+  test('prefers explicit event key state over stale tracked modifiers', () => {
     expect(
       selectionModifiersFromEvent(
         { metaKey: false, ctrlKey: false, shiftKey: false },
@@ -71,7 +86,7 @@ describe('selectionModifiersFromEvent', () => {
 })
 
 describe('resolveNodeSelectionTarget', () => {
-  it('routes furniture items to furnish', () => {
+  test('routes furniture items to furnish', () => {
     const node = {
       id: 'item_1',
       type: 'item',
@@ -81,7 +96,7 @@ describe('resolveNodeSelectionTarget', () => {
     expect(resolveNodeSelectionTarget(node)).toEqual({ phase: 'furnish' })
   })
 
-  it('routes door and window catalog items to structure', () => {
+  test('routes door and window catalog items to structure', () => {
     const node = {
       id: 'item_1',
       type: 'item',

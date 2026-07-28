@@ -1,4 +1,9 @@
-import { emitter, useScene, validateBuildJson } from '@aedifex/core'
+import {
+  clearSceneHistory,
+  emitter,
+  useScene,
+  validateBuildJson,
+} from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { TreeView, VisualJson } from '@visual-json/react'
 import { Camera, Download, Map as MapIcon, Save, Trash2, Upload } from 'lucide-react'
@@ -20,6 +25,7 @@ import {
 } from './../../../../../components/ui/primitives/dialog'
 import { Switch } from './../../../../../components/ui/primitives/switch'
 import useEditor, { selectDefaultBuildingAndLevel } from './../../../../../store/use-editor'
+import useFloorplanMode from './../../../../../store/use-floorplan-mode'
 import { AudioSettingsDialog } from './audio-settings-dialog'
 import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog'
 import { LoadBuildDialog, type PendingImport } from './load-build-dialog'
@@ -180,12 +186,14 @@ export function SettingsPanel({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const nodes = useScene((state) => state.nodes)
   const rootNodeIds = useScene((state) => state.rootNodeIds)
+  const installedPlugins = useScene((state) => state.installedPlugins)
   const setScene = useScene((state) => state.setScene)
   const clearScene = useScene((state) => state.clearScene)
   const resetSelection = useViewer((state) => state.resetSelection)
   const exportScene = useViewer((state) => state.exportScene)
   const shadows = useViewer((state) => state.shadows)
   const setPhase = useEditor((state) => state.setPhase)
+  const floorplanMode = useFloorplanMode((state) => state.mode)
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false)
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null)
   const sceneGraphValue = useMemo(
@@ -206,7 +214,7 @@ export function SettingsPanel({
   const isLocalProject = false // Props-based; only show cloud sections when projectId provided
 
   const handleSaveBuild = () => {
-    const sceneData = { nodes, rootNodeIds }
+    const sceneData = { nodes, rootNodeIds, installedPlugins }
     const json = JSON.stringify(sceneData, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -235,7 +243,7 @@ export function SettingsPanel({
           result: {
             ok: false,
             parsed: null,
-            stats: { total: 0, byType: {}, unknownTypes: {}, floorAreaM2: 0 },
+            stats: { total: 0, byType: {}, pluginTypes: {}, unknownTypes: {}, floorAreaM2: 0 },
             errors: [
               {
                 severity: 'error',
@@ -262,11 +270,24 @@ export function SettingsPanel({
     e.target.value = ''
   }
 
-  const handleConfirmImport = (parsed: { nodes: Record<string, unknown>; rootNodeIds: string[] }) => {
+  const handleConfirmImport = (parsed: {
+    nodes: Record<string, unknown>
+    rootNodeIds: string[]
+    installedPlugins?: string[]
+  }) => {
+    const currentScene = useScene.getState()
     setScene(
       parsed.nodes as Parameters<typeof setScene>[0],
       parsed.rootNodeIds as Parameters<typeof setScene>[1],
+      {
+        installedPlugins: parsed.installedPlugins ?? currentScene.installedPlugins,
+        hasExplicitPluginInstallState:
+          parsed.installedPlugins !== undefined || currentScene.hasExplicitPluginInstallState,
+      },
     )
+    // An import is a scene load: it becomes the undo floor. Without this,
+    // undo could step back into the pre-import scene state.
+    clearSceneHistory()
     resetSelection()
     setPhase('site')
     setPendingImport(null)
@@ -274,6 +295,9 @@ export function SettingsPanel({
 
   const handleResetToDefault = () => {
     clearScene()
+    // Same floor rule as import — undo after a reset must not resurrect the
+    // old scene (or land on the empty intermediate `unloadScene` state).
+    clearSceneHistory()
     resetSelection()
     setPhase('structure')
     selectDefaultBuildingAndLevel()
@@ -377,14 +401,17 @@ export function SettingsPanel({
         </div>
 
         <div className="space-y-2">
-          <div className="font-medium text-muted-foreground text-xs">Floorplan</div>
+          <div className="flex items-center justify-between font-medium text-muted-foreground text-xs">
+            <span>Floor plan</span>
+            <span>{floorplanMode === 'default' ? 'Default mode' : 'Expert mode'}</span>
+          </div>
           <Button
             className="w-full justify-start gap-2"
             onClick={() => exportFloorplanPdf('full')}
             variant="outline"
           >
             <MapIcon className="size-4" />
-            Full floorplan
+            Full floor plan
           </Button>
           <Button
             className="w-full justify-start gap-2"

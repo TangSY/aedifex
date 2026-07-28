@@ -2,10 +2,10 @@
 import '../bridge/node-shims'
 
 import { beforeEach, describe, expect, test } from 'bun:test'
+import useScene from '@aedifex/core/store'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import useScene from '@aedifex/core/store'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { buildFromBriefPrompt, registerFromBrief } from './from-brief'
 import { buildIterateOnFeedbackPrompt, registerIterateOnFeedback } from './iterate-on-feedback'

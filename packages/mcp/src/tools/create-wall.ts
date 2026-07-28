@@ -8,7 +8,7 @@ import { publishLiveSceneSnapshot } from './live-sync'
 import { measurement } from './measurement'
 import { NodeIdSchema, Vec2Schema } from './schemas'
 
-export const createWallInput: any = {
+export const createWallInput = {
   levelId: NodeIdSchema,
   start: Vec2Schema,
   end: Vec2Schema,
@@ -19,7 +19,7 @@ export const createWallInput: any = {
   height: measurement('length', 'm', { positive: true, description: 'Wall height.' }).optional(),
 }
 
-export const createWallOutput: any = {
+export const createWallOutput = {
   wallId: z.string(),
 }
 

@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, test } from 'bun:test'
 import {
   type AnyNode,
   type AnyNodeDefinition,
+  BuildingNode,
   CeilingNode,
   ColumnNode,
   ElevatorNode,
@@ -46,8 +47,9 @@ function mountNode(
   sceneRegistry.byType[node.type]!.add(node.id)
 }
 
-function mountRegistryGroup(node: AnyNode) {
+function mountRegistryGroup(node: AnyNode, position: [number, number, number] = [0, 0, 0]) {
   const group = new Group()
+  group.position.set(position[0], position[1], position[2])
   group.updateMatrixWorld(true)
   sceneRegistry.nodes.set(node.id, group)
   sceneRegistry.byType[node.type]!.add(node.id)
@@ -67,7 +69,7 @@ describe('buildFirstPersonColliderWorldFromRegistry', () => {
     useScene.setState({ nodes: {}, rootNodeIds: [] } as never)
   })
 
-  it('includes structure and furnish nodes discovered through the node registry', () => {
+  test('includes structure and furnish nodes discovered through the node registry', () => {
     registerColliderDefinition('column', ColumnNode, 'structure')
     registerColliderDefinition('shelf', ShelfNode, 'furnish')
 
@@ -85,7 +87,7 @@ describe('buildFirstPersonColliderWorldFromRegistry', () => {
     world?.dispose()
   })
 
-  it('excludes ceiling surfaces so the walkthrough player passes through them', () => {
+  test('excludes ceiling surfaces so the walkthrough player passes through them', () => {
     registerColliderDefinition('column', ColumnNode, 'structure')
     registerColliderDefinition('ceiling', CeilingNode, 'structure', 'ceiling')
 
@@ -105,7 +107,7 @@ describe('buildFirstPersonColliderWorldFromRegistry', () => {
     world?.dispose()
   })
 
-  it('skips meshes hidden by an invisible ancestor (stale roof segment CSG)', () => {
+  test('skips meshes hidden by an invisible ancestor (stale roof segment CSG)', () => {
     registerColliderDefinition('column', ColumnNode, 'structure')
 
     // Mirror the roof's segments-wrapper shape: the registered mesh's own
@@ -135,7 +137,7 @@ describe('buildFirstPersonColliderWorldFromRegistry', () => {
     world?.dispose()
   })
 
-  it('leaves elevators to their dedicated dynamic collider meshes', () => {
+  test('leaves elevators to their dedicated dynamic collider meshes', () => {
     registerColliderDefinition('elevator', ElevatorNode, 'structure')
 
     const elevator = ElevatorNode.parse({ id: 'elevator_test' })
@@ -147,7 +149,7 @@ describe('buildFirstPersonColliderWorldFromRegistry', () => {
     expect(world).toBeNull()
   })
 
-  it('adds a fallback floor for a visible level with no slab', () => {
+  test('adds a fallback floor for a visible level with no slab', () => {
     const level = LevelNode.parse({ id: 'level_test', level: 0 })
     setSceneNodes([level])
     mountRegistryGroup(level)
@@ -160,7 +162,35 @@ describe('buildFirstPersonColliderWorldFromRegistry', () => {
     world?.dispose()
   })
 
-  it('adds a site ground collider so a spawn on bare ground has a floor', () => {
+  test('adds a fallback floor only for the lowest slab-less level in a building', () => {
+    const building = BuildingNode.parse({
+      id: 'building_test',
+      children: ['level_ground', 'level_upper'],
+    })
+    const groundLevel = LevelNode.parse({
+      id: 'level_ground',
+      parentId: building.id,
+      level: 0,
+      height: 3,
+    })
+    const upperLevel = LevelNode.parse({
+      id: 'level_upper',
+      parentId: building.id,
+      level: 1,
+    })
+    setSceneNodes([building, groundLevel, upperLevel])
+    mountRegistryGroup(groundLevel)
+    mountRegistryGroup(upperLevel, [0, 3, 0])
+
+    const world = buildFirstPersonColliderWorldFromRegistry()
+
+    expect(world).not.toBeNull()
+    expect(world?.bounds?.min.y).toBeCloseTo(-0.08)
+    expect(world?.bounds?.max.y).toBeCloseTo(0)
+    world?.dispose()
+  })
+
+  test('adds a site ground collider so a spawn on bare ground has a floor', () => {
     const site = SiteNode.parse({ id: 'site_test' })
     setSceneNodes([site])
     mountRegistryGroup(site)

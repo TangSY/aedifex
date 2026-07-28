@@ -34,14 +34,14 @@ export function registerIterateOnFeedback(server: McpServer, _bridge: SceneOpera
         'Produces a minimal-diff plan of apply_patch calls in response to user feedback on the current scene.',
       argsSchema: {
         feedback: z.string(),
-      } as any,
+      },
     },
-    async ({ feedback }: any) => ({
+    async ({ feedback }) => ({
       messages: [
         {
-          role: 'user' as const,
+          role: 'user',
           content: {
-            type: 'text' as const,
+            type: 'text',
             text: buildIterateOnFeedbackPrompt({ feedback }),
           },
         },

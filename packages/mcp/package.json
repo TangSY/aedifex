@@ -1,7 +1,7 @@
 {
   "name": "@aedifex/mcp",
-  "version": "0.3.1",
-  "description": "Model Context Protocol server for Aedifex 3D building editor",
+  "version": "0.3.2",
+  "description": "Model Context Protocol server for Aedifex 3D editor",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -53,14 +53,14 @@
   ],
   "scripts": {
     "build": "tsc --build",
-    "dev": "tsc --build --watch",
+    "dev": "tsgo --build --watch",
     "start": "bun dist/bin/aedifex-mcp.js",
     "test": "bun test",
     "smoke": "bun run scripts/smoke.ts",
     "prepublishOnly": "bun run build && bun test"
   },
   "peerDependencies": {
-    "@aedifex/core": "^0.9.1"
+    "@aedifex/core": "^0.9.2"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
@@ -68,9 +68,9 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
-    "@aedifex/core": "^0.9.1",
+    "@aedifex/core": "^0.9.2",
     "@repo/typescript-config": "*",
-    "@types/node": "^25.5.0",
+    "@types/node": "^22.19.20",
     "typescript": "6.0.3"
   },
   "keywords": [

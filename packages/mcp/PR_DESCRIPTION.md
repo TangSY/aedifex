@@ -4,11 +4,11 @@
 
 Introduces a new workspace package `@aedifex/mcp` (v0.1.0) that exposes the Aedifex scene graph (`@aedifex/core`) as MCP **tools**, **resources**, and **prompts** so any MCP-compatible AI host — Claude Desktop, Claude Code, Codex CLI, Cursor, or a custom agent — can read, mutate, save, and reopen Aedifex projects programmatically with full Zod validation, atomic patches, undo-safe mutations, multimodal image inputs, and local SQLite persistence.
 
-The branch is now local-first: scenes persist to `~/.pascal/data/pascal.db` through SQLite, using `bun:sqlite` in the MCP CLI and `node:sqlite` when the Next.js editor server imports the storage package. The earlier Supabase adapter, SQL migrations, and committed `test-reports/` artifacts have been removed.
+The branch is now local-first: scenes persist to `~/.pascal/data/aedifex.db` through SQLite, using `bun:sqlite` in the MCP CLI and `node:sqlite` when the Next.js editor server imports the storage package. The earlier Supabase adapter, SQL migrations, and committed `test-reports/` artifacts have been removed.
 
 ## Motivation
 
-Issue [#74 "Viewer component API definition"](https://github.com/TangSY/aedifex/issues/74) opens the question of how external consumers should drive Aedifex. The viewer answers "embed in a React app." This PR answers the complementary case: **drive Aedifex from anything, without a browser** — AI agents, CLI scripts, background services, or IDE plugins.
+Issue [#74 "Viewer component API definition"](https://github.com/pascalorg/editor/issues/74) opens the question of how external consumers should drive Aedifex. The viewer answers "embed in a React app." This PR answers the complementary case: **drive Aedifex from anything, without a browser** — AI agents, CLI scripts, background services, or IDE plugins.
 
 ## What's in the box
 
@@ -65,12 +65,12 @@ Issue [#74 "Viewer component API definition"](https://github.com/TangSY/aedifex/
 │                          ▲                                │
 │         stdio │ HTTP                                      │
 │                          ▼                                │
-│   ┌──────── packages/mcp/src/bin/pascal-mcp.ts ────────┐  │
+│   ┌──────── packages/mcp/src/bin/aedifex-mcp.ts ────────┐  │
 │   │ (Bun CLI, loads node-shims first)                  │  │
 │   └────────────────────────────────────────────────────┘  │
 │                          │                                │
 │                          ▼                                │
-│   ┌──── createPascalMcpServer({ bridge }) ────┐            │
+│   ┌──── createAedifexMcpServer({ bridge }) ────┐            │
 │   │  registerTools()                          │            │
 │   │  registerVisionTools()                    │            │
 │   │  registerResources()                      │            │
@@ -117,9 +117,9 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "pascal": {
+    "aedifex": {
       "command": "bun",
-      "args": ["/absolute/path/to/editor/packages/mcp/dist/bin/pascal-mcp.js"],
+      "args": ["/absolute/path/to/editor/packages/mcp/dist/bin/aedifex-mcp.js"],
       "env": {
         "AEDIFEX_DATA_DIR": "/Users/you/.pascal/data"
       }
@@ -131,9 +131,9 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 For Codex CLI:
 
 ```bash
-codex mcp add pascal-dev \
+codex mcp add aedifex-dev \
   --env AEDIFEX_DATA_DIR="$HOME/.pascal/data" \
-  -- bun "$PWD/packages/mcp/dist/bin/pascal-mcp.js"
+  -- bun "$PWD/packages/mcp/dist/bin/aedifex-mcp.js"
 ```
 
 Run the editor with the same `AEDIFEX_DATA_DIR`, then ask the MCP host to create
@@ -167,7 +167,7 @@ Documented in [`packages/mcp/CROSS_CUTTING.md`](./CROSS_CUTTING.md):
 - ✅ `bun run --cwd packages/mcp smoke` — spawns stdio server, registers 30 tools, exercises `get_scene` / `create_level` / `validate_scene` / `undo` end-to-end
 - ✅ `bun test apps/editor/lib/scene-store-server.test.ts` — editor store singleton test passes
 - ✅ Editor smoke — `/api/scenes/<id>` and `/scene/<id>` return 200 for a scene saved through MCP using the shared SQLite DB
-- ✅ Local Codex MCP probe with `gpt-5.5` — saved a template scene through `pascal-dev`, then reloaded it and created a wall
+- ✅ Local Codex MCP probe with `gpt-5.5` — saved a template scene through `aedifex-dev`, then reloaded it and created a wall
 - ✅ Docs: README with Claude Desktop, Claude Code, Codex CLI, Cursor configs + tool/resource/prompt tables, CHANGELOG, 3 examples
 - ✅ Conventional commit series (9 commits on `feat/mcp-server`)
 - ✅ No Supabase dependency, SQL migrations, or committed test-report artifacts
@@ -198,5 +198,5 @@ fix(mcp): remove Supabase backend and committed test reports
 - Extract shared operation/service layer so MCP, CLI, and future REST/OpenAPI adapters do not duplicate business validation.
 - Expose a Node-consumable item catalog from `@aedifex/core` so `place_item` can resolve real catalog IDs.
 - Surface real spatial-grid collision detection (currently a simple AABB pass in `check_collisions`).
-- Post-build `chmod +x dist/bin/pascal-mcp.js` step so fresh installs get an executable bin without a manual chmod.
+- Post-build `chmod +x dist/bin/aedifex-mcp.js` step so fresh installs get an executable bin without a manual chmod.
 - Consider a separate `@aedifex/systems` package so `@aedifex/core` can go data-only (breaking change, larger refactor).

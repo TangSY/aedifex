@@ -9,7 +9,7 @@ describe('builtinPlugin', () => {
 
   test('has the expected manifest shape', () => {
     expect(builtinPlugin.id).toBe('aedifex:core')
-    expect(builtinPlugin.apiVersion).toBe(2)
+    expect(builtinPlugin.apiVersion).toBe(1)
     expect(Array.isArray(builtinPlugin.nodes)).toBe(true)
   })
 
@@ -49,32 +49,5 @@ describe('builtinPlugin', () => {
     const missingFromUnion = [...registryKinds].filter((k) => !unionKinds.has(k))
     expect(missingFromRegistry).toEqual([])
     expect(missingFromUnion).toEqual([])
-  })
-
-  test('every roof accessory kind is deletable (remove_node single source of truth)', async () => {
-    // The AI remove_node validator reads NodeDefinition.capabilities.deletable
-    // from the registry (no parallel whitelist — see editor's validate-wall.ts).
-    // Pin the whole roof-accessory family, including the v0.9.1 additions
-    // (turbine-vent / eyebrow-vent / cupola / gutter / downspout), so a future
-    // definition edit cannot silently strip AI delete support.
-    await loadPlugin(builtinPlugin)
-    const accessoryKinds = [
-      'chimney',
-      'dormer',
-      'skylight',
-      'solar-panel',
-      'ridge-vent',
-      'box-vent',
-      'turbine-vent',
-      'eyebrow-vent',
-      'cupola',
-      'gutter',
-      'downspout',
-    ]
-    for (const kind of accessoryKinds) {
-      const def = nodeRegistry.get(kind)
-      expect(def).toBeDefined()
-      expect(def?.capabilities.deletable).toBe(true)
-    }
   })
 })

@@ -12,7 +12,7 @@
 
 [**English**](./README.md) | [**中文**](./README.zh-CN.md)
 
-https://github.com/user-attachments/assets/6c819726-65f4-45c6-903e-fa5c364a6340
+https://github.com/user-attachments/assets/8b50e7cf-cebe-4579-9cf3-8786b35f7b6b
 
 </div>
 
@@ -54,7 +54,7 @@ https://github.com/user-attachments/assets/6c819726-65f4-45c6-903e-fa5c364a6340
 ### AI 设计助手
 
 - **自然语言** — 用文字描述需求：*「创建一个 5m x 4m 的房间，布置成卧室。」*
-- **35 种工具** — 覆盖家具、墙体、门窗、楼板、天花板、屋顶、楼梯、分区、楼层、建筑、扫描参考、批量操作、多方案提议和确认式预览等完整设计动作。
+- **16 种工具** — 添加/移除/移动家具、创建墙体、放置门窗、修改墙高/门宽/窗户尺寸、批量操作、多方案提议、询问澄清等。
 - **幽灵预览** — AI 建议以半透明预览显示，确认后才执行。
 - **智能循环** — AI 自动迭代调整位置，处理碰撞和边界约束，在请求模糊时主动向用户提问。
 - **目录匹配** — 模糊名称匹配 + 形状变体警告（如请求圆桌但只有方桌时会提醒）。
@@ -73,7 +73,7 @@ https://github.com/user-attachments/assets/6c819726-65f4-45c6-903e-fa5c364a6340
 
 ```bash
 # 克隆
-git clone https://github.com/TangSY/aedifex.git
+git clone https://github.com/AedifexOrg/aedifex.git
 cd aedifex
 
 # 安装依赖
@@ -145,16 +145,13 @@ AI_SUMMARIZE_MODEL=gpt-4o-mini
 
 ## 架构
 
-Turborepo 单仓库，5 个发布包 + 编辑器应用：
+Turborepo 单仓库，三个包：
 
 ```
 aedifex/
-├── apps/editor/         # Next.js 16 应用（入口）
-├── packages/core/       # 数据模型、状态管理（Zustand）、几何系统、空间查询
-├── packages/viewer/     # 3D 渲染（React Three Fiber + WebGPU）
-├── packages/editor/     # 编辑器 UI：工具、面板、选择管理、AI 助手
-├── packages/mcp/        # MCP server：35 个工具，提供自然语言场景控制
-└── packages/ui/         # 共享 shadcn/ui 基础组件
+├── apps/editor/       # Next.js 16 应用
+├── packages/core/     # 数据模型、状态管理（Zustand）、几何系统、空间查询
+└── packages/viewer/   # 3D 渲染（React Three Fiber + WebGPU）
 ```
 
 | 包 | 职责 |
@@ -162,8 +159,6 @@ aedifex/
 | **core** | 节点 Schema（Zod）、场景存储 + 撤销重做（Zundo）、几何系统、空间网格、事件总线 |
 | **viewer** | 渲染器、相机、灯光、后处理、楼层/扫描/参考系统 |
 | **editor** | 工具、面板、选择管理、AI 助手、自定义相机控制 |
-| **mcp** | Model Context Protocol server，将场景操作暴露给 Claude Desktop / Cursor |
-| **ui** | 编辑器使用的共享 shadcn/ui 基础组件 |
 
 ### 场景数据模型
 
@@ -227,9 +222,3 @@ Aedifex 基于 Pascal Group Inc. 的开源项目 [Pascal Editor](https://github.
 ## 许可证
 
 [MIT](LICENSE)
-
----
-
-## 友情链接
-
-- [LINUX DO](https://linux.do/)

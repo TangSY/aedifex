@@ -51,7 +51,7 @@ AEDIFEX_MCP_HTTP_TOKEN="$(openssl rand -hex 32)" \
 Scenes saved through MCP are stored in a local SQLite database:
 
 ```text
-~/.pascal/data/pascal.db
+~/.pascal/data/aedifex.db
 ```
 
 Set `AEDIFEX_DATA_DIR` when you want the MCP server and the running editor to

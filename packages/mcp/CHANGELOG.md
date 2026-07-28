@@ -19,9 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`export_json`, `export_glb`), validation (`validate_scene`,
   `check_collisions`), plus 2 vision tools (`analyze_floorplan_image`,
   `analyze_room_photo`) backed by MCP sampling.
-- 4 MCP resources: `aedifex://scene/current`,
-  `aedifex://scene/current/summary`, `aedifex://catalog/items`, and
-  `aedifex://constraints/{levelId}`.
+- 4 MCP resources: `pascal://scene/current`,
+  `pascal://scene/current/summary`, `pascal://catalog/items`, and
+  `pascal://constraints/{levelId}`.
 - 3 MCP prompts: `from_brief`, `iterate_on_feedback`, and
   `renovation_from_photos`.
 - stdio and Streamable HTTP transports.
@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Local `SqliteSceneStore` backed by built-in SQLite drivers (`bun:sqlite` in
   the MCP CLI, `node:sqlite` in the Next.js editor server), with WAL mode,
   transaction-scoped optimistic locking, revision rows, and shared
-  `AEDIFEX_DATA_DIR` / `AEDIFEX_DB_PATH` configuration for MCP and the editor.
+  `PASCAL_DATA_DIR` / `PASCAL_DB_PATH` configuration for MCP and the editor.
 
 ### Removed
 

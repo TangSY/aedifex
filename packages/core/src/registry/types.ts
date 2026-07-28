@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import type { AnimationClip, BufferGeometry, Object3D, Ray } from 'three'
 import type { ZodObject, z } from 'zod'
 import type { MaterialSchema, MaterialTarget } from '../schema/material'
+import type { MeasurementFeatureReference, MeasurementPoint } from '../schema/nodes/measurement'
 import type { SceneMaterial, SceneMaterialId } from '../schema/scene-material'
 import type { AnyNode, AnyNodeId } from '../schema/types'
 import type { HandleList } from './handles'
@@ -50,6 +51,8 @@ export type GeometryContext = {
    * `scene:` refs.
    */
   materials?: Record<SceneMaterialId, SceneMaterial>
+  /** Opaque host/plugin context. Core never interprets extension values. */
+  extensions?: Readonly<Record<string, unknown>>
   /**
    * Optional view state — only populated for `def.floorplan` builders. The
    * 2D floor-plan layer surfaces selection / hover here so kinds can vary
@@ -60,6 +63,7 @@ export type GeometryContext = {
    */
   viewState?: {
     selected: boolean
+    unit: 'metric' | 'imperial'
     /** Marquee or programmatic highlight — shows selected chrome without keyboard focus. */
     highlighted: boolean
     /** Pointer-hovered. */
@@ -79,6 +83,83 @@ export type GeometryContext = {
      */
     palette: FloorplanPalette
   }
+}
+
+export type MeasurementSnapKind =
+  | 'endpoint'
+  | 'midpoint'
+  | 'edge'
+  | 'center'
+  | 'face'
+  | 'ridge'
+  | 'height'
+
+export type MeasurementFeatureGeometry =
+  | { kind: 'point'; point: MeasurementPoint }
+  | { kind: 'segment'; start: MeasurementPoint; end: MeasurementPoint }
+  | { kind: 'path'; points: MeasurementPoint[]; closed?: boolean }
+  | { kind: 'polygon'; points: MeasurementPoint[] }
+
+export type MeasurementFeature = {
+  /** Stable within the node kind; presentation labels must not be used as IDs. */
+  id: string
+  label: string
+  snapKind: MeasurementSnapKind
+  geometry: MeasurementFeatureGeometry
+  /**
+   * Level-local surface normal for contact markers. Continuous features may
+   * provide the normal from `resolve(...)` after applying reference parameters.
+   */
+  normal?: MeasurementPoint
+  /** Higher values win when multiple candidates occupy the same screen-space radius. */
+  priority?: number
+}
+
+export type MeasurementFeatureBinding = {
+  featureId: string
+  point: MeasurementPoint
+  parameters?: Record<string, string | number | boolean>
+  distance: number
+}
+
+export type QuickMeasurementQuantity = 'length' | 'area' | 'volume'
+
+export type QuickMeasurementMetric = {
+  key: string
+  label: string
+  abbreviation: string
+  quantity: QuickMeasurementQuantity
+  /** Canonical metres, square metres, or cubic metres according to `quantity`. */
+  value: number
+}
+
+export type QuickMeasurementReport = {
+  title: string
+  kindLabel: string
+  /** Stable level-local label anchor chosen by the node kind. */
+  anchor: MeasurementPoint
+  metrics: QuickMeasurementMetric[]
+  note?: string
+}
+
+export type MeasurementContribution<N = AnyNode> = {
+  /** Enumerates semantic candidates for hover, quick measure, and snapping. */
+  features: (node: N, ctx: GeometryContext) => MeasurementFeature[]
+  /** Resolve IDs that cannot be fully enumerated by `features`. */
+  resolve?: (
+    node: N,
+    ctx: GeometryContext,
+    reference: MeasurementFeatureReference,
+  ) => MeasurementFeature | null
+  /** Kind-aware nearest semantic binding for a level-local surface hit. */
+  match?: (
+    node: N,
+    ctx: GeometryContext,
+    point: MeasurementPoint,
+    maxDistance: number,
+  ) => MeasurementFeatureBinding | null
+  /** Live, non-persistent quantities shown by the smart measurement tool. */
+  quickMeasure?: (node: N, ctx: GeometryContext) => QuickMeasurementReport | null
 }
 
 // ─── FloorplanPalette ────────────────────────────────────────────────
@@ -133,12 +214,18 @@ export type FloorplanPalette = {
 
 export type FloorplanPoint = readonly [x: number, y: number]
 
+export type DimensionTerminator = 'architectural-tick' | 'filled-arrow' | 'open-arrow' | 'dot'
+
+export type DimensionTextPosition = 'above' | 'centered'
+
 export type FloorplanStyle = {
   stroke?: string
   fill?: string
   strokeWidth?: number
   strokeDasharray?: string
   opacity?: number
+  /** Opaque renderer/plugin metadata. Core never interprets these values. */
+  metadata?: Readonly<Record<string, unknown>>
   /**
    * When `'non-scaling-stroke'`, the SVG renderer interprets `strokeWidth`
    * as a constant screen-pixel width regardless of viewport zoom. Maps
@@ -319,6 +406,8 @@ export type FloorplanGeometry =
        * of the floor-plan's scene rotation (default 90°).
        */
       upright?: boolean
+      /** Opaque renderer/plugin metadata. Core never interprets these values. */
+      metadata?: Readonly<Record<string, unknown>>
     }
   /**
    * Bitmap overlay — captured top-down asset thumbnail, AI-generated
@@ -347,6 +436,8 @@ export type FloorplanGeometry =
       children: FloorplanGeometry[]
       /** Optional transform applied to all children. Rotation in radians. */
       transform?: { translate?: FloorplanPoint; rotate?: number }
+      /** Opaque renderer/plugin metadata. Core never interprets these values. */
+      metadata?: Readonly<Record<string, unknown>>
     }
   /**
    * Hatched fill overlay — same polygon shape as the kind's main fill but
@@ -499,7 +590,8 @@ export type FloorplanGeometry =
     }
   /**
    * Centered length / distance label. Renders as a small rounded
-   * background plate with text, oriented along `angle` (radians). The
+   * background plate by default, or as outlined text when `appearance`
+   * is `'outlined'`, oriented along `angle` (radians). The
    * 2D layer flips the label upright when it would otherwise be upside
    * down. Use this for simple "what length am I?" badges (fence, item
    * width, draft preview).
@@ -511,6 +603,12 @@ export type FloorplanGeometry =
       text: string
       /** Rotation in radians. The renderer auto-flips to keep text upright. */
       angle: number
+      /** Keep the plate horizontal on screen instead of following a segment. */
+      screenUpright?: boolean
+      /** Perpendicular screen-pixel offset from the anchor segment. */
+      offsetPx?: number
+      /** Match map-style labels without changing the default editing badge. */
+      appearance?: 'plate' | 'outlined'
     }
   /**
    * Equal-spacing badge — a small accent pill marking one gap in a run of
@@ -543,15 +641,63 @@ export type FloorplanGeometry =
       kind: 'dimension'
       start: FloorplanPoint
       end: FloorplanPoint
+      /**
+       * Optional explicit dimension-line endpoints. Use these when the
+       * measured origins sit at different depths, such as stepped facades or
+       * an exterior column row. Extension lines still originate at
+       * `start`/`end`, while the measurement is drawn between these aligned
+       * baseline points.
+       */
+      dimensionStart?: FloorplanPoint
+      dimensionEnd?: FloorplanPoint
       /** Outward-pointing unit normal — the dimension line offsets along this. */
       offsetNormal: FloorplanPoint
       /** Distance (plan units) from the edge to the dimension line. */
       offsetDistance: number
       /** How far past the offset point the extension line continues. */
       extensionOvershoot: number
+      /** Optional gap before each extension line starts. Defaults to the project/document profile. */
+      extensionStartGap?: number
+      /** Dimension-line terminator. Defaults to an architectural tick. */
+      terminator?: DimensionTerminator
+      /** Dimension text position relative to the baseline. Defaults above the line. */
+      textPosition?: DimensionTextPosition
       text: string
       /** Optional override for the line/text colour. Defaults to the palette accent. */
       stroke?: string
+    }
+  | {
+      kind: 'dimension-string'
+      segments: readonly {
+        start: FloorplanPoint
+        end: FloorplanPoint
+        /**
+         * Optional explicit dimension-line endpoints. Use these when the
+         * measured origins sit at different depths, such as stepped facades or
+         * an exterior column row. Extension lines still originate at
+         * `start`/`end`, while the measurement is drawn between these aligned
+         * baseline points.
+         */
+        dimensionStart?: FloorplanPoint
+        dimensionEnd?: FloorplanPoint
+        text: string
+      }[]
+      /** Outward-pointing unit normal shared by every segment in the string. */
+      offsetNormal: FloorplanPoint
+      /** Distance (plan units) from each measured origin to its dimension line. */
+      offsetDistance: number
+      /** How far past each offset point the extension line continues. */
+      extensionOvershoot: number
+      /** Optional gap before each extension line starts. Defaults to the project/document profile. */
+      extensionStartGap?: number
+      /** Dimension-line terminator shared by every segment. Defaults to an architectural tick. */
+      terminator?: DimensionTerminator
+      /** Dimension text position shared by every segment. Defaults above the line. */
+      textPosition?: DimensionTextPosition
+      /** Optional override for the line/text colour. Defaults to the palette accent. */
+      stroke?: string
+      /** Opaque renderer/plugin metadata. Core never interprets these values. */
+      metadata?: Readonly<Record<string, unknown>>
     }
 
 // ─── FloorplanAffordance ─────────────────────────────────────────────
@@ -715,7 +861,7 @@ export type FloorplanMoveTarget<N> = (args: {
 
 export type Plugin = {
   id: string
-  apiVersion: 2
+  apiVersion: 1
   nodes?: AnyNodeDefinition[]
 }
 
@@ -767,6 +913,8 @@ export type NodeDefinition<S extends ZodObject<any>> = {
   schemaVersion: number
   schema: S
   category: NodeCategory
+  /** Opaque host/plugin contributions. Core stores but never interprets them. */
+  extensions?: Readonly<Record<string, unknown>>
   surfaceRole?: SurfaceRole
   /**
    * Show a floor direction-triangle while placing/moving — the kind has a
@@ -803,7 +951,6 @@ export type NodeDefinition<S extends ZodObject<any>> = {
   portConnectivityFollow?: boolean
 
   defaults: () => Omit<z.infer<S>, 'id' | 'type'>
-  migrate?: Record<number, (old: unknown) => unknown>
 
   capabilities: Capabilities
   relations?: Relations
@@ -931,6 +1078,10 @@ export type NodeDefinition<S extends ZodObject<any>> = {
    * the legacy `floorplan-panel.tsx` monolith.
    */
   floorplan?: (node: z.infer<S>, ctx: GeometryContext) => FloorplanGeometry | null
+  /** Extra node IDs whose committed changes invalidate this node's floor-plan cache. */
+  floorplanDependencies?: (node: z.infer<S>) => readonly AnyNodeId[]
+  /** Stable semantic geometry that associative measurement anchors may reference. */
+  measurement?: MeasurementContribution<z.infer<S>>
   /**
    * Which scope the floor-plan layer walks to find instances of this
    * kind. Default `'level'` — the layer's DFS from the active level id
@@ -980,6 +1131,8 @@ export type NodeDefinition<S extends ZodObject<any>> = {
    * and runs through `SceneApi`.
    */
   quickActions?: NodeQuickActionProvider<z.infer<S>>
+  /** Scene-graph scope the quick-action provider needs for derived availability. */
+  quickActionNodeScope?: NodeQuickActionNodeScope
   /**
    * Sidebar-tree presentation hooks. Lets a kind reshape how the generic
    * scene tree walks its subtree — hiding derived/managed nodes and
@@ -1232,6 +1385,9 @@ export type Presentation = {
   /** Set true for kinds that exist but should NOT appear in the palette
    * (containers like `site`/`building`/`level`, internal nodes). */
   hidden?: boolean
+  /** Set false when selection is edited directly through in-scene affordances
+   * and the generic floating action menu would duplicate or conflict with them. */
+  actionMenu?: boolean
 }
 
 export type IconRef =
@@ -1313,20 +1469,7 @@ export type Capabilities = {
   snappable?: SnappableConfig
   surfaces?: SurfacesConfig
   duplicable?: boolean | DuplicableConfig
-  /**
-   * Whether instances of this kind can be removed from the scene. **REQUIRED**
-   * on every NodeDefinition — the type forces every new node kind to make an
-   * explicit decision rather than inheriting an implicit default. Set `false`
-   * for scene roots (site) and containers whose removal cascades destructively
-   * (building owns levels). Everything else is typically `true`.
-   *
-   * Single source of truth for AI tool `remove_node` validation and the
-   * inspector UI's "Delete" menu item — both readers (validateRemoveNode in
-   * the editor AI layer, canDelete in parametric-inspector) consult this
-   * field directly. NEVER maintain a parallel hardcoded list; the previous
-   * iteration's drift cost real production bugs.
-   */
-  deletable: boolean
+  deletable?: boolean
   groupable?: boolean
   selectable?: SelectableConfig
   interactive?: boolean
@@ -1575,6 +1718,8 @@ export type NodeQuickActionResult = {
   selectedIds?: AnyNodeId[]
 }
 
+export type NodeQuickActionNodeScope = 'family' | 'level'
+
 export type NodeQuickAction = {
   id: string
   label: string
@@ -1587,6 +1732,8 @@ export type NodeQuickAction = {
    */
   icon?: NodeQuickActionIcon | IconRef
   disabled?: boolean
+  /** Whether pressing a disabled action should acknowledge its blocked state. */
+  blockedFeedback?: boolean
   history?: 'single'
   run: (args: { node: AnyNode; sceneApi: SceneApi }) => NodeQuickActionResult | undefined
 }

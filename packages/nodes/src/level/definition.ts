@@ -1,4 +1,8 @@
-import { LevelNode as LevelNodeSchema, type NodeDefinition } from '@aedifex/core'
+import {
+  DEFAULT_LEVEL_HEIGHT,
+  LevelNode as LevelNodeSchema,
+  type NodeDefinition,
+} from '@aedifex/core'
 import { levelParametrics } from './parametrics'
 import { LevelNode } from './schema'
 
@@ -9,12 +13,16 @@ import { LevelNode } from './schema'
  */
 export const levelDefinition: NodeDefinition<typeof LevelNode> = {
   kind: 'level',
-  schemaVersion: 1,
+  schemaVersion: 2,
   schema: LevelNode,
   category: 'site',
 
   defaults: () => {
-    const stub = LevelNodeSchema.parse({ id: 'level_default' as never, type: 'level' })
+    const stub = LevelNodeSchema.parse({
+      id: 'level_default' as never,
+      type: 'level',
+      height: DEFAULT_LEVEL_HEIGHT,
+    })
     const { id: _id, type: _type, ...rest } = stub
     return rest
   },

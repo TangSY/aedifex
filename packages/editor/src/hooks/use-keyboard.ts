@@ -11,6 +11,11 @@ import { useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
 import { Vector3 } from 'three'
 import {
+  cutSelectionToEditorClipboard,
+  deleteSelection,
+  pasteSelectionAndPickUp,
+} from '../components/editor/group-actions'
+import {
   classifyParticipant,
   collectParticipants,
   computeGroupBox,
@@ -23,12 +28,11 @@ import { resolveDirectManipulationNode } from '../lib/direct-manipulation'
 import { toggleDoorOpenState } from '../lib/door-interaction'
 import { guideEmitter } from '../lib/guide-events'
 import { runRedo, runUndo } from '../lib/history'
-import {
-  copySelectedNodesToEditorClipboard,
-  pasteEditorClipboardToLevel,
-} from '../lib/scene-clipboard'
-import { emitDeleteSFX, sfxEmitter } from '../lib/sfx-bus'
+import { isActive } from '../lib/interaction/scope'
+import { copySelectedNodesToEditorClipboard } from '../lib/scene-clipboard'
+import { sfxEmitter } from '../lib/sfx-bus'
 import { toggleWindowOpenState } from '../lib/window-interaction'
+import useDeleteConfirmation from '../store/use-delete-confirmation'
 import useEditor, { getActiveContinuationContext, getActiveSnapContext } from '../store/use-editor'
 import useInteractionScope, { getMovingNode } from '../store/use-interaction-scope'
 
@@ -98,6 +102,64 @@ export const markToolCancelConsumed = () => {
   _toolCancelConsumed = true
 }
 
+// Escape's fall-through when no tool consumed the cancel: drop back to the
+// select tool (keeping building/level context) and close panels. Tools like
+// preset/item placement rely on this — they pass no coordinator onCancel, and
+// it is the mode switch unmounting them that destroys the draft.
+const exitToSelectAfterUnconsumedCancel = () => {
+  const currentPhase = useEditor.getState().phase
+  const currentStructureLayer = useEditor.getState().structureLayer
+
+  useInteractionScope.getState().endIf((sc) => sc.kind === 'reshaping' && sc.reshape === 'hole')
+
+  // From zone mode, return to structure select
+  if (currentPhase === 'structure' && currentStructureLayer === 'zones') {
+    useEditor.getState().setStructureLayer('elements')
+    useEditor.getState().setMode('select')
+  } else {
+    // Return to the default select tool while keeping the active building/level context.
+    useEditor.getState().setMode('select')
+  }
+
+  useEditor.getState().setFloorplanSelectionTool('click')
+
+  // Clear selections to close UI panels, but KEEP the active building and level context.
+  useViewer.getState().setSelection({ selectedIds: [], zoneId: null })
+  useEditor.getState().setSelectedReferenceId(null)
+}
+
+// ⌘Z pressed mid-interaction (moving a node, drawing a wall, mid-placement…)
+// reads as "abort this action", not history undo — behave exactly like Escape
+// and report whether anything was in flight so the undo/redo arms know to
+// skip the history jump. Pointer drags that only listen for their own
+// capture-phase keydown never reach here — they stopPropagation first (see
+// isHistoryShortcut call sites).
+const cancelInteractionForHistoryShortcut = () => {
+  if (useEditor.getState().referenceScaleActiveGuideId) {
+    guideEmitter.emit('guide:cancel-reference-scale')
+    return true
+  }
+  _toolCancelConsumed = false
+  emitter.emit('tool:cancel')
+  if (_toolCancelConsumed) return true
+  if (
+    isActive(useInteractionScope.getState().scope) ||
+    useViewer.getState().inputDragging ||
+    // Paused history means a gesture session is live (draft placement, adopted
+    // move, …) even when no scope/drag flag is set — the preset/item draft
+    // cycle keeps temporal paused for the whole session, and a history jump
+    // against a paused store would land on a stale baseline anyway.
+    !useScene.temporal.getState().isTracking
+  ) {
+    // A gesture is live but nothing consumed the cancel: finish it the way
+    // Escape does — the mode switch is what actually cancels tools that hook
+    // their teardown to unmount (preset/item placement).
+    exitToSelectAfterUnconsumedCancel()
+    return true
+  }
+  return false
+}
+
 export const useKeyboard = ({
   isVersionPreviewMode = false,
   disabled = false,
@@ -148,6 +210,10 @@ export const useKeyboard = ({
 
       // Don't handle shortcuts if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
+      if (useDeleteConfirmation.getState().request) {
         return
       }
 
@@ -233,27 +299,7 @@ export const useKeyboard = ({
         // Only switch to select mode if no tool had an active mid-action to cancel.
         // (e.g. mid-wall draw or mid-slab polygon should only cancel the action, not exit the tool)
         if (!_toolCancelConsumed) {
-          const currentPhase = useEditor.getState().phase
-          const currentStructureLayer = useEditor.getState().structureLayer
-
-          useInteractionScope
-            .getState()
-            .endIf((sc) => sc.kind === 'reshaping' && sc.reshape === 'hole')
-
-          // From zone mode, return to structure select
-          if (currentPhase === 'structure' && currentStructureLayer === 'zones') {
-            useEditor.getState().setStructureLayer('elements')
-            useEditor.getState().setMode('select')
-          } else {
-            // Return to the default select tool while keeping the active building/level context.
-            useEditor.getState().setMode('select')
-          }
-
-          useEditor.getState().setFloorplanSelectionTool('click')
-
-          // Clear selections to close UI panels, but KEEP the active building and level context.
-          useViewer.getState().setSelection({ selectedIds: [], zoneId: null })
-          useEditor.getState().setSelectedReferenceId(null)
+          exitToSelectAfterUnconsumedCancel()
         }
       } else if (e.key === '1' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault()
@@ -284,6 +330,15 @@ export const useKeyboard = ({
         useEditor.getState().setMode('build')
         // Set the zone tool explicitly so it never inherits a stale tool.
         useEditor.getState().setTool('zone')
+      } else if (e.key === 'm' && !e.metaKey && !e.ctrlKey) {
+        if (isVersionPreviewMode) return
+        e.preventDefault()
+        const editor = useEditor.getState()
+        editor.setPhase('structure')
+        editor.setStructureLayer('elements')
+        editor.setToolDefaults('measurement', { kind: editor.lastMeasurementKind })
+        editor.setMode('build')
+        editor.setTool('measurement')
       }
       if (e.key === 'v' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault()
@@ -313,23 +368,23 @@ export const useKeyboard = ({
         if (isVersionPreviewMode) return
         e.preventDefault()
         copySelectedNodesToEditorClipboard()
+      } else if (e.key === 'x' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+        if (isVersionPreviewMode) return
+        e.preventDefault()
+        cutSelectionToEditorClipboard()
       } else if (e.key === 'v' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
         if (isVersionPreviewMode) return
         e.preventDefault()
-        const result = pasteEditorClipboardToLevel()
-        if (result?.pastedIds.length) {
-          sfxEmitter.emit('sfx:item-place')
-        }
+        void pasteSelectionAndPickUp()
       } else if (e.key.toLowerCase() === 'z' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
-        // Match both 'Z' and 'z': synthetic events (tests, automation) may
-        // report lowercase 'z' even with Shift held — without this, Cmd+Shift+Z
-        // would fall through to the undo branch and undo instead of redo.
         if (isVersionPreviewMode) return
         e.preventDefault()
+        if (cancelInteractionForHistoryShortcut()) return
         runRedo()
-      } else if (e.key === 'z' && !e.shiftKey && (e.metaKey || e.ctrlKey)) {
+      } else if (e.key.toLowerCase() === 'z' && !e.shiftKey && (e.metaKey || e.ctrlKey)) {
         if (isVersionPreviewMode) return
         e.preventDefault()
+        if (cancelInteractionForHistoryShortcut()) return
         runUndo()
       } else if (e.key === 'ArrowUp' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
@@ -574,27 +629,7 @@ export const useKeyboard = ({
           }
         }
 
-        const selectedNodeIds = useViewer.getState().selection.selectedIds as AnyNodeId[]
-
-        if (selectedNodeIds.length > 0) {
-          // Guard against accidental bulk deletion (e.g. box-select all + Delete)
-          const BULK_DELETE_THRESHOLD = 10
-          if (selectedNodeIds.length >= BULK_DELETE_THRESHOLD) {
-            const confirmed = window.confirm(
-              `Delete ${selectedNodeIds.length} selected elements? This cannot be undone if the undo history is exhausted.`,
-            )
-            if (!confirmed) return
-          }
-
-          // Play appropriate SFX based on what's being deleted
-          if (selectedNodeIds.length === 1) {
-            const node = useScene.getState().nodes[selectedNodeIds[0]!]
-            emitDeleteSFX(node?.type)
-          } else {
-            sfxEmitter.emit('sfx:structure-delete')
-          }
-
-          useScene.getState().deleteNodes(selectedNodeIds)
+        if (deleteSelection()) {
           return
         }
 

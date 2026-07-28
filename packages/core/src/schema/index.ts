@@ -51,8 +51,33 @@ export {
   ColumnStyle,
   ColumnSupportStyle,
 } from './nodes/column'
+export {
+  CONSTRUCTION_DRAWING_TYPES,
+  ConstructionDimensionBaseline,
+  ConstructionDimensionChainMode,
+  ConstructionDimensionDatumPolicy,
+  ConstructionDimensionDrawingOverride,
+  ConstructionDimensionDrawingPresentation,
+  ConstructionDimensionImperialPrecision,
+  ConstructionDimensionMetricNotation,
+  ConstructionDimensionMode,
+  ConstructionDimensionNode,
+  ConstructionDimensionTerminator,
+  ConstructionDimensionTextPosition,
+  ConstructionDrawingType,
+  constructionDimensionRequiredAnchorCount,
+  resolveConstructionDimensionDrawingOverride,
+  resolveConstructionDimensionDrawingPresentation,
+  setConstructionDimensionDrawingPresentation,
+  setConstructionDimensionDrawingSuppressedSegments,
+} from './nodes/construction-dimension'
 export { CupolaNode } from './nodes/cupola'
-export { DoorNode, DoorSegment } from './nodes/door'
+export {
+  DoorNode,
+  DoorSegment,
+  OpeningConstructionType,
+  OpeningDimensionReference,
+} from './nodes/door'
 export {
   DormerNode,
   type DormerSurfaceMaterialRole,
@@ -95,6 +120,20 @@ export {
 export { LevelNode } from './nodes/level'
 export { LinesetNode } from './nodes/lineset'
 export { LiquidLineNode } from './nodes/liquid-line'
+export {
+  AngleMeasurement,
+  AreaMeasurement,
+  DistanceMeasurement,
+  MeasurementAnchor,
+  MeasurementFeatureAnchor,
+  MeasurementFeatureParameter,
+  MeasurementFeatureReference,
+  MeasurementNode,
+  MeasurementPayload,
+  MeasurementPoint,
+  PerimeterMeasurement,
+  VolumeMeasurement,
+} from './nodes/measurement'
 export { PipeFittingNode } from './nodes/pipe-fitting'
 export { PipeSegmentNode } from './nodes/pipe-segment'
 export { PipeTrapNode } from './nodes/pipe-trap'
@@ -108,7 +147,11 @@ export {
   type RidgeVentLine,
   RidgeVentNode,
 } from './nodes/ridge-vent'
-export type { RoofSlotId, RoofSurfaceMaterialRole, RoofSurfaceMaterialSpec } from './nodes/roof'
+export type {
+  RoofSlotId,
+  RoofSurfaceMaterialRole,
+  RoofSurfaceMaterialSpec,
+} from './nodes/roof'
 export {
   getEffectiveRoofSurfaceMaterial,
   ROOF_FASCIA_SLOT_DEFAULT,
@@ -178,7 +221,7 @@ export {
   SkylightType,
   type SkylightTypePreset,
 } from './nodes/skylight'
-export { SlabNode } from './nodes/slab'
+export { MIN_SLAB_THICKNESS, SlabNode } from './nodes/slab'
 export {
   SolarPanelMaterialRole,
   SolarPanelNode,
@@ -194,6 +237,7 @@ export {
   StairType,
 } from './nodes/stair'
 export { AttachmentSide, StairSegmentNode, StairSegmentType } from './nodes/stair-segment'
+export { StructuralGridNode } from './nodes/structural-grid'
 export { SurfaceHoleMetadata } from './nodes/surface-hole-metadata'
 export { TurbineVentNode } from './nodes/turbine-vent'
 export type {
@@ -228,7 +272,12 @@ export {
   WallTreatmentSide,
   WallTrimProfile,
 } from './nodes/wall'
-export { WindowNode, WindowType } from './nodes/window'
+export {
+  WindowConstructionType,
+  WindowDimensionReference,
+  WindowNode,
+  WindowType,
+} from './nodes/window'
 export { ZoneNode } from './nodes/zone'
 export { generateSceneMaterialId, SceneMaterial, type SceneMaterialId } from './scene-material'
 export type { AnyNodeId, AnyNodeType } from './types'

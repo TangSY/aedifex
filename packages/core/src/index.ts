@@ -5,9 +5,11 @@ export type {
   CabinetModuleEvent,
   CameraControlEvent,
   CameraControlFitSceneEvent,
+  CameraPose,
   CeilingEvent,
   ChimneyEvent,
   ColumnEvent,
+  ConstructionDimensionEvent,
   DoorEvent,
   DormerEvent,
   ElevatorEvent,
@@ -18,6 +20,7 @@ export type {
   GutterEvent,
   ItemEvent,
   LevelEvent,
+  MeasurementEvent,
   NodeEvent,
   RidgeVentEvent,
   RoofEvent,
@@ -32,6 +35,7 @@ export type {
   SpawnEvent,
   StairEvent,
   StairSegmentEvent,
+  StructuralGridEvent,
   WallEvent,
   WindowEvent,
   ZoneEvent,
@@ -44,17 +48,33 @@ export {
 } from './hooks/scene-registry/scene-registry'
 export {
   type FloorPlacedElevationArgs,
+  GROUND_SUPPORT_ID,
   getFloorPlacedElevation,
   getFloorPlacedFootprints,
   getFloorStackedPosition,
 } from './hooks/spatial-grid/floor-placed-elevation'
-export { pointInPolygon, spatialGridManager } from './hooks/spatial-grid/spatial-grid-manager'
+export {
+  getWallEffectiveHeightForNodes,
+  type PointedSupportSurface,
+  pointInPolygon,
+  SUPPORT_ELEVATION_EPSILON,
+  spatialGridManager,
+  type WallSlabSupportSegment,
+} from './hooks/spatial-grid/spatial-grid-manager'
 export {
   findLevelAncestorId,
   initSpatialGridSync,
   resolveBuildingForLevel,
   resolveLevelId,
 } from './hooks/spatial-grid/spatial-grid-sync'
+export {
+  type FenceSupportInput,
+  resolveFenceSupportSlabPatch,
+  resolveSupportSlabPatch,
+  resolveWallSupportSlabPatch,
+  type SupportSlabPatch,
+  type SupportSlabPatchOptions,
+} from './hooks/spatial-grid/support-host-patch'
 export { useSpatialQuery } from './hooks/spatial-grid/use-spatial-query'
 export { loadAssetUrl, saveAsset } from './lib/asset-storage'
 export {
@@ -66,6 +86,25 @@ export {
 } from './lib/door-operation'
 export { getDefaultLevelName, getLevelDisplayName } from './lib/level-name'
 export {
+  areMeasurementPointsCoplanar,
+  closestMeasurementFeatureBinding,
+  MEASUREMENT_PLANAR_TOLERANCE,
+  measurementAnchorFallback,
+  measurementAnchorReferenceNodeIds,
+  measurementAngle,
+  measurementArea,
+  measurementAreaVector,
+  measurementCentroid,
+  measurementDistance,
+  measurementFeatureLength,
+  measurementNormal,
+  measurementPerimeter,
+  measurementPrismVolume,
+  measurementReferenceNodeIds,
+  remapMeasurementAnchors,
+  remapMeasurementReferences,
+} from './lib/measurement-geometry'
+export {
   type Point2D as PolygonPoint2D,
   pointInPolygon as pointInPolygon2D,
   pointOnSegment,
@@ -75,7 +114,13 @@ export {
   segmentsIntersect,
 } from './lib/polygon-relations'
 export { resolveSelectionProxyId, selectionProxyIdFromMetadata } from './lib/selection-proxy'
-export { getRenderableSlabPolygon } from './lib/slab-polygon'
+export {
+  getRenderableSlabPolygon,
+  type SlabEdgeWallBandSnap,
+  type SlabPolygonContext,
+  slabPolygonContextFromGeometry,
+  snapSlabEdgeToWallBand,
+} from './lib/slab-polygon'
 export {
   deriveSlotId,
   isSlotMaterialName,
@@ -86,15 +131,18 @@ export {
   type AutoCeilingPlanningContext,
   type AutoCeilingSyncPlan,
   type AutoSlabSyncPlan,
+  type AutoZoneSyncPlan,
   detectSpacesForLevel,
   initSpaceDetectionSync,
   isSpaceDetectionPaused,
   pauseSpaceDetection,
   planAutoCeilingsForLevel,
   planAutoSlabsForLevel,
-  projectAutoSlabsForPlan,
+  planAutoZonesForLevel,
+  resolveAutoZonePolygon,
   resumeSpaceDetection,
   type Space,
+  type SpaceBoundaryFace,
   wallClosesRoom,
   wallTouchesOthers,
 } from './lib/space-detection'
@@ -107,8 +155,15 @@ export {
   type WallSegmentClosest,
 } from './lib/wall-distance'
 export {
+  deriveZoneQuantityReport,
+  type ZoneQuantityReport,
+  type ZoneQuantityValue,
+} from './lib/zone-quantities'
+export {
   getCatalogMaterialById,
+  getDynamicLibraryMaterials,
   getLibraryMaterialIdFromRef,
+  getLibraryMaterialsVersion,
   getMaterialPresetByRef,
   getMaterialsForCategory,
   getSceneMaterialIdFromRef,
@@ -119,12 +174,16 @@ export {
   type MaterialCatalogItem,
   type MaterialCategory,
   type MaterialRef,
+  type MaterialSource,
   type MaterialSurface,
   type ParsedMaterialRef,
   parseMaterialRef,
+  registerLibraryMaterials,
   SCENE_MATERIAL_REF_PREFIX,
+  subscribeLibraryMaterials,
   toLibraryMaterialRef,
   toSceneMaterialRef,
+  unregisterLibraryMaterials,
 } from './material-library'
 export type {
   FloorPlacedFootprint,
@@ -142,6 +201,11 @@ export {
   resetSceneHistoryPauseDepth,
   resumeSceneHistory,
   runAsSingleSceneHistoryStep,
+  type SceneCommit,
+  type SceneCommitListener,
+  type SceneCommitOrigin,
+  type SceneSnapshot,
+  subscribeSceneCommits,
 } from './store/history-control'
 export {
   type ControlValue,
@@ -162,7 +226,20 @@ export {
   type LiveNodeOverrides,
 } from './store/use-live-node-overrides'
 export { default as useLiveTransforms, type LiveTransform } from './store/use-live-transforms'
-export { clearSceneHistory, default as useScene } from './store/use-scene'
+export {
+  type ApplySceneSnapshotOptions,
+  acquireSceneReadOnlyLease,
+  applySceneOperationPatch,
+  applyScenePatch,
+  applySceneSnapshot,
+  clearSceneHistory,
+  default as useScene,
+  type SceneMaterialPatch,
+  type SceneNodePatch,
+  type SceneNodeStructuralPatch,
+  type SceneOperationPatch,
+  type ScenePatch,
+} from './store/use-scene'
 export { resolveElevatorDispatchTarget } from './systems/elevator/elevator-dispatch'
 export {
   type ElevatorDoorSide,
@@ -192,9 +269,7 @@ export {
 } from './systems/elevator/elevator-runtime'
 export { ElevatorRuntimeSystem } from './systems/elevator/elevator-runtime-system'
 export {
-  DEFAULT_ELEVATOR_LEVEL_HEIGHT,
   type ElevatorLevelEntry,
-  getElevatorLevelHeight,
   resolveElevatorBuildingLevels,
   resolveElevatorLevels,
   resolveElevatorServiceLevelIds,
@@ -213,13 +288,20 @@ export {
   isSplineFence,
   sampleFenceSpline,
 } from './systems/fence/fence-spline'
+export {
+  clampSlabElevationForWalls,
+  getSlabElevationUpperBound,
+  type SlabElevationClamp,
+} from './systems/slab/slab-support'
 export { type StairFootprintAABB, stairFootprintAABB } from './systems/stair/stair-footprint'
 export { createSurfaceOpeningPreviewController } from './systems/stair/stair-opening-preview'
 export { syncAutoStairOpenings } from './systems/stair/stair-opening-sync'
 export { StairOpeningSystem } from './systems/stair/stair-opening-system'
+export { resolveStairTotalRise } from './systems/stair/stair-rise'
 export {
   getClampedWallCurveOffset,
   getMaxWallCurveOffset,
+  getWallArcData,
   getWallChordFrame,
   getWallCurveFrameAt,
   getWallCurveLength,
@@ -257,9 +339,21 @@ export {
   type WallMoveLinkedWallTargetPlan,
   type WallPlanPoint,
 } from './systems/wall/wall-move'
+export {
+  MIN_WALL_HEIGHT,
+  resolveWallEffectiveHeight,
+  resolveWallTop,
+} from './systems/wall/wall-top'
 export type { SceneGraph } from './utils/clone-scene-graph'
 export { cloneLevelSubtree, cloneSceneGraph, forkSceneGraph } from './utils/clone-scene-graph'
 export { isObject } from './utils/types'
+
+/**
+ * Public mirror of Zod v4's internal JSON value type. Metadata consumers need
+ * this recursive shape without depending on Zod's private type declarations.
+ */
+export type JSONType = string | number | boolean | null | JSONType[] | { [key: string]: JSONType }
+
 export {
   type BuildStats,
   type ParsedBuildJson,
@@ -269,12 +363,3 @@ export {
   type ValidationSeverity,
   validateBuildJson,
 } from './validation/validate-build-json'
-export type { AssetInput } from './schema/nodes/item'
-
-/**
- * Public mirror of zod's internal v4 `JSONType`. zod does not export this type
- * publicly, so we duplicate the structural definition here for any code that
- * needs to interact with `metadata` (`z.json()`) values without falling back
- * to `unknown`. Keep in sync with zod's `src/v4/core/util.ts`.
- */
-export type JSONType = string | number | boolean | null | JSONType[] | { [key: string]: JSONType }

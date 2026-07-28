@@ -55,6 +55,7 @@ const SHORTCUT_CATEGORIES: ShortcutCategory[] = [
     shortcuts: [
       { keys: ['V'], action: 'Switch to Select mode' },
       { keys: ['B'], action: 'Switch to Build mode' },
+      { keys: ['M'], action: 'Activate the last measurement tool' },
       { keys: ['X'], action: 'Switch to Delete mode' },
       {
         keys: ['Esc'],
@@ -68,6 +69,22 @@ const SHORTCUT_CATEGORIES: ShortcutCategory[] = [
   {
     title: 'Selection',
     shortcuts: [
+      {
+        keys: ['Cmd/Ctrl', 'C'],
+        action: 'Copy the selected objects',
+        note: 'The copied selection can be pasted into another level, project, or browser tab.',
+      },
+      {
+        keys: ['Cmd/Ctrl', 'X'],
+        action: 'Cut the selected objects',
+        note: 'Copies the selection to the clipboard, then removes it from this scene.',
+      },
+      {
+        keys: ['Cmd/Ctrl', 'V'],
+        action: 'Paste and place copied objects',
+        note:
+          'Carries a preview under the cursor. Click to place it, or press Escape to cancel.',
+      },
       {
         keys: ['Cmd/Ctrl', 'Left click'],
         action: 'Add or remove an object from multi-selection',

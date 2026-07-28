@@ -4,11 +4,11 @@ import type { SceneOperations } from '../../operations'
 import { ErrorCode, McpError, throwMcpError } from '../errors'
 import { currentLevelContext, projectStatusPayload } from './metadata'
 
-export const getProjectStatusInput: any = {
+export const getProjectStatusInput = {
   id: z.string().min(1).max(64),
 }
 
-export const getProjectStatusOutput: any = {
+export const getProjectStatusOutput = {
   id: z.string(),
   projectId: z.string(),
   name: z.string(),

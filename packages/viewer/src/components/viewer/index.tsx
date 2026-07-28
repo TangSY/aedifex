@@ -17,12 +17,14 @@ import {
   useState,
 } from 'react'
 import * as THREE from 'three/webgpu'
+import { clearScreenshotRenderer, setScreenshotRenderer } from '../../lib/capture-screenshot'
 import { hasDrawableGeometry } from '../../lib/drawable-geometry'
 import { PERF_OVERLAY_ENABLED, pushGpuSample } from '../../lib/gpu-perf'
 import { applyIsolation, clearIsolation } from '../../lib/isolation'
 import { ensureKtx2Support } from '../../lib/ktx2-loader'
 import type { ColorPreset, RenderShading } from '../../lib/materials'
 import { getSceneTheme } from '../../lib/scene-themes'
+import { installTextureNodeNullGuard } from '../../lib/texture-node-guard'
 import useViewer, { type RenderContext } from '../../store/use-viewer'
 import { FloorElevationSystem } from '../../systems/floor-elevation/floor-elevation-system'
 import { GeometrySystem } from '../../systems/geometry/geometry-system'
@@ -36,6 +38,10 @@ import { RegisteredSystems } from './registered-systems'
 import { SceneBvh } from './scene-bvh'
 import { SelectionManager } from './selection-manager'
 import { ViewerCamera } from './viewer-camera'
+
+// Must be in place before any node material builds — a null texture pulled by
+// a shared override-material pass otherwise kills the render pass outright.
+installTextureNodeNullGuard()
 
 declare module '@react-three/fiber' {
   // The TS 7 native compiler (tsgo) rejects mapping the entire `three/webgpu`
@@ -106,12 +112,24 @@ function UnsupportedGpuViewerFallback() {
       <div className="max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
         <h2 className="font-semibold text-lg">3D viewer unavailable</h2>
         <p className="mt-2 text-neutral-600 text-sm">
-          This browser or environment does not expose WebGPU or WebGL, so Aedifex cannot render
-          the 3D scene here. Try opening the editor in a browser with hardware acceleration enabled.
+          This browser or environment does not expose WebGPU or WebGL, so Aedifex cannot render the
+          3D scene here. Try opening the editor in a browser with hardware acceleration enabled.
         </p>
       </div>
     </div>
   )
+}
+
+function ScreenshotRendererBridge() {
+  const renderer = useThree((state) => state.gl)
+  const scene = useThree((state) => state.scene)
+
+  useEffect(() => {
+    setScreenshotRenderer(renderer, scene)
+    return () => clearScreenshotRenderer(renderer)
+  }, [renderer, scene])
+
+  return null
 }
 
 /**
@@ -289,6 +307,7 @@ function SceneReadyTracker({
   sceneReadyKey?: string | number | null
   sceneReadyMaxWaitMs?: number
 }) {
+  const invalidate = useThree((state) => state.invalidate)
   const readyRef = useRef(false)
   const settledFramesRef = useRef(0)
   const waitedFramesRef = useRef(0)
@@ -306,7 +325,8 @@ function SceneReadyTracker({
     waitedFramesRef.current = 0
     waitStartRef.current = null
     onSceneReadyChangeRef.current?.(false)
-  }, [sceneReadyKey])
+    invalidate()
+  }, [invalidate, sceneReadyKey])
 
   useFrame(() => {
     if (!(onSceneReadyChangeRef.current && !readyRef.current)) return
@@ -323,11 +343,15 @@ function SceneReadyTracker({
       : waitedFramesRef.current >= SCENE_READY_MAX_WAIT_FRAMES
     if (!capReached && (!hasCommittedSceneRoot() || hasPendingSceneBuildWork())) {
       settledFramesRef.current = 0
+      invalidate()
       return
     }
 
     settledFramesRef.current += 1
-    if (settledFramesRef.current < SCENE_READY_SETTLED_FRAMES) return
+    if (settledFramesRef.current < SCENE_READY_SETTLED_FRAMES) {
+      invalidate()
+      return
+    }
 
     readyRef.current = true
     onSceneReadyChangeRef.current(true)
@@ -412,6 +436,14 @@ const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
   },
   ref,
 ) {
+  useEffect(() => {
+    if (nodeRegistry.size === 0) {
+      console.warn(
+        '[viewer] Node registry is empty. Install @aedifex/nodes and call await loadPlugin(builtinPlugin) before mounting <Viewer>.',
+      )
+    }
+  }, [])
+
   useImperativeHandle(
     ref,
     () => ({
@@ -446,6 +478,14 @@ const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
 
   const isDark = useViewer((state) => getSceneTheme(state.sceneTheme).appearance === 'dark')
   const transparentBackground = useViewer((state) => state.transparentBackground)
+  // The shadows toggle drives `renderer.shadowMap.enabled` (via the Canvas
+  // `shadows` prop) rather than the lights' `castShadow`: toggling castShadow
+  // off disposes the shadow map's GPU texture but three r184's WebGPU node
+  // cache keeps the shadows-on builder state that references it, so toggling
+  // back on reuses destroyed resources and every frame submit fails with a
+  // GPUValidationError. Disabling at the renderer level rebuilds materials
+  // without disposing anything, so the round-trip is safe.
+  const shadowsEnabled = useViewer((state) => state.shadows)
   useLayoutEffect(() => {
     if (transparent === undefined) return
 
@@ -549,9 +589,10 @@ const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
       }}
       shadows={{
         type: THREE.PCFShadowMap,
-        enabled: true,
+        enabled: shadowsEnabled,
       }}
     >
+      <ScreenshotRendererBridge />
       <FrameLimiter fps={50} />
       <ViewerCamera />
       <GPUDeviceWatcher />

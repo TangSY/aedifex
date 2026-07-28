@@ -6,7 +6,6 @@ import {
   type CeilingNode,
   ColumnNode,
   createSceneApi,
-  DEFAULT_WALL_HEIGHT,
   DoorNode,
   ElevatorNode,
   emitter,
@@ -15,6 +14,7 @@ import {
   getActiveRoofHeight,
   getEffectiveNode,
   getWallCurveLength,
+  getWallEffectiveHeightForNodes,
   getWallThickness,
   ItemNode,
   isCurvedWall,
@@ -27,7 +27,6 @@ import {
   runAsSingleSceneHistoryStep,
   type SlabNode,
   SpawnNode,
-  StairNode,
   StairSegmentNode,
   sceneRegistry,
   summarizeSystemFor,
@@ -42,15 +41,20 @@ import { useFrame } from '@react-three/fiber'
 import { useCallback, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useShallow } from 'zustand/react/shallow'
+import { useReducedMotion } from '../../hooks/use-reduced-motion'
+import { resolveMoveActionNode } from '../../lib/direct-manipulation'
 import {
   createFreshPlacementSubtree,
   duplicatesAsFreshSubtree,
+  prepareFreshPlacementRootDuplicate,
 } from '../../lib/fresh-planar-placement'
 import { resolveOverlayPolicy } from '../../lib/interaction/overlay-policy'
 import { curveReshapeScope, holeEditScope } from '../../lib/interaction/scope'
+import { playBlockedQuickActionFeedback } from '../../lib/quick-action-feedback'
+import { collectQuickActionNodeScope } from '../../lib/quick-action-nodes'
 import { duplicateRoofSubtree } from '../../lib/roof-duplication'
 import { emitDeleteSFX, sfxEmitter } from '../../lib/sfx-bus'
-import { duplicateStairSubtree } from '../../lib/stair-duplication'
+import { cn } from '../../lib/utils'
 import useEditor from '../../store/use-editor'
 import useInteractionScope, {
   useActiveHandleDrag,
@@ -207,26 +211,9 @@ function collectQuickActionNodes(
 ): Record<AnyNodeId, AnyNode> | null {
   if (!selectedId) return null
   const selected = nodes[selectedId as AnyNodeId]
-  if (!selected || !nodeRegistry.get(selected.type)?.quickActions) return null
-
-  const collected: Record<AnyNodeId, AnyNode> = { [selected.id as AnyNodeId]: selected }
-  const add = (id: string | null | undefined) => {
-    if (!id) return
-    const node = nodes[id as AnyNodeId]
-    if (node) collected[node.id as AnyNodeId] = node
-  }
-  const addChildren = (node: AnyNode | undefined) => {
-    for (const childId of (node as { children?: readonly string[] } | undefined)?.children ?? []) {
-      add(childId)
-    }
-  }
-
-  add(selected.parentId ?? null)
-  addChildren(selected)
-  const parent = selected.parentId ? nodes[selected.parentId as AnyNodeId] : undefined
-  addChildren(parent)
-
-  return collected
+  const def = selected ? nodeRegistry.get(selected.type) : undefined
+  if (!def?.quickActions) return null
+  return collectQuickActionNodeScope(nodes, selectedId, def.quickActionNodeScope)
 }
 
 // Pooled scratch for the per-frame anchor recompute (see useFrame below) so a
@@ -283,7 +270,7 @@ function getHeightPillDimensions(node: WallNode | FenceNode): {
 } {
   if (node.type === 'wall') {
     return {
-      height: node.height ?? DEFAULT_WALL_HEIGHT,
+      height: getWallEffectiveHeightForNodes(node, useScene.getState().nodes),
       length: getWallCurveLength(node),
       thickness: getWallThickness(node),
     }
@@ -296,6 +283,7 @@ function getHeightPillDimensions(node: WallNode | FenceNode): {
 }
 
 export function FloatingActionMenu() {
+  const reducedMotion = useReducedMotion()
   const selectedIds = useViewer((s) => s.selection.selectedIds)
   const updateNode = useScene((s) => s.updateNode)
   const mode = useEditor((s) => s.mode)
@@ -363,7 +351,8 @@ export function FloatingActionMenu() {
   // NodeDefinition with `capabilities.selectable`) get the floating menu
   // by default too. Phase 4 collapses these into a single registry check.
   const isValidType = node
-    ? ALLOWED_TYPES.includes(node.type) || isRegistrySelectable(node.type)
+    ? nodeRegistry.get(node.type)?.presentation?.actionMenu !== false &&
+      (ALLOWED_TYPES.includes(node.type) || isRegistrySelectable(node.type))
     : false
 
   // Height-drag pill: shown just above the menu only while the selected
@@ -423,7 +412,10 @@ export function FloatingActionMenu() {
       const override = useLiveNodeOverrides.getState().overrides.get(selectedId) as
         | { height?: number }
         | undefined
-      const fallbackHeight = node.type === 'wall' ? DEFAULT_WALL_HEIGHT : FENCE_DEFAULT_HEIGHT
+      const fallbackHeight =
+        node.type === 'wall'
+          ? getWallEffectiveHeightForNodes(node, useScene.getState().nodes)
+          : FENCE_DEFAULT_HEIGHT
       const liveHeight = override?.height ?? node.height ?? fallbackHeight
       pillHeightRef.current.textContent = `H ${formatMeasurement(liveHeight, unit)}`
     }
@@ -513,7 +505,8 @@ export function FloatingActionMenu() {
       e.stopPropagation()
       if (!node) return
       sfxEmitter.emit('sfx:item-pick')
-      setMovingNode(node as any)
+      const sceneNodes = useScene.getState().nodes
+      setMovingNode(resolveMoveActionNode(node, sceneNodes) as any)
       setSelection({ selectedIds: [] })
     },
     [node, setMovingNode, setSelection],
@@ -536,20 +529,26 @@ export function FloatingActionMenu() {
       useScene.temporal.getState().pause()
 
       if (duplicatesAsFreshSubtree(node as AnyNode)) {
-        const draftId = createFreshPlacementSubtree(node.id as AnyNodeId)
-        const draft = draftId ? useScene.getState().nodes[draftId] : null
-        if (draft) {
-          setMovingNode(draft as any)
-          setSelection({ selectedIds: [] })
-          return
+        let draftId: AnyNodeId | null = null
+        try {
+          draftId = createFreshPlacementSubtree(node.id as AnyNodeId)
+          const draft = draftId ? useScene.getState().nodes[draftId] : null
+          if (draft) {
+            setMovingNode(draft as any)
+            setSelection({ selectedIds: [] })
+            return
+          }
+        } catch (error) {
+          if (draftId && useScene.getState().nodes[draftId]) {
+            useScene.getState().deleteNode(draftId)
+          }
+          console.error('Failed to duplicate node subtree', error)
         }
         useScene.temporal.getState().resume()
         return
       }
 
-      let duplicateInfo = structuredClone(node) as any
-      delete duplicateInfo.id
-      duplicateInfo.metadata = { ...duplicateInfo.metadata, isNew: true }
+      const duplicateInfo = prepareFreshPlacementRootDuplicate(node as AnyNode) as any
 
       let duplicate: AnyNode | null = null
       try {
@@ -572,11 +571,6 @@ export function FloatingActionMenu() {
         } else if (node.type === 'roof-segment') {
           duplicateInfo.id = generateId('rseg')
           duplicate = RoofSegmentNode.parse(duplicateInfo)
-        } else if (node.type === 'stair') {
-          duplicateInfo.children = []
-          duplicateInfo.metadata = { ...duplicateInfo.metadata }
-          delete duplicateInfo.metadata?.isNew
-          duplicate = StairNode.parse(duplicateInfo)
         } else if (node.type === 'stair-segment') {
           duplicate = StairSegmentNode.parse(duplicateInfo)
         } else if (node.type === 'spawn') {
@@ -614,11 +608,7 @@ export function FloatingActionMenu() {
           useScene.getState().createNode(duplicate, duplicate.parentId as AnyNodeId)
         } else if (duplicate.type === 'fence') {
           useScene.getState().createNode(duplicate, duplicate.parentId as AnyNodeId)
-        } else if (
-          duplicate.type === 'roof-segment' ||
-          duplicate.type === 'stair' ||
-          duplicate.type === 'stair-segment'
-        ) {
+        } else if (duplicate.type === 'roof-segment' || duplicate.type === 'stair-segment') {
           // Add small offset to make it visible
           if ('position' in duplicate) {
             duplicate.position = [
@@ -627,13 +617,7 @@ export function FloatingActionMenu() {
               duplicate.position[2] + 1,
             ]
           }
-          if (node.type === 'stair' && duplicate.type === 'stair') {
-            duplicateStairSubtree(node.id as AnyNodeId, { mode: 'move' })
-          } else {
-            useScene.getState().createNode(duplicate, duplicate.parentId as AnyNodeId)
-          }
-
-          // Duplicate children for stair nodes
+          useScene.getState().createNode(duplicate, duplicate.parentId as AnyNodeId)
         } else if (
           duplicate.type === 'item' ||
           duplicate.type === 'chimney' ||
@@ -702,12 +686,8 @@ export function FloatingActionMenu() {
           nodeRegistry.has(duplicate.type)
         ) {
           setMovingNode(duplicate as any)
-        } else if (duplicate.type === 'stair') {
-          setSelection({ selectedIds: [duplicate.id as AnyNodeId] })
         }
-        if (duplicate.type !== 'stair') {
-          setSelection({ selectedIds: [] })
-        }
+        setSelection({ selectedIds: [] })
       }
     },
     [node, setMovingNode, setSelection],
@@ -775,9 +755,15 @@ export function FloatingActionMenu() {
   )
 
   const handleQuickAction = useCallback(
-    (action: NodeQuickAction) => (e: React.MouseEvent) => {
+    (action: NodeQuickAction) => (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation()
-      if (!node || action.disabled) return
+      if (!node) return
+      if (action.disabled) {
+        if (action.blockedFeedback) {
+          playBlockedQuickActionFeedback(e.currentTarget, reducedMotion)
+        }
+        return
+      }
       const run = () => action.run({ node, sceneApi: createSceneApi(useScene) })
       const result =
         action.history === 'single' ? runAsSingleSceneHistoryStep(useScene, run) : run()
@@ -787,7 +773,7 @@ export function FloatingActionMenu() {
         sfxEmitter.emit(selectedDifferentNode ? 'sfx:item-place' : 'sfx:item-pick')
       }
     },
-    [node, setSelection],
+    [node, reducedMotion, setSelection],
   )
 
   if (
@@ -850,18 +836,27 @@ export function FloatingActionMenu() {
               >
                 {quickActions.map((action) => (
                   <button
+                    aria-disabled={action.disabled || undefined}
                     aria-label={action.title ?? action.label}
-                    className="tooltip-trigger flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
-                    disabled={action.disabled}
+                    className={cn(
+                      'tooltip-trigger flex items-center rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground',
+                      action.disabled &&
+                        'cursor-not-allowed opacity-40 hover:bg-transparent hover:text-muted-foreground',
+                    )}
+                    disabled={action.disabled && !action.blockedFeedback}
                     key={action.id}
                     onClick={handleQuickAction(action)}
                     title={action.title ?? action.label}
                     type="button"
                   >
-                    <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-current">
-                      <QuickActionIcon action={action} />
+                    <span className="flex items-center gap-1.5" data-quick-action-feedback>
+                      <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-current">
+                        <QuickActionIcon action={action} />
+                      </span>
+                      <span className="whitespace-nowrap leading-none" data-quick-action-label>
+                        {action.label}
+                      </span>
                     </span>
-                    <span className="whitespace-nowrap leading-none">{action.label}</span>
                   </button>
                 ))}
               </div>

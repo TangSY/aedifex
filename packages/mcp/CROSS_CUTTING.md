@@ -103,7 +103,7 @@ Added `./storage` and `./operations` entries to the `"exports"` map of `@aedifex
 
 The Next.js editor (`apps/editor`) needs access to `createSceneStore()`, `SceneStore` types/errors, and the shared `SceneOperations` service layer in server-only code (API route handlers + `lib/scene-store-server.ts`). The main entry `.` pulls in the full MCP server surface (tools, transports, MCP SDK), which is overkill for a consumer that only needs storage/operations. The subpath exports let `apps/editor` dynamically import storage and operations without re-declaring either contract.
 
-The concrete backend is now `SqliteSceneStore`, backed by built-in SQLite drivers (`bun:sqlite` for the MCP CLI and `node:sqlite` for the Next.js editor server). It writes to `~/.pascal/data/pascal.db` by default and also supports `AEDIFEX_DATA_DIR`, `AEDIFEX_DB_PATH`, and `AEDIFEX_MAX_SCENE_BYTES`.
+The concrete backend is now `SqliteSceneStore`, backed by built-in SQLite drivers (`bun:sqlite` for the MCP CLI and `node:sqlite` for the Next.js editor server). It writes to `~/.pascal/data/aedifex.db` by default and also supports `AEDIFEX_DATA_DIR`, `AEDIFEX_DB_PATH`, and `AEDIFEX_MAX_SCENE_BYTES`.
 
 ### Impact
 

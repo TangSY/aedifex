@@ -1,3 +1,4 @@
+import { DEFAULT_LEVEL_HEIGHT } from '@aedifex/core'
 import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
 import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
 
@@ -137,7 +138,6 @@ function buildNodes(): StudioNodes {
     metadata: {},
     children: [],
     thickness: 0.1,
-    height: 2.5,
     start: [-W, -D],
     end: [W, -D],
     frontSide: 'unknown',
@@ -153,7 +153,6 @@ function buildNodes(): StudioNodes {
     metadata: {},
     children: [],
     thickness: 0.1,
-    height: 2.5,
     start: [W, -D],
     end: [W, D],
     frontSide: 'unknown',
@@ -169,7 +168,6 @@ function buildNodes(): StudioNodes {
     metadata: {},
     children: ['door_front'],
     thickness: 0.1,
-    height: 2.5,
     start: [W, D],
     end: [-W, D],
     frontSide: 'unknown',
@@ -185,7 +183,6 @@ function buildNodes(): StudioNodes {
     metadata: {},
     children: ['window_w'],
     thickness: 0.1,
-    height: 2.5,
     start: [-W, D],
     end: [-W, -D],
     frontSide: 'unknown',
@@ -217,6 +214,7 @@ function buildNodes(): StudioNodes {
     visible: true,
     metadata: {},
     level: 0,
+    height: DEFAULT_LEVEL_HEIGHT,
     children: [...wallIds, 'zone_living'] as AnyNodeId[],
   } as unknown as AnyNode
 
@@ -237,16 +235,6 @@ function buildTemplate(): SceneGraph {
   for (const node of [n.site, n.building, n.level, ...n.walls, n.zone, n.door, n.window]) {
     nodes[node.id as AnyNodeId] = node
   }
-
-  // SiteNode.children is a discriminatedUnion of BuildingNode/ItemNode objects
-  // (not string ids) — so the site must embed the full building node. The
-  // rest of the tree uses string ids per the BaseNode/LevelNode/WallNode
-  // schemas. We mutate the flat-dict copy of the site here so the nested
-  // representation round-trips through AnyNode.safeParse.
-  const siteInDict = nodes['site_empty' as AnyNodeId] as unknown as {
-    children: unknown[]
-  }
-  siteInDict.children = ['building_empty']
 
   return {
     nodes,

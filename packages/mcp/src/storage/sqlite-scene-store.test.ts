@@ -37,7 +37,7 @@ function makeGraph(overrides: Partial<SceneGraph> = {}): SceneGraph {
 }
 
 async function mkTmpRoot(): Promise<string> {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'pascal-sqlite-test-'))
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aedifex-sqlite-test-'))
 }
 
 async function rmrf(p: string): Promise<void> {
@@ -56,7 +56,7 @@ describe('resolveDefaultDatabasePath', () => {
     expect(resolveDefaultDatabasePath({ AEDIFEX_DB_PATH: '/tmp/custom.db' })).toBe('/tmp/custom.db')
   })
 
-  test('resolves AEDIFEX_DATA_DIR to pascal.db', () => {
+  test('resolves AEDIFEX_DATA_DIR to aedifex.db', () => {
     expect(resolveDefaultDatabasePath({ AEDIFEX_DATA_DIR: '/tmp/pascal-data' })).toBe(
       path.join('/tmp/pascal-data', 'aedifex.db'),
     )
@@ -69,11 +69,11 @@ describe('resolveDefaultDatabasePath', () => {
     )
   })
 
-  test('falls back to homedir + .pascal/data/pascal.db', () => {
+  test('falls back to homedir + .pascal/data/aedifex.db', () => {
     if (process.platform === 'win32') return
-    expect(resolveDefaultDatabasePath({}).endsWith(path.join('.pascal', 'data', 'aedifex.db'))).toBe(
-      true,
-    )
+    expect(
+      resolveDefaultDatabasePath({}).endsWith(path.join('.pascal', 'data', 'aedifex.db')),
+    ).toBe(true)
   })
 })
 

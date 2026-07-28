@@ -6,6 +6,7 @@ import {
   getMaxWallCurveOffset,
   getWallChordFrame,
   normalizeWallCurveOffset,
+  runAsSingleSceneHistoryStep,
   useLiveNodeOverrides,
   useScene,
   type WallNode,
@@ -17,6 +18,7 @@ import {
   isAngleSnapActive,
   isMagneticSnapActive,
   isSegmentLongEnough,
+  resolveEndpointWallSplit,
   snapBuildingLocalToWorldGrid,
   snapScalarToGrid,
   snapWallDraftPoint,
@@ -167,6 +169,18 @@ export const wallMoveEndpointAffordance: FloorplanAffordance<WallNode> = {
     const originalEnd: WallPlanPoint = [...node.end] as WallPlanPoint
     const linkedWalls = collectLinkedWalls(nodes, node.id, originalStart, originalEnd)
     const affectedIds: AnyNodeId[] = [node.id, ...linkedWalls.map((w) => w.id)]
+    const movingOriginal: WallPlanPoint = endpoint === 'start' ? originalStart : originalEnd
+    // Walls attached to the MOVING corner cascade with the drag, but the snap
+    // pipeline reads the scene store, which keeps their pre-drag coordinates
+    // until commit. Their stale corners would recreate the old junction as a
+    // snap/alignment target: inside the connect radius the endpoint could
+    // never land closer than ~5cm to where it started, making sub-5cm
+    // corrections (e.g. squaring a scan-imported 91° corner) impossible.
+    // Excluded while attached; under Alt-detach they stay put and remain
+    // legitimate targets. Mirrors the 3D move-endpoint tool.
+    const movingLinkedWallIds = linkedWalls
+      .filter((w) => pointsEqual(w.start, movingOriginal) || pointsEqual(w.end, movingOriginal))
+      .map((w) => w.id)
 
     // Remember the latest preview so `commit()` can write it tracked.
     let lastPrimaryStart: WallPlanPoint = originalStart
@@ -179,11 +193,12 @@ export const wallMoveEndpointAffordance: FloorplanAffordance<WallNode> = {
         // Re-collect walls every tick so the snap pipeline sees fresh
         // positions (matters when the user releases + re-grabs without
         // unmounting the layer). Snap reads from scene — which holds
-        // the pre-drag positions throughout — so the linked-wall snap
-        // targets stay anchored to where corners *were*, exactly like
-        // the legacy flow.
+        // the pre-drag positions throughout — so walls that cascade with
+        // the moving corner are excluded (stale coordinates); under
+        // Alt-detach they stay put, so they rejoin the candidate pool.
         const sceneNodes = useScene.getState().nodes
         const walls = collectLevelWalls(sceneNodes, node.id)
+        const staleWallIds = modifiers.altKey ? [node.id] : [node.id, ...movingLinkedWallIds]
         // The grid step follows the active snapping mode (`getSegmentGridStep()`
         // is 0 outside grid mode), so `'lines' / 'angles' / 'off'` no longer
         // force a grid snap the mode chip says is inactive. In `'angles'` mode
@@ -193,7 +208,7 @@ export const wallMoveEndpointAffordance: FloorplanAffordance<WallNode> = {
         const snapped = snapWallDraftPoint({
           point: planPoint as WallPlanPoint,
           walls,
-          ignoreWallIds: [node.id],
+          ignoreWallIds: staleWallIds,
           start: angleLocked ? fixedPoint : undefined,
           angleSnap: angleLocked,
           magnetic: isMagneticSnapActive(),
@@ -203,13 +218,15 @@ export const wallMoveEndpointAffordance: FloorplanAffordance<WallNode> = {
         // object's edge / wall face and publishes a guide. The guide is
         // DISPLAYED in every mode except Off (isAlignmentGuideActive); the
         // magnetic pull onto it is applied only in 'lines' mode
-        // (isMagneticSnapActive), like the draft tool does. The dragged wall and
-        // its linked siblings (which cascade with the corner) are excluded from
-        // the candidate pool. Alt is detach, NOT bypass.
+        // (isMagneticSnapActive), like the draft tool does. Only the dragged
+        // wall and the siblings cascading with the moving corner are excluded
+        // from the candidate pool — walls linked at the FIXED corner don't
+        // move, and their anchors are what let the dragged corner align back
+        // onto a true axis. Alt is detach, NOT bypass.
         const aligned = alignFloorplanDraftPoint(snapped, {
           applySnap: isMagneticSnapActive(),
           bypass: !isAlignmentGuideActive(),
-          excludeIds: [node.id, ...linkedWalls.map((w) => w.id)],
+          excludeIds: staleWallIds,
         }) as WallPlanPoint
 
         const primaryStart: WallPlanPoint = endpoint === 'start' ? aligned : fixedPoint
@@ -244,6 +261,17 @@ export const wallMoveEndpointAffordance: FloorplanAffordance<WallNode> = {
         const sceneState = useScene.getState()
         overrides.set(node.id as AnyNodeId, { start: primaryStart, end: primaryEnd })
         sceneState.markDirty(node.id as AnyNodeId)
+        if (modifiers.altKey) {
+          // Attach→detach transition: linked walls dragged on earlier attached
+          // ticks still carry overrides — drop them so their corners snap back
+          // to the scene originals (untouched during the drag).
+          for (const linked of linkedWalls) {
+            if (overrides.get(linked.id)) {
+              overrides.clear(linked.id)
+              sceneState.markDirty(linked.id)
+            }
+          }
+        }
         for (const upd of linkedUpdates) {
           overrides.set(upd.id, { start: upd.start, end: upd.end })
           sceneState.markDirty(upd.id)
@@ -261,14 +289,41 @@ export const wallMoveEndpointAffordance: FloorplanAffordance<WallNode> = {
       commit() {
         // Atomic tracked write of the final endpoints, then drop the
         // overrides so the scene state is the single source of truth
-        // again.
-        useScene.getState().updateNodes([
-          { id: node.id, data: { start: lastPrimaryStart, end: lastPrimaryEnd } },
-          ...lastLinkedUpdates.map((u) => ({
-            id: u.id,
-            data: { start: u.start, end: u.end },
-          })),
-        ])
+        // again. Parity with the 3D move-endpoint tool: a drop on another
+        // wall's interior splits that host (create halves, migrate
+        // attachments, delete host) inside the same single history step as
+        // the endpoint write. Linked walls updated here share the drop point
+        // as an endpoint (a corner join, not a split) so they're excluded
+        // with the dragged wall; a zero-move drop skips the resolution
+        // entirely.
+        const movingPoint = endpoint === 'start' ? lastPrimaryStart : lastPrimaryEnd
+        const originalMovingPoint = endpoint === 'start' ? originalStart : originalEnd
+        runAsSingleSceneHistoryStep(useScene, () => {
+          const resolved = pointsEqual(movingPoint, originalMovingPoint)
+            ? null
+            : resolveEndpointWallSplit({
+                point: movingPoint,
+                levelId: (node.parentId ?? null) as string | null,
+                ignoreWallIds: [node.id, ...lastLinkedUpdates.map((u) => String(u.id))],
+              })
+          const finalPoint = resolved ?? movingPoint
+          useScene.getState().updateNodes([
+            {
+              id: node.id,
+              data: {
+                start: endpoint === 'start' ? finalPoint : lastPrimaryStart,
+                end: endpoint === 'end' ? finalPoint : lastPrimaryEnd,
+              },
+            },
+            ...lastLinkedUpdates.map((u) => ({
+              id: u.id,
+              data: {
+                start: pointsEqual(u.start, movingPoint) ? finalPoint : u.start,
+                end: pointsEqual(u.end, movingPoint) ? finalPoint : u.end,
+              },
+            })),
+          ])
+        })
         const overrides = useLiveNodeOverrides.getState()
         overrides.clear(node.id as AnyNodeId)
         for (const upd of lastLinkedUpdates) overrides.clear(upd.id)

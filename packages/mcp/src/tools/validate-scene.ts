@@ -2,9 +2,9 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 
-export const validateSceneInput: any = {}
+export const validateSceneInput = {}
 
-export const validateSceneOutput: any = {
+export const validateSceneOutput = {
   valid: z.boolean(),
   errors: z.array(
     z.object({

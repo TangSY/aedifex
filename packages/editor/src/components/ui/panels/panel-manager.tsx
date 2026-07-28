@@ -28,7 +28,9 @@ import { sfxEmitter } from '../../../lib/sfx-bus'
 import useEditor from '../../../store/use-editor'
 import { MobilePanelSheet } from './mobile-panel-sheet'
 import { MobileSelectionBar } from './mobile-selection-bar'
+import { MultiSelectionPanel } from './multi-selection-panel'
 import { getNodeDisplay } from './node-display'
+import { resetDesktopInspectorCollapsed } from './panel-wrapper'
 import { ParametricInspector } from './parametric-inspector'
 import { ReferencePanel } from './reference-panel'
 
@@ -167,7 +169,13 @@ function MobilePanelLayer({
   )
 }
 
-export function PanelManager({ inspectorFooter }: { inspectorFooter?: React.ReactNode }) {
+export function PanelManager({
+  inspectorFooter,
+  multiSelectionFooter,
+}: {
+  inspectorFooter?: React.ReactNode
+  multiSelectionFooter?: React.ReactNode
+}) {
   const isMobile = useIsMobile()
   const selectedIds = useViewer((s) => s.selection.selectedIds)
   const selectedZoneId = useViewer((s) => s.selection.zoneId)
@@ -185,6 +193,27 @@ export function PanelManager({ inspectorFooter }: { inspectorFooter?: React.Reac
     const id = selectedIds[0]
     return id ? (s.nodes[id as AnyNodeId] ?? null) : null
   })
+
+  // Node and reference selection are mutually exclusive: selecting a guide
+  // clears the node selection (handleGuideSelect), but node selection never
+  // cleared a lingering reference — so clicking a wall with a floorplan
+  // selected kept showing the reference panel. Clear the stale reference the
+  // moment a scene selection appears.
+  const setSelectedReferenceId = useEditor((s) => s.setSelectedReferenceId)
+  useEffect(() => {
+    if (selectedIds.length > 0 || selectedZoneId) {
+      setSelectedReferenceId(null)
+    }
+  }, [selectedIds, selectedZoneId, setSelectedReferenceId])
+
+  // The inspector's expanded state is shared across panel swaps, but a fresh
+  // selection after everything was deselected should open collapsed again.
+  const hasAnySelection = selectedIds.length > 0 || Boolean(selectedZoneId) || Boolean(selectedReferenceId)
+  useEffect(() => {
+    if (!hasAnySelection) {
+      resetDesktopInspectorCollapsed()
+    }
+  }, [hasAnySelection])
 
   if (isMobile) {
     if (selectedReferenceId) {
@@ -213,6 +242,12 @@ export function PanelManager({ inspectorFooter }: { inspectorFooter?: React.Reac
         onClose={() => setSelection({ zoneId: null })}
       />
     )
+  }
+
+  // Multi-selection: compact docked panel (desktop only — the mobile branch
+  // above keeps today's behavior and renders nothing for multi-selections).
+  if (selectedIds.length > 1) {
+    return <MultiSelectionPanel footer={multiSelectionFooter} />
   }
 
   return panelForType(selectedNodeType, inspectorFooter)

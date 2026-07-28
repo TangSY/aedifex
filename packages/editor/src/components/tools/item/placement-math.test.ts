@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'bun:test'
 import { getDetachedAttachmentPreviewLift, stripTransient } from './placement-math'
 
 describe('stripTransient', () => {
-  it('removes placement-only metadata flags before commit', () => {
+  test('removes placement-only metadata flags before commit', () => {
     expect(stripTransient({ isNew: true, isTransient: true, label: 'copy' })).toEqual({
       label: 'copy',
     })
@@ -10,13 +10,13 @@ describe('stripTransient', () => {
 })
 
 describe('getDetachedAttachmentPreviewLift', () => {
-  it('raises attach-only item previews while they are detached from their host', () => {
+  test('raises attach-only item previews while they are detached from their host', () => {
     expect(getDetachedAttachmentPreviewLift('wall')).toBeGreaterThan(0)
     expect(getDetachedAttachmentPreviewLift('wall-side')).toBeGreaterThan(0)
     expect(getDetachedAttachmentPreviewLift('ceiling')).toBeGreaterThan(0)
   })
 
-  it('keeps floor item previews on the floor', () => {
+  test('keeps floor item previews on the floor', () => {
     expect(getDetachedAttachmentPreviewLift(undefined)).toBe(0)
   })
 })

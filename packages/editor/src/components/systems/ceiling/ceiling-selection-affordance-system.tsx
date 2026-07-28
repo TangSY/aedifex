@@ -3,6 +3,7 @@
 import {
   type CeilingNode,
   emitter,
+  resolveCeilingHeight,
   resolveLevelId,
   sceneRegistry,
   snapPointToGrid,
@@ -20,10 +21,7 @@ import {
 } from '../../../lib/ceiling-plan-snap'
 import { sfxEmitter } from '../../../lib/sfx-bus'
 import useEditor, { isGridSnapActive } from '../../../store/use-editor'
-import useInteractionScope, {
-  useIsCurveReshape,
-  useMovingNode,
-} from '../../../store/use-interaction-scope'
+import useInteractionScope from '../../../store/use-interaction-scope'
 import { suppressBoxSelectForPointer } from '../../tools/select/box-select-state'
 
 const BRACKET_THICKNESS = 0.04
@@ -99,8 +97,13 @@ export const CeilingSelectionAffordanceSystem = () => {
   const phase = useEditor((state) => state.phase)
   const mode = useEditor((state) => state.mode)
   const structureLayer = useEditor((state) => state.structureLayer)
-  const movingNode = useMovingNode()
-  const isCurveReshape = useIsCurveReshape()
+  // ANY active interaction (moving/placing a node, reshaping a boundary or
+  // curve, dragging a handle) unmounts the brackets: their ceiling-height hit
+  // boxes would otherwise catch drag-time hover, set `hoveredId` to the
+  // ceiling, and flash the ceiling grid mid-gesture (e.g. while dragging a
+  // slab polygon vertex). The brackets' own corner drag doesn't begin a
+  // scope, so it can't unmount itself.
+  const scopeIdle = useInteractionScope((state) => state.scope.kind === 'idle')
   const currentLevelId = useViewer((state) => state.selection.levelId)
 
   const ceilings = useScene(
@@ -120,8 +123,7 @@ export const CeilingSelectionAffordanceSystem = () => {
     phase === 'structure' &&
     mode === 'select' &&
     structureLayer === 'elements' &&
-    !movingNode &&
-    !isCurveReshape &&
+    scopeIdle &&
     currentLevelId !== null
 
   if (!shouldRender) return null
@@ -150,6 +152,9 @@ const CeilingSelectionAffordance = ({
     () => (liveOverride ? ({ ...ceiling, ...liveOverride } as CeilingNode) : ceiling),
     [ceiling, liveOverride],
   )
+  // Explicit height when stored, else the live level-top bound the ceiling
+  // follows (primitive selector — re-render-safe).
+  const resolvedHeight = useScene((s) => resolveCeilingHeight(effectiveCeiling, s.nodes))
   const [levelObject, setLevelObject] = useState<Object3D | null>(
     () => sceneRegistry.nodes.get(levelId) ?? null,
   )
@@ -220,7 +225,7 @@ const CeilingSelectionAffordance = ({
       )
       raycasterRef.current.setFromCamera(ndcRef.current, camera)
 
-      planePointRef.current.set(0, (effectiveCeiling.height ?? 2.5) + BRACKET_Y_OFFSET, 0)
+      planePointRef.current.set(0, resolvedHeight + BRACKET_Y_OFFSET, 0)
       levelObject.localToWorld(planePointRef.current)
 
       planeOriginRef.current.set(0, 0, 0)
@@ -237,7 +242,7 @@ const CeilingSelectionAffordance = ({
       levelObject.worldToLocal(localIntersectionRef.current)
       return [localIntersectionRef.current.x, localIntersectionRef.current.z]
     },
-    [camera, effectiveCeiling.height, gl.domElement, levelObject],
+    [camera, resolvedHeight, gl.domElement, levelObject],
   )
 
   const handleCornerPointerDown = useCallback(
@@ -437,10 +442,7 @@ const CeilingSelectionAffordance = ({
   if (!levelObject || corners.length === 0) return null
 
   return createPortal(
-    <group
-      position={[0, (effectiveCeiling.height ?? 2.5) + BRACKET_Y_OFFSET, 0]}
-      ref={bracketsRootRef}
-    >
+    <group position={[0, resolvedHeight + BRACKET_Y_OFFSET, 0]} ref={bracketsRootRef}>
       {corners.map((corner, index) => (
         <CornerBracket
           ceiling={effectiveCeiling}
@@ -506,7 +508,11 @@ const CornerBracket = ({
       node: ceiling,
       nativeEvent: e.nativeEvent,
       localPosition: [0, 0, 0],
-      position: [corner.corner[0], ceiling.height ?? 2.5, corner.corner[1]],
+      position: [
+        corner.corner[0],
+        resolveCeilingHeight(ceiling, useScene.getState().nodes),
+        corner.corner[1],
+      ],
       stopPropagation: () => e.stopPropagation(),
       viaHandle: true,
     })

@@ -1,178 +1,161 @@
 import { sceneRegistry, useScene } from '@aedifex/core'
-import * as THREE from 'three'
+import * as THREE from 'three/webgpu'
 import { snapLevelsToTruePositions } from '../systems/level/level-utils'
 
-// ============================================================================
-// Screenshot Renderer Context
-// ============================================================================
+type ScreenshotRenderer = {
+  domElement: HTMLCanvasElement
+  render: (scene: THREE.Scene, camera: THREE.Camera) => void
+  renderAsync?: (scene: THREE.Scene, camera: THREE.Camera) => Promise<void>
+  getClearAlpha?: () => number
+  setClearAlpha?: (alpha: number) => void
+}
 
-/** Shared ref to the active renderer context, set by the host component */
 let activeRendererContext: {
-  gl: THREE.WebGLRenderer
+  renderer: ScreenshotRenderer
   scene: THREE.Scene
 } | null = null
 
-/** Register the renderer and scene for screenshot capture. Call from a R3F component's useEffect. */
-export function setScreenshotRenderer(gl: THREE.WebGLRenderer, scene: THREE.Scene) {
-  activeRendererContext = { gl, scene }
+export function setScreenshotRenderer(renderer: ScreenshotRenderer, scene: THREE.Scene) {
+  activeRendererContext = { renderer, scene }
 }
 
-/** Clear the renderer context. Call on component unmount. */
-export function clearScreenshotRenderer() {
-  activeRendererContext = null
-}
-
-// ============================================================================
-// Reusable capture resources (P0-3: avoid GC pressure from per-call allocations)
-// ============================================================================
-
-let _captureCamera: THREE.PerspectiveCamera | null = null
-let _offscreenCanvas: HTMLCanvasElement | null = null
-
-function getCaptureCamera(aspect: number): THREE.PerspectiveCamera {
-  if (!_captureCamera) {
-    _captureCamera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000)
+export function clearScreenshotRenderer(renderer: ScreenshotRenderer) {
+  if (activeRendererContext?.renderer === renderer) {
+    activeRendererContext = null
   }
-  _captureCamera.aspect = aspect
-  _captureCamera.layers.enableAll()
-  return _captureCamera
 }
 
-function getOffscreenCanvas(width: number, height: number): HTMLCanvasElement {
-  if (!_offscreenCanvas) {
-    _offscreenCanvas = document.createElement('canvas')
+let captureCamera: THREE.PerspectiveCamera | null = null
+let offscreenCanvas: HTMLCanvasElement | null = null
+
+function getCaptureCamera(aspect: number) {
+  if (!captureCamera) {
+    captureCamera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000)
   }
-  _offscreenCanvas.width = width
-  _offscreenCanvas.height = height
-  return _offscreenCanvas
+  captureCamera.aspect = aspect
+  captureCamera.layers.enableAll()
+  return captureCamera
 }
 
-// ============================================================================
-// Screenshot API
-// ============================================================================
+function getOffscreenCanvas(width: number, height: number) {
+  if (!offscreenCanvas) {
+    offscreenCanvas = document.createElement('canvas')
+  }
+  offscreenCanvas.width = width
+  offscreenCanvas.height = height
+  return offscreenCanvas
+}
 
 export interface CaptureScreenshotOptions {
   width?: number
   height?: number
-  /** Layer indices to disable on the capture camera (e.g. editor-only gizmos) */
   excludeLayers?: number[]
 }
 
 /**
- * Capture a screenshot of the current 3D scene as a Blob Object URL.
- * Returns null if the renderer is not available.
- *
- * P0-1: Returns Object URL (blob:...) instead of base64 data URL to avoid
- * storing large strings in memory. Callers must call URL.revokeObjectURL()
- * when the URL is no longer needed.
+ * Capture the active viewer as a JPEG Blob URL. The renderer bridge is owned
+ * by Viewer, so consumers only need this high-level API.
  */
-export function captureScreenshot(
+export async function captureScreenshot(
   options: CaptureScreenshotOptions = {},
 ): Promise<string | null> {
-  const ctx = activeRendererContext
-  if (!ctx) return Promise.resolve(null)
+  const context = activeRendererContext
+  if (!context || typeof document === 'undefined') return null
 
   const { width = 640, height = 360, excludeLayers = [] } = options
-  const { gl, scene } = ctx
+  const { renderer, scene } = context
+  const camera = getCaptureCamera(width / height)
+  const nodes = useScene.getState().nodes
+  const siteNode = Object.values(nodes).find((node) => node.type === 'site')
 
-  return new Promise((resolve) => {
-    try {
-      const camera = getCaptureCamera(width / height)
+  if (siteNode?.camera) {
+    const { position, target } = siteNode.camera
+    camera.position.set(position[0], position[1], position[2])
+    camera.lookAt(target[0], target[1], target[2])
+  } else {
+    camera.position.set(8, 8, 8)
+    camera.lookAt(0, 0, 0)
+  }
 
-      const nodes = useScene.getState().nodes
-      const siteNode = Object.values(nodes).find((n) => n.type === 'site')
+  for (const layer of excludeLayers) {
+    camera.layers.disable(layer)
+  }
 
-      if (siteNode?.camera) {
-        const { position, target } = siteNode.camera
-        camera.position.set(position[0], position[1], position[2])
-        camera.lookAt(target[0], target[1], target[2])
-      } else {
-        camera.position.set(8, 8, 8)
-        camera.lookAt(0, 0, 0)
-      }
+  const { width: canvasWidth, height: canvasHeight } = renderer.domElement
+  if (canvasWidth === 0 || canvasHeight === 0) return null
+  camera.aspect = canvasWidth / canvasHeight
+  camera.updateProjectionMatrix()
 
-      for (const layer of excludeLayers) {
-        camera.layers.disable(layer)
-      }
+  const restoreLevels = snapLevelsToTruePositions()
+  const previousBackground = scene.background
+  const previousClearAlpha = renderer.getClearAlpha?.() ?? 1
+  const visibilitySnapshot = new Map<string, boolean>()
 
-      const { width: canvasW, height: canvasH } = gl.domElement
-      camera.aspect = canvasW / canvasH
-      camera.updateProjectionMatrix()
+  try {
+    scene.background = new THREE.Color('#ffffff')
+    renderer.setClearAlpha?.(1)
 
-      const restoreLevels = snapLevelsToTruePositions()
-
-      // Force opaque white background for the screenshot.
-      // The post-processing pipeline sets setClearAlpha(0) so background pixels
-      // are transparent (used as geometry mask in the TSL pipeline). When we
-      // bypass the pipeline with gl.render(), transparent pixels become black
-      // on the 2D canvas. Fix: force clearAlpha=1 and a white background.
-      const prevBackground = scene.background
-      const prevClearAlpha = (gl as any).getClearAlpha?.() ?? 1
-      scene.background = new THREE.Color('#ffffff')
-      if ((gl as any).setClearAlpha) {
-        ;(gl as any).setClearAlpha(1)
-      }
-
-      // Hide scan/guide nodes
-      const visibilitySnapshot = new Map<string, boolean>()
-      for (const type of ['scan', 'guide'] as const) {
-        sceneRegistry.byType[type]?.forEach((id) => {
-          const obj = sceneRegistry.nodes.get(id)
-          if (obj) {
-            visibilitySnapshot.set(id, obj.visible)
-            obj.visible = false
-          }
-        })
-      }
-
-      gl.render(scene, camera)
-
-      // Restore original background and clear alpha
-      scene.background = prevBackground
-      if ((gl as any).setClearAlpha) {
-        ;(gl as any).setClearAlpha(prevClearAlpha)
-      }
-
-      restoreLevels()
-      visibilitySnapshot.forEach((wasVisible, id) => {
-        const obj = sceneRegistry.nodes.get(id)
-        if (obj) obj.visible = wasVisible
+    for (const type of ['scan', 'guide'] as const) {
+      sceneRegistry.byType[type]?.forEach((id) => {
+        const object = sceneRegistry.nodes.get(id)
+        if (!object) return
+        visibilitySnapshot.set(id, object.visible)
+        object.visible = false
       })
+    }
 
-      // Crop and resize to target dimensions
-      const srcAspect = canvasW / canvasH
-      const dstAspect = width / height
-      let sx = 0,
-        sy = 0,
-        sWidth = canvasW,
-        sHeight = canvasH
-      if (srcAspect > dstAspect) {
-        sWidth = Math.round(canvasH * dstAspect)
-        sx = Math.round((canvasW - sWidth) / 2)
-      } else if (srcAspect < dstAspect) {
-        sHeight = Math.round(canvasW / dstAspect)
-        sy = Math.round((canvasH - sHeight) / 2)
-      }
+    if (renderer.renderAsync) {
+      await renderer.renderAsync(scene, camera)
+    } else {
+      renderer.render(scene, camera)
+    }
 
-      const offscreen = getOffscreenCanvas(width, height)
-      const ctx2d = offscreen.getContext('2d')!
-      ctx2d.drawImage(gl.domElement, sx, sy, sWidth, sHeight, 0, 0, width, height)
+    const sourceAspect = canvasWidth / canvasHeight
+    const targetAspect = width / height
+    let sourceX = 0
+    let sourceY = 0
+    let sourceWidth = canvasWidth
+    let sourceHeight = canvasHeight
 
-      // P0-1: Convert to Blob Object URL instead of base64 string.
-      // Blob URLs are lightweight references (~60 bytes) vs base64 strings (~100KB+).
-      offscreen.toBlob(
-        (blob) => {
-          if (blob) {
-            resolve(URL.createObjectURL(blob))
-          } else {
-            resolve(null)
-          }
-        },
+    if (sourceAspect > targetAspect) {
+      sourceWidth = Math.round(canvasHeight * targetAspect)
+      sourceX = Math.round((canvasWidth - sourceWidth) / 2)
+    } else if (sourceAspect < targetAspect) {
+      sourceHeight = Math.round(canvasWidth / targetAspect)
+      sourceY = Math.round((canvasHeight - sourceHeight) / 2)
+    }
+
+    const canvas = getOffscreenCanvas(width, height)
+    const context2d = canvas.getContext('2d')
+    if (!context2d) return null
+    context2d.drawImage(
+      renderer.domElement,
+      sourceX,
+      sourceY,
+      sourceWidth,
+      sourceHeight,
+      0,
+      0,
+      width,
+      height,
+    )
+
+    return await new Promise((resolve) => {
+      canvas.toBlob(
+        (blob) => resolve(blob ? URL.createObjectURL(blob) : null),
         'image/jpeg',
         0.8,
       )
-    } catch {
-      resolve(null)
-    }
-  })
+    })
+  } catch {
+    return null
+  } finally {
+    scene.background = previousBackground
+    renderer.setClearAlpha?.(previousClearAlpha)
+    restoreLevels()
+    visibilitySnapshot.forEach((wasVisible, id) => {
+      const object = sceneRegistry.nodes.get(id)
+      if (object) object.visible = wasVisible
+    })
+  }
 }

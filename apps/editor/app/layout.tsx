@@ -26,20 +26,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const enableDevDiagnostics =
+    process.env.NODE_ENV === 'development' && process.env.AEDIFEX_DEV_DIAGNOSTICS === '1'
+
   return (
     <html
       className={`${geistSans.variable} ${geistMono.variable} ${GeistPixelSquare.variable} ${barlow.variable}`}
       lang="en"
     >
-      <head>
-        {/* react-scan: uncomment to visualize component re-renders
-        {process.env.NODE_ENV === 'development' && (
-          <script async crossOrigin="anonymous" src="//unpkg.com/react-scan/dist/auto.global.js" />
-        )} */}
-      </head>
       <body className="font-sans">
-        <ClientBootstrap>{children}</ClientBootstrap>
-        {process.env.NODE_ENV === 'development' && <Agentation />}
+        <ClientBootstrap enableDevDiagnostics={enableDevDiagnostics}>{children}</ClientBootstrap>
+        {enableDevDiagnostics && <Agentation />}
       </body>
     </html>
   )

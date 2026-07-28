@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'bun:test'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -10,8 +10,8 @@ import {
 import { buildLevelDuplicateCreateOps } from './level-duplication'
 
 describe('buildLevelDuplicateCreateOps', () => {
-  it('parents a duplicated bootstrap level back to its building', () => {
-    const level = LevelNode.parse({ level: 0, children: [] })
+  test('parents a duplicated bootstrap level back to its building', () => {
+    const level = LevelNode.parse({ level: 0, height: 3.25, children: [] })
     const building = BuildingNode.parse({ children: [level.id] })
     const wall = WallNode.parse({
       parentId: level.id,
@@ -36,9 +36,10 @@ describe('buildLevelDuplicateCreateOps', () => {
 
     expect(sourceLevel.parentId).toBeNull()
     expect(levelCreateOp?.parentId).toBe(building.id)
+    expect(levelCreateOp?.node.type === 'level' ? levelCreateOp.node.height : undefined).toBe(3.25)
   })
 
-  it('does not copy spawn points from the source level', () => {
+  test('does not copy spawn points from the source level', () => {
     const building = BuildingNode.parse({})
     const spawn = SpawnNode.parse({ parentId: 'level_source' })
     const level = LevelNode.parse({

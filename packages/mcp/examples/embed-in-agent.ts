@@ -10,9 +10,9 @@
  *   bun run packages/mcp/examples/embed-in-agent.ts
  */
 
+import { createAedifexMcpServer, SceneBridge } from '@aedifex/mcp'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { createAedifexMcpServer, SceneBridge } from '@aedifex/mcp'
 
 async function main(): Promise<void> {
   // 1. Spin up the headless bridge. `loadDefault()` seeds a Site → Building →

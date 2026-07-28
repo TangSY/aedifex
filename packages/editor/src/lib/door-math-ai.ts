@@ -9,7 +9,7 @@ import {
 } from '@aedifex/core'
 
 /**
- * Converts wall-local (X along wall, Y = height above wall base) to world XYZ.
+ * Converts wall-local coordinates to world coordinates.
  */
 export function wallLocalToWorld(
   wallNode: WallNode,
@@ -30,8 +30,7 @@ export function wallLocalToWorld(
 }
 
 /**
- * Clamps door center X so it stays fully within wall bounds.
- * Y is always height/2 — doors sit at floor level.
+ * Clamp a door center so its full dimensions stay inside a wall.
  */
 export function clampToWall(
   wallNode: WallNode,
@@ -43,14 +42,14 @@ export function clampToWall(
   const dz = wallNode.end[1] - wallNode.start[1]
   const wallLength = Math.sqrt(dx * dx + dz * dz)
 
-  const clampedX = Math.max(width / 2, Math.min(wallLength - width / 2, localX))
-  const clampedY = height / 2 // Doors always sit at floor level
-  return { clampedX, clampedY }
+  return {
+    clampedX: Math.max(width / 2, Math.min(wallLength - width / 2, localX)),
+    clampedY: height / 2,
+  }
 }
 
 /**
- * Checks if a proposed door position overlaps any existing wall children.
- * Handles item, window, and door types.
+ * Check a proposed door rectangle against wall-attached children.
  */
 export function hasWallChildOverlap(
   wallId: string,
@@ -64,6 +63,7 @@ export function hasWallChildOverlap(
   const nodes = useScene.getState().nodes
   const wallNode = nodes[wallId as AnyNodeId] as WallNode | undefined
   if (!wallNode) return true
+
   const halfW = width / 2
   const halfH = height / 2
   const newBottom = clampedY - halfH
@@ -78,33 +78,35 @@ export function hasWallChildOverlap(
         : null
 
   for (const childId of Array.isArray(wallNode.children) ? wallNode.children : []) {
-    if (childId === ignoreId) continue
-    if (removalSet?.has(childId)) continue
+    if (childId === ignoreId || removalSet?.has(childId)) continue
     const child = nodes[childId as AnyNodeId]
     if (!child) continue
 
-    let childLeft: number, childRight: number, childBottom: number, childTop: number
+    let childLeft: number
+    let childRight: number
+    let childBottom: number
+    let childTop: number
 
     if (child.type === 'item') {
       const item = child as ItemNode
       if (item.asset.attachTo !== 'wall' && item.asset.attachTo !== 'wall-side') continue
-      const [w, h] = getScaledDimensions(item)
-      childLeft = item.position[0] - w / 2
-      childRight = item.position[0] + w / 2
+      const [childWidth, childHeight] = getScaledDimensions(item)
+      childLeft = item.position[0] - childWidth / 2
+      childRight = item.position[0] + childWidth / 2
       childBottom = item.position[1]
-      childTop = item.position[1] + h
+      childTop = item.position[1] + childHeight
     } else if (child.type === 'window') {
-      const win = child as WindowNode
-      childLeft = win.position[0] - win.width / 2
-      childRight = win.position[0] + win.width / 2
-      childBottom = win.position[1] - win.height / 2
-      childTop = win.position[1] + win.height / 2
+      const windowNode = child as WindowNode
+      childLeft = windowNode.position[0] - windowNode.width / 2
+      childRight = windowNode.position[0] + windowNode.width / 2
+      childBottom = windowNode.position[1] - windowNode.height / 2
+      childTop = windowNode.position[1] + windowNode.height / 2
     } else if (child.type === 'door') {
-      const door = child as DoorNode
-      childLeft = door.position[0] - door.width / 2
-      childRight = door.position[0] + door.width / 2
-      childBottom = door.position[1] - door.height / 2
-      childTop = door.position[1] + door.height / 2
+      const doorNode = child as DoorNode
+      childLeft = doorNode.position[0] - doorNode.width / 2
+      childRight = doorNode.position[0] + doorNode.width / 2
+      childBottom = doorNode.position[1] - doorNode.height / 2
+      childTop = doorNode.position[1] + doorNode.height / 2
     } else {
       continue
     }

@@ -29,7 +29,6 @@ function floorPlacedDef(kind: string, applies?: (n: AnyNode) => boolean): AnyNod
     category: 'utility',
     defaults: () => ({}) as any,
     capabilities: {
-      deletable: true,
       floorPlaced: {
         footprint: (n: AnyNode) => ({
           dimensions: (n as { dimensions?: [number, number, number] }).dimensions ?? [1, 1, 1],
@@ -54,7 +53,6 @@ function elevatorDef(): AnyNodeDefinition {
     category: 'structure',
     defaults: () => ({}) as any,
     capabilities: {
-      deletable: true,
       alignmentFootprint: (n: AnyNode) => {
         const e = n as any
         const wall = getElevatorShaftWallThickness(e)
@@ -77,7 +75,6 @@ function stairDef(): AnyNodeDefinition {
     category: 'structure',
     defaults: () => ({}) as any,
     capabilities: {
-      deletable: true,
       alignmentFootprint: (n: AnyNode, nodes?: Readonly<Record<string, AnyNode>>) => {
         const aabb = stairFootprintAABB(n as any, nodes)
         return aabb ? { shape: 'aabb', ...aabb } : null
@@ -94,7 +91,7 @@ function plainDef(kind: string): AnyNodeDefinition {
     schema: z.object({ type: z.literal(kind) }) as any,
     category: 'utility',
     defaults: () => ({}) as any,
-    capabilities: { deletable: true },
+    capabilities: {},
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
   } as AnyNodeDefinition
 }

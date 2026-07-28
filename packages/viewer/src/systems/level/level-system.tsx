@@ -1,4 +1,4 @@
-import { getLevelHeight, type LevelNode, sceneRegistry, useScene } from '@aedifex/core'
+import { getLevelElevations, type LevelNode, sceneRegistry, useScene } from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import type { Object3D } from 'three'
 import { lerp } from 'three/src/math/MathUtils.js'
@@ -19,8 +19,7 @@ export const LevelSystem = () => {
     const levelMode = useViewer.getState().levelMode
     const selectedLevel = useViewer.getState().selection.levelId
 
-    // Collect and sort levels by floor index so we can compute cumulative offsets.
-    // Level 0 → Y=0, Level 1 → Y=height(0), Level 2 → Y=height(0)+height(1), etc.
+    const levelElevations = getLevelElevations(nodes)
     type LevelEntry = {
       levelId: string
       index: number
@@ -29,21 +28,22 @@ export const LevelSystem = () => {
     const entries: LevelEntry[] = []
     sceneRegistry.byType.level!.forEach((levelId) => {
       const obj = sceneRegistry.nodes.get(levelId)
-      const level = nodes[levelId as LevelNode['id']]
+      const level = nodes[levelId as LevelNode['id']] as LevelNode | undefined
       if (obj && level) {
-        entries.push({ levelId, index: (level as any).level ?? 0, obj })
+        entries.push({
+          levelId,
+          index: level.level,
+          obj,
+        })
       }
     })
-    entries.sort((a, b) => a.index - b.index)
 
-    // Walk sorted levels, accumulating base Y offsets
     const selectedIndex = selectedLevel
       ? entries.find((e) => e.levelId === selectedLevel)?.index
       : undefined
-    let cumulativeY = 0
     for (const { levelId, index, obj } of entries) {
-      const level = nodes[levelId as LevelNode['id']]
-      const baseY = cumulativeY
+      const level = nodes[levelId as LevelNode['id']] as LevelNode | undefined
+      const baseY = levelElevations.get(levelId)?.baseY ?? 0
       const explodedExtra = levelMode === 'exploded' ? index * EXPLODED_GAP : 0
       const targetY = baseY + explodedExtra
 
@@ -65,12 +65,6 @@ export const LevelSystem = () => {
         }
         obj.visible = !hidden
       }
-
-      cumulativeY += getLevelHeight(
-        levelId,
-        nodes,
-        (wallId) => sceneRegistry.nodes.get(wallId)?.position.y,
-      )
     }
   }, 5) // Using a lower priority so it runs after transforms from other systems have settled
   return null

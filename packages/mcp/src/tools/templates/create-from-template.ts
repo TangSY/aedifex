@@ -1,6 +1,6 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { cloneSceneGraph } from '@aedifex/core/clone-scene-graph'
 import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { rehydrateSiteChildren } from '../../lib/rehydrate-site-children'
 import type { SceneOperations } from '../../operations'
@@ -9,7 +9,7 @@ import { ErrorCode, throwMcpError } from '../errors'
 import { appendLiveSceneEvent } from '../live-sync'
 import { currentLevelContext, sceneMetaPayload } from '../scene-lifecycle/metadata'
 
-export const createFromTemplateInput: any = {
+export const createFromTemplateInput = {
   id: z
     .string()
     .describe(
@@ -31,7 +31,7 @@ export const createFromTemplateInput: any = {
   projectId: z.string().optional(),
 }
 
-export const createFromTemplateOutput: any = {
+export const createFromTemplateOutput = {
   templateId: z.string(),
   rootNodeIds: z.array(z.string()),
   nodeCount: z.number(),

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, test } from 'vitest'
+import { beforeEach, describe, expect, test } from 'bun:test'
 import {
   type AnyNode,
   type AnyNodeDefinition,
@@ -8,10 +8,17 @@ import {
   findLevelAncestorId,
   nodeRegistry,
   registerNode,
+  type SceneCommit,
+  subscribeSceneCommits,
   useScene,
 } from '@aedifex/core'
 import { z } from 'zod'
-import { commitFreshPlacementSubtree, createFreshPlacementSubtree } from './fresh-planar-placement'
+import {
+  commitFreshPlacementSubtree,
+  createFreshPlacementSubtree,
+  duplicatesAsFreshSubtree,
+  prepareFreshPlacementRootDuplicate,
+} from './fresh-planar-placement'
 
 type RafFn = (cb: (time: number) => void) => number
 ;(globalThis as { requestAnimationFrame?: RafFn }).requestAnimationFrame ??= ((
@@ -169,13 +176,16 @@ describe('commitFreshPlacementSubtree', () => {
     useScene.temporal.getState().resume()
   })
 
-  it('commits a fresh draft as one undoable clean subtree', () => {
+  test('commits a fresh draft as one undoable clean subtree', () => {
+    const commits: SceneCommit[] = []
+    const unsubscribe = subscribeSceneCommits((commit) => commits.push(commit))
     useScene.temporal.getState().pause()
 
     const committedId = commitFreshPlacementSubtree(SHELF_ID, {
       position: [2, 0, 3],
       visible: true,
     } as Partial<AnyNode>)
+    unsubscribe()
 
     expect(committedId).toBeTruthy()
     expect(committedId).not.toBe(SHELF_ID)
@@ -192,6 +202,12 @@ describe('commitFreshPlacementSubtree', () => {
     expect((useScene.getState().nodes[LEVEL_ID] as { children: AnyNodeId[] }).children).toEqual([
       finalId,
     ])
+    expect(commits).toHaveLength(1)
+    expect(commits[0]?.origin).toBe('local')
+    expect(commits[0]?.before.nodes[SHELF_ID]).toBeUndefined()
+    expect(commits[0]?.before.nodes[finalId]).toBeUndefined()
+    expect(commits[0]?.current.nodes[SHELF_ID]).toBeUndefined()
+    expect(commits[0]?.current.nodes[finalId]).toEqual(committed)
 
     useScene.temporal.getState().resume()
     useScene.temporal.getState().undo()
@@ -199,6 +215,33 @@ describe('commitFreshPlacementSubtree', () => {
     expect(useScene.getState().nodes[finalId]).toBeUndefined()
     expect(useScene.getState().nodes[SHELF_ID]).toBeUndefined()
     expect((useScene.getState().nodes[LEVEL_ID] as { children: AnyNodeId[] }).children).toEqual([])
+  })
+
+  test('uses the subtree contract for childless variants and never aliases root-only children', () => {
+    registerCabinetClonePrepTestKind()
+    const childlessCabinet = {
+      ...shelf(),
+      type: 'cabinet',
+      children: [],
+      metadata: { isTransient: true, label: 'source' },
+    } as AnyNode
+    expect(duplicatesAsFreshSubtree(childlessCabinet)).toBe(true)
+
+    const source = {
+      ...shelf(),
+      children: ['item_original' as AnyNodeId],
+      metadata: { isTransient: true, label: 'source' },
+    } as AnyNode
+    const duplicate = prepareFreshPlacementRootDuplicate(source) as AnyNode & {
+      children: AnyNodeId[]
+      id?: AnyNodeId
+      metadata?: Record<string, unknown>
+    }
+
+    expect(duplicate.id).toBeUndefined()
+    expect(duplicate.children).toEqual([])
+    expect(duplicate.metadata).toEqual({ isNew: true, label: 'source' })
+    expect((source as AnyNode & { children: AnyNodeId[] }).children).toEqual(['item_original'])
   })
 
   test('commits a duplicated cabinet draft without deleting the original modules', () => {

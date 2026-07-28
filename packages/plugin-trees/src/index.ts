@@ -18,7 +18,7 @@ import { grassDefinition } from './grass-definition'
  */
 export const treesPlugin: Plugin = {
   id: 'aedifex:trees',
-  apiVersion: 2,
+  apiVersion: 1,
   nodes: [
     treeDefinition as unknown as AnyNodeDefinition,
     flowerDefinition as unknown as AnyNodeDefinition,

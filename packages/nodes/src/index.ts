@@ -5,6 +5,7 @@ import { cabinetDefinition, cabinetModuleDefinition } from './cabinet'
 import { ceilingDefinition } from './ceiling'
 import { chimneyDefinition } from './chimney'
 import { columnDefinition } from './column'
+import { constructionDimensionDefinition } from './construction-dimension'
 import { cupolaDefinition } from './cupola'
 import { doorDefinition } from './door'
 import { dormerDefinition } from './dormer'
@@ -22,6 +23,7 @@ import { itemDefinition } from './item'
 import { levelDefinition } from './level'
 import { linesetDefinition } from './lineset'
 import { liquidLineDefinition } from './liquid-line'
+import { measurementDefinition } from './measurement'
 import { pipeFittingDefinition } from './pipe-fitting'
 import { pipeSegmentDefinition } from './pipe-segment'
 import { pipeTrapDefinition } from './pipe-trap'
@@ -37,6 +39,7 @@ import { solarPanelDefinition } from './solar-panel'
 import { spawnDefinition } from './spawn'
 import { stairDefinition } from './stair'
 import { stairSegmentDefinition } from './stair-segment'
+import { structuralGridDefinition } from './structural-grid'
 import { turbineVentDefinition } from './turbine-vent'
 import { wallDefinition } from './wall'
 import { windowDefinition } from './window'
@@ -60,7 +63,7 @@ import { zoneDefinition } from './zone'
  */
 export const builtinPlugin: Plugin = {
   id: 'aedifex:core',
-  apiVersion: 2,
+  apiVersion: 1,
   nodes: [
     // Stage E-complete (full registry path)
     shelfDefinition as unknown as AnyNodeDefinition,
@@ -88,6 +91,9 @@ export const builtinPlugin: Plugin = {
     levelDefinition as unknown as AnyNodeDefinition,
     guideDefinition as unknown as AnyNodeDefinition,
     scanDefinition as unknown as AnyNodeDefinition,
+    measurementDefinition as unknown as AnyNodeDefinition,
+    constructionDimensionDefinition as unknown as AnyNodeDefinition,
+    structuralGridDefinition as unknown as AnyNodeDefinition,
     // Roof-mounted accessories (custom renderer + bespoke roof-event tool).
     boxVentDefinition as unknown as AnyNodeDefinition,
     ridgeVentDefinition as unknown as AnyNodeDefinition,
@@ -128,6 +134,7 @@ export {
 export { ceilingDefinition } from './ceiling'
 export { chimneyDefinition } from './chimney'
 export { columnDefinition } from './column'
+export { constructionDimensionDefinition } from './construction-dimension'
 export { cupolaDefinition } from './cupola'
 export { doorDefinition } from './door'
 export { dormerDefinition } from './dormer'
@@ -145,6 +152,7 @@ export { itemDefinition } from './item'
 export { levelDefinition } from './level'
 export { linesetDefinition } from './lineset'
 export { liquidLineDefinition, useLiquidLineToolOptions } from './liquid-line'
+export { measurementDefinition } from './measurement'
 export { pipeFittingDefinition } from './pipe-fitting'
 export { pipeSegmentDefinition } from './pipe-segment'
 export { pipeTrapDefinition } from './pipe-trap'
@@ -171,6 +179,7 @@ export { solarPanelDefinition } from './solar-panel'
 export { spawnDefinition } from './spawn'
 export { stairDefinition } from './stair'
 export { stairSegmentDefinition } from './stair-segment'
+export { structuralGridDefinition } from './structural-grid'
 export { turbineVentDefinition } from './turbine-vent'
 export { wallDefinition } from './wall'
 export { windowDefinition } from './window'

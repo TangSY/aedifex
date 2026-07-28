@@ -15,8 +15,9 @@ import { float, mix, positionViewDirection, transformedNormalView } from 'three/
 import { MeshLambertNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu'
 
 import { resolveCdnUrl } from './asset-url'
-import { isKtx2Url, ktx2Loader } from './ktx2-loader'
+import { isKtx2Url, ktx2Loader, whenKtx2Ready } from './ktx2-loader'
 import { getSceneTheme } from './scene-themes'
+import { stampAedifexTextureRef } from './texture-reference'
 
 export type RenderShading = 'solid' | 'rendered'
 export type ColorPreset = 'clay' | 'white' | 'mono' | 'blueprint'
@@ -180,12 +181,28 @@ function getCacheKey(props: MaterialProperties, shading: RenderShading): string 
   return `${shading}-${props.color}-${props.roughness}-${props.metalness}-${props.opacity}-${props.transparent}-${props.side}`
 }
 
-function getTextureKey(material?: MaterialSchema): string {
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+export function resolveTextureRepeat(repeat: unknown, scale: unknown): [number, number] {
+  const fallback = isFiniteNumber(scale) ? scale : 1
+  if (Array.isArray(repeat) && isFiniteNumber(repeat[0]) && isFiniteNumber(repeat[1])) {
+    return [repeat[0], repeat[1]]
+  }
+  if (isFiniteNumber(repeat)) return [repeat, repeat]
+  if (repeat && typeof repeat === 'object' && 'x' in repeat && 'y' in repeat) {
+    const { x, y } = repeat
+    if (isFiniteNumber(x) && isFiniteNumber(y)) return [x, y]
+  }
+  return [fallback, fallback]
+}
+
+export function getTextureKey(material?: MaterialSchema): string {
   const texture = material?.texture
   if (!texture) return 'none'
-  const repeat = texture.repeat?.join('x') ?? 'default'
-  const scale = texture.scale ?? 'default'
-  return `${texture.url}-${repeat}-${scale}`
+  const [repeatX, repeatY] = resolveTextureRepeat(texture.repeat, texture.scale)
+  return `${texture.url}-${repeatX}x${repeatY}`
 }
 
 function getTexture(material?: MaterialSchema): THREE.Texture | undefined {
@@ -196,15 +213,22 @@ function getTexture(material?: MaterialSchema): THREE.Texture | undefined {
   const cached = textureCache.get(cacheKey)
   if (cached) return cached
 
-  const texture = pickTextureLoader(textureConfig.url).load(textureConfig.url)
+  const resolvedUrl = /^(?:asset|blob|data):/.test(textureConfig.url)
+    ? textureConfig.url
+    : (resolveCdnUrl(textureConfig.url) ?? textureConfig.url)
+  const texture = pickTextureLoader(resolvedUrl).load(resolvedUrl)
   texture.wrapS = THREE.RepeatWrapping
   texture.wrapT = THREE.RepeatWrapping
 
-  const repeatX = textureConfig.repeat?.[0] ?? textureConfig.scale ?? 1
-  const repeatY = textureConfig.repeat?.[1] ?? textureConfig.scale ?? 1
+  const [repeatX, repeatY] = resolveTextureRepeat(textureConfig.repeat, textureConfig.scale)
   texture.repeat.set(repeatX, repeatY)
   texture.updateMatrix()
   texture.colorSpace = THREE.SRGBColorSpace
+  stampAedifexTextureRef(texture, {
+    kind: 'project-asset',
+    src: resolvedUrl,
+    slot: 'map',
+  })
 
   textureCache.set(cacheKey, texture)
   return texture
@@ -266,6 +290,11 @@ function getPresetTexture(
 
   const texture = pickTextureLoader(resolvedPath).load(resolvedPath)
   applyTextureProperties(texture, props, slot)
+  stampAedifexTextureRef(texture, {
+    kind: 'material',
+    src: resolvedPath,
+    slot: slot ?? 'map',
+  })
   setTextureCacheKey(texture, cacheKey)
   textureCache.set(cacheKey, texture)
   return texture
@@ -308,10 +337,24 @@ async function loadPresetTexture(
   const existingPromise = textureLoadPromises.get(cacheKey)
   if (existingPromise) return existingPromise
 
-  const promise = pickTextureLoader(resolvedPath)
-    .loadAsync(resolvedPath)
+  // `.ktx2` loads wait for `detectSupport` (KTX2Loader.load throws before it) —
+  // materials can be created while a capture canvas's renderer is still
+  // initializing, and failing here would cache the material permanently
+  // texture-less (white).
+  const load = isKtx2Url(resolvedPath)
+    ? whenKtx2Ready().then(() =>
+        (ktx2Loader as unknown as THREE.TextureLoader).loadAsync(resolvedPath),
+      )
+    : textureLoader.loadAsync(resolvedPath)
+
+  const promise = load
     .then((texture) => {
       applyTextureProperties(texture, props, slot)
+      stampAedifexTextureRef(texture, {
+        kind: 'material',
+        src: resolvedPath,
+        slot: slot ?? 'map',
+      })
       setTextureCacheKey(texture, cacheKey)
       textureCache.set(cacheKey, texture)
       textureLoadPromises.delete(cacheKey)
@@ -336,7 +379,13 @@ function queueTextureAssignment(
   const textureMaterial = material as TextureMaterial
 
   if (!path) {
-    textureMaterial[slot] = null
+    if (textureMaterial[slot] != null) {
+      // Rebuild the node graph: a cached WebGPU material keeps a TextureNode
+      // for the slot, whose per-frame material reference would pull the null
+      // and crash in TextureNode.update ("null (reading 'matrix')").
+      textureMaterial[slot] = null
+      material.needsUpdate = true
+    }
     return
   }
 
@@ -355,7 +404,14 @@ function queueTextureAssignment(
     return
   }
 
-  textureMaterial[slot] = null
+  // Cold load: clear the slot for the fetch window, and rebuild the node
+  // graph if it previously held a texture — reused cached materials otherwise
+  // keep a TextureNode whose reference pulls the null and crashes the render
+  // pass. Cold loads are the norm for freshly generated library materials.
+  if (textureMaterial[slot] != null) {
+    textureMaterial[slot] = null
+    material.needsUpdate = true
+  }
 
   loadPresetTexture(path, props, slot).then((texture) => {
     if (!texture) return

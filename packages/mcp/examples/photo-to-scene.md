@@ -14,7 +14,7 @@ stitch three tools together manually.
 
 A user drops a photo of a hand-drawn floor plan into the chat and types:
 
-> **User:** here's a floor plan photo, turn it into an Aedifex scene.
+> **User:** here's a floor plan photo, turn it into a Aedifex scene.
 
 ## The tool call
 
