@@ -6,16 +6,10 @@ import type {
   FloorPlacedFootprintsResolver,
 } from '../../registry/types'
 import type { AnyNode, AnyNodeId } from '../../schema'
+import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import { spatialGridManager } from './spatial-grid-manager'
 
-/**
- * Sentinel `supportSlabId` meaning "hosted by the level base (ground)".
- * Persisted when a pointer-capped commit elects the ground while one or
- * more slabs (e.g. an elevated deck) still overlap the footprint above the
- * cap — without it, the uncapped per-frame election would lift the
- * committed node back onto the deck.
- */
-export const GROUND_SUPPORT_ID = 'ground'
+export { GROUND_SUPPORT_ID } from '../../lib/support-host'
 
 export type FloorPlacedElevationArgs = {
   node: AnyNode

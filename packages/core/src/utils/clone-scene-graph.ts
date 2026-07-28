@@ -1,4 +1,4 @@
-import { GROUND_SUPPORT_ID } from '../hooks/spatial-grid/floor-placed-elevation'
+import { GROUND_SUPPORT_ID } from '../lib/support-host'
 import {
   remapConstructionDimensionReferences,
   remapMeasurementReferences,

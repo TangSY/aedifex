@@ -1,12 +1,13 @@
 import type { CeilingNode, LevelNode, SlabNode, WallNode } from '../schema'
 import type { AnyNode, AnyNodeId } from '../schema/types'
+import { DEFAULT_LEVEL_HEIGHT } from '../lib/level-constants'
 import { computeWallSlabSupport, pointInPolygon } from '../systems/slab/slab-support'
 import { resolveWallTop } from '../systems/wall/wall-top'
 // Cycle with ./storey (it imports DEFAULT_LEVEL_HEIGHT from here) is safe:
 // both sides only reference the other inside function bodies.
 import { CEILING_CLAMP_MARGIN, getCeilingClampBound } from './storey'
 
-export const DEFAULT_LEVEL_HEIGHT = 2.5
+export { DEFAULT_LEVEL_HEIGHT } from '../lib/level-constants'
 
 /**
  * Effective ceiling height in level-local meters. An explicit stored
