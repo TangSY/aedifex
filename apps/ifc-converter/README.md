@@ -34,10 +34,10 @@ JSON to load into the Aedifex editor.
 bun dev   # from this directory, or `turbo run dev` at the repo root
 ```
 
-The `web-ifc.wasm` binary is copied into `public/` automatically on
-install/dev/build (`scripts/copy-web-ifc-wasm.mjs`). Large example IFCs are
-fetched from a public bucket at runtime; the small ones are committed under
-`public/test-ifc-files/`. Override the bucket with
+The browser `web-ifc*.wasm` binaries are copied into `public/` automatically on
+dev/build (`packages/ifc-converter/scripts/copy-web-ifc-wasm.mjs`). Large example
+IFCs are fetched from a public bucket at runtime; the small ones are committed
+under `public/test-ifc-files/`. Override the bucket with
 `NEXT_PUBLIC_IFC_EXAMPLES_BASE_URL`.
 
 ## Known limitations (help wanted)

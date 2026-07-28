@@ -14,6 +14,7 @@
   },
   "files": [
     "dist",
+    "scripts/copy-web-ifc-wasm.mjs",
     "README.md"
   ],
   "scripts": {

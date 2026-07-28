@@ -4,9 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "predev": "node scripts/copy-web-ifc-wasm.mjs",
-    "prebuild": "node scripts/copy-web-ifc-wasm.mjs",
-    "postinstall": "node scripts/copy-web-ifc-wasm.mjs",
+    "predev": "node ../../packages/ifc-converter/scripts/copy-web-ifc-wasm.mjs public",
+    "prebuild": "node ../../packages/ifc-converter/scripts/copy-web-ifc-wasm.mjs public",
     "dev": "next dev --port 3003",
     "build": "next build",
     "start": "next start",

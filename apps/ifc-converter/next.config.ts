@@ -22,8 +22,8 @@ const nextConfig: NextConfig = {
   // web-ifc ships a WASM module. Serving it from the same origin as the
   // app keeps `WebAssembly.instantiateStreaming` happy with strict CSP /
   // module-MIME-type checks. The standalone repo copied the file into
-  // public/; we do the same on first dev/build via a postinstall step
-  // (see scripts/copy-web-ifc-wasm.mjs).
+  // public/; we do the same before every dev/build
+  // (see packages/ifc-converter/scripts/copy-web-ifc-wasm.mjs).
   webpack: (config) => {
     config.experiments = { ...config.experiments, asyncWebAssembly: true }
     return config
