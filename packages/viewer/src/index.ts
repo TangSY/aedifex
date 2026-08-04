@@ -142,6 +142,10 @@ export {
   THUMBNAIL_WIDTH,
 } from './lib/snapshot-pipeline'
 export {
+  buildTerrainPerimeterFillGeometry,
+  type TerrainPerimeterPoint,
+} from './lib/terrain-perimeter-fill'
+export {
   type AedifexTextureColorSpace,
   type AedifexTextureMap,
   type AedifexTextureRef,
