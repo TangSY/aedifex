@@ -16,6 +16,7 @@ import {
 } from '@aedifex/core'
 import { type OpeningGuide3D, useOpeningGuides } from '@aedifex/editor'
 import { resolveWallOpeningCeiling } from './wall-opening-ceiling'
+import { wallLocalToWorld } from './wall-local-frame'
 
 // Parity with `snapLocalXToNeighbors`' along-wall threshold.
 const SILL_SNAP_THRESHOLD_M = 0.08
@@ -178,14 +179,7 @@ export function clearOpeningGuides3D(): void {
  *  publisher (which already has them) and the resize publisher (which derives
  *  them from the scene). Same frame as `wallLocalToWorld`. */
 function makeWallToWorld(wall: WallNode, levelYOffset: number, slabElevation: number): ToWorld {
-  const angle = Math.atan2(wall.end[1] - wall.start[1], wall.end[0] - wall.start[0])
-  const cos = Math.cos(angle)
-  const sin = Math.sin(angle)
-  return (s, y) => [
-    wall.start[0] + s * cos,
-    slabElevation + y + levelYOffset,
-    wall.start[1] + s * sin,
-  ]
+  return (s, y) => wallLocalToWorld(wall, s, y, levelYOffset, slabElevation)
 }
 
 /** Like {@link makeWallToWorld} but derives the level Y + slab elevation from the

@@ -399,6 +399,7 @@ const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNode }) =>
         getSlabElevation(target.event),
       )
       const ghostYaw = target.itemRotation - wallAngle
+      const wallBaseWorldY = ghostWorldPos[1] - target.clampedY
       setGhostPose({
         position: ghostWorldPos,
         rotationY: ghostYaw,
@@ -411,7 +412,7 @@ const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNode }) =>
       useFacingPose.getState().set({
         position: [
           ghostWorldPos[0],
-          getLevelYOffset() + getSlabElevation(target.event),
+          wallBaseWorldY,
           ghostWorldPos[2],
         ],
         rotationY: ghostYaw,

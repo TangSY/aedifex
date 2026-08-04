@@ -24,7 +24,7 @@ export function wallLocalToWorld(
   )
   return [
     wallNode.start[0] + localX * Math.cos(wallAngle),
-    slabElevation + localY + levelYOffset,
+    slabElevation + (wallNode.supportOffset ?? 0) + localY + levelYOffset,
     wallNode.start[1] + localX * Math.sin(wallAngle),
   ]
 }

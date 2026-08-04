@@ -1,4 +1,3 @@
-import { GROUND_SUPPORT_ID } from './support-host'
 import {
   type AnyNodeId,
   CeilingNode,
@@ -23,7 +22,7 @@ import {
   pauseSceneHistory,
   resumeSceneHistory,
 } from '../store/history-control'
-import { computeWallSlabSupport } from '../systems/slab/slab-support'
+import { resolveWallBaseElevation } from '../systems/wall/wall-base'
 import {
   getClampedWallCurveOffset,
   getWallCurveFrameAt,
@@ -347,33 +346,6 @@ function resolveCeilingClampBound(
 }
 
 /**
- * The base a boundary wall actually stands on, in level-local metres.
- *
- * Resolved the same way the wall renderer resolves it — the level base under
- * the wall's own start point (sculpted ground or the flat plane), the slab
- * election on top of that, plus the wall's stored `supportOffset`. Reading the
- * ground for `GROUND_SUPPORT_ID` walls only is what left stamped room presets
- * flat: `resolveWallSupportSlabPatch` writes no host at all for a wall on bare
- * terrain, so the sentinel is a hint about pointer intent, never a precondition
- * for standing on the ground.
- */
-function boundaryWallBase(
-  wall: WallNode,
-  walls: WallNode[],
-  supportSlabs: readonly SlabNodeType[],
-  nodes: Record<string, any>,
-  levelId: string,
-): number {
-  const levelBase = levelBaseElevationAt(nodes, levelId, wall.start[0], wall.start[1])
-  const offset = wall.supportOffset ?? 0
-  if (wall.supportSlabId === GROUND_SUPPORT_ID) return levelBase + offset
-  return (
-    computeWallSlabSupport(wall, supportSlabs, walls, wall.supportSlabId ?? null, null, levelBase)
-      .elevation + offset
-  )
-}
-
-/**
  * The plane an auto floor/ceiling takes when its enclosing walls disagree.
  *
  * `floor` takes the HIGHEST wall base and `ceiling` the LOWEST wall top —
@@ -416,7 +388,17 @@ function autoRoomVerticalPlacements(
     if (boundaryWalls.length !== space.wallIds.length) continue
 
     const wallBases = boundaryWalls.map((wall) =>
-      boundaryWallBase(wall, walls, supportSlabs, nodes, space.levelId),
+      resolveWallBaseElevation({
+        wall,
+        walls,
+        slabs: supportSlabs,
+        levelBase: levelBaseElevationAt(
+          nodes,
+          space.levelId,
+          wall.start[0],
+          wall.start[1],
+        ),
+      }),
     )
     const base = roomFloorPlane(wallBases)
     if (base === undefined) continue
@@ -890,7 +872,7 @@ function wallGeometrySignature(wall: WallNode, nodes: Record<string, any>, level
     (wall.supportOffset ?? 0).toFixed(4),
     getClampedWallCurveOffset(wall).toFixed(4),
     // The ground under this wall, sampled at the SAME point
-    // `boundaryWallBase` samples it. Sculpting changes only `site.terrain`,
+    // `resolveWallBaseElevation` samples it. Sculpting changes only `site.terrain`,
     // so without a terrain term here every signature stays byte-identical
     // and the sync early-exits — a room's floor and ceiling could never
     // follow ground that moved beneath its walls.

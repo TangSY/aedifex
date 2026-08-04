@@ -413,6 +413,10 @@ export {
   resolveWallEffectiveHeight,
   resolveWallTop,
 } from './systems/wall/wall-top'
+export {
+  type ResolveWallBaseElevationArgs,
+  resolveWallBaseElevation,
+} from './systems/wall/wall-base'
 export type { SceneGraph } from './utils/clone-scene-graph'
 export { cloneLevelSubtree, cloneSceneGraph, forkSceneGraph } from './utils/clone-scene-graph'
 export { isObject } from './utils/types'

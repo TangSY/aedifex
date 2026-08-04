@@ -3,6 +3,7 @@
 import {
   type AnyNode,
   type AnyNodeId,
+  getWallBaseElevationForNodes,
   getWallCurveFrameAt,
   getWallCurveLength,
   getWallPlaneTop,
@@ -11,7 +12,6 @@ import {
   resolveLevelId,
   resolveWallTop,
   sceneRegistry,
-  spatialGridManager,
   useScene,
   type WallNode,
 } from '@aedifex/core'
@@ -148,16 +148,9 @@ type WallTopHighlightSegment = {
 
 function getWallTopY(wall: WallNode, nodes: Readonly<Record<string, AnyNode>>) {
   const levelId = resolveLevelId(wall, nodes as Record<string, AnyNode>)
-  const support = spatialGridManager.getSlabSupportForWall(
-    levelId,
-    wall.start,
-    wall.end,
-    wall.curveOffset ?? 0,
-    wall.thickness,
-    wall.supportSlabId,
-  )
+  const wallBase = getWallBaseElevationForNodes(wall, nodes as Record<string, AnyNode>)
   const planeTop = getWallPlaneTop(wall, levelId, nodes as Record<string, AnyNode>)
-  return resolveWallTop(wall, planeTop, support.elevation) + WALL_TOP_HIGHLIGHT_LIFT
+  return resolveWallTop(wall, planeTop, wallBase) + WALL_TOP_HIGHLIGHT_LIFT
 }
 
 function buildHighlightSegment(start: [number, number], end: [number, number]) {

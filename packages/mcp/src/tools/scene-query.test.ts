@@ -70,6 +70,25 @@ describe('scene query tools', () => {
     expect(parsed.zones[0].areaSqMeters).toBe(12)
   })
 
+  test('get_level_summary subtracts a raised wall base from resolvedHeight', async () => {
+    const level = Object.values(bridge.getNodes()).find((node) => node.type === 'level')!
+    bridge.updateNode(level.id, { height: 3 } as never)
+    const wall = WallNode.parse({
+      start: [0, 0],
+      end: [4, 0],
+      supportOffset: 1,
+    })
+    bridge.createNode(wall, level.id)
+
+    const result = await client.callTool({
+      name: 'get_level_summary',
+      arguments: { levelId: level.id },
+    })
+    expect(result.isError).toBeFalsy()
+    const parsed = JSON.parse((result.content as Array<{ type: string; text: string }>)[0]!.text)
+    expect(parsed.walls[0].resolvedHeight).toBe(2)
+  })
+
   test('verify_scene reports practical issues without replacing validate_scene', async () => {
     const level = Object.values(bridge.getNodes()).find((n) => n.type === 'level')!
     bridge.createNode(WallNode.parse({ start: [0, 0], end: [4, 0] }), level.id)

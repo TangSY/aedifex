@@ -10,30 +10,7 @@ import { resolveWallOpeningCeiling } from '../shared/wall-opening-ceiling'
  */
 export const DEFAULT_WINDOW_SILL_M = 0.5
 
-/**
- * Converts wall-local (X along wall, Y = height above wall base) to world XYZ.
- * Wall XZ uses level-local coordinates (levels only offset in Y, not XZ).
- * Pass levelYOffset (the level group's current world Y) and slabElevation (the
- * wall mesh's Y within the level group) so the cursor lands at the correct world
- * height — matching how WallSystem positions the wall mesh at slabElevation.
- */
-export function wallLocalToWorld(
-  wallNode: WallNode,
-  localX: number,
-  localY: number,
-  levelYOffset = 0,
-  slabElevation = 0,
-): [number, number, number] {
-  const wallAngle = Math.atan2(
-    wallNode.end[1] - wallNode.start[1],
-    wallNode.end[0] - wallNode.start[0],
-  )
-  return [
-    wallNode.start[0] + localX * Math.cos(wallAngle),
-    slabElevation + localY + levelYOffset,
-    wallNode.start[1] + localX * Math.sin(wallAngle),
-  ]
-}
+export { wallLocalToWorld } from '../shared/wall-local-frame'
 
 /**
  * Clamps window center position so it stays fully within wall bounds. The Y

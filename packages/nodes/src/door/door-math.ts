@@ -16,26 +16,7 @@ export function scaleHandleHeight(
   return Math.min(Math.max(handleHeight * ratio, 0.5), Math.max(0.5, newHeight - 0.1))
 }
 
-/**
- * Converts wall-local (X along wall, Y = height above wall base) to world XYZ.
- */
-export function wallLocalToWorld(
-  wallNode: WallNode,
-  localX: number,
-  localY: number,
-  levelYOffset = 0,
-  slabElevation = 0,
-): [number, number, number] {
-  const wallAngle = Math.atan2(
-    wallNode.end[1] - wallNode.start[1],
-    wallNode.end[0] - wallNode.start[0],
-  )
-  return [
-    wallNode.start[0] + localX * Math.cos(wallAngle),
-    slabElevation + localY + levelYOffset,
-    wallNode.start[1] + localX * Math.sin(wallAngle),
-  ]
-}
+export { wallLocalToWorld } from '../shared/wall-local-frame'
 
 /**
  * Clamps door center X so it stays fully within wall bounds.
