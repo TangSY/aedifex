@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 // Load shims FIRST so any subsequent core import sees the RAF polyfill.
 import '../bridge/node-shims'
 
@@ -53,26 +53,31 @@ async function main(): Promise<void> {
     process.exit(0)
   }
 
-  const bridge = new SceneBridge()
-  if (values.scene) {
-    const raw = readFileSync(values.scene, 'utf8')
-    bridge.loadJSON(raw)
-  } else {
-    bridge.loadDefault()
-  }
-
   const store = await createSceneStore()
-  const server = createAedifexMcpServer({ bridge, store })
+  const createServer = () => {
+    const bridge = new SceneBridge()
+    if (values.scene) bridge.loadJSON(readFileSync(values.scene, 'utf8'))
+    else bridge.loadDefault()
+    return createAedifexMcpServer({ bridge, store })
+  }
 
   if (values.http) {
     const portNum = Number.parseInt(values.port ?? '3917', 10)
     if (!Number.isFinite(portNum) || portNum < 0 || portNum > 65_535) {
       throw new Error(`invalid --port value: ${values.port}`)
     }
-    const handle = await connectHttp(server, portNum, {
+    const handle = await connectHttp(createServer, portNum, {
       host: values.host,
       authToken: values['auth-token'],
       allowedOrigins: values['cors-origin'],
+      ...(process.env.AEDIFEX_INSTANCE_ID
+        ? {
+            health: {
+              version: process.env.AEDIFEX_RUNTIME_VERSION ?? version,
+              instanceId: process.env.AEDIFEX_INSTANCE_ID,
+            },
+          }
+        : {}),
     })
     console.error(`[aedifex-mcp] HTTP server listening on ${handle.host}:${handle.port}`)
     const shutdown = async () => {
@@ -86,7 +91,7 @@ async function main(): Promise<void> {
     process.on('SIGTERM', shutdown)
   } else {
     // --stdio is the default when no transport flag is passed.
-    await connectStdio(server)
+    await connectStdio(createServer())
     console.error('[aedifex-mcp] stdio server running')
   }
 }

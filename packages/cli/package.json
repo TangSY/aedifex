@@ -1,0 +1,71 @@
+{
+  "name": "@aedifex/cli",
+  "version": "0.1.0",
+  "description": "Run the open-source Aedifex 3D editor, local projects, and MCP agent tools from your terminal",
+  "type": "module",
+  "bin": {
+    "aedifex": "dist/bin/aedifex.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "build-runtime": "cd ../../apps/editor && AEDIFEX_PORTABLE_BUILD=1 bun run build",
+    "check-types": "tsc --build --pretty false && tsc --project tsconfig.scripts.json --pretty false",
+    "stage-runtime": "bun run scripts/stage-runtime.ts",
+    "smoke-runtime": "bun run scripts/smoke-packed-runtime.ts",
+    "test": "bun test src",
+    "prepublishOnly": "bun run check-types && bun run build && bun run test && bun run build-runtime && bun run stage-runtime && bun run smoke-runtime"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/node": "^22.19.20",
+    "typescript": "6.0.3"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "keywords": [
+    "aedifex",
+    "editor",
+    "3d-editor",
+    "3d",
+    "architecture",
+    "building-design",
+    "cad",
+    "bim",
+    "local-first",
+    "cli",
+    "mcp",
+    "ai-agents"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TangSY/aedifex.git",
+    "directory": "packages/cli"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "TangSY"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/TangSY/aedifex/tree/main/packages/cli#readme",
+  "bugs": "https://github.com/TangSY/aedifex/issues"
+}

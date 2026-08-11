@@ -3,17 +3,14 @@
 // Node registry bootstrap is loaded once at the root via
 // `<ClientBootstrap>` in `app/layout.tsx` — no per-page side-effect
 // import here.
-import {
-  applySceneGraphToEditor,
-  Editor,
-  type SceneGraph,
-  type SidebarTab,
-} from '@aedifex/editor'
+import { applySceneGraphToEditor, Editor, type SceneGraph, type SidebarTab } from '@aedifex/editor'
 import { Hammer, Layers } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { type PersistedSceneGraph, sceneGraphSignature } from '@/lib/scene-signature'
+import { cn } from '@/lib/utils'
 import { BuildTab } from './build-tab'
 import { CommunityViewerToolbarLeft, CommunityViewerToolbarRight } from './viewer-toolbar'
 
@@ -70,35 +67,35 @@ interface SceneLoaderProps {
   meta: SceneMeta
 }
 
-type SceneGraphWithCollections = SceneGraph & {
-  collections?: Record<string, unknown>
-}
-
 interface LiveSceneEvent {
   eventId: number
   sceneId: string
   version: number
   kind: string
   createdAt: string
-  graph: SceneGraphWithCollections
+  graph: PersistedSceneGraph
 }
 
-function sceneGraphSignature(graph: SceneGraphWithCollections): string {
-  return JSON.stringify({
-    nodes: graph.nodes,
-    rootNodeIds: graph.rootNodeIds,
-    collections: graph.collections,
-    installedPlugins: graph.installedPlugins,
-  })
+/**
+ * `?disable=postFx` is read at post-processing module load, so it only takes
+ * effect on a full page load. Reading it here as well lets the flag survive a
+ * client-side navigation, since `disablePostFx` is a live prop.
+ */
+function isLightPreviewQuery(searchParams: URLSearchParams): boolean {
+  const disable = searchParams.get('disable') ?? ''
+  return disable.split(',').some((p) => p.trim() === 'postFx')
 }
 
 export function SceneLoader({ initialScene, meta }: SceneLoaderProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const versionRef = useRef(meta.version)
   const lastRemoteGraphJsonRef = useRef<string | null>(null)
   const suppressRemoteSaveUntilRef = useRef(0)
   const [conflict, setConflict] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+
+  const lightPreview = isLightPreviewQuery(searchParams)
 
   const handleLoad = useCallback(async () => initialScene, [initialScene])
 
@@ -224,6 +221,20 @@ export function SceneLoader({ initialScene, meta }: SceneLoaderProps) {
         </div>
       )}
       <div className="pointer-events-none absolute top-4 right-4 z-40 flex items-center gap-2">
+        <button
+          aria-pressed={lightPreview}
+          className={cn(
+            'pointer-events-auto rounded-md border border-border px-3 py-1.5 font-medium text-xs shadow-sm backdrop-blur',
+            lightPreview ? 'bg-accent' : 'bg-background/90 hover:bg-accent/40',
+          )}
+          onClick={() =>
+            router.push(lightPreview ? `/scene/${meta.id}` : `/scene/${meta.id}?disable=postFx`)
+          }
+          title="Skip the post-processing pipeline — lighter on the GPU, no ambient occlusion or selection outlines"
+          type="button"
+        >
+          Light preview
+        </button>
         <Link
           className="pointer-events-auto rounded-md border border-border bg-background/90 px-3 py-1.5 font-medium text-xs shadow-sm backdrop-blur hover:bg-accent/40"
           href="/scenes"
@@ -232,6 +243,7 @@ export function SceneLoader({ initialScene, meta }: SceneLoaderProps) {
         </Link>
       </div>
       <Editor
+        disablePostFx={lightPreview}
         layoutVersion="v2"
         onLoad={handleLoad}
         onSave={handleSave}

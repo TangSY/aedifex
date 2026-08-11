@@ -1,11 +1,30 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import type { NextConfig } from 'next'
 
+const appDirectory = path.dirname(fileURLToPath(import.meta.url))
+const portableBuild = process.env.AEDIFEX_PORTABLE_BUILD === '1'
+
 const nextConfig: NextConfig = {
+  ...(portableBuild
+    ? { output: 'standalone' as const, outputFileTracingRoot: path.join(appDirectory, '../..') }
+    : {}),
   logging: {
     browserToTerminal: true,
   },
   typescript: {
     ignoreBuildErrors: true,
+  },
+  // MCP / package metadata returns `/editor/<id>` (hosted route). This open-source
+  // app serves saved scenes at `/scene/<id>` — redirect so links and bookmarks work.
+  async redirects() {
+    return [
+      {
+        source: '/editor/:id',
+        destination: '/scene/:id',
+        permanent: false,
+      },
+    ]
   },
   transpilePackages: [
     'three',
@@ -30,7 +49,9 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    unoptimized: process.env.NEXT_PUBLIC_ASSETS_CDN_URL?.startsWith('http://localhost') ?? false,
+    unoptimized:
+      portableBuild ||
+      (process.env.NEXT_PUBLIC_ASSETS_CDN_URL?.startsWith('http://localhost') ?? false),
     remotePatterns: [
       {
         protocol: 'https',

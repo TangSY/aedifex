@@ -1,14 +1,14 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import {
   DEFAULT_LEVEL_HEIGHT,
   getStoredLevelHeight,
   getWallPlaneTop,
   levelBaseElevationAt,
-  resolveWallBaseElevation,
   resolveStairTotalRise,
+  resolveWallBaseElevation,
   resolveWallEffectiveHeight,
 } from '@aedifex/core'
 import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import {
@@ -19,6 +19,7 @@ import {
   type Vec2,
   wallLength,
 } from './geometry'
+import { layoutIssuesFromScene } from './layout-clearance'
 import { NodeIdSchema } from './schemas'
 
 export const levelScopedInput = {
@@ -39,6 +40,7 @@ export const listLevelsOutput = {
 export const getLevelSummaryOutput = {
   levelId: z.string(),
   levelName: z.string().optional(),
+  floorIndex: z.number(),
   role: z.string(),
   metadataRole: z.string().nullable(),
   isOccupiedStory: z.boolean(),
@@ -138,9 +140,7 @@ export function resolveReportedWallHeight(
     (node): node is Extract<AnyNode, { type: 'wall' }> => node.type === 'wall',
   )
   const nodes = bridge.getNodes()
-  const levelBase = levelId
-    ? levelBaseElevationAt(nodes, levelId, wall.start[0], wall.start[1])
-    : 0
+  const levelBase = levelId ? levelBaseElevationAt(nodes, levelId, wall.start[0], wall.start[1]) : 0
   const wallBase = resolveWallBaseElevation({ wall, slabs, walls, levelBase })
   return resolveWallEffectiveHeight(wall, planeTop, wallBase)
 }
@@ -834,6 +834,11 @@ export function registerVerifyScene(server: McpServer, bridge: SceneOperations):
         if (validation.errors.length > 5) {
           issues.push(`Schema: ${validation.errors.length - 5} additional validation errors`)
         }
+      }
+
+      // Door keep-outs + item–item footprint overlaps (rotation-aware).
+      for (const layoutIssue of layoutIssuesFromScene(Object.values(bridge.getNodes()))) {
+        issues.push(layoutIssue)
       }
 
       const payload = {
