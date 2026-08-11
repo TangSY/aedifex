@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import { ItemNode, WallNode } from '@aedifex/core/schema'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { ItemNode, WallNode } from '@aedifex/core/schema'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { registerCheckCollisions } from './check-collisions'
 
@@ -67,6 +67,26 @@ describe('check_collisions', () => {
     ;(b as { wallId?: string }).wallId = wall.id
     bridge.createNode(a, wall.id)
     bridge.createNode(b, wall.id)
+
+    const result = await client.callTool({
+      name: 'check_collisions',
+      arguments: {},
+    })
+    const parsed = JSON.parse((result.content as Array<{ type: string; text: string }>)[0]!.text)
+    expect(parsed.collisions.length).toBe(0)
+  })
+
+  // This tool reports *actual* overlap, not "too close together". It shares
+  // findItemItemCollisions with furnish_room, which defaults to an 8cm spacing
+  // gap; if that default ever leaks in here, neighbouring furniture starts
+  // getting reported as colliding. 7cm apart must stay clean.
+  test('items standing close but not overlapping are not collisions', async () => {
+    const level = Object.values(bridge.getNodes()).find((n) => n.type === 'level')!
+    // a spans x [0, 1], b spans x [1.07, 2.07] — 7cm of clear air between them.
+    const a = makeItem([0.5, 0, 0])
+    const b = makeItem([1.57, 0, 0])
+    bridge.createNode(a, level.id)
+    bridge.createNode(b, level.id)
 
     const result = await client.callTool({
       name: 'check_collisions',

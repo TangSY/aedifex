@@ -69,6 +69,18 @@ https://github.com/user-attachments/assets/6c819726-65f4-45c6-903e-fa5c364a6340
 - **pnpm** 9+ (`npm install -g pnpm`)
 - A **WebGPU-capable browser**: Chrome 113+, Edge 113+, or Firefox Nightly
 
+### CLI-managed local editor
+
+With Node.js 22.13 or newer, install and start the editor plus its authenticated
+local MCP service without cloning the repository:
+
+```bash
+npx @aedifex/cli editor
+```
+
+See the [Aedifex CLI guide](packages/cli/README.md) for project, health, update,
+and MCP commands. The CLI intentionally keeps compatible data under `~/.pascal/`.
+
 ### Setup
 
 ```bash
@@ -145,7 +157,7 @@ AI_SUMMARIZE_MODEL=gpt-4o-mini
 
 ## Architecture
 
-Turborepo monorepo with five published packages plus the editor app:
+Turborepo monorepo with reusable packages plus the editor app:
 
 ```
 aedifex/
@@ -153,7 +165,11 @@ aedifex/
 ├── packages/core/       # Schema, state (Zustand), systems, spatial queries
 ├── packages/viewer/     # 3D rendering (React Three Fiber + WebGPU)
 ├── packages/editor/     # Editor UI: tools, panels, selection, AI assistant
-├── packages/mcp/        # MCP server: 35 tools for natural-language scene control
+├── packages/nodes/      # Built-in registry node definitions and renderers
+├── packages/cli/        # Local editor runtime and MCP process manager
+├── packages/mcp/        # MCP server for natural-language scene control
+├── packages/ifc-converter/ # IFC conversion logic
+├── packages/plugin-trees/  # In-repository Nature plugin
 └── packages/ui/         # Shared shadcn/ui primitives
 ```
 
@@ -162,7 +178,11 @@ aedifex/
 | **core** | Node schemas (Zod), scene store with undo/redo (Zundo), geometry systems, spatial grid, event bus |
 | **viewer** | Renderers, camera, lighting, post-processing, level/scan/guide systems |
 | **editor** | Tools, panels, selection manager, AI assistant, custom camera controls |
+| **nodes** | Built-in node schemas, tools, renderers, geometry, and systems |
+| **cli** | Installs and manages the local editor runtime and MCP service |
 | **mcp** | Model Context Protocol server exposing scene operations to Claude Desktop / Cursor |
+| **ifc-converter** | Converts IFC data into the Aedifex scene graph |
+| **plugin-trees** | First-party Nature plugin and host panel |
 | **ui** | Shared shadcn/ui primitives consumed by the editor |
 
 ### Scene Data Model

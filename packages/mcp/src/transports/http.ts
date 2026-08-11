@@ -31,6 +31,8 @@ export type HttpTransportOptions = {
   allowedOrigins?: string[]
   /** Per-client request cap per minute. Set <= 0 to disable. */
   rateLimitPerMinute?: number
+  /** Authenticated identity returned from GET /health for local supervisors. */
+  health?: { version: string; instanceId: string }
 }
 
 /**
@@ -46,7 +48,7 @@ export type HttpTransportOptions = {
  * configure an auth token.
  */
 export async function connectHttp(
-  server: McpServer,
+  createMcpServer: () => McpServer,
   port: number,
   options: HttpTransportOptions = {},
 ): Promise<HttpTransportHandle> {
@@ -60,17 +62,15 @@ export async function connectHttp(
   const guard = createHttpGuard({
     authToken,
     allowedOrigins: options.allowedOrigins ?? envAllowedOrigins(),
+    host,
     rateLimitPerMinute: options.rateLimitPerMinute ?? DEFAULT_RATE_LIMIT_PER_MINUTE,
   })
 
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => randomUUID(),
-  })
-  await server.connect(transport)
+  const transports = new Map<string, StreamableHTTPServerTransport>()
 
   const httpServer = createServer((req, res) => {
     if (!guard(req, res)) return
-    transport.handleRequest(req, res).catch((err) => {
+    handleRequest(req, res).catch((err) => {
       // Log to stderr; never touch stdout (stdio transport uses it).
       console.error('[aedifex-mcp] http transport error', err)
       if (!res.writableEnded) {
@@ -82,6 +82,51 @@ export async function connectHttp(
       }
     })
   })
+
+  const handleRequest = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+    const pathname = req.url ? new URL(req.url, 'http://localhost').pathname : '/'
+    if (pathname === '/health') {
+      if (!options.health) return sendJson(res, 404, { error: 'not_found' })
+      if (req.method !== 'GET') {
+        res.setHeader('Allow', 'GET')
+        return sendJson(res, 405, { error: 'method_not_allowed' })
+      }
+      return sendJson(res, 200, {
+        status: 'ok',
+        app: 'mcp',
+        version: options.health.version,
+        instanceId: options.health.instanceId,
+      })
+    }
+
+    const sessionId = headerValue(req.headers['mcp-session-id'])
+    let transport = sessionId ? transports.get(sessionId) : undefined
+    if (!transport && req.method === 'POST' && !sessionId) {
+      let createdTransport: StreamableHTTPServerTransport
+      createdTransport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        onsessioninitialized: (id) => {
+          transports.set(id, createdTransport)
+        },
+      })
+      createdTransport.onclose = () => {
+        const id = createdTransport.sessionId
+        if (id) transports.delete(id)
+      }
+      await createMcpServer().connect(createdTransport)
+      transport = createdTransport
+    }
+
+    if (!transport) {
+      if (req.method === 'GET' && !sessionId) {
+        res.setHeader('Allow', 'POST')
+        return sendJson(res, 405, { error: 'session_required' })
+      }
+      return sendJson(res, 400, { error: 'invalid_session' })
+    }
+    await transport.handleRequest(req, res)
+    if (!transport.sessionId) await transport.close()
+  }
 
   await new Promise<void>((resolve, reject) => {
     const onError = (err: Error) => {
@@ -104,13 +149,14 @@ export async function connectHttp(
     host,
     port: boundPort,
     close: async () => {
+      await Promise.all([...transports.values()].map((transport) => transport.close()))
+      transports.clear()
       await new Promise<void>((resolve, reject) => {
         httpServer.close((err) => {
           if (err) reject(err)
           else resolve()
         })
       })
-      await transport.close()
     },
   }
 }
@@ -118,6 +164,7 @@ export async function connectHttp(
 function createHttpGuard(options: {
   authToken?: string
   allowedOrigins: string[]
+  host: string
   rateLimitPerMinute: number
 }): (req: IncomingMessage, res: ServerResponse) => boolean {
   const buckets = new Map<string, { count: number; resetAt: number }>()
@@ -128,6 +175,14 @@ function createHttpGuard(options: {
   )
 
   return (req, res) => {
+    if (
+      !options.authToken &&
+      !isExpectedLoopbackRequestHost(req.headers.host, options.host, req.socket.localPort)
+    ) {
+      sendJson(res, 421, { error: 'invalid_host' })
+      return false
+    }
+
     const origin = req.headers.origin
     if (origin && !isOriginAllowed(origin, req.headers.host, allowedOrigins)) {
       sendJson(res, 403, { error: 'origin_not_allowed' })
@@ -142,7 +197,7 @@ function createHttpGuard(options: {
     }
 
     const pathname = req.url ? new URL(req.url, 'http://localhost').pathname : '/'
-    if (pathname !== '/mcp') {
+    if (pathname !== '/mcp' && pathname !== '/health') {
       sendJson(res, 404, { error: 'not_found' })
       return false
     }
@@ -155,7 +210,7 @@ function createHttpGuard(options: {
       }
     }
 
-    if (options.rateLimitPerMinute > 0) {
+    if (pathname === '/mcp' && options.rateLimitPerMinute > 0) {
       const now = Date.now()
       const key = req.socket.remoteAddress ?? 'unknown'
       const bucket = buckets.get(key)
@@ -172,6 +227,23 @@ function createHttpGuard(options: {
     }
 
     return true
+  }
+}
+
+function isExpectedLoopbackRequestHost(
+  requestHost: string | undefined,
+  bindHost: string,
+  localPort: number | undefined,
+): boolean {
+  if (!(requestHost && localPort && isLoopbackHost(bindHost))) return false
+  try {
+    const parsed = new URL(`http://${requestHost}`)
+    const hostname = parsed.hostname.toLowerCase()
+    const isExactLoopback =
+      hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]'
+    return isExactLoopback && Number(parsed.port || 80) === localPort
+  } catch {
+    return false
   }
 }
 

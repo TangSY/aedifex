@@ -1,0 +1,22 @@
+services:
+  editor:
+    build: .
+    ports:
+      # Keep the container port at 3000. `/scenes` fetches its own API through a
+      # base URL that only `NEXT_PUBLIC_APP_URL` can override, and Next inlines
+      # that at build time — so a remapped host port 500s the page.
+      - "127.0.0.1:3000:3000"
+    environment:
+      NODE_ENV: production
+      # Tokenless scene access is safe only because the published port above is
+      # restricted to the host loopback interface.
+      AEDIFEX_SCENE_API_ALLOW_LOOPBACK_WITHOUT_TOKEN: "true"
+      # Scene database location. Without the volume below, every saved project is
+      # discarded when the container is recreated.
+      AEDIFEX_DATA_DIR: /data
+    volumes:
+      - aedifex-data:/data
+    restart: unless-stopped
+
+volumes:
+  aedifex-data:

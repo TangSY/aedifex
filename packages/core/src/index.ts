@@ -260,6 +260,7 @@ export * from './schema'
 export * from './services'
 export { isMovable, movePlanToward, moveToward, resolveMovable } from './services/movement'
 export {
+  acquireSceneHistoryPause,
   getSceneHistoryPauseDepth,
   pauseSceneHistory,
   resetSceneHistoryPauseDepth,
@@ -368,6 +369,10 @@ export { syncAutoStairOpenings } from './systems/stair/stair-opening-sync'
 export { StairOpeningSystem } from './systems/stair/stair-opening-system'
 export { resolveStairTotalRise, syncStairRises } from './systems/stair/stair-rise'
 export {
+  type ResolveWallBaseElevationArgs,
+  resolveWallBaseElevation,
+} from './systems/wall/wall-base'
+export {
   getClampedWallCurveOffset,
   getMaxWallCurveOffset,
   getWallArcData,
@@ -413,10 +418,6 @@ export {
   resolveWallEffectiveHeight,
   resolveWallTop,
 } from './systems/wall/wall-top'
-export {
-  type ResolveWallBaseElevationArgs,
-  resolveWallBaseElevation,
-} from './systems/wall/wall-base'
 export type { SceneGraph } from './utils/clone-scene-graph'
 export { cloneLevelSubtree, cloneSceneGraph, forkSceneGraph } from './utils/clone-scene-graph'
 export { isObject } from './utils/types'

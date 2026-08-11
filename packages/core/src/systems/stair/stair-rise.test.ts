@@ -8,7 +8,7 @@ import { spatialGridManager } from '../../hooks/spatial-grid/spatial-grid-manage
 import { nodeRegistry, registerNode } from '../../registry'
 import type { AnyNodeDefinition } from '../../registry/types'
 import type { AnyNode, StairNode as StairNodeType } from '../../schema'
-import { LevelNode, SlabNode, StairNode, StairSegmentNode } from '../../schema'
+import { BuildingNode, LevelNode, SlabNode, StairNode, StairSegmentNode } from '../../schema'
 import { resolveStairTotalRise, syncStairRises } from './stair-rise'
 
 // The deck branch elects the stair's floor-stack base through the node
@@ -144,6 +144,40 @@ describe('resolveStairTotalRise', () => {
     if (level.type !== 'level') throw new Error('expected level')
     const updated = { ...nodes, level_1: { ...level, height: 3.0 } }
     expect(resolveStairTotalRise(stair, updated)).toBe(3.0)
+  })
+
+  it('includes the next level base elevation in a following stair rise', () => {
+    const { stair, nodes } = buildScene(2.5, undefined)
+    const current = nodes.level_1
+    if (current.type !== 'level') throw new Error('expected level')
+    const building = BuildingNode.parse({
+      id: 'building_1',
+      children: ['level_1', 'level_2'],
+    })
+    const upper = LevelNode.parse({
+      id: 'level_2',
+      parentId: building.id,
+      level: 1,
+      baseElevation: 0.4,
+      height: 2.5,
+    })
+    const stackedNodes = {
+      ...nodes,
+      [building.id]: building,
+      level_1: { ...current, parentId: building.id },
+      level_2: upper,
+    } as Record<string, AnyNode>
+
+    expect(resolveStairTotalRise(stair, stackedNodes)).toBeCloseTo(2.9)
+    // A fresh record, not a mutation of `stackedNodes`: getLevelElevations
+    // memoises on the identity of the nodes object, which holds because the
+    // store always publishes a new record. Mutating in place would read the
+    // cached elevations and silently assert nothing.
+    const loweredNodes = {
+      ...stackedNodes,
+      level_2: { ...upper, baseElevation: -0.4 },
+    } as Record<string, AnyNode>
+    expect(resolveStairTotalRise(stair, loweredNodes)).toBeCloseTo(2.1)
   })
 
   it('prefers an explicit totalRise over the storey height', () => {
@@ -396,7 +430,7 @@ describe('deck-attached rise with a floor-lifted base', () => {
     const updates = syncStairRises(nodes)
     expect(updates).toHaveLength(1)
     expect(updates[0]?.id).toBe('sseg_1' as never)
-    expect((updates[0]?.data as { height?: number }).height).toBeCloseTo(1.2)
+    expect((updates[0]!.data as { height?: number }).height).toBeCloseTo(1.2)
   })
 
   it('keeps the full deck elevation when the stair stands on bare ground', () => {
@@ -421,7 +455,7 @@ describe('deck-attached rise with a floor-lifted base', () => {
     spatialGridManager.handleNodeUpdated(movedDeck as AnyNode, 'level_1')
     const updates = syncStairRises(nodes)
     expect(updates).toHaveLength(1)
-    expect((updates[0]?.data as { height?: number }).height).toBeCloseTo(1.55)
+    expect((updates[0]!.data as { height?: number }).height).toBeCloseTo(1.55)
   })
 
   it('re-converges to flush after the base slab elevation changes', () => {
@@ -434,7 +468,7 @@ describe('deck-attached rise with a floor-lifted base', () => {
     spatialGridManager.handleNodeUpdated(movedFloor as AnyNode, 'level_1')
     const updates = syncStairRises(nodes)
     expect(updates).toHaveLength(1)
-    expect((updates[0]?.data as { height?: number }).height).toBeCloseTo(0.95)
+    expect((updates[0]!.data as { height?: number }).height).toBeCloseTo(0.95)
   })
 
   it('rescales flights proportionally from the lifted base, landings untouched', () => {
@@ -450,9 +484,9 @@ describe('deck-attached rise with a floor-lifted base', () => {
     const updates = syncStairRises(nodes)
     expect(updates).toHaveLength(2)
     expect(updates[0]?.id).toBe('sseg_1' as never)
-    expect((updates[0]?.data as { height?: number }).height).toBeCloseTo(1.0)
+    expect((updates[0]!.data as { height?: number }).height).toBeCloseTo(1.0)
     expect(updates[1]?.id).toBe('sseg_3' as never)
-    expect((updates[1]?.data as { height?: number }).height).toBeCloseTo(1.0)
+    expect((updates[1]!.data as { height?: number }).height).toBeCloseTo(1.0)
   })
 
   it('honors a persisted ground host over the floor slab election', () => {
