@@ -12,6 +12,7 @@ import {
   type WallNode,
 } from '../../schema'
 import type { CollectionId } from '../../schema/collections'
+import { addActiveSceneCommitNodeIds, runWithSceneCommitNodeIds } from '../history-control'
 import type { SceneState } from '../use-scene'
 
 type AnyContainerNode = AnyNode & { children: string[] }
@@ -779,7 +780,7 @@ function buildWallMergePlans(
   return mergePlans
 }
 
-export const createNodesAction = (
+const createNodesActionImpl = (
   set: (fn: (state: SceneState) => Partial<SceneState>) => void,
   get: () => SceneState,
   ops: NodeCreateOp[],
@@ -834,7 +835,7 @@ export const createNodesAction = (
   })
 }
 
-export const applyNodeChangesAction = (
+const applyNodeChangesActionImpl = (
   set: (fn: (state: SceneState) => Partial<SceneState>) => void,
   get: () => SceneState,
   changes: { create?: NodeCreateOp[]; update?: NodeUpdateOp[]; delete?: NodeDeleteOp[] },
@@ -959,6 +960,8 @@ export const applyNodeChangesAction = (
       delete nextNodes[id]
     }
 
+    addActiveSceneCommitNodeIds([...allIdsToDelete, ...nodesToMarkDirty, ...parentsToMarkDirty])
+
     return { nodes: nextNodes, rootNodeIds: resolvedRootIds, collections: nextCollections }
   })
 
@@ -976,7 +979,7 @@ export const applyNodeChangesAction = (
   }
 }
 
-export const updateNodesAction = (
+const updateNodesActionImpl = (
   set: (fn: (state: SceneState) => Partial<SceneState>) => void,
   get: () => SceneState,
   updates: { id: AnyNodeId; data: Partial<AnyNode> }[],
@@ -1038,11 +1041,21 @@ export const updateNodesAction = (
       }
     }
 
+    addActiveSceneCommitNodeIds([
+      ...updates.map(({ id }) => id),
+      ...parentsToUpdate,
+      ...extraNodesToUpdate,
+    ])
+
     return { nodes: nextNodes }
   })
 
   // Batch dirty-marking into a single RAF to avoid redundant callbacks during rapid updates
   for (const u of updates) {
+    // Visibility is applied by React before the deferred dirty callback. Mark
+    // it now so render systems can release collective geometry in that same
+    // frame, including when the host uses render-on-demand.
+    if (u.data.visible !== undefined) get().markDirty(u.id)
     pendingUpdates.add(u.id)
   }
   for (const pId of parentsToUpdate) {
@@ -1089,7 +1102,7 @@ export const setNodeAction = (
   get().markDirty(id)
 }
 
-export const deleteNodesAction = (
+const deleteNodesActionImpl = (
   set: (fn: (state: SceneState) => Partial<SceneState>) => void,
   get: () => SceneState,
   ids: AnyNodeId[],
@@ -1228,6 +1241,8 @@ export const deleteNodesAction = (
       delete nextNodes[id]
     }
 
+    addActiveSceneCommitNodeIds([...allIds, ...parentsToMarkDirty, ...nodesToMarkDirty])
+
     return { nodes: nextNodes, rootNodeIds: nextRootIds, collections: nextCollections }
   })
 
@@ -1251,3 +1266,49 @@ export const deleteNodesAction = (
     get().markDirty(id)
   })
 }
+
+export const createNodesAction = (
+  set: Parameters<typeof createNodesActionImpl>[0],
+  get: Parameters<typeof createNodesActionImpl>[1],
+  ops: NodeCreateOp[],
+) =>
+  runWithSceneCommitNodeIds(
+    ops.flatMap(({ node, parentId }) => {
+      const effectiveParentId = parentId ?? (node.parentId as AnyNodeId | null)
+      return effectiveParentId ? [node.id, effectiveParentId] : [node.id]
+    }),
+    () => createNodesActionImpl(set, get, ops),
+  )
+
+export const applyNodeChangesAction = (
+  set: Parameters<typeof applyNodeChangesActionImpl>[0],
+  get: Parameters<typeof applyNodeChangesActionImpl>[1],
+  changes: Parameters<typeof applyNodeChangesActionImpl>[2],
+) =>
+  runWithSceneCommitNodeIds(
+    [
+      ...(changes.create ?? []).flatMap(({ node, parentId }) => {
+        const effectiveParentId = parentId ?? (node.parentId as AnyNodeId | null)
+        return effectiveParentId ? [node.id, effectiveParentId] : [node.id]
+      }),
+      ...(changes.update ?? []).map(({ id }) => id),
+      ...(changes.delete ?? []),
+    ],
+    () => applyNodeChangesActionImpl(set, get, changes),
+  )
+
+export const updateNodesAction = (
+  set: Parameters<typeof updateNodesActionImpl>[0],
+  get: Parameters<typeof updateNodesActionImpl>[1],
+  updates: Parameters<typeof updateNodesActionImpl>[2],
+) =>
+  runWithSceneCommitNodeIds(
+    updates.map(({ id }) => id),
+    () => updateNodesActionImpl(set, get, updates),
+  )
+
+export const deleteNodesAction = (
+  set: Parameters<typeof deleteNodesActionImpl>[0],
+  get: Parameters<typeof deleteNodesActionImpl>[1],
+  ids: AnyNodeId[],
+) => runWithSceneCommitNodeIds(ids, () => deleteNodesActionImpl(set, get, ids))
