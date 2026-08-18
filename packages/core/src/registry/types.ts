@@ -878,10 +878,46 @@ export type FloorplanMoveTarget<N> = (args: {
 
 // ─── Plugin manifest ─────────────────────────────────────────────────
 
+/**
+ * A plugin-contributed section for the floating node inspector card.
+ * When a node whose `type` is in `kinds` is selected, the inspector header
+ * shows the extension's `icon` as a button. Clicking it swaps the card
+ * body to ONLY this extension's `component` (inside a section titled
+ * `title`) — extension mode and the kind's own controls are EITHER/OR,
+ * never appended together. Clicking the (highlighted) icon again, or the
+ * chevron, returns to the regular controls. The mobile sheet has no
+ * header icons, so it appends the section after the kind's controls
+ * instead.
+ *
+ * `component` is lazy-loaded on first expand and receives the selected
+ * node as a `node` prop (`ComponentType<{ node: AnyNode }>` — typed as
+ * {@link LazyComponent} so plugin bundles don't need the host's node
+ * types to declare one).
+ *
+ * Extensions surface only when the contributing plugin is installed in
+ * the project (same `installedPlugins` gate as panels and node kinds).
+ */
+export type InspectorExtension = {
+  /** Globally unique id, e.g. `aedifex:bones:wall-engineering`. */
+  id: string
+  /** The contributing plugin's id — used for the install gate. */
+  pluginId: string
+  /** Node kinds whose inspector card grows this section. */
+  kinds: string[]
+  /** Header-button icon (16px box). */
+  icon: IconRef
+  /** Section title, e.g. `Engineering`. */
+  title: string
+  /** Lazy section body; receives `{ node }` (the selected node). */
+  component: LazyComponent
+}
+
 export type Plugin = {
   id: string
   apiVersion: 2
   nodes?: AnyNodeDefinition[]
+  /** Sections contributed to the floating node inspector card. */
+  inspectorExtensions?: InspectorExtension[]
 }
 
 // ─── NodeDefinition ──────────────────────────────────────────────────
