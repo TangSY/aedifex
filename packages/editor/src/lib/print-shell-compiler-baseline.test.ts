@@ -79,6 +79,13 @@ describe('print shell compiler baseline', () => {
     const compiled = compilePrintShellBaseline(source)
 
     expect(compiled.status).toBe('compiled')
+    expect(compiled.backend).toBe('aedifex-three-bvh-csg')
+    expect(compiled.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'baseline_compiler',
+        message: expect.stringContaining('Aedifex Three/CSG'),
+      }),
+    )
     expect(compiled.inputMeshCount).toBe(2)
     expect(compiled.sourceNodeIds).toEqual(['wall_left', 'wall_right'])
     expect(compiled.scene).not.toBeNull()
@@ -93,7 +100,7 @@ describe('print shell compiler baseline', () => {
     expect(print.report.volumeMm3).toBeCloseTo(12_000, 1)
   })
 
-  test('blocks a structural mesh without Pascal provenance', () => {
+  test('blocks a structural mesh without Aedifex provenance', () => {
     const source = new THREE.Group()
     source.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1)))
 
@@ -102,7 +109,11 @@ describe('print shell compiler baseline', () => {
     expect(compiled.status).toBe('blocked')
     expect(compiled.scene).toBeNull()
     expect(compiled.diagnostics).toContainEqual(
-      expect.objectContaining({ code: 'missing_node_provenance', severity: 'error' }),
+      expect.objectContaining({
+        code: 'missing_node_provenance',
+        severity: 'error',
+        message: 'A structural mesh has no Aedifex node identity.',
+      }),
     )
   })
 

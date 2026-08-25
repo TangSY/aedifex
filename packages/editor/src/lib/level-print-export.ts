@@ -501,7 +501,7 @@ export async function exportSceneLevelsForPrint(
   return {
     data:
       format === '3mf'
-        ? createPrint3mf(packageParts, 'Pascal level parts')
+        ? createPrint3mf(packageParts, 'Aedifex level parts')
         : zipSync(files, { level: 0 }),
     report: {
       kind: 'print-level-export-report',

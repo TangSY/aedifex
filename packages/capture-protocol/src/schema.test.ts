@@ -17,7 +17,7 @@ describe('capture manifests', () => {
         roomModel: {
           kind: 'room-model',
           mediaType: 'model/vnd.usdz+zip',
-          url: 'https://cdn.pascal.app/room.usdz',
+          url: 'https://cdn.aedifex.example/room.usdz',
         },
         deviceMotion: {
           kind: 'device-motion',
@@ -64,7 +64,7 @@ describe('capture manifests', () => {
       'pointCloud',
       'surfaceMesh',
     ])
-    expect(descriptor.streams[0]?.artifact?.uri).toBe('https://cdn.pascal.app/room.usdz')
+    expect(descriptor.streams[0]?.artifact?.uri).toBe('https://cdn.aedifex.example/room.usdz')
     expect(descriptor.streams[2]?.inline).toMatchObject({
       coordinateSystem: 'arkit-world',
       positions: [0, 0, 0, 1, 1, 1],

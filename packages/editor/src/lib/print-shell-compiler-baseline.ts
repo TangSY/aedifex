@@ -10,7 +10,7 @@ export type PrintShellCompileDiagnostic = {
 }
 
 export type PrintShellCompileResult = {
-  backend: 'pascal-three-bvh-csg' | 'manifold-3d'
+  backend: 'aedifex-three-bvh-csg' | 'manifold-3d'
   status: 'compiled' | 'blocked'
   scene: THREE.Object3D | null
   inputMeshCount: number
@@ -26,7 +26,7 @@ export type PrintShellInput = {
   diagnostics: PrintShellCompileDiagnostic[]
 }
 
-function nearestPascalId(object: THREE.Object3D): string | null {
+function nearestAedifexNodeId(object: THREE.Object3D): string | null {
   let current: THREE.Object3D | null = object
   while (current) {
     const id = current.userData.pascalId
@@ -85,12 +85,12 @@ export function collectPrintShellInput(source: THREE.Object3D): PrintShellInput 
     if (!position || position.count === 0) return
     inputMeshCount += 1
 
-    const nodeId = nearestPascalId(mesh)
+    const nodeId = nearestAedifexNodeId(mesh)
     if (!nodeId) {
       diagnostics.push({
         severity: 'error',
         code: 'missing_node_provenance',
-        message: 'A structural mesh has no Pascal node identity.',
+        message: 'A structural mesh has no Aedifex node identity.',
         nodeIds: [],
       })
       return
@@ -139,7 +139,7 @@ function blockedResult(
   diagnostics: PrintShellCompileDiagnostic[],
 ): PrintShellCompileResult {
   return {
-    backend: 'pascal-three-bvh-csg',
+    backend: 'aedifex-three-bvh-csg',
     status: 'blocked',
     scene: null,
     inputMeshCount,
@@ -187,7 +187,7 @@ export function compilePrintShellBaseline(source: THREE.Object3D): PrintShellCom
     const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial())
     mesh.name = 'print-shell-baseline'
     mesh.userData = {
-      printCompiler: 'pascal-three-bvh-csg',
+      printCompiler: 'aedifex-three-bvh-csg',
       sourceNodeIds: Array.from(sourceNodeIds).sort(),
     }
     const scene = new THREE.Group()
@@ -198,12 +198,12 @@ export function compilePrintShellBaseline(source: THREE.Object3D): PrintShellCom
       severity: 'info',
       code: 'baseline_compiler',
       message:
-        'Compiled with the synchronous Pascal Three/CSG baseline; worker scheduling and face-level provenance remain pending.',
+        'Compiled with the synchronous Aedifex Three/CSG baseline; worker scheduling and face-level provenance remain pending.',
       nodeIds: Array.from(sourceNodeIds).sort(),
     })
 
     return {
-      backend: 'pascal-three-bvh-csg',
+      backend: 'aedifex-three-bvh-csg',
       status: 'compiled',
       scene,
       inputMeshCount,
