@@ -18,7 +18,8 @@
  *    branch logic, this file goes red immediately instead of silently
  *    letting AI placement drift away from manual placement.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useScene } from '@aedifex/core'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // Real implementation — single source of truth the mirror must track.
 // 6 × `../` climbs __tests__ → mutation → ai → components → src → editor,
 // landing on packages/, then into nodes/src/gutter/eave-snap.ts.
@@ -30,13 +31,6 @@ import {
 } from '../../../../../../nodes/src/gutter/eave-snap'
 
 const mockNodes: Record<string, any> = {}
-
-vi.mock('@aedifex/core', () => ({
-  useScene: { getState: () => ({ nodes: mockNodes }) },
-  pointInPolygon: () => false,
-  getCatalogMaterialById: () => null,
-  nodeRegistry: { get: (_t: string) => ({ capabilities: { deletable: true } }) },
-}))
 
 vi.mock('@aedifex/viewer', () => ({
   useViewer: { getState: () => ({ selection: { levelId: null } }) },
@@ -50,6 +44,14 @@ import {
 
 beforeEach(() => {
   for (const key of Object.keys(mockNodes)) delete mockNodes[key]
+  vi.spyOn(useScene, 'getState').mockReturnValue({
+    ...useScene.getInitialState(),
+    nodes: mockNodes,
+  })
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 function makeSegment(

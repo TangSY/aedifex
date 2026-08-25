@@ -118,6 +118,12 @@ interface TreeNodeProps {
   isLast?: boolean
 }
 
+type TreeNodeComponent = React.ComponentType<{
+  depth: number
+  isLast?: boolean
+  nodeId: AnyNodeId
+}>
+
 // Per-kind tree-node components keyed by `node.type`. Lookup replaces
 // the legacy switch — adding a kind to this map is now the only edit
 // needed in this file (the switch's `case '<kind>':` clauses were
@@ -125,12 +131,6 @@ interface TreeNodeProps {
 // outside the registry; future work moves these to a
 // `def.presentation`-driven generic tree-node and removes this map
 // entirely).
-type TreeNodeComponent = React.ComponentType<{
-  depth: number
-  isLast?: boolean
-  nodeId: AnyNodeId
-}>
-
 const treeNodeByType: Record<string, TreeNodeComponent> = {
   building: BuildingTreeNode as React.ComponentType<{
     depth: number
@@ -140,6 +140,7 @@ const treeNodeByType: Record<string, TreeNodeComponent> = {
   cabinet: RegistryTreeNode,
   'cabinet-module': RegistryTreeNode,
   'box-vent': RegistryTreeNode,
+  'block': RegistryTreeNode,
   ceiling: CeilingTreeNode,
   chimney: ChimneyTreeNode,
   dormer: DormerTreeNode,
@@ -173,6 +174,7 @@ const treeNodeByType: Record<string, TreeNodeComponent> = {
   'eyebrow-vent': RegistryTreeNode,
   skylight: RegistryTreeNode,
   roof: RoofTreeNode,
+  scan: RegistryTreeNode,
   stair: StairTreeNode,
   door: DoorTreeNode,
   window: WindowTreeNode,
@@ -182,6 +184,10 @@ const treeNodeByType: Record<string, TreeNodeComponent> = {
     nodeId: AnyNodeId
   }>,
   item: ItemTreeNode,
+}
+
+export function getTreeNodeComponent(nodeType: string): TreeNodeComponent {
+  return treeNodeByType[nodeType] ?? RegistryTreeNode
 }
 
 export const TreeNode = memo(function TreeNode({ nodeId, depth = 0, isLast }: TreeNodeProps) {

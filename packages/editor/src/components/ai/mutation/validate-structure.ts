@@ -1,9 +1,13 @@
 import {
   type AnyNode,
   type AnyNodeId,
+  computeGutterEaveY as computeCoreGutterEaveY,
   computeOpeningGuides,
   getCatalogMaterialById,
+  getRoofShapeEaveSides,
+  GUTTER_EAVE_TUCK_INWARD,
   nodeRegistry,
+  type RoofType,
   useScene,
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
@@ -1233,18 +1237,15 @@ const GUTTER_DEFAULT_SIZE = 0.13
 const MIN_DOWNSPOUT_LENGTH = 0.1
 
 // ---------------------------------------------------------------------------
-// Gutter eave snap — mirrors packages/nodes/src/gutter/eave-snap.ts.
+// Gutter eave snap — shares its primitives with packages/nodes/src/gutter/eave-snap.ts.
 // @aedifex/nodes peer-depends on @aedifex/editor, so the editor AI module
-// cannot import the original helpers without a package cycle. Keep this math
-// in lockstep with that file: the manual placement tool and this validator
-// must store identical poses for the same segment-local hit.
+// cannot import the original resolver without a package cycle. Core owns the
+// constants, eave-height formula, and roof-shape classification so the manual
+// placement tool and this validator stay aligned.
 // ---------------------------------------------------------------------------
 
-const EAVE_TUCK_INWARD = 0.04
-const EAVE_TUCK_UP = 0.04
-
 type EaveSnapSegment = {
-  roofType?: string
+  roofType?: RoofType
   width?: number
   depth?: number
   wallHeight?: number
@@ -1254,12 +1255,12 @@ type EaveSnapSegment = {
 
 /** Live eave Y from a segment's wallHeight + overhang + pitch (see eave-snap.ts). */
 export function computeGutterEaveY(segment: EaveSnapSegment): number {
-  const wallHeight = segment.wallHeight ?? 0
-  // Flat roofs: the deck top IS the eave line — no slope drop, no tuck-up.
-  if ((segment.roofType ?? 'gable') === 'flat') return wallHeight
-  const overhang = segment.overhang ?? 0
-  const pitchRad = ((segment.pitch ?? 0) * Math.PI) / 180
-  return wallHeight - overhang * Math.tan(pitchRad) + EAVE_TUCK_UP
+  return computeCoreGutterEaveY({
+    roofType: segment.roofType ?? 'gable',
+    wallHeight: segment.wallHeight ?? 0,
+    overhang: segment.overhang ?? 0,
+    pitch: segment.pitch ?? 0,
+  })
 }
 
 /**
@@ -1276,12 +1277,12 @@ export function resolveGutterEaveSnap(
   const halfD = (segment.depth ?? 0) / 2
   const overhang = segment.overhang ?? 0
   const eaveY = computeGutterEaveY(segment)
-  const roofType = segment.roofType ?? 'gable'
+  const eaveSides = getRoofShapeEaveSides(segment.roofType ?? 'gable')
 
   let side: '+X' | '-X' | '+Z' | '-Z'
-  if (roofType === 'shed') {
-    side = '+Z'
-  } else if (roofType === 'hip' || roofType === 'flat' || roofType === 'dutch') {
+  if (eaveSides.length === 1) {
+    side = eaveSides[0]!
+  } else if (eaveSides.includes('+X')) {
     const fx = halfW > 0 ? Math.abs(localX) / halfW : 0
     const fz = halfD > 0 ? Math.abs(localZ) / halfD : 0
     if (fx > fz) side = localX < 0 ? '-X' : '+X'
@@ -1290,8 +1291,8 @@ export function resolveGutterEaveSnap(
     side = localZ < 0 ? '-Z' : '+Z'
   }
 
-  const pinZ = Math.max(halfD, halfD + overhang - EAVE_TUCK_INWARD)
-  const pinX = Math.max(halfW, halfW + overhang - EAVE_TUCK_INWARD)
+  const pinZ = Math.max(halfD, halfD + overhang - GUTTER_EAVE_TUCK_INWARD)
+  const pinX = Math.max(halfW, halfW + overhang - GUTTER_EAVE_TUCK_INWARD)
   switch (side) {
     case '+Z':
       return { eaveX: localX, eaveY, eaveZ: pinZ, rotation: 0 }
