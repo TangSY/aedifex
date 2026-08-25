@@ -41,26 +41,6 @@ a base URL that only `NEXT_PUBLIC_APP_URL` can override, and Next inlines that
 value at build time, so remapping the port to something else makes the page
 return 500.
 
-## CLI-managed editor
-
-Node.js 22.13 or newer can install a persistent local runtime, start it in the
-background, and open it in the browser without a repository checkout:
-
-```bash
-npx @aedifex/cli editor
-```
-
-The command starts the editor and its authenticated local MCP service together. Configure
-an agent to launch `aedifex mcp connect`; for example, run `aedifex mcp setup codex`.
-
-Use `npx @aedifex/cli doctor` to check the runtime, storage, editor, and MCP state. Saved
-scenes live in `~/.pascal/data/aedifex.db` independently from installed runtime versions.
-The CLI retains old runtime versions for rollback and warns after more than three have
-accumulated. It also replaces a damaged copy of its bundled runtime on the next start;
-neither operation modifies the data directory.
-The complete command and storage reference is in
-[`packages/cli/README.md`](./packages/cli/README.md).
-
 ## Monorepo Structure
 
 ```
@@ -70,7 +50,7 @@ The complete command and storage reference is in
 │   ├── core/            # @aedifex/core — Scene schema, state, systems
 │   ├── viewer/          # @aedifex/viewer — 3D rendering
 │   └── ui/              # Shared UI components
-└── tooling/             # Build & release tooling
+└── tooling/             # Shared build and configuration tooling
 ```
 
 ## Scripts

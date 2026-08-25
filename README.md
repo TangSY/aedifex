@@ -72,18 +72,6 @@ https://github.com/user-attachments/assets/6c819726-65f4-45c6-903e-fa5c364a6340
 - **pnpm** 9+ (`npm install -g pnpm`)
 - A **WebGPU-capable browser**: Chrome 113+, Edge 113+, or Firefox Nightly
 
-### CLI-managed local editor
-
-With Node.js 22.13 or newer, install and start the editor plus its authenticated
-local MCP service without cloning the repository:
-
-```bash
-npx @aedifex/cli editor
-```
-
-See the [Aedifex CLI guide](packages/cli/README.md) for project, health, update,
-and MCP commands. The CLI intentionally keeps compatible data under `~/.pascal/`.
-
 ### Setup
 
 ```bash

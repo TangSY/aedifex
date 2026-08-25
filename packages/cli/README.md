@@ -1,25 +1,18 @@
 # Aedifex CLI
 
-Run the open-source [Aedifex 3D building editor](https://github.com/TangSY/aedifex) locally
-from your terminal—without cloning or building the Aedifex repository.
+Repository-local CLI and packed-runtime test harness for the
+[Aedifex 3D building editor](https://github.com/TangSY/aedifex).
 
-[![npm version](https://img.shields.io/npm/v/@aedifex/cli?label=npm)](https://www.npmjs.com/package/@aedifex/cli)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
 
-```bash
-npx @aedifex/cli editor
-```
-
-On an interactive first run through `npx`, Aedifex installs the same CLI version globally
-after the editor becomes healthy. The shorter `aedifex` command is therefore available
-for `status`, `logs`, `stop`, and future sessions without another setup step. If the
-global installation is unavailable because of local npm permissions, the editor remains
-running and the CLI shows the equivalent `npx` commands plus the manual install command.
+This package is private and is not published to npm. Normal development uses `bun dev`
+from the repository root. The CLI remains available for local packed-runtime and MCP
+integration testing.
 
 The first run walks through local storage, runtime installation, automatic editor and
 MCP port selection, process startup, and both health checks with live terminal feedback.
 It then opens `http://aedifex.localhost:<port>`. Your projects are stored separately from
-the runtime, so updating the CLI does not replace your work.
+the runtime, so rebuilding the CLI does not replace your work.
 
 ## Why use the CLI?
 
@@ -28,43 +21,31 @@ the runtime, so updating the CLI does not replace your work.
 - Start and stop the editor independently from your terminal session.
 - Inspect health, logs, versions, storage, and project state from scripts or agents.
 - Connect Codex, Claude Code, Cursor, or another MCP client to the same local projects.
-- Update through a health-checked activation that rolls back if the new runtime fails.
+- Exercise health-checked runtime activation and rollback in local integration tests.
 
 ## Requirements
 
 - Node.js 22.13 or newer
-- npm, including when the CLI itself is launched with pnpm or Bun
+- Bun 1.3+
 - A browser, unless you pass `--no-open`
 
-The initial supported release is macOS. The packed runtime also passes automated
-release smoke tests on Ubuntu; broader Linux and Windows support is still being
-verified.
+The local packed runtime is primarily tested on macOS. Its smoke tests also run on
+Ubuntu; broader Linux and Windows support is still being verified.
 
-## Install and run
+## Build and run from the repository
 
-Use your preferred package runner:
-
-```bash
-# npm
-npx @aedifex/cli editor
-
-# pnpm
-pnpm dlx @aedifex/cli editor
-
-# Bun
-bunx @aedifex/cli editor
-```
-
-To install the `aedifex` command before starting the editor:
+Build the editor runtime and CLI, stage the runtime, then link the local command:
 
 ```bash
-npm install --global @aedifex/cli
+cd packages/cli
+bun run build-runtime
+bun run build
+bun run stage-runtime
+bun link
 aedifex editor
 ```
 
-After the interactive `npx` first run or a global installation, `aedifex status`,
-`aedifex logs --follow`, and the other commands work directly in the current terminal
-and future sessions.
+`bun link` links the current checkout; it does not publish or download an npm package.
 
 Use `--no-open` on a headless machine. Use `--foreground` when a process supervisor
 should own the editor or when you want logs attached to the current terminal.
@@ -73,8 +54,8 @@ not compete with other local development servers. Pass `--port <n>` to request a
 specific port; if it is occupied, Aedifex reports that and safely selects another one.
 
 ```bash
-npx @aedifex/cli editor --no-open
-npx @aedifex/cli editor --foreground --no-open
+aedifex editor --no-open
+aedifex editor --foreground --no-open
 ```
 
 ## Commands
@@ -90,7 +71,7 @@ npx @aedifex/cli editor --foreground --no-open
 | `aedifex resume [project]` | Open the latest project, or a selected project. |
 | `aedifex projects [--json]` | List local projects. |
 | `aedifex logs [--follow]` | Read or follow the managed editor log. |
-| `aedifex update [--version <version>]` | Health-check and activate a published runtime. |
+| `aedifex update` | Re-activate the bundled runtime from the current local build. |
 | `aedifex doctor [--json]` | Diagnose Node.js, storage, runtime, process, and plugin state. |
 | `aedifex info [--json]` | Print platform, paths, runtime, and plugin context. |
 | `aedifex project list [--json]` | Explicit form of `aedifex projects`. |
@@ -100,9 +81,6 @@ npx @aedifex/cli editor --foreground --no-open
 | `aedifex mcp config [--json]` | Print generic MCP client configuration. |
 | `aedifex mcp setup <codex\|claude>` | Configure an installed client without overwriting existing entries. |
 | `aedifex plugin list [--json]` | Inspect the reserved managed-plugin lock. |
-
-When you do not install globally, prefix commands with a runner—for example,
-`npx @aedifex/cli doctor`.
 
 ## Local data and security
 
@@ -125,9 +103,9 @@ The `~/.pascal/` root is intentionally retained for compatibility with existing
 Aedifex editor and MCP data.
 
 Runtime installation, project data, process state, and logs have separate lifecycles.
-The CLI does not include a command that deletes project data. Updates retain the
-previous runtime for rollback, and `aedifex doctor` warns when more than three versions
-have accumulated.
+The CLI does not include a command that deletes project data. Local runtime activations
+retain the previous runtime for rollback, and `aedifex doctor` warns when more than three
+versions have accumulated.
 
 ## Local AI agents
 

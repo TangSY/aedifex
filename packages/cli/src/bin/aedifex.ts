@@ -2,7 +2,6 @@
 import { spawn } from 'node:child_process'
 import { parseArgs } from 'node:util'
 import { openBrowser } from '../browser.js'
-import { installGlobalAedifexCommand, isNpxInvocation } from '../command-install.js'
 import { collectInfo, runDoctor } from '../diagnostics.js'
 import {
   activateEditorRuntime,
@@ -25,16 +24,9 @@ import { version } from '../version.js'
 
 const HELP = `Aedifex — local 3D editor
 
-FIRST RUN:
-  npx @aedifex/cli editor
-  Starts the editor and installs the shorter "aedifex" command interactively.
-
-RUN A COMMAND THROUGH NPX:
-  npx @aedifex/cli <command>
-
-ENABLE THE SHORT GLOBAL COMMAND:
-  npm install --global @aedifex/cli
-  aedifex <command>
+SOURCE CHECKOUT:
+  This CLI is repository-local and is not published to npm.
+  Build and link packages/cli before running the aedifex command.
 
 USAGE:
   aedifex editor [--foreground] [--no-open] [--port <n>]
@@ -44,7 +36,7 @@ USAGE:
   aedifex resume [project]
   aedifex projects [--json]
   aedifex logs [--follow] [--lines <n>]
-  aedifex update [--version <version>]
+  aedifex update
   aedifex doctor [--json]
   aedifex info [--json]
   aedifex project list [--json]
@@ -152,22 +144,7 @@ async function runStart(args: string[], shouldOpen: boolean): Promise<void> {
   }
   progress?.stop()
   if (values.open && !values['no-open']) openBrowser(result.state.url)
-  const npxInvocation = isNpxInvocation()
-  let commandInstalled = false
-  if (npxInvocation && !values.json && process.stdin.isTTY && process.stderr.isTTY) {
-    progress?.start('Installing the aedifex command')
-    commandInstalled = await installGlobalAedifexCommand(version)
-    if (commandInstalled) {
-      progress?.succeed('aedifex command installed')
-    } else {
-      progress?.stop()
-      process.stderr.write(
-        '! The editor is ready, but npm could not install the aedifex command globally.\n',
-      )
-    }
-  }
-  const useShortCommand = !npxInvocation || commandInstalled
-  const commandPrefix = useShortCommand ? 'aedifex' : 'npx @aedifex/cli'
+  const commandPrefix = 'aedifex'
   output(
     values.json,
     { ...result.state, alreadyRunning: result.alreadyRunning },
@@ -178,18 +155,15 @@ async function runStart(args: string[], shouldOpen: boolean): Promise<void> {
       `MCP is ready on port ${result.state.mcp?.port}`,
       `Projects stay in ${paths.data}`,
       '',
-      `Manage it with ${useShortCommand ? 'aedifex' : 'npx'}:`,
+      'Manage it with aedifex:',
       `  ${commandPrefix} status        Check the local editor`,
       `  ${commandPrefix} projects      List local projects`,
       `  ${commandPrefix} resume        Resume your latest project`,
       `  ${commandPrefix} logs --follow Follow editor logs`,
       `  ${commandPrefix} stop          Stop the background process`,
-      ...(useShortCommand
-        ? ['', 'Connect an AI agent:', `  ${commandPrefix} mcp setup codex`]
-        : []),
-      ...(useShortCommand
-        ? []
-        : ['', 'To install the shorter "aedifex" command:', '  npm install --global @aedifex/cli']),
+      '',
+      'Connect an AI agent:',
+      `  ${commandPrefix} mcp setup codex`,
     ].join('\n'),
   )
   if (result.child) {
@@ -360,7 +334,7 @@ async function runUpdate(args: string[]): Promise<void> {
     strict: true,
     options: { version: { type: 'string' }, json: { type: 'boolean', default: false } },
   })
-  const target = values.version ?? 'latest'
+  const target = values.version ?? version
   if (!isAllowedUpdateVersion(target)) {
     throw new CliError(
       'invalid_version',
@@ -369,52 +343,14 @@ async function runUpdate(args: string[]): Promise<void> {
       2,
     )
   }
-  let candidate
-  if (target === version) {
-    candidate = await installBundledRuntime(paths, undefined, { activate: false })
-  } else {
-    const spec = `@aedifex/cli@${target}`
-    const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
-    if (!values.json) print(`Installing ${spec}...`)
-    let result: Awaited<ReturnType<typeof spawnAndCapture>>
-    try {
-      result = await spawnAndCapture(
-        npm,
-        [
-          'exec',
-          '--yes',
-          '--ignore-scripts',
-          `--package=${spec}`,
-          '--',
-          'aedifex',
-          '_install-runtime',
-        ],
-        !values.json,
-      )
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        throw new CliError(
-          'npm_unavailable',
-          'npm is required to install another Aedifex runtime. Install Node.js with npm and try again.',
-        )
-      }
-      throw error
-    }
-    if (result.exitCode !== 0) {
-      throw new CliError('update_failed', `Unable to install ${spec}.`, {
-        stderr: result.stderr.trim() || undefined,
-      })
-    }
-    try {
-      candidate = JSON.parse(result.stdout) as {
-        schemaVersion: 1
-        version: string
-        directory: string
-      }
-    } catch {
-      throw new CliError('update_failed', `The installer for ${spec} returned invalid output.`)
-    }
+  if (target !== version) {
+    throw new CliError(
+      'updates_unavailable',
+      'This repository-local CLI has no npm update channel. Pull the repository and rebuild the CLI instead.',
+      { requestedVersion: target, currentVersion: version },
+    )
   }
+  const candidate = await installBundledRuntime(paths, undefined, { activate: false })
   const activation = await activateEditorRuntime(paths, candidate)
   output(
     values.json,
@@ -647,7 +583,7 @@ async function ensureShortCommandAvailable(): Promise<void> {
   } catch {}
   throw new CliError(
     'aedifex_command_unavailable',
-    `The matching Aedifex CLI ${version} is required in MCP client configuration. Run "npm install --global @aedifex/cli@${version}" and try again.`,
+    `The repository-local Aedifex CLI ${version} must be linked before MCP client setup. Build packages/cli, run "bun link" from that directory, and try again.`,
   )
 }
 

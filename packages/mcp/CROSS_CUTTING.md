@@ -81,11 +81,11 @@ Adds a CI workflow that runs on pushes to `main` and on pull requests touching `
 
 ### Why
 
-The existing `.github/workflows/release.yml` is `workflow_dispatch`-only (manual releases for `core` / `viewer`). There was no automated pre-merge check for MCP builds/tests. A new workflow is still needed so that PRs touching mcp/core are verified before merge, and it now covers the editor scene API because those routes consume the same MCP operations layer. Full `apps/editor` typecheck was evaluated but is not part of this workflow because it currently fails on unrelated `packages/editor` type errors.
+The Aedifex fork does not publish Core, Capture, or CLI packages and therefore has no release workflow. A dedicated quality workflow is still needed so that PRs touching mcp/core are verified before merge, and it covers the editor scene API because those routes consume the same MCP operations layer. Full `apps/editor` typecheck was evaluated but is not part of this workflow because it currently fails on unrelated `packages/editor` type errors.
 
 ### Impact
 
-None on existing workflows; purely additive. The workflow only triggers for MCP/core/editor scene API paths, the workflow file itself, or `bun.lock`, so unrelated PRs remain unaffected. `release.yml` is untouched.
+None on existing workflows; purely additive. The workflow only triggers for MCP/core/editor scene API paths, the workflow file itself, or `bun.lock`, so unrelated PRs remain unaffected.
 
 ### Reversibility
 

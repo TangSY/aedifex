@@ -15,8 +15,9 @@ describe('command parsing', () => {
 
     expect(result.exitCode).toBe(0)
     expect(result.stdout).toContain('aedifex editor')
-    expect(result.stdout).toContain('npx @aedifex/cli <command>')
-    expect(result.stdout).toContain('npm install --global @aedifex/cli')
+    expect(result.stdout).toContain('This CLI is repository-local and is not published to npm.')
+    expect(result.stdout).not.toContain('npx @aedifex/cli')
+    expect(result.stdout).not.toContain('npm install --global')
   })
 
   test('shows focused help for MCP commands', async () => {
@@ -42,11 +43,21 @@ describe('command parsing', () => {
     expect(result.stderr).toContain('--lines must be an integer')
   })
 
-  test('rejects non-registry update sources before invoking npm', async () => {
+  test('rejects non-semver update sources', async () => {
     const result = await runCli('update', '--version', 'file:/tmp/untrusted', '--json')
 
     expect(result.exitCode).toBe(2)
     expect(JSON.parse(result.stderr)).toMatchObject({ error: 'invalid_version' })
+  })
+
+  test('rejects remote runtime updates because the CLI has no npm release channel', async () => {
+    const result = await runCli('update', '--version', '9.9.9', '--json')
+
+    expect(result.exitCode).toBe(1)
+    expect(JSON.parse(result.stderr)).toMatchObject({
+      error: 'updates_unavailable',
+      details: { requestedVersion: '9.9.9' },
+    })
   })
 
   test('reports unknown options as command errors', async () => {

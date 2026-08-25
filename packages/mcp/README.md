@@ -13,10 +13,16 @@ resources, and prompts.
 
 ## Recommended local setup
 
-For a local editor and MCP that share projects automatically, install the Aedifex CLI:
+The CLI is repository-local and is not published to npm. For local development, build
+and link it from this checkout before starting the managed editor and MCP service:
 
 ```bash
-npx @aedifex/cli editor
+cd packages/cli
+bun run build-runtime
+bun run build
+bun run stage-runtime
+bun link
+aedifex editor
 aedifex mcp setup codex
 ```
 

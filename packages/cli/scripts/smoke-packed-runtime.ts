@@ -178,7 +178,7 @@ function enforceArtifactBudget(artifact: {
     artifact.entryCount > maximumEntryCount
   ) {
     throw new Error(
-      `packed CLI exceeds its release budget: ${formatMb(artifact.size)} MB compressed, ${formatMb(artifact.unpackedSize)} MB unpacked, ${artifact.entryCount} files`,
+      `packed CLI exceeds its local runtime budget: ${formatMb(artifact.size)} MB compressed, ${formatMb(artifact.unpackedSize)} MB unpacked, ${artifact.entryCount} files`,
     )
   }
 }
