@@ -1,15 +1,20 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import {
   type AnyNode,
   type AnyNodeId,
   applyHeightPatch,
+  BlockNode,
   CeilingNode,
   createTerrainField,
   DoorNode as DoorSchema,
   encodeTerrainField,
   flattenPatch,
   GROUND_SUPPORT_ID,
+  getFloorPlacedElevation,
   initSpaceDetectionSync,
+  nodeRegistry,
+  registerNode,
+  resolveTerrainWallConstructionOptions,
   runAsSingleSceneHistoryStep,
   SlabNode,
   spatialGridManager,
@@ -23,7 +28,6 @@ import useInteractionScope from '../../../store/use-interaction-scope'
 import {
   createWallOnCurrentLevel,
   resolveEndpointWallSplit,
-  resolveTerrainWallConstructionOptions,
   snapWallDraftPointDetailed,
 } from './wall-drafting'
 import type { WallPlanPoint } from './wall-snap-geometry'
@@ -139,6 +143,15 @@ function levelWalls(): WallNode[] {
 }
 
 describe('createWallOnCurrentLevel', () => {
+  // Set by tests that mutate the process-wide node registry; restored here
+  // so the mutation can't leak into later test files (order-dependent flakes).
+  let restoreRegistry: (() => void) | undefined
+
+  afterEach(() => {
+    restoreRegistry?.()
+    restoreRegistry = undefined
+  })
+
   beforeEach(() => {
     useViewer.setState({
       selection: {
@@ -198,6 +211,181 @@ describe('createWallOnCurrentLevel', () => {
     expect(support.elevation).toBe(1.75)
   })
 
+  test('never exposes a raised wall at floor elevation during commit', () => {
+    const observed: WallNode[] = []
+    const unsubscribe = useScene.subscribe((state) => {
+      const wall = Object.values(state.nodes).find(
+        (node): node is WallNode => node?.type === 'wall' && node.id !== 'wall_a',
+      )
+      if (wall) observed.push(wall)
+    })
+
+    const created = createWallOnCurrentLevel([2, 2], [3, 2], {
+      supportCap: 1.75,
+      preferredSupportSlabId: GROUND_SUPPORT_ID,
+      constructionElevation: 1.75,
+      constructionHeight: 2.5,
+      flatConstructionBase: true,
+    })
+    unsubscribe()
+
+    expect(created).not.toBeNull()
+    expect(observed.length).toBeGreaterThan(0)
+    expect(observed.every((wall) => wall.supportSlabId === GROUND_SUPPORT_ID)).toBe(true)
+    expect(observed.every((wall) => wall.supportOffset === 1.75)).toBe(true)
+  })
+
+  test('keeps a node-top room plane flat across changing terrain', () => {
+    const field = createTerrainField({ cols: 5, rows: 5, spacing: 1, origin: [0, 0] })
+    const patch = flattenPatch(field, { minX: 3.5, minZ: 0, maxX: 4, maxZ: 4 }, 1)
+    if (!patch) throw new Error('Expected terrain patch')
+    const terrain = applyHeightPatch(field, patch)
+    const site = {
+      id: 'site_test',
+      type: 'site',
+      object: 'node',
+      parentId: null,
+      visible: true,
+      metadata: {},
+      children: ['building_test'],
+      terrain: encodeTerrainField(terrain),
+    } as unknown as AnyNode
+    const building = {
+      id: 'building_test',
+      type: 'building',
+      object: 'node',
+      parentId: site.id,
+      visible: true,
+      metadata: {},
+      children: [LEVEL_ID],
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+    } as AnyNode
+    const level = {
+      id: LEVEL_ID,
+      type: 'level',
+      object: 'node',
+      parentId: building.id,
+      visible: true,
+      metadata: {},
+      children: [],
+      level: 0,
+      baseElevation: 0,
+      height: 3,
+    } as AnyNode
+    useScene.setState({
+      nodes: Object.fromEntries([site, building, level].map((node) => [node.id, node])),
+      rootNodeIds: [site.id],
+      dirtyNodes: new Set(),
+    } as never)
+
+    const lowTerrainWall = createWallOnCurrentLevel([0, 0], [1, 0], {
+      constructionElevation: 3,
+      constructionHeight: 2.5,
+      flatConstructionBase: true,
+      supportCap: 3,
+    })
+    const highTerrainWall = createWallOnCurrentLevel([4, 0], [4, 1], {
+      constructionElevation: 3,
+      constructionHeight: 2.5,
+      flatConstructionBase: true,
+      supportCap: 3,
+    })
+
+    expect(lowTerrainWall?.supportSlabId).toBe(GROUND_SUPPORT_ID)
+    expect(highTerrainWall?.supportSlabId).toBe(GROUND_SUPPORT_ID)
+    expect(lowTerrainWall?.supportOffset).toBeCloseTo(3)
+    expect(highTerrainWall?.supportOffset).toBeCloseTo(2)
+    expect(
+      spatialGridManager.getSlabSupportForWall(
+        LEVEL_ID,
+        lowTerrainWall!.start,
+        lowTerrainWall!.end,
+        lowTerrainWall!.curveOffset,
+        lowTerrainWall!.thickness,
+        lowTerrainWall!.supportSlabId,
+        undefined,
+        lowTerrainWall!.supportOffset,
+      ).elevation,
+    ).toBeCloseTo(3)
+    expect(
+      spatialGridManager.getSlabSupportForWall(
+        LEVEL_ID,
+        highTerrainWall!.start,
+        highTerrainWall!.end,
+        highTerrainWall!.curveOffset,
+        highTerrainWall!.thickness,
+        highTerrainWall!.supportSlabId,
+        undefined,
+        highTerrainWall!.supportOffset,
+      ).elevation,
+    ).toBeCloseTo(3)
+  })
+
+  test('pins an existing construction source before a generated room slab can lift it', () => {
+    // The reset + throwaway `block` registration is scoped to this test —
+    // the registry is a process-wide singleton, so leaking it would leave
+    // later test FILES with a stripped registry (order-dependent flakes).
+    restoreRegistry = nodeRegistry._snapshot()
+    nodeRegistry._reset()
+    spatialGridManager.clear()
+    registerNode({
+      kind: 'block',
+      schemaVersion: 2,
+      schema: BlockNode,
+      category: 'structure',
+      defaults: () => BlockNode.parse({ name: 'Block' }),
+      capabilities: {
+        floorPlaced: {
+          footprint: () => ({ dimensions: [4, 2.4, 4], rotation: [0, 0, 0] }),
+        },
+      },
+    } as never)
+
+    const slope = BlockNode.parse({
+      name: 'Existing slope',
+      parentId: LEVEL_ID,
+      position: [0, 0, 0],
+    })
+    seedLevel([makeWall([0, 0], [4, 0], 'wall_a')], [slope as AnyNode])
+
+    createWallOnCurrentLevel([0, 1], [1, 1], {
+      constructionElevation: 2.4,
+      constructionHeight: 2.5,
+      constructionSourceNodeId: slope.id,
+      flatConstructionBase: true,
+      supportCap: 2.4,
+    })
+
+    const pinnedSlope = useScene.getState().nodes[slope.id] as BlockNode
+    expect(pinnedSlope.supportSlabId).toBe(GROUND_SUPPORT_ID)
+
+    const generatedSlab = SlabNode.parse({
+      polygon: [
+        [-2, -2],
+        [2, -2],
+        [2, 2],
+        [-2, 2],
+      ],
+      elevation: 2.45,
+      autoFromWalls: true,
+      parentId: LEVEL_ID,
+    })
+    spatialGridManager.handleNodeCreated(generatedSlab as AnyNode, LEVEL_ID)
+
+    expect(
+      getFloorPlacedElevation({
+        node: pinnedSlope,
+        nodes: {
+          ...useScene.getState().nodes,
+          [generatedSlab.id]: generatedSlab as AnyNode,
+        },
+        position: pinnedSlope.position,
+        rotation: [0, pinnedSlope.rotation, 0],
+      }),
+    ).toBe(0)
+  })
+
   test('a flat-ground draft (no sculpted terrain) commits plane-bound', () => {
     // Pointing at bare ground freezes a GROUND construction plane at 0. With
     // no terrain field in the scene that plane is just the backdrop — none of
@@ -246,6 +434,136 @@ describe('createWallOnCurrentLevel', () => {
     expect(created?.height).toBeUndefined()
     expect(created?.supportOffset).toBeUndefined()
     expect(created?.supportSlabId).not.toBe(GROUND_SUPPORT_ID)
+  })
+
+  test('a fresh-scene wall started on a slab node-top elects that slab plane-bound', () => {
+    const slab = SlabNode.parse({
+      id: 'slab_fresh_floor',
+      parentId: LEVEL_ID,
+      polygon: [
+        [-1, -1],
+        [5, -1],
+        [5, 5],
+        [-1, 5],
+      ],
+      elevation: 0.05,
+      thickness: 0.05,
+    })
+    seedLevel([], [slab])
+    spatialGridManager.clear()
+    spatialGridManager.handleNodeCreated(slab as AnyNode, LEVEL_ID)
+
+    const created = createWallOnCurrentLevel([2, 2], [3, 2], {
+      supportCap: 0.05,
+      preferredSupportSlabId: null,
+      constructionElevation: 0.05,
+      constructionHeight: 2.5,
+      constructionSourceNodeId: slab.id,
+      flatConstructionBase: true,
+    })
+
+    expect(created).not.toBeNull()
+    expect(created?.supportSlabId).toBeUndefined()
+    expect(created?.height).toBeUndefined()
+    expect(created?.supportOffset).toBeUndefined()
+    const support = spatialGridManager.getSlabSupportForWall(
+      LEVEL_ID,
+      created!.start,
+      created!.end,
+      created!.curveOffset,
+      created!.thickness,
+      created!.supportSlabId,
+    )
+    expect(support.electedSlabId).toBe(slab.id)
+    expect(support.elevation).toBeCloseTo(0.05)
+  })
+
+  test('a direct slab source does not pin a cross-slab wall away from the higher majority support', () => {
+    const sourceSlab = SlabNode.parse({
+      id: 'slab_source_low',
+      parentId: LEVEL_ID,
+      polygon: [
+        [-0.1, -1],
+        [0.1, -1],
+        [0.1, 1],
+        [-0.1, 1],
+      ],
+      elevation: 0.1,
+      thickness: 0.05,
+    })
+    const majoritySlab = SlabNode.parse({
+      id: 'slab_majority_high',
+      parentId: LEVEL_ID,
+      polygon: [
+        [0.1, -1],
+        [4.1, -1],
+        [4.1, 1],
+        [0.1, 1],
+      ],
+      elevation: 0.6,
+      thickness: 0.1,
+    })
+    seedLevel([], [sourceSlab, majoritySlab])
+    spatialGridManager.clear()
+    spatialGridManager.handleNodeCreated(sourceSlab as AnyNode, LEVEL_ID)
+    spatialGridManager.handleNodeCreated(majoritySlab as AnyNode, LEVEL_ID)
+
+    const created = createWallOnCurrentLevel([0, 0], [4, 0], {
+      supportCap: 0.6,
+      preferredSupportSlabId: null,
+      constructionElevation: 0.1,
+      constructionHeight: 2.5,
+      constructionSourceNodeId: sourceSlab.id,
+      flatConstructionBase: true,
+    })
+
+    expect(created?.supportSlabId).toBe(majoritySlab.id)
+    expect(created?.height).toBeUndefined()
+    expect(created?.supportOffset).toBeUndefined()
+  })
+
+  test('a grazing direct slab source does not override the commit elevation cap', () => {
+    const sourceSlab = SlabNode.parse({
+      id: 'slab_source_high',
+      parentId: LEVEL_ID,
+      polygon: [
+        [-0.1, -1],
+        [0.1, -1],
+        [0.1, 1],
+        [-0.1, 1],
+      ],
+      elevation: 0.6,
+      thickness: 0.1,
+    })
+    const cappedSlab = SlabNode.parse({
+      id: 'slab_capped_low',
+      parentId: LEVEL_ID,
+      polygon: [
+        [-0.1, -1],
+        [4.1, -1],
+        [4.1, 1],
+        [-0.1, 1],
+      ],
+      elevation: 0.1,
+      thickness: 0.05,
+    })
+    seedLevel([], [sourceSlab, cappedSlab])
+    spatialGridManager.clear()
+    spatialGridManager.handleNodeCreated(sourceSlab as AnyNode, LEVEL_ID)
+    spatialGridManager.handleNodeCreated(cappedSlab as AnyNode, LEVEL_ID)
+
+    const created = createWallOnCurrentLevel([0, 0], [4, 0], {
+      supportCap: 0.1,
+      preferredSupportSlabId: null,
+      constructionElevation: 0.6,
+      constructionHeight: 2.5,
+      constructionSourceNodeId: sourceSlab.id,
+      flatConstructionBase: true,
+    })
+
+    expect(created?.supportSlabId).toBe(cappedSlab.id)
+    expect(created?.height).toBeUndefined()
+    expect(created?.supportOffset).toBeUndefined()
   })
 
   test('a non-ground draft never freezes the ghost height, even at a raised plane', () => {

@@ -1,4 +1,15 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test'
+import * as realOperations from '@aedifex/mcp/operations'
+import * as realStorage from '@aedifex/mcp/storage'
+
+// bun's mock.module poisons the module registry for EVERY test file that
+// runs after this one in the same process — capture the real modules and
+// restore them when this file finishes, or route tests downstream get a
+// stub facade without saveScene/loadStoredScene (night-5 CI failure).
+afterAll(() => {
+  mock.module('@aedifex/mcp/operations', () => realOperations)
+  mock.module('@aedifex/mcp/storage', () => realStorage)
+})
 
 describe('getSceneStore', () => {
   beforeEach(() => {

@@ -25,6 +25,8 @@ https://github.com/user-attachments/assets/6c819726-65f4-45c6-903e-fa5c364a6340
 - **Zones** — Rooms are auto-detected from wall boundaries. Zones display area, shape analysis, and spatial metadata.
 - **Multi-Level** — Stack, explode, or solo levels. Each level maintains independent floor plans.
 - **Slabs, Ceilings & Roofs** — Draw floor plates, ceilings, and roof segments with polygon-based geometry.
+- **Lean-to Extensions & Drainage** — Attach lean-to roof extensions and generate coordinated gutters and downspouts.
+- **Custom Blocks** — Edit mesh faces, edges, loops, transforms, and per-face materials with Blender-style controls.
 
 ### Furniture & Items
 
@@ -44,11 +46,12 @@ https://github.com/user-attachments/assets/6c819726-65f4-45c6-903e-fa5c364a6340
 - **Dark / Light Theme** — Toggle between dark and light viewport themes.
 - **Compass HUD** — Always-visible cardinal direction indicator.
 - **Camera Controls** — Orbit, pan, zoom with mouse or trackpad. Optimized for Mac touchpad (two-finger pan + pinch zoom + right-click rotate).
+- **Capture Layers** — Display transport-neutral static or live room models, point clouds, surface meshes, and device motion.
 
 ### Export
 
 - **GLB** — Standard glTF binary format for web and game engines.
-- **STL** — For 3D printing.
+- **STL / 3MF** — Print-ready whole-model or per-level packages with optional shell compilation and plinths.
 - **OBJ** — Universal exchange format.
 
 ### AI Design Assistant
@@ -164,6 +167,8 @@ aedifex/
 ├── apps/editor/         # Next.js 16 application (entry point)
 ├── packages/core/       # Schema, state (Zustand), systems, spatial queries
 ├── packages/viewer/     # 3D rendering (React Three Fiber + WebGPU)
+├── packages/capture-protocol/ # Static/live capture-session contracts
+├── packages/capture-viewer/   # Capture runtime and reference render layers
 ├── packages/editor/     # Editor UI: tools, panels, selection, AI assistant
 ├── packages/nodes/      # Built-in registry node definitions and renderers
 ├── packages/cli/        # Local editor runtime and MCP process manager
@@ -177,6 +182,8 @@ aedifex/
 |---------|---------------|
 | **core** | Node schemas (Zod), scene store with undo/redo (Zundo), geometry systems, spatial grid, event bus |
 | **viewer** | Renderers, camera, lighting, post-processing, level/scan/guide systems |
+| **capture-protocol** | Versioned capture manifests, normalized streams, and transport-neutral sources |
+| **capture-viewer** | Capture runtime with room-model, motion, point-cloud, and surface-mesh layers |
 | **editor** | Tools, panels, selection manager, AI assistant, custom camera controls |
 | **nodes** | Built-in node schemas, tools, renderers, geometry, and systems |
 | **cli** | Installs and manages the local editor runtime and MCP service |

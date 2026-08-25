@@ -4,6 +4,8 @@ import {
   getHostRefFields,
   getInspectorExtensions,
   getNodePluginId,
+  getRegistryVersion,
+  getSelectableKinds,
   isDrawnViaTool,
   isDrawnViaToolKind,
   isNodeKindEnabled,
@@ -11,6 +13,7 @@ import {
   isPresettableKind,
   loadPlugin,
   nodeRegistry,
+  onRegistryChange,
   registerNode,
 } from './registry'
 import type { AnyNodeDefinition, InspectorExtension, Plugin } from './types'
@@ -104,6 +107,35 @@ describe('nodeRegistry', () => {
     registerNode(a)
     registerNode(b)
     expect(nodeRegistry.schemas()).toEqual([a.schema, b.schema])
+  })
+
+  test('_snapshot() restores definitions and plugin bookkeeping', async () => {
+    const kept = makeDefinition('kept')
+    registerNode(kept)
+    await loadPlugin({
+      id: 'test:kept-plugin',
+      apiVersion: 2,
+      nodes: [makeDefinition('kept-plugin-kind')],
+    } as Plugin)
+
+    const restore = nodeRegistry._snapshot()
+
+    // Mutate every kind of registry state a test can leak: a throwaway
+    // definition, a full reset, and a plugin load with its kind bookkeeping.
+    registerNode(makeDefinition('leaked'))
+    nodeRegistry._reset()
+    await loadPlugin({
+      id: 'test:leaked-plugin',
+      apiVersion: 2,
+      nodes: [makeDefinition('leaked-plugin-kind')],
+    } as Plugin)
+
+    restore()
+
+    expect(Array.from(nodeRegistry.entries(), ([k]) => k)).toEqual(['kept', 'kept-plugin-kind'])
+    expect(nodeRegistry.get('kept')).toBe(kept)
+    expect(getNodePluginId('kept-plugin-kind')).toBe('test:kept-plugin')
+    expect(getNodePluginId('leaked-plugin-kind')).toBeUndefined()
   })
 })
 
@@ -269,8 +301,7 @@ describe('loadPlugin', () => {
   // `getSelectableKinds()` emitter subscriptions off this change signal —
   // without it, a plugin kind selects but never hovers in prod (the outline
   // subscription list froze pre-registration).
-  test('registerNode bumps the registry version and notifies subscribers', async () => {
-    const { getRegistryVersion, onRegistryChange } = await import('./registry')
+  test('registerNode bumps the registry version and notifies subscribers', () => {
     const before = getRegistryVersion()
     let notified = 0
     const unsubscribe = onRegistryChange(() => {
@@ -282,7 +313,6 @@ describe('loadPlugin', () => {
     expect(notified).toBe(1)
 
     // A consumer re-deriving on the notification now sees the new kind.
-    const { getSelectableKinds } = await import('./registry')
     expect(getSelectableKinds()).toContain('late:kind')
 
     unsubscribe()
@@ -292,7 +322,6 @@ describe('loadPlugin', () => {
   })
 
   test('loadPlugin notifies once per registered kind', async () => {
-    const { getRegistryVersion } = await import('./registry')
     const before = getRegistryVersion()
     await loadPlugin({
       id: 'pack',
@@ -362,7 +391,6 @@ describe('inspector extensions', () => {
   // that ships ONLY extensions (no node kinds), a late load would never
   // re-render the open card and the section would silently not appear.
   test('registering extensions bumps the registry version', async () => {
-    const { getRegistryVersion } = await import('./registry')
     const before = getRegistryVersion()
     await loadPlugin({
       id: 'test:plugin',
