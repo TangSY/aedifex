@@ -1581,6 +1581,30 @@ const updateNodesActionImpl = (
   })
 }
 
+/**
+ * Replace a node entirely with the provided value (no spread merge). Used for
+ * snapshot restore — `updateNodesAction` cannot clear fields the snapshot
+ * doesn't carry. Preserves invariants: rejects if node id mismatches or the
+ * id doesn't already exist (no implicit creation).
+ */
+export const setNodeAction = (
+  set: (fn: (state: SceneState) => Partial<SceneState>) => void,
+  get: () => SceneState,
+  id: AnyNodeId,
+  node: AnyNode,
+) => {
+  if (get().readOnly) return
+  if (node.id !== id) return
+  if (!get().nodes[id]) return
+
+  set((state) => {
+    if (!state.nodes[id]) return {}
+    return { nodes: { ...state.nodes, [id]: node } }
+  })
+
+  get().markDirty(id)
+}
+
 const deleteNodesActionImpl = (
   set: (fn: (state: SceneState) => Partial<SceneState>) => void,
   get: () => SceneState,

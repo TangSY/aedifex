@@ -132,6 +132,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(funct
   return (
     <motion.div
       className="absolute right-0 bottom-0 left-0 z-40 flex flex-col overflow-hidden rounded-t-2xl bg-sidebar text-sidebar-foreground shadow-[0_-4px_16px_rgba(0,0,0,0.12)]"
+      initial={{ height: initialHeightPx }}
       style={{ height }}
     >
       <div

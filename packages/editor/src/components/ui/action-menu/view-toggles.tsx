@@ -113,6 +113,14 @@ function UploadButton({ onError }: { onError: (message: string | null) => void }
       }
 
       if (isImage) {
+        const { uploadHandler: guideUploadHandler } = useUploadStore.getState()
+        const hostProjectId = window.location.pathname.split('/editor/')[1]?.split('/')[0]
+        if (guideUploadHandler && hostProjectId) {
+          useUploadStore.getState().clearUpload(levelId)
+          guideUploadHandler(hostProjectId, levelId, file, 'guide')
+          return
+        }
+
         setIsAddingGuide(true)
         try {
           const guide = await createLocalGuideImage({ createNode, file, levelId })

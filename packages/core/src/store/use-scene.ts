@@ -1232,6 +1232,12 @@ export type SceneState = {
   updateNode: (id: AnyNodeId, data: Partial<AnyNode>) => void
   updateNodes: (updates: { id: AnyNodeId; data: Partial<AnyNode> }[]) => void
 
+  /**
+   * Replace a node entirely rather than merging a partial patch. Snapshot
+   * restore paths use this to remove fields introduced by previews.
+   */
+  setNode: (id: AnyNodeId, node: AnyNode) => void
+
   deleteNode: (id: AnyNodeId) => void
   deleteNodes: (ids: AnyNodeId[]) => void
 
@@ -1509,6 +1515,7 @@ const useScene: UseSceneStore = create<SceneState>()(
 
       updateNodes: (updates) => nodeActions.updateNodesAction(set, get, updates),
       updateNode: (id, data) => nodeActions.updateNodesAction(set, get, [{ id, data }]),
+      setNode: (id, node) => nodeActions.setNodeAction(set, get, id, node),
 
       // --- DELETE ---
 

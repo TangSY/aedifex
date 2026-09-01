@@ -1,7 +1,8 @@
 'use client'
 
 import { Editor, ItemsPanel } from '@aedifex/editor'
-import { Hammer, Layers, Package, Settings } from 'lucide-react'
+import { AIChatPanel } from '@aedifex/editor/components/ai'
+import { Bot, Hammer, Layers, Package, Settings } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { BuildTab } from '@/components/build-tab'
@@ -48,6 +49,18 @@ const SIDEBAR_TABS = [
         src="/icons/build.webp"
         width={32}
       />
+    ),
+  },
+  {
+    id: 'ai',
+    label: 'AI',
+    component: AIChatPanel,
+    mobileDefaultSnap: 0.5,
+    mobileIcon: <Bot className="h-5 w-5" />,
+    icon: (
+      <span className="flex h-8 w-8 items-center justify-center">
+        <Bot className="h-6 w-6" />
+      </span>
     ),
   },
   {

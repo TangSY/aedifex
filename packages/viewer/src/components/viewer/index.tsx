@@ -17,6 +17,10 @@ import {
   useState,
 } from 'react'
 import * as THREE from 'three/webgpu'
+import {
+  clearScreenshotRenderer,
+  setScreenshotRenderer,
+} from '../../lib/capture-screenshot'
 import { hasDrawableGeometry } from '../../lib/drawable-geometry'
 import { PERF_OVERLAY_ENABLED, pushGpuSample } from '../../lib/gpu-perf'
 import { applyIsolation, clearIsolation } from '../../lib/isolation'
@@ -89,6 +93,18 @@ const DIRTY_BUILD_KINDS = new Set([
 ])
 
 const warnedEmptyDraw = process.env.NODE_ENV === 'production' ? null : new WeakSet<object>()
+
+function ScreenshotRendererBridge() {
+  const renderer = useThree((state) => state.gl)
+  const scene = useThree((state) => state.scene)
+
+  useEffect(() => {
+    setScreenshotRenderer(renderer, scene)
+    return () => clearScreenshotRenderer(renderer)
+  }, [renderer, scene])
+
+  return null
+}
 
 /**
  * Renderer-level safety net against the empty-vertex-buffer crash.
@@ -573,6 +589,7 @@ const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
         enabled: shadowsEnabled,
       }}
     >
+      <ScreenshotRendererBridge />
       <FrameLimiter fps={maxFps} paused={renderPaused} />
       <ViewerCamera />
       <PointerRaycastLayers />
