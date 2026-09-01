@@ -1,8 +1,8 @@
 import { constants } from 'node:fs'
 import { access, readdir, stat } from 'node:fs/promises'
-import { ensurePascalDirectories, getEditorStatus } from './editor-process.js'
+import { ensureAedifexDirectories, getEditorStatus } from './editor-process.js'
 import { readJsonFile } from './json-files.js'
-import type { PascalPaths } from './paths.js'
+import type { AedifexPaths } from './paths.js'
 
 export interface DiagnosticCheck {
   id: string
@@ -10,7 +10,7 @@ export interface DiagnosticCheck {
   message: string
 }
 
-export async function runDoctor(paths: PascalPaths): Promise<DiagnosticCheck[]> {
+export async function runDoctor(paths: AedifexPaths): Promise<DiagnosticCheck[]> {
   const checks: DiagnosticCheck[] = []
   const [major = 0, minor = 0] = process.versions.node
     .split('.')
@@ -23,7 +23,7 @@ export async function runDoctor(paths: PascalPaths): Promise<DiagnosticCheck[]> 
     message: nodeSupported ? `Node ${process.versions.node}` : 'Node 22.13 or newer is required.',
   })
   try {
-    await ensurePascalDirectories(paths)
+    await ensureAedifexDirectories(paths)
     await access(paths.root, constants.R_OK | constants.W_OK)
     checks.push({ id: 'storage', status: 'pass', message: `Writable: ${paths.root}` })
     const exposed = []
@@ -42,7 +42,7 @@ export async function runDoctor(paths: PascalPaths): Promise<DiagnosticCheck[]> 
     checks.push({
       id: 'storage',
       status: 'fail',
-      message: error instanceof Error ? error.message : 'Pascal storage is not writable.',
+      message: error instanceof Error ? error.message : 'Aedifex storage is not writable.',
     })
   }
   try {
@@ -121,8 +121,8 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-export async function collectInfo(paths: PascalPaths) {
-  await ensurePascalDirectories(paths)
+export async function collectInfo(paths: AedifexPaths) {
+  await ensureAedifexDirectories(paths)
   const [status, runtimeVersions, pluginLock] = await Promise.all([
     getEditorStatus(paths),
     readdir(paths.runtime).catch(() => [] as string[]),

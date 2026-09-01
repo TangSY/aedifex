@@ -85,34 +85,34 @@ const GraphSchema = z.object({
 })
 
 /**
- * Resolves Pascal's local SQLite database path.
+ * Resolves Aedifex's local SQLite database path.
  *
  * Precedence:
- * 1. `PASCAL_DB_PATH`
- * 2. `PASCAL_DATA_DIR/pascal.db`
- * 3. On Windows: `%APPDATA%/Pascal/data/pascal.db`
- * 4. `$XDG_DATA_HOME/pascal/data/pascal.db`
- * 5. `$HOME/.pascal/data/pascal.db`
+ * 1. `AEDIFEX_DB_PATH`
+ * 2. `AEDIFEX_DATA_DIR/aedifex.db`
+ * 3. On Windows: `%APPDATA%/Aedifex/data/aedifex.db`
+ * 4. `$XDG_DATA_HOME/pascal/data/aedifex.db`
+ * 5. `$HOME/.pascal/data/aedifex.db`
  */
 export function resolveDefaultDatabasePath(env: NodeJS.ProcessEnv = process.env): string {
-  if (env.PASCAL_DB_PATH && env.PASCAL_DB_PATH.length > 0) {
-    return env.PASCAL_DB_PATH
+  if (env.AEDIFEX_DB_PATH && env.AEDIFEX_DB_PATH.length > 0) {
+    return env.AEDIFEX_DB_PATH
   }
-  if (env.PASCAL_DATA_DIR && env.PASCAL_DATA_DIR.length > 0) {
-    return path.join(env.PASCAL_DATA_DIR, 'pascal.db')
+  if (env.AEDIFEX_DATA_DIR && env.AEDIFEX_DATA_DIR.length > 0) {
+    return path.join(env.AEDIFEX_DATA_DIR, 'aedifex.db')
   }
   if (process.platform === 'win32') {
     const appData = env.APPDATA
     if (appData && appData.length > 0) {
-      return path.join(appData, 'Pascal', 'data', 'pascal.db')
+      return path.join(appData, 'Aedifex', 'data', 'aedifex.db')
     }
-    return path.join(os.homedir(), '.pascal', 'data', 'pascal.db')
+    return path.join(os.homedir(), '.pascal', 'data', 'aedifex.db')
   }
   const xdg = env.XDG_DATA_HOME
   if (xdg && xdg.length > 0) {
-    return path.join(xdg, 'pascal', 'data', 'pascal.db')
+    return path.join(xdg, 'pascal', 'data', 'aedifex.db')
   }
-  return path.join(os.homedir(), '.pascal', 'data', 'pascal.db')
+  return path.join(os.homedir(), '.pascal', 'data', 'aedifex.db')
 }
 
 function resolveMaxSceneBytes(
@@ -126,11 +126,11 @@ function resolveMaxSceneBytes(
     return explicit
   }
 
-  const raw = env?.PASCAL_MAX_SCENE_BYTES
+  const raw = env?.AEDIFEX_MAX_SCENE_BYTES
   if (raw === undefined || raw === '') return DEFAULT_MAX_SCENE_BYTES
   const parsed = Number.parseInt(raw, 10)
   if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new SceneInvalidError('PASCAL_MAX_SCENE_BYTES must be a positive integer')
+    throw new SceneInvalidError('AEDIFEX_MAX_SCENE_BYTES must be a positive integer')
   }
   return parsed
 }
@@ -156,7 +156,7 @@ function rowToMeta(row: SceneRow): SceneMeta {
 }
 
 function editorUrlForScene(id: string): string {
-  const origin = process.env.PASCAL_EDITOR_ORIGIN?.replace(/\/$/, '')
+  const origin = process.env.AEDIFEX_EDITOR_ORIGIN?.replace(/\/$/, '')
   return origin ? `${origin}/scene/${encodeURIComponent(id)}` : `/editor/${id}`
 }
 
@@ -290,6 +290,7 @@ export class SqliteSceneStore implements SceneStore {
   private readonly projectPlaceholders = new Map<string, ProjectPlaceholder>()
   private db: SqliteDatabase | null = null
   private dbPromise: Promise<SqliteDatabase> | null = null
+  private writeQueue: Promise<void> = Promise.resolve()
 
   constructor(opts: SqliteSceneStoreOptions = {}) {
     const env = opts.env ?? process.env
@@ -665,21 +666,29 @@ export class SqliteSceneStore implements SceneStore {
     `)
   }
 
-  private async withWriteTransaction<T>(fn: (db: SqliteDatabase) => T | Promise<T>): Promise<T> {
-    const db = await this.database()
-    db.exec('BEGIN IMMEDIATE')
-    try {
-      const result = await fn(db)
-      db.exec('COMMIT')
-      return result
-    } catch (err) {
+  private withWriteTransaction<T>(fn: (db: SqliteDatabase) => T | Promise<T>): Promise<T> {
+    const operation = this.writeQueue.then(async () => {
+      const db = await this.database()
+      db.exec('BEGIN IMMEDIATE')
       try {
-        db.exec('ROLLBACK')
-      } catch {
-        // Ignore rollback errors so the original failure is preserved.
+        const result = await fn(db)
+        db.exec('COMMIT')
+        return result
+      } catch (err) {
+        try {
+          db.exec('ROLLBACK')
+        } catch {
+          // Ignore rollback errors so the original failure is preserved.
+        }
+        throw err
       }
-      throw err
-    }
+    })
+
+    this.writeQueue = operation.then(
+      () => undefined,
+      () => undefined,
+    )
+    return operation
   }
 
   private getRow(db: SqliteDatabase, id: string): SceneRow | null {

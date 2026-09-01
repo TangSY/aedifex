@@ -25,9 +25,9 @@ export type HttpTransportOptions = {
    * interface requires an auth token.
    */
   host?: string
-  /** Bearer token for HTTP MCP calls. Defaults to PASCAL_MCP_HTTP_TOKEN. */
+  /** Bearer token for HTTP MCP calls. Defaults to AEDIFEX_MCP_HTTP_TOKEN. */
   authToken?: string
-  /** Exact CORS origins allowed to call this transport. Loopback origins are allowed. */
+  /** Exact CORS origins allowed to call this transport. */
   allowedOrigins?: string[]
   /** Per-client request cap per minute. Set <= 0 to disable. */
   rateLimitPerMinute?: number
@@ -53,15 +53,16 @@ export async function connectHttp(
   options: HttpTransportOptions = {},
 ): Promise<HttpTransportHandle> {
   const host = options.host ?? DEFAULT_HOST
-  const authToken = options.authToken ?? process.env.PASCAL_MCP_HTTP_TOKEN
+  const authToken = options.authToken ?? process.env.AEDIFEX_MCP_HTTP_TOKEN
   if (!(isLoopbackHost(host) || authToken)) {
     throw new Error(
-      'HTTP transport on a non-loopback host requires PASCAL_MCP_HTTP_TOKEN or authToken',
+      'HTTP transport on a non-loopback host requires AEDIFEX_MCP_HTTP_TOKEN or authToken',
     )
   }
   const guard = createHttpGuard({
     authToken,
     allowedOrigins: options.allowedOrigins ?? envAllowedOrigins(),
+    host,
     rateLimitPerMinute: options.rateLimitPerMinute ?? DEFAULT_RATE_LIMIT_PER_MINUTE,
   })
 
@@ -71,7 +72,7 @@ export async function connectHttp(
     if (!guard(req, res)) return
     handleRequest(req, res).catch((err) => {
       // Log to stderr; never touch stdout (stdio transport uses it).
-      console.error('[pascal-mcp] http transport error', err)
+      console.error('[aedifex-mcp] http transport error', err)
       if (!res.writableEnded) {
         try {
           res.writeHead(500).end()
@@ -163,6 +164,7 @@ export async function connectHttp(
 function createHttpGuard(options: {
   authToken?: string
   allowedOrigins: string[]
+  host: string
   rateLimitPerMinute: number
 }): (req: IncomingMessage, res: ServerResponse) => boolean {
   const buckets = new Map<string, { count: number; resetAt: number }>()
@@ -173,6 +175,14 @@ function createHttpGuard(options: {
   )
 
   return (req, res) => {
+    if (
+      !options.authToken &&
+      !isExpectedLoopbackRequestHost(req.headers.host, options.host, req.socket.localPort)
+    ) {
+      sendJson(res, 421, { error: 'invalid_host' })
+      return false
+    }
+
     const origin = req.headers.origin
     if (origin && !isOriginAllowed(origin, req.headers.host, allowedOrigins)) {
       sendJson(res, 403, { error: 'origin_not_allowed' })
@@ -220,6 +230,23 @@ function createHttpGuard(options: {
   }
 }
 
+function isExpectedLoopbackRequestHost(
+  requestHost: string | undefined,
+  bindHost: string,
+  localPort: number | undefined,
+): boolean {
+  if (!(requestHost && localPort && isLoopbackHost(bindHost))) return false
+  try {
+    const parsed = new URL(`http://${requestHost}`)
+    const hostname = parsed.hostname.toLowerCase()
+    const isExactLoopback =
+      hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]'
+    return isExactLoopback && Number(parsed.port || 80) === localPort
+  } catch {
+    return false
+  }
+}
+
 function applyCors(req: IncomingMessage, res: ServerResponse, allowedOrigins: Set<string>): void {
   const origin = req.headers.origin
   if (origin && isOriginAllowed(origin, req.headers.host, allowedOrigins)) {
@@ -238,11 +265,20 @@ function isOriginAllowed(
 ): boolean {
   const normalized = normalizeOrigin(origin)
   if (!normalized) return false
-  const parsed = new URL(normalized)
-  if (isLoopbackHost(parsed.hostname)) return true
+  if (allowedOrigins.has(normalized)) return true
   if (requestHost && normalized === normalizeOrigin(`http://${requestHost}`)) return true
   if (requestHost && normalized === normalizeOrigin(`https://${requestHost}`)) return true
-  return allowedOrigins.has(normalized)
+  if (loopbackAnyOriginAllowed()) {
+    const parsed = new URL(normalized)
+    if (isLoopbackHost(parsed.hostname)) return true
+  }
+  return false
+}
+
+function loopbackAnyOriginAllowed(): boolean {
+  const value = process.env.AEDIFEX_MCP_HTTP_LOOPBACK_ANY_ORIGIN
+  if (!value) return false
+  return value !== '0' && value.toLowerCase() !== 'false'
 }
 
 function bearerToken(req: IncomingMessage): string | null {
@@ -272,7 +308,7 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 function envAllowedOrigins(): string[] {
-  return (process.env.PASCAL_MCP_HTTP_ORIGINS ?? '')
+  return (process.env.AEDIFEX_MCP_HTTP_ORIGINS ?? '')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean)

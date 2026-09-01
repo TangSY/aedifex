@@ -4,20 +4,20 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js'
 import { getEditorStatus, startEditor } from './editor-process.js'
 import { CliError } from './errors.js'
-import type { PascalPaths } from './paths.js'
+import type { AedifexPaths } from './paths.js'
 
-export async function connectManagedMcp(paths: PascalPaths): Promise<void> {
+export async function connectManagedMcp(paths: AedifexPaths): Promise<void> {
   let status = await getEditorStatus(paths)
   if (!status.healthy) {
     await startEditor({ paths })
     status = await getEditorStatus(paths)
   }
   if (!(status.healthy && status.state?.mcp)) {
-    throw new CliError('mcp_unavailable', 'Pascal MCP is not healthy. Run "pascal doctor".')
+    throw new CliError('mcp_unavailable', 'Aedifex MCP is not healthy. Run "aedifex doctor".')
   }
 
   const token = (await readFile(paths.mcpToken, 'utf8')).trim()
-  if (!token) throw new CliError('mcp_unavailable', 'Pascal MCP credentials are missing.')
+  if (!token) throw new CliError('mcp_unavailable', 'Aedifex MCP credentials are missing.')
 
   const remote = new StreamableHTTPClientTransport(new URL(status.state.mcp.url), {
     requestInit: { headers: { authorization: `Bearer ${token}` } },
@@ -57,5 +57,5 @@ function applyProtocolVersion(
 }
 
 function reportConnectorError(error: Error): void {
-  process.stderr.write(`[pascal-mcp] ${error.message}\n`)
+  process.stderr.write(`[aedifex-mcp] ${error.message}\n`)
 }

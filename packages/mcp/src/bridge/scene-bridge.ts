@@ -342,6 +342,7 @@ export class SceneBridge {
     // earlier-created ids and reflect earlier-deleted ids.
     const simAvailable = new Set<string>(Object.keys(nodes))
     const simDeleted = new Set<string>()
+    const simNodes = new Map<string, AnyNode>(Object.entries(nodes))
     // Parsed create nodes keyed by patch index — so the apply phase can use the
     // Zod-normalised copy (which has a generated id if the caller omitted one)
     // instead of the unparsed input.
@@ -360,8 +361,12 @@ export class SceneBridge {
         if (p.parentId !== undefined && !simAvailable.has(p.parentId)) {
           throw new Error(`invalid patch: patches[${i}] create parentId "${p.parentId}" not found`)
         }
+        if (simAvailable.has(res.data.id)) {
+          throw new Error(`invalid patch: patches[${i}] create id "${res.data.id}" already exists`)
+        }
         parsedCreateNodes.set(i, res.data)
         simAvailable.add(res.data.id)
+        simNodes.set(res.data.id, res.data)
       } else if (p.op === 'update') {
         if (!simAvailable.has(p.id) || simDeleted.has(p.id)) {
           throw new Error(`invalid patch: patches[${i}] update id "${p.id}" not found`)
@@ -369,6 +374,24 @@ export class SceneBridge {
         if (!p.data || typeof p.data !== 'object') {
           throw new Error(`invalid patch: patches[${i}] update data is not an object`)
         }
+        if ('type' in p.data) {
+          throw new Error(`invalid patch: patches[${i}] update cannot change node type via data`)
+        }
+        if ('id' in p.data) {
+          throw new Error(`invalid patch: patches[${i}] update cannot change node id via data`)
+        }
+
+        const existing = simNodes.get(p.id)
+        if (!existing) {
+          throw new Error(`invalid patch: patches[${i}] update id "${p.id}" not found`)
+        }
+        const validated = AnyNodeSchema.safeParse({ ...existing, ...p.data })
+        if (!validated.success) {
+          throw new Error(
+            `invalid patch: patches[${i}] update would produce schema-invalid node: ${validated.error.message}`,
+          )
+        }
+        simNodes.set(p.id, validated.data)
       } else if (p.op === 'delete') {
         if (!simAvailable.has(p.id) || simDeleted.has(p.id)) {
           throw new Error(`invalid patch: patches[${i}] delete id "${p.id}" not found`)
@@ -387,6 +410,7 @@ export class SceneBridge {
         }
         simAvailable.delete(p.id)
         simDeleted.add(p.id)
+        simNodes.delete(p.id)
       } else {
         throw new Error(`invalid patch: patches[${i}] unknown op`)
       }

@@ -1,13 +1,14 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import {
   DEFAULT_LEVEL_HEIGHT,
   getStoredLevelHeight,
   getWallPlaneTop,
+  levelBaseElevationAt,
   resolveStairTotalRise,
+  resolveWallBaseElevation,
   resolveWallEffectiveHeight,
 } from '@aedifex/core'
 import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
-import { computeWallSlabSupport } from '@aedifex/core/spatial-grid'
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import {
@@ -138,8 +139,10 @@ export function resolveReportedWallHeight(
   const walls = levelNodes.filter(
     (node): node is Extract<AnyNode, { type: 'wall' }> => node.type === 'wall',
   )
-  const support = computeWallSlabSupport(wall, slabs, walls, wall.supportSlabId)
-  return resolveWallEffectiveHeight(wall, planeTop, support.elevation)
+  const nodes = bridge.getNodes()
+  const levelBase = levelId ? levelBaseElevationAt(nodes, levelId, wall.start[0], wall.start[1]) : 0
+  const wallBase = resolveWallBaseElevation({ wall, slabs, walls, levelBase })
+  return resolveWallEffectiveHeight(wall, planeTop, wallBase)
 }
 
 function metadataRecord(node: AnyNode): Record<string, unknown> | null {

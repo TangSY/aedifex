@@ -8,7 +8,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 
 const packageDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const smokeRoot = await mkdtemp(path.join(os.tmpdir(), 'pascal-cli-smoke-'))
+const smokeRoot = await mkdtemp(path.join(os.tmpdir(), 'aedifex-cli-smoke-'))
 let tarballPath: string | null = null
 let smokeExecutable: string | null = null
 const defaultPortBlocker = http.createServer((_request, response) => {
@@ -17,8 +17,8 @@ const defaultPortBlocker = http.createServer((_request, response) => {
 })
 const smokeEnvironment = {
   ...process.env,
-  PASCAL_HOME: path.join(smokeRoot, 'home'),
-  PASCAL_NO_OPEN: '1',
+  AEDIFEX_HOME: path.join(smokeRoot, 'home'),
+  AEDIFEX_NO_OPEN: '1',
 }
 
 try {
@@ -34,7 +34,7 @@ try {
 
   const installDirectory = path.join(smokeRoot, 'install')
   await run('npm', ['install', '--ignore-scripts', '--prefix', installDirectory, tarballPath])
-  smokeExecutable = path.join(installDirectory, 'node_modules/@aedifex/cli/dist/bin/pascal.js')
+  smokeExecutable = path.join(installDirectory, 'node_modules/@aedifex/cli/dist/bin/aedifex.js')
 
   const started = JSON.parse(
     (
@@ -75,10 +75,10 @@ try {
     smokeEnvironment,
   )
   if (
-    !humanStart.stdout.includes('pascal status') ||
+    !humanStart.stdout.includes('aedifex status') ||
     humanStart.stdout.includes('npm install --global @aedifex/cli')
   ) {
-    throw new Error('direct CLI start output did not use the persistent pascal command')
+    throw new Error('direct CLI start output did not use the persistent aedifex command')
   }
   await run(
     process.execPath,
@@ -92,7 +92,7 @@ try {
     env: smokeEnvironment as Record<string, string>,
     stderr: 'pipe',
   })
-  const mcpClient = new Client({ name: 'pascal-cli-smoke', version: '0.0.0' })
+  const mcpClient = new Client({ name: 'aedifex-cli-smoke', version: '0.0.0' })
   try {
     await mcpClient.connect(mcpTransport)
     const tools = await mcpClient.listTools()
@@ -178,7 +178,7 @@ function enforceArtifactBudget(artifact: {
     artifact.entryCount > maximumEntryCount
   ) {
     throw new Error(
-      `packed CLI exceeds its release budget: ${formatMb(artifact.size)} MB compressed, ${formatMb(artifact.unpackedSize)} MB unpacked, ${artifact.entryCount} files`,
+      `packed CLI exceeds its local runtime budget: ${formatMb(artifact.size)} MB compressed, ${formatMb(artifact.unpackedSize)} MB unpacked, ${artifact.entryCount} files`,
     )
   }
 }

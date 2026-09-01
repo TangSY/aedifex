@@ -28,8 +28,8 @@ describe('SceneOperationsFacade scene events', () => {
   let store: SqliteSceneStore
 
   beforeEach(async () => {
-    rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pascal-scene-ops-test-'))
-    store = new SqliteSceneStore({ databasePath: path.join(rootDir, 'pascal.db') })
+    rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'aedifex-scene-ops-test-'))
+    store = new SqliteSceneStore({ databasePath: path.join(rootDir, 'aedifex.db') })
   })
 
   afterEach(async () => {

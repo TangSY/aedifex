@@ -6,15 +6,15 @@ import { readFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { version } from '../index'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 import { createSceneStore } from '../storage'
 import { connectHttp } from '../transports/http'
 import { connectStdio } from '../transports/stdio'
 
-const HELP = `pascal-mcp — MCP server for the Pascal editor
+const HELP = `aedifex-mcp — MCP server for the Aedifex editor
 
 USAGE:
-  pascal-mcp [--stdio | --http --port <n>] [--scene <path>]
+  aedifex-mcp [--stdio | --http --port <n>] [--scene <path>]
 
 OPTIONS:
   --stdio          Use stdio transport (default)
@@ -58,7 +58,7 @@ async function main(): Promise<void> {
     const bridge = new SceneBridge()
     if (values.scene) bridge.loadJSON(readFileSync(values.scene, 'utf8'))
     else bridge.loadDefault()
-    return createPascalMcpServer({ bridge, store })
+    return createAedifexMcpServer({ bridge, store })
   }
 
   if (values.http) {
@@ -70,16 +70,16 @@ async function main(): Promise<void> {
       host: values.host,
       authToken: values['auth-token'],
       allowedOrigins: values['cors-origin'],
-      ...(process.env.PASCAL_INSTANCE_ID
+      ...(process.env.AEDIFEX_INSTANCE_ID
         ? {
             health: {
-              version: process.env.PASCAL_RUNTIME_VERSION ?? version,
-              instanceId: process.env.PASCAL_INSTANCE_ID,
+              version: process.env.AEDIFEX_RUNTIME_VERSION ?? version,
+              instanceId: process.env.AEDIFEX_INSTANCE_ID,
             },
           }
         : {}),
     })
-    console.error(`[pascal-mcp] HTTP server listening on ${handle.host}:${handle.port}`)
+    console.error(`[aedifex-mcp] HTTP server listening on ${handle.host}:${handle.port}`)
     const shutdown = async () => {
       try {
         await handle.close()
@@ -92,11 +92,11 @@ async function main(): Promise<void> {
   } else {
     // --stdio is the default when no transport flag is passed.
     await connectStdio(createServer())
-    console.error('[pascal-mcp] stdio server running')
+    console.error('[aedifex-mcp] stdio server running')
   }
 }
 
 main().catch((err) => {
-  console.error('[pascal-mcp] fatal:', err instanceof Error ? (err.stack ?? err.message) : err)
+  console.error('[aedifex-mcp] fatal:', err instanceof Error ? (err.stack ?? err.message) : err)
   process.exit(1)
 })

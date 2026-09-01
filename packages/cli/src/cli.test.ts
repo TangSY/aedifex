@@ -3,8 +3,8 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
-const executable = path.join(import.meta.dir, 'bin/pascal.ts')
-const testRoot = await mkdtemp(path.join(os.tmpdir(), 'pascal-cli-command-test-'))
+const executable = path.join(import.meta.dir, 'bin/aedifex.ts')
+const testRoot = await mkdtemp(path.join(os.tmpdir(), 'aedifex-cli-command-test-'))
 const testHome = path.join(testRoot, 'home')
 
 afterAll(() => rm(testRoot, { recursive: true, force: true }))
@@ -14,18 +14,19 @@ describe('command parsing', () => {
     const result = await runCli('status', '--help')
 
     expect(result.exitCode).toBe(0)
-    expect(result.stdout).toContain('pascal editor')
-    expect(result.stdout).toContain('npx @aedifex/cli <command>')
-    expect(result.stdout).toContain('npm install --global @aedifex/cli')
+    expect(result.stdout).toContain('aedifex editor')
+    expect(result.stdout).toContain('This CLI is repository-local and is not published to npm.')
+    expect(result.stdout).not.toContain('npx @aedifex/cli')
+    expect(result.stdout).not.toContain('npm install --global')
   })
 
   test('shows focused help for MCP commands', async () => {
     const result = await runCli('mcp', '--help')
 
     expect(result.exitCode).toBe(0)
-    expect(result.stdout).toContain('pascal mcp setup codex')
+    expect(result.stdout).toContain('aedifex mcp setup codex')
     expect(result.stdout).toContain('dynamic loopback port')
-    expect(result.stdout).not.toContain('pascal plugin list')
+    expect(result.stdout).not.toContain('aedifex plugin list')
   })
 
   test('rejects a partially numeric port', async () => {
@@ -42,11 +43,21 @@ describe('command parsing', () => {
     expect(result.stderr).toContain('--lines must be an integer')
   })
 
-  test('rejects non-registry update sources before invoking npm', async () => {
+  test('rejects non-semver update sources', async () => {
     const result = await runCli('update', '--version', 'file:/tmp/untrusted', '--json')
 
     expect(result.exitCode).toBe(2)
     expect(JSON.parse(result.stderr)).toMatchObject({ error: 'invalid_version' })
+  })
+
+  test('rejects remote runtime updates because the CLI has no npm release channel', async () => {
+    const result = await runCli('update', '--version', '9.9.9', '--json')
+
+    expect(result.exitCode).toBe(1)
+    expect(JSON.parse(result.stderr)).toMatchObject({
+      error: 'updates_unavailable',
+      details: { requestedVersion: '9.9.9' },
+    })
   })
 
   test('reports unknown options as command errors', async () => {
@@ -61,7 +72,7 @@ describe('command parsing', () => {
 
     expect(result.exitCode).toBe(0)
     expect(JSON.parse(result.stdout)).toEqual({
-      mcpServers: { pascal: { command: 'pascal', args: ['mcp', 'connect'] } },
+      mcpServers: { aedifex: { command: 'aedifex', args: ['mcp', 'connect'] } },
     })
   })
 
@@ -74,7 +85,7 @@ describe('command parsing', () => {
 
   test('reports a malformed plugin lock as managed-state corruption', async () => {
     await mkdir(testHome, { recursive: true })
-    await writeFile(path.join(testHome, 'pascal.plugins.lock'), '{"schemaVersion":1}')
+    await writeFile(path.join(testHome, 'aedifex.plugins.lock'), '{"schemaVersion":1}')
 
     const result = await runCli('plugin', 'list', '--json')
 
@@ -85,7 +96,7 @@ describe('command parsing', () => {
 
 async function runCli(...args: string[]) {
   const child = Bun.spawn([process.execPath, executable, ...args], {
-    env: { ...process.env, PASCAL_HOME: testHome, PASCAL_NO_OPEN: '1' },
+    env: { ...process.env, AEDIFEX_HOME: testHome, AEDIFEX_NO_OPEN: '1' },
     stdout: 'pipe',
     stderr: 'pipe',
   })

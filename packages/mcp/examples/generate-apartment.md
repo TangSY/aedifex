@@ -1,7 +1,7 @@
 # Generate a 2-bed apartment from a brief
 
 This example walks through a realistic session with an MCP host (Claude
-Desktop, Claude Code, or Cursor) that has `pascal-mcp` configured. The agent
+Desktop, Claude Code, or Cursor) that has `aedifex-mcp` configured. The agent
 uses the `from_brief` prompt to turn a short brief into a concrete scene.
 
 ## The brief
@@ -208,8 +208,8 @@ Response:
 The agent then reads the scene summary for its response to the user:
 
 ```jsonc
-// resource: pascal://scene/current/summary
-{ "uri": "pascal://scene/current/summary" }
+// resource: aedifex://scene/current/summary
+{ "uri": "aedifex://scene/current/summary" }
 ```
 
 The host displays the returned Markdown: 1 site, 1 building, 1 level, 8

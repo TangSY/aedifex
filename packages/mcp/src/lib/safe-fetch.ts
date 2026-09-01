@@ -13,7 +13,7 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
  * - max body size (default 20 MB)
  * - request timeout (default 10 s)
  *
- * Optional allowlist via `PASCAL_ALLOWED_ASSET_ORIGINS` env var (comma-separated).
+ * Optional allowlist via `AEDIFEX_ALLOWED_ASSET_ORIGINS` env var (comma-separated).
  *
  * Phase 10 A2 found that photo_to_scene / analyze_floorplan_image /
  * analyze_room_photo all called raw `fetch(url)` with no protection, giving
@@ -96,7 +96,7 @@ function assertAllowedUrl(url: string): URL {
     })
   }
   // Optional env-allowlist narrowing.
-  const allowEnv = process.env.PASCAL_ALLOWED_ASSET_ORIGINS
+  const allowEnv = process.env.AEDIFEX_ALLOWED_ASSET_ORIGINS
   if (allowEnv) {
     const origins = allowEnv
       .split(',')

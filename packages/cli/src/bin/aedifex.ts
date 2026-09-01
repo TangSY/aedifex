@@ -2,7 +2,6 @@
 import { spawn } from 'node:child_process'
 import { parseArgs } from 'node:util'
 import { openBrowser } from '../browser.js'
-import { installGlobalPascalCommand, isNpxInvocation } from '../command-install.js'
 import { collectInfo, runDoctor } from '../diagnostics.js'
 import {
   activateEditorRuntime,
@@ -17,63 +16,56 @@ import {
 import { CliError, toCliError } from '../errors.js'
 import { readJsonFile } from '../json-files.js'
 import { connectManagedMcp } from '../mcp-connector.js'
-import { resolvePascalPaths } from '../paths.js'
+import { resolveAedifexPaths } from '../paths.js'
 import { listLocalProjects, projectUrl, resolveLocalProject } from '../projects.js'
 import { installBundledRuntime } from '../runtime.js'
 import { TerminalProgress } from '../terminal-progress.js'
 import { version } from '../version.js'
 
-const HELP = `Pascal — local 3D editor
+const HELP = `Aedifex — local 3D editor
 
-FIRST RUN:
-  npx @aedifex/cli editor
-  Starts the editor and installs the shorter "pascal" command interactively.
-
-RUN A COMMAND THROUGH NPX:
-  npx @aedifex/cli <command>
-
-ENABLE THE SHORT GLOBAL COMMAND:
-  npm install --global @aedifex/cli
-  pascal <command>
+SOURCE CHECKOUT:
+  This CLI is repository-local and is not published to npm.
+  Build and link packages/cli before running the aedifex command.
 
 USAGE:
-  pascal editor [--foreground] [--no-open] [--port <n>]
-  pascal start [--foreground] [--port <n>]
-  pascal stop | restart | status
-  pascal open [project]
-  pascal resume [project]
-  pascal projects [--json]
-  pascal logs [--follow] [--lines <n>]
-  pascal update [--version <version>]
-  pascal doctor [--json]
-  pascal info [--json]
-  pascal project list [--json]
-  pascal project open <id-or-name>
-  pascal project resume [id-or-name]
-  pascal mcp connect | status | config | setup <client>
-  pascal plugin list [--json]
+  aedifex editor [--foreground] [--no-open] [--port <n>]
+  aedifex start [--foreground] [--port <n>]
+  aedifex stop | restart | status
+  aedifex open [project]
+  aedifex resume [project]
+  aedifex projects [--json]
+  aedifex logs [--follow] [--lines <n>]
+  aedifex update
+  aedifex doctor [--json]
+  aedifex info [--json]
+  aedifex project list [--json]
+  aedifex project open <id-or-name>
+  aedifex project resume [id-or-name]
+  aedifex mcp connect | status | config | setup <client>
+  aedifex plugin list [--json]
 
-Documentation: https://aedifex.localhost/docs/developers/local-editor
+Documentation: https://github.com/TangSY/aedifex/blob/main/packages/cli/README.md
 `
 
-const MCP_HELP = `Pascal MCP — connect AI agents to local projects
+const MCP_HELP = `Aedifex MCP — connect AI agents to local projects
 
-The authenticated MCP service starts and stops with the Pascal editor.
+The authenticated MCP service starts and stops with the Aedifex editor.
 
 USAGE:
-  pascal mcp status [--json]       Check the managed MCP service
-  pascal mcp setup codex           Configure Codex CLI
-  pascal mcp setup claude          Configure Claude Code
-  pascal mcp config [--json]       Print generic MCP client JSON
-  pascal mcp connect               Start the stdio client connector
+  aedifex mcp status [--json]       Check the managed MCP service
+  aedifex mcp setup codex           Configure Codex CLI
+  aedifex mcp setup claude          Configure Claude Code
+  aedifex mcp config [--json]       Print generic MCP client JSON
+  aedifex mcp connect               Start the stdio client connector
 
-MCP clients should run "pascal mcp connect"; the connector discovers the
-dynamic loopback port without exposing Pascal's private local token.
+MCP clients should run "aedifex mcp connect"; the connector discovers the
+dynamic loopback port without exposing Aedifex's private local token.
 
-Documentation: https://aedifex.localhost/docs/developers/mcp
+Documentation: https://github.com/TangSY/aedifex/blob/main/packages/mcp/README.md
 `
 
-const paths = resolvePascalPaths()
+const paths = resolveAedifexPaths()
 
 async function main(): Promise<void> {
   const [command = 'help', ...args] = process.argv.slice(2)
@@ -137,7 +129,7 @@ async function runStart(args: string[], shouldOpen: boolean): Promise<void> {
   if (values.help) return print(HELP)
   const port = parseIntegerOption(values.port, 'port')
   const progress = values.json ? undefined : new TerminalProgress()
-  progress?.start('Preparing your local Pascal editor')
+  progress?.start('Preparing your local Aedifex editor')
   let result: Awaited<ReturnType<typeof startEditor>>
   try {
     result = await startEditor({
@@ -152,48 +144,26 @@ async function runStart(args: string[], shouldOpen: boolean): Promise<void> {
   }
   progress?.stop()
   if (values.open && !values['no-open']) openBrowser(result.state.url)
-  const npxInvocation = isNpxInvocation()
-  let commandInstalled = false
-  if (npxInvocation && !values.json && process.stdin.isTTY && process.stderr.isTTY) {
-    progress?.start('Installing the pascal command')
-    commandInstalled = await installGlobalPascalCommand(version)
-    if (commandInstalled) {
-      progress?.succeed('pascal command installed')
-    } else {
-      progress?.stop()
-      process.stderr.write(
-        '! The editor is ready, but npm could not install the pascal command globally.\n',
-      )
-    }
-  }
-  const useShortCommand = !npxInvocation || commandInstalled
-  const commandPrefix = useShortCommand ? 'pascal' : 'npx @aedifex/cli'
+  const commandPrefix = 'aedifex'
   output(
     values.json,
     { ...result.state, alreadyRunning: result.alreadyRunning },
     [
       result.alreadyRunning
-        ? `Pascal is already running at ${result.state.url}`
-        : `Pascal is ready at ${result.state.url}`,
+        ? `Aedifex is already running at ${result.state.url}`
+        : `Aedifex is ready at ${result.state.url}`,
       `MCP is ready on port ${result.state.mcp?.port}`,
       `Projects stay in ${paths.data}`,
       '',
-      `Manage it with ${useShortCommand ? 'pascal' : 'npx'}:`,
+      'Manage it with aedifex:',
       `  ${commandPrefix} status        Check the local editor`,
       `  ${commandPrefix} projects      List local projects`,
       `  ${commandPrefix} resume        Resume your latest project`,
       `  ${commandPrefix} logs --follow Follow editor logs`,
       `  ${commandPrefix} stop          Stop the background process`,
-      ...(useShortCommand
-        ? ['', 'Connect an AI agent:', `  ${commandPrefix} mcp setup codex`]
-        : []),
-      ...(useShortCommand
-        ? []
-        : [
-            '',
-            'To install the shorter "pascal" command:',
-            '  npm install --global @aedifex/cli',
-          ]),
+      '',
+      'Connect an AI agent:',
+      `  ${commandPrefix} mcp setup codex`,
     ].join('\n'),
   )
   if (result.child) {
@@ -230,7 +200,7 @@ function reportStartProgress(progress: TerminalProgress, event: EditorStartProgr
       )
       return
     case 'process-starting':
-      progress.start(`Starting Pascal on port ${event.port}`)
+      progress.start(`Starting Aedifex on port ${event.port}`)
       return
     case 'health-checking':
       progress.update('Checking that the editor is ready')
@@ -239,16 +209,16 @@ function reportStartProgress(progress: TerminalProgress, event: EditorStartProgr
       progress.succeed(`MCP port ${event.port} selected automatically`)
       return
     case 'mcp-starting':
-      progress.start('Starting Pascal MCP')
+      progress.start('Starting Aedifex MCP')
       return
     case 'mcp-health-checking':
       progress.update('Checking that MCP is ready')
       return
     case 'ready':
-      progress.succeed('Pascal Editor and MCP are ready')
+      progress.succeed('Aedifex Editor and MCP are ready')
       return
     case 'already-running':
-      progress.succeed(`Pascal is already running on port ${event.port}`)
+      progress.succeed(`Aedifex is already running on port ${event.port}`)
   }
 }
 
@@ -262,13 +232,13 @@ async function runStop(args: string[]): Promise<void> {
     },
   })
   const stopped = await stopEditor(paths, { force: values.force })
-  output(values.json, { stopped }, stopped ? 'Pascal stopped.' : 'Pascal is not running.')
+  output(values.json, { stopped }, stopped ? 'Aedifex stopped.' : 'Aedifex is not running.')
 }
 
 async function runRestart(args: string[]): Promise<void> {
   const json = booleanOption(args, 'json')
   const result = await restartEditor(paths)
-  output(json, result.state, `Pascal restarted at ${result.state.url}`)
+  output(json, result.state, `Aedifex restarted at ${result.state.url}`)
 }
 
 async function runStatus(args: string[]): Promise<void> {
@@ -279,14 +249,14 @@ async function runStatus(args: string[]): Promise<void> {
     status,
     status.healthy
       ? [
-          `Pascal ${status.state?.version} is running at ${status.state?.url}`,
+          `Aedifex ${status.state?.version} is running at ${status.state?.url}`,
           `MCP is ready on port ${status.state?.mcp?.port}`,
         ].join('\n')
       : status.running
-        ? 'Pascal has a running but unhealthy process.'
+        ? 'Aedifex has a running but unhealthy process.'
         : status.installed
-          ? `Pascal ${status.runtime?.version} is installed and stopped.`
-          : 'Pascal is not installed.',
+          ? `Aedifex ${status.runtime?.version} is installed and stopped.`
+          : 'Aedifex is not installed.',
   )
   if (status.running && !status.healthy) process.exitCode = 1
 }
@@ -299,7 +269,7 @@ async function runOpen(args: string[]): Promise<void> {
     options: { json: { type: 'boolean', default: false } },
   })
   if (positionals.length > 1) {
-    throw new CliError('invalid_option', 'Use "pascal open [project]".', undefined, 2)
+    throw new CliError('invalid_option', 'Use "aedifex open [project]".', undefined, 2)
   }
   if (positionals[0]) return runProjectOpen(args, false)
   const status = await ensureRunningEditor()
@@ -364,7 +334,7 @@ async function runUpdate(args: string[]): Promise<void> {
     strict: true,
     options: { version: { type: 'string' }, json: { type: 'boolean', default: false } },
   })
-  const target = values.version ?? 'latest'
+  const target = values.version ?? version
   if (!isAllowedUpdateVersion(target)) {
     throw new CliError(
       'invalid_version',
@@ -373,57 +343,19 @@ async function runUpdate(args: string[]): Promise<void> {
       2,
     )
   }
-  let candidate
-  if (target === version) {
-    candidate = await installBundledRuntime(paths, undefined, { activate: false })
-  } else {
-    const spec = `@aedifex/cli@${target}`
-    const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
-    if (!values.json) print(`Installing ${spec}...`)
-    let result: Awaited<ReturnType<typeof spawnAndCapture>>
-    try {
-      result = await spawnAndCapture(
-        npm,
-        [
-          'exec',
-          '--yes',
-          '--ignore-scripts',
-          `--package=${spec}`,
-          '--',
-          'pascal',
-          '_install-runtime',
-        ],
-        !values.json,
-      )
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        throw new CliError(
-          'npm_unavailable',
-          'npm is required to install another Pascal runtime. Install Node.js with npm and try again.',
-        )
-      }
-      throw error
-    }
-    if (result.exitCode !== 0) {
-      throw new CliError('update_failed', `Unable to install ${spec}.`, {
-        stderr: result.stderr.trim() || undefined,
-      })
-    }
-    try {
-      candidate = JSON.parse(result.stdout) as {
-        schemaVersion: 1
-        version: string
-        directory: string
-      }
-    } catch {
-      throw new CliError('update_failed', `The installer for ${spec} returned invalid output.`)
-    }
+  if (target !== version) {
+    throw new CliError(
+      'updates_unavailable',
+      'This repository-local CLI has no npm update channel. Pull the repository and rebuild the CLI instead.',
+      { requestedVersion: target, currentVersion: version },
+    )
   }
+  const candidate = await installBundledRuntime(paths, undefined, { activate: false })
   const activation = await activateEditorRuntime(paths, candidate)
   output(
     values.json,
     activation,
-    `Pascal runtime ${activation.runtime.version} is active${activation.restarted ? ' and the editor was restarted' : ''}.`,
+    `Aedifex runtime ${activation.runtime.version} is active${activation.restarted ? ' and the editor was restarted' : ''}.`,
   )
 }
 
@@ -455,7 +387,7 @@ async function runProject(args: string[]): Promise<void> {
   }
   throw new CliError(
     'unknown_command',
-    'Use "pascal project list", "pascal project open <project>", or "pascal project resume".',
+    'Use "aedifex project list", "aedifex project open <project>", or "aedifex project resume".',
     undefined,
     2,
   )
@@ -471,7 +403,7 @@ async function runProjectOpen(args: string[], latestWhenMissing: boolean): Promi
   if (positionals.length > 1 || (!latestWhenMissing && positionals.length !== 1)) {
     throw new CliError(
       'invalid_option',
-      latestWhenMissing ? 'Use "pascal resume [project]".' : 'Use "pascal open <project>".',
+      latestWhenMissing ? 'Use "aedifex resume [project]".' : 'Use "aedifex open <project>".',
       undefined,
       2,
     )
@@ -488,7 +420,7 @@ async function runMcp(args: string[]): Promise<void> {
   const [subcommand, ...rest] = args
   if (subcommand === 'connect') {
     if (rest.length > 0) {
-      throw new CliError('invalid_option', 'Use "pascal mcp connect".', undefined, 2)
+      throw new CliError('invalid_option', 'Use "aedifex mcp connect".', undefined, 2)
     }
     await connectManagedMcp(paths)
     return
@@ -505,18 +437,18 @@ async function runMcp(args: string[]): Promise<void> {
       json,
       result,
       result.healthy
-        ? `Pascal MCP is ready on port ${result.port}.`
+        ? `Aedifex MCP is ready on port ${result.port}.`
         : result.running
-          ? 'Pascal MCP is running but unhealthy.'
-          : 'Pascal MCP is stopped.',
+          ? 'Aedifex MCP is running but unhealthy.'
+          : 'Aedifex MCP is stopped.',
     )
     if (result.running && !result.healthy) process.exitCode = 1
     return
   }
   if (subcommand === 'config') {
     const json = booleanOption(rest, 'json')
-    const config = { command: 'pascal', args: ['mcp', 'connect'] }
-    const document = { mcpServers: { pascal: config } }
+    const config = { command: 'aedifex', args: ['mcp', 'connect'] }
+    const document = { mcpServers: { aedifex: config } }
     output(json, document, JSON.stringify(document, null, 2))
     return
   }
@@ -531,7 +463,7 @@ async function runMcp(args: string[]): Promise<void> {
     if (positionals.length !== 1 || (client !== 'codex' && client !== 'claude')) {
       throw new CliError(
         'invalid_option',
-        'Use "pascal mcp setup codex" or "pascal mcp setup claude".',
+        'Use "aedifex mcp setup codex" or "aedifex mcp setup claude".',
         undefined,
         2,
       )
@@ -540,8 +472,8 @@ async function runMcp(args: string[]): Promise<void> {
     const command = client === 'codex' ? 'codex' : 'claude'
     const commandArgs =
       client === 'codex'
-        ? ['mcp', 'add', 'pascal', '--', 'pascal', 'mcp', 'connect']
-        : ['mcp', 'add', '--scope', 'user', 'pascal', '--', 'pascal', 'mcp', 'connect']
+        ? ['mcp', 'add', 'aedifex', '--', 'aedifex', 'mcp', 'connect']
+        : ['mcp', 'add', '--scope', 'user', 'aedifex', '--', 'aedifex', 'mcp', 'connect']
     let result: Awaited<ReturnType<typeof spawnAndCapture>>
     try {
       result = await spawnAndCapture(command, commandArgs)
@@ -557,20 +489,20 @@ async function runMcp(args: string[]): Promise<void> {
     if (result.exitCode !== 0) {
       throw new CliError(
         'mcp_setup_failed',
-        `Unable to configure ${client}. It may already have a Pascal MCP entry.`,
+        `Unable to configure ${client}. It may already have an Aedifex MCP entry.`,
         { stderr: result.stderr.trim() || undefined, stdout: result.stdout.trim() || undefined },
       )
     }
     output(
       values.json,
-      { client, configured: true, command: 'pascal', args: ['mcp', 'connect'] },
-      `${client === 'codex' ? 'Codex' : 'Claude Code'} now uses the managed Pascal MCP service. Start a new agent session to connect.`,
+      { client, configured: true, command: 'aedifex', args: ['mcp', 'connect'] },
+      `${client === 'codex' ? 'Codex' : 'Claude Code'} now uses the managed Aedifex MCP service. Start a new agent session to connect.`,
     )
     return
   }
   throw new CliError(
     'unknown_command',
-    'Use "pascal mcp connect", "pascal mcp status", "pascal mcp config", or "pascal mcp setup <client>".',
+    'Use "aedifex mcp connect", "aedifex mcp status", "aedifex mcp config", or "aedifex mcp setup <client>".',
     undefined,
     2,
   )
@@ -599,7 +531,7 @@ async function runPlugin(args: string[]): Promise<void> {
   }
   throw new CliError(
     'plugin_command_unavailable',
-    'Plugin installation is not enabled in this CLI release yet. Use "pascal plugin list".',
+    'Plugin installation is not enabled in this CLI release yet. Use "aedifex plugin list".',
     undefined,
     2,
   )
@@ -646,12 +578,12 @@ function print(value: string): void {
 
 async function ensureShortCommandAvailable(): Promise<void> {
   try {
-    const result = await spawnAndCapture('pascal', ['--version'])
+    const result = await spawnAndCapture('aedifex', ['--version'])
     if (result.exitCode === 0 && result.stdout === version) return
   } catch {}
   throw new CliError(
-    'pascal_command_unavailable',
-    `The matching Pascal CLI ${version} is required in MCP client configuration. Run "npm install --global @aedifex/cli@${version}" and try again.`,
+    'aedifex_command_unavailable',
+    `The repository-local Aedifex CLI ${version} must be linked before MCP client setup. Build packages/cli, run "bun link" from that directory, and try again.`,
   )
 }
 

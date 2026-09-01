@@ -8,7 +8,7 @@ import { registerTools } from './tools'
 import { registerVisionTools } from './tools/vision'
 import { version } from './version'
 
-export type CreatePascalMcpServerOptions = {
+export type CreateAedifexMcpServerOptions = {
   bridge: SceneBridge
   operations?: SceneOperations
   /** Required for persistence tools. Hosted apps and CLIs inject their own store. */
@@ -17,9 +17,9 @@ export type CreatePascalMcpServerOptions = {
   version?: string
 }
 
-export function createPascalMcpServer(opts: CreatePascalMcpServerOptions): McpServer {
+export function createAedifexMcpServer(opts: CreateAedifexMcpServerOptions): McpServer {
   const server = new McpServer({
-    name: opts.name ?? 'pascal-mcp-server',
+    name: opts.name ?? 'pascal-mcp',
     version: opts.version ?? version,
   })
   const operations =

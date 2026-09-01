@@ -1,5 +1,5 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { AnyNode, AnyNodeType } from '@aedifex/core/schema'
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { SceneOperations } from '../operations'
 
 type Poly2D = ReadonlyArray<readonly [number, number]>
@@ -192,13 +192,13 @@ function walkToLevel(node: AnyNode, nodes: Record<string, AnyNode>): string | nu
 }
 
 /**
- * `pascal://scene/current/summary` — human-readable scene overview.
+ * `aedifex://scene/current/summary` — human-readable scene overview.
  * MIME `text/markdown`.
  */
 export function registerSceneSummary(server: McpServer, bridge: SceneOperations): void {
   server.registerResource(
     'scene-summary',
-    'pascal://scene/current/summary',
+    'aedifex://scene/current/summary',
     {
       title: 'Scene summary (markdown)',
       description:

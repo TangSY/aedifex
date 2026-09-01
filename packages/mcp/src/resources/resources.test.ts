@@ -2,11 +2,11 @@
 import '../bridge/node-shims'
 
 import { beforeEach, describe, expect, test } from 'bun:test'
+import { WallNode, ZoneNode } from '@aedifex/core/schema'
+import useScene from '@aedifex/core/store'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { WallNode, ZoneNode } from '@aedifex/core/schema'
-import useScene from '@aedifex/core/store'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { registerAgentGuide } from './agent-guide'
 import { registerCatalogItems } from './catalog-items'
@@ -47,20 +47,20 @@ function resetScene(): void {
   useScene.temporal.getState().clear()
 }
 
-describe('pascal://scene/current', () => {
+describe('aedifex://scene/current', () => {
   beforeEach(() => resetScene())
 
   test('returns the full scene JSON', async () => {
     const pair = await spinUp(registerSceneCurrent)
     try {
       pair.bridge.loadDefault()
-      const res = await pair.client.readResource({ uri: 'pascal://scene/current' })
+      const res = await pair.client.readResource({ uri: 'aedifex://scene/current' })
       expect(res.contents).toHaveLength(1)
       const content = res.contents[0]
       expect(content).toBeDefined()
       const c = content as { uri: string; mimeType?: string; text?: string }
       expect(c.mimeType).toBe('application/json')
-      expect(c.uri).toBe('pascal://scene/current')
+      expect(c.uri).toBe('aedifex://scene/current')
       const parsed = JSON.parse(c.text ?? '{}')
       expect(parsed).toHaveProperty('nodes')
       expect(parsed).toHaveProperty('rootNodeIds')
@@ -77,7 +77,7 @@ describe('pascal://scene/current', () => {
     try {
       pair.bridge.loadDefault()
       const beforeRes = await pair.client.readResource({
-        uri: 'pascal://scene/current',
+        uri: 'aedifex://scene/current',
       })
       const beforeText = (beforeRes.contents[0] as { text: string }).text
       const before = JSON.parse(beforeText)
@@ -101,7 +101,7 @@ describe('pascal://scene/current', () => {
       pair.bridge.createNode(zone, level.id as never)
 
       const afterRes = await pair.client.readResource({
-        uri: 'pascal://scene/current',
+        uri: 'aedifex://scene/current',
       })
       const afterText = (afterRes.contents[0] as { text: string }).text
       const after = JSON.parse(afterText)
@@ -112,7 +112,7 @@ describe('pascal://scene/current', () => {
   })
 })
 
-describe('pascal://scene/current/summary', () => {
+describe('aedifex://scene/current/summary', () => {
   beforeEach(() => resetScene())
 
   test('returns markdown with counts and bbox', async () => {
@@ -120,7 +120,7 @@ describe('pascal://scene/current/summary', () => {
     try {
       pair.bridge.loadDefault()
       const res = await pair.client.readResource({
-        uri: 'pascal://scene/current/summary',
+        uri: 'aedifex://scene/current/summary',
       })
       const content = res.contents[0] as { uri: string; mimeType?: string; text?: string }
       expect(content.mimeType).toBe('text/markdown')
@@ -156,7 +156,7 @@ describe('pascal://scene/current/summary', () => {
       pair.bridge.createNode(zone, level.id as never)
 
       const res = await pair.client.readResource({
-        uri: 'pascal://scene/current/summary',
+        uri: 'aedifex://scene/current/summary',
       })
       const text = (res.contents[0] as { text: string }).text
       expect(text).toContain('12.00 m^2')
@@ -170,7 +170,7 @@ describe('pascal://scene/current/summary', () => {
     try {
       // deliberately do NOT call loadDefault()
       const res = await pair.client.readResource({
-        uri: 'pascal://scene/current/summary',
+        uri: 'aedifex://scene/current/summary',
       })
       const text = (res.contents[0] as { text: string }).text
       expect(text.startsWith('# Scene summary')).toBe(true)
@@ -181,13 +181,13 @@ describe('pascal://scene/current/summary', () => {
   })
 })
 
-describe('pascal://catalog/items', () => {
+describe('aedifex://catalog/items', () => {
   beforeEach(() => resetScene())
 
   test('returns built-in catalog subset', async () => {
     const pair = await spinUp(registerCatalogItems)
     try {
-      const res = await pair.client.readResource({ uri: 'pascal://catalog/items' })
+      const res = await pair.client.readResource({ uri: 'aedifex://catalog/items' })
       const content = res.contents[0] as { uri: string; mimeType?: string; text?: string }
       expect(content.mimeType).toBe('application/json')
       const parsed = JSON.parse(content.text ?? '{}')
@@ -201,13 +201,13 @@ describe('pascal://catalog/items', () => {
   })
 })
 
-describe('pascal://agent-guide', () => {
+describe('aedifex://agent-guide', () => {
   beforeEach(() => resetScene())
 
   test('returns MCP-first project guidance', async () => {
     const pair = await spinUp(registerAgentGuide)
     try {
-      const res = await pair.client.readResource({ uri: 'pascal://agent-guide' })
+      const res = await pair.client.readResource({ uri: 'aedifex://agent-guide' })
       const content = res.contents[0] as { uri: string; mimeType?: string; text?: string }
       expect(content.mimeType).toBe('text/markdown')
       const text = content.text ?? ''
@@ -224,16 +224,16 @@ describe('pascal://agent-guide', () => {
   test('keeps the legacy agent guide URI as an alias', async () => {
     const pair = await spinUp(registerAgentGuide)
     try {
-      const res = await pair.client.readResource({ uri: 'pascal://agent/guide' })
+      const res = await pair.client.readResource({ uri: 'aedifex://agent/guide' })
       const text = (res.contents[0] as { text?: string }).text ?? ''
-      expect(text).toContain('Pascal MCP Agent Guide')
+      expect(text).toContain('Aedifex MCP Agent Guide')
     } finally {
       await pair.close()
     }
   })
 })
 
-describe('pascal://constraints/{levelId}', () => {
+describe('aedifex://constraints/{levelId}', () => {
   beforeEach(() => resetScene())
 
   test('returns slabs + wall footprints for a known level', async () => {
@@ -254,7 +254,7 @@ describe('pascal://constraints/{levelId}', () => {
       pair.bridge.createNode(wall, level.id as never)
 
       const res = await pair.client.readResource({
-        uri: `pascal://constraints/${level.id}`,
+        uri: `aedifex://constraints/${level.id}`,
       })
       const content = res.contents[0] as { uri: string; mimeType?: string; text?: string }
       expect(content.mimeType).toBe('application/json')
@@ -280,7 +280,7 @@ describe('pascal://constraints/{levelId}', () => {
     try {
       pair.bridge.loadDefault()
       const res = await pair.client.readResource({
-        uri: 'pascal://constraints/level_nope',
+        uri: 'aedifex://constraints/level_nope',
       })
       const content = res.contents[0] as { text?: string }
       const parsed = JSON.parse(content.text ?? '{}')

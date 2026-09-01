@@ -7,7 +7,7 @@ import path from 'node:path'
 import { CliError } from './errors.js'
 import { withFileLock } from './file-lock.js'
 import { readJsonFile, writeJsonFile } from './json-files.js'
-import type { PascalPaths } from './paths.js'
+import type { AedifexPaths } from './paths.js'
 import {
   type ActiveRuntime,
   activateRuntime,
@@ -49,7 +49,7 @@ export interface EditorStatus {
 }
 
 export interface StartEditorOptions {
-  paths: PascalPaths
+  paths: AedifexPaths
   port?: number
   foreground?: boolean
   sourceDirectory?: string
@@ -84,7 +84,7 @@ export interface RuntimeActivationResult {
   restarted: boolean
 }
 
-export async function ensurePascalDirectories(paths: PascalPaths): Promise<void> {
+export async function ensureAedifexDirectories(paths: AedifexPaths): Promise<void> {
   await Promise.all(
     [paths.root, paths.runtime, paths.data, paths.plugins, paths.run, paths.logs].map((directory) =>
       mkdir(directory, { recursive: true, mode: 0o700 }),
@@ -92,7 +92,7 @@ export async function ensurePascalDirectories(paths: PascalPaths): Promise<void>
   )
 }
 
-export async function getEditorStatus(paths: PascalPaths): Promise<EditorStatus> {
+export async function getEditorStatus(paths: AedifexPaths): Promise<EditorStatus> {
   const [runtime, state] = await Promise.all([
     readActiveRuntime(paths),
     readJsonFile<EditorState>(paths.state),
@@ -134,7 +134,7 @@ export async function startEditor(options: StartEditorOptions): Promise<StartEdi
 }
 
 async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEditorResult> {
-  await ensurePascalDirectories(options.paths)
+  await ensureAedifexDirectories(options.paths)
   options.onProgress?.({ step: 'storage-ready', dataDirectory: options.paths.data })
   let installedRuntime = false
   let currentStatus: EditorStatus
@@ -157,7 +157,7 @@ async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEd
     if (!statusComponentsAreIdentified(currentStatus)) {
       throw new CliError(
         'state_conflict',
-        'A recorded Pascal process is running but its identity could not be verified.',
+        'A recorded Aedifex process is running but its identity could not be verified.',
       )
     }
     await stopEditorUnlocked(options.paths)
@@ -189,7 +189,7 @@ async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEd
     version: runtime.version,
     port,
     host: '127.0.0.1',
-    url: `http://pascal.localhost:${port}`,
+    url: `http://aedifex.localhost:${port}`,
     instanceId,
     runtimeDirectory: runtime.directory,
     startedAt: new Date().toISOString(),
@@ -200,12 +200,12 @@ async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEd
     NODE_ENV: 'production',
     HOSTNAME: state.host,
     PORT: String(port),
-    PASCAL_DATA_DIR: options.paths.data,
-    PASCAL_INSTANCE_ID: instanceId,
-    PASCAL_RUNTIME_VERSION: runtime.version,
-    MINT_PASCAL_HOST_ORIGIN: state.url,
+    AEDIFEX_DATA_DIR: options.paths.data,
+    AEDIFEX_INSTANCE_ID: instanceId,
+    AEDIFEX_RUNTIME_VERSION: runtime.version,
+    AEDIFEX_SCENE_API_ALLOW_LOOPBACK_WITHOUT_TOKEN: 'true',
   }
-  const nodeBinary = process.env.PASCAL_NODE_BINARY || 'node'
+  const nodeBinary = process.env.AEDIFEX_NODE_BINARY || 'node'
   if (!options.foreground) await rotateEditorLog(options.paths.editorLog)
   const logDescriptor = options.foreground
     ? undefined
@@ -222,7 +222,7 @@ async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEd
   let mcpChild: ChildProcess | undefined
   try {
     await waitForSpawn(child, nodeBinary)
-    if (!child.pid) throw new CliError('start_failed', 'The Pascal editor process did not start.')
+    if (!child.pid) throw new CliError('start_failed', 'The Aedifex editor process did not start.')
     state.pid = child.pid
     await writeJsonFile(options.paths.state, state)
     if (!options.foreground) child.unref()
@@ -242,9 +242,9 @@ async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEd
     options.onProgress?.({ step: 'mcp-port-ready', port: mcpPort })
     const mcpEnvironment: NodeJS.ProcessEnv = {
       ...environment,
-      PASCAL_EDITOR_ORIGIN: state.url,
-      PASCAL_MCP_HTTP_TOKEN: mcpToken,
-      PASCAL_MCP_VERSION: runtime.version,
+      AEDIFEX_EDITOR_ORIGIN: state.url,
+      AEDIFEX_MCP_HTTP_TOKEN: mcpToken,
+      AEDIFEX_MCP_VERSION: runtime.version,
     }
     const mcpLogDescriptor = options.foreground
       ? undefined
@@ -264,7 +264,7 @@ async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEd
     )
     if (mcpLogDescriptor !== undefined) closeSync(mcpLogDescriptor)
     await waitForSpawn(mcpChild, nodeBinary)
-    if (!mcpChild.pid) throw new CliError('start_failed', 'The Pascal MCP process did not start.')
+    if (!mcpChild.pid) throw new CliError('start_failed', 'The Aedifex MCP process did not start.')
     state.mcp.pid = mcpChild.pid
     await writeJsonFile(options.paths.state, state)
     if (!options.foreground) mcpChild.unref()
@@ -282,14 +282,14 @@ async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEd
 }
 
 export async function stopEditor(
-  paths: PascalPaths,
+  paths: AedifexPaths,
   options: StopEditorOptions = {},
 ): Promise<boolean> {
   return withEditorLifecycleLock(paths, () => stopEditorUnlocked(paths, options))
 }
 
 async function stopEditorUnlocked(
-  paths: PascalPaths,
+  paths: AedifexPaths,
   options: StopEditorOptions = {},
 ): Promise<boolean> {
   const state = await readJsonFile<EditorState>(paths.state)
@@ -313,8 +313,8 @@ async function stopEditorUnlocked(
     throw new CliError(
       'state_conflict',
       options.force
-        ? 'Refusing to stop a process whose health identity and operating-system command do not match the recorded Pascal runtime.'
-        : 'A Pascal process identity is unavailable. Inspect "pascal status --json", then use "pascal stop --force" only if the recorded commands are trusted.',
+        ? 'Refusing to stop a process whose health identity and operating-system command do not match the recorded Aedifex runtime.'
+        : 'An Aedifex process identity is unavailable. Inspect "aedifex status --json", then use "aedifex stop --force" only if the recorded commands are trusted.',
     )
   }
   if (mcpRunning && state.mcp) await terminateProcess(state.mcp.pid)
@@ -324,7 +324,7 @@ async function stopEditorUnlocked(
   return true
 }
 
-export async function restartEditor(paths: PascalPaths): Promise<StartEditorResult> {
+export async function restartEditor(paths: AedifexPaths): Promise<StartEditorResult> {
   return withEditorLifecycleLock(paths, async () => {
     const previousPort = (await readJsonFile<EditorState>(paths.state))?.port
     await stopEditorUnlocked(paths)
@@ -333,7 +333,7 @@ export async function restartEditor(paths: PascalPaths): Promise<StartEditorResu
 }
 
 export async function activateEditorRuntime(
-  paths: PascalPaths,
+  paths: AedifexPaths,
   candidate: ActiveRuntime,
 ): Promise<RuntimeActivationResult> {
   return withEditorLifecycleLock(paths, async () => {
@@ -369,7 +369,7 @@ export async function activateEditorRuntime(
     if (previousStatus.running && !statusComponentsAreIdentified(previousStatus)) {
       throw new CliError(
         'state_conflict',
-        'A recorded Pascal process is running but its identity could not be verified. Recover or stop it before updating.',
+        'A recorded Aedifex process is running but its identity could not be verified. Recover or stop it before updating.',
       )
     }
     if (
@@ -518,23 +518,23 @@ export async function waitForHealth(state: EditorState, timeoutMs: number): Prom
     if (health === 'foreign') {
       throw new CliError(
         'port_conflict',
-        `Port ${state.port} is responding as another application. Run Pascal again to choose another port, or pass --port <n>.`,
+        `Port ${state.port} is responding as another application. Run Aedifex again to choose another port, or pass --port <n>.`,
       )
     }
     if (!isProcessRunning(state.pid)) {
-      throw new CliError('start_failed', 'The Pascal editor exited before becoming healthy.')
+      throw new CliError('start_failed', 'The Aedifex editor exited before becoming healthy.')
     }
     await new Promise((resolve) => setTimeout(resolve, 200))
   }
-  throw new CliError('health_timeout', `Pascal did not become healthy within ${timeoutMs}ms.`)
+  throw new CliError('health_timeout', `Aedifex did not become healthy within ${timeoutMs}ms.`)
 }
 
-export async function checkMcpHealth(paths: PascalPaths, state: EditorState): Promise<boolean> {
+export async function checkMcpHealth(paths: AedifexPaths, state: EditorState): Promise<boolean> {
   return (await probeMcpHealth(paths, state)) === 'healthy'
 }
 
 async function probeMcpHealth(
-  paths: PascalPaths,
+  paths: AedifexPaths,
   state: EditorState,
 ): Promise<'healthy' | 'foreign' | 'unreachable'> {
   if (!state.mcp) return 'unreachable'
@@ -569,11 +569,11 @@ async function probeMcpHealth(
 }
 
 async function waitForMcpHealth(
-  paths: PascalPaths,
+  paths: AedifexPaths,
   state: EditorState,
   timeoutMs: number,
 ): Promise<void> {
-  if (!state.mcp) throw new CliError('start_failed', 'Pascal MCP state was not created.')
+  if (!state.mcp) throw new CliError('start_failed', 'Aedifex MCP state was not created.')
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     const health = await probeMcpHealth(paths, state)
@@ -581,15 +581,15 @@ async function waitForMcpHealth(
     if (health === 'foreign') {
       throw new CliError(
         'port_conflict',
-        `Port ${state.mcp.port} is responding as another application. Run Pascal again to choose another port.`,
+        `Port ${state.mcp.port} is responding as another application. Run Aedifex again to choose another port.`,
       )
     }
     if (!isProcessRunning(state.mcp.pid)) {
-      throw new CliError('start_failed', 'Pascal MCP exited before becoming healthy.')
+      throw new CliError('start_failed', 'Aedifex MCP exited before becoming healthy.')
     }
     await new Promise((resolve) => setTimeout(resolve, 200))
   }
-  throw new CliError('health_timeout', `Pascal MCP did not become healthy within ${timeoutMs}ms.`)
+  throw new CliError('health_timeout', `Aedifex MCP did not become healthy within ${timeoutMs}ms.`)
 }
 
 export function isProcessRunning(pid: number): boolean {
@@ -665,13 +665,13 @@ async function terminateProcess(pid: number): Promise<void> {
 }
 
 async function withEditorLifecycleLock<T>(
-  paths: PascalPaths,
+  paths: AedifexPaths,
   action: () => Promise<T>,
 ): Promise<T> {
   return withFileLock(
     path.join(paths.run, 'editor-lifecycle.lock'),
     'editor_locked',
-    'Another Pascal editor lifecycle operation is active.',
+    'Another Aedifex editor lifecycle operation is active.',
     action,
   )
 }
@@ -686,7 +686,7 @@ async function waitForSpawn(child: ChildProcess, binary: string): Promise<void> 
 }
 
 async function matchesRecordedEditorProcess(
-  paths: PascalPaths,
+  paths: AedifexPaths,
   state: EditorState,
 ): Promise<boolean> {
   if (process.platform === 'win32') return false
@@ -703,7 +703,10 @@ async function matchesRecordedEditorProcess(
   return command.includes(expectedEntrypoint)
 }
 
-async function matchesRecordedMcpProcess(paths: PascalPaths, state: EditorState): Promise<boolean> {
+async function matchesRecordedMcpProcess(
+  paths: AedifexPaths,
+  state: EditorState,
+): Promise<boolean> {
   if (process.platform === 'win32' || !state.mcp) return false
   const runtimeDirectory = path.resolve(state.runtimeDirectory)
   if (!runtimeDirectory.startsWith(`${path.resolve(paths.runtime)}${path.sep}`)) return false
@@ -712,7 +715,7 @@ async function matchesRecordedMcpProcess(paths: PascalPaths, state: EditorState)
     const manifest = await readRuntimeManifest(runtimeDirectory)
     expectedEntrypoint = path.resolve(runtimeDirectory, manifest.mcpEntrypoint)
   } catch {
-    expectedEntrypoint = path.join(runtimeDirectory, 'services/pascal-mcp.mjs')
+    expectedEntrypoint = path.join(runtimeDirectory, 'services/aedifex-mcp.mjs')
   }
   return (await processCommand(state.mcp.pid)).includes(expectedEntrypoint)
 }

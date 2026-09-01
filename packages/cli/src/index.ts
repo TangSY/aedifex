@@ -3,7 +3,7 @@ export {
   activateEditorRuntime,
   type EditorState,
   type EditorStatus,
-  ensurePascalDirectories,
+  ensureAedifexDirectories,
   getEditorStatus,
   type McpState,
   type RuntimeActivationResult,
@@ -13,7 +13,7 @@ export {
   stopEditor,
 } from './editor-process.js'
 export { CliError } from './errors.js'
-export { type PascalPaths, resolvePascalPaths } from './paths.js'
+export { type AedifexPaths, resolveAedifexPaths } from './paths.js'
 export {
   type ActiveRuntime,
   installBundledRuntime,
