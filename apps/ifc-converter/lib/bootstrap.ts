@@ -16,7 +16,7 @@ export function loadBuiltins(): void {
   if (typeof console !== 'undefined') {
     const kinds = Array.from(nodeRegistry.entries(), ([k]) => k)
     console.info(
-      `[pascal:registry] loaded ${builtinPlugin.id} v${builtinPlugin.apiVersion} (${kinds.length} kinds)`,
+      `[aedifex:registry] loaded ${builtinPlugin.id} v${builtinPlugin.apiVersion} (${kinds.length} kinds)`,
     )
   }
 }

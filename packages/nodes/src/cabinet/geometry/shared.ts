@@ -427,7 +427,7 @@ for (const material of [
   ovenHeatElementMaterial,
   ...ovenStatusLightMaterials,
 ]) {
-  material.userData.__pascalCachedMaterial = true
+  material.userData.__aedifexCachedMaterial = true
 }
 
 export function addApplianceHandle(

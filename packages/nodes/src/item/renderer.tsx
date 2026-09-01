@@ -29,7 +29,7 @@ import {
   type RenderShading,
   resolveCdnUrl,
   resolveMaterialRef,
-  stampPascalTextureRef,
+  stampAedifexTextureRef,
   useItemLightPool,
   useNodeEvents,
   useViewer,
@@ -283,7 +283,7 @@ function stampItemTextureReferences(gltf: LoadedItemGltf, src: string) {
         const imageIndex = getItemTextureImageIndex(gltf, texture)
         if (imageIndex === null) continue
         if (
-          stampPascalTextureRef(texture, {
+          stampAedifexTextureRef(texture, {
             kind: 'item-glb',
             src,
             slot,

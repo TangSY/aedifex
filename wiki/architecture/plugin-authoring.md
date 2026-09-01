@@ -1,6 +1,6 @@
 # Plugin authoring
 
-*Public contract for external node packs that extend the Pascal editor.*
+*Public contract for external node packs that extend the Aedifex editor.*
 
 Applies to: anything that ships a `Plugin` for the editor to load.
 
@@ -15,7 +15,7 @@ import type { Plugin } from '@aedifex/core'
 
 export const myPlugin: Plugin = {
   id: 'acme:furniture-pack',
-  apiVersion: 1,
+  apiVersion: 2,
   nodes: [
     couchDefinition,
     armchairDefinition,
@@ -27,16 +27,16 @@ export const myPlugin: Plugin = {
 | Field | Required | Notes |
 |---|---|---|
 | `id` | yes | Globally unique. Use `vendor:pack-name` to avoid collisions. The host treats it as opaque. |
-| `apiVersion` | yes | Currently `1`. The host throws on mismatch — bumping breaks plugins, intentionally. |
+| `apiVersion` | yes | Currently `2`. The host throws on mismatch — bumping breaks plugins, intentionally. |
 | `nodes` | optional | Array of `AnyNodeDefinition`. |
 
-The standalone [`pascalorg/plugin-trees`](https://github.com/pascalorg/plugin-trees) repository is the worked example. Clone it as a starting point.
+The in-repo [`@aedifex/plugin-trees`](../../packages/plugin-trees) package is the worked example. Copy it as a starting point.
 
 The same shape powers the built-in `aedifex:core` plugin in `@aedifex/nodes` — there's no "internal" plugin format. Whatever works for built-ins works for third parties.
 
 ## What a `NodeDefinition` can contribute
 
-A plugin's `nodes` array is the only meaningful contribution point in v1. Each entry is a `NodeDefinition<S extends ZodObject>` that the registry stamps with `kind`, `schemaVersion`, `schema`, and any combination of:
+A plugin's `nodes` array is the only core contribution point in v2. Each entry is a `NodeDefinition<S extends ZodObject>` that the registry stamps with `kind`, `schemaVersion`, `schema`, and any combination of:
 
 - `defaults` — initial field values for new instances.
 - `capabilities` — `selectable` / `duplicable` / `deletable` / `surfaces` / `relations` flags consumed by the framework.
@@ -143,7 +143,7 @@ graph TD
   LoadEach --> Ready["Registry frozen for the session"]
 ```
 
-`loadPlugin` is **add-only** for v1. Hot-removing a kind would require tearing down every mounted instance in the scene — out of scope. Plugins are loaded once at boot.
+`loadPlugin` is **add-only** for v2. Hot-removing a kind would require tearing down every mounted instance in the scene — out of scope. Plugins are loaded once at boot.
 
 `registerNode` throws on duplicate `kind`, so two plugins shipping a `kind: 'couch'` is a startup-time error, not a silent overwrite.
 
@@ -152,7 +152,7 @@ graph TD
 The host calls `discoverPlugins()` after the built-in plugin loads. The default implementation returns `[]`. Apps that ship external plugins replace it before the bootstrap module evaluates:
 
 ```ts
-// In app boot, BEFORE `import './pascal-bootstrap'`
+// In app boot, BEFORE `import './aedifex-bootstrap'`
 import { setPluginDiscovery } from '@aedifex/core'
 import { myPlugin } from '@acme/furniture-pack'
 
@@ -184,7 +184,7 @@ export const myHostPanel: EditorHostPanel = {
     name: 'Acme',
     url: 'https://acme.example',
   },
-  pluginUrl: 'https://github.com/acme/pascal-furniture-pack',
+  pluginUrl: 'https://github.com/acme/aedifex-furniture-pack',
   icon: { kind: 'iconify', name: 'lucide:armchair' },
   component: () => import('./catalog-panel'),
 }
@@ -200,7 +200,7 @@ Host panels mount lazily inside an error boundary. Use host CSS variables, keep 
 
 ## Versioning
 
-`apiVersion: 1` covers the surface above. The host bumps the major when it removes or changes the shape of an existing field. New optional fields don't bump. The plan is to keep additions backwards-compatible as long as possible — the bump is the escape hatch, not the default.
+`apiVersion: 2` covers the surface above. Version 1 manifests may still contain the removed core-level `panels` field, so the host rejects them instead of silently dropping editor metadata. The host bumps the major when it removes or changes the shape of an existing field. New optional fields don't bump. The plan is to keep additions backwards-compatible as long as possible — the bump is the escape hatch, not the default.
 
 A plugin's own data versioning is `schemaVersion` on each `NodeDefinition`. The host doesn't migrate; the plugin's `migrate(node, fromVersion)` (future) handles its own legacy persisted nodes.
 
@@ -216,10 +216,10 @@ The boundary stays narrow on purpose so the contract is shippable. Each "not yet
 
 ## Testing your plugin
 
-`@aedifex/nodes` is the built-in reference implementation, and [`pascalorg/plugin-trees`](https://github.com/pascalorg/plugin-trees) is the standalone example. To test locally:
+`@aedifex/nodes` is the built-in reference implementation, and [`@aedifex/plugin-trees`](../../packages/plugin-trees) is the in-repo example. To test locally:
 
 1. Build your plugin as a normal npm package with `@aedifex/*` as peerDependencies.
 2. In a host app that consumes your built-ins (`apps/editor` is the easiest target), wire `setPluginDiscovery` to return your plugin.
-3. The dev-mode `[pascal:registry]` console log shows the loaded plugin id + node count — that's the verification anchor.
+3. The dev-mode `[aedifex:registry]` console log shows the loaded plugin id + node count — that's the verification anchor.
 
 The host's own parity test (`packages/nodes/src/index.test.ts`) asserts every `AnyNode` discriminator has a registered kind. Plugin-contributed kinds don't participate in that test (they're not in `AnyNode`); add an equivalent test on your own side if you maintain a hand-typed union elsewhere.

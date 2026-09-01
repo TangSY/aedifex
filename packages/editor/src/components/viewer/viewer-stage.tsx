@@ -154,7 +154,7 @@ export function ViewerStage({
   return (
     <div
       className={cn('relative h-full w-full overflow-hidden bg-neutral-100', className)}
-      data-pascal-navigation-sync={synchronizeNavigation ? 'on' : 'off'}
+      data-aedifex-navigation-sync={synchronizeNavigation ? 'on' : 'off'}
       data-aedifex-viewer-stage={activeMode}
     >
       {showCompass && compassHost === undefined ? (

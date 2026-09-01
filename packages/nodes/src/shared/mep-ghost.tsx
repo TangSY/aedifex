@@ -55,7 +55,7 @@ function ghostify(group: { traverse: (cb: (child: object) => void) => void }, ti
     }
   })
   for (const material of replacedMaterials) {
-    if (!material.userData.__pascalCachedMaterial) material.dispose()
+    if (!material.userData.__aedifexCachedMaterial) material.dispose()
   }
 }
 

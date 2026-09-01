@@ -1,6 +1,6 @@
 # `@aedifex/capture-protocol`
 
-Transport-neutral capture-session contracts for Pascal viewers and hosts.
+Transport-neutral capture-session contracts for Aedifex viewers and hosts.
 
 The package contains versioned static manifests, a normalized session descriptor, packet headers
 for incremental data, and a `CaptureSource` interface that can be backed by HTTP, WebSocket,

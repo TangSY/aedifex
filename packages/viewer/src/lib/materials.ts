@@ -17,7 +17,7 @@ import { MeshLambertNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu'
 import { resolveCdnUrl } from './asset-url'
 import { isKtx2Url, ktx2Loader, whenKtx2Ready } from './ktx2-loader'
 import { getSceneTheme } from './scene-themes'
-import { stampPascalTextureRef } from './texture-reference'
+import { stampAedifexTextureRef } from './texture-reference'
 
 export type RenderShading = 'solid' | 'rendered'
 export type ColorPreset = 'clay' | 'white' | 'mono' | 'blueprint'
@@ -93,7 +93,7 @@ export const glassMaterial = new MeshLambertNodeMaterial({
   opacity: 0.35,
   side: THREE.FrontSide,
 })
-glassMaterial.userData.__pascalCachedMaterial = true
+glassMaterial.userData.__aedifexCachedMaterial = true
 
 function resolveNodeMaterialSide(side: THREE.Side): THREE.Side {
   return side === THREE.DoubleSide ? THREE.FrontSide : side
@@ -224,7 +224,7 @@ function getTexture(material?: MaterialSchema): THREE.Texture | undefined {
   texture.repeat.set(repeatX, repeatY)
   texture.updateMatrix()
   texture.colorSpace = THREE.SRGBColorSpace
-  stampPascalTextureRef(texture, {
+  stampAedifexTextureRef(texture, {
     kind: 'project-asset',
     src: resolvedUrl,
     slot: 'map',
@@ -290,7 +290,7 @@ function getPresetTexture(
 
   const texture = pickTextureLoader(resolvedPath).load(resolvedPath)
   applyTextureProperties(texture, props, slot)
-  stampPascalTextureRef(texture, {
+  stampAedifexTextureRef(texture, {
     kind: 'material',
     src: resolvedPath,
     slot: slot ?? 'map',
@@ -350,7 +350,7 @@ async function loadPresetTexture(
   const promise = load
     .then((texture) => {
       applyTextureProperties(texture, props, slot)
-      stampPascalTextureRef(texture, {
+      stampAedifexTextureRef(texture, {
         kind: 'material',
         src: resolvedPath,
         slot: slot ?? 'map',
@@ -532,7 +532,7 @@ export function createMaterialFromPreset(
     shading === 'solid' ? new MeshLambertNodeMaterial() : new MeshStandardNodeMaterial()
   applyMaterialPresetToMaterials(material, preset)
   maybeApplyGlassFresnel(material)
-  material.userData.__pascalCachedMaterial = true
+  material.userData.__aedifexCachedMaterial = true
   materialCache.set(cacheKey, material)
   return material
 }
@@ -583,7 +583,7 @@ export function createMaterial(
         })
 
   maybeApplyGlassFresnel(threeMaterial)
-  threeMaterial.userData.__pascalCachedMaterial = true
+  threeMaterial.userData.__aedifexCachedMaterial = true
   materialCache.set(cacheKey, threeMaterial)
   return threeMaterial
 }
@@ -660,7 +660,7 @@ function cachedDefaultMaterial(
   if (cached) return cached
 
   const material = createDefaultMaterial(color, roughness, shading, side)
-  material.userData.__pascalCachedMaterial = true
+  material.userData.__aedifexCachedMaterial = true
   defaultMaterialCache.set(cacheKey, material)
   return material
 }
@@ -697,7 +697,7 @@ export function createSurfaceRoleMaterial(
           side: resolvedSide,
         })
 
-  material.userData.__pascalCachedMaterial = true
+  material.userData.__aedifexCachedMaterial = true
   surfaceRoleMaterialCache.set(cacheKey, material)
   return material
 }

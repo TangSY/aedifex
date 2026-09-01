@@ -57,7 +57,7 @@ export const blockDefinition: NodeDefinition<typeof BlockNode> = {
       tool: () => import('./tool'),
       preferredView: '3d',
     } satisfies FloorplanNodeExtension<BlockNodeType>,
-    'pascal:editor/contextual-help': blockContextualHelp,
+    'aedifex:editor/contextual-help': blockContextualHelp,
   },
 
   defaults: () => ({

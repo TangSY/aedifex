@@ -24,7 +24,7 @@ describe('print 3MF export', () => {
     const item = asArray<Record<string, string>>(model.build.item)[0]!
     const metadata = asArray<Record<string, string>>(model.metadata)
     const partManifest = JSON.parse(
-      metadata.find((entry) => entry.name === 'Pascal.PartManifest')!['#text']!,
+      metadata.find((entry) => entry.name === 'Aedifex.PartManifest')!['#text']!,
     )
     const objectMesh = object.mesh as {
       vertices: { vertex: Record<string, string> | Record<string, string>[] }
@@ -40,14 +40,17 @@ describe('print 3MF export', () => {
     expect(Object.keys(files)).toEqual(['[Content_Types].xml', '_rels/.rels', '3D/3dmodel.model'])
     expect(strFromU8(files['_rels/.rels']!)).toContain('Target="/3D/3dmodel.model"')
     expect(model.unit).toBe('millimeter')
-    expect(object.name).toBe('Pascal print model')
+    expect(metadata).toContainEqual({ name: 'Title', '#text': 'Aedifex print export' })
+    expect(metadata).toContainEqual({ name: 'Application', '#text': 'Aedifex' })
+    expect(xml).not.toContain('Pascal')
+    expect(object.name).toBe('Aedifex print model')
     expect(vertices).toHaveLength(8)
     expect(triangles).toHaveLength(12)
     expect(item.objectid).toBe('1')
     expect(item.transform).toBeUndefined()
     expect(partManifest).toEqual([
       {
-        name: 'Pascal print model',
+        name: 'Aedifex print model',
         vertexStart: 0,
         vertexCount: 8,
         triangleStart: 0,

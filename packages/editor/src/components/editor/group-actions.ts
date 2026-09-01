@@ -486,7 +486,7 @@ function removeUnusedPasteMaterials(materialIds: SceneMaterialId[]) {
 }
 
 /**
- * Paste the Pascal scene payload from the browser clipboard onto the active
+ * Paste the Aedifex scene payload from the browser clipboard onto the active
  * level, then carry the clones under the cursor until click-to-place. Escape
  * removes the uncommitted clones and any scene materials imported with them.
  */

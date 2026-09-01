@@ -16,7 +16,7 @@ describe('ViewerStage', () => {
     )
 
     expect(markup).toContain('data-aedifex-viewer-stage="split"')
-    expect(markup).toContain('data-pascal-navigation-sync="on"')
+    expect(markup).toContain('data-aedifex-navigation-sync="on"')
     expect(markup).toContain('data-aedifex-viewer-3d="true"')
     expect(markup).toContain('data-floorplan-preview=""')
     expect(markup).toContain('viewBox="0 0 48 48"')
@@ -42,6 +42,6 @@ describe('ViewerStage', () => {
       />,
     )
 
-    expect(markup).toContain('data-pascal-navigation-sync="off"')
+    expect(markup).toContain('data-aedifex-navigation-sync="off"')
   })
 })

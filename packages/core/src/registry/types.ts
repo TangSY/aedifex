@@ -911,7 +911,7 @@ export type FloorplanMoveTarget<N> = (args: {
  * the project (same `installedPlugins` gate as panels and node kinds).
  */
 export type InspectorExtension = {
-  /** Globally unique id, e.g. `pascal:bones:wall-engineering`. */
+  /** Globally unique id, e.g. `aedifex:bones:wall-engineering`. */
   id: string
   /** The contributing plugin's id — used for the install gate. */
   pluginId: string

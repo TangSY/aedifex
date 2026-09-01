@@ -1,7 +1,7 @@
 import type * as THREE from 'three'
 import { ASSETS_CDN_URL } from './asset-url'
 
-export type PascalTextureMap =
+export type AedifexTextureMap =
   | 'basecolor'
   | 'normal'
   | 'roughness'
@@ -9,20 +9,20 @@ export type PascalTextureMap =
   | 'height'
   | 'other'
 
-export type PascalTextureColorSpace = 'srgb' | 'linear'
+export type AedifexTextureColorSpace = 'srgb' | 'linear'
 
-type PascalTextureRefBase = {
+type AedifexTextureRefBase = {
   v: 1
   src: string
-  map: PascalTextureMap
-  colorSpace: PascalTextureColorSpace
+  map: AedifexTextureMap
+  colorSpace: AedifexTextureColorSpace
 }
 
-export type PascalTextureRef =
-  | (PascalTextureRefBase & {
+export type AedifexTextureRef =
+  | (AedifexTextureRefBase & {
       kind: 'library-material' | 'app-material' | 'project-asset'
     })
-  | (PascalTextureRefBase & {
+  | (AedifexTextureRefBase & {
       kind: 'item-glb'
       imageIndex: number
     })
@@ -34,7 +34,7 @@ const STORAGE_BUCKET_BY_KIND = {
 } as const
 
 let cachedStorageOrigin: string | null | undefined
-function pascalStorageOrigin(): string | null {
+function aedifexStorageOrigin(): string | null {
   if (cachedStorageOrigin !== undefined) return cachedStorageOrigin
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -57,7 +57,7 @@ function isAppMaterialUrl(src: string): boolean {
   }
 }
 
-const TEXTURE_MAPS = new Set<PascalTextureMap>([
+const TEXTURE_MAPS = new Set<AedifexTextureMap>([
   'basecolor',
   'normal',
   'roughness',
@@ -66,8 +66,8 @@ const TEXTURE_MAPS = new Set<PascalTextureMap>([
   'other',
 ])
 
-function isPascalStorageUrl(src: string, kind: keyof typeof STORAGE_BUCKET_BY_KIND): boolean {
-  const origin = pascalStorageOrigin()
+function isAedifexStorageUrl(src: string, kind: keyof typeof STORAGE_BUCKET_BY_KIND): boolean {
+  const origin = aedifexStorageOrigin()
   if (!origin) return false
   try {
     const url = new URL(src)
@@ -78,7 +78,7 @@ function isPascalStorageUrl(src: string, kind: keyof typeof STORAGE_BUCKET_BY_KI
   }
 }
 
-export function textureMapForSlot(slot: string): PascalTextureMap {
+export function textureMapForSlot(slot: string): AedifexTextureMap {
   switch (slot) {
     case 'map':
       return 'basecolor'
@@ -96,11 +96,11 @@ export function textureMapForSlot(slot: string): PascalTextureMap {
   }
 }
 
-function textureColorSpace(texture: THREE.Texture): PascalTextureColorSpace {
+function textureColorSpace(texture: THREE.Texture): AedifexTextureColorSpace {
   return texture.colorSpace === 'srgb' ? 'srgb' : 'linear'
 }
 
-export function stampPascalTextureRef(
+export function stampAedifexTextureRef(
   texture: THREE.Texture,
   input:
     | {
@@ -116,7 +116,7 @@ export function stampPascalTextureRef(
         slot: string
         imageIndex: number
       },
-): PascalTextureRef | null {
+): AedifexTextureRef | null {
   const base = {
     v: 1 as const,
     src: input.src,
@@ -124,31 +124,31 @@ export function stampPascalTextureRef(
     colorSpace: textureColorSpace(texture),
   }
 
-  let ref: PascalTextureRef
+  let ref: AedifexTextureRef
   if (input.kind === 'item-glb') {
-    if (!isPascalStorageUrl(input.src, 'item-glb')) return null
+    if (!isAedifexStorageUrl(input.src, 'item-glb')) return null
     if (!Number.isInteger(input.imageIndex) || input.imageIndex < 0) return null
     ref = { ...base, kind: 'item-glb', imageIndex: input.imageIndex }
   } else {
     const kind =
       input.kind === 'material'
-        ? isPascalStorageUrl(input.src, 'library-material')
+        ? isAedifexStorageUrl(input.src, 'library-material')
           ? 'library-material'
           : isAppMaterialUrl(input.src)
             ? 'app-material'
             : null
-        : isPascalStorageUrl(input.src, 'project-asset')
+        : isAedifexStorageUrl(input.src, 'project-asset')
           ? 'project-asset'
           : null
     if (!kind) return null
     ref = { ...base, kind }
   }
-  texture.userData.pascalTextureRef = ref
+  texture.userData.aedifexTextureRef = ref
   return ref
 }
 
-export function getPascalTextureRef(texture: THREE.Texture): PascalTextureRef | null {
-  const raw = texture.userData.pascalTextureRef
+export function getAedifexTextureRef(texture: THREE.Texture): AedifexTextureRef | null {
+  const raw = texture.userData.aedifexTextureRef
   if (!raw || typeof raw !== 'object') return null
 
   const candidate = raw as Record<string, unknown>
@@ -162,18 +162,18 @@ export function getPascalTextureRef(texture: THREE.Texture): PascalTextureRef | 
     typeof candidate.src !== 'string' ||
     !(kind === 'app-material'
       ? isAppMaterialUrl(candidate.src)
-      : isPascalStorageUrl(candidate.src, kind)) ||
+      : isAedifexStorageUrl(candidate.src, kind)) ||
     typeof candidate.map !== 'string' ||
-    !TEXTURE_MAPS.has(candidate.map as PascalTextureMap) ||
+    !TEXTURE_MAPS.has(candidate.map as AedifexTextureMap) ||
     (candidate.colorSpace !== 'srgb' && candidate.colorSpace !== 'linear')
   ) {
     return null
   }
 
-  const base: PascalTextureRefBase = {
+  const base: AedifexTextureRefBase = {
     v: 1,
     src: candidate.src,
-    map: candidate.map as PascalTextureMap,
+    map: candidate.map as AedifexTextureMap,
     colorSpace: candidate.colorSpace,
   }
   if (kind === 'item-glb') {

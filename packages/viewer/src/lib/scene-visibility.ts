@@ -21,7 +21,7 @@ export type HiddenReason = 'isolated' | 'shadow-only' | 'batched'
  * recomputed from the one snapshot taken when the first reason arrived, and
  * handed back only when the last one leaves.
  */
-const HOLD = Symbol('pascal:scene-visibility:hold')
+const HOLD = Symbol('aedifex:scene-visibility:hold')
 
 type Hold = { original: number; reasons: Set<HiddenReason> }
 

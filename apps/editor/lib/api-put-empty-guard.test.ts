@@ -3,6 +3,15 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { NextRequest } from 'next/server'
+import { createSceneOperations } from '../../../packages/mcp/src/operations/scene-operations'
+import { SqliteSceneStore } from '../../../packages/mcp/src/storage/sqlite-scene-store'
+import { PUT } from '../app/api/scenes/[id]/route'
+import {
+  __resetSceneStoreForTests,
+  __setSceneStoreForTests,
+  getSceneOperations,
+  getSceneStore,
+} from './scene-store-server'
 
 /**
  * Integration gate for the scene-wipe class: `PUT /api/scenes/[id]` must
@@ -29,13 +38,12 @@ const POPULATED_GRAPH = {
 // alphabetically to see the real module (CI runs single-worker).
 const EMPTY_GRAPH = { nodes: {}, rootNodeIds: [] }
 
-let PUT: typeof import('../app/api/scenes/[id]/route')['PUT']
 let restoreEnv: () => void
 
 beforeAll(async () => {
   const saved = {
-    PASCAL_DB_PATH: process.env.PASCAL_DB_PATH,
-    PASCAL_SCENE_API_TOKEN: process.env.PASCAL_SCENE_API_TOKEN,
+    AEDIFEX_DB_PATH: process.env.AEDIFEX_DB_PATH,
+    AEDIFEX_SCENE_API_TOKEN: process.env.AEDIFEX_SCENE_API_TOKEN,
   }
   restoreEnv = () => {
     for (const [key, value] of Object.entries(saved)) {
@@ -43,40 +51,31 @@ beforeAll(async () => {
       else process.env[key] = value
     }
   }
-  process.env.PASCAL_DB_PATH = join(tempDir, 'pascal.db')
-  delete process.env.PASCAL_SCENE_API_TOKEN // loopback requests need no token
+  process.env.AEDIFEX_DB_PATH = join(tempDir, 'aedifex.db')
+  delete process.env.AEDIFEX_SCENE_API_TOKEN // loopback requests need no token
 
-  const storeServer = await import('./scene-store-server')
-  storeServer.__resetSceneStoreForTests()
+  __resetSceneStoreForTests()
 
   // Build REAL store+operations from relative SOURCE imports and inject
   // them: '@aedifex/mcp/*' subpaths may be mock.module'd by other test
   // files in the same process (the stubs stick for later dynamic imports
   // on linux), which starved this fixture of saveScene/loadStoredScene in
   // CI three runs straight.
-  const { SqliteSceneStore } = await import('../../../packages/mcp/src/storage/sqlite-scene-store')
-  const { createSceneOperations } = await import(
-    '../../../packages/mcp/src/operations/scene-operations'
-  )
   const store = new SqliteSceneStore({ env: process.env })
   const operations = createSceneOperations({ store })
-  storeServer.__setSceneStoreForTests(store, operations)
+  __setSceneStoreForTests(store, operations)
   await store.save({
     id: SCENE_ID,
     name: 'Wipe guard fixture',
     projectId: null,
     graph: POPULATED_GRAPH as never,
   })
-
-  const route = await import('../app/api/scenes/[id]/route')
-  PUT = route.PUT
 })
 
 afterAll(async () => {
-  const storeServer = await import('./scene-store-server')
-  const store = await storeServer.getSceneStore()
+  const store = await getSceneStore()
   ;(store as unknown as { close?: () => void }).close?.()
-  storeServer.__resetSceneStoreForTests()
+  __resetSceneStoreForTests()
   restoreEnv()
   rmSync(tempDir, { recursive: true, force: true })
 })
@@ -110,8 +109,7 @@ test('rejects an empty graph over a populated scene with 409 empty_graph_rejecte
 })
 
 test('the rejected PUT leaves the stored scene untouched', async () => {
-  const storeServer = await import('./scene-store-server')
-  const operations = await storeServer.getSceneOperations()
+  const operations = await getSceneOperations()
   const scene = await operations.loadStoredScene(SCENE_ID)
 
   expect(scene?.version).toBe(1)

@@ -102,7 +102,7 @@ describe('print shell compiler baseline', () => {
     expect(print.report.volumeMm3).toBeCloseTo(12_000, 1)
   })
 
-  test('blocks a structural mesh without Pascal provenance', () => {
+  test('blocks a structural mesh without Aedifex provenance', () => {
     const source = new THREE.Group()
     source.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1)))
 

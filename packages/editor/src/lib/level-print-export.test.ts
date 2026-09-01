@@ -16,7 +16,7 @@ function registerFixtureKind(category: 'structure' | 'furnish'): string {
     schemaVersion: 1,
     category,
     defaults: () => ({}),
-    capabilities: { deletable: false },
+    capabilities: {},
   } as never)
   return kind
 }
@@ -420,7 +420,7 @@ describe('per-level print STL export', () => {
     const items = asArray<Record<string, string>>(model.build.item)
     const metadata = asArray<Record<string, string>>(model.metadata)
     const partManifest = JSON.parse(
-      metadata.find((entry) => entry.name === 'Pascal.PartManifest')!['#text']!,
+      metadata.find((entry) => entry.name === 'Aedifex.PartManifest')!['#text']!,
     ) as Array<{
       name: string
       vertexStart: number
@@ -437,7 +437,10 @@ describe('per-level print STL export', () => {
 
     expect(Object.keys(files)).toEqual(['[Content_Types].xml', '_rels/.rels', '3D/3dmodel.model'])
     expect(model.unit).toBe('millimeter')
-    expect(object.name).toBe('Pascal level parts')
+    expect(metadata).toContainEqual({ name: 'Title', '#text': 'Aedifex level parts' })
+    expect(metadata).toContainEqual({ name: 'Application', '#text': 'Aedifex' })
+    expect(xml).not.toContain('Pascal')
+    expect(object.name).toBe('Aedifex level parts')
     expect(partManifest.map((part) => part.name)).toEqual([
       '00 Plinth',
       '01 Ground & Entry',

@@ -256,7 +256,7 @@ export function compileSemanticPrintShell(
   const prepared = prepareSemanticPrintShellSource(source, nodes, options)
   if (prepared.status === 'blocked') {
     return {
-      backend: 'pascal-three-bvh-csg',
+      backend: 'aedifex-three-bvh-csg',
       status: 'blocked',
       scene: null,
       inputMeshCount: prepared.inputMeshCount,
