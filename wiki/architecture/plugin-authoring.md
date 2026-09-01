@@ -11,7 +11,7 @@ This page documents the **contract**, not a loader implementation. The host call
 A plugin is a JS object exporting one symbol — the manifest:
 
 ```ts
-import type { Plugin } from '@pascal-app/core'
+import type { Plugin } from '@aedifex/core'
 
 export const myPlugin: Plugin = {
   id: 'acme:furniture-pack',
@@ -32,7 +32,7 @@ export const myPlugin: Plugin = {
 
 The standalone [`pascalorg/plugin-trees`](https://github.com/pascalorg/plugin-trees) repository is the worked example. Clone it as a starting point.
 
-The same shape powers the built-in `pascal:core` plugin in `@pascal-app/nodes` — there's no "internal" plugin format. Whatever works for built-ins works for third parties.
+The same shape powers the built-in `aedifex:core` plugin in `@aedifex/nodes` — there's no "internal" plugin format. Whatever works for built-ins works for third parties.
 
 ## What a `NodeDefinition` can contribute
 
@@ -84,7 +84,7 @@ that sample different points on a slope will visibly disagree. Background:
 
 ## Importing host packages
 
-A plugin imports from the published `@pascal-app/*` packages — same surface the built-ins use, peer-dependency-style:
+A plugin imports from the published `@aedifex/*` packages — same surface the built-ins use, peer-dependency-style:
 
 ```ts
 // Schemas, types, registry types
@@ -93,16 +93,16 @@ import {
   type NodeDefinition,
   type Plugin,
   z, // re-exported from zod for schema authoring
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 // Viewer-side primitives (lazy: only inside renderers / systems)
-import { useNodeEvents, NodeRenderer } from '@pascal-app/viewer'
+import { useNodeEvents, NodeRenderer } from '@aedifex/viewer'
 
 // Editor-side primitives (lazy: only inside `tool` / `affordanceTools`)
-import { useDragAction, EDITOR_LAYER } from '@pascal-app/editor'
+import { useDragAction, EDITOR_LAYER } from '@aedifex/editor'
 ```
 
-The packages are **peer dependencies**, not normal dependencies — the host app owns the version. A plugin that pins its own copy of `@pascal-app/core` would create two registries and silently fail. (npm peer-dep resolution catches this at install time.)
+The packages are **peer dependencies**, not normal dependencies — the host app owns the version. A plugin that pins its own copy of `@aedifex/core` would create two registries and silently fail. (npm peer-dep resolution catches this at install time.)
 
 ## Following viewer appearance and performance preferences
 
@@ -153,7 +153,7 @@ The host calls `discoverPlugins()` after the built-in plugin loads. The default 
 
 ```ts
 // In app boot, BEFORE `import './pascal-bootstrap'`
-import { setPluginDiscovery } from '@pascal-app/core'
+import { setPluginDiscovery } from '@aedifex/core'
 import { myPlugin } from '@acme/furniture-pack'
 
 setPluginDiscovery(async () => {
@@ -173,7 +173,7 @@ setPluginDiscovery(async () => {
 The core `Plugin` manifest remains renderer-agnostic. A plugin that also ships editor UI exports an `EditorHostPanel` separately:
 
 ```ts
-import type { EditorHostPanel } from '@pascal-app/editor'
+import type { EditorHostPanel } from '@aedifex/editor'
 
 export const myHostPanel: EditorHostPanel = {
   id: 'acme:furniture-pack:catalog',
@@ -206,9 +206,9 @@ A plugin's own data versioning is `schemaVersion` on each `NodeDefinition`. The 
 
 ## What's *not* a plugin contribution (yet)
 
-- **Materials** — there's no `plugin.materials` slot. Use `createMaterial` from `@pascal-app/viewer` inside your `def.renderer` / `def.system`.
+- **Materials** — there's no `plugin.materials` slot. Use `createMaterial` from `@aedifex/viewer` inside your `def.renderer` / `def.system`.
 - **Floor-plan primitives** — the `FloorplanGeometry` union is host-owned. To draw something the union can't express, fall back to `def.renderer` and render through a different 2D mount (or open an issue).
-- **Panels / sidebar UI in the core manifest** — host-specific. Export an `EditorHostPanel` separately for hosts that use `@pascal-app/editor`.
+- **Panels / sidebar UI in the core manifest** — host-specific. Export an `EditorHostPanel` separately for hosts that use `@aedifex/editor`.
 - **Stores** — plugins create their own Zustand stores; they don't extend `useScene`, `useEditor`, or `useViewer`. A renderer may subscribe read-only to exported host presentation state such as `useViewer` appearance axes, but must not treat host stores as plugin-owned state.
 - **Routes / pages** — plugins are visualisation + interaction code, not full app surfaces. Hosting a settings page belongs to the app.
 
@@ -216,9 +216,9 @@ The boundary stays narrow on purpose so the contract is shippable. Each "not yet
 
 ## Testing your plugin
 
-`@pascal-app/nodes` is the built-in reference implementation, and [`pascalorg/plugin-trees`](https://github.com/pascalorg/plugin-trees) is the standalone example. To test locally:
+`@aedifex/nodes` is the built-in reference implementation, and [`pascalorg/plugin-trees`](https://github.com/pascalorg/plugin-trees) is the standalone example. To test locally:
 
-1. Build your plugin as a normal npm package with `@pascal-app/*` as peerDependencies.
+1. Build your plugin as a normal npm package with `@aedifex/*` as peerDependencies.
 2. In a host app that consumes your built-ins (`apps/editor` is the easiest target), wire `setPluginDiscovery` to return your plugin.
 3. The dev-mode `[pascal:registry]` console log shows the loaded plugin id + node count — that's the verification anchor.
 

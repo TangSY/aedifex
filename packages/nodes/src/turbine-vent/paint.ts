@@ -1,4 +1,4 @@
-import type { AnyNode, MaterialSchema, TurbineVentMaterialRole } from '@pascal-app/core'
+import type { AnyNode, MaterialSchema, TurbineVentMaterialRole } from '@aedifex/core'
 import type { Mesh, Object3D } from 'three'
 import { buildSlotPreviewMaterial, createSlotPaintCapability } from '../shared/slot-paint'
 

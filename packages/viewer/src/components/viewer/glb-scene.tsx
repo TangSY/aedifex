@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNode, bakePolicyOf, type SurfaceRole } from '@pascal-app/core'
+import { type AnyNode, bakePolicyOf, type SurfaceRole } from '@aedifex/core'
 import { Html, useAnimations } from '@react-three/drei'
 import { type ThreeEvent, useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef } from 'react'

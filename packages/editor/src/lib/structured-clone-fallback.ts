@@ -1,5 +1,5 @@
 /**
- * `@pascal-app/lingo` builds its unit registry at module-eval time, and
+ * `@aedifex/lingo` builds its unit registry at module-eval time, and
  * `registerKind` deep-copies each kind definition with `structuredClone`. On a
  * browser without that global (Chromium <98 — reported from Honor Browser 9.8
  * as `ReferenceError: structuredClone is not defined`) the throw happens while
@@ -7,7 +7,7 @@
  * run in time and the whole editor bundle fails to load.
  *
  * This has to be imported for its side effect from the module that pulls lingo
- * in, so it is installed wherever `@pascal-app/editor` is loaded — the OSS app,
+ * in, so it is installed wherever `@aedifex/editor` is loaded — the OSS app,
  * the hosted app, and any npm consumer. An app-level polyfill would only cover
  * the app that declares it.
  *

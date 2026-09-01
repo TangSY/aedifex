@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, RoofSegmentNode, type RoofType, WallNode } from '@pascal-app/core'
-import { generateRoofSegmentGeometry } from '@pascal-app/viewer'
+import { type AnyNode, RoofSegmentNode, type RoofType, WallNode } from '@aedifex/core'
+import { generateRoofSegmentGeometry } from '@aedifex/viewer'
 import * as THREE from 'three'
 import { prepareSceneForExport } from './glb-export'
 import { filterPreparedSceneForPrintContent } from './print-content-scope'

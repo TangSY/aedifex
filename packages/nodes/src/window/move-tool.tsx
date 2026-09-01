@@ -16,7 +16,7 @@ import {
   type WallEvent,
   type WindowEvent,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   calculateItemRotation,
   clearPlacementSurface,
@@ -34,7 +34,7 @@ import {
   useEditor,
   useFacingPose,
   useRegistryToolContext,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BoxGeometry, EdgesGeometry, type Group, Vector3 } from 'three'
 import { LineBasicNodeMaterial } from 'three/webgpu'

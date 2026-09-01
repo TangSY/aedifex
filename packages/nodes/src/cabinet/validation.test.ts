@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { CabinetModuleNode, CabinetNode } from '@pascal-app/core'
+import { CabinetModuleNode, CabinetNode } from '@aedifex/core'
 import { validateCabinetRun } from './validation'
 
 test('validateCabinetRun accepts a flush modular base run', () => {

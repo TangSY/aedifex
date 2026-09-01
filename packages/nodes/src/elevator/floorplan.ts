@@ -7,7 +7,7 @@ import {
   resolveElevatorServiceLevelIds,
   useInteractive,
   useLiveNodeOverrides,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Stage C floor-plan emitter for elevator. Architectural symbol style:

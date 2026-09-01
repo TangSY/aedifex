@@ -13,7 +13,7 @@ import {
   StairNode,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { customAlphabet } from 'nanoid'
 import * as WebIFC from 'web-ifc'
 import { type IfcConversionSimplificationOptions, simplifyConvertedSceneGraph } from './cleanup'
@@ -1205,7 +1205,7 @@ export async function convertIfcToPascal(
           // Vertical centering is now handled: door center Y = height/2 so the
           // opening sits at the correct position. Remaining caveat: door bottom
           // is assumed at floor y=0 (i.e. the door starts at the wall's base).
-          // Defaults match @pascal-app/core door schema fallbacks.
+          // Defaults match @aedifex/core door schema fallbacks.
           const doorPosition: [number, number, number] = [position ?? 0, (height ?? 2.1) / 2, 0]
           const doorNode = tryParse(DoorNode, 'door', {
             object: 'node',
@@ -1843,7 +1843,7 @@ export async function convertIfcToPascal(
   }
 
   // Beams: skipped for now — Pascal has no `beam` node type yet. When it
-  // lands in @pascal-app/core, restore the IFCBEAM → BeamNode mapping
+  // lands in @aedifex/core, restore the IFCBEAM → BeamNode mapping
   // (axis polyline → start/end [x,y,z], profile XDim/YDim → width/depth,
   // extrusion depth → axis length). Reference implementation lives in
   // git history of this file. We still walk the entities to log how

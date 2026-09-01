@@ -7,7 +7,7 @@ import {
   useLiveTransforms,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useLayoutEffect, useRef } from 'react'
 import type { Group } from 'three'
 import { useNodeEvents } from '../../hooks/use-node-events'

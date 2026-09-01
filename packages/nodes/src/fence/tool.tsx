@@ -15,7 +15,7 @@ import {
   useScene,
   type WallMiterData,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CursorSphere,
   clearPlacementSurface,
@@ -46,9 +46,9 @@ import {
   useFenceCurveDraft,
   useFloorplanDraftPreview,
   useSegmentDraftChain,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 
-import { getSceneTheme, useViewer } from '@pascal-app/viewer'
+import { getSceneTheme, useViewer } from '@aedifex/viewer'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BufferGeometry, type Camera, DoubleSide, type Group, type Mesh, Vector3 } from 'three'

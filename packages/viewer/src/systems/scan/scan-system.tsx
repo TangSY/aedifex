@@ -1,4 +1,4 @@
-import { type ScanNode, sceneRegistry, useScene } from '@pascal-app/core'
+import { type ScanNode, sceneRegistry, useScene } from '@aedifex/core'
 import { useEffect } from 'react'
 import useViewer from '../../store/use-viewer'
 

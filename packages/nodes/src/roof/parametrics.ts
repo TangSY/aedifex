@@ -1,4 +1,4 @@
-import type { ParametricDescriptor, RoofNode } from '@pascal-app/core'
+import type { ParametricDescriptor, RoofNode } from '@aedifex/core'
 
 export const roofParametrics: ParametricDescriptor<RoofNode> = {
   groups: [],

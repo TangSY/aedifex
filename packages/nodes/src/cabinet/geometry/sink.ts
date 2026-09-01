@@ -4,7 +4,7 @@ import {
   csgGeometry,
   prepareBrushForCSG,
   SUBTRACTION,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import {
   BoxGeometry,
   CylinderGeometry,

@@ -26,14 +26,14 @@ import { version } from '../version.js'
 const HELP = `Pascal — local 3D editor
 
 FIRST RUN:
-  npx @pascal-app/cli editor
+  npx @aedifex/cli editor
   Starts the editor and installs the shorter "pascal" command interactively.
 
 RUN A COMMAND THROUGH NPX:
-  npx @pascal-app/cli <command>
+  npx @aedifex/cli <command>
 
 ENABLE THE SHORT GLOBAL COMMAND:
-  npm install --global @pascal-app/cli
+  npm install --global @aedifex/cli
   pascal <command>
 
 USAGE:
@@ -53,7 +53,7 @@ USAGE:
   pascal mcp connect | status | config | setup <client>
   pascal plugin list [--json]
 
-Documentation: https://editor.pascal.app/docs/developers/local-editor
+Documentation: https://aedifex.localhost/docs/developers/local-editor
 `
 
 const MCP_HELP = `Pascal MCP — connect AI agents to local projects
@@ -70,7 +70,7 @@ USAGE:
 MCP clients should run "pascal mcp connect"; the connector discovers the
 dynamic loopback port without exposing Pascal's private local token.
 
-Documentation: https://editor.pascal.app/docs/developers/mcp
+Documentation: https://aedifex.localhost/docs/developers/mcp
 `
 
 const paths = resolvePascalPaths()
@@ -167,7 +167,7 @@ async function runStart(args: string[], shouldOpen: boolean): Promise<void> {
     }
   }
   const useShortCommand = !npxInvocation || commandInstalled
-  const commandPrefix = useShortCommand ? 'pascal' : 'npx @pascal-app/cli'
+  const commandPrefix = useShortCommand ? 'pascal' : 'npx @aedifex/cli'
   output(
     values.json,
     { ...result.state, alreadyRunning: result.alreadyRunning },
@@ -192,7 +192,7 @@ async function runStart(args: string[], shouldOpen: boolean): Promise<void> {
         : [
             '',
             'To install the shorter "pascal" command:',
-            '  npm install --global @pascal-app/cli',
+            '  npm install --global @aedifex/cli',
           ]),
     ].join('\n'),
   )
@@ -377,7 +377,7 @@ async function runUpdate(args: string[]): Promise<void> {
   if (target === version) {
     candidate = await installBundledRuntime(paths, undefined, { activate: false })
   } else {
-    const spec = `@pascal-app/cli@${target}`
+    const spec = `@aedifex/cli@${target}`
     const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
     if (!values.json) print(`Installing ${spec}...`)
     let result: Awaited<ReturnType<typeof spawnAndCapture>>
@@ -651,7 +651,7 @@ async function ensureShortCommandAvailable(): Promise<void> {
   } catch {}
   throw new CliError(
     'pascal_command_unavailable',
-    `The matching Pascal CLI ${version} is required in MCP client configuration. Run "npm install --global @pascal-app/cli@${version}" and try again.`,
+    `The matching Pascal CLI ${version} is required in MCP client configuration. Run "npm install --global @aedifex/cli@${version}" and try again.`,
   )
 }
 

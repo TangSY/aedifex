@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId, WallNode } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, WallNode } from '@aedifex/core'
 import { resolveWallOpeningCeiling } from '../shared/wall-opening-ceiling'
 
 /**

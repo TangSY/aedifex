@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { BlockNode, createSceneApi, runAsSingleSceneHistoryStep, useScene } from '@pascal-app/core'
+import { BlockNode, createSceneApi, runAsSingleSceneHistoryStep, useScene } from '@aedifex/core'
 import { applyBlockCommand } from './commands'
 import {
   commitBlockOperation,

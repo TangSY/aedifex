@@ -1,7 +1,7 @@
 # IFC → Pascal Converter
 
 A web app that converts IFC building models into Pascal scene-graph JSON and
-previews the result in the real `@pascal-app/viewer`. Drop in an `.ifc` file
+previews the result in the real `@aedifex/viewer`. Drop in an `.ifc` file
 (or pick a bundled example), inspect what was extracted, and download the
 JSON to load into the Pascal editor.
 
@@ -21,9 +21,9 @@ JSON to load into the Pascal editor.
 
 ## How it works
 
-- **`@pascal-app/ifc-converter`** (`packages/ifc-converter`) — the pure
+- **`@aedifex/ifc-converter`** (`packages/ifc-converter`) — the pure
   conversion logic. Parses IFC via [web-ifc](https://github.com/ThatOpen/engine_web-ifc),
-  maps elements onto Pascal node schemas from `@pascal-app/core`. No DOM, no
+  maps elements onto Pascal node schemas from `@aedifex/core`. No DOM, no
   React.
 - **This app** — the UI: drop zone, example picker, element search/filters,
   the 3D preview, and JSON download.

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { LevelNode, useScene, WallNode } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { LevelNode, useScene, WallNode } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import useAlignmentGuides from '../../store/use-alignment-guides'
 import { alignFloorplanDraftPoint, applyFloorplanAlignment } from './apply-alignment'
 

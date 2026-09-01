@@ -7,7 +7,7 @@ import { registerSceneCurrent } from './scene-current'
 import { registerSceneSummary } from './scene-summary'
 
 /**
- * Registers all MCP resources exposed by `@pascal-app/mcp`.
+ * Registers all MCP resources exposed by `@aedifex/mcp`.
  *
  * Resources:
  * - `pascal://scene/current`          — application/json, full snapshot

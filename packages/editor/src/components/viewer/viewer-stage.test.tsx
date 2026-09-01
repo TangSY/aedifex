@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { LevelNode } from '@pascal-app/core/schema'
+import { LevelNode } from '@aedifex/core/schema'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { FloorplanPreviewScene } from './floorplan-preview'
 import { ViewerStage } from './viewer-stage'
@@ -15,9 +15,9 @@ describe('ViewerStage', () => {
       </ViewerStage>,
     )
 
-    expect(markup).toContain('data-pascal-viewer-stage="split"')
+    expect(markup).toContain('data-aedifex-viewer-stage="split"')
     expect(markup).toContain('data-pascal-navigation-sync="on"')
-    expect(markup).toContain('data-pascal-viewer-3d="true"')
+    expect(markup).toContain('data-aedifex-viewer-3d="true"')
     expect(markup).toContain('data-floorplan-preview=""')
     expect(markup).toContain('viewBox="0 0 48 48"')
   })
@@ -27,8 +27,8 @@ describe('ViewerStage', () => {
       <ViewerStage mode="2d" modes={['2d']} scene={scene} showLevelSelector={false} />,
     )
 
-    expect(markup).toContain('data-pascal-viewer-stage="2d"')
-    expect(markup).not.toContain('data-pascal-viewer-3d')
+    expect(markup).toContain('data-aedifex-viewer-stage="2d"')
+    expect(markup).not.toContain('data-aedifex-viewer-3d')
     expect(markup).toContain('data-floorplan-preview=""')
   })
 

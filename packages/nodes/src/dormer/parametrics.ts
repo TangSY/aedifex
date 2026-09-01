@@ -1,4 +1,4 @@
-import type { ParametricDescriptor } from '@pascal-app/core'
+import type { ParametricDescriptor } from '@aedifex/core'
 import type { DormerNode } from './schema'
 
 export const dormerParametrics: ParametricDescriptor<DormerNode> = {

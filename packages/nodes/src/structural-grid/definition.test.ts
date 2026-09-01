@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { getFloorplanNodeExtension } from '@pascal-app/editor'
+import { getFloorplanNodeExtension } from '@aedifex/editor'
 import { structuralGridDefinition } from './definition'
 
 describe('structuralGridDefinition', () => {

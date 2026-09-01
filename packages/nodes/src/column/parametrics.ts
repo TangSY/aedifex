@@ -1,4 +1,4 @@
-import type { ParametricDescriptor } from '@pascal-app/core'
+import type { ParametricDescriptor } from '@aedifex/core'
 import { leanToPostOmissionPatchesOnDelete } from '../shared/lean-to-post-omissions'
 import type { ColumnNode } from './schema'
 

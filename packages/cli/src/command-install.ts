@@ -20,7 +20,7 @@ export async function installGlobalPascalCommand(
       'install',
       '--global',
       '--ignore-scripts',
-      `@pascal-app/cli@${packageVersion}`,
+      `@aedifex/cli@${packageVersion}`,
     ])) === 0
   )
 }

@@ -20,7 +20,7 @@ import {
   useScene,
   type WallEvent,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   clearPlacementSurface,
   getFloorStackPreviewPosition,
@@ -38,8 +38,8 @@ import {
   useEditor,
   useFacingPose,
   usePlacementPreview,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'

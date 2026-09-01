@@ -1,4 +1,4 @@
-import { CABINET_METRIC_DEFAULTS, type CabinetModuleNode, type CabinetNode } from '@pascal-app/core'
+import { CABINET_METRIC_DEFAULTS, type CabinetModuleNode, type CabinetNode } from '@aedifex/core'
 
 type CabinetStackOwner = CabinetNode | CabinetModuleNode
 

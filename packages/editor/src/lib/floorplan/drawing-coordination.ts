@@ -1,4 +1,4 @@
-import { type AnyNode, type ConstructionDrawingType, nodeRegistry } from '@pascal-app/core'
+import { type AnyNode, type ConstructionDrawingType, nodeRegistry } from '@aedifex/core'
 import { getFloorplanNodeExtension } from './floorplan-extension'
 
 export function resolveNodeForDrawingType(

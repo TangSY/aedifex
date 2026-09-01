@@ -1,10 +1,10 @@
-import { nodeRegistry } from '@pascal-app/core'
+import { nodeRegistry } from '@aedifex/core'
 import { type ComponentType, lazy } from 'react'
 
 /**
  * Phase 5 Stage D — runtime lazy-load of a kind's affordance tool.
  *
- * The editor can't statically import from `@pascal-app/nodes` (the
+ * The editor can't statically import from `@aedifex/nodes` (the
  * nodes package depends on editor — static imports would cycle). The
  * kind declares its drag-affordance components in
  * `def.affordanceTools[<key>]: () => import('./<name>-tool')`; this

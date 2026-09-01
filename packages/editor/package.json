@@ -1,26 +1,34 @@
 {
-  "name": "@pascal-app/editor",
-  "version": "1.0.0-beta.5",
-  "description": "Pascal building editor component",
+  "name": "@aedifex/editor",
+  "version": "0.9.3",
+  "description": "Aedifex building editor component",
   "license": "MIT",
   "type": "module",
   "exports": {
     ".": "./src/index.tsx",
-    "./catalog": "./src/components/ui/item-catalog/catalog-items.tsx"
+    "./catalog": "./src/components/ui/item-catalog/catalog-items.tsx",
+    "./ai/prompt": "./src/components/ai/prompt/index.ts",
+    "./ai/contracts": "./src/components/ai/contracts/index.ts",
+    "./ai/stream-client": "./src/components/ai/ai-stream-client.ts",
+    "./components/ai": "./src/components/ai/index.ts"
   },
   "scripts": {
     "check-types": "tsgo --noEmit",
-    "test": "bun test src"
+    "check-boundary": "bash ./scripts/check-oss-boundary.sh",
+    "test": "bun run test:upstream && bun run test:ai",
+    "test:upstream": "bun test --path-ignore-patterns='src/components/ai/**'",
+    "test:ai": "vitest run"
   },
   "peerDependencies": {
-    "@pascal-app/core": "^1.0.0-beta.5",
-    "@pascal-app/viewer": "^1.0.0-beta.5",
+    "@aedifex/core": "^0.10.0",
+    "@aedifex/viewer": "^0.10.0",
     "@react-three/drei": "^10",
     "@react-three/fiber": "^9",
     "next": ">=15",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",
-    "three": "^0.185"
+    "three": "^0.185",
+    "@aedifex/mcp": "^0.3.2"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -28,7 +36,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@iconify/react": "^6.0.2",
     "@number-flow/react": "^0.6.0",
-    "@pascal-app/lingo": "^0.2.0",
+    "@aedifex/lingo": "npm:@pascal-app/lingo@^0.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-context-menu": "^2.2.16",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -61,9 +69,10 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "@pascal-app/core": "^1.0.0-beta.5",
-    "@pascal-app/viewer": "^1.0.0-beta.5",
-    "@pascal/typescript-config": "*",
+    "@aedifex/core": "^0.10.0",
+    "@aedifex/viewer": "^0.10.0",
+    "@aedifex/mcp": "^0.3.2",
+    "@repo/typescript-config": "*",
     "@types/blob-stream": "^0.1.33",
     "@types/bun": "^1.3.0",
     "@types/howler": "^2.2.12",

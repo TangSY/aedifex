@@ -5,7 +5,7 @@ import {
   ColumnNode,
   LeanToExtensionNode,
   type LeanToExtensionNode as LeanToNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   isLeanToPostOmitted,
   leanToPostOmissionPatchesOnDelete,

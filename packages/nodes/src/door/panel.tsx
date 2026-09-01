@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNode, type AnyNodeId, DoorNode, useInteractive, useScene } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, DoorNode, useInteractive, useScene } from '@aedifex/core'
 import {
   ActionButton,
   ActionGroup,
@@ -12,8 +12,8 @@ import {
   ToggleControl,
   triggerSFX,
   useEditor,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Copy, DoorOpen, FlipHorizontal2, Move, Trash2 } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 import { OpeningDocumentationFields } from '../shared/opening-documentation-fields'

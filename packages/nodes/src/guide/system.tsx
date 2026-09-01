@@ -1,5 +1,5 @@
 'use client'
 
-import { GuideSystem } from '@pascal-app/viewer'
+import { GuideSystem } from '@aedifex/viewer'
 
 export default GuideSystem

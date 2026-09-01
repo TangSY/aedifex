@@ -7,7 +7,7 @@ import {
   SiteNode,
   WallNode,
   ZoneNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import { SceneBridge } from './scene-bridge'
 
 function tick() {
@@ -434,9 +434,9 @@ describe('SceneBridge', () => {
 
     test('loadJSON preserves explicit plugin installs', () => {
       const snap = bridge.exportJSON()
-      bridge.loadJSON({ ...snap, installedPlugins: ['pascal:trees'] })
+      bridge.loadJSON({ ...snap, installedPlugins: ['aedifex:trees'] })
 
-      expect(bridge.exportJSON().installedPlugins).toEqual(['pascal:trees'])
+      expect(bridge.exportJSON().installedPlugins).toEqual(['aedifex:trees'])
     })
 
     // `setScene` resets `collections` and `materials` to `{}` unless they are

@@ -125,7 +125,7 @@ describe('planElbowAtPort', () => {
   })
 })
 
-import { DuctFittingNode, DuctSegmentNode } from '@pascal-app/core'
+import { DuctFittingNode, DuctSegmentNode } from '@aedifex/core'
 import { planCrossAtRunBody, planTeeAtRunBody } from './auto-fitting'
 import type { RunBodyHit } from './ports'
 
@@ -540,7 +540,7 @@ describe('planElbowRealign', () => {
   })
 })
 
-import { PipeFittingNode, PipeSegmentNode } from '@pascal-app/core'
+import { PipeFittingNode, PipeSegmentNode } from '@aedifex/core'
 import { getPipeFittingPorts } from '../pipe-fitting/ports'
 import { planPipeBranchTap, planPipeCrossAtRunBody } from './auto-fitting'
 

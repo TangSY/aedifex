@@ -1,4 +1,4 @@
-import type { AnyNode, SceneApi } from '@pascal-app/core'
+import type { AnyNode, SceneApi } from '@aedifex/core'
 
 export type SelectionAffordanceHistoryApi = {
   depth: () => number

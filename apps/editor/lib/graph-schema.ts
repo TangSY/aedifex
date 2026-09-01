@@ -1,4 +1,4 @@
-import { AnyNode, AssetUrl, BaseNode, SceneMaterial } from '@pascal-app/core/schema'
+import { AnyNode, AssetUrl, BaseNode, SceneMaterial } from '@aedifex/core/schema'
 import { z } from 'zod'
 
 /**

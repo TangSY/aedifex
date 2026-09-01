@@ -6,7 +6,7 @@ import type {
   RoofNode,
   RoofSegmentNode,
   SkylightNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Floor-plan builder for a skylight — a glazed opening set into the roof

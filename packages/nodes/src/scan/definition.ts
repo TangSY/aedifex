@@ -1,4 +1,4 @@
-import { type NodeDefinition, ScanNode as ScanNodeSchema } from '@pascal-app/core'
+import { type NodeDefinition, ScanNode as ScanNodeSchema } from '@aedifex/core'
 import { scanParametrics } from './parametrics'
 import { ScanNode } from './schema'
 

@@ -1,10 +1,10 @@
-# @pascal-app/mcp
+# @aedifex/mcp
 
 Model Context Protocol server for the Pascal 3D editor. Drives the
-`@pascal-app/core` scene graph from any MCP-compatible AI host.
+`@aedifex/core` scene graph from any MCP-compatible AI host.
 
 For the hosted Pascal MCP endpoint and copy-ready setup for Claude Code, Codex,
-Cursor, and OpenClaw, read [Connect an AI agent](https://editor.pascal.app/docs/developers/mcp).
+Cursor, and OpenClaw, read [Connect an AI agent](https://aedifex.localhost/docs/developers/mcp).
 The hosted endpoint edits projects in a Pascal account; this package is the
 open-source, local server for custom hosts and local scene storage.
 
@@ -18,7 +18,7 @@ resources, and prompts.
 For a local editor and MCP that share projects automatically, install the Pascal CLI:
 
 ```bash
-npx @pascal-app/cli editor
+npx @aedifex/cli editor
 pascal mcp setup codex
 ```
 
@@ -32,10 +32,10 @@ running MCP without the Pascal editor.
 ## Install the package directly
 
 ```bash
-bun add @pascal-app/mcp
+bun add @aedifex/mcp
 ```
 
-`@pascal-app/core` is a peer dependency. The local store uses Bun SQLite under Bun and
+`@aedifex/core` is a peer dependency. The local store uses Bun SQLite under Bun and
 Node's built-in SQLite driver under Node.js.
 
 ## Quick start
@@ -43,28 +43,28 @@ Node's built-in SQLite driver under Node.js.
 Launch the server over stdio in one line:
 
 ```bash
-bunx @pascal-app/mcp
+bunx @aedifex/mcp
 # or
-npm exec --package=@pascal-app/mcp -- pascal-mcp
+npm exec --package=@aedifex/mcp -- pascal-mcp
 ```
 
 Load an initial scene from disk:
 
 ```bash
-bunx @pascal-app/mcp --stdio --scene ./my-scene.json
+bunx @aedifex/mcp --stdio --scene ./my-scene.json
 ```
 
 Expose it over loopback HTTP:
 
 ```bash
-bunx @pascal-app/mcp --http --port 8787
+bunx @aedifex/mcp --http --port 8787
 ```
 
 Binding a non-loopback host requires a bearer token:
 
 ```bash
 PASCAL_MCP_HTTP_TOKEN="$(openssl rand -hex 32)" \
-  bunx @pascal-app/mcp --http --host 0.0.0.0 --port 8787 --cors-origin https://editor.example
+  bunx @aedifex/mcp --http --host 0.0.0.0 --port 8787 --cors-origin https://editor.example
 ```
 
 ## Local scene storage
@@ -217,7 +217,7 @@ example below runs a full client/server pair inside a single script — useful
 for agent frameworks and tests.
 
 ```ts
-import { createPascalMcpServer, SceneBridge } from '@pascal-app/mcp'
+import { createPascalMcpServer, SceneBridge } from '@aedifex/mcp'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 
@@ -284,7 +284,7 @@ external-coordinate gotcha — lives in
 [`examples/coordinate-conventions-demo.md`](./examples/coordinate-conventions-demo.md)
 and [`examples/coordinate-conventions-demo.json`](./examples/coordinate-conventions-demo.json).
 Load the JSON with
-`bunx @pascal-app/mcp --stdio --scene examples/coordinate-conventions-demo.json`.
+`bunx @aedifex/mcp --stdio --scene examples/coordinate-conventions-demo.json`.
 
 **Example — a 6 × 4 m slab rotated 30° about its first corner** (coordinates
 rounded to 3 dp; sides ≈ 6 m / 4 m; not axis-aligned, so the mapping is
@@ -386,7 +386,7 @@ The vision tools require the MCP host to support the sampling capability
 - Systems (wall mitering, slab triangulation, CSG cutouts, roof / stair
   generation) run inside React hooks in the editor. Headless mode doesn't
   regenerate derived geometry — but all node data remains fully manipulable.
-  Consumers that need rendered geometry run `@pascal-app/viewer` in a browser
+  Consumers that need rendered geometry run `@aedifex/viewer` in a browser
   host.
 - Core's `loadAssetUrl` / `saveAsset` are browser-only; items that reference
   `asset://<id>` URLs aren't resolvable in Node. Supply absolute URLs or

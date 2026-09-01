@@ -1,6 +1,6 @@
 'use client'
 
-import type { QuickMeasurementMetric, QuickMeasurementReport } from '@pascal-app/core'
+import type { QuickMeasurementMetric, QuickMeasurementReport } from '@aedifex/core'
 import { Crosshair, MapPin } from 'lucide-react'
 import { memo } from 'react'
 import { formatAreaLabel, formatLinearMeasurement, formatVolumeLabel } from '../../lib/measurements'

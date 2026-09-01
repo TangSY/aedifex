@@ -11,7 +11,7 @@ import {
   resumeSceneHistory,
   useScene,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { beginOpeningMoveHistorySession } from './opening-move-history'
 
 // `updateNodesAction` batches dirty-marking through requestAnimationFrame.

@@ -1,7 +1,7 @@
 {
-  "name": "@pascal-app/mcp",
-  "version": "1.0.0-beta.6",
-  "description": "Model Context Protocol server for Pascal 3D editor",
+  "name": "@aedifex/mcp",
+  "version": "0.3.3",
+  "description": "Model Context Protocol server for Aedifex 3D editor",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -35,10 +35,15 @@
       "types": "./dist/bridge/index.d.ts",
       "import": "./dist/bridge/index.js",
       "default": "./dist/bridge/index.js"
+    },
+    "./templates": {
+      "types": "./dist/templates/index.d.ts",
+      "import": "./dist/templates/index.js",
+      "default": "./dist/templates/index.js"
     }
   },
   "bin": {
-    "pascal-mcp": "./dist/bin/pascal-mcp.js"
+    "aedifex-mcp": "./dist/bin/aedifex-mcp.js"
   },
   "files": [
     "dist",
@@ -49,29 +54,29 @@
   "scripts": {
     "build": "tsc --build",
     "dev": "tsgo --build --watch",
-    "start": "bun dist/bin/pascal-mcp.js",
+    "start": "bun dist/bin/aedifex-mcp.js",
     "test": "bun test",
     "smoke": "bun run scripts/smoke.ts",
     "prepublishOnly": "bun run build && bun test"
   },
   "peerDependencies": {
-    "@pascal-app/core": "^1.0.0-beta.5"
+    "@aedifex/core": "^0.10.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@pascal-app/lingo": "^0.2.0",
+    "@aedifex/lingo": "npm:@pascal-app/lingo@^0.2.0",
     "zod": "^4.3.5"
   },
   "devDependencies": {
-    "@pascal-app/core": "^1.0.0-beta.5",
-    "@pascal/typescript-config": "*",
+    "@aedifex/core": "^0.10.0",
+    "@repo/typescript-config": "*",
     "@types/node": "^22.19.20",
     "typescript": "6.0.3"
   },
   "keywords": [
     "mcp",
     "model-context-protocol",
-    "pascal",
+    "aedifex",
     "3d",
     "building",
     "editor",
@@ -79,10 +84,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/pascalorg/editor.git",
+    "url": "https://github.com/TangSY/aedifex.git",
     "directory": "packages/mcp"
   },
   "license": "MIT",
-  "homepage": "https://github.com/pascalorg/editor/tree/main/packages/mcp#readme",
-  "bugs": "https://github.com/pascalorg/editor/issues"
+  "homepage": "https://github.com/TangSY/aedifex/tree/main/packages/mcp#readme",
+  "bugs": "https://github.com/TangSY/aedifex/issues"
 }

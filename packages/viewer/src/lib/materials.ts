@@ -9,7 +9,7 @@ import {
   type SceneMaterial,
   type SceneMaterialId,
   type SurfaceRole,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 import { float, mix, positionViewDirection, transformedNormalView } from 'three/tsl'
 import { MeshLambertNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu'

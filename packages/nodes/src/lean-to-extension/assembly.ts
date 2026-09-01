@@ -20,7 +20,7 @@ import {
   spatialGridManager,
   terrainFieldOf,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { resolveEaveSnap } from '../gutter/eave-snap'
 import { isLeanToPostOmitted } from '../shared/lean-to-post-omissions'
 import { getRoofTopSurfaceY } from '../shared/roof-surface'

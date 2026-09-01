@@ -1,6 +1,6 @@
 'use client'
 
-import { type SiteNode, terrainFieldOf, useLiveTerrain } from '@pascal-app/core'
+import { type SiteNode, terrainFieldOf, useLiveTerrain } from '@aedifex/core'
 import { useEffect, useMemo, useRef } from 'react'
 import type { Material } from 'three'
 import {

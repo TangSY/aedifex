@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { AnyNode, ItemNode } from '@pascal-app/core'
+import type { AnyNode, ItemNode } from '@aedifex/core'
 import { getInitialState } from './move-tool'
 
 describe('getInitialState', () => {

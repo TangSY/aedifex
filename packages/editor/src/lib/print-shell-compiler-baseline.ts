@@ -1,4 +1,4 @@
-import { ADDITION, Brush, csgEvaluator, csgGeometry, prepareBrushForCSG } from '@pascal-app/viewer'
+import { ADDITION, Brush, csgEvaluator, csgGeometry, prepareBrushForCSG } from '@aedifex/viewer'
 import * as THREE from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 

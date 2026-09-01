@@ -1,4 +1,4 @@
-import type { WallNode } from '@pascal-app/core'
+import type { WallNode } from '@aedifex/core'
 
 /**
  * Keep the door handle at the same relative height when the door is resized:

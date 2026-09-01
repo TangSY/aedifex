@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { CabinetModuleNode, CabinetNode } from '@pascal-app/core'
+import { CabinetModuleNode, CabinetNode } from '@aedifex/core'
 import { CABINET_REVEAL_GAPS, cabinetRevealGapById, cabinetRevealGapId } from '../reveals'
 
 test('standard reveal presets use millimetre values', () => {

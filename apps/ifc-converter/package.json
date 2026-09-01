@@ -4,9 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "predev": "node scripts/copy-web-ifc-wasm.mjs",
-    "prebuild": "node scripts/copy-web-ifc-wasm.mjs",
-    "postinstall": "node scripts/copy-web-ifc-wasm.mjs",
+    "predev": "node ../../packages/ifc-converter/scripts/copy-web-ifc-wasm.mjs public",
+    "prebuild": "node ../../packages/ifc-converter/scripts/copy-web-ifc-wasm.mjs public",
     "dev": "next dev --port 3003",
     "build": "next build",
     "start": "next start",
@@ -14,10 +13,10 @@
     "check-types": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@pascal-app/core": "*",
-    "@pascal-app/ifc-converter": "*",
-    "@pascal-app/nodes": "*",
-    "@pascal-app/viewer": "*",
+    "@aedifex/core": "*",
+    "@aedifex/ifc-converter": "*",
+    "@aedifex/nodes": "*",
+    "@aedifex/viewer": "*",
     "lucide-react": "^1.7.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
@@ -34,7 +33,7 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
-    "@pascal/typescript-config": "*",
+    "@repo/typescript-config": "*",
     "@types/node": "^22.19.12",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.3",

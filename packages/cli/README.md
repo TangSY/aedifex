@@ -1,14 +1,14 @@
 # Pascal CLI
 
-Run the open-source [Pascal 3D building editor](https://editor.pascal.app) locally
+Run the open-source [Pascal 3D building editor](https://aedifex.localhost) locally
 from your terminal—without cloning or building the Pascal repository.
 
-[![npm version](https://img.shields.io/npm/v/@pascal-app/cli?label=npm)](https://www.npmjs.com/package/@pascal-app/cli)
+[![npm version](https://img.shields.io/npm/v/@aedifex/cli?label=npm)](https://www.npmjs.com/package/@aedifex/cli)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
-[![Pascal documentation](https://img.shields.io/badge/docs-editor.pascal.app-111111)](https://editor.pascal.app/docs/developers/local-editor)
+[![Pascal documentation](https://img.shields.io/badge/docs-aedifex.localhost-111111)](https://aedifex.localhost/docs/developers/local-editor)
 
 ```bash
-npx @pascal-app/cli editor
+npx @aedifex/cli editor
 ```
 
 On an interactive first run through `npx`, Pascal installs the same CLI version globally
@@ -47,19 +47,19 @@ Use your preferred package runner:
 
 ```bash
 # npm
-npx @pascal-app/cli editor
+npx @aedifex/cli editor
 
 # pnpm
-pnpm dlx @pascal-app/cli editor
+pnpm dlx @aedifex/cli editor
 
 # Bun
-bunx @pascal-app/cli editor
+bunx @aedifex/cli editor
 ```
 
 To install the `pascal` command before starting the editor:
 
 ```bash
-npm install --global @pascal-app/cli
+npm install --global @aedifex/cli
 pascal editor
 ```
 
@@ -74,8 +74,8 @@ not compete with other local development servers. Pass `--port <n>` to request a
 specific port; if it is occupied, Pascal reports that and safely selects another one.
 
 ```bash
-npx @pascal-app/cli editor --no-open
-npx @pascal-app/cli editor --foreground --no-open
+npx @aedifex/cli editor --no-open
+npx @aedifex/cli editor --foreground --no-open
 ```
 
 ## Commands
@@ -103,7 +103,7 @@ npx @pascal-app/cli editor --foreground --no-open
 | `pascal plugin list [--json]` | Inspect the reserved managed-plugin lock. |
 
 When you do not install globally, prefix commands with a runner—for example,
-`npx @pascal-app/cli doctor`.
+`npx @aedifex/cli doctor`.
 
 ## Local data and security
 
@@ -144,19 +144,19 @@ when an agent connects while it is stopped. Ask the agent to read
 ## Plugins
 
 The current CLI manages the local editor runtime; it does not yet download plugin code
-from GitHub or npm. Follow the [plugin authoring guide](https://editor.pascal.app/docs/developers/plugins)
+from GitHub or npm. Follow the [plugin authoring guide](https://aedifex.localhost/docs/developers/plugins)
 and the standalone [Nature plugin](https://github.com/pascalorg/plugin-trees) when
 building an extension today.
 
 Pascal also exposes a hosted Model Context Protocol endpoint for projects in a Pascal
-account. See [Connect an AI agent](https://editor.pascal.app/docs/developers/mcp) for
-the local and hosted workflows and the standalone `@pascal-app/mcp` package.
+account. See [Connect an AI agent](https://aedifex.localhost/docs/developers/mcp) for
+the local and hosted workflows and the standalone `@aedifex/mcp` package.
 
 ## Documentation and support
 
-- [Complete CLI guide](https://editor.pascal.app/docs/developers/local-editor)
-- [Plugin authoring guide](https://editor.pascal.app/docs/developers/plugins)
-- [MCP and AI-agent guide](https://editor.pascal.app/docs/developers/mcp)
+- [Complete CLI guide](https://aedifex.localhost/docs/developers/local-editor)
+- [Plugin authoring guide](https://aedifex.localhost/docs/developers/plugins)
+- [MCP and AI-agent guide](https://aedifex.localhost/docs/developers/mcp)
 - [Open-source repository](https://github.com/pascalorg/editor)
 - [Issues and feature requests](https://github.com/pascalorg/editor/issues)
 - [Discord community](https://discord.gg/XRKsDcpqgS)

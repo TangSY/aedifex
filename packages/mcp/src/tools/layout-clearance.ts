@@ -8,7 +8,7 @@
  * See docs/layout-clearance-error-log.md for regression checklist.
  */
 
-import type { AnyNode } from '@pascal-app/core/schema'
+import type { AnyNode } from '@aedifex/core/schema'
 import {
   aabbsOverlap,
   findBlockedDoors,

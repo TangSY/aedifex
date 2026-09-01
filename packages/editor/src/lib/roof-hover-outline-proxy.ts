@@ -1,4 +1,4 @@
-import { type AnyNodeId, sceneRegistry, useScene } from '@pascal-app/core'
+import { type AnyNodeId, sceneRegistry, useScene } from '@aedifex/core'
 import type * as THREE from 'three'
 
 export const HOVERED_ROOF_SEGMENT_OUTLINE_PROXY_NAME = '__roof-hover-outline-proxy__'

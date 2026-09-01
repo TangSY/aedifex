@@ -1,7 +1,7 @@
 'use client'
 
-import { emitter, useScene } from '@pascal-app/core'
-import { disposeObject3DResources, snapLevelsToTruePositions, useViewer } from '@pascal-app/viewer'
+import { emitter, useScene } from '@aedifex/core'
+import { disposeObject3DResources, snapLevelsToTruePositions, useViewer } from '@aedifex/viewer'
 import { useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
 import * as THREE from 'three'

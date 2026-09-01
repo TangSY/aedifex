@@ -5,9 +5,9 @@ import type {
   DuctSegmentNode,
   PipeFittingNode,
   PipeSegmentNode,
-} from '@pascal-app/core'
-import { EDITOR_LAYER } from '@pascal-app/editor'
-import { disposeObject3DResources } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { EDITOR_LAYER } from '@aedifex/editor'
+import { disposeObject3DResources } from '@aedifex/viewer'
 import { useEffect, useMemo } from 'react'
 import { type Material, Mesh, MeshBasicMaterial } from 'three'
 import { buildDuctFittingGeometry } from '../duct-fitting/geometry'

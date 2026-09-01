@@ -14,7 +14,7 @@ import {
   WallNode,
   WindowNode,
   ZoneNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { registerSceneQueryTools } from './scene-query'
 

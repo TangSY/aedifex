@@ -3,7 +3,7 @@ import {
   type NodeDefinition,
   SolarPanelNode as SolarPanelNodeSchema,
   type SolarPanelNode as SolarPanelNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildSolarPanelFloorplan } from './floorplan'
 import { solarPanelParametrics } from './parametrics'
 import { SolarPanelNode } from './schema'

@@ -15,8 +15,8 @@ describe('command parsing', () => {
 
     expect(result.exitCode).toBe(0)
     expect(result.stdout).toContain('pascal editor')
-    expect(result.stdout).toContain('npx @pascal-app/cli <command>')
-    expect(result.stdout).toContain('npm install --global @pascal-app/cli')
+    expect(result.stdout).toContain('npx @aedifex/cli <command>')
+    expect(result.stdout).toContain('npm install --global @aedifex/cli')
   })
 
   test('shows focused help for MCP commands', async () => {

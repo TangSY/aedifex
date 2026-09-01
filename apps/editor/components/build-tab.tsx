@@ -5,7 +5,7 @@ import {
   type RoofType,
   RoofType as RoofTypeSchema,
   useRegistryVersion,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CATALOG_ITEMS,
   type FloorplanMode,
@@ -16,9 +16,9 @@ import {
   triggerSFX,
   useEditor,
   useFloorplanMode,
-} from '@pascal-app/editor'
-import { useLiquidLineToolOptions } from '@pascal-app/nodes'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useLiquidLineToolOptions } from '@aedifex/nodes'
+import { useViewer } from '@aedifex/viewer'
 import Image from 'next/image'
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import {

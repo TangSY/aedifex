@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNodeId, sceneRegistry, useScene, type WallNode } from '@pascal-app/core'
+import { type AnyNodeId, sceneRegistry, useScene, type WallNode } from '@aedifex/core'
 import {
   drainRebuiltWalls,
   getPendingWallRebuildCount,
@@ -8,7 +8,7 @@ import {
   SCENE_LAYER,
   useViewer,
   type WallMode,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import { type Material, Matrix4, Mesh, type Object3D } from 'three'

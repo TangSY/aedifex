@@ -1,6 +1,6 @@
 'use client'
 
-import { emitter, nodeRegistry } from '@pascal-app/core'
+import { emitter, nodeRegistry } from '@aedifex/core'
 import { X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { getFloorplanNodeExtension } from '../../lib/floorplan/floorplan-extension'

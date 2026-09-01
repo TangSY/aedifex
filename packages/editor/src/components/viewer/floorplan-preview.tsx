@@ -9,9 +9,9 @@ import {
   isNodeKindEnabled,
   nodeRegistry,
   useScene,
-} from '@pascal-app/core'
-import { AnyNode as AnyNodeSchema } from '@pascal-app/core/schema'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { AnyNode as AnyNodeSchema } from '@aedifex/core/schema'
+import { useViewer } from '@aedifex/viewer'
 import { Maximize2, Minus, Plus } from 'lucide-react'
 import {
   type KeyboardEvent as ReactKeyboardEvent,

@@ -8,7 +8,7 @@ import {
   isCurvedWall,
   isSplineFence,
   sampleFenceCenterline,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { FenceNode } from './schema'
 
 /**

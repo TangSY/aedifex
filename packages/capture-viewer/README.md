@@ -1,6 +1,6 @@
-# `@pascal-app/capture-viewer`
+# `@aedifex/capture-viewer`
 
-Reference capture layers for `@pascal-app/viewer`.
+Reference capture layers for `@aedifex/viewer`.
 
 Mount `CaptureRuntime` as a child of `Viewer` and provide a source resolver. The host owns access
 control and transport; the runtime owns source lifecycle, scan-node placement, layer visibility,

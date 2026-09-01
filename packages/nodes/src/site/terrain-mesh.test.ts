@@ -4,7 +4,7 @@ import {
   createTerrainField,
   flattenPatch,
   type TerrainField,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { BufferAttribute } from 'three'
 import { buildTerrainMesh } from './terrain-geometry'
 import {

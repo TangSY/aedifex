@@ -4,22 +4,22 @@ import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test'
 // runs after this one in the same process — capture the real modules and
 // restore them when this file finishes, or route tests downstream get a
 // stub facade without saveScene/loadStoredScene (night-5 CI failure).
-const realOperations = await import('@pascal-app/mcp/operations')
-const realStorage = await import('@pascal-app/mcp/storage')
+const realOperations = await import('@aedifex/mcp/operations')
+const realStorage = await import('@aedifex/mcp/storage')
 afterAll(() => {
-  mock.module('@pascal-app/mcp/operations', () => realOperations)
-  mock.module('@pascal-app/mcp/storage', () => realStorage)
+  mock.module('@aedifex/mcp/operations', () => realOperations)
+  mock.module('@aedifex/mcp/storage', () => realStorage)
 })
 
 describe('getSceneStore', () => {
   beforeEach(() => {
-    mock.module('@pascal-app/mcp/operations', () => ({
+    mock.module('@aedifex/mcp/operations', () => ({
       createSceneOperations: ({ store }: { store: unknown }) => ({
         __store: store,
         hasStore: true,
       }),
     }))
-    mock.module('@pascal-app/mcp/storage', () => {
+    mock.module('@aedifex/mcp/storage', () => {
       let callCount = 0
       return {
         createSceneStore: async (_env?: NodeJS.ProcessEnv) => {

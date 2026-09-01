@@ -1,5 +1,5 @@
 import { Icon } from '@iconify/react'
-import type { ToolHint } from '@pascal-app/core'
+import type { ToolHint } from '@aedifex/core'
 import { Fragment, useSyncExternalStore } from 'react'
 import {
   CONTINUATION_PROFILES,

@@ -5,7 +5,7 @@ import {
   getRoofShapeEaveSides,
   type RoofSegmentNode,
   type RoofType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Shared eave-snap math for the gutter's placement + move tools.

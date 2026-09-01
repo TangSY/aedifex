@@ -1,8 +1,8 @@
 'use client'
 
-import type { AnyNodeId } from '@pascal-app/core'
-import { DEFAULT_LEVEL_HEIGHT, LevelNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import type { AnyNodeId } from '@aedifex/core'
+import { DEFAULT_LEVEL_HEIGHT, LevelNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import {
   AppWindow,
   ArrowRight,

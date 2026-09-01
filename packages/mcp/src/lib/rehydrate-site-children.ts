@@ -1,4 +1,4 @@
-import type { SceneGraph } from '@pascal-app/core/clone-scene-graph'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
 
 /**
  * Previously re-embedded `SiteNode.children` from flat IDs back to full node

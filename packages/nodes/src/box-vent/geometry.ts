@@ -1,4 +1,4 @@
-import { type BoxVentNode, getActiveRoofHeight, type RoofType } from '@pascal-app/core'
+import { type BoxVentNode, getActiveRoofHeight, type RoofType } from '@aedifex/core'
 import * as THREE from 'three'
 import { copyUvToSecondaryChannel } from '../shared/primitive-uv'
 

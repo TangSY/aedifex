@@ -1,4 +1,4 @@
-import type { NodeDefinition } from '@pascal-app/core'
+import type { NodeDefinition } from '@aedifex/core'
 import type { ContextualShortcutHint } from './contextual-help'
 
 export const CONTEXTUAL_HELP_NODE_EXTENSION_KEY = 'pascal:editor/contextual-help'

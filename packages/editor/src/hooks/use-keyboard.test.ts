@@ -5,7 +5,7 @@ import {
   BlockNode,
   clearSceneHistory,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { meshEditScope } from '../lib/interaction/scope'
 import useEditor from '../store/use-editor'
 import useInteractionScope from '../store/use-interaction-scope'

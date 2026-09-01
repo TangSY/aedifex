@@ -2,8 +2,8 @@ import {
   type BlockNode as BlockNodeType,
   createBoxBlockTopology,
   type NodeDefinition,
-} from '@pascal-app/core'
-import type { FloorplanNodeExtension } from '@pascal-app/editor'
+} from '@aedifex/core'
+import type { FloorplanNodeExtension } from '@aedifex/editor'
 import { blockContextualHelp } from './contextual-help'
 import { blockFaceHost } from './face-host'
 import { buildBlockFloorplan } from './floorplan'
@@ -53,7 +53,7 @@ export const blockDefinition: NodeDefinition<typeof BlockNode> = {
   surfaceRole: 'wall',
   snapProfile: 'structural',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       tool: () => import('./tool'),
       preferredView: '3d',
     } satisfies FloorplanNodeExtension<BlockNodeType>,

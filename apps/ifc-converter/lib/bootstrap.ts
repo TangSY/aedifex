@@ -1,5 +1,5 @@
-import { type AnyNodeDefinition, nodeRegistry, registerNode } from '@pascal-app/core'
-import { builtinPlugin } from '@pascal-app/nodes'
+import { type AnyNodeDefinition, nodeRegistry, registerNode } from '@aedifex/core'
+import { builtinPlugin } from '@aedifex/nodes'
 
 // Mirrors apps/editor/lib/bootstrap.ts — registers every built-in node
 // kind synchronously so the registry is populated before the first

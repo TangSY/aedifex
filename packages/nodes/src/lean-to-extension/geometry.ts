@@ -1,4 +1,4 @@
-import type { GeometryContext, LeanToExtensionNode, SurfaceRole } from '@pascal-app/core'
+import type { GeometryContext, LeanToExtensionNode, SurfaceRole } from '@aedifex/core'
 import {
   applyWorldScaleBoxUVs,
   type ColorPreset,
@@ -6,7 +6,7 @@ import {
   type RenderShading,
   resolveMaterialRef,
   resolveSlotDefaultMaterial,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { BoxGeometry, FrontSide, Group, type Material, Mesh, Quaternion, Vector3 } from 'three'
 import { bendLocalPoint, bendRotationYAtLocalX, isCurvedLeanTo } from './arc'
 import { type CanopySide, readFreestandingCanopyJointMetadata } from './canopy-joint'

@@ -6,7 +6,7 @@ import {
   type LevelNode as LevelNodeType,
   resolveBuildingForLevel,
   type StairNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 function sortLevelsByHeight(levels: LevelNodeType[]) {
   return [...levels].sort((left, right) => left.level - right.level)

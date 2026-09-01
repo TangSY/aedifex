@@ -1,4 +1,4 @@
-import { calculateLevelMiters, type WallMiterData, type WallNode } from '@pascal-app/core'
+import { calculateLevelMiters, type WallMiterData, type WallNode } from '@aedifex/core'
 
 // A progressive rebuild drains 8 walls per frame, so a 1081-wall import takes
 // ~136 frames. The miter solution does not change across those frames — nothing

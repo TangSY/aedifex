@@ -6,7 +6,7 @@ import {
   clearSceneHistory,
   LevelNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getHistoryCommandState,
   installHistoryCommandDelegate,

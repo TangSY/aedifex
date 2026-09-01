@@ -5,14 +5,14 @@ scene graph.
 
 ## Package boundaries
 
-- `@pascal-app/capture-protocol` owns versioned manifests, normalized stream descriptors, stable
+- `@aedifex/capture-protocol` owns versioned manifests, normalized stream descriptors, stable
   session locators, incremental packet headers, and the `CaptureSource` interface. It has no React,
   Three.js, authentication, database, or prescribed transport.
-- `@pascal-app/capture-viewer` mounts inside `Viewer` through its existing children slot. It resolves
+- `@aedifex/capture-viewer` mounts inside `Viewer` through its existing children slot. It resolves
   `scan.captureSession`, portals layers into that scan node's registered group, honors per-layer
   visibility, composes declared local-to-parent coordinate frames into session space, and supplies
   reference model, device-motion, point-cloud, and compact color-surface renderers.
-- `@pascal-app/core` stores only the scene anchor: session locator, optional current mesh URL,
+- `@aedifex/core` stores only the scene anchor: session locator, optional current mesh URL,
   placement, opacity, and an extensible visibility map. Raw samples and artifact inventories never
   enter scene JSON.
 - A host owns source resolution, access control, signed URLs, persistence, retention, collaboration,

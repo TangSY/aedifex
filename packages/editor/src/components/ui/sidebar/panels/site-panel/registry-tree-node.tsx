@@ -1,6 +1,6 @@
 import { Icon as IconifyIcon } from '@iconify/react'
-import { type AnyNodeId, nodeRegistry, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, nodeRegistry, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import Image from 'next/image'
 import { memo, useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { useShallow } from 'zustand/react/shallow'

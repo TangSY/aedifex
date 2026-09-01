@@ -1,1 +1,1 @@
-export { ColumnNode } from '@pascal-app/core'
+export { ColumnNode } from '@aedifex/core'

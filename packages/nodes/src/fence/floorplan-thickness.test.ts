@@ -5,7 +5,7 @@ import {
   type GeometryContext,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildFenceFloorplan } from './floorplan'
 import { fenceThicknessAffordance } from './floorplan-affordances'
 import { FenceNode } from './schema'

@@ -1,4 +1,4 @@
-import { isRegistrySelectable, sceneRegistry, useScene } from '@pascal-app/core'
+import { isRegistrySelectable, sceneRegistry, useScene } from '@aedifex/core'
 
 /**
  * Who "owns" a raycast hit, for the hidden-wall nearest-first selection rule

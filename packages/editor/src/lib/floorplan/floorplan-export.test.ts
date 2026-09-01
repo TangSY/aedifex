@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { FloorplanGeometry, NodeCategory } from '@pascal-app/core'
+import type { FloorplanGeometry, NodeCategory } from '@aedifex/core'
 import { splitFloorplanOverlay } from '../../components/editor-2d/renderers/floorplan-registry-layer'
 import { DEFAULT_FLOORPLAN_ANNOTATION_VISIBILITY } from './annotation-visibility'
 import {
@@ -285,14 +285,14 @@ describe('floor plan export policy', () => {
       isFloorplanExportAnnotationGeometry({
         kind: 'group',
         children: [],
-        metadata: { 'pascal:editor/floorplan': { annotationRole: 'measurement' } },
+        metadata: { 'aedifex:editor/floorplan': { annotationRole: 'measurement' } },
       }),
     ).toBe(true)
     expect(
       isFloorplanExportAnnotationGeometry({
         kind: 'group',
         children: [],
-        metadata: { 'pascal:editor/floorplan': { annotationRole: 'manual-dimension' } },
+        metadata: { 'aedifex:editor/floorplan': { annotationRole: 'manual-dimension' } },
       }),
     ).toBe(true)
     expect(isFloorplanExportAnnotationGeometry({ kind: 'polygon', points: [] })).toBe(false)

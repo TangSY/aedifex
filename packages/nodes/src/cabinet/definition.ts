@@ -13,12 +13,12 @@ import type {
   LinearResizeHandle,
   NodeDefinition,
   SceneApi,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CABINET_METRIC_DEFAULTS,
   findLevelAncestorId,
   selectionProxyIdFromMetadata,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { bakeCabinetAnimationClip } from './animation'
 import { buildCabinetFloorplan, buildCabinetModuleFloorplan } from './floorplan'
 import { cabinetModuleFloorplanMoveTarget } from './floorplan-move'

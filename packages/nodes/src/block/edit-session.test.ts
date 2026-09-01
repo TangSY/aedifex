@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { createBoxBlockTopology } from '@pascal-app/core'
+import { createBoxBlockTopology } from '@aedifex/core'
 import useBlockEditSession from './edit-session'
 import type { BlockLastOperation } from './last-operation'
 import { createBlockSelection } from './selection-model'

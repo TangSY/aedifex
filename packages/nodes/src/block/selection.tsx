@@ -7,7 +7,7 @@ import {
   emitter,
   sceneRegistry,
   useLiveNodeOverrides,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   cn,
   EDITOR_LAYER,
@@ -23,7 +23,7 @@ import {
   triggerSFX,
   useEditor,
   useInteractionScope,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { Html } from '@react-three/drei'
 import { createPortal, type ThreeEvent, useFrame, useThree } from '@react-three/fiber'
 import {

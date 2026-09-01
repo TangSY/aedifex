@@ -1,7 +1,7 @@
 'use client'
 
-import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNode, type AnyNodeId, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import type { ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -155,7 +155,7 @@ export function ViewerStage({
     <div
       className={cn('relative h-full w-full overflow-hidden bg-neutral-100', className)}
       data-pascal-navigation-sync={synchronizeNavigation ? 'on' : 'off'}
-      data-pascal-viewer-stage={activeMode}
+      data-aedifex-viewer-stage={activeMode}
     >
       {showCompass && compassHost === undefined ? (
         <div className="pointer-events-none absolute inset-0 z-30" ref={setInternalCompassHost} />
@@ -186,7 +186,7 @@ export function ViewerStage({
                 : 'relative h-full min-h-0 w-full min-w-0',
               threeDClassName,
             )}
-            data-pascal-viewer-3d
+            data-aedifex-viewer-3d
           >
             {children}
           </div>

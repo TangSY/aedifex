@@ -1,4 +1,4 @@
-import type { BlockTopology, MaterialRef } from '@pascal-app/core'
+import type { BlockTopology, MaterialRef } from '@aedifex/core'
 
 export const BLOCK_BODY_SLOT_ID = 'body'
 

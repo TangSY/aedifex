@@ -4,7 +4,7 @@ import {
   type GeometryContext,
   nodeRegistry,
   type QuickMeasurementReport,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 const QUICK_MEASUREMENT_QUERY_INTERVAL_MS = 30
 const QUICK_MEASUREMENT_MIN_DISTANCE_SQ = 1

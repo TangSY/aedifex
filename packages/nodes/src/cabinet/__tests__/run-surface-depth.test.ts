@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import type { AnyNode, GeometryContext } from '@pascal-app/core'
+import type { AnyNode, GeometryContext } from '@aedifex/core'
 import { getRunSpanEnds, getRunSpans } from '../run-layout'
 import { CabinetModuleNode, CabinetNode } from '../schema'
 

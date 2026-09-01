@@ -7,8 +7,8 @@ import {
   terrainFieldOf,
   useLiveTerrain,
   useScene,
-} from '@pascal-app/core'
-import { GRID_LAYER, getSceneTheme, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { GRID_LAYER, getSceneTheme, useViewer } from '@aedifex/viewer'
 import { useFrame } from '@react-three/fiber'
 import { type MutableRefObject, useEffect, useMemo, useRef } from 'react'
 import { BufferAttribute, BufferGeometry, type LineSegments, Vector2 } from 'three'

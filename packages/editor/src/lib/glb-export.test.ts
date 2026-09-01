@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { type AnyNode, DoorNode, registerNode, sceneRegistry } from '@pascal-app/core'
-import { buildDoorPreviewMesh } from '@pascal-app/viewer'
+import { type AnyNode, DoorNode, registerNode, sceneRegistry } from '@aedifex/core'
+import { buildDoorPreviewMesh } from '@aedifex/viewer'
 import * as THREE from 'three'
 import type { GLTFWriter } from 'three/examples/jsm/exporters/GLTFExporter.js'
 import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter.js'

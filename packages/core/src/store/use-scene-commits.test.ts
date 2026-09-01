@@ -1099,14 +1099,14 @@ describe('scene commit boundary', () => {
       // load, so the stored storey height marks the applied snapshot instead.
       [LEVEL_ID]: { ...snapshot.nodes[LEVEL_ID], height: 8 } as AnyNode,
     }
-    snapshot.installedPlugins = ['pascal:trees']
+    snapshot.installedPlugins = ['aedifex:trees']
     const commits: SceneCommit[] = []
     unsubscribe = subscribeSceneCommits((commit) => commits.push(commit))
     useScene.getState().dirtyNodes.clear()
 
     expect(applySceneSnapshot(snapshot, { origin: 'host' })).toBe(true)
     expect((useScene.getState().nodes[LEVEL_ID] as { height?: number }).height).toBe(8)
-    expect(useScene.getState().installedPlugins).toEqual(['pascal:trees'])
+    expect(useScene.getState().installedPlugins).toEqual(['aedifex:trees'])
     expect(commits.map((commit) => commit.origin)).toEqual(['host'])
     expect(useScene.temporal.getState().pastStates).toHaveLength(0)
     expect(useScene.temporal.getState().futureStates).toHaveLength(0)

@@ -1,6 +1,6 @@
 'use client'
 
-import type { AnyNode } from '@pascal-app/core'
+import type { AnyNode } from '@aedifex/core'
 import { Copy, Move, SlidersHorizontal, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import type { MouseEventHandler } from 'react'

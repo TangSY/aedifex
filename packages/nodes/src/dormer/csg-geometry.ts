@@ -6,7 +6,7 @@ import {
   ROOF_SHAPE_DEFAULTS,
   type RoofSegmentNode,
   type WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   ADDITION,
   Brush,
@@ -21,7 +21,7 @@ import {
   remapRoofShellFaces,
   roofCsgDummyMats,
   SUBTRACTION,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import * as THREE from 'three'
 import { buildDormerShellGeometry, getDormerBodyYaw } from './geometry'
 

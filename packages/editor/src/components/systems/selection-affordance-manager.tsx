@@ -5,8 +5,8 @@ import {
   createSceneApi,
   runAsSingleSceneHistoryStep,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { type ComponentType, Suspense, useMemo } from 'react'
 import { getRegistryAffordanceTool } from '../tools/shared/affordance-dispatch'
 import type {

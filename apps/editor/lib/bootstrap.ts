@@ -1,4 +1,3 @@
-import { mintHostPanel, mintPlugin } from '@mint/pascal-plugin'
 import {
   type AnyNodeDefinition,
   discoverPlugins,
@@ -6,12 +5,10 @@ import {
   loadPlugin,
   nodeRegistry,
   registerNode,
-} from '@pascal-app/core'
-import { registerEditorHostPanel } from '@pascal-app/editor'
-import { builtinPlugin } from '@pascal-app/nodes'
-import { bonesHostPanel, bonesPlugin } from '@pascal-app/plugin-bones'
-import { streetscapeHostPanel, streetscapePlugin } from '@pascal-app/plugin-streetscape'
-import { treesHostPanel, treesPlugin } from '@pascal-app/plugin-trees'
+} from '@aedifex/core'
+import { registerEditorHostPanel } from '@aedifex/editor'
+import { builtinPlugin } from '@aedifex/nodes'
+import { treesHostPanel, treesPlugin } from '@aedifex/plugin-trees'
 
 // Idempotency guards: HMR can reload this module, but `registerNode`
 // throws on duplicate kinds. Flags live in the module closure so they
@@ -42,7 +39,7 @@ function loadBuiltinsSync(): void {
   builtinsLoaded = true
   for (const def of builtinPlugin.nodes ?? []) {
     // Skip kinds the registry already has. The module-closure flag
-    // above resets on HMR, but the registry singleton (in @pascal-app/core)
+    // above resets on HMR, but the registry singleton (in @aedifex/core)
     // persists — without this guard we'd throw on the first duplicate.
     if (nodeRegistry.has((def as AnyNodeDefinition).kind)) continue
     registerNode(def as AnyNodeDefinition)
@@ -52,14 +49,14 @@ function loadBuiltinsSync(): void {
     const kinds = Array.from(nodeRegistry.entries(), ([k]) => k)
     if (typeof console !== 'undefined') {
       console.info(
-        `[pascal:registry] loaded ${builtinPlugin.id} v${builtinPlugin.apiVersion} (${kinds.length} kinds: ${kinds.join(', ') || '∅'})`,
+        `[aedifex:registry] loaded ${builtinPlugin.id} v${builtinPlugin.apiVersion} (${kinds.length} kinds: ${kinds.join(', ') || '∅'})`,
       )
     }
     // Expose the registry on globalThis for ad-hoc dev inspection. In
-    // prod the registry is reachable through @pascal-app/core's
+    // prod the registry is reachable through @aedifex/core's
     // exports only.
     if (typeof globalThis !== 'undefined') {
-      ;(globalThis as { __pascalNodeRegistry?: typeof nodeRegistry }).__pascalNodeRegistry =
+      ;(globalThis as { __aedifexNodeRegistry?: typeof nodeRegistry }).__aedifexNodeRegistry =
         nodeRegistry
     }
   }
@@ -79,7 +76,7 @@ export async function loadExternalPlugins(): Promise<void> {
     await loadPlugin(plugin)
   }
   if (isDev() && externals.length > 0 && typeof console !== 'undefined') {
-    console.info(`[pascal:registry] + ${externals.length} discovered plugin(s)`)
+    console.info(`[aedifex:registry] + ${externals.length} discovered plugin(s)`)
   }
 }
 
@@ -88,18 +85,6 @@ export async function loadExternalPlugins(): Promise<void> {
 // so it is registered separately from the core plugin manifest.
 extendPluginDiscovery(async () => [treesPlugin])
 registerEditorHostPanel(treesHostPanel)
-extendPluginDiscovery(async () => [bonesPlugin])
-// Opt-in: Bones ships uninstalled — users enable it per scene from the
-// Plugins panel (engineering X-ray is a specialist view, not a default).
-registerEditorHostPanel({ ...bonesHostPanel, defaultInstalled: false })
-extendPluginDiscovery(async () => [mintPlugin])
-registerEditorHostPanel(mintHostPanel)
-extendPluginDiscovery(async () => [streetscapePlugin])
-// The upstream manifest still names 'Pascal' as creator; credit the author.
-registerEditorHostPanel({
-  ...streetscapeHostPanel,
-  creator: { name: 'Sudhir Yadav', url: 'https://github.com/sudhir9297' },
-})
 
 loadBuiltinsSync()
 void loadExternalPlugins()

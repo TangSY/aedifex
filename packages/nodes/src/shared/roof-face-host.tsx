@@ -7,7 +7,7 @@ import {
   type RoofWallFaceId,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { type ReactNode, useMemo } from 'react'
 
 /**

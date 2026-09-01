@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { BlockNode } from '@pascal-app/core'
-import { createSurfaceRoleMaterial } from '@pascal-app/viewer'
+import { BlockNode } from '@aedifex/core'
+import { createSurfaceRoleMaterial } from '@aedifex/viewer'
 import { Mesh, Ray, Vector3, type Vector3Tuple } from 'three'
 import { applyBlockCommand } from './commands'
 import { buildBlockGeometry } from './geometry'

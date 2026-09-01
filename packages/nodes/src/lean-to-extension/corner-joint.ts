@@ -1,4 +1,4 @@
-import { type AnyNode, type LeanToExtensionNode, unionPolygons, WallNode } from '@pascal-app/core'
+import { type AnyNode, type LeanToExtensionNode, unionPolygons, WallNode } from '@aedifex/core'
 import { bendLocalPoint, isCurvedLeanTo, leanToArcFrameAtLocalX } from './arc'
 import { resolveFreestandingCanopyJoints } from './canopy-joint'
 import { leanToWallLocalPose, resolveLeanToLayout } from './layout'

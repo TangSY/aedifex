@@ -3,7 +3,7 @@ import type {
   AnyNodeId,
   CabinetModuleNode as CabinetModuleNodeType,
   CabinetNode as CabinetNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Sidebar-tree shaping for cabinet runs (`def.tree` on both cabinet

@@ -1,6 +1,6 @@
 'use client'
 
-import { SurfaceMeshPayloadSchema } from '@pascal-app/capture-protocol'
+import { SurfaceMeshPayloadSchema } from '@aedifex/capture-protocol'
 import { useEffect, useMemo } from 'react'
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, Uint16BufferAttribute } from 'three'
 

@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import type { NextConfig } from 'next'
 
 const appDirectory = path.dirname(fileURLToPath(import.meta.url))
-const portableBuild = process.env.PASCAL_PORTABLE_BUILD === '1'
+const portableBuild = process.env.AEDIFEX_PORTABLE_BUILD === '1'
 
 const nextConfig: NextConfig = {
   ...(portableBuild
@@ -28,14 +28,11 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: [
     'three',
-    '@pascal-app/viewer',
-    '@pascal-app/core',
-    '@pascal-app/editor',
-    '@pascal-app/mcp',
-    '@pascal-app/plugin-streetscape',
-    '@pascal-app/plugin-trees',
-    '@mint/pascal-plugin',
-    '@pascal-app/plugin-bones',
+    '@aedifex/viewer',
+    '@aedifex/core',
+    '@aedifex/editor',
+    '@aedifex/mcp',
+    '@aedifex/plugin-trees',
     '@dgreenheck/ez-tree',
   ],
   turbopack: {

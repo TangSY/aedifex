@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { DoorNode, RoofSegmentNode, type RoofType } from '@pascal-app/core'
+import { DoorNode, RoofSegmentNode, type RoofType } from '@aedifex/core'
 import * as THREE from 'three'
 import { buildPrintableRoofSegmentSolids } from './print-roof-solids'
 

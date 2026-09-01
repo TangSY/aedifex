@@ -34,7 +34,7 @@ try {
 
   const installDirectory = path.join(smokeRoot, 'install')
   await run('npm', ['install', '--ignore-scripts', '--prefix', installDirectory, tarballPath])
-  smokeExecutable = path.join(installDirectory, 'node_modules/@pascal-app/cli/dist/bin/pascal.js')
+  smokeExecutable = path.join(installDirectory, 'node_modules/@aedifex/cli/dist/bin/pascal.js')
 
   const started = JSON.parse(
     (
@@ -76,7 +76,7 @@ try {
   )
   if (
     !humanStart.stdout.includes('pascal status') ||
-    humanStart.stdout.includes('npm install --global @pascal-app/cli')
+    humanStart.stdout.includes('npm install --global @aedifex/cli')
   ) {
     throw new Error('direct CLI start output did not use the persistent pascal command')
   }

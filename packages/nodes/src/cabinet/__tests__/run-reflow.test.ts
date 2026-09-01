@@ -7,7 +7,7 @@ import {
   SiteNode,
   useScene,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { cabinetPresetById } from '../presets'
 import { runMaxX, runMinX, runWallConstraints } from '../run-layout'
 import { addCornerRun } from '../run-ops'

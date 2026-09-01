@@ -12,7 +12,7 @@ import {
   resolveLevelId,
   type SceneApi,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 const DEFAULT_CONICAL_ROOF_PITCH = 40
 

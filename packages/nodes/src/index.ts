@@ -1,4 +1,4 @@
-import type { AnyNodeDefinition, Plugin } from '@pascal-app/core'
+import type { AnyNodeDefinition, Plugin } from '@aedifex/core'
 import { blockDefinition } from './block/definition'
 import { boxVentDefinition } from './box-vent'
 import { buildingDefinition } from './building'
@@ -64,7 +64,7 @@ import { zoneDefinition } from './zone'
  * gone — every kind dispatches through the registry.
  */
 export const builtinPlugin: Plugin = {
-  id: 'pascal:core',
+  id: 'aedifex:core',
   apiVersion: 1,
   nodes: [
     // Stage E-complete (full registry path)

@@ -1,4 +1,4 @@
-import type { CabinetModuleNode, CabinetNode } from '@pascal-app/core'
+import type { CabinetModuleNode, CabinetNode } from '@aedifex/core'
 import { moduleMaxX, moduleMinX, sortRunModules } from './run-layout'
 import { minCabinetCarcassHeightForStack } from './stack'
 

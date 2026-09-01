@@ -4,7 +4,7 @@ import {
   type AnyNodeId,
   runAsSingleSceneHistoryStep,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { commitHandleDragPatch } from './handle-drag-history'
 
 type RafFn = (callback: (time: number) => void) => number

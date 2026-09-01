@@ -3,7 +3,7 @@ import {
   type FaceHostCapability,
   getBlockFaceFrame,
   type ItemNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Euler, Matrix4, Quaternion, Vector3 } from 'three'
 
 type FaceBounds = {

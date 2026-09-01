@@ -1,6 +1,6 @@
 'use client'
 
-import { convertIfcToPascal, type PascalSceneGraph } from '@pascal-app/ifc-converter'
+import { convertIfcToPascal, type PascalSceneGraph } from '@aedifex/ifc-converter'
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { availableTestFiles, exampleFileUrl, testFiles } from '@/lib/test-files'

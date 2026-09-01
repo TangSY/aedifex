@@ -1,4 +1,4 @@
-import type { AnyNode, EyebrowVentMaterialRole, MaterialSchema } from '@pascal-app/core'
+import type { AnyNode, EyebrowVentMaterialRole, MaterialSchema } from '@aedifex/core'
 import type { Mesh, Object3D } from 'three'
 import { buildSlotPreviewMaterial, createSlotPaintCapability } from '../shared/slot-paint'
 import { EYEBROW_VENT_MATERIAL_INDEX } from './geometry'

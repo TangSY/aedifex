@@ -189,7 +189,7 @@ The user can walk back with `undo`; `redo` returns them to the proposal.
 
 The agent reports a summary of the changes plus the approximate new
 usable area (from the summary resource), and the user opens the scene in
-`@pascal-app/viewer` to see the renovated 3D layout.
+`@aedifex/viewer` to see the renovated 3D layout.
 
 ## Takeaways
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { emitter } from '@pascal-app/core'
+import { emitter } from '@aedifex/core'
 import {
   computeHeroFraming,
   createSnapshotPipeline,
@@ -15,7 +15,7 @@ import {
   THUMBNAIL_WIDTH,
   temporarilyHideNodeTypes,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import type { CameraControls } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useRef } from 'react'

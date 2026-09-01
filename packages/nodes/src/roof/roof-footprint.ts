@@ -13,7 +13,7 @@ import {
   resolveLevelId,
   type WallEvent,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export type RoofFootprintSource = 'room' | 'walls' | 'draw'
 

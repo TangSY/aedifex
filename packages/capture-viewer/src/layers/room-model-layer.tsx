@@ -1,6 +1,6 @@
 'use client'
 
-import { useGLTFKTX2 } from '@pascal-app/viewer'
+import { useGLTFKTX2 } from '@aedifex/viewer'
 import { useLoader } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 import type { Material, Mesh, Object3D } from 'three'

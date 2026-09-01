@@ -5,7 +5,7 @@ import {
   flattenPatch,
   heightAt,
   type TerrainField,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
 import { createTerrainColliderGeometry } from './terrain-collider'
 

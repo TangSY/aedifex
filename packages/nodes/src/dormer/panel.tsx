@@ -11,7 +11,7 @@ import {
   useLiveNodeOverrides,
   useScene,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   cn,
   createFreshPlacementSubtree,
@@ -20,8 +20,8 @@ import {
   SliderControl,
   triggerSFX,
   useEditor,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { DormerActionsSection } from './panel-actions-section'

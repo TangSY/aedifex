@@ -1,4 +1,4 @@
-import type { BlockTopology } from '@pascal-app/core'
+import type { BlockTopology } from '@aedifex/core'
 import { create } from 'zustand'
 import type { BlockLastOperation } from './last-operation'
 import { type BlockSelectionState, createBlockSelection } from './selection-model'

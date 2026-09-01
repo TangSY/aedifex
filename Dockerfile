@@ -13,10 +13,10 @@ COPY . .
 RUN bun install --frozen-lockfile
 RUN ./node_modules/.bin/turbo run build --filter=editor
 
-# Saved scenes live in SQLite under PASCAL_DATA_DIR; owned by the runtime user so
+# Saved scenes live in SQLite under AEDIFEX_DATA_DIR; owned by the runtime user so
 # the store can create the database on first write.
 RUN mkdir -p /data && chown -R bun:bun /data /app
-ENV PASCAL_DATA_DIR=/data
+ENV AEDIFEX_DATA_DIR=/data
 VOLUME /data
 
 USER bun

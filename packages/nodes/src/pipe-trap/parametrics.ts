@@ -1,4 +1,4 @@
-import type { ParametricDescriptor } from '@pascal-app/core'
+import type { ParametricDescriptor } from '@aedifex/core'
 import type { PipeTrapNode } from './schema'
 
 export const pipeTrapParametrics: ParametricDescriptor<PipeTrapNode> = {

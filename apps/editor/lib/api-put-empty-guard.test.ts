@@ -24,7 +24,7 @@ const POPULATED_GRAPH = {
   rootNodeIds: ['n1'],
 }
 // FILE NAME MATTERS: scene-store-server.test.ts calls mock.module() on
-// '@pascal-app/mcp/operations', and bun module mocks leak process-wide to
+// '@aedifex/mcp/operations', and bun module mocks leak process-wide to
 // every LATER test file in the same worker — this file must sort BEFORE it
 // alphabetically to see the real module (CI runs single-worker).
 const EMPTY_GRAPH = { nodes: {}, rootNodeIds: [] }
@@ -50,7 +50,7 @@ beforeAll(async () => {
   storeServer.__resetSceneStoreForTests()
 
   // Build REAL store+operations from relative SOURCE imports and inject
-  // them: '@pascal-app/mcp/*' subpaths may be mock.module'd by other test
+  // them: '@aedifex/mcp/*' subpaths may be mock.module'd by other test
   // files in the same process (the stubs stick for later dynamic imports
   // on linux), which starved this fixture of saveScene/loadStoredScene in
   // CI three runs straight.

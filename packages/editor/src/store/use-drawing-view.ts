@@ -1,6 +1,6 @@
 'use client'
 
-import type { ConstructionDrawingType } from '@pascal-app/core'
+import type { ConstructionDrawingType } from '@aedifex/core'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 

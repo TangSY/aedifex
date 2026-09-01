@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, test } from 'bun:test'
-import { type AnyNode, type AnyNodeDefinition, nodeRegistry, registerNode } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeDefinition, nodeRegistry, registerNode } from '@aedifex/core'
 import { z } from 'zod'
 import {
   classifyParticipant,

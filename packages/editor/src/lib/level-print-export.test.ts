@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { type AnyNode, RoofSegmentNode, registerNode, sceneRegistry } from '@pascal-app/core'
-import { generateRoofSegmentGeometry } from '@pascal-app/viewer'
+import { type AnyNode, RoofSegmentNode, registerNode, sceneRegistry } from '@aedifex/core'
+import { generateRoofSegmentGeometry } from '@aedifex/viewer'
 import { XMLParser } from 'fast-xml-parser'
 import { strFromU8, unzipSync } from 'fflate'
 import * as THREE from 'three'

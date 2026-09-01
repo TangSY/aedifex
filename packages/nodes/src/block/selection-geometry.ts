@@ -1,4 +1,4 @@
-import type { BlockTopology } from '@pascal-app/core'
+import type { BlockTopology } from '@aedifex/core'
 import type { Camera, Object3D } from 'three'
 import { Vector2, Vector3 } from 'three'
 import { type BlockSelection, blockSelectionVertexIds } from './commands'

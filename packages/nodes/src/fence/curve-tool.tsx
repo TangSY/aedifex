@@ -12,7 +12,7 @@ import {
   getWallMidpointHandlePoint,
   normalizeWallCurveOffset,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CursorSphere,
   getSegmentGridStep,
@@ -20,8 +20,8 @@ import {
   snapScalarToGrid,
   triggerSFX,
   useInteractionScope,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
@@ -30,7 +30,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
  * 1:1 port of the legacy `CurveFenceTool` (editor/components/tools/
  * fence/curve-fence-tool.tsx). Same snap pipeline, same history dance,
  * same activation grace. Imports adjusted to the
- * `@pascal-app/editor` public surface (triggerSFX, markToolCancelConsumed,
+ * `@aedifex/editor` public surface (triggerSFX, markToolCancelConsumed,
  * getSegmentGridStep, snapScalarToGrid). Mounted via
  * `def.affordanceTools.curve` — ToolManager picks it up at runtime,
  * legacy fallback is unused when this kind is registered.

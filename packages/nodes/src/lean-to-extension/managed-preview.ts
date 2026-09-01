@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId, LeanToExtensionNode, SceneApi } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, LeanToExtensionNode, SceneApi } from '@aedifex/core'
 import {
   isManagedLeanToNode,
   isManagedLeanToPost,

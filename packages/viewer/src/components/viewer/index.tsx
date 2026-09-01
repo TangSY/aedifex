@@ -6,7 +6,7 @@ import {
   StairOpeningSystem,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Canvas, extend, type ThreeElement, useFrame, useThree } from '@react-three/fiber'
 import {
   forwardRef,
@@ -414,7 +414,7 @@ const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
   useEffect(() => {
     if (nodeRegistry.size === 0) {
       console.warn(
-        '[viewer] Node registry is empty. Install @pascal-app/nodes and call await loadPlugin(builtinPlugin) before mounting <Viewer>.',
+        '[viewer] Node registry is empty. Install @aedifex/nodes and call await loadPlugin(builtinPlugin) before mounting <Viewer>.',
       )
     }
   }, [])

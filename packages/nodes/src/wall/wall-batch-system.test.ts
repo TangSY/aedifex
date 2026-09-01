@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { sceneRegistry, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { sceneRegistry, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { BufferGeometry, Float32BufferAttribute, Mesh, MeshBasicMaterial } from 'three'
 import { collectTintedWalls, collectWallBatchCandidates } from './wall-batch-system'
 

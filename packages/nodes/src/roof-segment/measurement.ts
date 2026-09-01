@@ -4,7 +4,7 @@ import {
   type MeasurementFeatureBinding,
   type RoofNode,
   type RoofSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { getRoofSegmentPlanLinework, type PlanPt, type PlanSeg } from './floorplan'
 
 function transformPoint(node: RoofSegmentNode, roof: RoofNode, [x, z]: PlanPt) {

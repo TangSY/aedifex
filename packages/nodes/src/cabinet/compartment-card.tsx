@@ -1,6 +1,6 @@
 'use client'
 
-import { SegmentedControl, SliderControl, ToggleControl } from '@pascal-app/editor'
+import { SegmentedControl, SliderControl, ToggleControl } from '@aedifex/editor'
 import { ArrowDown, ArrowUp, Minus, Plus, Trash } from 'lucide-react'
 import {
   type CabinetCompartment,

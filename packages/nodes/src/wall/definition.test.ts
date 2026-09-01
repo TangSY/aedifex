@@ -5,8 +5,8 @@ import {
   RoofNode,
   RoofSegmentNode,
   type SceneApi,
-} from '@pascal-app/core'
-import { getFloorplanNodeExtension } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { getFloorplanNodeExtension } from '@aedifex/editor'
 import { createConicalRoofSectorAboveWall } from '../roof/conical-roof'
 import { wallDefinition } from './definition'
 

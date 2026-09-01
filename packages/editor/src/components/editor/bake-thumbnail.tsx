@@ -7,7 +7,7 @@ import {
   heroCameraPose,
   temporarilyHideNodeTypes,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import { PerspectiveCamera } from 'three'

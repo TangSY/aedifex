@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { GutterNode } from '@pascal-app/core'
+import { GutterNode } from '@aedifex/core'
 import * as THREE from 'three'
 import { buildGutterGeometry } from './geometry'
 import { resolveGutterOutletById } from './outlet-lookup'

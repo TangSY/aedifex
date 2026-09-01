@@ -8,8 +8,8 @@ import {
   resolveLevelId,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { resolveSurfacePlanPointSnap } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { resolveSurfacePlanPointSnap } from '@aedifex/editor'
 import {
   constrainMeasurementPlanEditPoint,
   measurementEditAnchor,

@@ -1,8 +1,8 @@
 'use client'
 
-import type { BlockNode } from '@pascal-app/core'
-import { EDITOR_LAYER } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+import type { BlockNode } from '@aedifex/core'
+import { EDITOR_LAYER } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo } from 'react'
 import { Color, type Material, Mesh } from 'three'
 import { buildBlockGeometry } from './geometry'

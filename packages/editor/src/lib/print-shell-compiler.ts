@@ -5,8 +5,8 @@ import {
   resolveLevelId,
   spatialGridManager,
   type WallNode,
-} from '@pascal-app/core'
-import { disposeObject3DResources } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { disposeObject3DResources } from '@aedifex/viewer'
 import * as THREE from 'three'
 import { buildPrintableRoofSegmentSolids } from './print-roof-solids'
 import {

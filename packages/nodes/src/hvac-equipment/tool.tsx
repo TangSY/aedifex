@@ -6,9 +6,9 @@ import {
   HvacEquipmentNode,
   resolveSupportSlabPatch,
   useScene,
-} from '@pascal-app/core'
-import { isGridSnapActive, isMagneticSnapActive, triggerSFX, useEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { isGridSnapActive, isMagneticSnapActive, triggerSFX, useEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { alignDrawPoint, clearDrawAlignment } from '../shared/draw-alignment'

@@ -1,7 +1,7 @@
 'use client'
 
-import { emitter } from '@pascal-app/core'
-import { SNAPSHOT_MAX_EDGE } from '@pascal-app/viewer'
+import { emitter } from '@aedifex/core'
+import { SNAPSHOT_MAX_EDGE } from '@aedifex/viewer'
 import { Check, Crop, Loader2, Maximize2, Monitor, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useIsMobile } from '../../hooks/use-mobile'

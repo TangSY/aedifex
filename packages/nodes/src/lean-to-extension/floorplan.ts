@@ -11,7 +11,7 @@ import {
   type RoofNode,
   type RoofSegmentNode,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { isLeanToPostOmitted } from '../shared/lean-to-post-omissions'
 import { bendLocalPoint, isCurvedLeanTo } from './arc'
 import { resolveFreestandingCanopyJoints } from './canopy-joint'

@@ -1,4 +1,4 @@
-import type { NodeDefinition } from '@pascal-app/core'
+import type { NodeDefinition } from '@aedifex/core'
 import { buildHvacEquipmentFloorplan } from './floorplan'
 import { buildHvacEquipmentGeometry } from './geometry'
 import { hvacEquipmentParametrics } from './parametrics'

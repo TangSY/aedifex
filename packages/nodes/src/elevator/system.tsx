@@ -1,7 +1,7 @@
 'use client'
 
-import { ElevatorOpeningSystem, stepElevatorRuntimes } from '@pascal-app/core'
-import { ElevatorInteractionSystem } from '@pascal-app/viewer'
+import { ElevatorOpeningSystem, stepElevatorRuntimes } from '@aedifex/core'
+import { ElevatorInteractionSystem } from '@aedifex/viewer'
 import { useFrame } from '@react-three/fiber'
 
 /** Cab travel + door state machine, stepped once per frame. Lives here rather

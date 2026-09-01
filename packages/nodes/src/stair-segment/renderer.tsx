@@ -6,8 +6,8 @@ import {
   type StairSegmentNode,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
-import { getStraightStairSegmentBodyMaterials, useNodeEvents, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { getStraightStairSegmentBodyMaterials, useNodeEvents, useViewer } from '@aedifex/viewer'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import type * as THREE from 'three'
 import { createPlaceholderGeometry } from '../shared/placeholder-geometry'

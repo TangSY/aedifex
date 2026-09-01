@@ -13,8 +13,8 @@ import {
   useLiveNodeOverrides,
   type WallEvent,
   type WallNode,
-} from '@pascal-app/core'
-import { isGridSnapActive, triggerSFX, useEditor } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { isGridSnapActive, triggerSFX, useEditor } from '@aedifex/editor'
 import { useLayoutEffect, useState } from 'react'
 import { leanToExtensionGeometryKey } from './geometry'
 import {

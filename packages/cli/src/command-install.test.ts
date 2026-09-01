@@ -20,7 +20,7 @@ describe('short command installation', () => {
     expect(installed).toBe(true)
     expect(invocation).toEqual({
       command: process.platform === 'win32' ? 'npm.cmd' : 'npm',
-      args: ['install', '--global', '--ignore-scripts', '@pascal-app/cli@1.2.3'],
+      args: ['install', '--global', '--ignore-scripts', '@aedifex/cli@1.2.3'],
     })
   })
 

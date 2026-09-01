@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import * as fs from 'node:fs/promises'
 import * as os from 'node:os'
 import * as path from 'node:path'
-import type { SceneGraph } from '@pascal-app/core/clone-scene-graph'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
 import {
   resolveDefaultDatabasePath,
   SqliteSceneStore,
@@ -123,7 +123,7 @@ describe('SqliteSceneStore', () => {
       materials: {
         mat_1: { id: 'mat_1', name: 'Oak', material: { preset: 'wood' } },
       } as SceneGraph['materials'],
-      installedPlugins: ['pascal:trees'],
+      installedPlugins: ['aedifex:trees'],
     })
     await store.save({ id: 'full', name: 'Full', graph })
 

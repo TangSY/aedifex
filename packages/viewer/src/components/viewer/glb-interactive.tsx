@@ -8,7 +8,7 @@ import {
   type SceneGraph,
   type SliderControl,
   useInteractive,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Html } from '@react-three/drei'
 import { createPortal, useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'

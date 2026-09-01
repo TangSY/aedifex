@@ -11,14 +11,14 @@ import {
   sceneRegistry,
   type WindowNode,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getPascalTextureRef,
   poseDoorMovingParts,
   poseWindowMovingParts,
   SCENE_LAYER,
   snapLevelsToTruePositions,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import type { Object3D } from 'three'
 import * as THREE from 'three'
 import {

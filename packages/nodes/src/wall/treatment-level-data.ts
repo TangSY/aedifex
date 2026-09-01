@@ -3,7 +3,7 @@ import {
   getWallThickness,
   type WallMiterData,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { create } from 'zustand'
 
 const PROUD_KEY_PRECISION = 1e6

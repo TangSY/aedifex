@@ -3,7 +3,7 @@ import {
   useInteractive,
   useScene,
   type WindowInteractiveState,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export const WINDOW_TOGGLE_ANIMATION_MS = 520
 

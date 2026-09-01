@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { type AnyNode, CabinetModuleNode, CabinetNode, LevelNode } from '@pascal-app/core'
+import { type AnyNode, CabinetModuleNode, CabinetNode, LevelNode } from '@aedifex/core'
 import { cabinetCeilingGap } from '../run-ops'
 
 test('ceiling gap resolves the remaining space above a nested tall module', () => {

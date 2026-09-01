@@ -1,4 +1,4 @@
-import type { FloorplanGeometry, FloorplanPoint, GeometryContext } from '@pascal-app/core'
+import type { FloorplanGeometry, FloorplanPoint, GeometryContext } from '@aedifex/core'
 import { INCHES_TO_METERS } from './geometry'
 import type { DuctSegmentNode } from './schema'
 

@@ -1,12 +1,12 @@
 // @ts-expect-error — bun:test is provided by the Bun runtime; viewer does not
 // include Bun ambient types in its production declaration build.
 import { afterEach, describe, expect, mock, test } from 'bun:test'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core'
-import { sceneRegistry, useScene } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId } from '@aedifex/core'
+import { sceneRegistry, useScene } from '@aedifex/core'
 import type { Object3D } from 'three'
 
 // Only the two modules that need a renderer or a React context are mocked.
-// `@pascal-app/core` is deliberately NOT mocked: mock.module replaces a module
+// `@aedifex/core` is deliberately NOT mocked: mock.module replaces a module
 // for the whole test process and Bun never restores it, so faking core here
 // breaks the other viewer suites that run after this file.
 type FrameCallback = (state: unknown, delta: number) => void
