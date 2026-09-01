@@ -39,7 +39,7 @@ function makeDefinition(
     schema: z.object({ type: z.literal(kind) }) as any,
     category: 'utility',
     defaults: () => ({}) as any,
-    capabilities: {},
+    capabilities: { deletable: false },
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
     ...overrides,
   }
@@ -111,7 +111,7 @@ describe('nodeRegistry', () => {
     registerNode(kept)
     await loadPlugin({
       id: 'test:kept-plugin',
-      apiVersion: 1,
+      apiVersion: 2,
       nodes: [makeDefinition('kept-plugin-kind')],
     } as Plugin)
 
@@ -123,7 +123,7 @@ describe('nodeRegistry', () => {
     nodeRegistry._reset()
     await loadPlugin({
       id: 'test:leaked-plugin',
-      apiVersion: 1,
+      apiVersion: 2,
       nodes: [makeDefinition('leaked-plugin-kind')],
     } as Plugin)
 
@@ -213,7 +213,7 @@ describe('loadPlugin', () => {
   test('registers all nodes from a plugin', async () => {
     const plugin: Plugin = {
       id: 'test:plugin',
-      apiVersion: 1,
+      apiVersion: 2,
       nodes: [makeDefinition('a'), makeDefinition('b')],
     }
     await loadPlugin(plugin)
@@ -225,7 +225,7 @@ describe('loadPlugin', () => {
   })
 
   test('enables plugin kinds only when the project has the plugin installed', async () => {
-    await loadPlugin({ id: 'test:plugin', apiVersion: 1, nodes: [makeDefinition('plugin:node')] })
+    await loadPlugin({ id: 'test:plugin', apiVersion: 2, nodes: [makeDefinition('plugin:node')] })
 
     expect(isNodeKindEnabled('plugin:node', [])).toBe(false)
     expect(isNodeKindEnabled('plugin:node', ['test:plugin'])).toBe(true)
@@ -234,18 +234,18 @@ describe('loadPlugin', () => {
   })
 
   test('keeps built-in plugin kinds enabled independently of project installs', async () => {
-    await loadPlugin({ id: 'aedifex:core', apiVersion: 1, nodes: [makeDefinition('wall')] })
+    await loadPlugin({ id: 'aedifex:core', apiVersion: 2, nodes: [makeDefinition('wall')] })
 
     expect(isNodeKindEnabled('wall', [])).toBe(true)
   })
 
   test('handles plugin with no nodes', async () => {
-    await loadPlugin({ id: 'empty', apiVersion: 1 })
+    await loadPlugin({ id: 'empty', apiVersion: 2 })
     expect(nodeRegistry.size).toBe(0)
   })
 
   test('handles plugin with empty nodes array', async () => {
-    await loadPlugin({ id: 'empty', apiVersion: 1, nodes: [] })
+    await loadPlugin({ id: 'empty', apiVersion: 2, nodes: [] })
     expect(nodeRegistry.size).toBe(0)
   })
 
@@ -261,7 +261,7 @@ describe('loadPlugin', () => {
   test('propagates duplicate-kind error from a single plugin in production', async () => {
     const plugin: Plugin = {
       id: 'broken',
-      apiVersion: 1,
+      apiVersion: 2,
       nodes: [makeDefinition('dup'), makeDefinition('dup')],
     }
     await inProduction(() => expect(loadPlugin(plugin)).rejects.toThrow(/duplicate node kind/))
@@ -269,9 +269,9 @@ describe('loadPlugin', () => {
 
   test('propagates duplicate-kind error across plugins in production', async () => {
     await inProduction(async () => {
-      await loadPlugin({ id: 'a', apiVersion: 1, nodes: [makeDefinition('shared')] })
+      await loadPlugin({ id: 'a', apiVersion: 2, nodes: [makeDefinition('shared')] })
       await expect(
-        loadPlugin({ id: 'b', apiVersion: 1, nodes: [makeDefinition('shared')] }),
+        loadPlugin({ id: 'b', apiVersion: 2, nodes: [makeDefinition('shared')] }),
       ).rejects.toThrow(/duplicate node kind/)
     })
   })
@@ -308,7 +308,7 @@ describe('loadPlugin', () => {
     const before = getRegistryVersion()
     await loadPlugin({
       id: 'pack',
-      apiVersion: 1,
+      apiVersion: 2,
       nodes: [makeDefinition('pack:a'), makeDefinition('pack:b')],
     })
     expect(getRegistryVersion()).toBe(before + 2)
@@ -342,7 +342,7 @@ describe('inspector extensions', () => {
 
   test('loadPlugin registers extensions under each declared kind', async () => {
     const extension = makeExtension('test:plugin:eng', ['wall', 'slab'])
-    await loadPlugin({ id: 'test:plugin', apiVersion: 1, inspectorExtensions: [extension] })
+    await loadPlugin({ id: 'test:plugin', apiVersion: 2, inspectorExtensions: [extension] })
 
     expect(getInspectorExtensions('wall')).toEqual([extension])
     expect(getInspectorExtensions('slab')).toEqual([extension])
@@ -352,8 +352,8 @@ describe('inspector extensions', () => {
   test('extensions from separate plugins accumulate in load order', async () => {
     const a = makeExtension('a:eng', ['wall'], { pluginId: 'a' })
     const b = makeExtension('b:eng', ['wall'], { pluginId: 'b' })
-    await loadPlugin({ id: 'a', apiVersion: 1, inspectorExtensions: [a] })
-    await loadPlugin({ id: 'b', apiVersion: 1, inspectorExtensions: [b] })
+    await loadPlugin({ id: 'a', apiVersion: 2, inspectorExtensions: [a] })
+    await loadPlugin({ id: 'b', apiVersion: 2, inspectorExtensions: [b] })
 
     expect(getInspectorExtensions('wall')).toEqual([a, b])
   })
@@ -361,8 +361,8 @@ describe('inspector extensions', () => {
   test('re-registering the same extension id replaces in place (HMR)', async () => {
     const first = makeExtension('test:plugin:eng', ['wall'])
     const second = makeExtension('test:plugin:eng', ['wall'], { title: 'Engineering v2' })
-    await loadPlugin({ id: 'test:plugin', apiVersion: 1, inspectorExtensions: [first] })
-    await loadPlugin({ id: 'test:plugin', apiVersion: 1, inspectorExtensions: [second] })
+    await loadPlugin({ id: 'test:plugin', apiVersion: 2, inspectorExtensions: [first] })
+    await loadPlugin({ id: 'test:plugin', apiVersion: 2, inspectorExtensions: [second] })
 
     const registered = getInspectorExtensions('wall')
     expect(registered).toHaveLength(1)
@@ -378,7 +378,7 @@ describe('inspector extensions', () => {
     const before = getRegistryVersion()
     await loadPlugin({
       id: 'test:plugin',
-      apiVersion: 1,
+      apiVersion: 2,
       inspectorExtensions: [makeExtension('test:plugin:eng', ['wall'])],
     })
     expect(getRegistryVersion()).toBeGreaterThan(before)
@@ -387,7 +387,7 @@ describe('inspector extensions', () => {
   test('_reset clears registered extensions', async () => {
     await loadPlugin({
       id: 'test:plugin',
-      apiVersion: 1,
+      apiVersion: 2,
       inspectorExtensions: [makeExtension('test:plugin:eng', ['wall'])],
     })
     expect(getInspectorExtensions('wall')).toHaveLength(1)

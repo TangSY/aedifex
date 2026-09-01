@@ -15,6 +15,7 @@ import {
 import { matchRoofSegmentMeasurementFeature, roofSegmentMeasurementFeatures } from './measurement'
 import { roofSegmentParametrics } from './parametrics'
 import { RoofSegmentNode } from './schema'
+import { roofSegmentSlots } from './slots'
 
 const SIDE_HANDLE_OFFSET = 0.3
 const HEIGHT_HANDLE_OFFSET = 0.3
@@ -337,6 +338,7 @@ export const roofSegmentDefinition: NodeDefinition<typeof RoofSegmentNode> = {
     selectable: { hitVolume: 'bbox' },
     duplicable: true,
     deletable: true,
+    slots: () => roofSegmentSlots(),
   },
 
   // Bespoke move shared with roof / stair / stair-segment via

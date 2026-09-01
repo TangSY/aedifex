@@ -514,7 +514,7 @@ describe('prepareSceneForExport', () => {
       schemaVersion: 1,
       category: 'fixtures',
       defaults: () => ({}),
-      capabilities: {},
+      capabilities: { deletable: false },
       exportAnimation: ({ node, object }: { node: AnyNode; object: THREE.Object3D }) => {
         const target = object.children[0]!
         const clip = new THREE.AnimationClip(`${node.id}: open`, 1, [

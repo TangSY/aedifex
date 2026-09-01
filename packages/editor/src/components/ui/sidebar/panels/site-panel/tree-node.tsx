@@ -107,6 +107,7 @@ import { SlabTreeNode } from './slab-tree-node'
 import { SolarPanelTreeNode } from './solar-panel-tree-node'
 import { SpawnTreeNode } from './spawn-tree-node'
 import { StairTreeNode } from './stair-tree-node'
+import { resolveRegisteredTreeNodeComponent } from './tree-node-resolution'
 import { WallTreeNode } from './wall-tree-node'
 import { WindowTreeNode } from './window-tree-node'
 import { ZoneTreeNode } from './zone-tree-node'
@@ -200,7 +201,13 @@ export const TreeNode = memo(function TreeNode({ nodeId, depth = 0, isLast }: Tr
   const nodeType = useScene((state) => state.nodes[nodeId]?.type)
   if (shouldHide) return null
   if (!nodeType) return null
-  const Component = getTreeNodeComponent(nodeType)
+  const Component = resolveRegisteredTreeNodeComponent<TreeNodeComponent>({
+    nodeType,
+    components: treeNodeByType,
+    isRegistered: (kind) => nodeRegistry.has(kind),
+    fallback: RegistryTreeNode,
+  })
+  if (!Component) return null
   return <Component depth={depth} isLast={isLast} nodeId={nodeId} />
 })
 

@@ -16,7 +16,7 @@ function stubDef(kind: string, ports: (node: AnyNode) => NodePort[]): void {
     schema: {},
     category: 'utility',
     defaults: () => ({}),
-    capabilities: {},
+    capabilities: { deletable: false },
     ports,
   } as unknown as AnyNodeDefinition)
 }

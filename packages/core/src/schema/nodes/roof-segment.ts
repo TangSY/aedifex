@@ -107,6 +107,7 @@ export const RoofSegmentNode = BaseNode.extend({
   edgeMaterialPreset: z.string().optional(),
   wallMaterial: MaterialSchema.optional(),
   wallMaterialPreset: z.string().optional(),
+  slots: z.record(z.string(), z.string()).optional(),
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   // Rotation around Y axis in radians
   rotation: z.number().default(0),
@@ -843,6 +844,7 @@ export function getEffectiveSegmentSurfaceMaterial(
  */
 export function hasSegmentMaterialOverride(node: RoofSegmentNode): boolean {
   return (
+    Object.keys(node.slots ?? {}).length > 0 ||
     node.material !== undefined ||
     typeof node.materialPreset === 'string' ||
     node.topMaterial !== undefined ||

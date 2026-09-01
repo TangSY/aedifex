@@ -48,7 +48,7 @@ import { windowDefinition } from './window'
 import { zoneDefinition } from './zone'
 
 /**
- * Built-in plugin bundling every node kind shipped with the Pascal editor.
+ * Built-in plugin bundling every node kind shipped with the Aedifex editor.
  *
  * Apps load this once at bootstrap (`loadPlugin(builtinPlugin)`) before
  * mounting the viewer. New built-in nodes are added by creating a folder
@@ -65,7 +65,7 @@ import { zoneDefinition } from './zone'
  */
 export const builtinPlugin: Plugin = {
   id: 'aedifex:core',
-  apiVersion: 1,
+  apiVersion: 2,
   nodes: [
     // Stage E-complete (full registry path)
     shelfDefinition as unknown as AnyNodeDefinition,
@@ -179,7 +179,18 @@ export { pipeSegmentDefinition } from './pipe-segment'
 export { pipeTrapDefinition } from './pipe-trap'
 export { ridgeVentDefinition } from './ridge-vent'
 export { roofDefinition } from './roof'
+export {
+  ROOF_SLOT_ORDER,
+  type RoofSlotId,
+  roofSlots,
+  SLOT_DEFAULTS as ROOF_SLOT_DEFAULTS,
+} from './roof/slots'
 export { roofSegmentDefinition } from './roof-segment'
+export {
+  type RoofSegmentSlotId,
+  roofSegmentSlots,
+  SEGMENT_SLOT_DEFAULTS as ROOF_SEGMENT_SLOT_DEFAULTS,
+} from './roof-segment/slots'
 export { scanDefinition } from './scan'
 export { shelfDefinition } from './shelf'
 export { siteDefinition } from './site'

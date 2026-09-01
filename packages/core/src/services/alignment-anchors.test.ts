@@ -91,7 +91,7 @@ function plainDef(kind: string): AnyNodeDefinition {
     schema: z.object({ type: z.literal(kind) }) as any,
     category: 'utility',
     defaults: () => ({}) as any,
-    capabilities: {},
+    capabilities: { deletable: false },
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
   } as AnyNodeDefinition
 }

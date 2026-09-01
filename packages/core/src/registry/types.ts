@@ -927,7 +927,7 @@ export type InspectorExtension = {
 
 export type Plugin = {
   id: string
-  apiVersion: 1
+  apiVersion: 2
   nodes?: AnyNodeDefinition[]
   /** Sections contributed to the floating node inspector card. */
   inspectorExtensions?: InspectorExtension[]
@@ -1540,7 +1540,7 @@ export type Capabilities = {
   surfaces?: SurfacesConfig
   faceHost?: FaceHostCapability<any>
   duplicable?: boolean | DuplicableConfig
-  deletable?: boolean
+  deletable: boolean
   groupable?: boolean
   selectable?: SelectableConfig
   interactive?: boolean

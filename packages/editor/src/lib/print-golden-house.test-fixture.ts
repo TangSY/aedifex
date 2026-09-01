@@ -107,7 +107,7 @@ export function createPrintGoldenHouseFixture(): PrintGoldenHouseFixture {
       schemaVersion: 1,
       category: 'structure',
       defaults: () => ({}),
-      capabilities: {},
+      capabilities: { deletable: false },
     } as never)
   }
   const groundWalls = [
@@ -161,7 +161,7 @@ export function createPrintGoldenHouseFixture(): PrintGoldenHouseFixture {
       schemaVersion: 1,
       category: 'furnish',
       defaults: () => ({}),
-      capabilities: {},
+      capabilities: { deletable: false },
     } as never)
   }
   const visibleFurniture = {

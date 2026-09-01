@@ -19,7 +19,7 @@ function registerBuildingScopedTestKind() {
     schema: z.object({ type: z.literal(BUILDING_SCOPED_KIND) }) as never,
     category: 'structure',
     defaults: () => ({}),
-    capabilities: {},
+    capabilities: { deletable: false },
     floorplanScope: 'building',
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
   } as AnyNodeDefinition)

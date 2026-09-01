@@ -16,7 +16,7 @@ function registerFixtureKind(category: 'structure' | 'furnish'): string {
     schemaVersion: 1,
     category,
     defaults: () => ({}),
-    capabilities: {},
+    capabilities: { deletable: false },
   } as never)
   return kind
 }

@@ -8,7 +8,7 @@ import { editorHostPanelRegistry } from '../../../../lib/plugin-panels'
 import { Button } from '../../primitives/button'
 
 const PLUGIN_AUTHORING_URL =
-  'https://aedifex.localhost/docs/developers/plugins'
+  'https://editor.aedifex.app/docs/developers/plugins'
 
 function renderPluginIcon(ref: IconRef): ReactNode {
   if (ref.kind === 'url') {
@@ -151,7 +151,7 @@ export function PluginsPanel() {
             rel="noreferrer"
             target="_blank"
           >
-            Create a Pascal plugin
+            Create an Aedifex plugin
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
         </div>
@@ -209,7 +209,7 @@ export function PluginsPanel() {
           rel="noreferrer"
           target="_blank"
         >
-          Create a Pascal plugin
+          Create an Aedifex plugin
           <ExternalLink className="h-3.5 w-3.5" />
         </a>
       </div>
