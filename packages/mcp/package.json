@@ -65,7 +65,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@aedifex/lingo": "npm:@pascal-app/lingo@^0.2.0",
-    "zod": "^4.3.5"
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@aedifex/core": "^0.10.0",

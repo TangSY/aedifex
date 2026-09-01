@@ -144,6 +144,7 @@ export {
   type RoofPlanSegment,
   roofOverlapEntryOwns,
   roofPlanBoundsOverlap,
+  roofPlanOverlapEntryOwns,
 } from './lib/roof-overlap'
 export { resolveSelectionProxyId, selectionProxyIdFromMetadata } from './lib/selection-proxy'
 export {
@@ -405,6 +406,7 @@ export {
   resolveWallBaseElevation,
 } from './systems/wall/wall-base'
 export {
+  constrainWallCurveOffsetToAvoidIntersections,
   getClampedWallCurveOffset,
   getMaxWallCurveOffset,
   getWallArcData,

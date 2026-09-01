@@ -17,7 +17,6 @@ import {
   type TerrainVerb,
   useScene,
   type WallSurfaceSide,
-  type WindowNode,
 } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 import { create } from 'zustand'
@@ -515,6 +514,7 @@ export const DEFAULT_PERSISTED_EDITOR_LAYOUT_STATE: PersistedEditorLayoutState =
     fence: CONTINUATION_PROFILES.fence.default,
     point: CONTINUATION_PROFILES.point.default,
     cabinet: CONTINUATION_PROFILES.cabinet.default,
+    canopy: CONTINUATION_PROFILES.canopy.default,
   },
   showReferenceFloor: false,
   referenceFloorOffset: 1,
@@ -669,6 +669,9 @@ function normalizeContinuationByContext(
     cabinet:
       migrateContinuationMode(state?.continuationByContext?.cabinet, 'cabinet') ??
       CONTINUATION_PROFILES.cabinet.default,
+    canopy:
+      migrateContinuationMode(state?.continuationByContext?.canopy, 'canopy') ??
+      CONTINUATION_PROFILES.canopy.default,
   }
 }
 

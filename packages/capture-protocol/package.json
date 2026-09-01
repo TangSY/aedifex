@@ -25,7 +25,7 @@
     "test": "bun test src"
   },
   "dependencies": {
-    "zod": "^4.3.5"
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@repo/typescript-config": "*",

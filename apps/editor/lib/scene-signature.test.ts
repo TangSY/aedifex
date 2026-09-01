@@ -35,5 +35,7 @@ test('changing any signed field changes the signature', () => {
   expect(
     sceneGraphSignature(graph({ collections: { col_1: { id: 'col_1', nodeIds: [] } } })),
   ).not.toBe(base)
-  expect(sceneGraphSignature(graph({ installedPlugins: ['@aedifex/plugin-trees'] }))).not.toBe(base)
+  expect(sceneGraphSignature(graph({ installedPlugins: ['@aedifex/plugin-trees'] }))).not.toBe(
+    base,
+  )
 })

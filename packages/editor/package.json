@@ -2,6 +2,7 @@
   "name": "@aedifex/editor",
   "version": "0.9.3",
   "description": "Aedifex building editor component",
+  "license": "MIT",
   "type": "module",
   "exports": {
     ".": "./src/index.tsx",
@@ -64,7 +65,7 @@
     "tailwind-merge": "^3.5.0",
     "three-bvh-csg": "^0.0.18",
     "three-mesh-bvh": "~0.9.8",
-    "zod": "^4.3.6",
+    "zod": "4.4.3",
     "zustand": "^5.0.11"
   },
   "devDependencies": {

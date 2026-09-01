@@ -17,7 +17,10 @@ import {
   useState,
 } from 'react'
 import * as THREE from 'three/webgpu'
-import { clearScreenshotRenderer, setScreenshotRenderer } from '../../lib/capture-screenshot'
+import {
+  clearScreenshotRenderer,
+  setScreenshotRenderer,
+} from '../../lib/capture-screenshot'
 import { hasDrawableGeometry } from '../../lib/drawable-geometry'
 import { PERF_OVERLAY_ENABLED, pushGpuSample } from '../../lib/gpu-perf'
 import { applyIsolation, clearIsolation } from '../../lib/isolation'
@@ -102,6 +105,7 @@ function ScreenshotRendererBridge() {
 
   return null
 }
+
 /**
  * Renderer-level safety net against the empty-vertex-buffer crash.
  *

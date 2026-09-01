@@ -25,6 +25,20 @@ export const ROOF_SLOT_DEFAULTS: Record<RoofSlotId, string> = {
   soffit: ROOF_SOFFIT_SLOT_DEFAULT,
 }
 
+export const RoofSupport = z
+  .discriminatedUnion('kind', [
+    z.object({ kind: z.literal('level') }),
+    z.object({
+      kind: z.literal('roof'),
+      roofSegmentId: RoofSegmentNode.shape.id,
+      localPosition: z.tuple([z.number(), z.number()]),
+      curbHeight: z.number().min(0).default(0.5),
+    }),
+  ])
+  .default({ kind: 'level' })
+
+export type RoofSupport = z.infer<typeof RoofSupport>
+
 export const RoofNode = BaseNode.extend({
   id: objectId('roof'),
   type: nodeType('roof'),
@@ -40,6 +54,7 @@ export const RoofNode = BaseNode.extend({
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   // Rotation around Y axis in radians
   rotation: z.number().default(0),
+  support: RoofSupport,
   // Child roof segment IDs
   children: z.array(RoofSegmentNode.shape.id).default([]),
 }).describe(
@@ -49,6 +64,7 @@ export const RoofNode = BaseNode.extend({
   When not being edited, segments are visually combined into a single solid.
   - position: center position of the roof group
   - rotation: rotation around Y axis
+  - support: level placement or an explicit roof-surface attachment
   - children: array of RoofSegmentNode IDs
   `,
 )

@@ -55,6 +55,18 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
   // 4 groups map 1:1 to the roof's 4-material array (see getRoofMaterialArray).
   const placeholderGeometry = useMemo(() => createPlaceholderGeometry(4), [])
 
+  // Segment material precedence, per declared slot:
+  //   1. Segment slot reference.
+  //   2. Segment's legacy role-specific or catch-all material.
+  //   3. Parent roof slot reference.
+  //   4. Parent roof's legacy role-specific or catch-all material.
+  //   5. The themed/catalog default for that slot.
+  //
+  // The 4-slot layout matches getRoofMaterialArray:
+  //   slot 0 → 'edge'  (wall/trim & rake bands)
+  //   slot 1 → 'wall'  (deck top & shingle eave bands)
+  //   slot 2 → 'wall'  (interior)
+  //   slot 3 → 'top'   (shingle / roof surface)
   // biome-ignore lint/correctness/useExhaustiveDependencies: deps deliberately list the build inputs; depending on the whole object would rebuild on unrelated field changes.
   const customMaterial = useMemo(() => {
     const resolveSlot = (slotId: RoofSlotId): THREE.Material | null => {
@@ -103,6 +115,10 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
       return themedArray
     }
 
+    // Some slots have explicit materials; fill the rest from the themed array so
+    // an untextured slot still picks up the scene-theme role colour, not blank white.
+    // Per-role only, then the themed parent slot — no cross-role fallback, so
+    // painting one segment surface never bleeds onto its other surfaces.
     const fallbackAt = (index: number): THREE.Material =>
       themedArray?.[index] ?? new THREE.MeshStandardMaterial()
     return resolved.map((entry, index) => entry ?? fallbackAt(index)) as THREE.Material[]

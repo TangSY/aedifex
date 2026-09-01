@@ -26,6 +26,7 @@ import {
   type WallNode,
 } from '../../schema'
 import type { CollectionId } from '../../schema/collections'
+import { constrainWallCurveOffsetToAvoidIntersections } from '../../systems/wall/wall-curve'
 import { addActiveSceneCommitNodeIds, runWithSceneCommitNodeIds } from '../history-control'
 import type { SceneState } from '../use-scene'
 
@@ -487,14 +488,24 @@ function formatNumericValue(value: number) {
   return String(value)
 }
 
-function numericSanitizeIssuesToMessage(issues: NumericSanitizeIssue[]): string {
-  return issues
-    .map((issue) => {
-      const path = issue.path.map(String).join('.') || '<root>'
-      const to = issue.to === undefined ? '' : ` -> ${formatNumericValue(issue.to)}`
-      return `${path}: ${formatNumericValue(issue.from)} ${issue.action}${to}`
-    })
-    .join('; ')
+export function numericSanitizeIssuesToMessage(
+  issues: NumericSanitizeIssue[] | null | undefined,
+): string {
+  if (!Array.isArray(issues)) return ''
+
+  try {
+    return issues
+      .map((issue) => {
+        const path = Array.isArray(issue?.path)
+          ? issue.path.map(String).join('.') || '<root>'
+          : '<unknown>'
+        const to = issue?.to === undefined ? '' : ` -> ${formatNumericValue(issue.to)}`
+        return `${path}: ${formatNumericValue(issue?.from)} ${issue?.action ?? 'sanitized'}${to}`
+      })
+      .join('; ')
+  } catch {
+    return '<diagnostic unavailable>'
+  }
 }
 
 function warnSanitizedNodeMutation(
@@ -502,11 +513,18 @@ function warnSanitizedNodeMutation(
   nodeId: AnyNodeId,
   issues: NumericSanitizeIssue[],
 ) {
-  console.warn(
-    `[Scene] Sanitized invalid numeric node ${mutation}`,
-    nodeId,
-    numericSanitizeIssuesToMessage(issues),
-  )
+  let message = '<diagnostic unavailable>'
+  try {
+    message = numericSanitizeIssuesToMessage(issues)
+  } catch {
+    // Reporting must never interrupt a node mutation.
+  }
+
+  try {
+    console.warn(`[Scene] Sanitized invalid numeric node ${mutation}`, nodeId, message)
+  } catch {
+    // A broken diagnostic sink must not interrupt a node mutation either.
+  }
 }
 
 function parseCreatedNode(node: AnyNode, parentId: AnyNodeId | null): AnyNode {
@@ -1447,7 +1465,23 @@ const updateNodesActionImpl = (
       const currentNode = nextNodes[id]
       if (!currentNode) continue
       addLeanToHostRoofId(currentNode, nextNodes, roofsToRefresh)
-      const updatedNode = parseUpdatedNode(currentNode, data)
+      const curveOffset =
+        currentNode.type === 'wall' ? (data as Partial<WallNode>).curveOffset : undefined
+      const constrainedData =
+        currentNode.type === 'wall' && typeof curveOffset === 'number'
+          ? {
+              ...data,
+              curveOffset: constrainWallCurveOffsetToAvoidIntersections(
+                currentNode,
+                curveOffset,
+                Object.values(nextNodes).filter(
+                  (node): node is WallNode =>
+                    node.type === 'wall' && node.parentId === currentNode.parentId,
+                ),
+              ),
+            }
+          : data
+      const updatedNode = parseUpdatedNode(currentNode, constrainedData)
       addLeanToHostRoofId(updatedNode, nextNodes, roofsToRefresh)
 
       // Handle Reparenting Logic

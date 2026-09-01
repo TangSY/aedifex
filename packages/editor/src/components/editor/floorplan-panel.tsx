@@ -89,6 +89,7 @@ import {
   type FloorplanNodeTransform as SharedFloorplanNodeTransform,
   worldToFloorplanLocalPoint,
 } from '../../lib/floorplan'
+import { resolveGenericFloorplanGridEventPoint } from '../../lib/floorplan-grid-event-point'
 import { groundHeightAt } from '../../lib/ground-surface'
 import { guideEmitter } from '../../lib/guide-events'
 import { measurementHint, parseMeasurement } from '../../lib/measurement-parser'
@@ -5092,6 +5093,9 @@ export function FloorplanPanel({
     if (building?.type !== 'building') return false
     return building.children.some((cid) => state.nodes[cid]?.type === 'level')
   })
+  // The studio workspace (renders / materials / item builder) is a clean
+  // stage — editor viewport chrome, compass included, stays out of it.
+  const isStudioWorkspace = useEditor((s) => s.workspaceMode === 'studio')
   const elevators = useScene(
     useShallow((state) => {
       const building = currentBuildingId ? state.nodes[currentBuildingId] : null
@@ -9429,10 +9433,14 @@ export function FloorplanPanel({
       // this exclusion the catch-all would emit `grid:move` and re-drive the
       // 3D MoveDoorTool's free-follow, fighting the overlay again.
       if (!isWallBuildActive && !isOpeningMoveActive && isFloorplanGridInteractionActive) {
-        const snappedPoint = getSnappedFloorplanPoint(planPoint)
-        emitFloorplanGridEvent('move', snappedPoint, event)
+        const eventPoint = resolveGenericFloorplanGridEventPoint({
+          point: planPoint,
+          registryToolOwnsSnapping: isRegistryToolBuildActive,
+          snap: getSnappedFloorplanPoint,
+        })
+        emitFloorplanGridEvent('move', eventPoint, event)
         setCursorPoint((previousPoint) =>
-          previousPoint && pointsEqual(previousPoint, snappedPoint) ? previousPoint : snappedPoint,
+          previousPoint && pointsEqual(previousPoint, eventPoint) ? previousPoint : eventPoint,
         )
         return
       }
@@ -9532,6 +9540,7 @@ export function FloorplanPanel({
       // stale closure and float a door symbol while the window tool is armed.
       showOpeningGhost,
       isPolygonBuildActive,
+      isRegistryToolBuildActive,
       isRoofBuildActive,
       isWallBuildActive,
       levelId,
@@ -9878,6 +9887,7 @@ export function FloorplanPanel({
     isOpeningPlacementActive: isOpeningBuildActive && !isOpeningMoveActive,
     isPolygonBuildActive,
     isRoofBuildActive,
+    registryToolOwnsSnapping: isRegistryToolBuildActive,
     isWallBuildActive,
     isZoneBuildActive,
     levelId,
@@ -11136,7 +11146,8 @@ export function FloorplanPanel({
         <FloorplanRegistryActionMenu />
         <FloorplanGroupActionMenu />
 
-        {(levelNode?.type === 'level' || hasAmbientBuildingLevel) &&
+        {!isStudioWorkspace &&
+          (levelNode?.type === 'level' || hasAmbientBuildingLevel) &&
           (compassHost ? (
             createPortal(
               <FloorplanCompassButton

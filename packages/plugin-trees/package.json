@@ -44,7 +44,7 @@
     "react": "^19",
     "three": "^0.185",
     "typescript": "6.0.3",
-    "zod": "^4",
+    "zod": "4.4.3",
     "zustand": "^5"
   },
   "keywords": [

@@ -1,9 +1,10 @@
 'use client'
 
 import { emitter, type FenceNode, isCurvedWall, type WallNode } from '@aedifex/core'
-import { type MouseEvent as ReactMouseEvent, useCallback } from 'react'
+import { type MouseEvent as ReactMouseEvent, useCallback, useEffect } from 'react'
 import { resolveCeilingPlanPointSnap } from '../../lib/ceiling-plan-snap'
 import { alignFloorplanDraftPoint, getPlanPointDistance } from '../../lib/floorplan'
+import { resolveGenericFloorplanGridEventPoint } from '../../lib/floorplan-grid-event-point'
 import { resolveSlabPlanPointSnap } from '../../lib/slab-plan-snap'
 import useAlignmentGuides from '../../store/use-alignment-guides'
 import useEditor, { isAngleSnapActive, isMagneticSnapActive } from '../../store/use-editor'
@@ -55,6 +56,7 @@ type UseFloorplanBackgroundPlacementArgs = {
   isWallBuildActive: boolean
   isZoneBuildActive: boolean
   levelId: string | null
+  registryToolOwnsSnapping: boolean
   roofDraftStart: WallPlanPoint | null
   setCursorPoint: React.Dispatch<React.SetStateAction<WallPlanPoint | null>>
   setFenceDraftEnd: React.Dispatch<React.SetStateAction<WallPlanPoint | null>>
@@ -113,6 +115,7 @@ export function useFloorplanBackgroundPlacement({
   isWallBuildActive,
   isZoneBuildActive,
   levelId,
+  registryToolOwnsSnapping,
   roofDraftStart,
   setCursorPoint,
   setFenceDraftEnd,
@@ -125,6 +128,12 @@ export function useFloorplanBackgroundPlacement({
   walls,
   worldGridSnap,
 }: UseFloorplanBackgroundPlacementArgs) {
+  const roofFootprintSource = useEditor((state) => state.toolDefaults.roof?.footprintSource)
+
+  useEffect(() => {
+    if (isRoofBuildActive && roofFootprintSource !== 'draw') clearRoofPlacementDraft()
+  }, [clearRoofPlacementDraft, isRoofBuildActive, roofFootprintSource])
+
   const handleBackgroundPlacementClick = useCallback(
     (
       planPoint: WallPlanPoint,
@@ -187,6 +196,11 @@ export function useFloorplanBackgroundPlacement({
         })
         emitFloorplanGridEvent('click', snappedPoint, event)
         setCursorPoint(snappedPoint)
+
+        if (roofFootprintSource !== 'draw') {
+          clearRoofPlacementDraft()
+          return true
+        }
 
         if (roofDraftStart) {
           clearRoofPlacementDraft()
@@ -357,9 +371,13 @@ export function useFloorplanBackgroundPlacement({
       // local floor-plan draft handler (column / spawn / shelf / etc.).
       // The tool's `grid:click` subscriber owns the placement.
       if (isFloorplanGridInteractionActive) {
-        const snappedPoint = getSnappedFloorplanPoint(planPoint)
-        emitFloorplanGridEvent('click', snappedPoint, event)
-        setCursorPoint(snappedPoint)
+        const eventPoint = resolveGenericFloorplanGridEventPoint({
+          point: planPoint,
+          registryToolOwnsSnapping,
+          snap: getSnappedFloorplanPoint,
+        })
+        emitFloorplanGridEvent('click', eventPoint, event)
+        setCursorPoint(eventPoint)
         return true
       }
 
@@ -392,6 +410,8 @@ export function useFloorplanBackgroundPlacement({
       isZoneBuildActive,
       levelId,
       roofDraftStart,
+      registryToolOwnsSnapping,
+      roofFootprintSource,
       setCursorPoint,
       setFenceDraftEnd,
       setFenceDraftStart,
