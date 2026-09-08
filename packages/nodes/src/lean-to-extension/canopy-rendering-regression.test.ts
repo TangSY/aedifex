@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, type LeanToExtensionNode, LevelNode } from '@pascal-app/core'
-import { generateRoofSegmentGeometry } from '@pascal-app/viewer'
+import { type AnyNode, type LeanToExtensionNode, LevelNode } from '@aedifex/core'
+import { generateRoofSegmentGeometry } from '@aedifex/viewer'
 import { Matrix4, Mesh, Quaternion, Raycaster, Vector3 } from 'three'
 import { createLeanToAssembly } from './assembly'
 import { resolveFreestandingCanopyJoints } from './canopy-joint'

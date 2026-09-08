@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, type AnyNodeId, type SceneApi, WallNode } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, type SceneApi, WallNode } from '@aedifex/core'
 import { cabinetDefinition } from '../definition'
 import { cabinetQuickActions } from '../quick-actions'
 import { addCabinetModuleSide, addCornerRun } from '../run-ops'

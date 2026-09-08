@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { LevelNode, RoofNode, RoofSegmentNode } from '@pascal-app/core'
+import { LevelNode, RoofNode, RoofSegmentNode } from '@aedifex/core'
 import { resolveConicalRoofPlacement } from './conical-roof-placement'
 
 function sceneWithHost() {

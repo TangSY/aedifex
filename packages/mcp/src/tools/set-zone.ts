@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { AnyNodeId } from '@pascal-app/core/schema'
-import { ZoneNode } from '@pascal-app/core/schema'
+import type { AnyNodeId } from '@aedifex/core/schema'
+import { ZoneNode } from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { ErrorCode, throwMcpError } from './errors'

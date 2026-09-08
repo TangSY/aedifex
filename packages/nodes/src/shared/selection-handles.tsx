@@ -1,7 +1,7 @@
 'use client'
 
-import type { Cursor } from '@pascal-app/core'
-import { ARROW_SCALE, HandleArrow, swallowNextClick } from '@pascal-app/editor'
+import type { Cursor } from '@aedifex/core'
+import { ARROW_SCALE, HandleArrow, swallowNextClick } from '@aedifex/editor'
 import type { ThreeEvent } from '@react-three/fiber'
 import { useThree } from '@react-three/fiber'
 import { useState } from 'react'

@@ -11,7 +11,7 @@ import {
   useLiveTransforms,
   useScene,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   BoxGeometry,
   Group,
@@ -684,7 +684,7 @@ test('legacy wall extensions preserve the viewer-to-nodes dependency boundary', 
   const root = new URL('../../', import.meta.url).pathname
   for (const file of new Bun.Glob('**/*.{ts,tsx}').scanSync(root)) {
     const source = await Bun.file(`${root}${file}`).text()
-    expect(source).not.toMatch(/(?:from|import\s*\()\s*['"]@pascal-app\/nodes/)
+    expect(source).not.toMatch(/(?:from|import\s*\()\s*['"]@aedifex\/nodes/)
   }
   for (const file of ['wall-cutout-cache.ts', 'wall-rebuild-notifications.ts']) {
     const source = await Bun.file(new URL(file, import.meta.url)).text()

@@ -1,4 +1,4 @@
-import { type AnyNode, nodeRegistry } from '@pascal-app/core'
+import { type AnyNode, nodeRegistry } from '@aedifex/core'
 import * as THREE from 'three'
 
 export type PrintContentScope = 'structure' | 'everything'

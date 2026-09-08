@@ -5,7 +5,7 @@ import type {
   CaptureSourceResolver,
   CaptureStreamDescriptor,
   CaptureStreamPacket,
-} from '@pascal-app/capture-protocol'
+} from '@aedifex/capture-protocol'
 import { useCallback, useEffect, useState } from 'react'
 
 export type CaptureSourceState = {

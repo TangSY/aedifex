@@ -16,7 +16,7 @@ import {
   type WallNode,
   type WallSurfaceSide,
   type WallSurfaceSlotId,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { type Material, type Mesh, type Object3D, type Ray, Raycaster } from 'three'
 import {
   buildSlotPreviewMaterial,

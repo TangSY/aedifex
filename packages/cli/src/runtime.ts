@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { CliError } from './errors.js'
 import { withFileLock } from './file-lock.js'
 import { readJsonFile, writeJsonFile } from './json-files.js'
-import type { PascalPaths } from './paths.js'
+import type { AedifexPaths } from './paths.js'
 
 export interface RuntimeManifest {
   schemaVersion: 1
@@ -24,8 +24,8 @@ export interface ActiveRuntime {
 export function resolveBundledRuntimeDirectory(
   environment: NodeJS.ProcessEnv = process.env,
 ): string {
-  if (environment.PASCAL_BUNDLED_RUNTIME_DIR) {
-    return path.resolve(environment.PASCAL_BUNDLED_RUNTIME_DIR)
+  if (environment.AEDIFEX_BUNDLED_RUNTIME_DIR) {
+    return path.resolve(environment.AEDIFEX_BUNDLED_RUNTIME_DIR)
   }
   const moduleDirectory = path.dirname(fileURLToPath(import.meta.url))
   return path.basename(moduleDirectory) === 'dist'
@@ -38,7 +38,7 @@ export async function readRuntimeManifest(directory: string): Promise<RuntimeMan
   try {
     manifest = await readJsonFile<RuntimeManifest>(path.join(directory, 'runtime-manifest.json'))
   } catch {
-    throw new CliError('invalid_runtime', `Invalid Pascal runtime at ${directory}.`)
+    throw new CliError('invalid_runtime', `Invalid Aedifex runtime at ${directory}.`)
   }
   if (
     manifest?.schemaVersion !== 1 ||
@@ -48,7 +48,7 @@ export async function readRuntimeManifest(directory: string): Promise<RuntimeMan
     typeof manifest.healthPath !== 'string' ||
     typeof manifest.mcpHealthPath !== 'string'
   ) {
-    throw new CliError('invalid_runtime', `Invalid Pascal runtime at ${directory}.`)
+    throw new CliError('invalid_runtime', `Invalid Aedifex runtime at ${directory}.`)
   }
   if (!/^[0-9A-Za-z][0-9A-Za-z._-]*$/.test(manifest.version)) {
     throw new CliError('invalid_runtime', `Invalid runtime version: ${manifest.version}`)
@@ -75,7 +75,7 @@ export async function readRuntimeManifest(directory: string): Promise<RuntimeMan
 }
 
 export async function installBundledRuntime(
-  paths: PascalPaths,
+  paths: AedifexPaths,
   sourceDirectory = resolveBundledRuntimeDirectory(),
   options: { activate?: boolean } = {},
 ): Promise<ActiveRuntime> {
@@ -86,7 +86,7 @@ export async function installBundledRuntime(
   return withFileLock(
     path.join(paths.run, 'runtime-install.lock'),
     'install_locked',
-    'Another Pascal runtime installation is active.',
+    'Another Aedifex runtime installation is active.',
     async () => {
       await removeAbandonedInstallDirectories(paths.runtime)
       const installed = await readInstalledManifest(targetDirectory)
@@ -114,7 +114,7 @@ export async function installBundledRuntime(
   )
 }
 
-export async function readActiveRuntime(paths: PascalPaths): Promise<ActiveRuntime | null> {
+export async function readActiveRuntime(paths: AedifexPaths): Promise<ActiveRuntime | null> {
   let active: ActiveRuntime | null
   try {
     active = await readJsonFile<ActiveRuntime>(paths.currentRuntime)
@@ -130,7 +130,7 @@ export async function readActiveRuntime(paths: PascalPaths): Promise<ActiveRunti
   }
   const resolvedDirectory = path.resolve(active.directory)
   if (!resolvedDirectory.startsWith(`${path.resolve(paths.runtime)}${path.sep}`)) {
-    throw new CliError('invalid_runtime', 'The active runtime is outside Pascal runtime storage.')
+    throw new CliError('invalid_runtime', 'The active runtime is outside Aedifex runtime storage.')
   }
   const manifest = await readRuntimeManifest(resolvedDirectory)
   if (manifest.version !== active.version) {
@@ -140,13 +140,13 @@ export async function readActiveRuntime(paths: PascalPaths): Promise<ActiveRunti
 }
 
 export async function activateRuntime(
-  paths: PascalPaths,
+  paths: AedifexPaths,
   version: string,
   directory: string,
 ): Promise<ActiveRuntime> {
   const resolvedDirectory = path.resolve(directory)
   if (!resolvedDirectory.startsWith(`${path.resolve(paths.runtime)}${path.sep}`)) {
-    throw new CliError('invalid_runtime', 'Cannot activate a runtime outside Pascal storage.')
+    throw new CliError('invalid_runtime', 'Cannot activate a runtime outside Aedifex storage.')
   }
   const manifest = await readRuntimeManifest(resolvedDirectory)
   if (manifest.version !== version) {

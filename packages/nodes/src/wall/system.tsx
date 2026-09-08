@@ -1,7 +1,7 @@
 'use client'
 
-import { type AnyNodeId, useLiveNodeOverrides, useScene, type WallNode } from '@pascal-app/core'
-import { timeSpan, WallCutout, WallSystem } from '@pascal-app/viewer'
+import { type AnyNodeId, useLiveNodeOverrides, useScene, type WallNode } from '@aedifex/core'
+import { timeSpan, WallCutout, WallSystem } from '@aedifex/viewer'
 import { useFrame } from '@react-three/fiber'
 import { useEffect } from 'react'
 import {

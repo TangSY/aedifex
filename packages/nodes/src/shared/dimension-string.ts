@@ -3,7 +3,7 @@ import type {
   DimensionTextPosition,
   FloorplanGeometry,
   FloorplanPoint,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export type DimensionStringSegment = {
   witnessStart: FloorplanPoint

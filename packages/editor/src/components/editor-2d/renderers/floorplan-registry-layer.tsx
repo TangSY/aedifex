@@ -25,8 +25,8 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
-import { beginPerfAction, cancelPerfAction, commitPerfAction, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { beginPerfAction, cancelPerfAction, commitPerfAction, useViewer } from '@aedifex/viewer'
 import {
   type ComponentProps,
   memo,

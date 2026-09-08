@@ -1,4 +1,4 @@
-import type { ToolHint } from '@pascal-app/core'
+import type { ToolHint } from '@aedifex/core'
 import { useMemo, useSyncExternalStore } from 'react'
 import type { ContinuationContext } from '../../../lib/continuation'
 import type { SnapContext } from '../../../lib/snapping-mode'

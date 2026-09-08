@@ -8,7 +8,7 @@ import {
   RoofNode,
   RoofSegmentNode,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { resolveConicalLeanToPlacement } from './conical-host'
 import { buildLeanToExtensionFloorplan } from './floorplan'
 import { resolveLeanToWallPlacement } from './layout'

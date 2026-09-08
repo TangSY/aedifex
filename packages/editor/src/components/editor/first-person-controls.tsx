@@ -26,7 +26,7 @@ import {
   sceneRegistry,
   useInteractive,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   BVHEcctrl,
   type BVHEcctrlApi,
@@ -42,7 +42,7 @@ import {
   STAND_FLOAT_HEIGHT,
   useViewer,
   WALKTHROUGH_FOV,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { KeyboardControls } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'

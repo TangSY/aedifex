@@ -12,9 +12,9 @@ import {
   type CaptureStreamPacket,
   captureLayerKey,
   DeviceMotionTrajectorySchema,
-} from '@pascal-app/capture-protocol'
-import { type ScanNode, sceneRegistry, useScene } from '@pascal-app/core'
-import { ErrorBoundary, useNodeEvents, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/capture-protocol'
+import { type ScanNode, sceneRegistry, useScene } from '@aedifex/core'
+import { ErrorBoundary, useNodeEvents, useViewer } from '@aedifex/viewer'
 import { createPortal, useFrame } from '@react-three/fiber'
 import {
   type ComponentType,

@@ -86,7 +86,7 @@ Topology operators preserve assignments deterministically:
 
 ### External plugin renderers
 
-Plugin renderers follow the same four axes through the public `@pascal-app/viewer`
+Plugin renderers follow the same four axes through the public `@aedifex/viewer`
 surface. For an imported hierarchy, capture its authored materials once and apply
 this mapping reactively:
 

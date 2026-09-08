@@ -10,7 +10,7 @@ import {
   useLiveTerrain,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   backdropGradient,
   deepSkyColor,
@@ -19,7 +19,7 @@ import {
   NodeRenderer,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useEffect, useMemo, useRef } from 'react'
 import { BufferAttribute, BufferGeometry, type Group, Path, Shape, ShapeGeometry } from 'three'
 import { cameraPosition, color, float, mix, positionWorld, smoothstep, vec2 } from 'three/tsl'
@@ -389,7 +389,7 @@ export const SiteRenderer = ({ node }: { node: SiteNode }) => {
           raycast={noopRaycast}
           receiveShadow
           rotation={[-Math.PI / 2, 0, 0]}
-          userData={{ pascalExport: 'strip' }}
+          userData={{ aedifexExport: 'strip' }}
         />
       )}
 

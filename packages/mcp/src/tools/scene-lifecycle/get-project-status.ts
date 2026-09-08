@@ -38,7 +38,7 @@ export function registerGetProjectStatus(server: McpServer, operations: SceneOpe
     {
       title: 'Get project status',
       description:
-        'Authoritative status/debug call for a Pascal project: editor URL, browser-visible version, latest saved version, published version, node count, and graph hash.',
+        'Authoritative status/debug call for a Aedifex project: editor URL, browser-visible version, latest saved version, published version, node count, and graph hash.',
       inputSchema: getProjectStatusInput,
       outputSchema: getProjectStatusOutput,
     },

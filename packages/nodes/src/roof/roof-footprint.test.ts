@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { emitter, LevelNode, type WallEvent, WallNode } from '@pascal-app/core'
+import { emitter, LevelNode, type WallEvent, WallNode } from '@aedifex/core'
 import {
   fitRoofFootprint,
   isStandardRoofWallEligible,

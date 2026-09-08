@@ -9,8 +9,8 @@ import {
   type ParamField,
   useScene,
   type ZoneNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Icon } from '@iconify/react'
 import { Move, Trash2 } from 'lucide-react'
 import { type ComponentType, lazy, Suspense, useCallback } from 'react'
@@ -141,7 +141,7 @@ export function ParametricInspector({
   const title = presentation?.label ?? nodeType ?? ''
   const iconNode = renderIcon(presentation?.icon)
   const canMove = !!def.capabilities.movable
-  const canDelete = def.capabilities.deletable !== false
+  const canDelete = def.capabilities.deletable
   const isZone = nodeType === 'zone'
 
   const TrailingSection = parametrics.trailingSection

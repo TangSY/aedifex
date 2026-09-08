@@ -15,9 +15,9 @@ import {
   sceneRegistry,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { DimensionPill, swallowNextClick, triggerSFX, useEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { DimensionPill, swallowNextClick, triggerSFX, useEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { createPortal, type ThreeEvent, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'

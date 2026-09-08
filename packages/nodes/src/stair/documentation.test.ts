@@ -5,12 +5,12 @@ import {
   LevelNode,
   StairNode,
   StairSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   buildFloorplanStairEntry,
   createFloorplanContextExtensions,
   readFloorplanGeometryMetadata,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import {
   buildStairDocumentation,
   resolveStairPlanDirection,

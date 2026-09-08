@@ -11,7 +11,7 @@ import {
   SlabNode,
   spatialGridManager,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { getRoofTopSurfaceY } from '../shared/roof-surface'
 import {
   createLeanToAssembly,

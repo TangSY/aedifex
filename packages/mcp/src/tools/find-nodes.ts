@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { AnyNode, AnyNodeId, AnyNodeType } from '@pascal-app/core/schema'
-import { pointInPolygon } from '@pascal-app/core/spatial-grid'
+import type { AnyNode, AnyNodeId, AnyNodeType } from '@aedifex/core/schema'
+import { pointInPolygon } from '@aedifex/core/spatial-grid'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { NodeIdSchema } from './schemas'

@@ -1,5 +1,5 @@
-import type { NodeDefinition } from '@pascal-app/core'
-import { useScene } from '@pascal-app/core'
+import type { NodeDefinition } from '@aedifex/core'
+import { useScene } from '@aedifex/core'
 import { getRotationAxis, rotateEulerWorld } from '../shared/fitting-rotation'
 import { buildPipeFittingFloorplan } from './floorplan'
 import { buildPipeFittingGeometry } from './geometry'

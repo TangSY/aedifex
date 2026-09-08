@@ -116,8 +116,8 @@ Use this when the kind composes its scene via JSX-only features and never needs 
 ```tsx
 // packages/nodes/src/<kind>/renderer.tsx
 import { useGLTF } from '@react-three/drei'
-import { useRegistry } from '@pascal-app/core'
-import { useNodeEvents } from '@pascal-app/viewer'
+import { useRegistry } from '@aedifex/core'
+import { useNodeEvents } from '@aedifex/viewer'
 
 const FurnitureRenderer = ({ node }: { node: FurnitureNode }) => {
   const ref = useRef<Group>(null!)

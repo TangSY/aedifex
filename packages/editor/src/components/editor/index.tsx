@@ -1,6 +1,5 @@
 'use client'
 
-import { Icon } from '@iconify/react'
 import {
   acquireSceneReadOnlyLease,
   getCatalogMaterialById,
@@ -10,7 +9,7 @@ import {
   initSpatialGridSync,
   spatialGridManager,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type HoverStyles,
   InteractiveSystem,
@@ -19,7 +18,8 @@ import {
   SceneEnvironment,
   useViewer,
   Viewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
+import { Icon } from '@iconify/react'
 import {
   memo,
   Profiler,
@@ -1082,7 +1082,7 @@ const ViewerCanvas = memo(function ViewerCanvas({
   return (
     <ErrorBoundary fallback={<EditorSceneCrashFallback />}>
       {/* `relative` so the floorplan compass (portaled here to stay visible in
-          2d / 3d / split alike) can anchor to this container's bottom-left. */}
+          2d / 3d / split alike) can anchor to this container's top-right. */}
       <div className="relative flex h-full" ref={setViewerAreaNode}>
         <QuickMeasurementHud />
         <DeleteConfirmationDialog />
@@ -1110,7 +1110,7 @@ const ViewerCanvas = memo(function ViewerCanvas({
         {/* 3D viewer — always mounted, hidden via CSS to avoid destroying the WebGL context */}
         <div
           className="relative min-w-0 flex-1 overflow-hidden"
-          data-pascal-viewer-3d
+          data-aedifex-viewer-3d
           ref={viewer3dRef}
           style={{ display: show3d ? undefined : 'none' }}
         >

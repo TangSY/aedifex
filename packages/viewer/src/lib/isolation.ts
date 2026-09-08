@@ -1,7 +1,7 @@
 'use client'
 
-import type { AnyNodeId } from '@pascal-app/core'
-import { sceneRegistry } from '@pascal-app/core'
+import type { AnyNodeId } from '@aedifex/core'
+import { sceneRegistry } from '@aedifex/core'
 import type { Object3D } from 'three'
 import { hideFromScene, showInScene } from './scene-visibility'
 

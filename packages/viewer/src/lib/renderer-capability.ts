@@ -2,6 +2,10 @@ export type RendererCapabilityCanvas = {
   getContext(contextId: 'webgl2'): unknown
 }
 
+type ReleasableWebGlContext = {
+  getExtension?: (name: 'WEBGL_lose_context') => { loseContext?: () => void } | null
+}
+
 /** Mirrors `GPUPowerPreference` without pulling WebGPU ambient types into the declaration build. */
 export type RendererPowerPreference = 'high-performance' | 'low-power'
 
@@ -58,6 +62,14 @@ function releaseDevice(device: unknown) {
   } catch {}
 }
 
+function releaseWebGlContext(context: unknown) {
+  try {
+    ;(context as ReleasableWebGlContext | null)
+      ?.getExtension?.('WEBGL_lose_context')
+      ?.loseContext?.()
+  } catch {}
+}
+
 function withTimeout<Result>(promise: Promise<Result>, timeoutMs: number, operation: string) {
   let timeout: ReturnType<typeof setTimeout>
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -110,7 +122,10 @@ export async function detectRendererCapability({
   if (canvas) {
     try {
       const context = canvas.getContext('webgl2')
-      if (context) return { backend: 'webgl', status: 'supported' }
+      if (context) {
+        releaseWebGlContext(context)
+        return { backend: 'webgl', status: 'supported' }
+      }
     } catch (error) {
       capabilityError ??= error
     }

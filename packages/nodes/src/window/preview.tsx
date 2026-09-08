@@ -1,7 +1,7 @@
 'use client'
 
-import { EDITOR_LAYER } from '@pascal-app/editor'
-import { buildWindowPreviewMesh } from '@pascal-app/viewer'
+import { EDITOR_LAYER } from '@aedifex/editor'
+import { buildWindowPreviewMesh } from '@aedifex/viewer'
 import { useEffect, useMemo } from 'react'
 import { applyGhost } from '../shared/ghost-materials'
 import type { WindowNode } from './schema'

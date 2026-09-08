@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { type AnyNodeId, useLiveNodeOverrides, useScene, type WallNode } from '@pascal-app/core'
+import { type AnyNodeId, useLiveNodeOverrides, useScene, type WallNode } from '@aedifex/core'
 import { resetWallTreatmentLevels, updateWallTreatmentLevels } from './system'
 import { useWallTreatmentLevelData } from './treatment-level-data'
 

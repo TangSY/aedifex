@@ -8,7 +8,7 @@ import {
   type ShelfNode,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   applyFloorplanAlignment,
   getFloorStackPreviewPosition,
@@ -17,7 +17,7 @@ import {
   isMagneticSnapActive,
   triggerSFX,
   type WallPlanPoint,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { createFloorplanCursorResolver } from '../shared/floorplan-cursor'
 
 /**

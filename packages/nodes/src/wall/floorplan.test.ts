@@ -4,8 +4,8 @@ import {
   type FloorplanPalette,
   type GeometryContext,
   WallNode,
-} from '@pascal-app/core'
-import { createFloorplanContextExtensions, readFloorplanGeometryMetadata } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { createFloorplanContextExtensions, readFloorplanGeometryMetadata } from '@aedifex/editor'
 import { buildWallFloorplan } from './floorplan'
 
 const palette: FloorplanPalette = {

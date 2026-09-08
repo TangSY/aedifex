@@ -11,7 +11,7 @@
 // panel never subscribes. Editor-only; reset on pointer-up / cancel /
 // tool-inactive.
 
-import type { WallPlanPoint } from '@pascal-app/core'
+import type { WallPlanPoint } from '@aedifex/core'
 import { create } from 'zustand'
 
 export type FloorplanMarqueeDrag = {

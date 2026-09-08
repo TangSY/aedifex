@@ -1,4 +1,4 @@
-import { sceneRegistry, useScene } from '@pascal-app/core'
+import { sceneRegistry, useScene } from '@aedifex/core'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import { Vector3 } from 'three'
@@ -231,9 +231,9 @@ export const PerfMonitor = () => {
         }
       },
     }
-    ;(window as any).__pascalPerf = probe
+    ;(window as any).__aedifexPerf = probe
     return () => {
-      if ((window as any).__pascalPerf === probe) delete (window as any).__pascalPerf
+      if ((window as any).__aedifexPerf === probe) delete (window as any).__aedifexPerf
     }
   }, [getThree])
   useEffect(() => {

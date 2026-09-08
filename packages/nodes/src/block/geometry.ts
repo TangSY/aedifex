@@ -1,10 +1,10 @@
-import type { BlockFace, BlockNode, BlockTopology, GeometryContext } from '@pascal-app/core'
+import type { BlockFace, BlockNode, BlockTopology, GeometryContext } from '@aedifex/core'
 import {
   type ColorPreset,
   createSurfaceRoleMaterial,
   type RenderShading,
   resolveMaterialRef,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import {
   BufferGeometry,
   Float32BufferAttribute,

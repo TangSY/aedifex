@@ -8,13 +8,13 @@ import {
   resolveLevelId,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   isGridSnapActive,
   isMagneticSnapActive,
   resolveSurfacePlanPointSnap,
   useEditor,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { matchMeasurementFeatureForNode, resolveMeasurementAnchor } from '../measurement/resolve'
 
 const SEMANTIC_FEATURE_SNAP_DISTANCE = 0.2

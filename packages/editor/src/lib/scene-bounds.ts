@@ -11,7 +11,7 @@
  * tree and derives an axis-aligned bounding box on the XZ (plan) plane.
  */
 
-import type { AnyNode } from '@pascal-app/core/schema'
+import type { AnyNode } from '@aedifex/core/schema'
 
 export type SceneBoundsXZ = {
   /** Min [x, z] in world units (meters). */

@@ -5,8 +5,8 @@ import {
   LevelNode,
   StairNode,
   StairSegmentNode,
-} from '@pascal-app/core'
-import { readFloorplanGeometryMetadata } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { readFloorplanGeometryMetadata } from '@aedifex/editor'
 import { buildStairFloorplan } from './floorplan'
 
 function textValues(geometry: FloorplanGeometry | null) {

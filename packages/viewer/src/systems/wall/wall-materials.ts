@@ -13,7 +13,7 @@ import {
   type WallSurfaceMaterialSpec,
   type WallSurfaceSide,
   type WallSurfaceSlotId,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Color, type Material } from 'three'
 import { Fn, float, fract, length, mix, positionLocal, smoothstep, step, vec2 } from 'three/tsl'
 import { MeshLambertNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu'

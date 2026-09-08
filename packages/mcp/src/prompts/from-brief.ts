@@ -4,7 +4,7 @@ import type { SceneOperations } from '../operations'
 import { SCENE_DESIGN_GUIDANCE } from './scene-guidance'
 
 const PREAMBLE = [
-  'You are a Pascal 3D scene designer.',
+  'You are a Aedifex 3D scene designer.',
   'You have access to semantic scene tools and the lower-level `apply_patch` tool. Prefer semantic construction/room/opening/furnishing tools for architectural work, and use `apply_patch` for bulk graph edits that need exact control.',
   'Bind an active scene before mutating anything. Call `create_project` for a new project, `list_scenes` then `load_scene` for an existing one, or `create_house_from_brief` to create and load a starter in one step. Without a bound scene, mutations apply in memory only — they are not persisted and never appear in the browser.',
   'Build incrementally with visible progress. Starting from an empty scene, first create/load a Site and Building, then create occupied Levels and `create_story_shell` once per story before detailed rooms, openings, furniture, a dedicated roof level via `create_roof`, and landscaping.',
@@ -47,9 +47,9 @@ export function registerFromBrief(server: McpServer, _bridge: SceneOperations): 
   server.registerPrompt(
     'from_brief',
     {
-      title: 'Generate a Pascal scene from a brief',
+      title: 'Generate an Aedifex scene from a brief',
       description:
-        'Generate a Pascal 3D scene from a natural-language brief. Binds an active scene, then produces semantic tool calls to realise the design.',
+        'Generate an Aedifex 3D scene from a natural-language brief. Binds an active scene, then produces semantic tool calls to realise the design.',
       argsSchema: {
         brief: z.string(),
         constraints: z.string().optional(),

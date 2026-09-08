@@ -1,6 +1,6 @@
 # IFC Test Files
 
-This directory contains 10 real-world IFC (Industry Foundation Classes) files for testing the IFC to Pascal converter. All files are from open-source repositories and represent actual BIM models exported from professional software like Revit, ArchiCAD, and other authoring tools.
+This directory contains 10 real-world IFC (Industry Foundation Classes) files for testing the IFC to Aedifex converter. All files are from open-source repositories and represent actual BIM models exported from professional software like Revit, ArchiCAD, and other authoring tools.
 
 ## Files
 

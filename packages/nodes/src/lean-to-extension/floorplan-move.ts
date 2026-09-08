@@ -7,8 +7,8 @@ import {
   sampleWallCenterline,
   useLiveNodeOverrides,
   type WallNode,
-} from '@pascal-app/core'
-import { getSegmentGridStep, isGridSnapActive } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { getSegmentGridStep, isGridSnapActive } from '@aedifex/editor'
 import { resolveLeanToEdgeSnapTargets, resolveLeanToMoveProposal } from './layout'
 import { leanToManagedPreviewOverrides } from './managed-preview'
 import { moveLeanToAlongSlabEdge, resolveLeanToPlanPosition } from './placement'

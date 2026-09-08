@@ -1,4 +1,4 @@
-import type { FloorplanGeometry, FloorplanPoint } from '@pascal-app/core'
+import type { FloorplanGeometry, FloorplanPoint } from '@aedifex/core'
 import { resolveFloorplanLabelAngle } from './floorplan-label-angle'
 
 const EXTENSION_START_GAP = 0.075

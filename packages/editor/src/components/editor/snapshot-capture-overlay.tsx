@@ -1,7 +1,7 @@
 'use client'
 
-import { emitter, type SnapshotSavedEvent } from '@pascal-app/core'
-import { SNAPSHOT_MAX_EDGE } from '@pascal-app/viewer'
+import { emitter, type SnapshotSavedEvent } from '@aedifex/core'
+import { SNAPSHOT_MAX_EDGE } from '@aedifex/viewer'
 import {
   Check,
   Crop,
@@ -479,7 +479,7 @@ export function SnapshotCaptureOverlay({ projectId }: { projectId: string }) {
   // and an unlocked wheel keeps scrolling whatever pane it's over.
   useEffect(() => {
     if (!isCaptureMode || cameraNav === 'orbit') return
-    const canvas = document.querySelector<HTMLCanvasElement>('[data-pascal-viewer-3d] canvas')
+    const canvas = document.querySelector<HTMLCanvasElement>('[data-aedifex-viewer-3d] canvas')
     if (!canvas) return
     // `setCaptureFov` rounds to whole degrees; accumulate sub-degree trackpad
     // deltas so slow scrolls still move the lens.

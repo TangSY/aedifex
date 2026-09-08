@@ -18,7 +18,7 @@ import {
   useLiveNodeOverrides,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type ColorPreset,
   configureKtx2Support,
@@ -30,11 +30,11 @@ import {
   type RenderShading,
   resolveCdnUrl,
   resolveMaterialRef,
-  stampPascalTextureRef,
+  stampAedifexTextureRef,
   useItemLightPool,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useAnimations } from '@react-three/drei'
 import { Clone } from '@react-three/drei/core/Clone'
 import { useFrame, useLoader, useThree } from '@react-three/fiber'
@@ -284,7 +284,7 @@ function stampItemTextureReferences(gltf: LoadedItemGltf, src: string) {
         const imageIndex = getItemTextureImageIndex(gltf, texture)
         if (imageIndex === null) continue
         if (
-          stampPascalTextureRef(texture, {
+          stampAedifexTextureRef(texture, {
             kind: 'item-glb',
             src,
             slot,

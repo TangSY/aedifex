@@ -1,4 +1,4 @@
-import type { AssetInput, ItemNode } from '@pascal-app/core'
+import type { AssetInput, ItemNode } from '@aedifex/core'
 import type { PlacementState } from './placement-types'
 
 export function shouldCreateFloorDraft(

@@ -5,7 +5,7 @@ import type {
   CabinetNode,
   IconRef,
   NodeQuickAction,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { moduleSideOpen } from './run-layout'
 import {
   addCabinetModuleSide,

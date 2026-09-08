@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { FloorplanGeometry } from '@pascal-app/core'
+import type { FloorplanGeometry } from '@aedifex/core'
 import PDFDocument from 'pdfkit'
 import { floorplanGeometryMetadata } from './floorplan-extension'
 import { FloorplanPdfDocument } from './floorplan-pdfkit-document'

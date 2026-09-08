@@ -1,4 +1,4 @@
-import { CaptureSessionLocatorSchema } from '@pascal-app/capture-protocol'
+import { CaptureSessionLocatorSchema } from '@aedifex/capture-protocol'
 import { z } from 'zod'
 import { AssetUrl } from '../asset-url'
 import { BaseNode, nodeType, objectId } from '../base'

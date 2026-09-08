@@ -1,6 +1,6 @@
 'use client'
 
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 import { type ForwardedRef, Fragment, forwardRef } from 'react'
 import { formatLinearMeasurement, type MetricNotation } from '../../lib/measurements'
 

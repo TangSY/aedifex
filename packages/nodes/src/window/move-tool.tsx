@@ -16,7 +16,7 @@ import {
   type WallEvent,
   type WindowEvent,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   calculateItemRotation,
   clearPlacementSurface,
@@ -34,7 +34,7 @@ import {
   useEditor,
   useFacingPose,
   useRegistryToolContext,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BoxGeometry, EdgesGeometry, type Group, Vector3 } from 'three'
 import { LineBasicNodeMaterial } from 'three/webgpu'
@@ -498,11 +498,12 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
         getSlabElevation(target.event),
       )
       const ghostYaw = target.itemRotation - wallAngle
+      const wallBaseWorldY = ghostWorldPos[1] - target.clampedY
       setGhostPose({
         position: ghostWorldPos,
         rotationY: ghostYaw,
         tint: placement.tint,
-        floorY: getLevelYOffset() + getSlabElevation(target.event),
+        floorY: wallBaseWorldY,
         side: target.side,
       })
       // Forward-facing triangle (editor-side overlay), in the same building-local
@@ -511,7 +512,7 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
       useFacingPose.getState().set({
         position: [
           ghostWorldPos[0],
-          getLevelYOffset() + getSlabElevation(target.event),
+          wallBaseWorldY,
           ghostWorldPos[2],
         ],
         rotationY: ghostYaw,

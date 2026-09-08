@@ -1,7 +1,7 @@
 import os from 'node:os'
 import path from 'node:path'
 
-export interface PascalPaths {
+export interface AedifexPaths {
   root: string
   runtime: string
   data: string
@@ -16,8 +16,8 @@ export interface PascalPaths {
   mcpToken: string
 }
 
-export function resolvePascalPaths(environment: NodeJS.ProcessEnv = process.env): PascalPaths {
-  const root = path.resolve(environment.PASCAL_HOME || path.join(os.homedir(), '.pascal'))
+export function resolveAedifexPaths(environment: NodeJS.ProcessEnv = process.env): AedifexPaths {
+  const root = path.resolve(environment.AEDIFEX_HOME || path.join(os.homedir(), '.pascal'))
   return {
     root,
     runtime: path.join(root, 'runtime'),
@@ -27,8 +27,8 @@ export function resolvePascalPaths(environment: NodeJS.ProcessEnv = process.env)
     logs: path.join(root, 'logs'),
     state: path.join(root, 'run/editor.json'),
     currentRuntime: path.join(root, 'run/current-runtime.json'),
-    pluginLock: path.join(root, 'pascal.plugins.lock'),
-    database: path.join(root, 'data/pascal.db'),
+    pluginLock: path.join(root, 'aedifex.plugins.lock'),
+    database: path.join(root, 'data/aedifex.db'),
     editorLog: path.join(root, 'logs/editor.log'),
     mcpToken: path.join(root, 'run/mcp-token'),
   }

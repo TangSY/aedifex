@@ -1,6 +1,6 @@
 'use client'
 
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback } from 'react'
 import { getLinearUnitLabel, linearUnitToMeters, metersToLinearUnit } from './measurements'
 

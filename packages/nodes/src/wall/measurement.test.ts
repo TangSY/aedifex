@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { WallNode } from '@pascal-app/core'
+import { WallNode } from '@aedifex/core'
 import {
   matchWallMeasurementFeature,
   resolveWallMeasurementFeature,

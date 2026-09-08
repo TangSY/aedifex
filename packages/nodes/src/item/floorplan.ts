@@ -11,8 +11,8 @@ import {
   type RoofSegmentNode,
   roofFacePointToSegment,
   useLiveTransforms,
-} from '@pascal-app/core'
-import { formatLinearMeasurement, readFloorplanMetricNotationOverride } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { formatLinearMeasurement, readFloorplanMetricNotationOverride } from '@aedifex/editor'
 
 /**
  * Stage C floor-plan builder for item.

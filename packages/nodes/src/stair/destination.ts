@@ -1,4 +1,4 @@
-import type { AnyNode, StairNode } from '@pascal-app/core'
+import type { AnyNode, StairNode } from '@aedifex/core'
 
 /**
  * Computes the stair patch for a destination ("To") switch.

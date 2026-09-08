@@ -1,7 +1,7 @@
 // @ts-expect-error - bun:test is provided by the Bun runtime; viewer does not
 // include Bun globals in its package tsconfig.
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, RoofNode, RoofSegmentNode } from '@pascal-app/core'
+import { type AnyNode, RoofNode, RoofSegmentNode } from '@aedifex/core'
 import * as THREE from 'three'
 import { generateRoofSegmentGeometry } from './roof-system'
 

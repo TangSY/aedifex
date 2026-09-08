@@ -8,7 +8,7 @@ import {
   type NodeDefinition,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { surfacePaintCapability } from '../shared/surface-paint'
 import { downspoutParametrics } from './parametrics'
 import {

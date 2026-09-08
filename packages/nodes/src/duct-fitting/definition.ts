@@ -1,4 +1,4 @@
-import type { NodeDefinition } from '@pascal-app/core'
+import type { NodeDefinition } from '@aedifex/core'
 import { ductBodyPaint, ductBodySlots } from '../shared/duct-body-paint'
 import { rotateFittingNode } from '../shared/fitting-rotation'
 import { buildDuctFittingFloorplan } from './floorplan'

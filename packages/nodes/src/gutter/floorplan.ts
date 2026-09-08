@@ -6,7 +6,7 @@ import type {
   GutterNode,
   RoofNode,
   RoofSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { computeGutterMitres, type GutterWithSegment } from './corner-mitre'
 import { EAVE_TUCK_INWARD } from './eave-snap'
 import { outletDims, outletShapeForProfile, profileFloorMidZ } from './profile-geometry'

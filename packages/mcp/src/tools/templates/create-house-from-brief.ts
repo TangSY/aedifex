@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { cloneSceneGraph } from '@pascal-app/core/clone-scene-graph'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core/schema'
+import { cloneSceneGraph } from '@aedifex/core/clone-scene-graph'
+import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
 import { z } from 'zod'
 import { rehydrateSiteChildren } from '../../lib/rehydrate-site-children'
 import type { SceneOperations } from '../../operations'

@@ -6,8 +6,8 @@ import {
   useInteractive,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { hideFromScene, SCENE_LAYER, showInScene, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { hideFromScene, SCENE_LAYER, showInScene, useViewer } from '@aedifex/viewer'
 import { type Material, Matrix4, type Mesh, type Object3D } from 'three'
 import type { BatchCandidate, BatchEntry } from './types'
 

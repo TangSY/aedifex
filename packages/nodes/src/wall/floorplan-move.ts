@@ -20,7 +20,7 @@ import {
   useScene,
   type WallNode,
   type WallPlanPoint,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getFloorplanWallThickness,
   getSegmentGridStep,
@@ -28,8 +28,8 @@ import {
   snapScalarToGrid,
   useWallMoveGhosts,
   type WallMoveGhostBridge,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import {
   buildBridgeWallCreates,
   buildBridgeWallPreviews,

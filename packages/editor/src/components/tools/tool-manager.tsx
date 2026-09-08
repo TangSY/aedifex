@@ -9,8 +9,8 @@ import {
   type SlabNode,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { type ComponentType, lazy, Suspense, useMemo } from 'react'
 import { siteBoundaryHandlesEnabled } from '../../lib/site-boundary'
 import useEditor, { type Phase, type Tool } from '../../store/use-editor'

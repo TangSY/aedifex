@@ -6,7 +6,7 @@ import {
   type LevelNode,
   spatialGridManager,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 function getBuildingLevels(
   buildingId: string | null | undefined,

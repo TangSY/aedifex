@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { BlockNode } from '@pascal-app/core'
+import { BlockNode } from '@aedifex/core'
 import { blockDefinition } from './definition'
 
 describe('block placement bounds', () => {

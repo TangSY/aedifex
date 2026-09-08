@@ -1,4 +1,4 @@
-import type { AnyNode } from '@pascal-app/core'
+import type { AnyNode } from '@aedifex/core'
 import { create } from 'zustand'
 
 export type PathDraftKind = 'duct-segment' | 'lineset' | 'liquid-line' | 'pipe-segment'

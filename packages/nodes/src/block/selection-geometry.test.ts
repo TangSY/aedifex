@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { BlockTopology } from '@pascal-app/core'
+import type { BlockTopology } from '@aedifex/core'
 import { Object3D, PerspectiveCamera } from 'three'
 import { blockTopologyClientExtent } from './selection-geometry'
 

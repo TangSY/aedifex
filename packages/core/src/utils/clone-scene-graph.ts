@@ -1,8 +1,8 @@
-import { GROUND_SUPPORT_ID } from '../hooks/spatial-grid/floor-placed-elevation'
 import {
   remapConstructionDimensionReferences,
   remapMeasurementReferences,
 } from '../lib/measurement-geometry'
+import { GROUND_SUPPORT_ID } from '../lib/support-host'
 import type { AnyNode, AnyNodeId } from '../schema'
 import { generateId } from '../schema/base'
 import type { Collection, CollectionId } from '../schema/collections'

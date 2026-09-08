@@ -1,1 +1,1 @@
-export { LeanToExtensionNode } from '@pascal-app/core'
+export { LeanToExtensionNode } from '@aedifex/core'

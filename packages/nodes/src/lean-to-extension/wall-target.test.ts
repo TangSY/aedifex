@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { DoorNode, WallNode } from '@pascal-app/core'
+import { DoorNode, WallNode } from '@aedifex/core'
 import { Object3D, Vector3 } from 'three'
 import { resolveLeanToDoorWallTarget } from './wall-target'
 

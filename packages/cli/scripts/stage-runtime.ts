@@ -16,7 +16,7 @@ const packageJson = JSON.parse(
   version: string
 }
 
-await chmod(path.join(packageDirectory, 'dist/bin/pascal.js'), 0o755)
+await chmod(path.join(packageDirectory, 'dist/bin/aedifex.js'), 0o755)
 await assertFile(path.join(standaloneAppDirectory, 'server.js'))
 await rm(outputDirectory, { recursive: true, force: true })
 await mkdir(path.dirname(outputDirectory), { recursive: true })
@@ -49,7 +49,7 @@ await writeFile(
       schemaVersion: 1,
       version: packageJson.version,
       entrypoint: 'apps/editor/server.js',
-      mcpEntrypoint: 'services/pascal-mcp.mjs',
+      mcpEntrypoint: 'services/aedifex-mcp.mjs',
       healthPath: '/api/health',
       mcpHealthPath: '/health',
     },
@@ -58,16 +58,16 @@ await writeFile(
   )}\n`,
 )
 
-console.log(`Staged Pascal editor runtime ${packageJson.version} at ${outputDirectory}`)
+console.log(`Staged Aedifex editor runtime ${packageJson.version} at ${outputDirectory}`)
 
 async function bundleMcpServer(runtimeDirectory: string, version: string): Promise<void> {
-  const output = path.join(runtimeDirectory, 'services/pascal-mcp.mjs')
+  const output = path.join(runtimeDirectory, 'services/aedifex-mcp.mjs')
   await mkdir(path.dirname(output), { recursive: true })
   const child = spawn(
     process.execPath,
     [
       'build',
-      path.join(repositoryRoot, 'packages/mcp/src/bin/pascal-mcp.ts'),
+      path.join(repositoryRoot, 'packages/mcp/src/bin/aedifex-mcp.ts'),
       '--outfile',
       output,
       '--target',
@@ -75,7 +75,7 @@ async function bundleMcpServer(runtimeDirectory: string, version: string): Promi
       '--format',
       'esm',
       '--define',
-      `process.env.PASCAL_MCP_VERSION=${JSON.stringify(version)}`,
+      `process.env.AEDIFEX_MCP_VERSION=${JSON.stringify(version)}`,
     ],
     { stdio: ['ignore', 'ignore', 'pipe'] },
   )
@@ -86,7 +86,7 @@ async function bundleMcpServer(runtimeDirectory: string, version: string): Promi
     child.once('exit', (code) => resolve(code ?? 1))
   })
   if (exitCode !== 0) {
-    throw new Error(`Unable to bundle the Pascal MCP server: ${Buffer.concat(stderr).toString()}`)
+    throw new Error(`Unable to bundle the Aedifex MCP server: ${Buffer.concat(stderr).toString()}`)
   }
 }
 
@@ -95,7 +95,7 @@ async function assertFile(filePath: string): Promise<void> {
     await readFile(filePath)
   } catch {
     throw new Error(
-      `standalone editor build not found at ${filePath}; run PASCAL_PORTABLE_BUILD=1 bun run build from apps/editor first`,
+      `standalone editor build not found at ${filePath}; run AEDIFEX_PORTABLE_BUILD=1 bun run build from apps/editor first`,
     )
   }
 }

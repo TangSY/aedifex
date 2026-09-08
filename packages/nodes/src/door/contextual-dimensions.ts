@@ -1,4 +1,4 @@
-import type { DoorNode, FloorplanGeometry, GeometryContext } from '@pascal-app/core'
+import type { DoorNode, FloorplanGeometry, GeometryContext } from '@aedifex/core'
 import { buildWallHostedOpeningContextualDimensions } from '../wall/contextual-dimensions'
 
 export function buildDoorContextualDimensions(

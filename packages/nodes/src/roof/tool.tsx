@@ -20,7 +20,7 @@ import {
   type WallEvent,
   type WallNode,
   wallSegmentAnchors,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CursorSphere,
   clearSurfacePlanSnapFeedback,
@@ -35,8 +35,8 @@ import {
   useFloorplanDraftPreview,
   useInteractionScope,
   useRegistryToolContext,
-} from '@pascal-app/editor'
-import { generateRoofSegmentGeometry, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { generateRoofSegmentGeometry, useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import * as THREE from 'three'
 import {

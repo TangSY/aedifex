@@ -12,14 +12,14 @@ describe('editorHostPanelRegistry', () => {
 
   test('maps registered node kinds back to their owning host panel', () => {
     registerEditorHostPanel({
-      id: 'pascal:trees:trees',
+      id: 'aedifex:trees:trees',
       label: 'Nature',
       icon: { kind: 'url', src: '/nature.webp' },
       component: async () => ({ default: () => null }),
       kinds: ['trees:tree', 'trees:flower', 'trees:grass'],
     })
 
-    expect(editorHostPanelRegistry.panelForKind('trees:flower')).toBe('pascal:trees:trees')
+    expect(editorHostPanelRegistry.panelForKind('trees:flower')).toBe('aedifex:trees:trees')
     expect(editorHostPanelRegistry.panelForKind('wall')).toBeUndefined()
   })
 })
@@ -36,11 +36,11 @@ describe('managedPluginIds', () => {
   test('counts plugins, not panels — one plugin with two panels is one plugin', () => {
     expect(
       managedPluginIds([
-        panel('pascal:boots:game', 'pascal:boots'),
-        panel('pascal:boots:keep', 'pascal:boots'),
-        panel('pascal:trees:nature', 'pascal:trees'),
+        panel('aedifex:boots:game', 'aedifex:boots'),
+        panel('aedifex:boots:keep', 'aedifex:boots'),
+        panel('aedifex:trees:nature', 'aedifex:trees'),
       ]),
-    ).toEqual(['pascal:boots', 'pascal:trees'])
+    ).toEqual(['aedifex:boots', 'aedifex:trees'])
   })
 
   test("the editor's own panels are not plugins", () => {
@@ -78,7 +78,7 @@ describe('showsPluginManager', () => {
 
   test('a writable scene always keeps it, even with zero plugins', () => {
     // The empty state is still useful to an owner: it is where "Create a
-    // Pascal plugin" lives.
+    // Aedifex plugin" lives.
     expect(
       showsPluginManager({ managedPluginCount: 0, readOnly: false, workspaceMode: 'edit' }),
     ).toBe(true)

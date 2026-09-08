@@ -7,12 +7,12 @@ import {
   resolveCeilingHeight,
   type SceneApi,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   clearStructuralElevationGuide,
   publishStructuralElevationGuide,
   resolveStructuralElevationSnap,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { polygonMeasurementFeatures } from '../shared/polygon-measurement'
 import { buildCeilingFloorplan } from './floorplan'
 import {

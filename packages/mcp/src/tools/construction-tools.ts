@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { resolveStairTotalRise } from '@pascal-app/core'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core/schema'
+import { resolveStairTotalRise } from '@aedifex/core'
+import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
 import {
   CeilingNode,
   getActiveRoofHeight,
@@ -11,7 +11,7 @@ import {
   StairNode,
   StairSegmentNode,
   WallNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { liveSyncOutput, persistencePayload, publishLiveSceneSnapshot } from './live-sync'

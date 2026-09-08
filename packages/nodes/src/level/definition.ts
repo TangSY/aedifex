@@ -2,7 +2,7 @@ import {
   DEFAULT_LEVEL_HEIGHT,
   LevelNode as LevelNodeSchema,
   type NodeDefinition,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { levelParametrics } from './parametrics'
 import { LevelNode } from './schema'
 

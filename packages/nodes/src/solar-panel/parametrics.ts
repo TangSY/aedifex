@@ -1,4 +1,4 @@
-import type { ParametricDescriptor } from '@pascal-app/core'
+import type { ParametricDescriptor } from '@aedifex/core'
 import type { SolarPanelNode } from './schema'
 
 export const solarPanelParametrics: ParametricDescriptor<SolarPanelNode> = {

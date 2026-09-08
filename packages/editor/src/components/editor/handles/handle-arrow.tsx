@@ -1,7 +1,7 @@
 'use client'
 
-import { type Cursor, emitter } from '@pascal-app/core'
-import { markPureRaycast } from '@pascal-app/viewer'
+import { type Cursor, emitter } from '@aedifex/core'
+import { markPureRaycast } from '@aedifex/viewer'
 import type { ThreeEvent } from '@react-three/fiber'
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import {

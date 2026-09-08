@@ -40,7 +40,7 @@ export function registerCreateProject(server: McpServer, operations: SceneOperat
     {
       title: 'Create project',
       description:
-        'Create a browser-visible Pascal project for the authenticated user. Use this before save_scene when the user asks for a new project.',
+        'Create a browser-visible Aedifex project for the authenticated user. Use this before save_scene when the user asks for a new project.',
       inputSchema: createProjectInput,
       outputSchema: createProjectOutput,
     },

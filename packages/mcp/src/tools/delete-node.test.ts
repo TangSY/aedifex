@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { WallNode } from '@pascal-app/core/schema'
+import { WallNode } from '@aedifex/core/schema'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { registerDeleteNode } from './delete-node'
 

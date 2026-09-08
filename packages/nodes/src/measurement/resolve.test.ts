@@ -9,7 +9,7 @@ import {
   type RoofSegmentNode,
   registerNode,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { roofSegmentDefinition } from '../roof-segment/definition'
 import { wallDefinition } from '../wall/definition'
 import { remapMeasurementReferences, resolveMeasurementNode } from './resolve'

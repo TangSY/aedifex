@@ -7,7 +7,7 @@ import {
   useScene,
   type ZoneNode,
   type ZoneQuantityValue,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   formatAreaLabel,
   formatLinearMeasurement,
@@ -15,8 +15,8 @@ import {
   MetricControl,
   PanelSection,
   ToggleControl,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 

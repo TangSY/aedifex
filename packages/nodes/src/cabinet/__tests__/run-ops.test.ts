@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, type AnyNodeId, type SceneApi, WallNode, ZoneNode } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, type SceneApi, WallNode, ZoneNode } from '@aedifex/core'
 import { runLocalToPlan } from '../run-layout'
 import {
   addCabinetModuleSide,

@@ -7,8 +7,8 @@
  * See docs/layout-clearance-error-log.md for pitfalls (levels, gap sign, scale).
  */
 
-import type { AnyNode } from '@pascal-app/core/schema'
-import { getScaledDimensions } from '@pascal-app/core/schema'
+import type { AnyNode } from '@aedifex/core/schema'
+import { getScaledDimensions } from '@aedifex/core/schema'
 import { type Vec2, wallLength } from './geometry'
 
 export type PlanAabb = {

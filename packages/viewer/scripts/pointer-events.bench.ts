@@ -1,7 +1,7 @@
 // Run from the repo root: bun run packages/viewer/scripts/pointer-events.bench.ts
 import { _roots, createRoot, type Instance, events as stockEvents } from '@react-three/fiber'
 import * as THREE from 'three'
-import { createPascalPointerEvents } from '../src/lib/pointer-events'
+import { createAedifexPointerEvents } from '../src/lib/pointer-events'
 
 const warmups = 50
 const samples = 200
@@ -61,7 +61,7 @@ async function fixture(factory: typeof stockEvents) {
 }
 
 const stock = await fixture(stockEvents)
-const cached = await fixture(createPascalPointerEvents)
+const cached = await fixture(createAedifexPointerEvents)
 const timings = { stock: [] as number[], cached: [] as number[] }
 for (let i = -warmups; i < samples; i++) {
   // Alternate order to keep warm-up and scheduling effects balanced.

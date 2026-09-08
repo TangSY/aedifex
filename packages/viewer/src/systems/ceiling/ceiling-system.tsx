@@ -7,7 +7,7 @@ import {
   sceneRegistry,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { mergeSurfaceHolePolygons } from '../surface-hole-geometry'

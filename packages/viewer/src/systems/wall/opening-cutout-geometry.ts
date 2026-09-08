@@ -1,4 +1,4 @@
-import type { DoorNode, WindowNode } from '@pascal-app/core'
+import type { DoorNode, WindowNode } from '@aedifex/core'
 import * as THREE from 'three'
 
 export type OpeningCutoutNode = DoorNode | WindowNode

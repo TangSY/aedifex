@@ -3,8 +3,8 @@ import { ClientBootstrap } from './client-bootstrap'
 import './globals.css'
 
 export const metadata = {
-  title: 'IFC → Pascal Converter',
-  description: 'Convert IFC building models into Pascal scene-graph JSON.',
+  title: 'IFC → Aedifex Converter',
+  description: 'Convert IFC building models into Aedifex scene-graph JSON.',
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {

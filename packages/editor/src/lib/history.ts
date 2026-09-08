@@ -1,5 +1,5 @@
-import { useLiveNodeOverrides, useLiveTransforms, useScene } from '@pascal-app/core'
-import { markPerfAction } from '@pascal-app/viewer'
+import { useLiveNodeOverrides, useLiveTransforms, useScene } from '@aedifex/core'
+import { markPerfAction } from '@aedifex/viewer'
 
 export type HistoryCommandState = {
   canRedo: boolean

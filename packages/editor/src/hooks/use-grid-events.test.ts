@@ -1,6 +1,6 @@
 import { expect, spyOn, test } from 'bun:test'
-import { emitter, type GridEvent } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { emitter, type GridEvent } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { _roots, act, createRoot } from '@react-three/fiber'
 import { createElement } from 'react'
 import { PerspectiveCamera, type WebGLRenderer } from 'three'

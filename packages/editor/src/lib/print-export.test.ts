@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { type AnyNode, sceneRegistry } from '@pascal-app/core'
+import { type AnyNode, sceneRegistry } from '@aedifex/core'
 import * as THREE from 'three'
 import { prepareSceneForExport } from './glb-export'
 import {

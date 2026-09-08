@@ -5,8 +5,8 @@ import type {
   LevelNode,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
-import { type FloorplanSchedule, withFloorplanGeometryMetadata } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { type FloorplanSchedule, withFloorplanGeometryMetadata } from '@aedifex/editor'
 import {
   type ConstructionLengthProfile,
   type ConstructionLinearUnit,

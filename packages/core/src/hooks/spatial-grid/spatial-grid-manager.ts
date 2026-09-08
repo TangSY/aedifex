@@ -1,4 +1,5 @@
 import { getRenderableSlabPolygon } from '../../lib/slab-polygon'
+import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import { levelBaseElevationAt } from '../../lib/terrain-support'
 import { nodeRegistry } from '../../registry'
 import type { AnyNode, AnyNodeId, CeilingNode, ItemNode, SlabNode, WallNode } from '../../schema'
@@ -17,7 +18,6 @@ import { DEFAULT_WALL_THICKNESS } from '../../systems/wall/wall-footprint'
 import { resolveWallEffectiveHeight } from '../../systems/wall/wall-top'
 import { getFloorPlacedFootprints } from './floor-placed-elevation'
 import { SpatialGrid } from './spatial-grid'
-import { GROUND_SUPPORT_ID } from './support-host-id'
 import { WallSpatialGrid } from './wall-spatial-grid'
 
 export {

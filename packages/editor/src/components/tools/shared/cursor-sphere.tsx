@@ -47,7 +47,7 @@ export const CursorSphere = forwardRef<Group, CursorSphereProps>(function Cursor
   const isSnapping = useWallSnapIndicator((s) => s.point !== null)
 
   // Find the icon for the current tool
-  let activeToolConfig = null
+  let activeToolConfig: { label?: string; iconSrc?: string } | undefined
   if (mode === 'build' && tool) {
     if (tool === 'item' && catalogCategory) {
       activeToolConfig = furnishTools.find((t) => t.catalogCategory === catalogCategory)

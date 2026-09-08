@@ -1,7 +1,7 @@
 // @ts-expect-error — bun:test is provided by the Bun runtime; viewer does not
 // depend on @types/bun so the import type is unresolved at compile time.
 import { describe, expect, test } from 'bun:test'
-import { SlabNode, type SlabPolygonContext } from '@pascal-app/core'
+import { SlabNode, type SlabPolygonContext } from '@aedifex/core'
 import type * as THREE from 'three'
 import { generateSlabGeometry } from './slab-system'
 

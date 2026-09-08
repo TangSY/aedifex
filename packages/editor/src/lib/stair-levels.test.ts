@@ -5,7 +5,7 @@ import {
   BuildingNode,
   LevelNode,
   StairNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import {
   getBuildingLevelsForLevel,
   getStairLevelOptions,

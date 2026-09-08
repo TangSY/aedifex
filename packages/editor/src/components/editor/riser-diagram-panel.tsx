@@ -1,7 +1,7 @@
 'use client'
 
-import { type AnyNodeId, buildRiserDiagram, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, buildRiserDiagram, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { X } from 'lucide-react'
 import { useMemo } from 'react'
 import useEditor from '../../store/use-editor'

@@ -1,4 +1,4 @@
-import type { NodeDefinition } from '@pascal-app/core'
+import type { NodeDefinition } from '@aedifex/core'
 import { createPathPointMoveAffordance } from '../shared/path-point-affordance'
 import { buildPipeSegmentFloorplan } from './floorplan'
 import { buildPipeSegmentGeometry } from './geometry'

@@ -5,7 +5,7 @@ import {
   type QuickMeasurementReport,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { resolveWallOpeningCeiling } from '../shared/wall-opening-ceiling'
 
 export function wallQuickMeasurement(node: WallNode): QuickMeasurementReport {

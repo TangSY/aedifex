@@ -7,7 +7,7 @@ import {
   LeanToExtensionNode,
   RoofNode,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   resolveLeanToEdgeSnapTargets,
   resolveLeanToLayout,

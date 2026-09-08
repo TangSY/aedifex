@@ -9,8 +9,8 @@ import {
   snapPointToGrid,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { createPortal, type ThreeEvent, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BoxGeometry, type Group, type Object3D, Plane, Raycaster, Vector2, Vector3 } from 'three'

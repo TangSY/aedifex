@@ -6,7 +6,7 @@ import {
   sceneRegistry,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 import { shouldDeferWallRebuild } from './wall-system'
 

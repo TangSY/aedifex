@@ -3,7 +3,7 @@ import {
   type AnyNodeId,
   PipeSegmentNode,
   type PortConnection,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { getPipeFittingPorts, pipeFittingLegLength } from '../pipe-fitting/ports'
 import type { PipeFittingNode } from '../pipe-fitting/schema'
 import { type PipeElbowPlan, planPipeElbowAtPort, planPipeElbowRealign } from './auto-fitting'

@@ -1,4 +1,4 @@
-import type { AnyNodeId, Interactive, LightEffect, SliderControl } from '@pascal-app/core'
+import type { AnyNodeId, Interactive, LightEffect, SliderControl } from '@aedifex/core'
 import { create } from 'zustand'
 
 export type LightRegistration = {

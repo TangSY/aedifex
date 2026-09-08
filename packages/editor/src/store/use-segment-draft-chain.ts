@@ -1,5 +1,5 @@
 // Ephemeral store for the wall / fence tools' click-chaining start points.
-// The 3D tools (`@pascal-app/nodes` wall/tool.tsx, fence/tool.tsx) own node
+// The 3D tools (`@aedifex/nodes` wall/tool.tsx, fence/tool.tsx) own node
 // creation for both views; after each chained commit they publish the
 // created segment's resolved end here so the 2D floor-plan draft chains its
 // next segment from the same point instead of re-deriving it through a

@@ -1,6 +1,6 @@
 'use client'
 
-import { nodeRegistry, type ToolOption } from '@pascal-app/core'
+import { nodeRegistry, type ToolOption } from '@aedifex/core'
 import { useSyncExternalStore } from 'react'
 import { cn } from '../../../lib/utils'
 import { triggerSFX } from '../../../lib/sfx-bus'

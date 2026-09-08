@@ -10,7 +10,7 @@ import {
   type RoofSegmentNode,
   useScene,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 import { computeGutterMitres } from '../gutter/corner-mitre'
 import { computeSharedEaveY } from '../gutter/eave-align'

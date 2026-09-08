@@ -1,6 +1,6 @@
 import { afterAll, afterEach, describe, expect, spyOn, test } from 'bun:test'
-import { sceneRegistry, useScene } from '@pascal-app/core'
-import { SCENE_LAYER, useViewer } from '@pascal-app/viewer'
+import { sceneRegistry, useScene } from '@aedifex/core'
+import { SCENE_LAYER, useViewer } from '@aedifex/viewer'
 import {
   BufferGeometry,
   Float32BufferAttribute,

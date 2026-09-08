@@ -1,6 +1,6 @@
 'use client'
 
-import { markPureRaycast } from '@pascal-app/viewer'
+import { markPureRaycast } from '@aedifex/viewer'
 import type { Material, Mesh, Object3D, Raycaster } from 'three'
 
 export const INVALID_GHOST_COLOR = 0xef_44_44

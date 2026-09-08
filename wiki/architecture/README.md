@@ -12,11 +12,11 @@ Canonical rules for code that touches `packages/core`, `packages/viewer`, `packa
 | [node-definitions](node-definitions.md) | Three-checkbox composition model for registry-driven kinds (`geometry` / `renderer` / `system`) |
 | [materials-and-themes](materials-and-themes.md) | Surface colour: surface roles, colour presets, the textures axis, and scene themes (appearance / ground / clay tints) |
 | [item-authoring](item-authoring.md) | Content-author contract for catalog item GLBs: `slot_` material naming, authored defaults + `pascal_material` extras, the `cutout` reserved mesh, UV world scale, and the validated Blender/export recipe |
-| [plugin-authoring](plugin-authoring.md) | Public contract for external plugins — `Plugin` shape, `setPluginDiscovery`, lifecycle, what's in and out of v1 |
+| [plugin-authoring](plugin-authoring.md) | Public contract for external plugins — `Plugin` shape, `setPluginDiscovery`, lifecycle, what's in and out of v2 |
 | [tools](tools.md) | Editor tools structure, 2D↔3D behavioral parity, manipulation constraints, and Shift bypass defaults |
 | [measurements](measurements.md) | Persistent measurement data, 2D/3D draft ownership, snapping, units, and visibility |
 | [interaction-scope](interaction-scope.md) | The authoritative interaction state machine ("the spine"): `InteractionScope` union, the begin/update/end/endIf contract, the raycast hot-set, and the overlay scope matrix |
-| [viewer-isolation](viewer-isolation.md) | Keeping `@pascal-app/viewer` editor-agnostic |
+| [viewer-isolation](viewer-isolation.md) | Keeping `@aedifex/viewer` editor-agnostic |
 | [capture-runtime](capture-runtime.md) | Open capture protocol, host source boundary, static/live viewer layers, and stream extension |
 | [selection-managers](selection-managers.md) | Two-layer selection (viewer + editor), events, outliner |
 | [selection-groups](selection-groups.md) | Session multi-select groups (Ctrl/Cmd+G), expand-on-click, how they differ from collections |
