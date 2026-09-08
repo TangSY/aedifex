@@ -44,7 +44,7 @@
 ### Task 5: Commit, land, verify and push
 - [x] Inspect complete status/diff; make logical Conventional Commits with verification evidence.
 - [x] main checkout then immediate pull --ff-only; merge-tree preflight then normal --no-ff merge; any conflicts individually reviewed with validated branch as semantic reference, never batch selected.
-- [ ] Final required validation; push Aedifex main to origin and github, never upstream. Push necessary SaaS commits to origin. No deployment.
+- [x] Final required validation; push Aedifex main to origin and github, never upstream. Push necessary SaaS commits to origin. No deployment.
 
 ## Validation evidence before landing
 - Final full suite: 16/16 tasks; build 10/10; types 12/12; MCP 354 pass / 0 fail.
@@ -59,3 +59,8 @@
 - Fresh merged-tree validation: 16/16 test tasks, 10/10 build tasks, 12/12 type-check tasks, MCP 354 pass / 0 fail. Build/type tasks reused matching Turbo cache outputs.
 - All fork-only paths present; no new private-domain/key-pattern matches; editor OSS boundary check passed.
 - Deployment is outside this approved sync and has not been performed.
+
+## Completion
+- Merge commit 3b9173e11 pushed successfully to both origin/main and github/main.
+- SaaS dependency commit 41e8f43 pushed successfully to origin/main; final linked build again passed with 938 pages and the unchanged 30 attempted-import warnings.
+- No deployment. Original main db605148 remains the first parent of the normal merge.
