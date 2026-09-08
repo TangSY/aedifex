@@ -119,7 +119,6 @@ export { MoveTool } from './components/tools/item/move-tool'
 // `@aedifex/nodes` (wall curve sagitta snap, door / window placement,
 // item drop) so kinds don't reach into editor internals.
 export {
-  calculateCursorRotation,
   calculateItemRotation,
   getSideFromNormal,
   isValidWallSideFace,
@@ -151,6 +150,7 @@ export {
   resolveLevelConstructionPlane,
 } from './components/tools/shared/horizontal-construction-plane'
 export { PlacementBox } from './components/tools/shared/placement-box'
+export { PlacementDimensionGuides } from './components/tools/shared/placement-dimension-guides'
 // Pointer-decided support surface (deck top vs floor underneath) — the
 // draw tools (wall / fence) ride their grid plane and commit cap on it.
 export {
@@ -241,6 +241,7 @@ export { SegmentedControl } from './components/ui/controls/segmented-control'
 export { SliderControl } from './components/ui/controls/slider-control'
 export { TerrainSculptPanel } from './components/ui/controls/terrain-sculpt-panel'
 export { ToggleControl } from './components/ui/controls/toggle-control'
+export { ToolOptionsPanel } from './components/ui/controls/tool-options-panel'
 export { FloatingLevelSelector } from './components/ui/floating-level-selector'
 export { CATALOG_ITEMS } from './components/ui/item-catalog/catalog-items'
 // Item collections UI — used by the kind-owned ItemPanel in nodes/.
@@ -462,6 +463,7 @@ export {
   scopeNodeId,
 } from './lib/interaction/scope'
 export {
+  type ActivePaintMaterial,
   buildResetSurfaceMaterialUpdates,
   buildRoofSurfaceMaterialPatch,
   buildSingleSurfaceMaterialPatch,
@@ -480,6 +482,14 @@ export {
   measurementPolygonLabelAnchor,
   triangulateMeasurementPolygon,
 } from './lib/measurement-label'
+export {
+  type LingoUnitSpec,
+  lingoUnitSpec,
+  type MeasurementHintOptions,
+  measurementHint,
+  type ParseMeasurementOptions,
+  parseMeasurement,
+} from './lib/measurement-parser'
 export {
   buildMeasurementAngleArcPoints,
   cubicMetersToVolumeUnit,
@@ -598,15 +608,20 @@ export {
 export type {
   CaptureMode,
   FloorplanSelectionTool,
+  Mode,
   SnapshotCropMode,
   SnapshotStandardAspect,
   SplitOrientation,
+  StructureTool,
   Tool,
   ToolDefaults,
+  ToolMode,
   ViewMode,
   WorkspaceMode,
 } from './store/use-editor'
 export {
+  armMaterialPaint,
+  armToolMode,
   default as useEditor,
   getActiveContinuationContext,
   getActiveSnapContext,
@@ -667,7 +682,10 @@ export {
   type PathDraftPoint,
   usePathDraftPreview,
 } from './store/use-path-draft-preview'
-export { default as usePlacementPreview } from './store/use-placement-preview'
+export {
+  default as usePlacementPreview,
+  type PlacementPreviewDimension,
+} from './store/use-placement-preview'
 export {
   activateQuickMeasurementHudSource,
   clearQuickMeasurementHudSource,

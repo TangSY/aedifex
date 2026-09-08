@@ -20,9 +20,11 @@ Every node shares these fields:
   name?: string             // optional display name
   parentId: string | null   // parent node ID; null = root
   visible: boolean          // defaults to true
-  metadata: Record<string, unknown>  // arbitrary JSON, defaults to {}
+  metadata: Record<string, unknown> | JSONType  // preserves historical JSON values, defaults to {}
 }
 ```
+
+Metadata uses an object-first schema with a recursive JSON fallback. Saved scalar, array, and null values remain valid and are never silently rewritten. Zod may decline optional compilation for recursive schemas; the interpreted parser remains the compatibility baseline.
 
 ## Defining a New Node Type
 

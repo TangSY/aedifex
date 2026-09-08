@@ -9,7 +9,7 @@ import {
   useScene,
   type ZoneNode,
 } from '@aedifex/core'
-import { useViewer } from '@aedifex/viewer'
+import { markPerfAction, useViewer } from '@aedifex/viewer'
 import { ArrowLeft, ChevronRight, Layers } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
@@ -76,6 +76,7 @@ export const ViewerSceneHeader = ({
 
   const handleLevelClick = (levelId: LevelNode['id']) => {
     // When switching levels, deselect zone and items
+    if (levelId !== selection.levelId) markPerfAction('level-switch', levelId)
     useViewer.getState().setSelection({ levelId })
   }
 

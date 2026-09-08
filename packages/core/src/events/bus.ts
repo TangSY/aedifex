@@ -170,8 +170,32 @@ export interface CameraControlEvent {
   nodeId: AnyNode['id']
 }
 
+export interface SnapshotCapturePose {
+  position: [number, number, number]
+  quaternion: [number, number, number, number]
+  /** Vertical field of view in degrees in the final standard-size output. */
+  fov: number
+}
+
+export interface SnapshotSavedEvent {
+  requestId?: string
+  projectId?: string
+  id: string
+  url: string
+  width: number
+  height: number
+}
+
+export interface SnapshotCaptureFailedEvent {
+  requestId: string
+  error: string
+}
+
 export interface ThumbnailGenerateEvent {
   projectId: string
+  requestId?: string
+  /** World-space pose for a standard capture without moving the viewport camera. */
+  cameraPose?: SnapshotCapturePose
   captureMode?: 'standard' | 'viewport' | 'area'
   cropRegion?: { x: number; y: number; width: number; height: number }
   /**
@@ -263,7 +287,8 @@ type ThumbnailEvents = {
 }
 
 type SnapshotEvents = {
-  'snapshot:saved': undefined
+  'snapshot:saved': undefined | SnapshotSavedEvent
+  'snapshot:capture-failed': SnapshotCaptureFailedEvent
   'camera:go-to-position': { position: [number, number, number]; target: [number, number, number] }
 }
 

@@ -27,7 +27,7 @@ import {
   LevelNode,
   useScene,
 } from '@aedifex/core'
-import { useViewer } from '@aedifex/viewer'
+import { markPerfAction, useViewer } from '@aedifex/viewer'
 import { ClipboardPaste, Copy, GripVertical, MoreVertical, Plus, Trash2 } from 'lucide-react'
 import {
   type ButtonHTMLAttributes,
@@ -631,13 +631,14 @@ export function FloatingLevelSelector() {
                         onDuplicate={(preset) => handleDuplicateLevel(level, preset)}
                         onPaste={() => handlePasteToLevel(level)}
                         onRequestDelete={() => setDeletingLevel(level)}
-                        onSelect={() =>
+                        onSelect={() => {
+                          if (!isSelected) markPerfAction('level-switch', level.id)
                           setSelection(
                             resolvedBuildingId
                               ? { buildingId: resolvedBuildingId, levelId: level.id }
                               : { levelId: level.id },
                           )
-                        }
+                        }}
                       />
 
                       {showGapBelow && !draggingLevelId && (

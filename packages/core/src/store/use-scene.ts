@@ -8,6 +8,7 @@ import { getNodePluginId, isNodeKindEnabled, nodeRegistry } from '../registry/re
 import { BuildingNode } from '../schema'
 import type { Collection, CollectionId } from '../schema/collections'
 import { generateCollectionId } from '../schema/collections'
+import { compiledNodeSchema } from '../schema/compiled-node-parsers'
 import { DoorNode as DoorNodeSchema } from '../schema/nodes/door'
 import {
   createDormerDefaultWindow,
@@ -124,7 +125,7 @@ function normalizeStairNode(node: Record<string, unknown>) {
     children: getStringArray(node.children),
   }
 
-  const parsed = StairNodeSchema.safeParse(sanitized)
+  const parsed = compiledNodeSchema(StairNodeSchema).safeParse(sanitized)
   if (!parsed.success) return null
   if (hasTotalRise) return parsed.data
   // Absent `totalRise` means "rise derives from the storey height" and must
@@ -149,12 +150,12 @@ function normalizeStairSegmentNode(node: Record<string, unknown>) {
     thickness: getFiniteNumber(node.thickness, 0.25),
   }
 
-  const parsed = StairSegmentNodeSchema.safeParse(sanitized)
+  const parsed = compiledNodeSchema(StairSegmentNodeSchema).safeParse(sanitized)
   return parsed.success ? parsed.data : null
 }
 
 function normalizeDoorNode(node: Record<string, unknown>) {
-  const parsed = DoorNodeSchema.safeParse(node)
+  const parsed = compiledNodeSchema(DoorNodeSchema).safeParse(node)
   return parsed.success ? { ...node, ...parsed.data } : null
 }
 
@@ -162,7 +163,7 @@ function normalizeDoorNode(node: Record<string, unknown>) {
 // `frameThickness`) load without it; the mesh builder then reads undefined and
 // throws every frame. Zod-parse on load so schema defaults land, like doors.
 function normalizeWindowNode(node: Record<string, unknown>) {
-  const parsed = WindowNodeSchema.safeParse(node)
+  const parsed = compiledNodeSchema(WindowNodeSchema).safeParse(node)
   return parsed.success ? { ...node, ...parsed.data } : null
 }
 
@@ -193,7 +194,7 @@ function normalizeShelfNode(node: Record<string, unknown>) {
     ),
   }
 
-  const parsed = ShelfNodeSchema.safeParse(sanitized)
+  const parsed = compiledNodeSchema(ShelfNodeSchema).safeParse(sanitized)
   return parsed.success ? parsed.data : null
 }
 
@@ -222,7 +223,7 @@ function normalizeElevatorNode(node: Record<string, unknown>) {
     dwellMs: getFiniteNumber(node.dwellMs, 1400),
   }
 
-  const parsed = ElevatorNodeSchema.safeParse(sanitized)
+  const parsed = compiledNodeSchema(ElevatorNodeSchema).safeParse(sanitized)
   return parsed.success ? parsed.data : null
 }
 
@@ -1347,6 +1348,47 @@ function sceneHistorySnapshotFromState(
   }
 }
 
+/**
+ * A dirty mark is a promise that some system will rebuild the node and clear
+ * the mark, so marks are only accepted for kinds with a dirty consumer: kinds
+ * with `dirtyTracking: false` (and kinds of disabled plugins) have none, and
+ * a mark for them would sit in the set for the whole session and defeat every
+ * consumer's empty-set early exit. Ids without a node pass: tools mark nodes
+ * they are about to create.
+ */
+function isDirtyTrackable(
+  id: AnyNodeId,
+  scene: Pick<SceneState, 'nodes' | 'installedPlugins'>,
+): boolean {
+  const node = scene.nodes[id]
+  if (!node) return true
+  if (!isNodeKindEnabled(node.type, scene.installedPlugins)) return false
+  return nodeRegistry.get(node.type)?.dirtyTracking !== false
+}
+
+/**
+ * `markDirty` always applied the consumer-kind guard, but many call sites add
+ * to the raw set directly (that is how stuck `level` marks got in) — enforcing
+ * it in `add` itself keeps them all honest.
+ */
+class GuardedDirtySet extends Set<AnyNodeId> {
+  private readonly getScene: () => Pick<SceneState, 'nodes' | 'installedPlugins'>
+
+  constructor(
+    getScene: () => Pick<SceneState, 'nodes' | 'installedPlugins'>,
+    from?: Iterable<AnyNodeId>,
+  ) {
+    super()
+    this.getScene = getScene
+    if (from) for (const id of from) this.add(id)
+  }
+
+  override add(id: AnyNodeId): this {
+    if (!isDirtyTrackable(id, this.getScene())) return this
+    return super.add(id)
+  }
+}
+
 const useScene: UseSceneStore = create<SceneState>()(
   temporal(
     (set, get) => ({
@@ -1357,7 +1399,7 @@ const useScene: UseSceneStore = create<SceneState>()(
       rootNodeIds: [],
 
       // 3. Dirty set
-      dirtyNodes: new Set<AnyNodeId>(),
+      dirtyNodes: new GuardedDirtySet(get),
 
       // 4. Collections
       collections: {} as Record<CollectionId, Collection>,
@@ -1373,7 +1415,7 @@ const useScene: UseSceneStore = create<SceneState>()(
         set({
           nodes: {},
           rootNodeIds: [],
-          dirtyNodes: new Set<AnyNodeId>(),
+          dirtyNodes: new GuardedDirtySet(get),
           collections: {},
           materials: {},
           installedPlugins: [],
@@ -1429,7 +1471,7 @@ const useScene: UseSceneStore = create<SceneState>()(
         set({
           nodes: cleanedNodes,
           rootNodeIds: normalizedRootNodeIds,
-          dirtyNodes: new Set<AnyNodeId>(),
+          dirtyNodes: new GuardedDirtySet(get),
           collections: extra?.collections ?? {},
           materials,
           installedPlugins: Array.from(new Set(extra?.installedPlugins ?? [])),
@@ -1445,7 +1487,16 @@ const useScene: UseSceneStore = create<SceneState>()(
         if (get().readOnly) return
         const nextInstalledPlugins = Array.from(new Set(pluginIds))
         const previousInstalledPlugins = get().installedPlugins
-        const dirtyNodes = new Set(get().dirtyNodes)
+        // Guard against the *next* plugin list: the store still holds the old
+        // one, and re-marks for newly enabled kinds must pass the guard.
+        let preparingInstall = true
+        const dirtyNodes = new GuardedDirtySet(
+          () =>
+            preparingInstall
+              ? { nodes: get().nodes, installedPlugins: nextInstalledPlugins }
+              : get(),
+          get().dirtyNodes,
+        )
         for (const node of Object.values(get().nodes)) {
           if (!getNodePluginId(node.type)) continue
           if (!isNodeKindEnabled(node.type, nextInstalledPlugins)) {
@@ -1454,6 +1505,9 @@ const useScene: UseSceneStore = create<SceneState>()(
             if (nodeRegistry.get(node.type)?.dirtyTracking !== false) dirtyNodes.add(node.id)
           }
         }
+        // Undo/redo restores installedPlugins without replacing this set.
+        // After preparation its guard must follow the live scene again.
+        preparingInstall = false
         set({
           installedPlugins: nextInstalledPlugins,
           hasExplicitPluginInstallState: options?.explicit ?? get().hasExplicitPluginInstallState,
@@ -1499,9 +1553,9 @@ const useScene: UseSceneStore = create<SceneState>()(
       },
 
       markDirty: (id) => {
-        const node = get().nodes[id]
-        if (node && !isNodeKindEnabled(node.type, get().installedPlugins)) return
-        if (node && nodeRegistry.get(node.type)?.dirtyTracking === false) return
+        // Guarded here too, not just in GuardedDirtySet.add — tests (and any
+        // setState caller) can swap in a plain Set.
+        if (!isDirtyTrackable(id, get())) return
         get().dirtyNodes.add(id)
       },
 
@@ -2168,6 +2222,14 @@ useScene.temporal.subscribe((state) => {
         for (const node of Object.values(currentNodes)) {
           markDirty(node.id)
         }
+      }
+
+      // Undo/redo rewrites `nodes` without going through the delete actions,
+      // so marks for nodes that no longer exist would sit in the set for the
+      // rest of the session — no system clears a mark whose node is gone.
+      const { dirtyNodes, clearDirty } = useScene.getState()
+      for (const id of [...dirtyNodes]) {
+        if (!currentNodes[id]) clearDirty(id)
       }
     })
   }

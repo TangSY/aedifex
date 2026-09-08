@@ -24,13 +24,16 @@ import {
   vec3,
   vec4,
 } from 'three/tsl'
-import { RenderPipeline, type WebGPURenderer } from 'three/webgpu'
+import { RenderPipeline, TimestampQuery, type WebGPURenderer } from 'three/webgpu'
 import { backdropGradient, deepSkyColor, horizonHazeColor } from '../../lib/backdrop'
 import { edgeColorFor, edgeOpacityScaleFor } from '../../lib/edge-style'
-import { PERF_OVERLAY_ENABLED, pushGpuSample } from '../../lib/gpu-perf'
+import { PERF_OVERLAY_ENABLED } from '../../lib/gpu-perf'
 import { inkedEdges } from '../../lib/ink-edges'
+import { LayerPassIndex, LayerPassNode } from '../../lib/layer-pass'
 import { GRID_LAYER, OVERLAY_LAYER, SCENE_LAYER, ZONE_LAYER } from '../../lib/layers'
 import { mergedOutline } from '../../lib/merged-outline-node'
+import { recordPerfSample, timeSpan } from '../../lib/perf-tracks'
+import { PostProcessingResources } from '../../lib/post-processing-resources'
 import { getSceneTheme } from '../../lib/scene-themes'
 import { packNormalToRGB, unpackRGBToNormal } from '../../lib/tsl-compat'
 import useViewer from '../../store/use-viewer'
@@ -152,6 +155,36 @@ function sanitizeOutlineObjects(objects: Object3D[]) {
   objects.length = nextIndex
 }
 
+// Two independent GPU readings per frame, both `?perf`-only:
+//  - `gpu-render`: three's WebGPU timestamp queries — the summed GPU duration of
+//    the frame's render passes, measured on the device. The only honest "GPU ms".
+//  - `gpu-queue`: submit → `onSubmittedWorkDone()` wall time. That covers queue
+//    backlog and CPU work that ran before the microtask got to resume, so it is
+//    a backpressure signal, not GPU time.
+// `resolveTimestampsAsync` returns the previous resolve's value while one is in
+// flight, so calling it every frame is safe (and required — the query pool warns
+// once it fills).
+function recordFrameGpuTiming(renderer: any, submittedAt: number): void {
+  const queue = renderer.backend?.device?.queue as
+    | { onSubmittedWorkDone?: () => Promise<void> }
+    | undefined
+  queue?.onSubmittedWorkDone?.().then(() => {
+    recordPerfSample('gpu-queue', performance.now() - submittedAt)
+  })
+
+  // Off unless the device advertised 'timestamp-query' at init — the backend
+  // clears its own flag when the feature is missing, so this is the truth.
+  if (renderer.backend?.trackTimestamp !== true) return
+  renderer
+    .resolveTimestampsAsync?.(TimestampQuery.RENDER)
+    ?.then((ms: number | undefined) => {
+      if (typeof ms === 'number' && ms > 0) recordPerfSample('gpu-render', ms)
+    })
+    .catch(() => {
+      // Pool disposed mid-flight (pipeline rebuild / unmount) — nothing to report.
+    })
+}
+
 const PostProcessingPasses = ({
   hoverStyles = DEFAULT_HOVER_STYLES,
   disablePostFx = false,
@@ -161,7 +194,7 @@ const PostProcessingPasses = ({
   disablePostFx?: boolean
 }) => {
   const { gl: renderer, invalidate, scene, camera, size } = useThree()
-  const renderPipelineRef = useRef<RenderPipeline | null>(null)
+  const resourcesRef = useRef<PostProcessingResources | null>(null)
   const hasPipelineErrorRef = useRef(false)
   const retryCountRef = useRef(0)
   const rebuildTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -305,10 +338,8 @@ const PostProcessingPasses = ({
     if (width < 1 || height < 1) {
       skippedZeroSizeRef.current = true
       hasPipelineErrorRef.current = false
-      if (renderPipelineRef.current) {
-        renderPipelineRef.current.dispose()
-      }
-      renderPipelineRef.current = null
+      resourcesRef.current?.dispose()
+      resourcesRef.current = null
       return
     }
 
@@ -324,10 +355,8 @@ const PostProcessingPasses = ({
     // allocated every pass.
     if (disablePostFx || perfDisable.postFx) {
       hasPipelineErrorRef.current = false
-      if (renderPipelineRef.current) {
-        renderPipelineRef.current.dispose()
-      }
-      renderPipelineRef.current = null
+      resourcesRef.current?.dispose()
+      resourcesRef.current = null
       return
     }
     const ssgiEnabled = shading === 'rendered' && SSGI_PARAMS.enabled && !perfDisable.ao
@@ -371,7 +400,7 @@ const PostProcessingPasses = ({
     const hasWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator
     if (!hasWebGPU) {
       hasPipelineErrorRef.current = true
-      renderPipelineRef.current = null
+      resourcesRef.current = null
       return
     }
 
@@ -383,15 +412,22 @@ const PostProcessingPasses = ({
     outliner.selectedObjects.length = 0
     outliner.hoveredObjects.length = 0
 
+    const resources = new PostProcessingResources()
+    resourcesRef.current = resources
     try {
+      const layerIndex = new LayerPassIndex(scene, [ZONE_LAYER, OVERLAY_LAYER])
+      resources.layerIndex = layerIndex
       const scenePass = pass(scene, camera)
+      resources.passes.push(scenePass)
       scenePass.setLayers(sceneOnlyLayers)
-      const zonePass = pass(scene, camera)
+      const zonePass = new LayerPassNode(layerIndex, camera, ZONE_LAYER, scenePass)
+      resources.passes.push(zonePass)
       zonePass.setLayers(zoneLayers)
       // Editor overlays (gizmos, move handles, tool previews, grid) on their own
       // layer, kept out of the depth/normal MRT above so the ink + SSGI ignore
       // them, then composited on top of the final image below.
-      const overlayPass = pass(scene, camera)
+      const overlayPass = new LayerPassNode(layerIndex, camera, OVERLAY_LAYER, scenePass)
+      resources.passes.push(overlayPass)
       overlayPass.setLayers(overlayLayers)
       const overlayColor = overlayPass.getTextureNode('output')
 
@@ -414,7 +450,7 @@ const PostProcessingPasses = ({
 
       // Depth + normal MRT — shared by SSGI (diffuse/normal) and the ink pass
       // (depth/normal). Built whenever either is active.
-      let scenePassDepth: any = null
+      const scenePassDepth = scenePass.getTextureNode('depth')
       let scenePassNormal: any = null
       let sceneNormal: any = null
       if (needsNormalMRT) {
@@ -425,7 +461,6 @@ const PostProcessingPasses = ({
             normal: packNormalToRGB(normalView),
           }),
         )
-        scenePassDepth = scenePass.getTextureNode('depth')
         scenePassNormal = scenePass.getTextureNode('normal')
         const normalTexture = scenePass.getTexture('normal')
         normalTexture.type = UnsignedByteType
@@ -520,17 +555,21 @@ const PostProcessingPasses = ({
         sceneColor = vec4(gradeRgb(sceneColor.rgb), sceneColor.a)
       }
 
-      // Single merged outline node: one shared depth pass for both selected + hovered groups.
+      // Reused scene depth lets outlined groups occlude each other; materials
+      // with depthWrite=false (including glazing) no longer occlude outlines.
       const outliner = useViewer.getState().outliner
       let compositeWithOutlines = sceneColor
       let visualAlpha = contentAlpha
       if (outlineEnabled) {
         const outlineNode = mergedOutline(scene, camera, {
+          sceneDepthNode: scenePassDepth,
           primaryObjects: outliner.selectedObjects,
           secondaryObjects: outliner.hoveredObjects,
           primaryEdgeThickness: uniform(1),
           secondaryEdgeThickness: uniform(1.5),
         })
+
+        resources.outline = outlineNode
 
         // Selected: white visible, yellow hidden
         const selectedVisibleColor = uniform(new Color(0xff_ff_ff))
@@ -603,11 +642,12 @@ const PostProcessingPasses = ({
       }
 
       const renderPipeline = new RenderPipeline(renderer as unknown as WebGPURenderer)
+      resources.pipeline = renderPipeline
       renderPipeline.outputColorTransform = !transparentBackground
       renderPipeline.outputNode = finalOutput
-      renderPipelineRef.current = renderPipeline
       retryCountRef.current = 0
     } catch (error) {
+      resources.dispose()
       hasPipelineErrorRef.current = true
       console.error(
         '[viewer/post-processing] Failed to set up post-processing pipeline. Rendering without post FX.',
@@ -618,17 +658,12 @@ const PostProcessingPasses = ({
         },
         error,
       )
-      if (renderPipelineRef.current) {
-        renderPipelineRef.current.dispose()
-      }
-      renderPipelineRef.current = null
+      resourcesRef.current = null
     }
 
     return () => {
-      if (renderPipelineRef.current) {
-        renderPipelineRef.current.dispose()
-      }
-      renderPipelineRef.current = null
+      resources.dispose()
+      if (resourcesRef.current === resources) resourcesRef.current = null
     }
   }, [
     // NOTE: hoverHighlightMode intentionally excluded — the hover style is
@@ -709,7 +744,7 @@ const PostProcessingPasses = ({
       disablePostFx ||
       PERF_POST_FX_DISABLED ||
       hasPipelineErrorRef.current ||
-      !renderPipelineRef.current
+      !resourcesRef.current?.pipeline
     ) {
       try {
         const clearAlpha = transparentBackground ? 0 : 1
@@ -719,40 +754,26 @@ const PostProcessingPasses = ({
           ;(renderer as any).setClearAlpha(clearAlpha)
         }
         const submittedAt = PERF_OVERLAY_ENABLED ? performance.now() : 0
-        ;(renderer as any).render(scene, camera)
-        if (PERF_OVERLAY_ENABLED) {
-          const queue = (renderer as any).backend?.device?.queue as
-            | { onSubmittedWorkDone?: () => Promise<void> }
-            | undefined
-          queue?.onSubmittedWorkDone?.().then(() => {
-            pushGpuSample(performance.now() - submittedAt)
-          })
-        }
+        timeSpan('render-encode', () => {
+          ;(renderer as any).render(scene, camera)
+        })
+        if (PERF_OVERLAY_ENABLED) recordFrameGpuTiming(renderer, submittedAt)
       } catch (fallbackError) {
         console.error('[viewer/post-processing] Fallback render failed.', fallbackError)
       }
       return
     }
 
+    const pipeline = resourcesRef.current.pipeline
     try {
       // Clear alpha=0 so background pixels in the output MRT attachment (index 0) get a=0,
       // making scenePassColor.a a reliable geometry mask (geometry pixels write a=1 via output node).
       ;(renderer as any).setClearAlpha(0)
       const submittedAt = PERF_OVERLAY_ENABLED ? performance.now() : 0
-      renderPipelineRef.current.render()
-      if (PERF_OVERLAY_ENABLED) {
-        // device.queue.onSubmittedWorkDone() resolves once the GPU has
-        // finished the work we just submitted — the delta from our submit
-        // timestamp is a clean per-frame GPU duration. Doesn't block CPU
-        // (no await) and works for the custom RenderPipeline path that
-        // bypasses three.js's timestamp-query infrastructure.
-        const queue = (renderer as any).backend?.device?.queue as
-          | { onSubmittedWorkDone?: () => Promise<void> }
-          | undefined
-        queue?.onSubmittedWorkDone?.().then(() => {
-          pushGpuSample(performance.now() - submittedAt)
-        })
-      }
+      timeSpan('render-encode', () => {
+        pipeline.render()
+      })
+      if (PERF_OVERLAY_ENABLED) recordFrameGpuTiming(renderer, submittedAt)
     } catch (error) {
       hasPipelineErrorRef.current = true
       // A failed MRT pass may leave its target bound; clear it before the fallback render.
@@ -762,10 +783,8 @@ const PostProcessingPasses = ({
         rendererCtor: (renderer as any).constructor?.name,
         error,
       })
-      if (renderPipelineRef.current) {
-        renderPipelineRef.current.dispose()
-      }
-      renderPipelineRef.current = null
+      resourcesRef.current?.dispose()
+      resourcesRef.current = null
 
       if (retryCountRef.current < MAX_PIPELINE_RETRIES) {
         // Auto-retry: schedule a pipeline rebuild if we haven't exceeded the retry limit

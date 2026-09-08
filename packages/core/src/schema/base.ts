@@ -26,7 +26,9 @@ export const BaseNode = z.object({
   parentId: z.string().nullable().default(null),
   visible: z.boolean().optional().default(true),
   camera: CameraSchema.optional(),
-  metadata: z.json().optional().default({}),
+  // Existing saved scenes may contain any JSON metadata. Keep the common
+  // object fast path without rejecting or rewriting those historical values.
+  metadata: z.union([z.record(z.string(), z.unknown()), z.json()]).optional().default({}),
 })
 
 export type BaseNode = z.infer<typeof BaseNode>

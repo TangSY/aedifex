@@ -6,6 +6,7 @@ export type {
   HandleAnchor,
   HandleAxis,
   HandleDescriptor,
+  HandleDragModifiers,
   HandleList,
   HandlePlacement,
   HandlePortal,
@@ -162,5 +163,7 @@ export type {
   SystemContribution,
   ToolHint,
   ToolHintChip,
+  ToolOption,
+  ToolOptionChoice,
   Vec2,
 } from './types'

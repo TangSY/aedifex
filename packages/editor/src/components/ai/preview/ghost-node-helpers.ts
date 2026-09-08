@@ -3,7 +3,6 @@ import {
   type AnyNodeId,
   DoorNode,
   ItemNode,
-  type JSONType,
   WallNode as WallSchema,
   WindowNode,
   useScene,
@@ -64,9 +63,9 @@ export function resetPreviewState(): void {
 export function buildGhostMetadata(
   existing: unknown,
   flags: { isGhostPreview?: boolean; isGhostRemoval?: boolean },
-): JSONType {
+): AnyNode['metadata'] {
   const base =
-    typeof existing === 'object' && existing !== null ? (existing as { [key: string]: JSONType }) : {}
+    typeof existing === 'object' && existing !== null ? (existing as Record<string, unknown>) : {}
   return {
     ...base,
     isTransient: true,

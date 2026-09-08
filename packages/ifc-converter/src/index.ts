@@ -32,10 +32,8 @@ export interface AedifexSceneGraph {
   collections?: Record<string, unknown>
 }
 
-// Aedifex's BaseNode.metadata is typed as `JSONType` (z.json()) — a loose
-// JSON value. The converter writes a fixed shape; this typed accessor
-// keeps dot-access ergonomics without spraying `as any` through the
-// post-processing loops. Read-side only — writes still inline literals.
+// The converter writes a fixed metadata shape; this accessor preserves
+// typed reads while BaseNode accepts an open record.
 type ConverterMetadata = {
   ifcType?: string
   expressID?: number
@@ -52,11 +50,7 @@ function meta(node: { metadata?: unknown } | null | undefined): ConverterMetadat
   return (node?.metadata ?? {}) as ConverterMetadata
 }
 
-// Aedifex's `BaseNode.metadata` is `z.json()` — a recursive JSON value
-// type that doesn't accept `undefined` (JSON has `null`, not undefined).
-// The converter pulls many fields from optional IFC properties that
-// often return `undefined`; stripping them at the boundary keeps the
-// schemas happy without spraying `?? null` through every assignment.
+// Omit absent IFC properties so in-memory metadata matches serialized scenes.
 function buildMetadata(input: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(input)) {
@@ -694,7 +688,7 @@ export async function convertIfcToAedifex(
 
   // Maps to track relationships
   const parentMap = new Map<number, number>()
-  const childrenMap = new Map<number, number[]>()
+  const childrenMap = new Map<number, Set<number>>()
   const expressIdToNodeId = new Map<number, string>()
 
   progress('Analyzing spatial relationships...', 20)
@@ -749,9 +743,9 @@ export async function convertIfcToAedifex(
       })
 
       if (!childrenMap.has(parentExpressID)) {
-        childrenMap.set(parentExpressID, [])
+        childrenMap.set(parentExpressID, new Set())
       }
-      childrenMap.get(parentExpressID)?.push(...children)
+      for (const childID of children) childrenMap.get(parentExpressID)!.add(childID)
     }
   }
 
@@ -771,9 +765,9 @@ export async function convertIfcToAedifex(
       })
 
       if (!childrenMap.has(parentExpressID)) {
-        childrenMap.set(parentExpressID, [])
+        childrenMap.set(parentExpressID, new Set())
       }
-      childrenMap.get(parentExpressID)?.push(...children)
+      for (const childID of children) childrenMap.get(parentExpressID)!.add(childID)
     }
   }
 
@@ -1126,6 +1120,9 @@ export async function convertIfcToAedifex(
     for (const openingId of openingIds) {
       const fillId = openingToFill.get(openingId)
       if (!fillId) continue
+      // IFC fills belong to at most one opening, which voids one host element.
+      // Repeated or conflicting relationships must not emit another node.
+      if (expressIdToNodeId.has(fillId)) continue
 
       const isDoor = doorExpressIds.has(fillId)
       const isWindow = windowExpressIds.has(fillId)
@@ -1195,7 +1192,6 @@ export async function convertIfcToAedifex(
 
         if (isDoor) {
           const nodeId = generateId('door')
-          expressIdToNodeId.set(fillId, nodeId)
 
           // Vertical centering is now handled: door center Y = height/2 so the
           // opening sits at the correct position. Remaining caveat: door bottom
@@ -1221,10 +1217,10 @@ export async function convertIfcToAedifex(
           })
 
           nodes[nodeId] = doorNode
+          expressIdToNodeId.set(fillId, nodeId)
           wallNode.children.push(nodeId)
         } else {
           const nodeId = generateId('window')
-          expressIdToNodeId.set(fillId, nodeId)
 
           // TODO(ifc-fix): same scalar-vs-tuple position issue as door above.
           // sillHeight stays read-only metadata until we resolve the window
@@ -1255,6 +1251,7 @@ export async function convertIfcToAedifex(
           })
 
           nodes[nodeId] = windowNode
+          expressIdToNodeId.set(fillId, nodeId)
           wallNode.children.push(nodeId)
         }
       } catch {
@@ -1378,7 +1375,6 @@ export async function convertIfcToAedifex(
       if (isDoor) {
         const h = height ?? 2.1
         const nodeId = generateId('door')
-        expressIdToNodeId.set(fillId, nodeId)
         const doorNode = tryParse(DoorNode, 'door', {
           object: 'node',
           id: nodeId,
@@ -1399,6 +1395,7 @@ export async function convertIfcToAedifex(
           }),
         })
         nodes[nodeId] = doorNode
+        expressIdToNodeId.set(fillId, nodeId)
         if (parentNodeId && nodes[parentNodeId]) {
           ;(nodes[parentNodeId] as { children?: string[] }).children?.push(nodeId)
         }
@@ -1406,7 +1403,6 @@ export async function convertIfcToAedifex(
         const h = height ?? 1.2
         const sill = hosted && scene ? Math.max(0, scene[2] - hosted.info.baseY) : 0
         const nodeId = generateId('window')
-        expressIdToNodeId.set(fillId, nodeId)
         const windowNode = tryParse(WindowNode, 'window', {
           object: 'node',
           id: nodeId,
@@ -1426,6 +1422,7 @@ export async function convertIfcToAedifex(
           }),
         })
         nodes[nodeId] = windowNode
+        expressIdToNodeId.set(fillId, nodeId)
         if (parentNodeId && nodes[parentNodeId]) {
           ;(nodes[parentNodeId] as { children?: string[] }).children?.push(nodeId)
         }

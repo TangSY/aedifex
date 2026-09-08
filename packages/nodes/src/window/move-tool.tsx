@@ -445,24 +445,29 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
       tickGridStep(target.event.nativeEvent?.timeStamp ?? -1, target.clampedX)
       // Keep the REAL node hidden and show a tinted ghost in the wall opening —
       // green when placeable, red when it collides — matching the free-follow
-      // ghost so validity reads at a glance (see MoveDoorTool). The live
-      // override keeps the preview data-driven without mutating the scene.
-      const hostChanged = currentHostId !== target.wallId
-      if (hostChanged) {
+      // ghost so validity reads at a glance (see MoveDoorTool). Reparenting
+      // MUST be a scene write: the wall's CSG merge and the renderer's nesting
+      // walk the wall's `children` array, which a live override never joins —
+      // an override-only reparent left the window uncut and rendered against
+      // its stale parent (no on-wall preview at all). A stale override from a
+      // free-follow / dormer hop would shadow those scene fields, so drop it.
+      useLiveNodeOverrides.getState().clear(movingWindowNode.id)
+      if (currentHostId !== target.wallId) {
+        useScene.getState().updateNode(movingWindowNode.id, {
+          position: [target.clampedX, target.clampedY, 0],
+          rotation: [0, target.itemRotation, 0],
+          side: target.side,
+          parentId: target.wallId,
+          wallId: target.wallId,
+          roofSegmentId: undefined,
+          roofFace: undefined,
+          dormerId: undefined,
+          dormerFace: undefined,
+          visible: false,
+        })
         markHostDirty(currentHostId)
         currentHostId = target.wallId
-      }
-      useLiveNodeOverrides.getState().set(movingWindowNode.id, {
-        position: [target.clampedX, target.clampedY, 0],
-        rotation: [0, target.itemRotation, 0],
-        side: target.side,
-        parentId: target.wallId,
-        wallId: target.wallId,
-        roofSegmentId: undefined,
-        roofFace: undefined,
-        visible: false,
-      })
-      if (!hostChanged) {
+      } else {
         const windowMesh = sceneRegistry.nodes.get(movingWindowNode.id as AnyNodeId)
         if (windowMesh) {
           windowMesh.position.set(target.clampedX, target.clampedY, 0)
@@ -657,6 +662,7 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
       }
 
       markHostDirty(target.wallId)
+      useLiveNodeOverrides.getState().clear(movingWindowNode.id)
       useLiveTransforms.getState().clear(movingWindowNode.id)
 
       triggerSFX('sfx:structure-build')
@@ -729,20 +735,32 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
       const sillCenterY = getSillCenterY()
       // Keep the R-flip visible while free-following (back = rotated π).
       const yaw = sideOverride === 'back' ? Math.PI : 0
+      // Only a host change writes the scene: leaving the wall must remove the
+      // window from its `children` so the old CSG cut disappears. Subsequent
+      // floor moves stay in live overrides without replacing the nodes map.
       if (currentHostId !== levelId) {
         if (currentHostId && currentHostId !== levelId) markHostDirty(currentHostId)
+        useScene.getState().updateNode(movingWindowNode.id, {
+          position: [localX, sillCenterY, localZ],
+          rotation: [0, yaw, 0],
+          side: sideOverride,
+          parentId: levelId ?? undefined,
+          wallId: undefined,
+          roofSegmentId: undefined,
+          roofFace: undefined,
+          dormerId: undefined,
+          dormerFace: undefined,
+          visible: false,
+        })
         currentHostId = levelId
+      } else {
+        useLiveNodeOverrides.getState().set(movingWindowNode.id, {
+          position: [localX, sillCenterY, localZ],
+          rotation: [0, yaw, 0],
+          side: sideOverride,
+          visible: false,
+        })
       }
-      useLiveNodeOverrides.getState().set(movingWindowNode.id, {
-        position: [localX, sillCenterY, localZ],
-        rotation: [0, yaw, 0],
-        side: sideOverride,
-        parentId: levelId ?? undefined,
-        wallId: undefined,
-        roofSegmentId: undefined,
-        roofFace: undefined,
-        visible: false,
-      })
       // Float the red (invalid — no wall) ghost at the cursor, level-Y lifted to
       // the sill center (sideOverride carries the R-flip so the ghost matches).
       setGhostPose({
@@ -1106,6 +1124,7 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
       }
 
       markHostDirty(segmentId)
+      useLiveNodeOverrides.getState().clear(movingWindowNode.id)
       useLiveTransforms.getState().clear(movingWindowNode.id)
 
       triggerSFX('sfx:structure-build')

@@ -11,7 +11,7 @@ import {
   useScene,
   type ZoneNode,
 } from '@aedifex/core'
-import { useViewer } from '@aedifex/viewer'
+import { markPerfAction, useViewer } from '@aedifex/viewer'
 import {
   Camera,
   ChevronDown,
@@ -717,7 +717,8 @@ const LevelItem = memo(function LevelItem({
       ? (level.parentId as BuildingNode['id'])
       : undefined
 
-  const selectLevel = (levelId: LevelNode['id']) => {
+  const selectLevel = (levelId: LevelNode['id'], measure = true) => {
+    if (measure && selectedLevelId !== levelId) markPerfAction('level-switch', levelId)
     setSelection(buildingId ? { buildingId, levelId } : { levelId })
   }
 
@@ -756,7 +757,7 @@ const LevelItem = memo(function LevelItem({
       )
     }
     createNodes(createOps)
-    selectLevel(newLevelId as LevelNode['id'])
+    selectLevel(newLevelId as LevelNode['id'], false)
     setDuplicateDialogOpen(false)
   }
 
