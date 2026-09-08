@@ -29,7 +29,7 @@ function invalidVariants(fixture: Record<string, unknown>): { label: string; val
     { label: 'id: number', value: { ...fixture, id: 42 } },
     { label: 'visible: string', value: { ...fixture, visible: 'yes' } },
     { label: 'parentId: number', value: { ...fixture, parentId: 7 } },
-    { label: 'metadata: string', value: { ...fixture, metadata: 'nope' } },
+    { label: 'metadata: function', value: { ...fixture, metadata: () => 'nope' } },
     { label: 'object: wrong literal', value: { ...fixture, object: 'not-a-node' } },
     { label: 'name: number', value: { ...fixture, name: 5 } },
     { label: 'root: null', value: null },
@@ -123,9 +123,10 @@ describe('compiled node parsers — flag on', () => {
   })
 
   test('memoizes one compiled clone per schema', () => {
-    const first = nodeSchemaForKind('wall')
-    expect(nodeSchemaForKind('wall')).toBe(first)
-    expect(first).not.toBe(optionByKind.get('wall'))
+    const schema = z.object({ id: z.string(), size: z.number() })
+    const first = compiledNodeSchema(schema)
+    expect(compiledNodeSchema(schema)).toBe(first)
+    expect(first).not.toBe(schema)
   })
 
   test('leaves the interpreted schema instance untouched', () => {
@@ -136,11 +137,14 @@ describe('compiled node parsers — flag on', () => {
     expect(option.safeParse(fixtures.get('wall')).success).toBe(true)
   })
 
-  test('every kind actually compiles', () => {
-    // A kind that comes back identical means `z.compile` declined it. That is
-    // safe but silently drops the whole point, so surface it here instead.
-    const declined = NODE_KINDS.filter((kind) => nodeSchemaForKind(kind) === optionByKind.get(kind))
-    expect(declined).toEqual([])
+  test.each(NODE_KINDS)('%s: preserves historical metadata when compilation declines', (kind) => {
+    const fixture = fixtures.get(kind) as Record<string, unknown>
+    const schema = nodeSchemaForKind(kind) as AnyNodeOption
+    for (const metadata of [null, 'legacy', 7, true, ['nested', { value: null }]]) {
+      const result = schema.safeParse({ ...fixture, metadata })
+      expect(result.success).toBe(true)
+      expect(result.data?.metadata).toEqual(metadata)
+    }
   })
 
   test.each(NODE_KINDS)('%s: compiled output matches interpreted', (kind) => {

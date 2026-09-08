@@ -1489,8 +1489,12 @@ const useScene: UseSceneStore = create<SceneState>()(
         const previousInstalledPlugins = get().installedPlugins
         // Guard against the *next* plugin list: the store still holds the old
         // one, and re-marks for newly enabled kinds must pass the guard.
+        let preparingInstall = true
         const dirtyNodes = new GuardedDirtySet(
-          () => ({ nodes: get().nodes, installedPlugins: nextInstalledPlugins }),
+          () =>
+            preparingInstall
+              ? { nodes: get().nodes, installedPlugins: nextInstalledPlugins }
+              : get(),
           get().dirtyNodes,
         )
         for (const node of Object.values(get().nodes)) {
@@ -1501,6 +1505,9 @@ const useScene: UseSceneStore = create<SceneState>()(
             if (nodeRegistry.get(node.type)?.dirtyTracking !== false) dirtyNodes.add(node.id)
           }
         }
+        // Undo/redo restores installedPlugins without replacing this set.
+        // After preparation its guard must follow the live scene again.
+        preparingInstall = false
         set({
           installedPlugins: nextInstalledPlugins,
           hasExplicitPluginInstallState: options?.explicit ?? get().hasExplicitPluginInstallState,

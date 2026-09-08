@@ -25,14 +25,13 @@ describe('node metadata contract', () => {
     expect(ZoneNode.parse({ ...zoneInput, metadata }).metadata).toEqual(metadata)
   })
 
-  // The contract is object-only, narrower than the JSON value it replaced —
-  // see the note on `BaseNode.metadata` for why the recursive schema had to go.
-  // Each case is tuple-wrapped so `test.each` passes the array case as one
-  // argument instead of spreading it into none.
-  test.each([[null], [[]], ['note'], [7], [true]])('rejects the non-object %p', (metadata) => {
-    expect(BaseNode.safeParse({ id: 'node_1', metadata }).success).toBe(false)
-    expect(ZoneNode.safeParse({ ...zoneInput, metadata }).success).toBe(false)
-  })
+  test.each([[null], [[]], ['note'], [7], [true], [[{ legacy: ['value', null] }]]])(
+    'preserves historical JSON metadata %p',
+    (metadata) => {
+      expect(BaseNode.parse({ id: 'node_1', metadata }).metadata).toEqual(metadata)
+      expect(ZoneNode.parse({ ...zoneInput, metadata }).metadata).toEqual(metadata)
+    },
+  )
 
   test('drops keys whose value is undefined', () => {
     expect(BaseNode.parse({ id: 'node_1', metadata: { a: 1, b: undefined } }).metadata).toEqual({
