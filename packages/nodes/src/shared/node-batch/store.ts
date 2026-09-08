@@ -273,7 +273,7 @@ export class NodeBatchStore implements NodeBatchStoreApi {
     // releases everything on 'thumbnail:before-capture' so the real item
     // meshes are back on the scene layer for the export clone — this marker
     // is the backstop for any capture path that skips the emit.
-    batched.userData.pascalExport = 'strip'
+    batched.userData.aedifexExport = 'strip'
     batched.castShadow = true
     batched.receiveShadow = true
     batched.perObjectFrustumCulled = true
