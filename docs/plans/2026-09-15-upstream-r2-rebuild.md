@@ -27,7 +27,7 @@ Resolve source conflicts individually with all three trees and call sites. Never
 - [x] Reconcile local CLI, MCP execution/security and IFC import.
 - [x] Reconcile Core, app wiring, identity, manifests and documentation.
 - [x] Regenerate dependencies; pass build, types, MCP and relevant/full tests.
-- [ ] Adapt SaaS Capture/Three dependencies; relink packages and pass web build.
+- [x] Adapt SaaS Capture/Three dependencies; relink packages and pass web build.
 - [x] Review compatibility/architecture/public boundaries and fix confirmed issues.
 - [ ] Commit integration, normal merge to main, validate final state and push required remotes.
 
@@ -36,3 +36,5 @@ Resolve source conflicts individually with all three trees and call sites. Never
 `bun install`; `bun run test`; `bun run build`; `bun run check-types`; `bun --filter @aedifex/mcp test`; SaaS `pnpm install --force` and `pnpm --filter @aedifex-saas/web run build`. Compare known SaaS namespace warnings with baseline 30. Never build Docker locally or deploy.
 
 Validation on the integration tree: full tests 13/13 tasks; types 11/11; portable build 8/8; local staged CLI smoke passed, including MCP-only startup and scene round-trip.
+
+Final main merge e2370147b preserves protected main2968cee12 as first parent and reviewed integration07143cf82 as second parent. Every historical source conflict was reviewed individually; only the regenerated lock differs from the tested integration. Final types11/11, tests13/13, build8/8 and MCP379/0 passed. SaaS build passed after clearing stale webpack cache for same-version local file packages; its30 namespace warnings match the baseline. No deployment.
