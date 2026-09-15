@@ -18,8 +18,8 @@ import {
   SlabNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { hideFromScene, STAND_CLEARANCE, showInScene } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { hideFromScene, STAND_CLEARANCE, showInScene } from '@aedifex/viewer'
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
 import { buildFirstPersonColliderWorldFromRegistry } from './build-collider-world'
 
@@ -35,7 +35,7 @@ function registerColliderDefinition(
     schemaVersion: 1,
     category,
     surfaceRole,
-    capabilities: {},
+    capabilities: { deletable: false },
   } as AnyNodeDefinition)
 }
 

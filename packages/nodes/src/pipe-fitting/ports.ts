@@ -1,4 +1,4 @@
-import type { NodePort } from '@pascal-app/core'
+import type { NodePort } from '@aedifex/core'
 import { Euler, Vector3 } from 'three'
 import { INCHES_TO_METERS } from '../duct-segment/geometry'
 import type { PipeFittingNode } from './schema'

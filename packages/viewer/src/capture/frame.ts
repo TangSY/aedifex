@@ -1,4 +1,4 @@
-import type { CaptureSessionDescriptor } from '@pascal-app/core/capture'
+import type { CaptureSessionDescriptor } from '@aedifex/core/capture'
 import { Matrix4 } from 'three'
 
 export function resolveCaptureFrameMatrix(

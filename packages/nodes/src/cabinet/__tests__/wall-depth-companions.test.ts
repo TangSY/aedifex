@@ -3,7 +3,7 @@ import type {
   AnyNode,
   AnyNodeId,
   CabinetModuleNode as CabinetModuleNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildWallCornerDepthIndex, wallCornerWidthOverridesForDepthTargets } from '../run-ops'
 import { CabinetModuleNode, CabinetNode } from '../schema'
 

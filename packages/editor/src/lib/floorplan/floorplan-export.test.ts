@@ -10,8 +10,8 @@ import {
   type NodeCategory,
   nodeRegistry,
   registerNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import PDFDocument from 'pdfkit'
 import { z } from 'zod'
 import { splitFloorplanOverlay } from '../../components/editor-2d/renderers/floorplan-registry-layer'
@@ -359,14 +359,14 @@ describe('floor plan export policy', () => {
       isFloorplanExportAnnotationGeometry({
         kind: 'group',
         children: [],
-        metadata: { 'pascal:editor/floorplan': { annotationRole: 'measurement' } },
+        metadata: { 'aedifex:editor/floorplan': { annotationRole: 'measurement' } },
       }),
     ).toBe(true)
     expect(
       isFloorplanExportAnnotationGeometry({
         kind: 'group',
         children: [],
-        metadata: { 'pascal:editor/floorplan': { annotationRole: 'manual-dimension' } },
+        metadata: { 'aedifex:editor/floorplan': { annotationRole: 'manual-dimension' } },
       }),
     ).toBe(true)
     expect(isFloorplanExportAnnotationGeometry({ kind: 'polygon', points: [] })).toBe(false)
@@ -455,7 +455,7 @@ describe('collectFloorplanSchedules', () => {
         defaults: () => ({}) as never,
         capabilities: {},
         extensions: {
-          'pascal:editor/floorplan': {
+          'aedifex:editor/floorplan': {
             schedule: () => scheduleFor('Doors'),
           },
         },
@@ -468,7 +468,7 @@ describe('collectFloorplanSchedules', () => {
         defaults: () => ({}) as never,
         capabilities: {},
         extensions: {
-          'pascal:editor/floorplan': {
+          'aedifex:editor/floorplan': {
             schedule: () => scheduleFor('Rooms'),
           },
         },
@@ -587,12 +587,12 @@ describe('collectFloorplanGeometry', () => {
       } as AnyNodeDefinition)
       await loadPlugin({
         id: enabledPluginId,
-        apiVersion: 1,
+        apiVersion: 2,
         nodes: [enabledDefinition],
       })
       await loadPlugin({
         id: disabledPluginId,
-        apiVersion: 1,
+        apiVersion: 2,
         nodes: [siteDefinition(disabledKind, () => ({ kind: 'circle', cx: 0, cy: 0, r: 1 }))],
       })
 
@@ -840,6 +840,22 @@ describe('resolveExportLevels', () => {
       { id: attic.id, label: 'Level 3' },
     ])
   })
+
+  test.each([[null], ['legacy floor'], [7], [true], [['legacy']]])(
+    'exports ordinary levels with historical metadata %p without changing it',
+    (metadata) => {
+      const legacyLevel = LevelNode.parse({ ...ground, metadata })
+      const legacyNodes = { ...nodes, [ground.id]: legacyLevel }
+      selectLevel(ground.id)
+
+      expect(resolveExportLevels(legacyNodes)).toEqual([
+        { id: ground.id, label: 'Level 0' },
+        { id: upper.id, label: 'Level 1' },
+        { id: attic.id, label: 'Level 3' },
+      ])
+      expect(legacyNodes[ground.id].metadata).toEqual(metadata)
+    },
+  )
 
   test('skips the roof level when it is the selected level', () => {
     selectLevel(roof.id)

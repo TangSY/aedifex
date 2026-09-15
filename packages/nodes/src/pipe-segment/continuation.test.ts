@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, nodeRegistry, PipeFittingNode, registerNode } from '@pascal-app/core'
+import { type AnyNode, nodeRegistry, PipeFittingNode, registerNode } from '@aedifex/core'
 import { pipeFittingDefinition } from '../pipe-fitting/definition'
 import { getPipeFittingPorts } from '../pipe-fitting/ports'
 import { createPipeRunEndCap } from '../shared/automatic-run-end-cap'

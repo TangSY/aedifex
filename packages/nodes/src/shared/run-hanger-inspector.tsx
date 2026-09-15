@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNodeId, emitter, useScene } from '@pascal-app/core'
+import { type AnyNodeId, emitter, useScene } from '@aedifex/core'
 import { useMemo } from 'react'
 import { planRunHangerSlots, type SupportedRun } from './run-hangers'
 import SystemCheckPanel from './system-check-panel'

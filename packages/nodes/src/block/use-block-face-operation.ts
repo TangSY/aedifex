@@ -3,7 +3,7 @@ import {
   type BlockTopology,
   type SceneApi,
   useLiveNodeOverrides,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   isGridSnapActive,
   meshEditScope,
@@ -11,7 +11,7 @@ import {
   swallowNextClick,
   useEditor,
   useInteractionScope,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { type Dispatch, type MutableRefObject, type SetStateAction, useCallback } from 'react'
 import type { Camera, Object3D } from 'three'
 import { Vector2, Vector3 } from 'three'

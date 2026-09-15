@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { TerrainVerb } from '@pascal-app/core'
+import type { TerrainVerb } from '@aedifex/core'
 import { brushRingColor } from './terrain-verb-color'
 
 /**

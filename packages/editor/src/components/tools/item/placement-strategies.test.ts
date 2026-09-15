@@ -8,7 +8,7 @@ import {
   useScene,
   type WallEvent,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { BufferGeometry, Mesh, MeshBasicMaterial, type Object3D, Vector3 } from 'three'
 import { faceHostStrategy, floorStrategy, wallStrategy } from './placement-strategies'
 import type { PlacementContext, SpatialValidators } from './placement-types'

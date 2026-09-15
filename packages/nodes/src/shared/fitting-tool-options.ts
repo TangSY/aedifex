@@ -1,5 +1,5 @@
-import type { ToolOption } from '@pascal-app/core'
-import { useEditor } from '@pascal-app/editor'
+import type { ToolOption } from '@aedifex/core'
+import { useEditor } from '@aedifex/editor'
 import { reducerOutletDiameter } from './reducer-size'
 
 const label = (value: string) =>

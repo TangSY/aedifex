@@ -1,5 +1,5 @@
 /**
- * End-to-end smoke test for @pascal-app/mcp.
+ * End-to-end smoke test for @aedifex/mcp.
  *
  * Spawns the compiled stdio binary as a child process, connects as an MCP
  * client, and exercises a handful of representative tools. This test requires
@@ -16,7 +16,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-const BIN_PATH = resolve(__dirname, '../dist/bin/pascal-mcp.js')
+const BIN_PATH = resolve(__dirname, '../dist/bin/aedifex-mcp.js')
 
 async function main(): Promise<void> {
   if (!existsSync(BIN_PATH)) {
@@ -30,7 +30,7 @@ async function main(): Promise<void> {
     args: [BIN_PATH, '--stdio'],
     stderr: 'inherit',
   })
-  const client = new Client({ name: 'pascal-mcp-smoke', version: '0.0.0' })
+  const client = new Client({ name: 'aedifex-mcp-smoke', version: '0.0.0' })
 
   try {
     await client.connect(transport)

@@ -8,7 +8,7 @@ import {
   sceneRegistry,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Euler, Quaternion, Vector3 } from 'three'
 import { isFreshPlacementMetadata } from '../../../lib/placement-metadata'
 import { snapToHalf } from '../item/placement-math'

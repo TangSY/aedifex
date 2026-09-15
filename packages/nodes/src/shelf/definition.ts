@@ -1,4 +1,4 @@
-import type { HandleDescriptor, NodeDefinition, ShelfNode as ShelfNodeType } from '@pascal-app/core'
+import type { HandleDescriptor, NodeDefinition, ShelfNode as ShelfNodeType } from '@aedifex/core'
 import { sanitizeShelfDimensions } from './dimensions'
 import { buildShelfFloorplan } from './floorplan'
 import { shelfResizeAffordance, shelfRotateAffordance } from './floorplan-affordances'

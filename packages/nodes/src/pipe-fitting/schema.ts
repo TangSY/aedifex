@@ -1,1 +1,1 @@
-export { PipeFittingNode } from '@pascal-app/core'
+export { PipeFittingNode } from '@aedifex/core'

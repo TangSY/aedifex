@@ -5,7 +5,7 @@ import {
   getAngleToSegmentReference,
   type SegmentAngleReference,
   type WallPlanPoint,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { Html } from '@react-three/drei'
 import { useMemo } from 'react'
 import { BufferGeometry, Vector3 } from 'three'

@@ -8,7 +8,7 @@ import type { Vec2 } from './snap'
  *   begin → (preview → snap? → apply → cascade dirty)* → commit | cancel
  *
  * Bracketed by `pauseHistory()` / `resumeHistory()` so the entire drag is one
- * undo step. The React hook (`useDragAction` in `@pascal-app/editor`) wraps
+ * undo step. The React hook (`useDragAction` in `@aedifex/editor`) wraps
  * this with event subscriptions; tests drive it directly.
  */
 

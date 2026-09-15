@@ -8,7 +8,7 @@ import {
   sampleWallCenterline,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { resolveWallOpeningCeiling } from '../shared/wall-opening-ceiling'
 
 const point = (x: number, y: number, z: number) => [x, y, z] as [number, number, number]

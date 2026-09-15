@@ -1,14 +1,14 @@
 'use client'
 
 import { Icon } from '@iconify/react'
-import { type IconRef, useScene } from '@pascal-app/core'
+import { type IconRef, useScene } from '@aedifex/core'
 import { ChevronLeft, ChevronRight, ExternalLink, Puzzle } from 'lucide-react'
 import { lazy, type ReactNode, Suspense, useState, useSyncExternalStore } from 'react'
 import { editorHostPanelRegistry } from '../../../../lib/plugin-panels'
 import { Button } from '../../primitives/button'
 
 const PLUGIN_AUTHORING_URL =
-  'https://editor.pascal.app/docs/developers/plugins'
+  'https://editor.aedifex.app/docs/developers/plugins'
 
 function renderPluginIcon(ref: IconRef): ReactNode {
   if (ref.kind === 'url') {
@@ -151,7 +151,7 @@ export function PluginsPanel() {
             rel="noreferrer"
             target="_blank"
           >
-            Create a Pascal plugin
+            Create an Aedifex plugin
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
         </div>
@@ -209,7 +209,7 @@ export function PluginsPanel() {
           rel="noreferrer"
           target="_blank"
         >
-          Create a Pascal plugin
+          Create an Aedifex plugin
           <ExternalLink className="h-3.5 w-3.5" />
         </a>
       </div>

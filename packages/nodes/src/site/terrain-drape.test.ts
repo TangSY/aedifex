@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { createTerrainField, heightAt, surfaceHeightAt, type TerrainField } from '@pascal-app/core'
+import { createTerrainField, heightAt, surfaceHeightAt, type TerrainField } from '@aedifex/core'
 import {
   buildDrapedPolyline,
   creaseCrossings,

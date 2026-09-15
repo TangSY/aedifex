@@ -9,8 +9,8 @@ import {
   type WallNode,
   type WallPlanPoint,
   WallNode as WallSchema,
-} from '@pascal-app/core'
-import { isSegmentLongEnough } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { isSegmentLongEnough } from '@aedifex/editor'
 import { resolveWallOpeningCeiling } from '../shared/wall-opening-ceiling'
 
 /**

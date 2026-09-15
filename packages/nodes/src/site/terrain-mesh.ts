@@ -1,4 +1,4 @@
-import type { HeightPatch, TerrainField } from '@pascal-app/core'
+import type { HeightPatch, TerrainField } from '@aedifex/core'
 import { BufferAttribute, BufferGeometry, DynamicDrawUsage, Sphere } from 'three'
 import {
   buildTerrainMesh,

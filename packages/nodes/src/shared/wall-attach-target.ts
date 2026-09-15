@@ -11,7 +11,7 @@ import {
   nearestWallSegment,
   WALL_SNAP_DISTANCE_M,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Shared helpers for the kinds whose 2D move snaps onto a wall in plan

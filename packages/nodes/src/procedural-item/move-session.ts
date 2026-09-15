@@ -7,7 +7,7 @@ import {
   useLiveNodeOverrides,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   boundsOf,
   boxCorners,
@@ -19,7 +19,7 @@ import {
   resolveProceduralWallPlacement,
   transformPoint,
   validateProceduralRelations,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import {
   isGridSnapActive,
   isMagneticSnapActive,
@@ -27,7 +27,7 @@ import {
   triggerSFX,
   useEditor,
   usePlacementPreview,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { itemFloorplanMoveTarget } from '../item/floorplan-move'
 import {
   findClosestWallInPlan,

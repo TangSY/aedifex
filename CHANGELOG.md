@@ -1,6 +1,8 @@
 # Changelog
 
-## 1.0.0 (2026-09-12)
+## Upstream 1.0.0 (2026-09-12)
+
+The following upstream release history includes hosted services and publication workflows that Aedifex does not ship. Aedifex keeps its repository-local CLI and package policy.
 
 ### Features
 
@@ -22,6 +24,22 @@
 - **Optional hosted key in the Cursor plugin** — `.cursor-plugin/plugin.json` declares an optional `PASCAL_API_KEY` variable and points at a Cursor-dialect `.cursor-plugin/mcp.json` that adds a `pascal-hosted` server for `https://editor.pascal.app/api/mcp`, so a Cursor install can reach hosted projects, Capture scans, and shared workspaces while the credential-free local server keeps working; the portable `mcp.json` stays credential-free because Agent Plugins 1.0.0 forbids secrets and placeholder expansion in `headers`, so Codex configures the hosted endpoint with `codex mcp add --bearer-token-env-var PASCAL_API_KEY` instead ([#849](https://github.com/pascalorg/editor/pull/849))
 - **Capture packages folded into core and viewer** — `@pascal-app/capture-protocol` is now `@pascal-app/core/capture` and `@pascal-app/capture-viewer` is now `@pascal-app/viewer/capture` (plus `@pascal-app/viewer/capture/preview`), so 1.0.0 ships seven packages instead of nine. Neither package was ever published to npm, so there is no npm migration; in-repo and workspace consumers change their import paths only.
 
+### Breaking changes
+
+- **`@aedifex/core` 0.10.0** — plugin manifests now require `apiVersion: 2`; legacy
+  manifest-level `panels` metadata is rejected instead of being silently ignored.
+  Register editor panels through the editor host-panel registry and declare
+  `pluginId`, contributed `kinds`, and `defaultInstalled` there. Node definitions
+  must now declare `capabilities.deletable` explicitly. The removed
+  `DEFAULT_ELEVATOR_LEVEL_HEIGHT` and `getElevatorLevelHeight` exports are replaced
+  by `DEFAULT_LEVEL_HEIGHT` and `getStoredLevelHeight`.
+- **`@aedifex/viewer` 0.10.0** — the legacy `WalkthroughControls` and `SlabSystem`
+  exports are removed. Use the current GLB walkthrough controller for walkthrough
+  playback and load slab behavior from the `@aedifex/nodes` registry definition.
+- **`@aedifex/nodes` 0.2.0** — the private door implementation module is no longer
+  exposed as `@aedifex/nodes/door/door-math`. Consumers should use registered door
+  capabilities and editor tools instead of importing node internals.
+
 ### Fixes
 
 - Localize terrain and ground-cover brush updates, preserve pending dab uploads, and keep Environment's day/night light graph stable.
@@ -39,6 +57,14 @@
 - Stop registered placement tools when their plugin is uninstalled in either view, preserving authored nodes and requiring explicit reactivation after reinstall.
 - Include enabled, visible Site contributions below architecture in floorplan PDFs, preserving building transforms, inline images, and even-odd holes. Hidden Sites also hide children associated through their declared child list.
 - The Claude Code plugin root is now `skills/` instead of the repository root, so installing `pascal-agent-skills@pascal` copies the two skill bundles and their MCP configuration instead of caching the whole monorepo and running `bun install` against the root lockfile ([#832](https://github.com/pascalorg/editor/pull/832))
+- **`@aedifex/editor` 0.9.3** — require explicit delete capability semantics in
+  registry-driven UI and show registered kinds through a generic scene-tree row.
+- **`@aedifex/mcp` 0.3.3** — serialize SQLite writes on each store connection while
+  preserving optimistic version checks and queue progress after a rejected write.
+- **`@aedifex/ifc-converter` 0.1.3** — restore bounded IFC placement traversal for
+  malformed `PlacementRelTo` cycles.
+- **`@aedifex/plugin-trees` 0.1.1** — restore Nature panel ownership, contributed
+  kinds, and default-install metadata for the v2 plugin contract.
 - Preserve custom scene materials across save, load, clone, fork, and live sync. Materials were dropped at every persistence boundary, so a scene reopened with default surfaces. Collections were dropped on MCP import for the same reason ([#597](https://github.com/pascalorg/editor/pull/597)) by [@ShiroKSH](https://github.com/ShiroKSH)
 - Wall junction mitering is now deterministic for exactly-collinear walls, so identical scenes produce identical geometry regardless of node iteration order ([#596](https://github.com/pascalorg/editor/pull/596)) by [@tomatotomata](https://github.com/tomatotomata)
 

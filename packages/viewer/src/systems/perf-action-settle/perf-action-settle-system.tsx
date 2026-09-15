@@ -1,4 +1,4 @@
-import { useScene } from '@pascal-app/core'
+import { useScene } from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import { PERF_OVERLAY_ENABLED } from '../../lib/gpu-perf'
 import { notifyPerfActionFrame } from '../../lib/perf-actions'

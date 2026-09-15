@@ -20,9 +20,11 @@ Every node shares these fields:
   name?: string             // optional display name
   parentId: string | null   // parent node ID; null = root
   visible: boolean          // defaults to true
-  metadata: Record<string, unknown>  // arbitrary JSON, defaults to {}
+  metadata: Record<string, unknown> | JSONType  // preserves historical JSON values, defaults to {}
 }
 ```
+
+Metadata uses an object-first schema with a recursive JSON fallback. Saved scalar, array, and null values remain valid and are never silently rewritten. Zod may decline optional compilation for recursive schemas; the interpreted parser remains the compatibility baseline.
 
 ## Defining a New Node Type
 
@@ -50,8 +52,8 @@ Then add `MyNode` to the `AnyNode` union in `packages/core/src/schema/types.ts`.
 Always use `.parse()` to validate and generate a proper typed ID. Never construct a plain object manually.
 
 ```ts
-import { WallNode } from '@pascal-app/core'
-import { useScene } from '@pascal-app/core'
+import { WallNode } from '@aedifex/core'
+import { useScene } from '@aedifex/core'
 
 // 1. Parse validates and fills defaults (including auto-generated id)
 const wall = WallNode.parse({ name: 'Wall 1', start: [0, 0], end: [5, 0] })

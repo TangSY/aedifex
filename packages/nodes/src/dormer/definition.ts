@@ -4,7 +4,7 @@ import {
   type DormerNode as DormerNodeType,
   type HandleDescriptor,
   type NodeDefinition,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildDormerRoofCut } from './csg-geometry'
 import { buildDormerFloorplan } from './floorplan'
 import { dormerPaint } from './paint'

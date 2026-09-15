@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { GROUND_SUPPORT_ID } from '../../hooks/spatial-grid/support-host-id'
+import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import { encodeTerrainField } from '../../lib/terrain-codec'
 import { applyHeightPatch, createTerrainField, flattenPatch } from '../../lib/terrain-field'
 import { type AnyNode, type AnyNodeId, DoorNode, WallNode } from '../../schema'

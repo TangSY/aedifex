@@ -1,245 +1,165 @@
-# Pascal CLI
+# Aedifex CLI
 
-Run the open-source [Pascal 3D building editor](https://editor.pascal.app) locally
-from your terminal—without cloning or building the Pascal repository.
+Repository-local CLI and packed-runtime test harness for the
+[Aedifex 3D building editor](https://github.com/TangSY/aedifex).
 
-[![npm version](https://img.shields.io/npm/v/@pascal-app/cli?label=npm)](https://www.npmjs.com/package/@pascal-app/cli)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
-[![Pascal documentation](https://img.shields.io/badge/docs-editor.pascal.app-111111)](https://editor.pascal.app/docs/developers/local-editor)
 
-```bash
-npx @pascal-app/cli editor
-```
+This package is private and is not published to npm. Normal development uses `bun dev`
+from the repository root. The CLI remains available for local packed-runtime and MCP
+integration testing.
 
-On an interactive first run through `npx`, Pascal installs the same CLI version globally
-after the editor becomes healthy. The shorter `pascal` command is therefore available
-for `status`, `logs`, `stop`, and future sessions without another setup step. If the
-global installation is unavailable because of local npm permissions, the editor remains
-running and the CLI shows the equivalent `npx` commands plus the manual install command.
-
-The first run walks through local storage, the one-time web runtime download, automatic
-editor and MCP port selection, process startup, and both health checks with live terminal
-feedback. It then opens `http://pascal.localhost:<port>`. Your projects are stored
-separately from the runtime, so updating the CLI does not replace your work.
+The first run walks through local storage, runtime installation, automatic editor and
+MCP port selection, process startup, and both health checks with live terminal feedback.
+It then opens `http://aedifex.localhost:<port>`. Projects are stored separately from
+the runtime, so rebuilding the CLI does not replace your work.
 
 ## Why use the CLI?
 
-- Run a complete local Pascal editor with one command.
+- Run a complete local Aedifex editor with one command.
 - Keep projects on your machine in a local SQLite database.
 - Start and stop the editor independently from your terminal session.
 - Inspect health, logs, versions, storage, and project state from scripts or agents.
 - Connect Codex, Claude Code, Cursor, or another MCP client to the same local projects.
-- Update through a health-checked activation that rolls back if the new runtime fails.
+- Exercise health-checked runtime activation and rollback in local integration tests.
 
 ## Requirements
 
 - Node.js 22.13 or newer
-- npm, including when the CLI itself is launched with pnpm or Bun
+- Bun 1.3+
 - A browser, unless you pass `--no-open`
-- Network access the first time you start the editor, or a local copy of the web runtime
-  archive (see [The web editor runtime](#the-web-editor-runtime)); `pascal mcp connect`
-  needs neither
+- A locally built and staged runtime for the web editor; MCP-only use needs the staged MCP service.
 
-The initial supported release is macOS. A clean claim-command installation also passed in
-a Linux arm64 container. This is not an x86_64 or Windows result.
+The local packed runtime is primarily tested on macOS. Broader Linux and Windows
+support is still being verified.
 
-Use one active agent client per local CLI service. The standalone local HTTP runtime shares active scene state between clients; use separate `PASCAL_HOME` directories and service processes when independent concurrent work is required.
+Use one active agent client per local CLI service. Its active scene state is shared;
+use separate `AEDIFEX_HOME` directories and service processes for independent work.
 
-## Install and run
+## Build and run from the repository
 
-Use your preferred package runner:
-
-```bash
-# npm
-npx @pascal-app/cli editor
-
-# pnpm
-pnpm dlx @pascal-app/cli editor
-
-# Bun
-bunx @pascal-app/cli editor
-```
-
-To install the `pascal` command before starting the editor:
+Build the editor runtime and CLI, stage the runtime, then link the local command:
 
 ```bash
-npm install --global @pascal-app/cli
-pascal editor
+cd packages/cli
+bun run build-runtime
+bun run build
+bun run stage-runtime
+bun link
+aedifex editor
 ```
 
-After the interactive `npx` first run or a global installation, `pascal status`,
-`pascal logs --follow`, and the other commands work directly in the current terminal
-and future sessions.
+`bun link` links the current checkout; it does not publish or download an npm package.
 
 Use `--no-open` on a headless machine. Use `--foreground` when a process supervisor
 should own the editor or when you want logs attached to the current terminal.
-Pascal asks the operating system for an available loopback port by default, so it does
+Aedifex asks the operating system for an available loopback port by default, so it does
 not compete with other local development servers. Pass `--port <n>` to request a
-specific port; if it is occupied, Pascal reports that and safely selects another one.
+specific port; if it is occupied, Aedifex reports that and safely selects another one.
 
 ```bash
-npx @pascal-app/cli editor --no-open
-npx @pascal-app/cli editor --foreground --no-open
+aedifex editor --no-open
+aedifex editor --foreground --no-open
 ```
 
 ## The web editor runtime
 
-The npm package carries the CLI and the MCP service only: about 0.5 MB compressed and
-2.5 MB installed. The web editor itself—the Next.js server, its static assets, and the
-bundled item library—is published as one archive per CLI version, about 64 MB compressed
-and 106 MB on disk.
+`bun run stage-runtime` stages the locally built Next.js server and assets in
+`packages/cli/dist/runtime`, and bundles MCP separately in
+`packages/cli/dist/services/aedifex-mcp.mjs`.
 
-Every command that starts the editor (`editor`, `start`, `open`, `resume`, `projects`,
-`project open`, `update`) resolves that runtime in this order:
+When the editor starts, the CLI reuses the active local runtime or installs the staged
+bundle into `~/.pascal/runtime/<version>`. Use `--runtime <directory>` to select a local
+build explicitly, or set `AEDIFEX_BUNDLED_RUNTIME_DIR` to override the default bundle.
+No npm release channel, hosted account login, runtime archive, or remote download is used.
+Concurrent installs share the runtime lock.
 
-1. `PASCAL_BUNDLED_RUNTIME_DIR`, an already-extracted runtime directory.
-2. `--runtime <directory-or-archive>`, which every one of those commands accepts.
-3. The runtime already installed in `~/.pascal/runtime/<version>` for this CLI version.
-4. The release asset recorded in the package, streamed into `~/.pascal/tmp` with download
-   progress in the terminal.
+Existing v1 runtime manifests remain readable; new staging emits v2. On first use,
+the previous MCP process is verified and retired before the independent managed MCP
+service starts. Project storage is preserved. An unverified process blocks migration.
 
-A downloaded archive is checked against the SHA-256 digest published inside the npm
-package before anything is extracted. On a mismatch the CLI deletes the temporary file and
-installs nothing, so a corrupted or substituted archive never becomes your runtime.
-Concurrent first runs share one download through the runtime install lock.
-
-An offline or air-gapped machine can take the archive from the release page:
-
-```bash
-# On a connected machine
-curl --fail --location --remote-name \
-  "https://github.com/pascalorg/editor/releases/download/@pascal-app/cli@<version>/pascal-web-runtime-<version>.tar.gz"
-
-# On the target machine
-pascal editor --runtime ./pascal-web-runtime-<version>.tar.gz
-```
-
-An archive passed with `--runtime` is digest-verified exactly like a download. A directory
-is installed as it is, which is the escape hatch for a runtime you built yourself from this
-repository.
-
-`HTTPS_PROXY` (or `ALL_PROXY`), including a proxy that requires basic authentication, and
-`NO_PROXY` are honoured; only `https://` URLs are accepted. When a download fails, the CLI
-prints the archive URL, the expected digest, and the `--runtime` command to run after
-copying the file across.
-
-Agent tools need none of this. `pascal mcp connect` starts the MCP service that ships in
-the npm package, so an agent can read and write local projects on a machine that has never
-downloaded the web runtime.
+`aedifex mcp connect` starts the locally bundled service without installing or starting
+the web editor.
 
 ## Commands
 
 | Command | Purpose |
 | --- | --- |
-| `pascal editor [--runtime <path>]` | Install the web runtime if needed, ensure the editor is running, and open it. |
-| `pascal start [--runtime <path>]` | Ensure the editor is running without opening a browser. |
-| `pascal stop [--force]` | Stop the managed editor and MCP processes; `--force` is a guarded recovery path. |
-| `pascal restart` | Restart the editor and MCP service with their current configuration. |
-| `pascal status [--json]` | Show editor and MCP health, version, PIDs, ports, URL, and runtime metadata. |
-| `pascal open [project]` | Start Pascal if needed, then open the editor or a project by ID, ID prefix, or unique name. |
-| `pascal resume [project]` | Open the latest project, or a selected project. |
-| `pascal projects [--json]` | List local projects. |
-| `pascal logs [--follow]` | Read or follow the managed editor log. |
-| `pascal update [--version <version>] [--runtime <path>]` | Health-check and activate the runtime this CLI publishes, or an npm-published target. |
-| `pascal doctor [--json]` | Diagnose Node.js, storage, runtime, process, and plugin state. |
-| `pascal info [--json]` | Print platform, paths, runtime, and plugin context. |
-| `pascal project list [--json]` | Explicit form of `pascal projects`. |
-| `pascal project open <id-or-name>` | Explicit form of `pascal open <project>`. |
-| `pascal agent claim [--no-open] [--json]` | Link an autonomous hosted agent to the person accountable for it. |
-| `pascal agent status [--json]` | Verify the hosted agent credential and inspect its claim and organization scope. |
-| `pascal mcp connect` | Stable local connector for MCP clients; starts the bundled MCP service without the web runtime. |
-| `pascal mcp status [--json]` | Show managed MCP health. |
-| `pascal mcp config [--json]` | Print generic MCP client configuration. |
-| `pascal mcp setup <codex\|claude>` | Configure an installed client without overwriting existing entries. |
-| `pascal plugin list [--json]` | Inspect the reserved managed-plugin lock. |
-
-When you do not install globally, prefix commands with a runner—for example,
-`npx @pascal-app/cli doctor`.
+| `aedifex editor [--runtime <directory>]` | Install a local runtime if needed, start the editor, and open it. |
+| `aedifex start [--runtime <directory>]` | Start the editor without opening a browser. |
+| `aedifex stop [--force]` | Stop managed editor and MCP processes; force remains identity-checked. |
+| `aedifex restart` | Restart the editor and repoint MCP to its local URL. |
+| `aedifex status [--json]` | Show editor and MCP health and process metadata. |
+| `aedifex open [project]` | Open the editor or a project by ID, ID prefix, or unique name. |
+| `aedifex resume [project]` | Open the latest project, or a selected project. |
+| `aedifex projects [--json]` | List local projects. |
+| `aedifex logs [--follow]` | Read or follow the managed editor log. |
+| `aedifex update [--runtime <directory>]` | Health-check and activate the local runtime with rollback on failure. |
+| `aedifex doctor [--json]` | Diagnose Node.js, storage, runtime, process, and plugin state. |
+| `aedifex info [--json]` | Print platform, paths, runtime, and plugin context. |
+| `aedifex project list [--json]` | Explicit form of `aedifex projects`. |
+| `aedifex project open <id-or-name>` | Explicit form of `aedifex open <project>`. |
+| `aedifex mcp connect` | Start or reuse the independent local MCP service. |
+| `aedifex mcp status [--json]` | Show managed MCP health. |
+| `aedifex mcp config [--json]` | Print generic MCP client configuration. |
+| `aedifex mcp setup <codex\|claude>` | Configure an installed client without overwriting existing entries. |
+| `aedifex plugin list [--json]` | Inspect the reserved managed-plugin lock. |
 
 ## Local data and security
 
-Pascal binds the editor and MCP service only to `127.0.0.1` and uses the reserved
-`.localhost` hostname. MCP requires a random token stored in Pascal's private runtime
+Aedifex binds the editor and MCP service only to `127.0.0.1` and uses the reserved
+`.localhost` hostname. MCP requires a random token stored in Aedifex's private runtime
 directory; client configuration never contains that token.
 
 ```text
 ~/.pascal/
-  runtime/<version>/           installed web editor runtimes
-  data/pascal.db               projects and scenes
+  runtime/<version>/           installed local editor runtimes
+  data/aedifex.db              projects and scenes
   logs/editor.log              detached editor and MCP output
   run/editor.json              managed editor process identity
   run/mcp.json                 managed MCP service identity
   run/mcp-token                private local MCP token
-  tmp/                         runtime downloads in progress
+  tmp/                         reserved temporary storage
   plugins/                     reserved verified-plugin storage
-  pascal.plugins.lock          reserved managed-plugin lock
+  aedifex.plugins.lock          reserved managed-plugin lock
 ```
 
+The `~/.pascal/` root is intentionally retained for compatibility with existing
+Aedifex editor and MCP data.
+
 Runtime installation, project data, process state, and logs have separate lifecycles.
-The CLI does not include a command that deletes project data. Updates retain the
-previous runtime for rollback, and `pascal doctor` warns when more than three versions
-have accumulated.
+The CLI does not include a command that deletes project data. Local runtime activations
+retain the previous runtime for rollback, and `aedifex doctor` warns when more than three
+versions have accumulated.
 
 ## Local AI agents
 
-The MCP service ships in the npm package. It starts automatically with `pascal editor`, and
-`pascal mcp connect` starts it on its own—no web runtime download, no editor process. Add
-the stable connector to your client once:
+The MCP server starts automatically with `aedifex editor`. It also starts independently
+when a client runs `aedifex mcp connect`. Add the stable connector to your client once:
 
 ```bash
-pascal mcp setup codex
-pascal mcp setup claude
+aedifex mcp setup codex
+aedifex mcp setup claude
 ```
 
-Or use `pascal mcp config` for JSON-based clients. Ask the agent to read
-`pascal://agent-guide`, list or load a scene, edit it, and return the `editorUrl`. Those
-`editorUrl` values point at the local editor; run `pascal editor` to open one, which is
-also when the web runtime is downloaded.
-
-## Hosted autonomous agents
-
-An autonomous agent registered with hosted Pascal receives its own API key and identity. The
-agent can create a short-lived claim code so the person working with it can establish the
-accountability link:
-
-```bash
-PASCAL_API_KEY='sk_live_...' pascal agent claim
-PASCAL_API_KEY='sk_live_...' pascal agent status
-```
-
-The CLI sends that key once to Pascal's claim endpoint, does not store or print it, and opens
-the claim page. Use `--no-open` on a headless host. `--json` returns structured output without
-opening a browser. A new claim request supersedes the agent's previous code; each code expires
-after 15 minutes.
-
-`pascal agent status` confirms that the credential remains active and reports the agent ID,
-autonomous or delegated mode, claim state, and whether the key is scoped to an organization.
-It does not expose the accountable person's identity or inspect local editor projects.
-
-Claiming lifts claim-gated capabilities for the autonomous agent. It does not transfer project
-ownership, grant the agent access to the person's private projects, or grant the person access
-to the agent's private projects. The local editor and its projects remain local unless a
-separate hosted project action explicitly moves data.
+Or use `aedifex mcp config` for JSON-based clients. Ask the agent to read
+`aedifex://agent-guide`, list or load a scene, edit it, and return the `editorUrl`.
+Run `aedifex editor` to open those local project URLs.
 
 ## Plugins
 
 The current CLI manages the local editor runtime; it does not yet download plugin code
-from GitHub or npm. Follow the [plugin authoring guide](https://editor.pascal.app/docs/developers/plugins)
-and the standalone [Nature plugin](https://github.com/pascalorg/plugin-trees) when
-building an extension today.
-
-Pascal also exposes a hosted Model Context Protocol endpoint for projects in a Pascal
-account. See [Connect an AI agent](https://editor.pascal.app/docs/developers/mcp) for
-the local and hosted workflows and the standalone `@pascal-app/mcp` package.
+from GitHub or npm. Follow the [plugin authoring guide](../../wiki/architecture/plugin-authoring.md)
+and the in-repository [Nature plugin](../plugin-trees) when building an extension.
+For agent integration, use the standalone `@aedifex/mcp` package.
 
 ## Documentation and support
 
-- [Complete CLI guide](https://editor.pascal.app/docs/developers/local-editor)
-- [Plugin authoring guide](https://editor.pascal.app/docs/developers/plugins)
-- [MCP and AI-agent guide](https://editor.pascal.app/docs/developers/mcp)
-- [Open-source repository](https://github.com/pascalorg/editor)
-- [Issues and feature requests](https://github.com/pascalorg/editor/issues)
-- [Discord community](https://discord.gg/XRKsDcpqgS)
+- [Setup guide](../../SETUP.md)
+- [Plugin authoring guide](../../wiki/architecture/plugin-authoring.md)
+- [MCP and AI-agent guide](../mcp/README.md)
+- [Open-source repository](https://github.com/TangSY/aedifex)
+- [Issues and feature requests](https://github.com/TangSY/aedifex/issues)
 
 ## License
 

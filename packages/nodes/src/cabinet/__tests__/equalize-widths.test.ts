@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { AnyNode, AnyNodeId, SceneApi } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, SceneApi } from '@aedifex/core'
 import { planRunModuleWidthEqualization } from '../run-layout'
 import { cabinetRunWidthEqualizationPlan, equalizeCabinetRunWidths } from '../run-ops'
 import { CabinetModuleNode, CabinetNode } from '../schema'

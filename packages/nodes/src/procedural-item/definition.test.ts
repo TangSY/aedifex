@@ -5,7 +5,7 @@ import {
   type HandleDescriptor,
   ItemNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   bedRecipe,
   evaluateRecipe,
@@ -13,7 +13,7 @@ import {
   parseRecipe,
   queryProceduralItem,
   radiatorRecipe,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import { proceduralItemDefinition } from './definition'
 
 const scene = createSceneApi(useScene)
@@ -205,4 +205,12 @@ test('plan image composes item host yaw and draws selected outline over the snap
   expect(image.center[0]).toBeCloseTo(4.7)
   expect(image.center[1]).toBeCloseTo(5.6)
   expect(result.children[2]).toMatchObject({ kind: 'polygon', fill: 'none', strokeWidth: 0.035 })
+})
+
+test('legacy scalar, array and null metadata still render the procedural floorplan', () => {
+  for (const metadata of [null, false, true, 42, 'legacy', []]) {
+    const node = ProceduralItemNode.parse({ recipe, metadata })
+    expect(node.metadata).toEqual(metadata)
+    expect(proceduralItemDefinition.floorplan!(node, floorplanContext)?.kind).toBe('rect')
+  }
 })

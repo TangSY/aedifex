@@ -1,4 +1,4 @@
-import type { CabinetModuleNode, CabinetNode } from '@pascal-app/core'
+import type { CabinetModuleNode, CabinetNode } from '@aedifex/core'
 import * as THREE from 'three'
 
 type CabinetPose =

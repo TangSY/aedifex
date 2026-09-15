@@ -3,16 +3,13 @@
 import {
   type AnyNodeId,
   getLibraryMaterialsVersion,
+  getWallEffectiveHeightForNodes,
   getWallFaceBandConfig,
-  getWallPlaneTop,
-  resolveLevelId,
-  resolveWallEffectiveHeight,
   sceneRegistry,
-  spatialGridManager,
   useLiveTransforms,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { type Camera, type Material, Matrix4, type Mesh, type Object3D, Vector3 } from 'three'
 import { getMaterialTextureVersion } from '../../lib/materials'
 import useViewer, { type WallMode } from '../../store/use-viewer'
@@ -297,20 +294,7 @@ export class WallCutoutCache {
     const deleted = viewer.hoverHighlightMode === 'delete' && viewer.hoveredId === node.id
     let selectionHighlighted = !deleted && this.selected.has(node.id)
     if (selectionHighlighted) {
-      const levelId = resolveLevelId(node, scene.nodes)
-      const support = spatialGridManager.getSlabSupportForWall(
-        levelId,
-        node.start,
-        node.end,
-        node.curveOffset ?? 0,
-        node.thickness,
-        node.supportSlabId,
-      )
-      const height = resolveWallEffectiveHeight(
-        node,
-        getWallPlaneTop(node, levelId, scene.nodes),
-        support.elevation,
-      )
+      const height = getWallEffectiveHeightForNodes(node, scene.nodes)
       selectionHighlighted = !getWallFaceBandConfig(node, height).enabled
     }
     const materials = getMaterialsForWall(

@@ -46,7 +46,7 @@ An exact room-footprint zone may be procedural. Space detection retains the wall
 
 An anchor is either a free point tuple or `{ kind: 'feature', reference, fallback }`. The reference contains a scene node ID, a node-kind-owned semantic feature ID, and optional finite/string/boolean parameters such as normalized path position `t` and wall height. The fallback is not a cached value: it is the explicit detach/dangling presentation point used only when the reference cannot resolve.
 
-Area is winding-independent. Volume is `abs(dot(areaVector, extrusion))`, so a valid oblique prism uses only the extrusion component normal to its base. Keep these calculations in `@pascal-app/core`; renderers and panels must not reimplement them.
+Area is winding-independent. Volume is `abs(dot(areaVector, extrusion))`, so a valid oblique prism uses only the extrusion component normal to its base. Keep these calculations in `@aedifex/core`; renderers and panels must not reimplement them.
 
 Measurement nodes must remain in `AnyNode`, `LevelNode.children`, the built-in node registry, and hosted graph validation together. They are selectable, deletable, and duplicable, but `bake: strip` keeps analysis annotations out of baked model output.
 

@@ -6,12 +6,12 @@ import type {
   GeometryContext,
   NodeDefinition,
   SceneApi,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { ComponentType } from 'react'
 
-export const FLOORPLAN_NODE_EXTENSION_KEY = 'pascal:editor/floorplan'
-export const FLOORPLAN_GEOMETRY_METADATA_KEY = 'pascal:editor/floorplan'
-export const FLOORPLAN_CONTEXT_EXTENSION_KEY = 'pascal:editor/floorplan'
+export const FLOORPLAN_NODE_EXTENSION_KEY = 'aedifex:editor/floorplan'
+export const FLOORPLAN_GEOMETRY_METADATA_KEY = 'aedifex:editor/floorplan'
+export const FLOORPLAN_CONTEXT_EXTENSION_KEY = 'aedifex:editor/floorplan'
 
 export type FloorplanRenderPurpose = 'edit' | 'document'
 export type FloorplanMetricNotation = 'meters' | 'millimeters'

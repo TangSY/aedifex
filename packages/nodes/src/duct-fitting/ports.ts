@@ -1,4 +1,4 @@
-import type { NodePort } from '@pascal-app/core'
+import type { NodePort } from '@aedifex/core'
 import { Euler, Vector3 } from 'three'
 import type { DuctFittingNode } from './schema'
 

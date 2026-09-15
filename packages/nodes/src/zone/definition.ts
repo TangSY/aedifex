@@ -2,8 +2,8 @@ import {
   type NodeDefinition,
   resolveAutoZonePolygon,
   ZoneNode as ZoneNodeSchema,
-} from '@pascal-app/core'
-import type { FloorplanNodeExtension } from '@pascal-app/editor'
+} from '@aedifex/core'
+import type { FloorplanNodeExtension } from '@aedifex/editor'
 import { polygonMeasurementFeatures } from '../shared/polygon-measurement'
 import { buildZoneContextualDimensions } from './contextual-dimensions'
 import { buildZoneFloorplan } from './floorplan'
@@ -32,7 +32,7 @@ export const zoneDefinition: NodeDefinition<typeof ZoneNode> = {
   schema: ZoneNode,
   category: 'site',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       contextualDimensions: buildZoneContextualDimensions,
       schedule: buildRoomFloorplanSchedule,
     } satisfies FloorplanNodeExtension<ZoneNode>,

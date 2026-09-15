@@ -7,7 +7,7 @@ import {
   LevelNode,
   SiteNode,
   SlabNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Mesh } from 'three'
 import { buildSlabGeometry } from '../geometry'
 

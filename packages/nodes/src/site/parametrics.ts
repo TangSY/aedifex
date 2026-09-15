@@ -1,4 +1,4 @@
-import type { ParametricDescriptor, SiteNode } from '@pascal-app/core'
+import type { ParametricDescriptor, SiteNode } from '@aedifex/core'
 
 export const siteParametrics: ParametricDescriptor<SiteNode> = {
   groups: [],

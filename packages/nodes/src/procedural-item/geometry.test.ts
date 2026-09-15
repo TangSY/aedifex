@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { bedRecipe, ProceduralItemNode, shelfRecipe } from '@pascal-app/core/procedural-items'
+import { bedRecipe, ProceduralItemNode, shelfRecipe } from '@aedifex/core/procedural-items'
 import {
   acquireProceduralGeometry,
   buildProceduralGeometry,

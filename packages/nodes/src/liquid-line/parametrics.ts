@@ -1,4 +1,4 @@
-import type { ParametricDescriptor } from '@pascal-app/core'
+import type { ParametricDescriptor } from '@aedifex/core'
 import type { LiquidLineNode } from './schema'
 
 export const liquidLineParametrics: ParametricDescriptor<LiquidLineNode> = {

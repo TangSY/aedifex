@@ -2,14 +2,14 @@ import { describe, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { SceneBridge } from './bridge/scene-bridge'
-import { createPascalMcpServer } from './server'
+import { createAedifexMcpServer } from './server'
 
 describe('Pascal MCP tool execution', () => {
   test('runs registered tools through the configured executor', async () => {
     const bridge = new SceneBridge()
     bridge.loadDefault()
     const events: string[] = []
-    const server = createPascalMcpServer({
+    const server = createAedifexMcpServer({
       bridge,
       executeTool: async ({ name, signal, execute }) => {
         events.push(`before:${name}`)
@@ -45,7 +45,7 @@ describe('Pascal MCP tool execution', () => {
     const executorStopped = new Promise<void>((resolve) => {
       notifyExecutorStopped = resolve
     })
-    const server = createPascalMcpServer({
+    const server = createAedifexMcpServer({
       bridge,
       executeTool: async ({ name, signal, execute }) => {
         if (name !== 'cancel_probe') return execute()
@@ -90,7 +90,7 @@ describe('Pascal MCP tool execution', () => {
     const bridge = new SceneBridge()
     bridge.loadDefault()
     const executed: string[] = []
-    const server = createPascalMcpServer({
+    const server = createAedifexMcpServer({
       bridge,
       executeTool: async ({ name, execute }) => {
         executed.push(name)
@@ -118,7 +118,7 @@ describe('Pascal MCP tool execution', () => {
     const bridge = new SceneBridge()
     bridge.loadDefault()
     const executed: string[] = []
-    const server = createPascalMcpServer({
+    const server = createAedifexMcpServer({
       bridge,
       executeTool: async ({ name, execute }) => {
         executed.push(name)
@@ -160,7 +160,7 @@ describe('Pascal MCP tool execution', () => {
     const bridge = new SceneBridge()
     bridge.loadDefault()
     const executed: string[] = []
-    const server = createPascalMcpServer({
+    const server = createAedifexMcpServer({
       bridge,
       executeTool: async ({ name, execute }) => {
         executed.push(name)

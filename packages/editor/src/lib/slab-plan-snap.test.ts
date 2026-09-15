@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, WallNode } from '@pascal-app/core'
+import { type AnyNode, WallNode } from '@aedifex/core'
 import useWallSnapIndicator from '../store/use-wall-snap-indicator'
 import { resolveSlabEdgeBandSnap } from './slab-plan-snap'
 

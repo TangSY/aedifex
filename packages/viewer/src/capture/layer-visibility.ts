@@ -1,5 +1,5 @@
-import type { CaptureStreamDescriptor } from '@pascal-app/core/capture'
-import { captureLayerKey } from '@pascal-app/core/capture'
+import type { CaptureStreamDescriptor } from '@aedifex/core/capture'
+import { captureLayerKey } from '@aedifex/core/capture'
 
 const EMPTY_LAYER_VISIBILITY: Readonly<Record<string, boolean>> = {}
 

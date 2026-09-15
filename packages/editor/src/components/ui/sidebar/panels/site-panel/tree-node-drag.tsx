@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, useScene } from '@aedifex/core'
 import { motion } from 'motion/react'
 import {
   createContext,

@@ -1,4 +1,4 @@
-import type { GutterNode, RoofSegmentNode } from '@pascal-app/core'
+import type { GutterNode, RoofSegmentNode } from '@aedifex/core'
 import { CORNER_EPSILON_SQ, gutterEndpointsInFrame, planDistSq } from './corner-mitre'
 import { computeEaveY } from './eave-snap'
 

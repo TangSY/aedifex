@@ -8,7 +8,7 @@ import {
   type LevelNode,
   resolveAlignment,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { resolveCurrentBuildingId, resolveElevatorSupportY } from '../../../lib/elevator-support'

@@ -1,4 +1,4 @@
-import { type MeasurementPoint, measurementCentroid, measurementNormal } from '@pascal-app/core'
+import { type MeasurementPoint, measurementCentroid, measurementNormal } from '@aedifex/core'
 import { ShapeUtils, Vector2, Vector3 } from 'three'
 
 type MeasurementPolygonProjection = {

@@ -66,7 +66,7 @@ Ceilings and slabs use declared slot defaults in colored (`textures` on) mode.
 Ceiling undersides use an opaque `BackSide` material in both appearances; only
 `ceiling-grid` blends. Slab top, side/underside and optional terrain skirt meshes
 can batch separately. Flat slot defaults share the viewer cache by color, roughness
-and shading; slab legacy cached materials carry `__pascalCachedMaterial` so geometry
+and shading; slab legacy cached materials carry `__aedifexCachedMaterial` so geometry
 rebuilds leave shared materials alive. Transparent slot overrides draw themselves.
 
 ## Procedural item recipe finishes
@@ -109,7 +109,7 @@ Topology operators preserve assignments deterministically:
 
 ### External plugin renderers
 
-Plugin renderers follow the same four axes through the public `@pascal-app/viewer`
+Plugin renderers follow the same four axes through the public `@aedifex/viewer`
 surface. For an imported hierarchy, capture its authored materials once and apply
 this mapping reactively:
 

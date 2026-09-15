@@ -11,7 +11,7 @@ import {
   slabPolygonContextForLevel,
   slabPolygonContextFromGeometry,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import maxi from '../../../core/src/store/fixtures/maxi-8x-endpoint.json'
 import { createSlabDependencyTracker } from './dependency-tracker'
 

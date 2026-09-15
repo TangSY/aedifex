@@ -17,7 +17,7 @@ import {
   type WallMiterData,
   type WallNode,
   wallClosesRoom,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CursorSphere,
   chainEndJoinsExistingWall,
@@ -50,8 +50,8 @@ import {
   WALL_CONNECT_SNAP_RADIUS,
   WALL_JOIN_SNAP_RADIUS,
   type WallPlanPoint,
-} from '@pascal-app/editor'
-import { getSceneTheme, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { getSceneTheme, useViewer } from '@aedifex/viewer'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useRef, useState } from 'react'
 import { DoubleSide, type Group, type Mesh, Vector3 } from 'three'

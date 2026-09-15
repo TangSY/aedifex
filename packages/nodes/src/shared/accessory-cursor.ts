@@ -4,8 +4,8 @@ import {
   type GridEvent,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { setSurfaceRaycastLayers } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { setSurfaceRaycastLayers } from '@aedifex/viewer'
 import { Matrix3, Raycaster, Vector3 } from 'three'
 
 export function accessoryCursor(

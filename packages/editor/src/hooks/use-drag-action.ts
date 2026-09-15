@@ -13,8 +13,8 @@ import {
   type Modifiers,
   type SpatialQuery,
   useScene,
-} from '@pascal-app/core'
-import { beginPerfAction, cancelPerfAction, commitPerfAction } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { beginPerfAction, cancelPerfAction, commitPerfAction } from '@aedifex/viewer'
 import { useEffect, useRef } from 'react'
 
 const sceneApi = createSceneApi(useScene)

@@ -4,12 +4,12 @@ import {
   getWallEffectiveHeightForNodes,
   type NodeDefinition,
   type WallNode as WallNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   DRAFTING_SURFACE_EXTENSION_KEY,
   type DraftingSurfaceExtension,
   type FloorplanNodeExtension,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { buildWallContextualDimensions } from './contextual-dimensions'
 import { hasWallCurveBlockingChildren } from './curve-eligibility'
 import { buildWallFloorplan, computeWallFloorplanLevelData } from './floorplan'
@@ -70,7 +70,7 @@ export const wallDefinition: NodeDefinition<typeof WallNode> = {
         return { face: 'end' }
       },
     } satisfies DraftingSurfaceExtension,
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       contextualDimensions: buildWallContextualDimensions,
       actionMenu: {
         canCurve: ({ node, nodes }) =>

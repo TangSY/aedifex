@@ -9,8 +9,8 @@ import {
   useLiveNodeOverrides,
   useScene,
   type WallEvent,
-} from '@pascal-app/core'
-import { type ProceduralItemNode, queryProceduralItem } from '@pascal-app/core/procedural-items'
+} from '@aedifex/core'
+import { type ProceduralItemNode, queryProceduralItem } from '@aedifex/core/procedural-items'
 import {
   clearPlacementSurface,
   commitFreshPlacementSubtree,
@@ -24,7 +24,7 @@ import {
   useEditor,
   usePlacementPreview,
   useRegistryToolContext,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { useEffect, useMemo, useState } from 'react'
 import { Vector3 } from 'three'
 import { MeshBasicNodeMaterial } from 'three/webgpu'

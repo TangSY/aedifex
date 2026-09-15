@@ -5,8 +5,8 @@ import type {
   FloorplanPoint,
   GeometryContext,
   StructuralGridNode,
-} from '@pascal-app/core'
-import { floorplanGeometryMetadata } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { floorplanGeometryMetadata } from '@aedifex/editor'
 import {
   collectStructuralGridAxes,
   resolveStructuralGridReference,

@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNode, type LazyComponent, useScene } from '@pascal-app/core'
+import { type AnyNode, type LazyComponent, useScene } from '@aedifex/core'
 import { type ComponentType, lazy, Suspense, useSyncExternalStore } from 'react'
 import type { Object3D, Texture } from 'three'
 import { ErrorBoundary } from '../error-boundary'

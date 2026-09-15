@@ -1,4 +1,4 @@
-import { type AnyNode, getWallThickness } from '@pascal-app/core'
+import { type AnyNode, getWallThickness } from '@aedifex/core'
 import {
   mergePrintExportDiagnostics,
   type PrintExportDiagnostic,

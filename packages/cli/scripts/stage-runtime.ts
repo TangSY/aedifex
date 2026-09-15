@@ -12,21 +12,13 @@ import {
 } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { fileSha256 } from '../src/runtime-download.js'
-import { createRuntimeArchive } from '../src/tar.js'
 
 const packageDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const repositoryRoot = path.resolve(packageDirectory, '../..')
 const appDirectory = path.join(repositoryRoot, 'apps/editor')
 const standaloneDirectory = path.join(appDirectory, '.next/standalone')
 const standaloneAppDirectory = path.join(standaloneDirectory, 'apps/editor')
-/**
- * The web runtime is a release asset, not part of the npm package: it is staged and archived
- * under `build/`, while `dist/` only gains the MCP service and the digest of that archive.
- */
-const buildDirectory = path.join(packageDirectory, 'build')
-const outputDirectory = path.join(buildDirectory, 'runtime')
-const releaseAssetBaseUrl = 'https://github.com/pascalorg/editor/releases/download'
+const outputDirectory = path.join(packageDirectory, 'dist/runtime')
 
 /**
  * `next build` copies its tracing root into `.next/standalone`, so the portable runtime
@@ -60,13 +52,9 @@ const packageJson = JSON.parse(
   version: string
 }
 
-const archiveName = `pascal-web-runtime-${packageJson.version}.tar.gz`
-const archiveFile = path.join(buildDirectory, archiveName)
-const assetUrl = `${releaseAssetBaseUrl}/@pascal-app/cli@${packageJson.version}/${archiveName}`
-
-await chmod(path.join(packageDirectory, 'dist/bin/pascal.js'), 0o755)
+await chmod(path.join(packageDirectory, 'dist/bin/aedifex.js'), 0o755)
 await bundleMcpServer(
-  path.join(packageDirectory, 'dist/services/pascal-mcp.mjs'),
+  path.join(packageDirectory, 'dist/services/aedifex-mcp.mjs'),
   packageJson.version,
 )
 await assertFile(path.join(standaloneAppDirectory, 'server.js'))
@@ -103,24 +91,7 @@ await writeFile(
   )}\n`,
 )
 
-const archive = await createRuntimeArchive(outputDirectory, archiveFile)
-const sha256 = await fileSha256(archiveFile)
-await writeFile(`${archiveFile}.sha256`, `${sha256}  ${archiveName}\n`)
-await writeFile(
-  path.join(packageDirectory, 'dist/runtime-source.json'),
-  `${JSON.stringify(
-    { version: packageJson.version, url: assetUrl, sha256, size: archive.size },
-    null,
-    2,
-  )}\n`,
-)
-
-console.log(`Staged Pascal web runtime ${packageJson.version} at ${outputDirectory}`)
-console.log(
-  `Archived ${archive.entryCount} entries to ${archiveFile} (${formatMegabytes(archive.size)} MB)`,
-)
-console.log(`Digest ${sha256}`)
-console.log(`Release asset ${assetUrl}`)
+console.log(`Staged Aedifex editor runtime ${packageJson.version} at ${outputDirectory}`)
 
 async function bundleMcpServer(output: string, version: string): Promise<void> {
   await mkdir(path.dirname(output), { recursive: true })
@@ -128,7 +99,7 @@ async function bundleMcpServer(output: string, version: string): Promise<void> {
     process.execPath,
     [
       'build',
-      path.join(repositoryRoot, 'packages/mcp/src/bin/pascal-mcp.ts'),
+      path.join(repositoryRoot, 'packages/mcp/src/bin/aedifex-mcp.ts'),
       '--outfile',
       output,
       '--target',
@@ -136,7 +107,7 @@ async function bundleMcpServer(output: string, version: string): Promise<void> {
       '--format',
       'esm',
       '--define',
-      `process.env.PASCAL_MCP_VERSION=${JSON.stringify(version)}`,
+      `process.env.AEDIFEX_MCP_VERSION=${JSON.stringify(version)}`,
     ],
     { stdio: ['ignore', 'ignore', 'pipe'] },
   )
@@ -147,7 +118,7 @@ async function bundleMcpServer(output: string, version: string): Promise<void> {
     child.once('exit', (code) => resolve(code ?? 1))
   })
   if (exitCode !== 0) {
-    throw new Error(`Unable to bundle the Pascal MCP server: ${Buffer.concat(stderr).toString()}`)
+    throw new Error(`Unable to bundle the Aedifex MCP server: ${Buffer.concat(stderr).toString()}`)
   }
 }
 
@@ -156,7 +127,7 @@ async function assertFile(filePath: string): Promise<void> {
     await readFile(filePath)
   } catch {
     throw new Error(
-      `standalone editor build not found at ${filePath}; run PASCAL_PORTABLE_BUILD=1 bun run build from apps/editor first`,
+      `standalone editor build not found at ${filePath}; run AEDIFEX_PORTABLE_BUILD=1 bun run build from apps/editor first`,
     )
   }
 }

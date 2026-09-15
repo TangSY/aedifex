@@ -1,5 +1,5 @@
-import { type AnyNode, type AnyNodeId, emitter, nodeRegistry, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNode, type AnyNodeId, emitter, nodeRegistry, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { ChevronRight } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { forwardRef, memo, useEffect, useRef } from 'react'
@@ -107,6 +107,7 @@ import { SlabTreeNode } from './slab-tree-node'
 import { SolarPanelTreeNode } from './solar-panel-tree-node'
 import { SpawnTreeNode } from './spawn-tree-node'
 import { StairTreeNode } from './stair-tree-node'
+import { resolveRegisteredTreeNodeComponent } from './tree-node-resolution'
 import { WallTreeNode } from './wall-tree-node'
 import { WindowTreeNode } from './window-tree-node'
 import { ZoneTreeNode } from './zone-tree-node'
@@ -200,7 +201,13 @@ export const TreeNode = memo(function TreeNode({ nodeId, depth = 0, isLast }: Tr
   const nodeType = useScene((state) => state.nodes[nodeId]?.type)
   if (shouldHide) return null
   if (!nodeType) return null
-  const Component = getTreeNodeComponent(nodeType)
+  const Component = resolveRegisteredTreeNodeComponent<TreeNodeComponent>({
+    nodeType,
+    components: treeNodeByType,
+    isRegistered: (kind) => nodeRegistry.has(kind),
+    fallback: RegistryTreeNode,
+  })
+  if (!Component) return null
   return <Component depth={depth} isLast={isLast} nodeId={nodeId} />
 })
 

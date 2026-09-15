@@ -2,7 +2,7 @@ import {
   type Evaluation,
   evaluateRecipe,
   type ProceduralItemNode,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import {
   BoxGeometry,
   type BufferGeometry,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNodeId, LevelNode, SiteNode, WallNode } from '@pascal-app/core'
+import { type AnyNodeId, LevelNode, SiteNode, WallNode } from '@aedifex/core'
 import { cabinetPresetById } from '../presets'
 import { runWallConstraints } from '../run-layout'
 import { CabinetModuleNode, CabinetNode } from '../schema'

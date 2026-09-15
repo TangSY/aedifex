@@ -1,4 +1,4 @@
-import type { AnyNodeId, GutterNode, RoofSegmentNode, SceneApi } from '@pascal-app/core'
+import type { AnyNodeId, GutterNode, RoofSegmentNode, SceneApi } from '@aedifex/core'
 
 /**
  * Length-handle snap. When the user drags a gutter's ±X length handle

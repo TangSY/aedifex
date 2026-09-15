@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { type AnyNode, createSceneApi, type LinearResizeHandle, useScene } from '@pascal-app/core'
+import { type AnyNode, createSceneApi, type LinearResizeHandle, useScene } from '@aedifex/core'
 import { createArrowHandleGeometry } from './handle-arrow'
 import { computeFreezeOffset, resolveLinearHandlePosition } from './handle-placement'
 

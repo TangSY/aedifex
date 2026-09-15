@@ -6,10 +6,10 @@ describe('ScanNode', () => {
     const scan = ScanNode.parse({
       id: 'scan_legacy',
       type: 'scan',
-      url: 'https://cdn.pascal.app/scans/room.glb',
+      url: 'https://cdn.aedifex.example/scans/room.glb',
     })
 
-    expect(scan.url).toBe('https://cdn.pascal.app/scans/room.glb')
+    expect(scan.url).toBe('https://cdn.aedifex.example/scans/room.glb')
     expect(scan.captureSession).toBeNull()
     expect(scan.layers).toEqual({ model: true, deviceMotion: true })
   })

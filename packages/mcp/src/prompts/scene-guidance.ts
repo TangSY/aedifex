@@ -1,7 +1,7 @@
 export const SCENE_DESIGN_GUIDANCE = [
   'Scene design workflow:',
   '  - Use meters. X/Z are horizontal floor-plan axes; Y is vertical.',
-  '  - Read `pascal://agent/guide` when you need construction rules; do not inspect repository code for ordinary scene editing.',
+  '  - Read `aedifex://agent/guide` when you need construction rules; do not inspect repository code for ordinary scene editing.',
   '  - Door default: 0.9m wide by 2.1m high, floor-mounted.',
   '  - Window default: 1.5m wide by 1.5m high with a 0.9m sill height.',
   '  - For clear concrete requests, act with reasonable defaults instead of asking for clarification.',
@@ -19,6 +19,6 @@ export const SCENE_DESIGN_GUIDANCE = [
   '  - add_door/add_window use t = 0..1 along a wall: 0 is start, 0.5 is center, 1 is end.',
   '  - Use search_assets before place_item when placing a specific catalog item.',
   '  - Use apply_patch for precise bulk edits that the semantic tools cannot express.',
-  '  - After each major phase, call get_level_summary or pascal://scene/current/summary so progress is visible and errors are easier to localize.',
+  '  - After each major phase, call get_level_summary or aedifex://scene/current/summary so progress is visible and errors are easier to localize.',
   '  - After multi-room or full-floor work, call validate_scene and verify_scene, then fix reported issues before finishing.',
 ].join('\n')

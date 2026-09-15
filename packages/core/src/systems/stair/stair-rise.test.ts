@@ -434,7 +434,7 @@ describe('deck-attached rise with a floor-lifted base', () => {
     const updates = syncStairRises(nodes)
     expect(updates).toHaveLength(1)
     expect(updates[0]?.id).toBe('sseg_1' as never)
-    expect((updates[0]?.data as { height?: number }).height).toBeCloseTo(1.2)
+    expect((updates[0]!.data as { height?: number }).height).toBeCloseTo(1.2)
   })
 
   it('keeps the full deck elevation when the stair stands on bare ground', () => {
@@ -459,7 +459,7 @@ describe('deck-attached rise with a floor-lifted base', () => {
     spatialGridManager.handleNodeUpdated(movedDeck as AnyNode, 'level_1')
     const updates = syncStairRises(nodes)
     expect(updates).toHaveLength(1)
-    expect((updates[0]?.data as { height?: number }).height).toBeCloseTo(1.55)
+    expect((updates[0]!.data as { height?: number }).height).toBeCloseTo(1.55)
   })
 
   it('re-converges to flush after the base slab elevation changes', () => {
@@ -472,7 +472,7 @@ describe('deck-attached rise with a floor-lifted base', () => {
     spatialGridManager.handleNodeUpdated(movedFloor as AnyNode, 'level_1')
     const updates = syncStairRises(nodes)
     expect(updates).toHaveLength(1)
-    expect((updates[0]?.data as { height?: number }).height).toBeCloseTo(0.95)
+    expect((updates[0]!.data as { height?: number }).height).toBeCloseTo(0.95)
   })
 
   it('rescales flights proportionally from the lifted base, landings untouched', () => {
@@ -488,9 +488,9 @@ describe('deck-attached rise with a floor-lifted base', () => {
     const updates = syncStairRises(nodes)
     expect(updates).toHaveLength(2)
     expect(updates[0]?.id).toBe('sseg_1' as never)
-    expect((updates[0]?.data as { height?: number }).height).toBeCloseTo(1.0)
+    expect((updates[0]!.data as { height?: number }).height).toBeCloseTo(1.0)
     expect(updates[1]?.id).toBe('sseg_3' as never)
-    expect((updates[1]?.data as { height?: number }).height).toBeCloseTo(1.0)
+    expect((updates[1]!.data as { height?: number }).height).toBeCloseTo(1.0)
   })
 
   it('honors a persisted ground host over the floor slab election', () => {

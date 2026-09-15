@@ -5,9 +5,9 @@ import {
   type RoofNode,
   type RoofSegmentNode,
   sceneRegistry,
-} from '@pascal-app/core'
-import { consumePlacementDragRelease, triggerSFX } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { consumePlacementDragRelease, triggerSFX } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { createRelativeRoofDrag } from '../shared/relative-roof-drag'

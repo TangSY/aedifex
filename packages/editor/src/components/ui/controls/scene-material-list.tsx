@@ -7,7 +7,7 @@ import {
   type SceneMaterialId,
   toSceneMaterialRef,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Copy, Paintbrush, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import useEditor from '../../../store/use-editor'

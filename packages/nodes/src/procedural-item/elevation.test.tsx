@@ -13,13 +13,13 @@ import {
   useLiveTransforms,
   useScene,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   ProceduralItemNode,
   proceduralLocalPose,
   radiatorRecipe,
   shelfRecipe,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import { act, create } from '@react-three/test-renderer'
 import { FloorElevationSystem } from '../../../viewer/src/systems/floor-elevation/floor-elevation-system'
 import { proceduralItemDefinition } from './definition'

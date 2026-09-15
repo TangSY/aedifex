@@ -1,8 +1,8 @@
 // @ts-expect-error — bun:test is provided by the Bun runtime; viewer does not
 // depend on @types/bun so the import type is unresolved at compile time.
 import { afterEach, describe, expect, test } from 'bun:test'
-import type { AnyNodeId } from '@pascal-app/core'
-import { sceneRegistry } from '@pascal-app/core'
+import type { AnyNodeId } from '@aedifex/core'
+import { sceneRegistry } from '@aedifex/core'
 import * as THREE from 'three'
 import { applyIsolation, clearIsolation } from './isolation'
 import { SCENE_LAYER, SHADOW_ONLY_LAYER } from './layers'

@@ -8,8 +8,8 @@ import {
   nodeRegistry,
   registerNode,
   WallNode,
-} from '@pascal-app/core'
-import { createFloorplanContextExtensions } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { createFloorplanContextExtensions } from '@aedifex/editor'
 import { wallDefinition } from '../wall/definition'
 import { buildConstructionDimensionFloorplan } from './floorplan'
 

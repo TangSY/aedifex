@@ -1,4 +1,4 @@
-import type { FloorplanGeometry, FloorplanPoint, GeometryContext } from '@pascal-app/core'
+import type { FloorplanGeometry, FloorplanPoint, GeometryContext } from '@aedifex/core'
 import { getPipeTrapPorts } from './ports'
 import type { PipeTrapNode } from './schema'
 

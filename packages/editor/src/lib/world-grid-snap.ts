@@ -18,8 +18,8 @@ import {
   snapWorldXZToBuildingLocal,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 
 /**
  * Look up the active building's pose, or null when we're at the site root.

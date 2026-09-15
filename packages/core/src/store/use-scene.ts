@@ -1249,6 +1249,12 @@ export type SceneState = {
   updateNode: (id: AnyNodeId, data: Partial<AnyNode>) => void
   updateNodes: (updates: { id: AnyNodeId; data: Partial<AnyNode> }[]) => void
 
+  /**
+   * Replace a node entirely rather than merging a partial patch. Snapshot
+   * restore paths use this to remove fields introduced by previews.
+   */
+  setNode: (id: AnyNodeId, node: AnyNode) => void
+
   deleteNode: (id: AnyNodeId) => void
   deleteNodes: (ids: AnyNodeId[]) => void
 
@@ -1592,8 +1598,12 @@ const useScene: UseSceneStore = createSceneStore(
         const previousInstalledPlugins = get().installedPlugins
         // Guard against the *next* plugin list: the store still holds the old
         // one, and re-marks for newly enabled kinds must pass the guard.
+        let preparingInstall = true
         const dirtyNodes = new GuardedDirtySet(
-          () => ({ nodes: get().nodes, installedPlugins: nextInstalledPlugins }),
+          () =>
+            preparingInstall
+              ? { nodes: get().nodes, installedPlugins: nextInstalledPlugins }
+              : get(),
           get().dirtyNodes,
         )
         for (const node of Object.values(get().nodes)) {
@@ -1604,6 +1614,9 @@ const useScene: UseSceneStore = createSceneStore(
             if (nodeRegistry.get(node.type)?.dirtyTracking !== false) dirtyNodes.add(node.id)
           }
         }
+        // Undo/redo restores installedPlugins without replacing this set.
+        // After preparation its guard must follow the live scene again.
+        preparingInstall = false
         set({
           installedPlugins: nextInstalledPlugins,
           hasExplicitPluginInstallState: options?.explicit ?? get().hasExplicitPluginInstallState,
@@ -1665,6 +1678,7 @@ const useScene: UseSceneStore = createSceneStore(
 
       updateNodes: (updates) => nodeActions.updateNodesAction(set, get, updates),
       updateNode: (id, data) => nodeActions.updateNodesAction(set, get, [{ id, data }]),
+      setNode: (id, node) => nodeActions.setNodeAction(set, get, id, node),
 
       // --- DELETE ---
 

@@ -7,12 +7,12 @@ import type {
   SceneApi,
   WallNode,
   WindowNode as WindowNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getDormerWallHorizontalBoundsAtHeight,
   getDormerWallOpeningVerticalBounds,
-} from '@pascal-app/core'
-import type { FloorplanNodeExtension } from '@pascal-app/editor'
+} from '@aedifex/core'
+import type { FloorplanNodeExtension } from '@aedifex/editor'
 import {
   buildWindowFloorplanSchedule,
   computeWindowFloorplanLevelData,
@@ -223,7 +223,7 @@ export const windowDefinition: NodeDefinition<typeof WindowNode> = {
   schema: WindowNode,
   category: 'structure',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       contextualDimensions: buildWindowContextualDimensions,
       schedule: buildWindowFloorplanSchedule,
     } satisfies FloorplanNodeExtension<WindowNodeType>,

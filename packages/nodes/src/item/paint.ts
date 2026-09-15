@@ -10,8 +10,8 @@ import {
   type SceneMaterialId,
   toSceneMaterialRef,
   useScene,
-} from '@pascal-app/core'
-import { createMaterial, createMaterialFromPresetRef, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { createMaterial, createMaterialFromPresetRef, useViewer } from '@aedifex/viewer'
 import type { Material, Mesh } from 'three'
 
 type SlotTag = string | null | (string | null)[]

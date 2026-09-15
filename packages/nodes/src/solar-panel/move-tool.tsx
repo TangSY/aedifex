@@ -9,14 +9,14 @@ import {
   type SolarPanelNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   consumePlacementDragRelease,
   EDITOR_LAYER,
   markToolCancelConsumed,
   triggerSFX,
   useEditor,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {

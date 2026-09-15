@@ -9,8 +9,8 @@ import {
   sceneRegistry,
   spatialGridManager,
   useScene,
-} from '@pascal-app/core'
-import { setSurfaceRaycastLayers, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { setSurfaceRaycastLayers, useViewer } from '@aedifex/viewer'
 import { type Camera, Matrix3, type Object3D, Raycaster, Vector3 } from 'three'
 import { resolveTerrainGroundHit } from '../../../lib/ground-surface'
 import { scopeNodeId } from '../../../lib/interaction/scope'

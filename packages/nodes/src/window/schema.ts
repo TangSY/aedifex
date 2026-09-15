@@ -2,4 +2,4 @@ export {
   WindowConstructionType,
   WindowDimensionReference,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'

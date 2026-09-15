@@ -1,13 +1,13 @@
 'use client'
 
-import type { AnyNodeId } from '@pascal-app/core'
+import type { AnyNodeId } from '@aedifex/core'
 import {
   EDITOR_LAYER,
   isAngleSnapActive,
   isGridSnapActive,
   isMagneticSnapActive,
   useEditor,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { type ConnectionProfile, connectionCompatibility } from './connection-compatibility'
 import { collectScenePorts, findNearestPort3D, type ScenePort } from './ports'
 

@@ -1,4 +1,4 @@
-import type { GuideNode, ParametricDescriptor } from '@pascal-app/core'
+import type { GuideNode, ParametricDescriptor } from '@aedifex/core'
 
 export const guideParametrics: ParametricDescriptor<GuideNode> = {
   groups: [],

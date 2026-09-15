@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNodeId, getEffectiveNode, type SceneApi, sceneRegistry } from '@pascal-app/core'
+import { type AnyNodeId, getEffectiveNode, type SceneApi, sceneRegistry } from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
 import type { BufferAttribute, Material, Mesh, Object3D } from 'three'

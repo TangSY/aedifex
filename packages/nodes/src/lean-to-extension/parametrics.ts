@@ -1,4 +1,4 @@
-import type { LeanToExtensionNode, ParametricDescriptor } from '@pascal-app/core'
+import type { LeanToExtensionNode, ParametricDescriptor } from '@aedifex/core'
 import { leanToLowEdgeHeight, MIN_LEAN_TO_POST_HEIGHT, resolveLeanToLayout } from './layout'
 
 const degrees = (rise: number, run: number) =>

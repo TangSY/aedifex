@@ -49,13 +49,13 @@ try {
 
   await mkdir(outputDirectory, { recursive: true })
   const files = [
-    { name: 'pascal-golden-house-levels.3mf', data: threeMf.data },
-    { name: 'pascal-golden-house-levels-stl.zip', data: stl.data },
+    { name: 'aedifex-golden-house-levels.3mf', data: threeMf.data },
+    { name: 'aedifex-golden-house-levels-stl.zip', data: stl.data },
   ]
   for (const file of files) await writeFile(resolve(outputDirectory, file.name), file.data)
 
   const manifest = {
-    kind: 'pascal-print-golden-house',
+    kind: 'aedifex-print-golden-house',
     version: 1,
     scale: 100,
     units: 'millimeter',

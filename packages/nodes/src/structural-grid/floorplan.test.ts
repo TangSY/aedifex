@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type GeometryContext, StructuralGridNode } from '@pascal-app/core'
+import { type GeometryContext, StructuralGridNode } from '@aedifex/core'
 import { buildStructuralGridFloorplan } from './floorplan'
 
 const context = {

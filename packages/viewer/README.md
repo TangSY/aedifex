@@ -1,11 +1,11 @@
-# @pascal-app/viewer
+# @aedifex/viewer
 
-3D viewer component for Pascal building editor.
+3D viewer component for Aedifex building editor.
 
 ## Installation
 
 ```bash
-npm install @pascal-app/core @pascal-app/viewer @pascal-app/editor @pascal-app/nodes
+npm install @aedifex/core @aedifex/viewer @aedifex/editor @aedifex/nodes
 ```
 
 ## Peer Dependencies
@@ -17,7 +17,7 @@ npm install next react react-dom three @react-three/fiber @react-three/drei luci
 ## What's Included
 
 - **Viewer Component** - WebGPU-powered 3D viewer with camera controls
-- **Node Rendering Runtime** - Registry-driven dispatch for node renderers supplied by `@pascal-app/nodes`
+- **Node Rendering Runtime** - Registry-driven dispatch for node renderers supplied by `@aedifex/nodes`
 - **Post-Processing** - SSGI (ambient occlusion + global illumination), TRAA (anti-aliasing), outline effects
 - **Level System** - Level visibility and positioning (stacked/exploded/solo modes)
 - **Wall Cutout System** - Dynamic wall hiding based on camera position
@@ -26,9 +26,9 @@ npm install next react react-dom three @react-three/fiber @react-three/drei luci
 ## Usage
 
 ```typescript
-import { loadPlugin } from '@pascal-app/core'
-import { builtinPlugin } from '@pascal-app/nodes'
-import { Viewer } from '@pascal-app/viewer'
+import { loadPlugin } from '@aedifex/core'
+import { builtinPlugin } from '@aedifex/nodes'
+import { Viewer } from '@aedifex/viewer'
 import { useEffect, useState } from 'react'
 
 const registryReady = loadPlugin(builtinPlugin)
@@ -56,7 +56,7 @@ definitions and scene nodes cannot render. Host-provided plugins use the same `l
 ## Custom Camera Controls
 
 ```typescript
-import { Viewer } from '@pascal-app/viewer'
+import { Viewer } from '@aedifex/viewer'
 import { CameraControls } from '@react-three/drei'
 
 function App() {
@@ -70,8 +70,8 @@ function App() {
 
 ## 2D and Split-View Embeds
 
-`@pascal-app/viewer` owns the 3D canvas. The npm-facing multi-view shell lives in
-`@pascal-app/editor`, where it can compose that canvas with the read-only SVG floor plan without
+`@aedifex/viewer` owns the 3D canvas. The npm-facing multi-view shell lives in
+`@aedifex/editor`, where it can compose that canvas with the read-only SVG floor plan without
 coupling editor-only floor-plan state into the viewer runtime.
 
 Use `modes` to expose any combination of `3d`, `2d`, and `split`. A single enabled mode hides the
@@ -79,8 +79,8 @@ switcher automatically. `mode` and `onModeChange` can be supplied for controlled
 `defaultMode` is used.
 
 ```tsx
-import { ViewerStage, useViewerCameraNavigationSync } from '@pascal-app/editor'
-import { Viewer } from '@pascal-app/viewer'
+import { ViewerStage, useViewerCameraNavigationSync } from '@aedifex/editor'
+import { Viewer } from '@aedifex/viewer'
 import { CameraControls, type CameraControlsImpl } from '@react-three/drei'
 import { useRef } from 'react'
 
@@ -122,16 +122,16 @@ navigation does not require a React render per frame. Set `showCompass={false}` 
 
 ## Capture Sessions
 
-`@pascal-app/viewer/capture` holds the optional capture runtime and its reference layers. Mount
+`@aedifex/viewer/capture` holds the optional capture runtime and its reference layers. Mount
 `CaptureRuntime` as a child of `Viewer` and provide a source resolver. The host owns access control
 and transport; the runtime owns source lifecycle, scan-node placement, layer visibility, and
 reference renderers for RoomPlan models, device trajectories, and PLY/live point clouds. The
-session contracts it consumes live in `@pascal-app/core/capture`.
+session contracts it consumes live in `@aedifex/core/capture`.
 
 ```tsx
-import { createHttpCaptureSource } from '@pascal-app/core/capture'
-import { Viewer } from '@pascal-app/viewer'
-import { CaptureRuntime } from '@pascal-app/viewer/capture'
+import { createHttpCaptureSource } from '@aedifex/core/capture'
+import { Viewer } from '@aedifex/viewer'
+import { CaptureRuntime } from '@aedifex/viewer/capture'
 
 function CaptureViewer() {
   return (
@@ -162,10 +162,10 @@ raycasting, artifact work, animation, and live packet subscriptions while disabl
 
 ### Local surface previews
 
-`@pascal-app/viewer/capture/preview` exports `createSurfaceMeshGeometry` and `createClayMatcap`
+`@aedifex/viewer/capture/preview` exports `createSurfaceMeshGeometry` and `createClayMatcap`
 without importing the React viewer runtime, so a capture client can render a locally saved surface
 immediately, before its archive is uploaded. The geometry decoder uses the shared
-`@pascal-app/core/capture` validator, including the native 20,000-face budget, byte lengths, and
+`@aedifex/core/capture` validator, including the native 20,000-face budget, byte lengths, and
 index bounds. It returns `null` for invalid input. The host owns the returned geometry and matcap
 texture and must dispose them on teardown.
 
@@ -178,7 +178,7 @@ loader-cached materials. Omitting these options preserves the existing presentat
 ## Viewer State
 
 ```typescript
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 
 function ViewerControls() {
   const levelMode = useViewer(s => s.levelMode)
@@ -200,11 +200,11 @@ function ViewerControls() {
 ## Asset CDN Helpers
 
 ```typescript
-import { resolveCdnUrl, ASSETS_CDN_URL } from '@pascal-app/viewer'
+import { resolveCdnUrl, ASSETS_CDN_URL } from '@aedifex/viewer'
 
 // Resolves relative paths to CDN URLs
 const url = resolveCdnUrl('/items/chair/model.glb')
-// → 'https://pascal-cdn.wawasensei.dev/items/chair/model.glb'
+// → 'https://aedifex-cdn.example.com/items/chair/model.glb'
 
 // Handles external URLs and asset:// protocol
 const externalUrl = resolveCdnUrl('https://example.com/model.glb')

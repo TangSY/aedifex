@@ -1,7 +1,7 @@
 'use client'
 
-import { type AnyNodeId, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { type ThreeEvent, useThree } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'

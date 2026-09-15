@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { SceneBridge } from '../bridge/scene-bridge'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 import { SqliteSceneStore } from '../storage/sqlite-scene-store'
 
 const TOOL_POLICIES = [
@@ -102,7 +102,7 @@ const TOOL_POLICIES = [
 const EXPECTED_TOOL_NAMES = TOOL_POLICIES.flatMap(({ tools }) => tools).toSorted()
 const annotationPacket = JSON.parse(
   readFileSync(
-    resolve(import.meta.dir, '../../../../plugin-evals/tool-annotation-justifications.json'),
+    resolve(import.meta.dir, './fixtures/tool-annotation-justifications.json'),
     'utf8',
   ),
 ) as {
@@ -121,7 +121,7 @@ describe('MCP tool annotations', () => {
     bridge.loadDefault()
     const directory = mkdtempSync(join(tmpdir(), 'pascal-mcp-annotations-'))
     const store = new SqliteSceneStore({ databasePath: join(directory, 'pascal.db') })
-    const server = createPascalMcpServer({ bridge, store })
+    const server = createAedifexMcpServer({ bridge, store })
     const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
     const client = new Client({ name: 'annotation-test-client', version: '0.0.0' })
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])

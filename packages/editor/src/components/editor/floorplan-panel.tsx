@@ -1,6 +1,5 @@
 'use client'
 
-import { Icon } from '@iconify/react'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -56,9 +55,10 @@ import {
   wallClosesRoom,
   ZoneNode as ZoneNodeSchema,
   type ZoneNode as ZoneNodeType,
-} from '@pascal-app/core'
-import { useSegmentDraftChain, useWallSnapIndicator } from '@pascal-app/editor'
-import { getSceneTheme, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useSegmentDraftChain, useWallSnapIndicator } from '@aedifex/editor'
+import { getSceneTheme, useViewer } from '@aedifex/viewer'
+import { Icon } from '@iconify/react'
 import { Command, Ruler } from 'lucide-react'
 import {
   type ComponentProps,
@@ -197,12 +197,12 @@ import {
 } from '../tools/wall/wall-drafting'
 
 import { PALETTE_COLORS } from '../ui/primitives/color-dot'
-import { FloorplanCompassButton } from '../viewer/floorplan-compass-button'
 import { resolveFloorplanBackgroundSelection } from './floorplan-background-selection'
 import {
   subscribeFloorplanCameraNavigation,
   useFloorplanCameraSyncBridge,
 } from './floorplan-camera-sync'
+import { FloorplanCompassButton } from './floorplan-compass-button'
 import {
   canApplyFloorplanNavigationSync,
   canZoomFloorplanDuringNavigation,
@@ -7098,7 +7098,7 @@ export function FloorplanPanel({
   )
   const wallSelectionHatchId = useMemo(() => `floorplan-wall-selection-hatch-${isDark}`, [isDark])
   // Subset of the legacy palette surfaced to registry-driven kinds via
-  // <FloorplanRenderProvider>. Mirrors `FloorplanPalette` in `@pascal-app/
+  // <FloorplanRenderProvider>. Mirrors `FloorplanPalette` in `@aedifex/
   // core` — keep slot names + meanings in sync.
   const floorplanRegistryPalette = useMemo<FloorplanRenderContextValue['palette']>(
     () => ({
@@ -11323,7 +11323,7 @@ export function FloorplanPanel({
           // panel, so pan/zoom is preserved across the toggle.
           <svg
             className="h-full w-full touch-none"
-            data-pascal-floorplan-2d
+            data-aedifex-floorplan-2d
             onClick={isMarqueeSelectionToolActive ? undefined : handleSvgClick}
             onContextMenu={(event) => event.preventDefault()}
             onDoubleClick={isMarqueeSelectionToolActive ? undefined : handleBackgroundDoubleClick}

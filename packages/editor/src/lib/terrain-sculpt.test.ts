@@ -8,7 +8,7 @@ import {
   terrainFieldOf,
   useLiveTerrain,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   brushRadiusRange,
   clampBrushRadius,

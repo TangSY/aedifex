@@ -1,4 +1,4 @@
-import type { ContextualHelpNodeExtension, ContextualShortcutHint } from '@pascal-app/editor'
+import type { ContextualHelpNodeExtension, ContextualShortcutHint } from '@aedifex/editor'
 import useBlockEditSession from './edit-session'
 import type { BlockComponentMode } from './selection-model'
 

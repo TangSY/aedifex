@@ -1,5 +1,5 @@
-import type { NodeDefinition } from '@pascal-app/core'
-import type { FloorplanNodeExtension } from '@pascal-app/editor'
+import type { NodeDefinition } from '@aedifex/core'
+import type { FloorplanNodeExtension } from '@aedifex/editor'
 import { buildStructuralGridFloorplan } from './floorplan'
 import { StructuralGridNode } from './schema'
 
@@ -10,7 +10,7 @@ export const structuralGridDefinition: NodeDefinition<typeof StructuralGridNode>
   schema: StructuralGridNode,
   category: 'structure',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       tool: () => import('./floorplan-tool'),
       availableModes: ['expert'],
       preferredView: '2d',

@@ -9,13 +9,13 @@ import {
   sceneRegistry,
   type TurbineVentNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   consumePlacementDragRelease,
   markToolCancelConsumed,
   triggerSFX,
   useEditor,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { useCallback, useEffect, useState } from 'react'
 import * as THREE from 'three'
 import {

@@ -8,14 +8,14 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getPendingWallRebuildCount,
   isIsolationActive,
   publishPerfBatchStats,
   registerMaterialCacheCleanup,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import type { Object3D } from 'three'
@@ -514,7 +514,7 @@ const NodeBatchSystemActive = () => {
     }
   }, [])
 
-  // Scripted-probe hook, ?perf sessions only (mirrors __pascalPerf).
+  // Scripted-probe hook, ?perf sessions only (mirrors __aedifexPerf).
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).has('perf')) return
     const probe = {

@@ -6,8 +6,8 @@ import {
   emitter,
   getLevelElevations,
   summarizeSystemFor,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import {
   AlertTriangle,
   CheckCircle2,

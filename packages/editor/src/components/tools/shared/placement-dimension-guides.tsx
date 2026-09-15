@@ -1,6 +1,6 @@
 'use client'
 
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useLayoutEffect, useMemo } from 'react'
 import { BufferGeometry, Float32BufferAttribute, Line as ThreeLine } from 'three'

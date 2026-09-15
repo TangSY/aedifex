@@ -1,4 +1,4 @@
-import { hideFromScene, showInScene } from '@pascal-app/viewer'
+import { hideFromScene, showInScene } from '@aedifex/viewer'
 import * as THREE from 'three'
 
 /** A contiguous vertex range one wall contributes to one material run. */

@@ -1,5 +1,5 @@
-import type { AnyNode, FloorplanGeometry, HandleDescriptor, NodeDefinition } from '@pascal-app/core'
-import { type AnyNodeId, useScene } from '@pascal-app/core'
+import type { AnyNode, FloorplanGeometry, HandleDescriptor, NodeDefinition } from '@aedifex/core'
+import { type AnyNodeId, useScene } from '@aedifex/core'
 import {
   boundsOf,
   boxCorners,
@@ -16,8 +16,9 @@ import {
   snapParameters,
   transformPoint,
   validateProceduralRelations,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import { itemPaint } from '../item/paint'
+import { metadataRecord } from '../shared/node-metadata'
 import { proceduralFloorplanMoveTarget } from './move-session'
 
 const GIZMO_SIDE_OFFSET = 0.3
@@ -143,7 +144,7 @@ export const proceduralItemDefinition: NodeDefinition<typeof ProceduralItemNode>
   },
   relations: { hosts: ['item', 'procedural-item'], cascadeDelete: 'descendants' },
   renderer: { kind: 'parametric', module: () => import('./renderer') },
-  parametrics: { groups: [], customPanel: () => import('@pascal-app/editor/procedural-items') },
+  parametrics: { groups: [], customPanel: () => import('@aedifex/editor/procedural-items') },
   affordanceTools: { move: () => import('./move-tool') },
   floorplanMoveTarget: proceduralFloorplanMoveTarget,
   keyboardActions: {
@@ -240,7 +241,7 @@ export const proceduralItemDefinition: NodeDefinition<typeof ProceduralItemNode>
     }
     const q = queryProceduralItem(node, chain),
       b = q.levelBounds
-    const floorPlanUrl = node.metadata.floorPlanUrl
+    const floorPlanUrl = metadataRecord(node.metadata).floorPlanUrl
     if (typeof floorPlanUrl === 'string' && floorPlanUrl.trim()) {
       const local = q.localBounds
       const center = transformPoint(

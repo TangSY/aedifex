@@ -10,7 +10,7 @@ import {
   getWallThickness,
   nodeRegistry,
   validateDwv,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Box3, Ray, Vector3 } from 'three'
 import { connectionCompatibility } from './connection-compatibility'
 import { planRunHangerSlots } from './run-hangers'

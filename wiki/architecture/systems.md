@@ -78,7 +78,7 @@ builds. Subsequent builds retain neighbour invalidation and the **80 ms** traili
 quiet window. Once initial build ends, the existing interactive scheduling applies
 (progressive limits for queues larger than eight; small edits rebuild immediately).
 
-Only with `?perf`, `__pascalPerf.batchStats().wallDrain` publishes the active state,
+Only with `?perf`, `__aedifexPerf.batchStats().wallDrain` publishes the active state,
 this frame's consumption, cumulative budget/heavy/drained/cap exits, pending-neighbour
 count, first builds, re-invalidation builds and unique neighbour enqueues. Publication
 reuses one mutable stats object without allocating frame snapshots. Counters reset

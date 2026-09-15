@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { DuctSegmentNode, useScene } from '@pascal-app/core'
+import { DuctSegmentNode, useScene } from '@aedifex/core'
 import { planDuctDraw } from './tool'
 
 const profile = { shape: 'round' as const, diameter: 6, width: 12, height: 8 }

@@ -18,7 +18,7 @@ import {
   useLiveTransforms,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CursorSphere,
   commitFreshPlacementSubtree,
@@ -34,8 +34,8 @@ import {
   useEditor,
   useFreshPlacementVisibility,
   type WallPlanPoint,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 

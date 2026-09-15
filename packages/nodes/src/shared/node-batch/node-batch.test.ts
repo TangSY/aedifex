@@ -7,9 +7,9 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
-import * as viewerExports from '@pascal-app/viewer'
-import { SCENE_LAYER, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import * as viewerExports from '@aedifex/viewer'
+import { SCENE_LAYER, useViewer } from '@aedifex/viewer'
 import {
   BackSide,
   type BatchedMesh,
@@ -175,7 +175,7 @@ test('separates both shadow flags and preserves them through capacity growth', (
   expect(
     batches(root).find((batch) => !batch.castShadow && !batch.receiveShadow)?.instanceCount,
   ).toBe(10)
-  expect(batches(root).every((batch) => batch.userData.pascalExport === 'strip')).toBe(true)
+  expect(batches(root).every((batch) => batch.userData.aedifexExport === 'strip')).toBe(true)
 })
 
 test.each([

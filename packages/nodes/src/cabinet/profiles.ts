@@ -1,5 +1,5 @@
-import type { CabinetNode } from '@pascal-app/core'
-import { CABINET_METRIC_DEFAULTS } from '@pascal-app/core'
+import type { CabinetNode } from '@aedifex/core'
+import { CABINET_METRIC_DEFAULTS } from '@aedifex/core'
 
 export type CabinetDimensionProfileId = 'metric-base' | 'us-base'
 

@@ -11,14 +11,15 @@ import {
   waitForHealth,
 } from './editor-process.js'
 import { getMcpServiceStatus } from './mcp-service.js'
-import { resolvePascalPaths } from './paths.js'
+import { resolveAedifexPaths } from './paths.js'
+import { isProcessRunning, terminateProcess } from './process-control.js'
 import { installBundledRuntime, readActiveRuntime } from './runtime.js'
 import { writeFakeMcpService } from './test-support/fake-mcp-service.js'
 
 const roots: string[] = []
 /** The MCP service ships with the CLI, so it is injected instead of staged in the runtime. */
-const serviceRoot = await mkdtemp(path.join(os.tmpdir(), 'pascal-cli-test-service-'))
-process.env.PASCAL_MCP_SERVICE_PATH = await writeFakeMcpService(serviceRoot)
+const serviceRoot = await mkdtemp(path.join(os.tmpdir(), 'aedifex-cli-test-service-'))
+process.env.AEDIFEX_MCP_SERVICE_PATH = await writeFakeMcpService(serviceRoot)
 
 afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })))
@@ -30,7 +31,7 @@ describe('managed runtime', () => {
   test('installs a bundled runtime outside the package-runner cache', async () => {
     const root = await temporaryRoot()
     const source = await fakeRuntime(root, '1.2.3')
-    const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
 
     const active = await installBundledRuntime(paths, source)
 
@@ -39,50 +40,81 @@ describe('managed runtime', () => {
     expect(await Bun.file(path.join(active.directory, 'apps/editor/server.js')).exists()).toBe(true)
   })
 
+  test('starts an existing v1 local runtime without downloading or rewriting its manifest', async () => {
+    const root = await temporaryRoot()
+    const source = await fakeRuntime(root, '1.2.3')
+    const manifest = {
+      schemaVersion: 1,
+      version: '1.2.3',
+      entrypoint: 'apps/editor/server.js',
+      mcpEntrypoint: 'services/aedifex-mcp.mjs',
+      healthPath: '/api/health',
+      mcpHealthPath: '/health',
+    }
+    await writeFile(path.join(source, 'runtime-manifest.json'), JSON.stringify(manifest))
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
+    const active = await installBundledRuntime(paths, source)
+    try {
+      await startEditor({ paths })
+      expect((await getEditorStatus(paths)).healthy).toBe(true)
+      expect(await Bun.file(path.join(active.directory, 'runtime-manifest.json')).json()).toEqual(manifest)
+    } finally {
+      await stopEditor(paths)
+    }
+  })
+
   test('starts, identifies, and stops a detached editor while preserving data', async () => {
     const root = await temporaryRoot()
     const source = await fakeRuntime(root, '1.2.3')
-    const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
     await mkdir(paths.data, { recursive: true })
     await writeFile(paths.database, 'persistent')
 
-    const started = await startEditor({ paths, runtimeSource: source })
+    const started = await startEditor({ paths, sourceDirectory: source })
     expect(started.alreadyRunning).toBe(false)
     expect((await getEditorStatus(paths)).healthy).toBe(true)
-    expect((await startEditor({ paths, runtimeSource: source })).alreadyRunning).toBe(true)
+    expect((await startEditor({ paths, sourceDirectory: source })).alreadyRunning).toBe(true)
 
     expect(await stopEditor(paths)).toBe(true)
     expect((await getEditorStatus(paths)).running).toBe(false)
     expect(await Bun.file(paths.database).text()).toBe('persistent')
-  })
+  }, 15_000)
 
-  test('preserves a configured Mint host origin in the editor process', async () => {
+  test('retires the legacy MCP after its editor has exited before replacing editor state', async () => {
     const root = await temporaryRoot()
     const source = await fakeRuntime(root, '1.2.3')
-    const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
-    const previousMintOrigin = process.env.MINT_PASCAL_HOST_ORIGIN
-    process.env.MINT_PASCAL_HOST_ORIGIN = 'https://pascal.example.com'
-
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
+    const started = await startEditor({ paths, sourceDirectory: source })
     try {
-      const started = await startEditor({ paths, runtimeSource: source })
-      const response = await fetch(`http://127.0.0.1:${started.state.port}/mint-origin`)
+      await terminateProcess(started.state.pid)
+      await writeFile(paths.state, JSON.stringify({
+        ...started.state,
+        version: started.mcp.version,
+        instanceId: started.mcp.instanceId,
+        mcp: { pid: started.mcp.pid, port: started.mcp.port },
+      }))
+      await rm(paths.mcpState)
+      expect(isProcessRunning(started.mcp.pid)).toBe(true)
 
-      expect(await response.text()).toBe('https://pascal.example.com')
+      const restarted = await startEditor({ paths })
+
+      expect(restarted.mcp.pid).not.toBe(started.mcp.pid)
+      expect(isProcessRunning(started.mcp.pid)).toBe(false)
+      expect((await getEditorStatus(paths)).healthy).toBe(true)
+      expect((await getMcpServiceStatus(paths)).healthy).toBe(true)
     } finally {
       await stopEditor(paths)
-      if (previousMintOrigin === undefined) delete process.env.MINT_PASCAL_HOST_ORIGIN
-      else process.env.MINT_PASCAL_HOST_ORIGIN = previousMintOrigin
     }
   })
 
   test('serializes concurrent starts into one managed editor', async () => {
     const root = await temporaryRoot()
     const source = await fakeRuntime(root, '1.2.3')
-    const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
 
     const [first, second] = await Promise.all([
-      startEditor({ paths, port: 0, runtimeSource: source }),
-      startEditor({ paths, port: 0, runtimeSource: source }),
+      startEditor({ paths, port: 0, sourceDirectory: source }),
+      startEditor({ paths, port: 0, sourceDirectory: source }),
     ])
 
     expect(first.state.pid).toBe(second.state.pid)
@@ -93,7 +125,7 @@ describe('managed runtime', () => {
   test('falls back to an automatic port when the requested port is occupied', async () => {
     const root = await temporaryRoot()
     const source = await fakeRuntime(root, '1.2.3')
-    const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
     const foreignServer = http.createServer((_request, response) => response.end('foreign'))
     await new Promise<void>((resolve, reject) => {
       foreignServer.once('error', reject)
@@ -106,7 +138,7 @@ describe('managed runtime', () => {
       const started = await startEditor({
         paths,
         port: address.port,
-        runtimeSource: source,
+        sourceDirectory: source,
       })
 
       expect(started.state.port).not.toBe(address.port)
@@ -120,7 +152,7 @@ describe('managed runtime', () => {
   })
 
   test('reports a foreign health responder without waiting for the timeout', async () => {
-    const foreignServer = http.createServer((_request, response) => response.end('not Pascal'))
+    const foreignServer = http.createServer((_request, response) => response.end('not Aedifex'))
     await new Promise<void>((resolve, reject) => {
       foreignServer.once('error', reject)
       foreignServer.listen({ host: '127.0.0.1', port: 0 }, resolve)
@@ -138,9 +170,9 @@ describe('managed runtime', () => {
             version: '1.2.3',
             port: address.port,
             host: '127.0.0.1',
-            url: `http://pascal.localhost:${address.port}`,
+            url: `http://aedifex.localhost:${address.port}`,
             instanceId: 'expected-instance',
-            runtimeDirectory: '/tmp/pascal-test-runtime',
+            runtimeDirectory: '/tmp/aedifex-test-runtime',
             startedAt: new Date().toISOString(),
           },
           5_000,
@@ -157,7 +189,7 @@ describe('managed runtime', () => {
   test('reclaims an install lock whose owner is gone', async () => {
     const root = await temporaryRoot()
     const source = await fakeRuntime(root, '1.2.3')
-    const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
     await mkdir(paths.run, { recursive: true })
     await writeFile(
       path.join(paths.run, 'runtime-install.lock'),
@@ -175,11 +207,11 @@ describe('managed runtime', () => {
   test('replaces a damaged installed runtime on the next start', async () => {
     const root = await temporaryRoot()
     const source = await fakeRuntime(root, '1.2.3')
-    const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
     const active = await installBundledRuntime(paths, source)
     await rm(path.join(active.directory, 'apps/editor/server.js'))
 
-    const started = await startEditor({ paths, port: 0, runtimeSource: source })
+    const started = await startEditor({ paths, port: 0, sourceDirectory: source })
 
     expect(started.state.version).toBe('1.2.3')
     expect((await getEditorStatus(paths)).healthy).toBe(true)
@@ -190,11 +222,11 @@ describe('managed runtime', () => {
   test('replaces a runtime whose manifest contains invalid JSON', async () => {
     const root = await temporaryRoot()
     const source = await fakeRuntime(root, '1.2.3')
-    const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
     const active = await installBundledRuntime(paths, source)
     await writeFile(path.join(active.directory, 'runtime-manifest.json'), '{not-json')
 
-    const started = await startEditor({ paths, port: 0, runtimeSource: source })
+    const started = await startEditor({ paths, port: 0, sourceDirectory: source })
 
     expect(started.state.version).toBe('1.2.3')
     expect((await getEditorStatus(paths)).healthy).toBe(true)
@@ -204,11 +236,11 @@ describe('managed runtime', () => {
   test('recovers an active-runtime pointer containing invalid JSON', async () => {
     const root = await temporaryRoot()
     const source = await fakeRuntime(root, '1.2.3')
-    const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
     await mkdir(paths.run, { recursive: true })
     await writeFile(paths.currentRuntime, '{not-json')
 
-    const started = await startEditor({ paths, port: 0, runtimeSource: source })
+    const started = await startEditor({ paths, port: 0, sourceDirectory: source })
 
     expect(started.state.version).toBe('1.2.3')
     expect((await getEditorStatus(paths)).healthy).toBe(true)
@@ -218,7 +250,7 @@ describe('managed runtime', () => {
   test('removes abandoned temporary runtime copies before installing', async () => {
     const root = await temporaryRoot()
     const source = await fakeRuntime(root, '1.2.3')
-    const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
     const abandoned = path.join(paths.runtime, '.install-abandoned')
     await mkdir(abandoned, { recursive: true })
     await writeFile(path.join(abandoned, 'partial'), 'incomplete')
@@ -231,8 +263,8 @@ describe('managed runtime', () => {
   test('allows an explicit force stop only for the recorded editor command', async () => {
     const root = await temporaryRoot()
     const source = await fakeRuntime(root, '1.2.3')
-    const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
-    const started = await startEditor({ paths, port: 0, runtimeSource: source })
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
+    const started = await startEditor({ paths, port: 0, sourceDirectory: source })
     await writeFile(
       paths.state,
       `${JSON.stringify({ ...started.state, instanceId: 'no-longer-healthy' }, null, 2)}\n`,
@@ -245,8 +277,8 @@ describe('managed runtime', () => {
   test('force-stops the recorded editor when its runtime manifest is damaged', async () => {
     const root = await temporaryRoot()
     const source = await fakeRuntime(root, '1.2.3')
-    const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
-    const started = await startEditor({ paths, port: 0, runtimeSource: source })
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
+    const started = await startEditor({ paths, port: 0, sourceDirectory: source })
     await writeFile(path.join(started.state.runtimeDirectory, 'runtime-manifest.json'), '{not-json')
     await writeFile(
       paths.state,
@@ -258,26 +290,26 @@ describe('managed runtime', () => {
 
   test('restores the previous running runtime when a candidate fails health', async () => {
     const root = await temporaryRoot()
-    const firstSource = await fakeRuntime(root, '1.2.3')
-    const brokenSource = await fakeRuntime(root, '2.0.0', false)
-    const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
-    await startEditor({ paths, port: 0, runtimeSource: firstSource })
+    const firstSource = await fakeLegacyRuntime(root, '0.1.0')
+    const brokenSource = await fakeRuntime(root, '0.1.1', false)
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
+    await startEditor({ paths, port: 0, sourceDirectory: firstSource })
     const candidate = await installBundledRuntime(paths, brokenSource, { activate: false })
 
     await expect(activateEditorRuntime(paths, candidate)).rejects.toMatchObject({
       code: 'update_failed',
     })
-    expect((await readActiveRuntime(paths))?.version).toBe('1.2.3')
+    expect((await readActiveRuntime(paths))?.version).toBe('0.1.0')
     expect((await getEditorStatus(paths)).healthy).toBe(true)
     await stopEditor(paths)
   })
 
   test('restarts the editor and repoints MCP when a new runtime is activated', async () => {
     const root = await temporaryRoot()
-    const firstSource = await fakeRuntime(root, '1.2.3')
-    const secondSource = await fakeRuntime(root, '2.0.0')
-    const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
-    const started = await startEditor({ paths, runtimeSource: firstSource })
+    const firstSource = await fakeLegacyRuntime(root, '0.1.0')
+    const secondSource = await fakeRuntime(root, '0.1.1')
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
+    const started = await startEditor({ paths, sourceDirectory: firstSource })
     const candidate = await installBundledRuntime(paths, secondSource, { activate: false })
 
     const result = await activateEditorRuntime(paths, candidate)
@@ -285,7 +317,10 @@ describe('managed runtime', () => {
     expect(result.restarted).toBe(true)
     const status = await getEditorStatus(paths)
     expect(status.healthy).toBe(true)
-    expect(status.state?.version).toBe('2.0.0')
+    expect(status.state?.version).toBe('0.1.1')
+    expect((await readActiveRuntime(paths))?.directory).toBe(path.join(paths.runtime, '0.1.1'))
+    expect(await Bun.file(path.join(paths.runtime, '0.1.0/runtime-manifest.json')).json()).toMatchObject({ schemaVersion: 1 })
+    expect(await Bun.file(path.join(paths.runtime, '0.1.1/runtime-manifest.json')).json()).toMatchObject({ schemaVersion: 2 })
     expect(status.state?.pid).not.toBe(started.state.pid)
     const mcp = await getMcpServiceStatus(paths)
     expect(mcp.healthy).toBe(true)
@@ -297,9 +332,9 @@ describe('managed runtime', () => {
     const root = await temporaryRoot()
     const firstSource = await fakeRuntime(root, '1.2.3')
     const secondSource = await fakeRuntime(root, '2.0.0')
-    const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
     await installBundledRuntime(paths, firstSource)
-    const seeded = await startEditor({ paths, port: 0, runtimeSource: firstSource })
+    const seeded = await startEditor({ paths, port: 0, sourceDirectory: firstSource })
     await stopEditor(paths)
     await writeFile(paths.state, `${JSON.stringify(seeded.state, null, 2)}\n`)
     const candidate = await installBundledRuntime(paths, secondSource, { activate: false })
@@ -313,7 +348,7 @@ describe('managed runtime', () => {
 })
 
 async function temporaryRoot(): Promise<string> {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'pascal-cli-test-'))
+  const root = await mkdtemp(path.join(os.tmpdir(), 'aedifex-cli-test-'))
   roots.push(root)
   return root
 }
@@ -330,20 +365,16 @@ async function fakeRuntime(root: string, version: string, healthy = true): Promi
     path.join(app, 'server.js'),
     healthy
       ? `import http from 'node:http'
-const instanceId = process.env.PASCAL_INSTANCE_ID
+const instanceId = process.env.AEDIFEX_INSTANCE_ID
 const server = http.createServer((request, response) => {
   response.setHeader('content-type', 'application/json')
   if (request.url === '/api/health') {
     response.end(JSON.stringify({
       status: 'ok',
       app: 'editor',
-      version: process.env.PASCAL_RUNTIME_VERSION,
+      version: process.env.AEDIFEX_RUNTIME_VERSION,
       instanceId,
     }))
-    return
-  }
-  if (request.url === '/mint-origin') {
-    response.end(process.env.MINT_PASCAL_HOST_ORIGIN ?? '')
     return
   }
   response.end('{}')
@@ -353,5 +384,18 @@ process.on('SIGTERM', () => server.close(() => process.exit(0)))
 `
       : 'process.exit(1)\n',
   )
+  return runtime
+}
+
+async function fakeLegacyRuntime(root: string, version: string): Promise<string> {
+  const runtime = await fakeRuntime(root, version)
+  await writeFile(path.join(runtime, 'runtime-manifest.json'), JSON.stringify({
+    schemaVersion: 1,
+    version,
+    entrypoint: 'apps/editor/server.js',
+    mcpEntrypoint: 'services/aedifex-mcp.mjs',
+    healthPath: '/api/health',
+    mcpHealthPath: '/health',
+  }))
   return runtime
 }

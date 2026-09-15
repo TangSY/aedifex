@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, DoorNode, LevelNode, WallNode } from '@pascal-app/core'
+import { type AnyNode, DoorNode, LevelNode, WallNode } from '@aedifex/core'
 import {
   buildCabinetPlacementSizeDimensions,
   resolveCabinetPlacementDimensionPosition,

@@ -6,8 +6,8 @@ import {
   LevelNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { hideFromScene, showInScene, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { hideFromScene, showInScene, useViewer } from '@aedifex/viewer'
 import { _roots, act, createRoot } from '@react-three/fiber'
 import { createElement } from 'react'
 import {

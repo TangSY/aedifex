@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { type AnyNode, registerNode, sceneRegistry } from '@pascal-app/core'
+import { type AnyNode, registerNode, sceneRegistry } from '@aedifex/core'
 import * as THREE from 'three'
 import { prepareSceneForExport } from './glb-export'
 import { filterPreparedSceneForPrintContent } from './print-content-scope'
@@ -12,7 +12,7 @@ function registerFixtureKind(category: 'site' | 'structure' | 'furnish'): string
     schemaVersion: 1,
     category,
     defaults: () => ({}),
-    capabilities: {},
+    capabilities: { deletable: false },
   } as never)
   return kind
 }

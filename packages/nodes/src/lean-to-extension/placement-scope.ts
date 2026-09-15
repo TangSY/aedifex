@@ -1,4 +1,4 @@
-import { type AnyNode, type AnyNodeId, findLevelAncestorId } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, findLevelAncestorId } from '@aedifex/core'
 
 export function isLeanToHostOnLevel(
   host: AnyNode,

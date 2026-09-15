@@ -1,6 +1,6 @@
 /**
  * Pure plan (XZ) footprint math — one source for spatial-grid collision and
- * alignment anchors. The `@pascal-app/core/plan-footprint` subpath is the seam
+ * alignment anchors. The `@aedifex/core/plan-footprint` subpath is the seam
  * for a follow-up that consolidates MCP layout clearance onto these helpers.
  *
  * ## Invariant

@@ -23,7 +23,7 @@
  * contributors emit — `mergeGeometries` requires every input to agree on both.
  */
 
-import { heightAtSample, normalAt, type TerrainField } from '@pascal-app/core'
+import { heightAtSample, normalAt, type TerrainField } from '@aedifex/core'
 import * as THREE from 'three'
 
 /**
