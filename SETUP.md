@@ -41,6 +41,10 @@ a base URL that only `NEXT_PUBLIC_APP_URL` can override, and Next inlines that
 value at build time, so remapping the port to something else makes the page
 return 500.
 
+## Local CLI
+
+The CLI uses a repository-built runtime. See [the CLI guide](packages/cli/README.md) for staging and local startup.
+
 ## Monorepo Structure
 
 ```

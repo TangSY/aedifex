@@ -16,6 +16,7 @@ import {
 import { CliError, toCliError } from '../errors.js'
 import { readJsonFile } from '../json-files.js'
 import { connectManagedMcp } from '../mcp-connector.js'
+import { getMcpServiceStatus } from '../mcp-service.js'
 import { resolveAedifexPaths } from '../paths.js'
 import { listLocalProjects, projectUrl, resolveLocalProject } from '../projects.js'
 import { installBundledRuntime } from '../runtime.js'
@@ -29,14 +30,14 @@ SOURCE CHECKOUT:
   Build and link packages/cli before running the aedifex command.
 
 USAGE:
-  aedifex editor [--foreground] [--no-open] [--port <n>]
-  aedifex start [--foreground] [--port <n>]
+  aedifex editor [--foreground] [--no-open] [--port <n>] [--runtime <directory>]
+  aedifex start [--foreground] [--port <n>] [--runtime <directory>]
   aedifex stop | restart | status
   aedifex open [project]
   aedifex resume [project]
   aedifex projects [--json]
   aedifex logs [--follow] [--lines <n>]
-  aedifex update
+  aedifex update [--runtime <directory>]
   aedifex doctor [--json]
   aedifex info [--json]
   aedifex project list [--json]
@@ -45,12 +46,18 @@ USAGE:
   aedifex mcp connect | status | config | setup <client>
   aedifex plugin list [--json]
 
+THE WEB EDITOR RUNTIME:
+  Build and stage the runtime from this repository. The CLI installs that local
+  directory into ~/.pascal/runtime when the editor first starts. Pass --runtime
+  <directory> to use another local build. No runtime is downloaded.
+
 Documentation: https://github.com/TangSY/aedifex/blob/main/packages/cli/README.md
 `
 
 const MCP_HELP = `Aedifex MCP — connect AI agents to local projects
 
-The authenticated MCP service starts and stops with the Aedifex editor.
+The authenticated MCP service is built locally with this CLI. It starts on demand
+without the web editor, so agents can read and write local projects independently.
 
 USAGE:
   aedifex mcp status [--json]       Check the managed MCP service
@@ -106,8 +113,6 @@ async function main(): Promise<void> {
       return runPlugin(args)
     case 'mcp':
       return runMcp(args)
-    case '_install-runtime':
-      return output(true, await installBundledRuntime(paths, undefined, { activate: false }), '')
     default:
       throw new CliError('unknown_command', `Unknown command: ${command}`, { command }, 2)
   }
@@ -122,6 +127,7 @@ async function runStart(args: string[], shouldOpen: boolean): Promise<void> {
       open: { type: 'boolean', default: shouldOpen },
       'no-open': { type: 'boolean', default: false },
       port: { type: 'string' },
+      runtime: { type: 'string' },
       json: { type: 'boolean', default: false },
       help: { type: 'boolean', short: 'h', default: false },
     },
@@ -136,7 +142,8 @@ async function runStart(args: string[], shouldOpen: boolean): Promise<void> {
       paths,
       port,
       foreground: values.foreground,
-      onProgress: progress ? (event) => reportStartProgress(progress, event) : undefined,
+      sourceDirectory: values.runtime,
+      onProgress: progress ? createStartProgressReporter(progress) : undefined,
     })
   } catch (error) {
     progress?.stop()
@@ -147,12 +154,12 @@ async function runStart(args: string[], shouldOpen: boolean): Promise<void> {
   const commandPrefix = 'aedifex'
   output(
     values.json,
-    { ...result.state, alreadyRunning: result.alreadyRunning },
+    { ...result.state, mcp: result.mcp, alreadyRunning: result.alreadyRunning },
     [
       result.alreadyRunning
         ? `Aedifex is already running at ${result.state.url}`
         : `Aedifex is ready at ${result.state.url}`,
-      `MCP is ready on port ${result.state.mcp?.port}`,
+      `MCP is ready on port ${result.mcp.port}`,
       `Projects stay in ${paths.data}`,
       '',
       'Manage it with aedifex:',
@@ -175,13 +182,16 @@ async function runStart(args: string[], shouldOpen: boolean): Promise<void> {
   }
 }
 
+function createStartProgressReporter(
+  progress: TerminalProgress,
+): (event: EditorStartProgress) => void {
+  return (event) => reportStartProgress(progress, event)
+}
+
 function reportStartProgress(progress: TerminalProgress, event: EditorStartProgress): void {
   switch (event.step) {
     case 'storage-ready':
       progress.succeed(`Local data directory ready at ${event.dataDirectory}`)
-      return
-    case 'runtime-installing':
-      progress.start('Installing the editor runtime')
       return
     case 'runtime-ready':
       progress.succeed(
@@ -214,6 +224,12 @@ function reportStartProgress(progress: TerminalProgress, event: EditorStartProgr
     case 'mcp-health-checking':
       progress.update('Checking that MCP is ready')
       return
+    case 'mcp-ready':
+      progress.succeed(`MCP is ready on port ${event.port}`)
+      return
+    case 'mcp-already-running':
+      progress.succeed(`MCP is already running on port ${event.port}`)
+      return
     case 'ready':
       progress.succeed('Aedifex Editor and MCP are ready')
       return
@@ -243,20 +259,20 @@ async function runRestart(args: string[]): Promise<void> {
 
 async function runStatus(args: string[]): Promise<void> {
   const json = booleanOption(args, 'json')
-  const status = await getEditorStatus(paths)
+  const [status, mcp] = await Promise.all([getEditorStatus(paths), getMcpServiceStatus(paths)])
   output(
     json,
-    status,
+    { ...status, mcp },
     status.healthy
       ? [
           `Aedifex ${status.state?.version} is running at ${status.state?.url}`,
-          `MCP is ready on port ${status.state?.mcp?.port}`,
+          mcp.healthy ? `MCP is ready on port ${mcp.state?.port}` : 'MCP is stopped.',
         ].join('\n')
       : status.running
         ? 'Aedifex has a running but unhealthy process.'
         : status.installed
           ? `Aedifex ${status.runtime?.version} is installed and stopped.`
-          : 'Aedifex is not installed.',
+          : 'The local Aedifex runtime is not installed yet.',
   )
   if (status.running && !status.healthy) process.exitCode = 1
 }
@@ -266,13 +282,13 @@ async function runOpen(args: string[]): Promise<void> {
     args,
     strict: true,
     allowPositionals: true,
-    options: { json: { type: 'boolean', default: false } },
+    options: { json: { type: 'boolean', default: false }, runtime: { type: 'string' } },
   })
   if (positionals.length > 1) {
     throw new CliError('invalid_option', 'Use "aedifex open [project]".', undefined, 2)
   }
   if (positionals[0]) return runProjectOpen(args, false)
-  const status = await ensureRunningEditor()
+  const status = await ensureRunningEditor(values.runtime)
   openBrowser(status.state.url)
   output(values.json, { url: status.state.url }, status.state.url)
 }
@@ -320,9 +336,9 @@ async function runInfo(args: string[]): Promise<void> {
       `CLI: ${version}`,
       `Node: ${info.cli.node}`,
       `Home: ${paths.root}`,
-      `Runtime: ${info.editor.runtime?.version ?? 'not installed'}`,
+      `Web runtime: ${info.editor.runtime?.version ?? 'not installed'}`,
       `Editor: ${info.editor.healthy ? info.editor.state?.url : 'stopped'}`,
-      `MCP: ${info.editor.components.mcp.healthy ? `ready on port ${info.editor.state?.mcp?.port}` : 'stopped'}`,
+      `MCP: ${info.mcp.healthy ? `ready on port ${info.mcp.state?.port}` : 'stopped'}`,
       `Plugins: ${info.plugins.length}`,
     ].join('\n'),
   )
@@ -332,7 +348,11 @@ async function runUpdate(args: string[]): Promise<void> {
   const { values } = parseArgs({
     args,
     strict: true,
-    options: { version: { type: 'string' }, json: { type: 'boolean', default: false } },
+    options: {
+      version: { type: 'string' },
+      runtime: { type: 'string' },
+      json: { type: 'boolean', default: false },
+    },
   })
   const target = values.version ?? version
   if (!isAllowedUpdateVersion(target)) {
@@ -350,7 +370,7 @@ async function runUpdate(args: string[]): Promise<void> {
       { requestedVersion: target, currentVersion: version },
     )
   }
-  const candidate = await installBundledRuntime(paths, undefined, { activate: false })
+  const candidate = await installBundledRuntime(paths, values.runtime, { activate: false })
   const activation = await activateEditorRuntime(paths, candidate)
   output(
     values.json,
@@ -362,11 +382,15 @@ async function runUpdate(args: string[]): Promise<void> {
 async function runProject(args: string[]): Promise<void> {
   const [subcommand, ...rest] = args
   if (subcommand === 'list') {
-    const json = booleanOption(rest, 'json')
-    const status = await ensureRunningEditor()
+    const { values } = parseArgs({
+      args: rest,
+      strict: true,
+      options: { json: { type: 'boolean', default: false }, runtime: { type: 'string' } },
+    })
+    const status = await ensureRunningEditor(values.runtime)
     const projects = await listLocalProjects(status.state)
     output(
-      json,
+      values.json,
       { projects },
       projects.length
         ? projects
@@ -398,7 +422,7 @@ async function runProjectOpen(args: string[], latestWhenMissing: boolean): Promi
     args,
     strict: true,
     allowPositionals: true,
-    options: { json: { type: 'boolean', default: false } },
+    options: { json: { type: 'boolean', default: false }, runtime: { type: 'string' } },
   })
   if (positionals.length > 1 || (!latestWhenMissing && positionals.length !== 1)) {
     throw new CliError(
@@ -408,7 +432,7 @@ async function runProjectOpen(args: string[], latestWhenMissing: boolean): Promi
       2,
     )
   }
-  const status = await ensureRunningEditor()
+  const status = await ensureRunningEditor(values.runtime)
   const projects = await listLocalProjects(status.state)
   const project = resolveLocalProject(projects, positionals[0])
   const url = projectUrl(status.state, project)
@@ -427,11 +451,11 @@ async function runMcp(args: string[]): Promise<void> {
   }
   if (subcommand === 'status') {
     const json = booleanOption(rest, 'json')
-    const status = await getEditorStatus(paths)
+    const status = await getMcpServiceStatus(paths)
     const result = {
-      running: status.components.mcp.running,
-      healthy: status.components.mcp.healthy,
-      port: status.state?.mcp?.port ?? null,
+      running: status.running,
+      healthy: status.healthy,
+      port: status.state?.port ?? null,
     }
     output(
       json,
@@ -440,7 +464,7 @@ async function runMcp(args: string[]): Promise<void> {
         ? `Aedifex MCP is ready on port ${result.port}.`
         : result.running
           ? 'Aedifex MCP is running but unhealthy.'
-          : 'Aedifex MCP is stopped.',
+          : 'Aedifex MCP is stopped. It starts when an MCP client runs "aedifex mcp connect".',
     )
     if (result.running && !result.healthy) process.exitCode = 1
     return
@@ -537,10 +561,20 @@ async function runPlugin(args: string[]): Promise<void> {
   )
 }
 
-async function ensureRunningEditor() {
+async function ensureRunningEditor(runtimeSource?: string) {
   const status = await getEditorStatus(paths)
   if (status.healthy && status.state) return { ...status, state: status.state }
-  const started = await startEditor({ paths })
+  const progress = process.stderr.isTTY ? new TerminalProgress() : undefined
+  let started: Awaited<ReturnType<typeof startEditor>>
+  try {
+    started = await startEditor({
+      paths,
+      sourceDirectory: runtimeSource,
+      onProgress: progress ? createStartProgressReporter(progress) : undefined,
+    })
+  } finally {
+    progress?.stop()
+  }
   return {
     ...(await getEditorStatus(paths)),
     state: started.state,

@@ -1,4 +1,5 @@
 import type { AnyNode, AnyNodeId } from '@aedifex/core'
+import { metadataRecord } from './node-metadata'
 
 /**
  * Tag + rewind bookkeeping for auto-routed vertical offsets.
@@ -49,10 +50,6 @@ export type AutoOffsetTag = {
 
 type Point = [number, number, number]
 
-function metaRecord(metadata: unknown): Record<string, unknown> {
-  return metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>) : {}
-}
-
 function isPoint(value: unknown): value is Point {
   return (
     Array.isArray(value) &&
@@ -71,7 +68,7 @@ function translatePoint(point: Point, delta: Point): Point {
 export function readAutoOffsetTag(
   node: { metadata?: unknown } | null | undefined,
 ): AutoOffsetTag | null {
-  const tag = metaRecord(node?.metadata)[AUTO_OFFSET_KEY] as Partial<AutoOffsetTag> | undefined
+  const tag = metadataRecord(node?.metadata)[AUTO_OFFSET_KEY] as Partial<AutoOffsetTag> | undefined
   if (!tag || typeof tag !== 'object') return null
   if (
     typeof tag.group !== 'string' ||
@@ -86,12 +83,12 @@ export function readAutoOffsetTag(
 
 /** `metadata` with the offset tag set (replacing any prior one). */
 export function withAutoOffsetTag(metadata: unknown, tag: AutoOffsetTag): Record<string, unknown> {
-  return { ...metaRecord(metadata), [AUTO_OFFSET_KEY]: tag }
+  return { ...metadataRecord(metadata), [AUTO_OFFSET_KEY]: tag }
 }
 
 /** `metadata` with the offset tag removed — the run is a clean L again. */
 export function withoutAutoOffsetTag(metadata: unknown): Record<string, unknown> {
-  const { [AUTO_OFFSET_KEY]: _omit, ...rest } = metaRecord(metadata)
+  const { [AUTO_OFFSET_KEY]: _omit, ...rest } = metadataRecord(metadata)
   return rest
 }
 

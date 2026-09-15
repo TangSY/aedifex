@@ -41,7 +41,7 @@ resolveSurfaceColor(role, colorPreset, sceneThemeId?)
 
 ## The rule: untextured surfaces are theme-coloured in both modes
 
-This is the important invariant. A surface is "textured" only if its node has an explicit `materialPreset` or `material`.
+For kinds without declared slot defaults, a surface is "textured" only if its node has an explicit `materialPreset` or `material`. Kinds with slot defaults use the slot contract described below.
 
 - **`textures` off** → every surface uses `resolveSurfaceColor(role, …)`.
 - **`textures` on** → textured surfaces show their texture; **untextured surfaces still use `resolveSurfaceColor`** (not a hardcoded white/grey default).
@@ -54,13 +54,36 @@ So picking the Mediterranean theme gives a blue roof + warm walls without touchi
 |---|---|
 | wall | `systems/wall/wall-materials.ts` (`getMaterialsForWall`), re-applied each frame by `wall-cutout.tsx` |
 | roof / roof-segment | `systems/roof/roof-materials.ts` (`getRoofMaterialArray`) |
-| slab | `nodes/slab/geometry.ts` (`getSlabMaterial`) |
+| slab | `nodes/slab/geometry.ts` (`getSlabSlotMaterial`) |
 | ceiling | `nodes/ceiling/renderer.tsx` |
 | generic registry kinds | `systems/geometry/geometry-system.tsx` → `applyDefaultSurfaceRole` (textures-off) |
 | door / window | `systems/{door,window}/*-system.tsx` |
 | stair / column / item / elevator | `nodes/<kind>/renderer.tsx` |
 
 Each of these reads `shading`/`textures`/`colorPreset`/`sceneTheme` from `useViewer` (or receives them threaded from `GeometrySystem`) and **must include `sceneTheme` in its material cache key and its rebuild dependency array**, or theme switches won't re-colour. `GeometrySystem` marks every geometry node dirty on any of those changing.
+
+Ceilings and slabs use declared slot defaults in colored (`textures` on) mode.
+Ceiling undersides use an opaque `BackSide` material in both appearances; only
+`ceiling-grid` blends. Slab top, side/underside and optional terrain skirt meshes
+can batch separately. Flat slot defaults share the viewer cache by color, roughness
+and shading; slab legacy cached materials carry `__aedifexCachedMaterial` so geometry
+rebuilds leave shared materials alive. Transparent slot overrides draw themselves.
+
+## Procedural item recipe finishes
+
+Recipe slots keep a required authored hex color and may declare `finish: 'glass'`.
+On a generated design's first catalog save, `snapProceduralSlotsToLibrary` selects
+`FINISH_LIBRARY_REFS.glass` (`library:preset-glass`); slots without a finish select
+the nearest flat library color. Explicit overrides, including an Authored hex pick,
+are preserved. Existing recipes and scene instances are not automatically resnapped.
+
+The Studio preview and colored scene renderer resolve the glass library preset:
+blue `#87ceeb`, transparency enabled, opacity 0.3, with Fresnel reflections in
+rendered shading. The recipe hex does not retint that preset. Monochrome scene
+appearance still uses the furnishing theme material. `proceduralSlotColor` uses
+the preset's blue for a glass override in 2D; absent overrides and Authored picks
+use the recipe hex. Studio's Authored option clears a saved slot override (or stores
+the hex on an unsaved draft), so it restores the opaque authored material.
 
 ## Custom-mesh face materials
 

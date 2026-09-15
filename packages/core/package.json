@@ -22,6 +22,11 @@
       "import": "./dist/utils/scene-migrations.js",
       "default": "./dist/utils/scene-migrations.js"
     },
+    "./capture": {
+      "types": "./dist/capture/index.d.ts",
+      "import": "./dist/capture/index.js",
+      "default": "./dist/capture/index.js"
+    },
     "./registry": {
       "types": "./dist/registry/index.d.ts",
       "import": "./dist/registry/index.js",
@@ -52,6 +57,11 @@
       "import": "./dist/hooks/spatial-grid/spatial-grid-manager.js",
       "default": "./dist/hooks/spatial-grid/spatial-grid-manager.js"
     },
+    "./plan-footprint": {
+      "types": "./dist/lib/plan-footprint.d.ts",
+      "import": "./dist/lib/plan-footprint.js",
+      "default": "./dist/lib/plan-footprint.js"
+    },
     "./wall": {
       "types": "./dist/systems/wall/wall-footprint.d.ts",
       "import": "./dist/systems/wall/wall-footprint.js",
@@ -61,6 +71,11 @@
       "types": "./dist/systems/stair/stair-opening-sync.d.ts",
       "import": "./dist/systems/stair/stair-opening-sync.js",
       "default": "./dist/systems/stair/stair-opening-sync.js"
+    },
+    "./procedural-items": {
+      "types": "./dist/procedural-items/index.d.ts",
+      "import": "./dist/procedural-items/index.js",
+      "default": "./dist/procedural-items/index.js"
     }
   },
   "files": [
@@ -68,20 +83,20 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsc --build && bun ../../scripts/fix-node-esm-imports.ts dist",
     "dev": "tsgo --build --watch",
     "test": "bun test src",
     "bench:registry": "bun run src/registry/__bench__/relations-resolver.bench.ts",
-    "bench:schema": "bun run src/schema/__bench__/node-parsers.bench.ts"
+    "bench:schema": "bun run src/schema/__bench__/node-parsers.bench.ts",
+    "smoke:node": "node --input-type=module -e \"await import('./dist/index.js')\""
   },
   "peerDependencies": {
     "@react-three/drei": "^10",
     "@react-three/fiber": "^9",
     "react": "^18 || ^19",
-    "three": "^0.185"
+    "three": "^0.186"
   },
   "dependencies": {
-    "@aedifex/capture-protocol": "^1.0.0-beta.4",
     "dedent": "^1.7.1",
     "idb-keyval": "^6.2.2",
     "mitt": "^3.0.1",

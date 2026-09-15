@@ -6,7 +6,6 @@ import path from 'node:path'
 const executable = path.join(import.meta.dir, 'bin/aedifex.ts')
 const testRoot = await mkdtemp(path.join(os.tmpdir(), 'aedifex-cli-command-test-'))
 const testHome = path.join(testRoot, 'home')
-
 afterAll(() => rm(testRoot, { recursive: true, force: true }))
 
 describe('command parsing', () => {
@@ -27,6 +26,12 @@ describe('command parsing', () => {
     expect(result.stdout).toContain('aedifex mcp setup codex')
     expect(result.stdout).toContain('dynamic loopback port')
     expect(result.stdout).not.toContain('aedifex plugin list')
+  })
+
+  test('does not expose hosted agent account commands', async () => {
+    const result = await runCli('agent', 'claim', '--json')
+    expect(result.exitCode).toBe(2)
+    expect(JSON.parse(result.stderr)).toMatchObject({ error: 'unknown_command' })
   })
 
   test('rejects a partially numeric port', async () => {

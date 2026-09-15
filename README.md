@@ -155,8 +155,6 @@ aedifex/
 ├── apps/editor/         # Next.js 16 application (entry point)
 ├── packages/core/       # Schema, state (Zustand), systems, spatial queries
 ├── packages/viewer/     # 3D rendering (React Three Fiber + WebGPU)
-├── packages/capture-protocol/ # Static/live capture-session contracts
-├── packages/capture-viewer/   # Capture runtime and reference render layers
 ├── packages/editor/     # Editor UI: tools, panels, selection, AI assistant
 ├── packages/nodes/      # Built-in registry node definitions and renderers
 ├── packages/cli/        # Local editor runtime and MCP process manager
@@ -170,8 +168,8 @@ aedifex/
 |---------|---------------|
 | **core** | Node schemas (Zod), scene store with undo/redo (Zundo), geometry systems, spatial grid, event bus |
 | **viewer** | Renderers, camera, lighting, post-processing, level/scan/guide systems |
-| **capture-protocol** | Versioned capture manifests, normalized streams, and transport-neutral sources |
-| **capture-viewer** | Capture runtime with room-model, motion, point-cloud, and surface-mesh layers |
+| **core/capture** | Versioned capture manifests, normalized streams, and transport-neutral sources |
+| **viewer/capture** | Capture runtime with room-model, motion, point-cloud, and surface-mesh layers |
 | **editor** | Tools, panels, selection manager, AI assistant, custom camera controls |
 | **nodes** | Built-in node schemas, tools, renderers, geometry, and systems |
 | **cli** | Installs and manages the local editor runtime and MCP service |

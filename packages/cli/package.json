@@ -1,7 +1,7 @@
 {
   "name": "@aedifex/cli",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Run the open-source Aedifex 3D editor, local projects, and MCP agent tools from your terminal",
   "type": "module",
   "bin": {

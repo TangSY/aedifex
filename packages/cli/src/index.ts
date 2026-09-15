@@ -5,7 +5,6 @@ export {
   type EditorStatus,
   ensureAedifexDirectories,
   getEditorStatus,
-  type McpState,
   type RuntimeActivationResult,
   restartEditor,
   type StopEditorOptions,
@@ -13,6 +12,13 @@ export {
   stopEditor,
 } from './editor-process.js'
 export { CliError } from './errors.js'
+export {
+  ensureMcpService,
+  getMcpServiceStatus,
+  type McpServiceState,
+  type McpServiceStatus,
+  stopMcpService,
+} from './mcp-service.js'
 export { type AedifexPaths, resolveAedifexPaths } from './paths.js'
 export {
   type ActiveRuntime,

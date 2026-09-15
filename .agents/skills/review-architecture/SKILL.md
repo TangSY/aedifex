@@ -1,6 +1,8 @@
 ---
 name: review-architecture
-description: Review a PR against the Aedifex architectural rules — package boundaries (core/viewer/editor/nodes), the registry-driven composition model (def.geometry / def.renderer / def.system), legacy-dispatch regressions, the slots + world-scale-UV convention for new nodes/geometry, hook hygiene (useEditor/useScene/useViewer), and selector performance. Use when the user asks to review a PR, audit a branch, or check that changes respect the codebase's architecture.
+description: Review a PR against the Aedifex architectural rules — package boundaries, registry-driven composition, slots and world-scale UVs, hook hygiene and selector performance.
+metadata:
+  internal: true
 allowed-tools: Bash(git *) Bash(gh *) Read Grep Glob
 ---
 

@@ -3,15 +3,15 @@
 Capture data is an optional viewer extension, not a private Community renderer and not a second
 scene graph.
 
-## Package boundaries
+## Ownership boundaries
 
-- `@aedifex/capture-protocol` owns versioned manifests, normalized stream descriptors, stable
-  session locators, incremental packet headers, and the `CaptureSource` interface. It has no React,
-  Three.js, authentication, database, or prescribed transport.
-- `@aedifex/capture-viewer` mounts inside `Viewer` through its existing children slot. It resolves
-  `scan.captureSession`, portals layers into that scan node's registered group, honors per-layer
-  visibility, composes declared local-to-parent coordinate frames into session space, and supplies
-  reference model, device-motion, point-cloud, and compact color-surface renderers.
+- `@aedifex/core/capture` (`packages/core/src/capture/`) owns versioned manifests, normalized
+  stream descriptors, stable session locators, incremental packet headers, and the `CaptureSource`
+  interface. It has no React, Three.js, authentication, database, or prescribed transport.
+- `@aedifex/viewer/capture` (`packages/viewer/src/capture/`) mounts inside `Viewer` through its
+  children slot. It resolves `scan.captureSession`, portals layers into the scan node's group,
+  honors layer visibility and coordinate frames, and supplies model, motion, point-cloud,
+  and surface-mesh renderers. `@aedifex/viewer/capture/preview` exposes preview geometry builders.
 - `@aedifex/core` stores only the scene anchor: session locator, optional current mesh URL,
   placement, opacity, and an extensible visibility map. Raw samples and artifact inventories never
   enter scene JSON.

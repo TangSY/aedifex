@@ -1,5 +1,5 @@
-import { CaptureSessionLocatorSchema } from '@aedifex/capture-protocol'
 import { z } from 'zod'
+import { CaptureSessionLocatorSchema } from '../../capture/schema'
 import { AssetUrl } from '../asset-url'
 import { BaseNode, nodeType, objectId } from '../base'
 

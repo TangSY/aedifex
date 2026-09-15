@@ -11,7 +11,7 @@ integration testing.
 
 The first run walks through local storage, runtime installation, automatic editor and
 MCP port selection, process startup, and both health checks with live terminal feedback.
-It then opens `http://aedifex.localhost:<port>`. Your projects are stored separately from
+It then opens `http://aedifex.localhost:<port>`. Projects are stored separately from
 the runtime, so rebuilding the CLI does not replace your work.
 
 ## Why use the CLI?
@@ -28,9 +28,13 @@ the runtime, so rebuilding the CLI does not replace your work.
 - Node.js 22.13 or newer
 - Bun 1.3+
 - A browser, unless you pass `--no-open`
+- A locally built and staged runtime for the web editor; MCP-only use needs the staged MCP service.
 
-The local packed runtime is primarily tested on macOS. Its smoke tests also run on
-Ubuntu; broader Linux and Windows support is still being verified.
+The local packed runtime is primarily tested on macOS. Broader Linux and Windows
+support is still being verified.
+
+Use one active agent client per local CLI service. Its active scene state is shared;
+use separate `AEDIFEX_HOME` directories and service processes for independent work.
 
 ## Build and run from the repository
 
@@ -58,25 +62,44 @@ aedifex editor --no-open
 aedifex editor --foreground --no-open
 ```
 
+## The web editor runtime
+
+`bun run stage-runtime` stages the locally built Next.js server and assets in
+`packages/cli/dist/runtime`, and bundles MCP separately in
+`packages/cli/dist/services/aedifex-mcp.mjs`.
+
+When the editor starts, the CLI reuses the active local runtime or installs the staged
+bundle into `~/.pascal/runtime/<version>`. Use `--runtime <directory>` to select a local
+build explicitly, or set `AEDIFEX_BUNDLED_RUNTIME_DIR` to override the default bundle.
+No npm release channel, hosted account login, runtime archive, or remote download is used.
+Concurrent installs share the runtime lock.
+
+Existing v1 runtime manifests remain readable; new staging emits v2. On first use,
+the previous MCP process is verified and retired before the independent managed MCP
+service starts. Project storage is preserved. An unverified process blocks migration.
+
+`aedifex mcp connect` starts the locally bundled service without installing or starting
+the web editor.
+
 ## Commands
 
 | Command | Purpose |
 | --- | --- |
-| `aedifex editor` | Install if needed, ensure the editor is running, and open it. |
-| `aedifex start` | Ensure the editor is running without opening a browser. |
-| `aedifex stop [--force]` | Stop the managed editor and MCP processes; `--force` is a guarded recovery path. |
-| `aedifex restart` | Restart the editor and MCP service with their current configuration. |
-| `aedifex status [--json]` | Show editor and MCP health, version, PIDs, ports, URL, and runtime metadata. |
-| `aedifex open [project]` | Start Aedifex if needed, then open the editor or a project by ID, ID prefix, or unique name. |
+| `aedifex editor [--runtime <directory>]` | Install a local runtime if needed, start the editor, and open it. |
+| `aedifex start [--runtime <directory>]` | Start the editor without opening a browser. |
+| `aedifex stop [--force]` | Stop managed editor and MCP processes; force remains identity-checked. |
+| `aedifex restart` | Restart the editor and repoint MCP to its local URL. |
+| `aedifex status [--json]` | Show editor and MCP health and process metadata. |
+| `aedifex open [project]` | Open the editor or a project by ID, ID prefix, or unique name. |
 | `aedifex resume [project]` | Open the latest project, or a selected project. |
 | `aedifex projects [--json]` | List local projects. |
 | `aedifex logs [--follow]` | Read or follow the managed editor log. |
-| `aedifex update` | Re-activate the bundled runtime from the current local build. |
+| `aedifex update [--runtime <directory>]` | Health-check and activate the local runtime with rollback on failure. |
 | `aedifex doctor [--json]` | Diagnose Node.js, storage, runtime, process, and plugin state. |
 | `aedifex info [--json]` | Print platform, paths, runtime, and plugin context. |
 | `aedifex project list [--json]` | Explicit form of `aedifex projects`. |
 | `aedifex project open <id-or-name>` | Explicit form of `aedifex open <project>`. |
-| `aedifex mcp connect` | Stable local connector for MCP clients; discovers the dynamic managed service. |
+| `aedifex mcp connect` | Start or reuse the independent local MCP service. |
 | `aedifex mcp status [--json]` | Show managed MCP health. |
 | `aedifex mcp config [--json]` | Print generic MCP client configuration. |
 | `aedifex mcp setup <codex\|claude>` | Configure an installed client without overwriting existing entries. |
@@ -90,11 +113,13 @@ directory; client configuration never contains that token.
 
 ```text
 ~/.pascal/
-  runtime/<version>/           installed editor runtimes
-  data/aedifex.db               projects and scenes
-  logs/editor.log              detached editor output
-  run/editor.json              managed editor and MCP process identity
+  runtime/<version>/           installed local editor runtimes
+  data/aedifex.db              projects and scenes
+  logs/editor.log              detached editor and MCP output
+  run/editor.json              managed editor process identity
+  run/mcp.json                 managed MCP service identity
   run/mcp-token                private local MCP token
+  tmp/                         reserved temporary storage
   plugins/                     reserved verified-plugin storage
   aedifex.plugins.lock          reserved managed-plugin lock
 ```
@@ -109,17 +134,17 @@ versions have accumulated.
 
 ## Local AI agents
 
-The MCP server starts automatically with `aedifex editor`. Add the stable connector to
-your client once:
+The MCP server starts automatically with `aedifex editor`. It also starts independently
+when a client runs `aedifex mcp connect`. Add the stable connector to your client once:
 
 ```bash
 aedifex mcp setup codex
 aedifex mcp setup claude
 ```
 
-Or use `aedifex mcp config` for JSON-based clients. The connector also starts Aedifex
-when an agent connects while it is stopped. Ask the agent to read
+Or use `aedifex mcp config` for JSON-based clients. Ask the agent to read
 `aedifex://agent-guide`, list or load a scene, edit it, and return the `editorUrl`.
+Run `aedifex editor` to open those local project URLs.
 
 ## Plugins
 

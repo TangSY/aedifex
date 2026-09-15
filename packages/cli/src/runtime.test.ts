@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'bun:test'
+import { afterAll, afterEach, describe, expect, test } from 'bun:test'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import http from 'node:http'
 import os from 'node:os'
@@ -10,14 +10,22 @@ import {
   stopEditor,
   waitForHealth,
 } from './editor-process.js'
+import { getMcpServiceStatus } from './mcp-service.js'
 import { resolveAedifexPaths } from './paths.js'
+import { isProcessRunning, terminateProcess } from './process-control.js'
 import { installBundledRuntime, readActiveRuntime } from './runtime.js'
+import { writeFakeMcpService } from './test-support/fake-mcp-service.js'
 
 const roots: string[] = []
+/** The MCP service ships with the CLI, so it is injected instead of staged in the runtime. */
+const serviceRoot = await mkdtemp(path.join(os.tmpdir(), 'aedifex-cli-test-service-'))
+process.env.AEDIFEX_MCP_SERVICE_PATH = await writeFakeMcpService(serviceRoot)
 
 afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })))
 })
+
+afterAll(() => rm(serviceRoot, { recursive: true, force: true }))
 
 describe('managed runtime', () => {
   test('installs a bundled runtime outside the package-runner cache', async () => {
@@ -30,6 +38,29 @@ describe('managed runtime', () => {
     expect(active.version).toBe('1.2.3')
     expect(active.directory).toBe(path.join(paths.runtime, '1.2.3'))
     expect(await Bun.file(path.join(active.directory, 'apps/editor/server.js')).exists()).toBe(true)
+  })
+
+  test('starts an existing v1 local runtime without downloading or rewriting its manifest', async () => {
+    const root = await temporaryRoot()
+    const source = await fakeRuntime(root, '1.2.3')
+    const manifest = {
+      schemaVersion: 1,
+      version: '1.2.3',
+      entrypoint: 'apps/editor/server.js',
+      mcpEntrypoint: 'services/aedifex-mcp.mjs',
+      healthPath: '/api/health',
+      mcpHealthPath: '/health',
+    }
+    await writeFile(path.join(source, 'runtime-manifest.json'), JSON.stringify(manifest))
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
+    const active = await installBundledRuntime(paths, source)
+    try {
+      await startEditor({ paths })
+      expect((await getEditorStatus(paths)).healthy).toBe(true)
+      expect(await Bun.file(path.join(active.directory, 'runtime-manifest.json')).json()).toEqual(manifest)
+    } finally {
+      await stopEditor(paths)
+    }
   })
 
   test('starts, identifies, and stops a detached editor while preserving data', async () => {
@@ -48,6 +79,33 @@ describe('managed runtime', () => {
     expect((await getEditorStatus(paths)).running).toBe(false)
     expect(await Bun.file(paths.database).text()).toBe('persistent')
   }, 15_000)
+
+  test('retires the legacy MCP after its editor has exited before replacing editor state', async () => {
+    const root = await temporaryRoot()
+    const source = await fakeRuntime(root, '1.2.3')
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
+    const started = await startEditor({ paths, sourceDirectory: source })
+    try {
+      await terminateProcess(started.state.pid)
+      await writeFile(paths.state, JSON.stringify({
+        ...started.state,
+        version: started.mcp.version,
+        instanceId: started.mcp.instanceId,
+        mcp: { pid: started.mcp.pid, port: started.mcp.port },
+      }))
+      await rm(paths.mcpState)
+      expect(isProcessRunning(started.mcp.pid)).toBe(true)
+
+      const restarted = await startEditor({ paths })
+
+      expect(restarted.mcp.pid).not.toBe(started.mcp.pid)
+      expect(isProcessRunning(started.mcp.pid)).toBe(false)
+      expect((await getEditorStatus(paths)).healthy).toBe(true)
+      expect((await getMcpServiceStatus(paths)).healthy).toBe(true)
+    } finally {
+      await stopEditor(paths)
+    }
+  })
 
   test('serializes concurrent starts into one managed editor', async () => {
     const root = await temporaryRoot()
@@ -232,8 +290,8 @@ describe('managed runtime', () => {
 
   test('restores the previous running runtime when a candidate fails health', async () => {
     const root = await temporaryRoot()
-    const firstSource = await fakeRuntime(root, '1.2.3')
-    const brokenSource = await fakeRuntime(root, '2.0.0', false)
+    const firstSource = await fakeLegacyRuntime(root, '0.1.0')
+    const brokenSource = await fakeRuntime(root, '0.1.1', false)
     const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
     await startEditor({ paths, port: 0, sourceDirectory: firstSource })
     const candidate = await installBundledRuntime(paths, brokenSource, { activate: false })
@@ -241,30 +299,32 @@ describe('managed runtime', () => {
     await expect(activateEditorRuntime(paths, candidate)).rejects.toMatchObject({
       code: 'update_failed',
     })
-    expect((await readActiveRuntime(paths))?.version).toBe('1.2.3')
+    expect((await readActiveRuntime(paths))?.version).toBe('0.1.0')
     expect((await getEditorStatus(paths)).healthy).toBe(true)
     await stopEditor(paths)
   })
 
-  test('upgrades a running editor state that predates managed MCP', async () => {
+  test('restarts the editor and repoints MCP when a new runtime is activated', async () => {
     const root = await temporaryRoot()
-    const firstSource = await fakeRuntime(root, '1.2.3')
-    const secondSource = await fakeRuntime(root, '2.0.0')
+    const firstSource = await fakeLegacyRuntime(root, '0.1.0')
+    const secondSource = await fakeRuntime(root, '0.1.1')
     const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
     const started = await startEditor({ paths, sourceDirectory: firstSource })
-    const oldMcpPid = started.state.mcp?.pid
-    if (!oldMcpPid) throw new Error('test MCP did not start')
-    process.kill(oldMcpPid, 'SIGTERM')
-    await waitUntilStopped(oldMcpPid)
-    const legacyState = { ...started.state, mcp: undefined }
-    await writeFile(paths.state, `${JSON.stringify(legacyState, null, 2)}\n`)
-    await rm(paths.mcpToken, { force: true })
     const candidate = await installBundledRuntime(paths, secondSource, { activate: false })
 
     const result = await activateEditorRuntime(paths, candidate)
 
     expect(result.restarted).toBe(true)
-    expect((await getEditorStatus(paths)).healthy).toBe(true)
+    const status = await getEditorStatus(paths)
+    expect(status.healthy).toBe(true)
+    expect(status.state?.version).toBe('0.1.1')
+    expect((await readActiveRuntime(paths))?.directory).toBe(path.join(paths.runtime, '0.1.1'))
+    expect(await Bun.file(path.join(paths.runtime, '0.1.0/runtime-manifest.json')).json()).toMatchObject({ schemaVersion: 1 })
+    expect(await Bun.file(path.join(paths.runtime, '0.1.1/runtime-manifest.json')).json()).toMatchObject({ schemaVersion: 2 })
+    expect(status.state?.pid).not.toBe(started.state.pid)
+    const mcp = await getMcpServiceStatus(paths)
+    expect(mcp.healthy).toBe(true)
+    expect(mcp.state?.editorOrigin).toBe(status.state?.url ?? '')
     await stopEditor(paths)
   })
 
@@ -293,35 +353,13 @@ async function temporaryRoot(): Promise<string> {
   return root
 }
 
-async function waitUntilStopped(pid: number): Promise<void> {
-  const deadline = Date.now() + 2_000
-  while (Date.now() < deadline) {
-    try {
-      process.kill(pid, 0)
-    } catch {
-      return
-    }
-    await Bun.sleep(20)
-  }
-  throw new Error(`process ${pid} did not stop`)
-}
-
 async function fakeRuntime(root: string, version: string, healthy = true): Promise<string> {
   const runtime = path.join(root, `source-${version}`)
   const app = path.join(runtime, 'apps/editor')
-  const services = path.join(runtime, 'services')
   await mkdir(app, { recursive: true })
-  await mkdir(services, { recursive: true })
   await writeFile(
     path.join(runtime, 'runtime-manifest.json'),
-    JSON.stringify({
-      schemaVersion: 1,
-      version,
-      entrypoint: 'apps/editor/server.js',
-      mcpEntrypoint: 'services/aedifex-mcp.mjs',
-      healthPath: '/api/health',
-      mcpHealthPath: '/health',
-    }),
+    JSON.stringify({ schemaVersion: 2, version, entrypoint: 'apps/editor/server.js' }),
   )
   await writeFile(
     path.join(app, 'server.js'),
@@ -346,31 +384,18 @@ process.on('SIGTERM', () => server.close(() => process.exit(0)))
 `
       : 'process.exit(1)\n',
   )
-  await writeFile(
-    path.join(services, 'aedifex-mcp.mjs'),
-    `import http from 'node:http'
-const token = process.env.AEDIFEX_MCP_HTTP_TOKEN
-const server = http.createServer((request, response) => {
-  if (request.headers.authorization !== \`Bearer \${token}\`) {
-    response.writeHead(401).end()
-    return
-  }
-  response.setHeader('content-type', 'application/json')
-  if (request.url === '/health') {
-    response.end(JSON.stringify({
-      status: 'ok',
-      app: 'mcp',
-      version: process.env.AEDIFEX_RUNTIME_VERSION,
-      instanceId: process.env.AEDIFEX_INSTANCE_ID,
-    }))
-    return
-  }
-  response.writeHead(404).end('{}')
-})
-const portIndex = process.argv.indexOf('--port')
-server.listen(Number(process.argv[portIndex + 1]), '127.0.0.1')
-process.on('SIGTERM', () => server.close(() => process.exit(0)))
-`,
-  )
+  return runtime
+}
+
+async function fakeLegacyRuntime(root: string, version: string): Promise<string> {
+  const runtime = await fakeRuntime(root, version)
+  await writeFile(path.join(runtime, 'runtime-manifest.json'), JSON.stringify({
+    schemaVersion: 1,
+    version,
+    entrypoint: 'apps/editor/server.js',
+    mcpEntrypoint: 'services/aedifex-mcp.mjs',
+    healthPath: '/api/health',
+    mcpHealthPath: '/health',
+  }))
   return runtime
 }

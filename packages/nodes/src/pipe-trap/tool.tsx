@@ -1,10 +1,12 @@
 'use client'
 
 import { emitter, type GridEvent, PipeTrapNode, useScene } from '@aedifex/core'
-import { isGridSnapActive, triggerSFX, useEditor } from '@aedifex/editor'
+import { isGridSnapActive, isMagneticSnapActive, triggerSFX, useEditor } from '@aedifex/editor'
 import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { subscribeAccessorySnapping } from '../shared/accessory-snapping'
+import { alignDrawPoint, clearDrawAlignment } from '../shared/draw-alignment'
 import { LevelOffsetGroup } from '../shared/level-offset-group'
 import { pipeTrapDefinition } from './definition'
 import { buildPipeTrapGeometry } from './geometry'
@@ -58,16 +60,20 @@ const PipeTrapTool = () => {
     const resolve = (event: GridEvent) => {
       const step = isGridSnapActive() ? useEditor.getState().gridSnapStep : 0
       return {
-        position: [snap(event.localPosition[0], step), 0, snap(event.localPosition[2], step)] as [
-          number,
-          number,
-          number,
-        ],
+        position: alignDrawPoint(
+          [snap(event.localPosition[0], step), 0, snap(event.localPosition[2], step)],
+          {
+            applySnap: isMagneticSnapActive(),
+            bypass: !isMagneticSnapActive(),
+          },
+        ),
         diameter: diameterRef.current,
       }
     }
 
+    let lastEvent: GridEvent | null = null
     const onMove = (event: GridEvent) => {
+      lastEvent = event
       setCursor(resolve(event).position)
     }
 
@@ -98,13 +104,18 @@ const PipeTrapTool = () => {
       }
     }
 
+    const unsubscribeSnapping = subscribeAccessorySnapping(() => {
+      if (lastEvent) onMove(lastEvent)
+    })
     emitter.on('grid:move', onMove)
     emitter.on('grid:click', onClick)
     window.addEventListener('keydown', onKeyDown, true)
     return () => {
+      unsubscribeSnapping()
       emitter.off('grid:move', onMove)
       emitter.off('grid:click', onClick)
       window.removeEventListener('keydown', onKeyDown, true)
+      clearDrawAlignment()
     }
   }, [activeLevelId])
 

@@ -68,6 +68,7 @@ function createHarness() {
     controllerRef: { current: null },
     crouchKeyRef: { current: false },
     droneAscendKeyRef: { current: false },
+    droneSlowKeyRef: { current: false },
     droneDescendKeyRef: { current: false },
     droneVelocityRef: { current: new Vector3() },
     yawRef: { current: 0 },
@@ -86,6 +87,7 @@ function createHarness() {
     ...[
       'DRONE_SPEED',
       'DRONE_RUN_MULTIPLIER',
+      'DRONE_SLOW_MULTIPLIER',
       'DRONE_SMOOTHING',
       'movementKeyboardBindings',
       'movementKeyToName',
@@ -151,6 +153,40 @@ describe('drone cursor suspension', () => {
       h.frame()
       expect(h.camera.position.toArray()).toEqual(pose)
     })
+  }
+
+  for (const slowKey of ['AltLeft', 'AltRight']) {
+    for (const pauseKey of ['KeyP', 'Escape']) {
+      for (const release of ['keyup', 'blur']) {
+        test(`${slowKey} → ${pauseKey} → ${release} restores normal speed after resume`, () => {
+          const normal = createHarness()
+          normal.down('KeyW')
+          normal.frame()
+          const normalStep = normal.camera.position.length()
+          const h = createHarness()
+          h.down(slowKey)
+          h.down('KeyW')
+          h.frame()
+          expect(h.camera.position.length()).toBeLessThan(normalStep)
+          h.down(pauseKey)
+          expect(h.suspendRef.current).toBe(true)
+          if (release === 'blur') h.blur()
+          else {
+            h.up(slowKey)
+            h.up('KeyW')
+          }
+          const pose = h.camera.position.clone()
+          h.frame()
+          expect(h.camera.position.toArray()).toEqual(pose.toArray())
+          h.canvas.requestPointerLock()
+          h.frame()
+          expect(h.camera.position.toArray()).toEqual(pose.toArray())
+          h.down('KeyW')
+          h.frame()
+          expect(h.camera.position.distanceTo(pose)).toBeCloseTo(normalStep, 10)
+        })
+      }
+    }
   }
 
   test('shutter hold keeps the drone fixed', () => {

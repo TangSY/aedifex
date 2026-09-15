@@ -137,6 +137,7 @@ export {
   type PlacementCoordinatorConfig,
   usePlacementCoordinator,
 } from './components/tools/item/use-placement-coordinator'
+export { MoveRegistryNodeTool } from './components/tools/registry/move-registry-node-tool'
 export { useRegistryToolContext } from './components/tools/registry-tool-context'
 export { CursorSphere } from './components/tools/shared/cursor-sphere'
 export { DragBoundingBox } from './components/tools/shared/drag-bounding-box'
@@ -436,7 +437,12 @@ export {
   commitFreshPlacementSubtree,
   createFreshPlacementSubtree,
 } from './lib/fresh-planar-placement'
-export { exportSceneToGlb } from './lib/glb-export'
+export { exportSceneToGlb, type GlbExportOptions } from './lib/glb-export'
+export {
+  type EditorGridEvent,
+  type GridEventScreenProjection,
+  getGridEventScreenProjection,
+} from './lib/grid-event-presentation'
 export {
   getHistoryCommandState,
   type HistoryCommandDelegate,
@@ -453,6 +459,12 @@ export {
   editorHostTreeChildrenRegistry,
   registerEditorHostTreeChildren,
 } from './lib/host-tree-children'
+export {
+  DRAFTING_EXTENSION_KEY,
+  DRAFTING_SURFACE_EXTENSION_KEY,
+  type DraftingSurfaceExtension,
+  type RegisteredDraftingConfig,
+} from './lib/interaction/registered-drafting'
 export {
   boundaryReshapeScope,
   curveReshapeScope,
@@ -511,6 +523,12 @@ export {
   metersToLinearUnit,
   squareMetersToAreaUnit,
 } from './lib/measurements'
+export type {
+  ModelExport,
+  ModelExportArtifact,
+  ModelExportFormat,
+  ModelExportOptions,
+} from './lib/model-export'
 export { consumePlacementDragRelease } from './lib/placement-drag-release'
 export {
   addFreshPlacementMetadata,
@@ -529,6 +547,8 @@ export {
   editorHostPanelRegistry,
   registerEditorHostPanel,
 } from './lib/plugin-panels'
+export { configureManifoldRuntime } from './lib/print-shell-compiler-manifold-worker'
+export type { ManifoldRuntimeOptions } from './lib/print-shell-compiler-protocol'
 export {
   createQuickMeasurementPointerScheduler,
   quickMeasurementContext,
@@ -584,6 +604,7 @@ export {
   resolveFlattenTarget,
   sculptFieldForSite,
 } from './lib/terrain-sculpt'
+export { exportSceneToUsdz, type UsdzExportOptions } from './lib/usdz-export'
 // `cn` (twMerge + clsx) — used by kind-owned panels in `@aedifex/
 // nodes` so they don't need their own copy / their own tailwind-merge
 // dependency.

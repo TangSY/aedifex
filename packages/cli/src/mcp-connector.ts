@@ -2,24 +2,15 @@ import { readFile } from 'node:fs/promises'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js'
-import { getEditorStatus, startEditor } from './editor-process.js'
 import { CliError } from './errors.js'
+import { ensureMcpService } from './mcp-service.js'
 import type { AedifexPaths } from './paths.js'
 
 export async function connectManagedMcp(paths: AedifexPaths): Promise<void> {
-  let status = await getEditorStatus(paths)
-  if (!status.healthy) {
-    await startEditor({ paths })
-    status = await getEditorStatus(paths)
-  }
-  if (!(status.healthy && status.state?.mcp)) {
-    throw new CliError('mcp_unavailable', 'Aedifex MCP is not healthy. Run "aedifex doctor".')
-  }
+  const { state } = await ensureMcpService({ paths })
+  const token = await readMcpToken(paths)
 
-  const token = (await readFile(paths.mcpToken, 'utf8')).trim()
-  if (!token) throw new CliError('mcp_unavailable', 'Aedifex MCP credentials are missing.')
-
-  const remote = new StreamableHTTPClientTransport(new URL(status.state.mcp.url), {
+  const remote = new StreamableHTTPClientTransport(new URL(state.url), {
     requestInit: { headers: { authorization: `Bearer ${token}` } },
   })
   const stdio = new StdioServerTransport()
@@ -40,6 +31,15 @@ export async function connectManagedMcp(paths: AedifexPaths): Promise<void> {
 
   await remote.start()
   await stdio.start()
+}
+
+async function readMcpToken(paths: AedifexPaths): Promise<string> {
+  let token = ''
+  try {
+    token = (await readFile(paths.mcpToken, 'utf8')).trim()
+  } catch {}
+  if (!token) throw new CliError('mcp_unavailable', 'Aedifex MCP credentials are missing.')
+  return token
 }
 
 function applyProtocolVersion(

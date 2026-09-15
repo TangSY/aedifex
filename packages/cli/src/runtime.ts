@@ -7,12 +7,9 @@ import { readJsonFile, writeJsonFile } from './json-files.js'
 import type { AedifexPaths } from './paths.js'
 
 export interface RuntimeManifest {
-  schemaVersion: 1
+  schemaVersion: 1 | 2
   version: string
   entrypoint: string
-  mcpEntrypoint: string
-  healthPath: string
-  mcpHealthPath: string
 }
 
 export interface ActiveRuntime {
@@ -41,12 +38,9 @@ export async function readRuntimeManifest(directory: string): Promise<RuntimeMan
     throw new CliError('invalid_runtime', `Invalid Aedifex runtime at ${directory}.`)
   }
   if (
-    manifest?.schemaVersion !== 1 ||
+    (manifest?.schemaVersion !== 1 && manifest?.schemaVersion !== 2) ||
     typeof manifest.version !== 'string' ||
-    typeof manifest.entrypoint !== 'string' ||
-    typeof manifest.mcpEntrypoint !== 'string' ||
-    typeof manifest.healthPath !== 'string' ||
-    typeof manifest.mcpHealthPath !== 'string'
+    typeof manifest.entrypoint !== 'string'
   ) {
     throw new CliError('invalid_runtime', `Invalid Aedifex runtime at ${directory}.`)
   }
@@ -54,24 +48,35 @@ export async function readRuntimeManifest(directory: string): Promise<RuntimeMan
     throw new CliError('invalid_runtime', `Invalid runtime version: ${manifest.version}`)
   }
   const entrypoint = path.resolve(directory, manifest.entrypoint)
-  const mcpEntrypoint = path.resolve(directory, manifest.mcpEntrypoint)
-  if (
-    !entrypoint.startsWith(`${path.resolve(directory)}${path.sep}`) ||
-    !mcpEntrypoint.startsWith(`${path.resolve(directory)}${path.sep}`)
-  ) {
-    throw new CliError('invalid_runtime', 'Runtime entrypoints escape the installation directory.')
+  if (!entrypoint.startsWith(`${path.resolve(directory)}${path.sep}`)) {
+    throw new CliError(
+      'invalid_runtime',
+      'The runtime entrypoint escapes the installation directory.',
+    )
   }
   try {
     if (!(await stat(entrypoint)).isFile()) throw new Error('not a file')
   } catch {
     throw new CliError('invalid_runtime', `Runtime entrypoint is missing: ${entrypoint}`)
   }
-  try {
-    if (!(await stat(mcpEntrypoint)).isFile()) throw new Error('not a file')
-  } catch {
-    throw new CliError('invalid_runtime', `MCP runtime entrypoint is missing: ${mcpEntrypoint}`)
-  }
   return manifest
+}
+
+/**
+ * Serializes local runtime installation so concurrent starts reuse the completed copy.
+ */
+export async function withRuntimeInstallLock<T>(
+  paths: AedifexPaths,
+  action: () => Promise<T>,
+  options: { timeoutMs?: number } = {},
+): Promise<T> {
+  return withFileLock(
+    path.join(paths.run, 'runtime-install.lock'),
+    'install_locked',
+    'Another Aedifex runtime installation is active.',
+    action,
+    options,
+  )
 }
 
 export async function installBundledRuntime(
@@ -79,39 +84,42 @@ export async function installBundledRuntime(
   sourceDirectory = resolveBundledRuntimeDirectory(),
   options: { activate?: boolean } = {},
 ): Promise<ActiveRuntime> {
+  return withRuntimeInstallLock(paths, () =>
+    installRuntimeDirectory(paths, sourceDirectory, options),
+  )
+}
+
+/** Requires `withRuntimeInstallLock`; call `installBundledRuntime` when no lock is held. */
+export async function installRuntimeDirectory(
+  paths: AedifexPaths,
+  sourceDirectory: string,
+  options: { activate?: boolean } = {},
+): Promise<ActiveRuntime> {
   const sourceManifest = await readRuntimeManifest(sourceDirectory)
   const targetDirectory = path.join(paths.runtime, sourceManifest.version)
   await mkdir(paths.runtime, { recursive: true, mode: 0o700 })
-
-  return withFileLock(
-    path.join(paths.run, 'runtime-install.lock'),
-    'install_locked',
-    'Another Aedifex runtime installation is active.',
-    async () => {
-      await removeAbandonedInstallDirectories(paths.runtime)
-      const installed = await readInstalledManifest(targetDirectory)
-      if (
-        installed?.version === sourceManifest.version &&
-        (await isRuntimeValid(targetDirectory, sourceManifest.version))
-      ) {
-        return options.activate === false
-          ? runtimeRecord(sourceManifest.version, targetDirectory)
-          : activateRuntime(paths, sourceManifest.version, targetDirectory)
-      }
-      const temporaryDirectory = path.join(
-        paths.runtime,
-        `.install-${sourceManifest.version}-${process.pid}`,
-      )
-      await rm(temporaryDirectory, { recursive: true, force: true })
-      await cp(sourceDirectory, temporaryDirectory, { recursive: true, dereference: false })
-      await readRuntimeManifest(temporaryDirectory)
-      await rm(targetDirectory, { recursive: true, force: true })
-      await rename(temporaryDirectory, targetDirectory)
-      return options.activate === false
-        ? runtimeRecord(sourceManifest.version, targetDirectory)
-        : activateRuntime(paths, sourceManifest.version, targetDirectory)
-    },
+  await removeAbandonedInstallDirectories(paths.runtime)
+  const installed = await readInstalledManifest(targetDirectory)
+  if (
+    installed?.version === sourceManifest.version &&
+    (await isRuntimeValid(targetDirectory, sourceManifest.version))
+  ) {
+    return options.activate === false
+      ? runtimeRecord(sourceManifest.version, targetDirectory)
+      : activateRuntime(paths, sourceManifest.version, targetDirectory)
+  }
+  const temporaryDirectory = path.join(
+    paths.runtime,
+    `.install-${sourceManifest.version}-${process.pid}`,
   )
+  await rm(temporaryDirectory, { recursive: true, force: true })
+  await cp(sourceDirectory, temporaryDirectory, { recursive: true, dereference: false })
+  await readRuntimeManifest(temporaryDirectory)
+  await rm(targetDirectory, { recursive: true, force: true })
+  await rename(temporaryDirectory, targetDirectory)
+  return options.activate === false
+    ? runtimeRecord(sourceManifest.version, targetDirectory)
+    : activateRuntime(paths, sourceManifest.version, targetDirectory)
 }
 
 export async function readActiveRuntime(paths: AedifexPaths): Promise<ActiveRuntime | null> {
@@ -155,6 +163,14 @@ export async function activateRuntime(
   const active: ActiveRuntime = { schemaVersion: 1, version, directory: resolvedDirectory }
   await writeJsonFile(paths.currentRuntime, active)
   return active
+}
+
+export async function findInstalledRuntime(
+  paths: AedifexPaths,
+  version: string,
+): Promise<ActiveRuntime | null> {
+  const directory = path.join(paths.runtime, version)
+  return (await isRuntimeValid(directory, version)) ? runtimeRecord(version, directory) : null
 }
 
 function runtimeRecord(version: string, directory: string): ActiveRuntime {

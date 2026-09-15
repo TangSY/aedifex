@@ -6,8 +6,8 @@ Public, open-source home of `@aedifex/{core,viewer,editor,mcp}` and the standalo
 
 | Path | Purpose |
 |---|---|
-| `packages/core` | Scene graph, node schemas, stores, event bus, core systems — pure logic, no Three.js |
-| `packages/viewer` | Standalone 3D canvas: renderers, viewer systems, presentation state |
+| `packages/core` | Scene graph, node schemas, stores, event bus, core systems — pure logic, no Three.js. `src/capture/` holds the capture-session contracts published as `@aedifex/core/capture` |
+| `packages/viewer` | Standalone 3D canvas: renderers, viewer systems, presentation state. `src/capture/` holds the capture runtime and reference layers published as `@aedifex/viewer/capture` |
 | `packages/editor` | Editor UI components reused by the standalone app and embedders |
 | `packages/mcp` | MCP server and scene storage adapters |
 | `apps/editor` | Standalone editor app — composes `viewer` + `editor` + tools |

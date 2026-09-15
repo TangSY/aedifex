@@ -7,6 +7,7 @@
   "exports": {
     ".": "./src/index.tsx",
     "./catalog": "./src/components/ui/item-catalog/catalog-items.tsx",
+    "./procedural-items": "./src/components/procedural-items/inspector.tsx",
     "./ai/prompt": "./src/components/ai/prompt/index.ts",
     "./ai/contracts": "./src/components/ai/contracts/index.ts",
     "./ai/stream-client": "./src/components/ai/ai-stream-client.ts",
@@ -27,7 +28,7 @@
     "next": ">=15",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",
-    "three": "^0.185",
+    "three": "^0.186",
     "@aedifex/mcp": "^0.3.2"
   },
   "dependencies": {
@@ -64,7 +65,7 @@
     "pdfkit": "^0.19.1",
     "tailwind-merge": "^3.5.0",
     "three-bvh-csg": "^0.0.18",
-    "three-mesh-bvh": "~0.9.8",
+    "three-mesh-bvh": "0.9.10",
     "zod": ">=4.5.4 <4.6",
     "zustand": "^5.0.11"
   },
@@ -73,6 +74,7 @@
     "@aedifex/viewer": "^0.10.0",
     "@aedifex/mcp": "^0.3.2",
     "@repo/typescript-config": "*",
+    "@react-three/test-renderer": "^9.1.0",
     "@types/blob-stream": "^0.1.33",
     "@types/bun": "^1.3.0",
     "@types/howler": "^2.2.12",

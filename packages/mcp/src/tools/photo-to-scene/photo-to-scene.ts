@@ -12,6 +12,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import type { SceneOperations } from '../../operations'
+import { DESTRUCTIVE_OPEN_WORLD_TOOL_ANNOTATIONS } from '../annotations'
 import { appendLiveSceneEvent } from '../live-sync'
 import { measurement } from '../measurement'
 
@@ -358,6 +359,7 @@ export function registerPhotoToScene(server: McpServer, bridge: SceneOperations)
         'Orchestrator: analyse a floor-plan photo via MCP sampling, translate the structured vision result into a Aedifex SceneGraph (site → building → level with walls and zones), optionally save it, and swap the bridge to the new scene. Requires host support for sampling.',
       inputSchema: photoToSceneInput,
       outputSchema: photoToSceneOutput,
+      annotations: DESTRUCTIVE_OPEN_WORLD_TOOL_ANNOTATIONS,
     },
     async ({ image, scaleHint, name, save, defaultWallThickness, defaultWallHeight }) => {
       // 1. Vision.

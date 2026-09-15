@@ -8,7 +8,9 @@ export interface AedifexPaths {
   plugins: string
   run: string
   logs: string
+  tmp: string
   state: string
+  mcpState: string
   currentRuntime: string
   pluginLock: string
   database: string
@@ -25,7 +27,9 @@ export function resolveAedifexPaths(environment: NodeJS.ProcessEnv = process.env
     plugins: path.join(root, 'plugins'),
     run: path.join(root, 'run'),
     logs: path.join(root, 'logs'),
+    tmp: path.join(root, 'tmp'),
     state: path.join(root, 'run/editor.json'),
+    mcpState: path.join(root, 'run/mcp.json'),
     currentRuntime: path.join(root, 'run/current-runtime.json'),
     pluginLock: path.join(root, 'aedifex.plugins.lock'),
     database: path.join(root, 'data/aedifex.db'),

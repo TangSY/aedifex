@@ -52,12 +52,13 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsc --build && bun ../../scripts/fix-node-esm-imports.ts ../core/dist && bun ../../scripts/fix-node-esm-imports.ts dist",
     "dev": "tsgo --build --watch",
     "start": "bun dist/bin/aedifex-mcp.js",
     "test": "bun test",
     "smoke": "bun run scripts/smoke.ts",
-    "prepublishOnly": "bun run build && bun test"
+    "smoke:node": "node dist/bin/aedifex-mcp.js --help",
+    "prepublishOnly": "bun run build && bun test && bun run smoke:node"
   },
   "peerDependencies": {
     "@aedifex/core": "^0.10.0"
