@@ -21,14 +21,20 @@ Preserve package identities, MIT attribution, persisted protocol identifiers, me
 
 - [x] Verify clean repositories, pull main, record immutable inputs and effective binary patch.
 - [x] Create review branch from upstream and immediately pull; apply effective patch with three-way evidence.
-- [ ] Reconcile Editor hosting/units/interaction changes and tests, preserving fork contracts.
-- [ ] Reconcile Nodes/Viewer surfaces, duplication, geometry, Capture and isolation.
-- [ ] Reconcile local CLI runtime and MCP unit operations; retain exclusion of marketplace files.
-- [ ] Reconcile Core floor support, schema/metadata and package manifests; review all new brand references.
-- [ ] Rebuild lock with `bun install`; run `bun run check-types`, `bun run test`, `bun run build`, `bun --filter @aedifex/mcp test`; fix actual regressions and rerun affected checks.
-- [ ] Relink SaaS file packages using its existing workflow, run `pnpm install --force` and `pnpm --filter @aedifex-saas/web run build`; compare namespace warning baseline30.
-- [ ] Review architecture, fork assets and public repository boundaries; commit reviewed integration.
+- [x] Reconcile Editor hosting/units/interaction changes and tests, preserving fork contracts.
+- [x] Reconcile Nodes/Viewer surfaces, duplication, geometry, Capture and isolation.
+- [x] Reconcile local CLI runtime and MCP unit operations; retain exclusion of marketplace files.
+- [x] Reconcile Core floor support, schema/metadata and package manifests; review all new brand references.
+- [x] Rebuild lock with `bun install`; run `bun run check-types`, `bun run test`, `bun run build`, `bun --filter @aedifex/mcp test`; fix actual regressions and rerun affected checks.
+- [x] Relink SaaS file packages using its existing workflow, run `pnpm install --force` and `pnpm --filter @aedifex-saas/web run build`; compare namespace warning baseline30.
+- [x] Review architecture, fork assets and public repository boundaries; commit reviewed integration.
 - [ ] Return to main and immediately pull; merge-tree then normal --no-ff merge, manually reconcile each landing conflict against all three trees and reviewed integration.
 - [ ] Validate final merged tree, commit required SaaS changes, push SaaS origin and Aedifex origin/github; independently verify remote SHAs. Never push upstream or deploy.
 
 No automatic side selection, whole-tree replacement, merge-driver source overrides, local Docker build, production access, or weakening verification gates.
+
+## Integration validation
+
+Review tree `fd1398c78`: types 11/11, full test tasks 13/13 (Nodes 3401 pass, 1 existing skip, 0 fail), portable build 8/8, MCP 393 pass/0 fail. Local staged CLI smoke passed: 49 MCP tools without a web runtime and a saved scene round-trip with the local editor. SaaS relink/install and web build EXIT0, 1010 pages, 30 namespace import warnings matching baseline; no SaaS tracked changes.
+
+Reviews retained all 182 fork-only paths, found no new private-domain/credential patterns and passed the OSS boundary gate. Corrected new metadata object-only assumptions, kept 2D unit focus in editor-owned extensions, and isolated browser-schema bundle tests in fresh Bun processes without weakening import/runtime assertions. Excluded upstream-only Next promotional media and marketplace publishing files. Existing persisted compatibility identifiers and MIT attribution remain intact.
