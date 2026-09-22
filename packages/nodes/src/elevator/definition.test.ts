@@ -6,7 +6,7 @@ import {
   nodeRegistry,
   registerNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { elevatorDefinition } from './definition'
 
 describe('elevatorDefinition', () => {

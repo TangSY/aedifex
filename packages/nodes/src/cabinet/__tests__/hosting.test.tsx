@@ -19,15 +19,15 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   evaluateRecipe,
   nodeLevelFrame,
   ProceduralItemNode,
   queryProceduralItem,
   type Recipe,
-} from '@pascal-app/core/procedural-items'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core/procedural-items'
+import { useViewer } from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import { Group, PerspectiveCamera, Vector3 } from 'three'
 import {

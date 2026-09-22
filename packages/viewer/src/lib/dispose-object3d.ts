@@ -1,7 +1,7 @@
 import type { BufferGeometry, Material, Object3D } from 'three'
 
 function isCachedMaterial(material: Material): boolean {
-  return Boolean(material.userData?.__pascalCachedMaterial)
+  return Boolean(material.userData?.__aedifexCachedMaterial)
 }
 
 /** Dispose geometry and non-cached materials owned by an Object3D subtree. */

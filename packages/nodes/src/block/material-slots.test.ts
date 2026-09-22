@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { createBoxBlockTopology } from '@pascal-app/core'
+import { createBoxBlockTopology } from '@aedifex/core'
 import {
   assignBlockMaterial,
   blockMaterialSelection,

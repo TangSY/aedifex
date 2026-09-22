@@ -1,4 +1,4 @@
-import type { AnyNode } from '@pascal-app/core'
+import type { AnyNode } from '@aedifex/core'
 import type { Object3D } from 'three'
 import { USDZExporter } from 'three/examples/jsm/exporters/USDZExporter.js'
 import { createExportTextureUtils } from './export-texture-utils'

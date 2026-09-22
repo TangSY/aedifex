@@ -1,4 +1,4 @@
-import { type HeightPatch, heightAtSample, normalAt, type TerrainField } from '@pascal-app/core'
+import { type HeightPatch, heightAtSample, normalAt, type TerrainField } from '@aedifex/core'
 
 /**
  * Builds the terrain mesh buffers from a `TerrainField`.

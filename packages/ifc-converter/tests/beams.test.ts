@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { AnyNode, type BlockNode, BlockTopology } from '@pascal-app/core'
+import { AnyNode, type BlockNode, BlockTopology } from '@aedifex/core'
 import * as WebIFC from 'web-ifc'
-import { convertIfcToPascal, type PascalSceneGraph } from '../src'
+import { convertIfcToAedifex, type AedifexSceneGraph } from '../src'
 
 const fixture = new URL('./fixtures/beams.ifc', import.meta.url)
 const duplex = new URL(
@@ -13,7 +13,7 @@ const duplex = new URL(
 const originalSetWasmPath = WebIFC.IfcAPI.prototype.SetWasmPath
 const originalGetLineIDsWithType = WebIFC.IfcAPI.prototype.GetLineIDsWithType
 
-function beams(graph: PascalSceneGraph) {
+function beams(graph: AedifexSceneGraph) {
   return Object.values(graph.nodes).filter(
     (node): node is BlockNode =>
       node.type === 'block' && String(node.metadata.ifcType).startsWith('IFCBEAM'),
@@ -53,7 +53,7 @@ function expectBounds(node: BlockNode, expected: number[][]) {
   }
 }
 
-function assertAttached(graph: PascalSceneGraph, node: BlockNode) {
+function assertAttached(graph: AedifexSceneGraph, node: BlockNode) {
   const parent = node.parentId ? graph.nodes[node.parentId] : undefined
   expect(parent?.type).toBe('level')
   expect(node.metadata.levelId).toBe(parent?.id)
@@ -85,7 +85,7 @@ describe('IFC beam import', () => {
 
   for (const simplify of [false, true]) {
     it(`preserves all eight duplex I-beams with simplify=${simplify}`, async () => {
-      const graph = await convertIfcToPascal(await Bun.file(duplex).bytes(), undefined, {
+      const graph = await convertIfcToAedifex(await Bun.file(duplex).bytes(), undefined, {
         simplify,
       })
       const imported = beams(graph)
@@ -111,7 +111,7 @@ describe('IFC beam import', () => {
 
   for (const swapYZ of [true, false]) {
     it(`converts millimeters, nested placements, slopes and storey offsets with swapYZ=${swapYZ}`, async () => {
-      const graph = await convertIfcToPascal(await Bun.file(fixture).bytes(), undefined, { swapYZ })
+      const graph = await convertIfcToAedifex(await Bun.file(fixture).bytes(), undefined, { swapYZ })
       const imported = beams(graph)
       expect(imported).toHaveLength(2)
       const horizontal = imported.find((node) => node.metadata.expressID === 100)!
@@ -160,7 +160,7 @@ describe('IFC beam import', () => {
         }
       }),
     )
-    const graph = await convertIfcToPascal(await Bun.file(fixture).bytes(), undefined, {
+    const graph = await convertIfcToAedifex(await Bun.file(fixture).bytes(), undefined, {
       simplify: false,
     })
     expect(beams(graph)).toHaveLength(2)
@@ -184,7 +184,7 @@ describe('IFC beam import', () => {
 ENDSEC;
 END-ISO`,
     )
-    const graph = await convertIfcToPascal(new TextEncoder().encode(mapped))
+    const graph = await convertIfcToAedifex(new TextEncoder().encode(mapped))
     const node = beams(graph).find((candidate) => candidate.metadata.expressID === 100)!
     assertAttached(graph, node)
     expect(node.topology.faces).toHaveLength(24)
@@ -197,7 +197,7 @@ END-ISO`,
 
   it('retains uncontained beams as reachable roots', async () => {
     const source = (await Bun.file(fixture).text()).replace(/^#42=.*\n/m, '')
-    const graph = await convertIfcToPascal(new TextEncoder().encode(source))
+    const graph = await convertIfcToAedifex(new TextEncoder().encode(source))
     const node = beams(graph).find((candidate) => candidate.metadata.expressID === 100)!
     expect(node.parentId).toBeNull()
     expect(graph.rootNodeIds).toContain(node.id)
@@ -211,7 +211,7 @@ END-ISO`,
     const warn = spyOn(console, 'warn').mockImplementation(() => {})
     spies.push(warn)
     const data = (await Bun.file(fixture).text()).replace('#92,#97,', '#92,$,')
-    const graph = await convertIfcToPascal(new TextEncoder().encode(data))
+    const graph = await convertIfcToAedifex(new TextEncoder().encode(data))
     expect(beams(graph).map((node) => node.metadata.expressID)).toEqual([130])
     expect(warn.mock.calls.some(([message]) => String(message).includes('beam #100'))).toBe(true)
   })

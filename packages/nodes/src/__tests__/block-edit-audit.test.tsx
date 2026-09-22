@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, spyOn, test } from 'bun:test'
-import * as core from '@pascal-app/core'
+import * as core from '@aedifex/core'
 import {
   type AnyNodeId,
   BlockNode,
@@ -21,10 +21,10 @@ import {
   useLiveTransforms,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
-import { nodeLevelFrame, ProceduralItemNode, type Recipe } from '@pascal-app/core/procedural-items'
-import { meshEditScope } from '@pascal-app/editor'
-import { NodeRenderer, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { nodeLevelFrame, ProceduralItemNode, type Recipe } from '@aedifex/core/procedural-items'
+import { meshEditScope } from '@aedifex/editor'
+import { NodeRenderer, useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { act, create } from '@react-three/test-renderer'
@@ -49,13 +49,13 @@ function htmlText(node: ReactNode): string {
   return ''
 }
 // Other node tests install process-global renderer mocks; this audit must observe production modules.
-if (process.env.PASCAL_BLOCK_EDIT_AUDIT_ISOLATED !== '1') {
+if (process.env.AEDIFEX_BLOCK_EDIT_AUDIT_ISOLATED !== '1') {
   test('block edit audit with production registrations', async () => {
     const child = Bun.spawn(
       [process.execPath, 'run', 'test', 'src/__tests__/block-edit-audit.test.tsx'],
       {
         cwd: new URL('../..', import.meta.url).pathname,
-        env: { ...process.env, PASCAL_BLOCK_EDIT_AUDIT_ISOLATED: '1' },
+        env: { ...process.env, AEDIFEX_BLOCK_EDIT_AUDIT_ISOLATED: '1' },
         stdout: 'pipe',
         stderr: 'pipe',
       },

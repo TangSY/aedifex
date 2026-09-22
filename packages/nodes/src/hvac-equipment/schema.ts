@@ -1,1 +1,1 @@
-export { HvacEquipmentNode } from '@pascal-app/core'
+export { HvacEquipmentNode } from '@aedifex/core'

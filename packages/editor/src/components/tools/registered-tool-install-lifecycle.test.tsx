@@ -9,8 +9,8 @@ import {
   registerNode,
   type SceneApi,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import { type ComponentType, useEffect } from 'react'
 import { z } from 'zod'
@@ -143,7 +143,7 @@ for (const host of hosts) {
       nodeRegistry._reset()
       await loadPlugin({
         id: PLUGIN_ID,
-        apiVersion: 1,
+        apiVersion: 2,
         nodes: [definition(PLUGIN_KIND, lifecycle)],
       })
       registerNode(definition(BUILTIN_KIND, lifecycle))

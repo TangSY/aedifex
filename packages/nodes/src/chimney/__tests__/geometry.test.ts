@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { RoofSegmentNode } from '@pascal-app/core'
+import type { RoofSegmentNode } from '@aedifex/core'
 import { buildChimneyGeometry, flueXPositions } from '../geometry'
 import { ChimneyNode } from '../schema'
 

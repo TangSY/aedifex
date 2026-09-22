@@ -22,7 +22,7 @@ import { acceleratedRaycast, computeBoundsTree } from 'three-mesh-bvh'
 import { createWithEqualityFn } from 'zustand/traditional'
 import useViewer from '../store/use-viewer'
 import { BATCHED_LAYER } from './layers'
-import { choosePointerEvents, createPascalPointerEvents, markPureRaycast } from './pointer-events'
+import { choosePointerEvents, createAedifexPointerEvents, markPureRaycast } from './pointer-events'
 
 extend({ Group: THREE.Group })
 
@@ -300,7 +300,7 @@ async function differential(
 ) {
   const stock = await fixture(reference)
   await run(stock)
-  const cached = await fixture(createPascalPointerEvents)
+  const cached = await fixture(createAedifexPointerEvents)
   await run(cached)
   expect(cached.trace).toEqual(stock.trace)
   return { stock, cached }
@@ -393,7 +393,7 @@ describe('R3F 9.6.1 pointer-event differential', () => {
       else process.env.NODE_ENV = original
     })
     process.env.NODE_ENV = 'development'
-    const f = await fixture(createPascalPointerEvents)
+    const f = await fixture(createAedifexPointerEvents)
     warn.mockClear()
     expect(probeWindow.__pointerEvents).toBeUndefined()
     const mesh = f.mesh('handle')
@@ -443,7 +443,7 @@ describe('R3F 9.6.1 pointer-event differential', () => {
     }
     const stock = await fixture(stockEvents)
     run(stock, false)
-    const cached = await fixture(createPascalPointerEvents)
+    const cached = await fixture(createAedifexPointerEvents)
     run(cached, true)
     expect(cached.trace).toEqual(stock.trace)
     expect(cached.calls.get('a')).toBe(3)
@@ -819,10 +819,10 @@ describe('R3F 9.6.1 pointer-event differential', () => {
     try {
       for (const environment of ['production', 'development', 'test']) {
         process.env.NODE_ENV = environment
-        expect(choosePointerEvents('')).toBe(createPascalPointerEvents)
+        expect(choosePointerEvents('')).toBe(createAedifexPointerEvents)
         for (const search of ['?stockEvents', '?stockEvents=false']) {
           expect(choosePointerEvents(search)).toBe(
-            environment === 'production' ? createPascalPointerEvents : stockEvents,
+            environment === 'production' ? createAedifexPointerEvents : stockEvents,
           )
         }
       }

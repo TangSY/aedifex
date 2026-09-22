@@ -9,8 +9,8 @@ import {
   type InspectorExtension,
   useRegistryVersion,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { ChevronDown, ChevronLeft, GripHorizontal, RotateCcw, X } from 'lucide-react'
 import Image from 'next/image'
 import {

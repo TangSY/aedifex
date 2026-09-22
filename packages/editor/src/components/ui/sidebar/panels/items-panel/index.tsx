@@ -1,6 +1,6 @@
 'use client'
 
-import type { AssetInput } from '@pascal-app/core'
+import type { AssetInput } from '@aedifex/core'
 import NextImage from 'next/image'
 import { useEffect, useState } from 'react'
 import { triggerSFX } from '../../../../../lib/sfx-bus'

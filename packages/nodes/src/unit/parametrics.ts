@@ -1,4 +1,4 @@
-import type { ParametricDescriptor, UnitNode } from '@pascal-app/core'
+import type { ParametricDescriptor, UnitNode } from '@aedifex/core'
 
 export const unitParametrics: ParametricDescriptor<UnitNode> = {
   groups: [],

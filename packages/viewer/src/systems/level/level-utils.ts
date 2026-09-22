@@ -1,4 +1,4 @@
-import { getLevelElevations, type LevelNode, sceneRegistry, useScene } from '@pascal-app/core'
+import { getLevelElevations, type LevelNode, sceneRegistry, useScene } from '@aedifex/core'
 
 export const EXPLODED_GAP = 5
 

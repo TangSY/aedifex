@@ -3,7 +3,7 @@ import {
   type CeilingNode,
   getMaterialPresetByRef,
   resolveMaterial,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { Mesh } from 'three'
 import { createSlotPaintCapability } from '../shared/slot-paint'
 import { getCeilingMaterials } from './materials'

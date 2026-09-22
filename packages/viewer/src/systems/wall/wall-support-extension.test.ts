@@ -7,7 +7,7 @@ import {
   calculateLevelMiters,
   getWallPlaneTop,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { generateExtrudedWall } from './wall-system'
 
 describe('wall support extension', () => {

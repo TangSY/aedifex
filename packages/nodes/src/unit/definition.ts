@@ -1,4 +1,4 @@
-import { type NodeDefinition, UnitNode as UnitNodeSchema } from '@pascal-app/core'
+import { type NodeDefinition, UnitNode as UnitNodeSchema } from '@aedifex/core'
 import { unitParametrics } from './parametrics'
 import { UnitNode } from './schema'
 

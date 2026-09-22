@@ -7,7 +7,7 @@ import {
   type SceneApi,
   type SurfaceProvider,
   type SurfaceRejectReason,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { registerHostingTestNode } from '../__fixtures__/hosting'
 import { createSurfaceRejectionFeedback } from './surface-rejection'
 

@@ -9,7 +9,7 @@ import {
   resolveSurfacePlacement,
   type SceneApi,
   type SurfaceContext,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Box3, Group, type Mesh, Raycaster, Vector3 } from 'three'
 import { cabinetDefinition } from '../definition'
 import { buildCabinetGeometry } from '../geometry'

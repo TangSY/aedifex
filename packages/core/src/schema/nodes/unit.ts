@@ -12,7 +12,6 @@ export const UnitNode = BaseNode.extend({
   kind: z.enum(UNIT_KINDS).default('apartment'),
   members: z.array(objectId('zone')).default([]),
   color: z.string().default(DEFAULT_UNIT_COLOR),
-  metadata: z.record(z.string(), z.unknown()).optional().default({}),
 })
 
 export type UnitNode = z.infer<typeof UnitNode>

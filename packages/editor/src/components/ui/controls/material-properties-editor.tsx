@@ -1,6 +1,6 @@
 'use client'
 
-import type { MaterialProperties, MaterialSchema } from '@pascal-app/core'
+import type { MaterialProperties, MaterialSchema } from '@aedifex/core'
 import { Input } from '../primitives/input'
 import { SliderControl } from './slider-control'
 

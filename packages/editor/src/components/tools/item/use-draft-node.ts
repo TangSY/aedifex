@@ -6,8 +6,8 @@ import {
   type SurfaceRejectReason,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { beginPerfAction, commitPerfAction, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { beginPerfAction, commitPerfAction, useViewer } from '@aedifex/viewer'
 import { useCallback, useMemo, useRef } from 'react'
 import type { Vector3 } from 'three'
 import { commitFreshPlacementSubtree } from '../../../lib/fresh-planar-placement'

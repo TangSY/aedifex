@@ -8,8 +8,8 @@ import {
   sceneRegistry,
   useScene,
   WallNode,
-} from '@pascal-app/core'
-import { hideFromScene, showInScene } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { hideFromScene, showInScene } from '@aedifex/viewer'
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Ray, Vector3 } from 'three'
 import { resolveWallRole } from '../wall/paint'
 import { accessoryCursor } from './accessory-cursor'

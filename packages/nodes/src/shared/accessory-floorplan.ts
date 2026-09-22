@@ -3,7 +3,7 @@ import type {
   FloorplanGeometry,
   GeometryContext,
   PipeFittingNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Euler, type Group, Mesh, Vector3 } from 'three'
 
 type Point = [number, number]

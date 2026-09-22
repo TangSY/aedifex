@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId, UnitNode, ZoneNode } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, UnitNode, ZoneNode } from '@aedifex/core'
 
 type ResolveNode = (id: AnyNodeId) => AnyNode | undefined
 

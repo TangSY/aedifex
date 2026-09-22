@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { measurementCentroid, pointInPolygon2D } from '@pascal-app/core'
+import { measurementCentroid, pointInPolygon2D } from '@aedifex/core'
 import { measurementPolygonLabelAnchor, triangulateMeasurementPolygon } from './measurement-label'
 
 describe('measurementPolygonLabelAnchor', () => {

@@ -63,9 +63,9 @@ function validateOrigin(request: Request): NextResponse | null {
 }
 
 function validateAuth(request: Request): NextResponse | null {
-  const token = process.env.PASCAL_SCENE_API_TOKEN
+  const token = process.env.AEDIFEX_SCENE_API_TOKEN
   if (!token) {
-    if (isLoopbackRequest(request)) return null
+    if (allowsUnauthenticatedLoopback() && isLoopbackRequest(request)) return null
     return sceneApiJson(request, { error: 'scene_api_token_required' }, { status: 503 })
   }
 
@@ -110,7 +110,7 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 function rateLimitPerMinute(): number {
-  const raw = process.env.PASCAL_SCENE_API_RATE_LIMIT
+  const raw = process.env.AEDIFEX_SCENE_API_RATE_LIMIT
   if (!raw) return DEFAULT_RATE_LIMIT_PER_MINUTE
   const n = Number.parseInt(raw, 10)
   return Number.isFinite(n) ? n : DEFAULT_RATE_LIMIT_PER_MINUTE
@@ -126,12 +126,17 @@ function isOriginAllowed(request: Request, origin: string): boolean {
   if (isSameOrigin(request, origin)) return true
   const parsed = parseUrl(origin)
   if (!parsed) return false
-  if (isLoopbackHostname(parsed.hostname)) return true
   return configuredOrigins().has(normalizeOrigin(parsed))
 }
 
+function allowsUnauthenticatedLoopback(): boolean {
+  if (process.env.NODE_ENV !== 'production') return true
+  const value = process.env.AEDIFEX_SCENE_API_ALLOW_LOOPBACK_WITHOUT_TOKEN
+  return value === '1' || value?.toLowerCase() === 'true'
+}
+
 function configuredOrigins(): Set<string> {
-  const raw = process.env.PASCAL_SCENE_API_ORIGINS
+  const raw = process.env.AEDIFEX_SCENE_API_ORIGINS
   if (!raw) return new Set()
   return new Set(
     raw

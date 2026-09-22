@@ -6,9 +6,9 @@ import {
   nodeRegistry,
   registerNode,
   useScene,
-} from '@pascal-app/core'
-import { useEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Quaternion, Vector3 } from 'three'
 import { ductSegmentDefinition } from '../duct-segment/definition'
 import { ductFittingToolOptions } from '../shared/fitting-tool-options'

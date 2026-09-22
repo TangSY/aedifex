@@ -8,7 +8,7 @@ import {
   sceneRegistry,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 import { shouldDeferWallRebuild } from './wall-system'
 
@@ -86,7 +86,7 @@ test('initial wall drain lifecycle and scheduling against source packages', () =
       `
       import { mock } from 'bun:test'
       mock.module(${sourcePath('packages/viewer/src/lib/gpu-perf.ts')}, () => ({ PERF_OVERLAY_ENABLED: process.env.WALL_TEST_PERF !== 'off' }))
-      mock.module('@pascal-app/core', () => require(${sourcePath('packages/core/src/index.ts')}))
+      mock.module('@aedifex/core', () => require(${sourcePath('packages/core/src/index.ts')}))
     `,
     )
     const probe = join(directory, 'probe.test.ts')
@@ -112,7 +112,7 @@ import {
   useLiveTransforms,
   useScene,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { BoxGeometry, Mesh, MeshBasicMaterial } from 'three'
 import { publishPerfBatchStats, readPerfBatchStats } from ${sourcePath('packages/viewer/src/lib/perf-panel-store.ts')}
 import {
@@ -666,7 +666,7 @@ mock.module('react', () => ({ ...react, default: react, useEffect: (effect) => {
 mock.module('@react-three/fiber', () => ({ useFrame: (frame) => { globalThis.wallFrame = frame } }))
 const core = require(${sourcePath('packages/core/src/index.ts')})
 const storeWithoutHooks = (store) => Object.assign((selector) => selector(store.getState()), store)
-mock.module('@pascal-app/core', () => ({ ...core, useScene: storeWithoutHooks(core.useScene), useLiveNodeOverrides: storeWithoutHooks(core.useLiveNodeOverrides) }))
+mock.module('@aedifex/core', () => ({ ...core, useScene: storeWithoutHooks(core.useScene), useLiveNodeOverrides: storeWithoutHooks(core.useLiveNodeOverrides) }))
 mock.module(${sourcePath('packages/viewer/src/lib/gpu-perf.ts')}, () => ({ PERF_OVERLAY_ENABLED: process.env.WALL_TEST_PERF !== 'off' }))
 `,
     )
@@ -675,7 +675,7 @@ mock.module(${sourcePath('packages/viewer/src/lib/gpu-perf.ts')}, () => ({ PERF_
       mountProbe,
       `
 import { expect, spyOn, test } from 'bun:test'
-import { LevelNode, WallNode, useScene, useLiveNodeOverrides, useLiveTransforms, sceneRegistry } from '@pascal-app/core'
+import { LevelNode, WallNode, useScene, useLiveNodeOverrides, useLiveTransforms, sceneRegistry } from '@aedifex/core'
 import { BoxGeometry, Mesh } from 'three'
 import { subscribeWallBuildInteractions, isWallInitialBuildActive, drainStats } from ${sourcePath('packages/viewer/src/systems/wall/wall-build-lifecycle.ts')}
 import * as perfStore from ${sourcePath('packages/viewer/src/lib/perf-panel-store.ts')}

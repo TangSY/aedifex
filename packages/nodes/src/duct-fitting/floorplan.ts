@@ -1,4 +1,4 @@
-import type { FloorplanGeometry, GeometryContext } from '@pascal-app/core'
+import type { FloorplanGeometry, GeometryContext } from '@aedifex/core'
 import { MeshStandardMaterial } from 'three'
 import { INCHES_TO_METERS } from '../duct-segment/geometry'
 import { accessoryFloorplan } from '../shared/accessory-floorplan'

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { MeasurementNode, measurementDistance } from '@pascal-app/core'
+import { MeasurementNode, measurementDistance } from '@aedifex/core'
 import {
   constrainMeasurementPlanEditPoint,
   constrainMeasurementSpatialEditPoint,

@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { AnyNodeId } from '@pascal-app/core/schema'
+import type { AnyNodeId } from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { DESTRUCTIVE_TOOL_ANNOTATIONS } from './annotations'
@@ -41,7 +41,7 @@ export function registerSetUnitMembers(server: McpServer, bridge: SceneOperation
       if (!unit.parentId) {
         throwMcpError(ErrorCode.InvalidParams, `Unit ${unitId} must belong to a building`)
       }
-      const members = validateUnitMembers(bridge, unit.parentId, memberZoneIds)
+      const members = validateUnitMembers({ bridge, buildingId: unit.parentId, memberZoneIds })
       bridge.updateNode(unit.id, { members })
       const persistence = await publishLiveSceneSnapshot(bridge, 'set_unit_members')
       const payload = { unitId, memberCount: members.length, ...persistencePayload(persistence) }

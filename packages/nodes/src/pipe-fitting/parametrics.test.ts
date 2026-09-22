@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, type AnyNodeId, PipeFittingNode, PipeSegmentNode } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, PipeFittingNode, PipeSegmentNode } from '@aedifex/core'
 import { pipeFittingParametrics } from './parametrics'
 import { getPipeFittingPorts } from './ports'
 

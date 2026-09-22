@@ -6,7 +6,7 @@ import {
   sceneRegistry,
   type ThumbnailGenerateEvent,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   computeHeroFraming,
   createSnapshotPipeline,
@@ -25,7 +25,7 @@ import {
   temporarilyShowShadowOnly,
   useSceneAtmosphere,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import type { CameraControls } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useRef } from 'react'

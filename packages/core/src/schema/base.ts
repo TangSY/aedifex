@@ -26,14 +26,9 @@ export const BaseNode = z.object({
   parentId: z.string().nullable().default(null),
   visible: z.boolean().optional().default(true),
   camera: CameraSchema.optional(),
-  // Deliberately a record, not `z.json()`. The recursive JSON schema is the
-  // most expensive member of every node that embeds it (`WallNode.parse` runs
-  // ~1.5x faster without it) and, being self-referential, it also denies the
-  // whole node tree zod 4.5's compiled parser: measured on `WallNode`,
-  // `z.compile()` bought 1.0x with `z.json()` and 2.2x with this record.
-  // Metadata is a flat bag of per-node extras, so an open object with
-  // unchecked values is the whole contract we need.
-  metadata: z.record(z.string(), z.unknown()).optional().default({}),
+  // Existing saved scenes may contain any JSON metadata. Keep the common
+  // object fast path without rejecting or rewriting those historical values.
+  metadata: z.union([z.record(z.string(), z.unknown()), z.json()]).optional().default({}),
 })
 
 export type BaseNode = z.infer<typeof BaseNode>

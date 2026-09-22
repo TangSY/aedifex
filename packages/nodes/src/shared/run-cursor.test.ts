@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { AnyNodeId } from '@pascal-app/core'
+import type { AnyNodeId } from '@aedifex/core'
 import {
   createRunSurfaceFrame,
   isSameRunWallSurface,

@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNodeId, emitter, sceneRegistry, useScene, type WallNode } from '@pascal-app/core'
+import { type AnyNodeId, emitter, sceneRegistry, useScene, type WallNode } from '@aedifex/core'
 import {
   drainRebuiltWalls,
   getPendingWallRebuildCount,
@@ -8,7 +8,7 @@ import {
   SCENE_LAYER,
   useViewer,
   type WallMode,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import { type Material, Matrix4, Mesh, type Object3D } from 'three'
@@ -310,7 +310,7 @@ function mergeLevel(levelId: string, excludedNodeIds: ReadonlySet<string> = EMPT
 
     const mesh = new Mesh(batch.geometry, candidates[0]!.materials)
     mesh.name = 'wall-batch'
-    mesh.userData.pascalExport = 'strip'
+    mesh.userData.aedifexExport = 'strip'
     mesh.castShadow = true
     mesh.receiveShadow = true
     mesh.matrixAutoUpdate = false

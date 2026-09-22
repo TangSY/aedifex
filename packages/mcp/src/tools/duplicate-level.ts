@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { cloneLevelSubtree } from '@pascal-app/core/clone-scene-graph'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core/schema'
+import { cloneLevelSubtree } from '@aedifex/core/clone-scene-graph'
+import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { Patch as BridgePatch } from '../bridge/scene-bridge'
 import type { SceneOperations } from '../operations'

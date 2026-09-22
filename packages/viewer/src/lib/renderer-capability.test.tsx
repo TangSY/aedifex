@@ -2,6 +2,7 @@
 // include Bun ambient types in its production declaration build.
 import { describe, expect, mock, test } from 'bun:test'
 import {
+  detectRendererCapability,
   initializeGpuRenderer,
   type RendererBackendParameters,
   type RendererCapabilityCanvas,
@@ -14,6 +15,19 @@ function canvasWithContexts(contexts: Partial<Record<'webgl2', unknown>>) {
 }
 
 describe('GPU renderer capability and initialization', () => {
+  test('releases the temporary WebGL probe context', async () => {
+    const loseContext = mock(() => undefined)
+    const result = await detectRendererCapability({
+      canvas: canvasWithContexts({
+        webgl2: { getExtension: () => ({ loseContext }) },
+      }),
+      gpu: null,
+    })
+
+    expect(result).toEqual({ backend: 'webgl', status: 'supported' })
+    expect(loseContext).toHaveBeenCalledTimes(1)
+  })
+
   test('uses a working WebGPU device without requiring WebGL', async () => {
     const device = {}
     const createRenderer = mock(() => ({ init: async () => undefined }))

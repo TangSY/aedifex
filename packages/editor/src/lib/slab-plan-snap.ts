@@ -1,4 +1,4 @@
-import { type AnyNode, snapSlabEdgeToWallBand, useScene } from '@pascal-app/core'
+import { type AnyNode, snapSlabEdgeToWallBand, useScene } from '@aedifex/core'
 import { WALL_CONNECT_SNAP_RADIUS } from '../components/tools/wall/wall-drafting'
 import useAlignmentGuides from '../store/use-alignment-guides'
 import { isMagneticSnapActive } from '../store/use-editor'

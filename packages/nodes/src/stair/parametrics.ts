@@ -1,4 +1,4 @@
-import type { ParametricDescriptor, StairNode } from '@pascal-app/core'
+import type { ParametricDescriptor, StairNode } from '@aedifex/core'
 
 export const stairParametrics: ParametricDescriptor<StairNode> = {
   groups: [],

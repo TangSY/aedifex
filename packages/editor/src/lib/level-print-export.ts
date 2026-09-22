@@ -3,8 +3,8 @@ import {
   getLevelDisplayName,
   getLevelElevations,
   type LevelNode,
-} from '@pascal-app/core'
-import { disposeObject3DResources } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { disposeObject3DResources } from '@aedifex/viewer'
 import { type Zippable, zipSync } from 'fflate'
 import * as THREE from 'three'
 import { createPrint3mf, type Print3mfPart } from './print-3mf'
@@ -501,7 +501,7 @@ export async function exportSceneLevelsForPrint(
   return {
     data:
       format === '3mf'
-        ? createPrint3mf(packageParts, 'Pascal level parts')
+        ? createPrint3mf(packageParts, 'Aedifex level parts')
         : zipSync(files, { level: 0 }),
     report: {
       kind: 'print-level-export-report',

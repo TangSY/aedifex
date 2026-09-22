@@ -11,8 +11,8 @@ import {
   sceneRegistry,
   spatialGridManager,
   useScene,
-} from '@pascal-app/core'
-import { hideFromScene, showInScene, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { hideFromScene, showInScene, useViewer } from '@aedifex/viewer'
 import {
   BoxGeometry,
   Mesh,

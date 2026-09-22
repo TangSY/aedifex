@@ -16,8 +16,8 @@ import {
   ShelfNode,
   SlabNode,
   WallNode,
-} from '@pascal-app/core'
-import { ProceduralItemNode, shelfRecipe } from '@pascal-app/core/procedural-items'
+} from '@aedifex/core'
+import { ProceduralItemNode, shelfRecipe } from '@aedifex/core/procedural-items'
 import { builtinPlugin } from '../index'
 import { resolveItemTransform } from './floorplan'
 

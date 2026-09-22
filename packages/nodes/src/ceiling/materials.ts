@@ -4,7 +4,7 @@ import {
   resolveMaterial,
   type SceneMaterial,
   type SceneMaterialId,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { float, mix, positionWorld, smoothstep } from 'three/tsl'
 import { BackSide, FrontSide, MeshBasicNodeMaterial } from 'three/webgpu'
 

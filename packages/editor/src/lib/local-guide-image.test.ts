@@ -1,9 +1,9 @@
 import { expect, mock, test } from 'bun:test'
-import * as core from '@pascal-app/core'
+import * as core from '@aedifex/core'
 
 const saveAsset = mock(async () => 'asset://stored-scan')
 
-mock.module('@pascal-app/core', () => ({ ...core, saveAsset }))
+mock.module('@aedifex/core', () => ({ ...core, saveAsset }))
 
 const { createLocalScan } = await import('./local-guide-image')
 

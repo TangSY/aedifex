@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, spyOn, test } from 'bun:test'
-import * as core from '@pascal-app/core'
+import * as core from '@aedifex/core'
 import {
   type AnyNodeId,
   type GridEvent,
@@ -11,7 +11,7 @@ import {
   sceneRegistry,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Group, Vector3 } from 'three'
 import { commitFreshPlacementSubtree } from '../../../lib/fresh-planar-placement'
 import useEditor from '../../../store/use-editor'

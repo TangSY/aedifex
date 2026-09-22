@@ -396,7 +396,7 @@ function buildVertexColorAtlas(
   expanded.setAttribute(uvAttributeName(VERTEX_COLOR_UV_CHANNEL), new THREE.BufferAttribute(uv, 2))
   expanded.deleteAttribute('color')
   const texture = new THREE.CanvasTexture(canvas)
-  texture.name = 'pascal_vertex_color_atlas'
+  texture.name = 'aedifex_vertex_color_atlas'
   texture.channel = VERTEX_COLOR_UV_CHANNEL
   texture.colorSpace = THREE.SRGBColorSpace
   texture.flipY = true
@@ -463,7 +463,7 @@ function bakeVertexColors(root: THREE.Object3D, preserveDeformations = false): b
     const originalGeometry = mesh.geometry
     const baked = buildVertexColorAtlas(originalGeometry, materials, relocatedUvChannel)
     mesh.geometry = baked.geometry
-    if (baked.clampedHdr) mesh.userData.pascalHdrVertexColor = 'clamped-to-portable-range'
+    if (baked.clampedHdr) mesh.userData.aedifexHdrVertexColor = 'clamped-to-portable-range'
     clampedHdr ||= baked.clampedHdr
     const relocatedTextures = new Map<THREE.Texture, THREE.Texture>()
     const convertedMaterials = new Map<THREE.Material, THREE.Material>()
@@ -910,7 +910,7 @@ export function normalizeViewerArtifactMaterials(
 
 /** Where the portable GLB conversion parks the authored opacity of glass it
  * rewrote as transmission, so formats without transmission can fall back. */
-export const GLASS_OPACITY_USERDATA = 'pascalGlassOpacity'
+export const GLASS_OPACITY_USERDATA = 'aedifexGlassOpacity'
 
 function cloneMaterialForUsdz(material: THREE.Material): THREE.Material {
   const clone = material.clone()

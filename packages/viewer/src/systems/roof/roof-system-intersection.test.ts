@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { LevelNode, RoofNode, RoofSegmentNode } from '@pascal-app/core'
+import { LevelNode, RoofNode, RoofSegmentNode } from '@aedifex/core'
 import * as THREE from 'three'
 import { Brush, Evaluator } from 'three-bvh-csg'
 import { prepareBrushForCSG, subtractCsgBrush } from '../../lib/csg-utils'

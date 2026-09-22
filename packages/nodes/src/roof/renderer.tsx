@@ -8,8 +8,8 @@ import {
   useLiveNodeOverrides,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
-import { getRoofMaterialArray, NodeRenderer, useNodeEvents, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { getRoofMaterialArray, NodeRenderer, useNodeEvents, useViewer } from '@aedifex/viewer'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import type * as THREE from 'three'
 import { useShallow } from 'zustand/react/shallow'
@@ -35,6 +35,7 @@ export const RoofRenderer = ({ node: rawNode }: { node: RoofNode }) => {
   const textures = useViewer((s) => s.textures)
   const colorPreset = useViewer((s) => s.colorPreset)
   const sceneTheme = useViewer((s) => s.sceneTheme)
+  const sceneMaterials = useScene((s) => s.materials)
 
   // Collect roof element IDs (chimneys, skylights, etc.) hosted by any segment.
   // Rendered outside segments-wrapper (invisible during normal mode) so elements
@@ -85,8 +86,8 @@ export const RoofRenderer = ({ node: rawNode }: { node: RoofNode }) => {
   const placeholderGeometry = useMemo(() => createPlaceholderGeometry(4), [])
 
   const customMaterial = useMemo(
-    () => getRoofMaterialArray(node, shading, textures, colorPreset, sceneTheme),
-    [node, shading, textures, colorPreset, sceneTheme],
+    () => getRoofMaterialArray(node, shading, textures, colorPreset, sceneTheme, sceneMaterials),
+    [node, shading, textures, colorPreset, sceneTheme, sceneMaterials],
   )
 
   const material = debugColors

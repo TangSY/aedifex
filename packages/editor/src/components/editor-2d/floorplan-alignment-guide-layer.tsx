@@ -1,6 +1,6 @@
 'use client'
 
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 import { memo } from 'react'
 import useAlignmentGuides from '../../store/use-alignment-guides'
 import { formatMeasurement } from '../editor/measurement-pill'

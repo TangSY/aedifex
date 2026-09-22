@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { createBoxBlockTopology, inspectBlockTopology } from '@pascal-app/core'
+import { createBoxBlockTopology, inspectBlockTopology } from '@aedifex/core'
 import { applyBlockCommand } from './commands'
 
 describe('applyBlockCommand', () => {

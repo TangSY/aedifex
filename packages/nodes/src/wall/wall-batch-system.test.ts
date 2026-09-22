@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, expect, spyOn, test } from 'bun:test'
-import { sceneRegistry, useScene } from '@pascal-app/core'
-import * as viewerExports from '@pascal-app/viewer'
-import { SCENE_LAYER, useViewer } from '@pascal-app/viewer'
+import { sceneRegistry, useScene } from '@aedifex/core'
+import * as viewerExports from '@aedifex/viewer'
+import { SCENE_LAYER, useViewer } from '@aedifex/viewer'
 import {
   BufferGeometry,
   Float32BufferAttribute,
@@ -263,7 +263,7 @@ describe('WallBatchSystem capture holds', () => {
 
 test('merged wall batches are stripped from GLB exports', () => {
   const { batch } = setupBatchedLevel()
-  expect(batch.userData.pascalExport).toBe('strip')
+  expect(batch.userData.aedifexExport).toBe('strip')
 })
 
 test('wall batches keep waiting for pending neighbours even after the dirty census is clean', () => {

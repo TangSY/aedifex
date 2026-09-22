@@ -3,7 +3,7 @@ export {
   activateEditorRuntime,
   type EditorState,
   type EditorStatus,
-  ensurePascalDirectories,
+  ensureAedifexDirectories,
   getEditorStatus,
   type RuntimeActivationResult,
   restartEditor,
@@ -19,7 +19,7 @@ export {
   type McpServiceStatus,
   stopMcpService,
 } from './mcp-service.js'
-export { type PascalPaths, resolvePascalPaths } from './paths.js'
+export { type AedifexPaths, resolveAedifexPaths } from './paths.js'
 export {
   type ActiveRuntime,
   installBundledRuntime,
@@ -27,10 +27,4 @@ export {
   readActiveRuntime,
   readRuntimeManifest,
 } from './runtime.js'
-export {
-  ensureWebRuntime,
-  type RuntimeSource,
-  readRuntimeSource,
-  verifyArchiveDigest,
-} from './runtime-download.js'
 export { version } from './version.js'

@@ -7,8 +7,8 @@ import {
   type PortConnectivity,
   resolveConnectivityUpdates,
   useScene,
-} from '@pascal-app/core'
-import { snapPointToGrid, type WallPlanPoint } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { snapPointToGrid, type WallPlanPoint } from '@aedifex/editor'
 
 /**
  * Shared "side-move a path segment" floor-plan affordance for polyline

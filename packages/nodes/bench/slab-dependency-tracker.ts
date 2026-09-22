@@ -4,7 +4,7 @@ import {
   getLinkedWallUpdates,
   type SlabNode,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import fixture from '../../core/src/store/fixtures/maxi-8x-endpoint.json'
 import { createSlabDependencyTracker } from '../src/slab/dependency-tracker'
 

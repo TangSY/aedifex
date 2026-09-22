@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { GutterNode } from '@pascal-app/core'
+import { GutterNode } from '@aedifex/core'
 import { gutterDefinition } from './definition'
 
 describe('gutter paint capability', () => {

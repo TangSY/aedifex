@@ -5,7 +5,7 @@ import {
   LeanToExtensionNode,
   type SlabNode,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { findClosestWallAttachmentInPlan } from '../shared/wall-attach-target'
 import {
   canopyCornerJointMetadata,

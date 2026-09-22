@@ -1,4 +1,4 @@
-import type { NodeQuickAction, PipeFittingNode, SceneApi } from '@pascal-app/core'
+import type { NodeQuickAction, PipeFittingNode, SceneApi } from '@aedifex/core'
 
 export function pipeFittingQuickActions({ node }: { node: PipeFittingNode }): NodeQuickAction[] {
   if (node.fittingType === 'end-cap') return []

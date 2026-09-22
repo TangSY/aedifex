@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, CeilingNode, SlabNode, WallNode, ZoneNode } from '../schema'
+import { type AnyNode, CeilingNode, LevelNode, SlabNode, WallNode, ZoneNode } from '../schema'
 import { detectSpacesForLevel } from './space-detection'
 import { deriveZoneQuantityReport } from './zone-quantities'
 
@@ -36,6 +36,46 @@ function roomNodes() {
 }
 
 describe('deriveZoneQuantityReport', () => {
+  test('subtracts a raised plane-bound wall base from indoor wall surface', () => {
+    const raisedRoom: Array<[number, number]> = [
+      [0, 0],
+      [4, 0],
+      [4, 4],
+      [0, 4],
+    ]
+    const level = LevelNode.parse({
+      id: 'level_raised',
+      name: 'Raised level',
+      level: 0,
+      height: 3,
+    })
+    const zone = ZoneNode.parse({
+      id: 'zone_raised',
+      name: 'Raised room',
+      parentId: level.id,
+      polygon: raisedRoom,
+    })
+    const walls = raisedRoom.map((start, index) =>
+      WallNode.parse({
+        id: `wall_raised_${index}`,
+        parentId: level.id,
+        start,
+        end: raisedRoom[(index + 1) % raisedRoom.length],
+        supportOffset: 1,
+      }),
+    )
+
+    const report = deriveZoneQuantityReport(
+      zone,
+      sceneRecord([level, zone, ...walls] as AnyNode[]),
+    )
+
+    expect(report.wallSurface).toMatchObject({ status: 'available' })
+    if (report.wallSurface.status === 'available') {
+      expect(report.wallSurface.value).toBeCloseTo(32)
+    }
+  })
+
   test('derives room surfaces and volume only from matching enclosure geometry', () => {
     const { zone, slab, ceiling, walls } = roomNodes()
     const report = deriveZoneQuantityReport(

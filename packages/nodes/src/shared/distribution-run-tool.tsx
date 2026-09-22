@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNodeId, emitter, type GridEvent, sceneRegistry, useScene } from '@pascal-app/core'
+import { type AnyNodeId, emitter, type GridEvent, sceneRegistry, useScene } from '@aedifex/core'
 import {
   CursorSphere,
   clearPlacementSurface,
@@ -15,7 +15,7 @@ import {
   triggerSFX,
   useEditor,
   useInteractionScope,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { Html } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'

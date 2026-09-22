@@ -9,7 +9,7 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 import { Euler, Matrix4, type Object3D, Quaternion, Vector3 } from 'three'

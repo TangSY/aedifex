@@ -1,4 +1,4 @@
-import { type AnyNode, type AnyNodeId, createSceneApi, useScene } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, createSceneApi, useScene } from '@aedifex/core'
 import { planHostedEdit } from '../shared/hosted-resize'
 
 export const columnHostedPolicy = {

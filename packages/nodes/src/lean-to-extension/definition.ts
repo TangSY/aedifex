@@ -7,12 +7,12 @@ import {
   type RoofSegmentNode,
   type SceneApi,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   clearStructuralElevationGuide,
   type FloorplanNodeExtension,
   publishResolvedElevationGuide,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { buildLeanToExtensionFloorplan } from './floorplan'
 import { leanToResizeAffordance, leanToRotateAffordance } from './floorplan-affordances'
 import { leanToFloorplanMoveTarget } from './floorplan-move'
@@ -443,7 +443,7 @@ export const leanToExtensionDefinition: NodeDefinition<typeof LeanToExtensionNod
   category: 'structure',
   snapProfile: 'structural',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       tool: () => import('./floorplan-tool'),
     } satisfies FloorplanNodeExtension<LeanToExtensionNode>,
   },

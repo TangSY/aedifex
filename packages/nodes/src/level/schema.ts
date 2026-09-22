@@ -1,1 +1,1 @@
-export { LevelNode } from '@pascal-app/core'
+export { LevelNode } from '@aedifex/core'

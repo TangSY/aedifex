@@ -1,4 +1,4 @@
-import { type AnyNodeId, sceneRegistry } from '@pascal-app/core'
+import { type AnyNodeId, sceneRegistry } from '@aedifex/core'
 
 /**
  * Hidden-wall gate for the door / window MOVE tools.

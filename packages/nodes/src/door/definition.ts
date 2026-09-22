@@ -5,8 +5,8 @@ import type {
   NodeDefinition,
   RoofSegmentNode,
   WallNode,
-} from '@pascal-app/core'
-import type { FloorplanNodeExtension } from '@pascal-app/editor'
+} from '@aedifex/core'
+import type { FloorplanNodeExtension } from '@aedifex/editor'
 import {
   buildDoorFloorplanSchedule,
   computeDoorFloorplanLevelData,
@@ -174,7 +174,7 @@ export const doorDefinition: NodeDefinition<typeof DoorNode> = {
   schema: DoorNode,
   category: 'structure',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       contextualDimensions: buildDoorContextualDimensions,
       schedule: buildDoorFloorplanSchedule,
     } satisfies FloorplanNodeExtension<DoorNodeType>,

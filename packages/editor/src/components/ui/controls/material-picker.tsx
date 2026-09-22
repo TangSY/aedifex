@@ -12,7 +12,7 @@ import {
   type MaterialTarget,
   subscribeLibraryMaterials,
   toLibraryMaterialRef,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Plus } from 'lucide-react'
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { triggerSFX } from '../../../lib/sfx-bus'
@@ -29,9 +29,9 @@ export type MaterialPickerProps = {
 }
 
 // No 'All': the browse surfaces (Items / Rooms / Build) dropped it and default
-// to the Pascal library — the combined list buried the curated set.
+// to the Aedifex library — the combined list buried the curated set.
 const SOURCE_FILTERS: { id: MaterialSourceFilter; label: string }[] = [
-  { id: 'pascal', label: 'Pascal' },
+  { id: 'aedifex', label: 'Aedifex' },
   { id: 'mine', label: 'Mine' },
   { id: 'workspace', label: 'Workspace' },
   { id: 'community', label: 'Community' },
@@ -42,7 +42,7 @@ function getCategoryLabel(category: (typeof MATERIAL_CATEGORIES)[number]) {
 }
 
 function filterBySource(items: MaterialCatalogItem[], filter: MaterialSourceFilter) {
-  return items.filter((item) => (item.source ?? 'pascal') === filter)
+  return items.filter((item) => (item.source ?? 'aedifex') === filter)
 }
 
 /**
@@ -60,7 +60,7 @@ export function MaterialPicker({
   const [selectedCategory, setSelectedCategory] = useState<(typeof MATERIAL_CATEGORIES)[number]>(
     MATERIAL_CATEGORIES[0],
   )
-  const [sourceFilter, setSourceFilter] = useState<MaterialSourceFilter>('pascal')
+  const [sourceFilter, setSourceFilter] = useState<MaterialSourceFilter>('aedifex')
   // Version counter so host registrations/unregistrations re-render the picker.
   const libraryVersion = useSyncExternalStore(
     subscribeLibraryMaterials,

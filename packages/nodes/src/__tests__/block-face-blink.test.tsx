@@ -16,9 +16,9 @@ import {
   useLiveTransforms,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
-import { useDraftNode, usePlacementCoordinator } from '@pascal-app/editor'
-import { NodeRenderer, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useDraftNode, usePlacementCoordinator } from '@aedifex/editor'
+import { NodeRenderer, useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { act, create } from '@react-three/test-renderer'
 import { Children, cloneElement, isValidElement, type ReactNode, useRef } from 'react'
@@ -34,13 +34,13 @@ import { getInitialState } from '../item/move-tool'
 import { getDefaultPanelMaterial } from '../solar-panel/geometry'
 
 // Other suites replace production renderers with process-global mocks.
-if (process.env.PASCAL_BLOCK_BLINK_ISOLATED !== '1') {
+if (process.env.AEDIFEX_BLOCK_BLINK_ISOLATED !== '1') {
   test('block face blink with production registrations', async () => {
     const child = Bun.spawn(
       [process.execPath, 'run', 'test', 'src/__tests__/block-face-blink.test.tsx'],
       {
         cwd: new URL('../..', import.meta.url).pathname,
-        env: { ...process.env, PASCAL_BLOCK_BLINK_ISOLATED: '1' },
+        env: { ...process.env, AEDIFEX_BLOCK_BLINK_ISOLATED: '1' },
         stdout: 'pipe',
         stderr: 'pipe',
       },

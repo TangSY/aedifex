@@ -13,7 +13,7 @@ import {
   snapScalar,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CursorSphere,
   consumePlacementDragRelease,
@@ -23,8 +23,8 @@ import {
   triggerSFX,
   useAlignmentGuides,
   useEditor,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type * as THREE from 'three'
 import { BufferGeometry, DoubleSide, Path, Shape, ShapeGeometry, Vector3 } from 'three'

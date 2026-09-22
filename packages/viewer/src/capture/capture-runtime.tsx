@@ -1,6 +1,6 @@
 'use client'
 
-import { type ScanNode, sceneRegistry, useScene } from '@pascal-app/core'
+import { type ScanNode, sceneRegistry, useScene } from '@aedifex/core'
 import {
   type CaptureArtifactReference,
   CaptureArtifactReferenceSchema,
@@ -13,7 +13,7 @@ import {
   type CaptureStreamPacket,
   captureLayerKey,
   DeviceMotionTrajectorySchema,
-} from '@pascal-app/core/capture'
+} from '@aedifex/core/capture'
 import { createPortal, useFrame } from '@react-three/fiber'
 import {
   type ComponentType,

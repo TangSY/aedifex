@@ -35,8 +35,8 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type Group, Vector3 } from 'three'
@@ -421,7 +421,7 @@ export function MoveRegistryNodeTool({ node: source }: { node: AnyNode }) {
   // Kinds that declare `movable.portSnap` (duct terminals) magnetically
   // mate one of their own ports onto a nearby scene port while dragging —
   // a register collar drops onto a duct run end. Reads `def.ports` through
-  // the core registry, so it stays layer-clean (no @pascal-app/nodes import).
+  // the core registry, so it stays layer-clean (no @aedifex/nodes import).
   const portSnapConfig = nodeRegistry.get(node.type)?.capabilities?.movable?.portSnap ?? null
   // Kind-owned magnetic snap for the generic 3D move path. Cabinets use this
   // to settle a dragged run flush against a wall without forking the move tool.

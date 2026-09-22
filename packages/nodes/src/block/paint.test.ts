@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { BlockNode, generateSceneMaterialId, toSceneMaterialRef, useScene } from '@pascal-app/core'
+import { BlockNode, generateSceneMaterialId, toSceneMaterialRef, useScene } from '@aedifex/core'
 import { blockPaint } from './paint'
 
 describe('block slot paint', () => {

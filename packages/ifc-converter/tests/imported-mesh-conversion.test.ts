@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import { readFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { AnyNode, ImportedMeshNode, WallNode, ZoneNode } from '@pascal-app/core'
-import { type ConversionOptions, convertIfcToPascal, type PascalSceneGraph } from '../src'
+import type { AnyNode, ImportedMeshNode, WallNode, ZoneNode } from '@aedifex/core'
+import { type ConversionOptions, convertIfcToAedifex, type AedifexSceneGraph } from '../src'
 
 const fixturesDirectory = fileURLToPath(
   new URL('../../../apps/ifc-converter/public/test-ifc-files/', import.meta.url),
@@ -19,14 +19,14 @@ async function convertFixture(
   const data = transform
     ? new TextEncoder().encode(transform(new TextDecoder().decode(source)))
     : source
-  return convertIfcToPascal(data, undefined, { simplify: false, wasmPath, ...options })
+  return convertIfcToAedifex(data, undefined, { simplify: false, wasmPath, ...options })
 }
 
 function metadata(node: AnyNode): Record<string, unknown> {
   return (node.metadata ?? {}) as Record<string, unknown>
 }
 
-function importedMeshes(scene: PascalSceneGraph): ImportedMeshNode[] {
+function importedMeshes(scene: AedifexSceneGraph): ImportedMeshNode[] {
   return Object.values(scene.nodes).filter(
     (node): node is ImportedMeshNode => node.type === 'imported-mesh',
   )
@@ -54,7 +54,7 @@ function importedMeshPlanBounds(meshes: ImportedMeshNode[], secondPlanAxis = 2):
   return bounds
 }
 
-function wallPlanBounds(scene: PascalSceneGraph): PlanBounds {
+function wallPlanBounds(scene: AedifexSceneGraph): PlanBounds {
   const walls = Object.values(scene.nodes).filter((node): node is WallNode => node.type === 'wall')
   return walls.reduce<PlanBounds>(
     (bounds, wall) => {
@@ -75,13 +75,13 @@ function wallPlanBounds(scene: PascalSceneGraph): PlanBounds {
   )
 }
 
-let openHouse: Promise<PascalSceneGraph> | undefined
+let openHouse: Promise<AedifexSceneGraph> | undefined
 function openHouseScene() {
   openHouse ??= convertFixture('04-ifc-open-house.ifc')
   return openHouse
 }
 
-let openHouseWithoutAxisSwap: Promise<PascalSceneGraph> | undefined
+let openHouseWithoutAxisSwap: Promise<AedifexSceneGraph> | undefined
 function openHouseWithoutAxisSwapScene() {
   openHouseWithoutAxisSwap ??= convertFixture('04-ifc-open-house.ifc', undefined, {
     swapYZ: false,
@@ -89,7 +89,7 @@ function openHouseWithoutAxisSwapScene() {
   return openHouseWithoutAxisSwap
 }
 
-let openHouseWithoutStorey: Promise<PascalSceneGraph> | undefined
+let openHouseWithoutStorey: Promise<AedifexSceneGraph> | undefined
 function openHouseWithoutStoreyScene() {
   openHouseWithoutStorey ??= convertFixture('04-ifc-open-house.ifc', (source) =>
     source.replace('IFCBUILDINGSTOREY(', 'IFCBUILDINGELEMENTPROXY('),
@@ -97,7 +97,7 @@ function openHouseWithoutStoreyScene() {
   return openHouseWithoutStorey
 }
 
-function reachableNodeIds(scene: PascalSceneGraph): Set<string> {
+function reachableNodeIds(scene: AedifexSceneGraph): Set<string> {
   const reachable = new Set<string>()
   const visit = (nodeId: string) => {
     if (reachable.has(nodeId)) return
@@ -111,13 +111,13 @@ function reachableNodeIds(scene: PascalSceneGraph): Set<string> {
   return reachable
 }
 
-let duplex: Promise<PascalSceneGraph> | undefined
+let duplex: Promise<AedifexSceneGraph> | undefined
 function duplexScene() {
   duplex ??= convertFixture('01-duplex.ifc')
   return duplex
 }
 
-let duplexWithoutAxisSwap: Promise<PascalSceneGraph> | undefined
+let duplexWithoutAxisSwap: Promise<AedifexSceneGraph> | undefined
 function duplexWithoutAxisSwapScene() {
   duplexWithoutAxisSwap ??= convertFixture('01-duplex.ifc', undefined, {
     swapYZ: false,
@@ -125,7 +125,7 @@ function duplexWithoutAxisSwapScene() {
   return duplexWithoutAxisSwap
 }
 
-let duplexWithMissingSpaceName: Promise<PascalSceneGraph> | undefined
+let duplexWithMissingSpaceName: Promise<AedifexSceneGraph> | undefined
 function duplexWithMissingSpaceNameScene() {
   duplexWithMissingSpaceName ??= convertFixture('01-duplex.ifc', (source) =>
     source.replace(
@@ -137,7 +137,7 @@ function duplexWithMissingSpaceNameScene() {
 }
 
 const longRoomNumber = 'ROOM-NUMBER-THAT-IS-LONGER-THAN-THIRTY-TWO-CHARACTERS'
-let duplexWithLongRoomNumber: Promise<PascalSceneGraph> | undefined
+let duplexWithLongRoomNumber: Promise<AedifexSceneGraph> | undefined
 function duplexWithLongRoomNumberScene() {
   duplexWithLongRoomNumber ??= convertFixture('01-duplex.ifc', (source) =>
     source.replace(

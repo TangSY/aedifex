@@ -1,4 +1,4 @@
-import type { AnyNode, LinearResizeHandle, RadialResizeHandle, SceneApi } from '@pascal-app/core'
+import type { AnyNode, LinearResizeHandle, RadialResizeHandle, SceneApi } from '@aedifex/core'
 
 export function resolveLinearHandlePosition<N>(
   descriptor: LinearResizeHandle<N> | RadialResizeHandle<N>,

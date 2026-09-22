@@ -4,7 +4,7 @@ import {
   findLevelAncestorId,
   levelBaseElevationAt,
   type SlabNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { FenceNode } from './schema'
 
 /**

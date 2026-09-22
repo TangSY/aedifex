@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { LevelNode, WallNode } from '@pascal-app/core/schema'
+import { LevelNode, WallNode } from '@aedifex/core/schema'
 import { buildFloorplanContext } from './floorplan-readonly'
 
 const viewState = {

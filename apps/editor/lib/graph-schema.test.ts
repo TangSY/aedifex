@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { CabinetModuleNode, CabinetNode } from '@pascal-app/core/schema'
+import { CabinetModuleNode, CabinetNode } from '@aedifex/core/schema'
 import { apiGraphSchema } from './graph-schema'
 
 function buildGraph(nodes: Record<string, unknown>, rootNodeIds: string[] = []) {
@@ -68,17 +68,18 @@ test('keeps plugin child ids in the parsed graph', () => {
   const res = apiGraphSchema.safeParse(graph)
 
   expect(res.success).toBe(true)
-  expect((res.data?.nodes[LEVEL_ID] as { children: string[] }).children).toEqual([TREE_ID])
+  if (!res.success) throw res.error
+  expect((res.data.nodes[LEVEL_ID] as { children: string[] }).children).toEqual([TREE_ID])
 })
 
 test('preserves installedPlugins alongside a plugin node', () => {
   const res = apiGraphSchema.safeParse({
     ...buildGraph({ [TREE_ID]: pluginTree() }, [LEVEL_ID]),
-    installedPlugins: ['pascal:trees'],
+    installedPlugins: ['aedifex:trees'],
   })
 
   expect(res.success).toBe(true)
-  expect(res.data?.installedPlugins).toEqual(['pascal:trees'])
+  expect(res.data?.installedPlugins).toEqual(['aedifex:trees'])
 })
 
 test('rejects a plugin node that fails the base envelope', () => {
@@ -122,7 +123,7 @@ test('accepts the asset URL forms core allows', () => {
     'data:image/png;base64,iVBORw0KGgo=',
     'https://cdn.example/tree.webp',
     'asset://tree-bark',
-    'blob:https://editor.pascal.app/9f1c',
+    'blob:https://aedifex.localhost/9f1c',
     '/textures/bark.webp',
     'http://localhost:3000/textures/bark.webp',
   ]) {

@@ -4,7 +4,7 @@ import type {
   GutterNode,
   RoofSegmentNode,
   SceneApi,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { EAVE_TUCK_INWARD } from '../gutter/eave-snap'
 import { resolveGutterOutletById } from '../gutter/outlet-lookup'
 import {

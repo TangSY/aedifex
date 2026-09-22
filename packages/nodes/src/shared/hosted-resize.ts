@@ -7,8 +7,8 @@ import {
   nodeRegistry,
   type SceneApi,
   surfaceRegionContainsFootprint,
-} from '@pascal-app/core'
-import { boundsOf, boxCorners, frame, transformPoint } from '@pascal-app/core/procedural-items'
+} from '@aedifex/core'
+import { boundsOf, boxCorners, frame, transformPoint } from '@aedifex/core/procedural-items'
 
 export type HostedEditPolicy = {
   host: (node: AnyNode) => boolean

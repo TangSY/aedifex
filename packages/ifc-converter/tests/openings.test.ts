@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import * as WebIFC from 'web-ifc'
-import { convertIfcToPascal, type PascalSceneGraph } from '../src'
+import { convertIfcToAedifex, type AedifexSceneGraph } from '../src'
 
 const fixture = new URL(
   '../../../apps/ifc-converter/public/test-ifc-files/04-ifc-open-house.ifc',
@@ -13,7 +13,7 @@ const originalSetWasmPath = WebIFC.IfcAPI.prototype.SetWasmPath
 const originalGetLineIDsWithType = WebIFC.IfcAPI.prototype.GetLineIDsWithType
 const originalGetLine = WebIFC.IfcAPI.prototype.GetLine
 
-function assertUniqueFills(graph: PascalSceneGraph) {
+function assertUniqueFills(graph: AedifexSceneGraph) {
   const fills = Object.values(graph.nodes).filter(
     (node) => node.type === 'door' || node.type === 'window',
   )
@@ -48,7 +48,7 @@ describe('IFC opening emission', () => {
   })
 
   it('emits each fixture fill once across relationship and fallback paths without cleanup', async () => {
-    const graph = await convertIfcToPascal(await Bun.file(fixture).bytes(), undefined, {
+    const graph = await convertIfcToAedifex(await Bun.file(fixture).bytes(), undefined, {
       simplify: false,
     })
     assertUniqueFills(graph)
@@ -101,7 +101,7 @@ describe('IFC opening emission', () => {
         }),
       )
 
-      const graph = await convertIfcToPascal(await Bun.file(fixture).bytes(), undefined, {
+      const graph = await convertIfcToAedifex(await Bun.file(fixture).bytes(), undefined, {
         simplify: false,
       })
       assertUniqueFills(graph)
@@ -125,7 +125,7 @@ describe('IFC opening emission', () => {
       }),
     )
 
-    const graph = await convertIfcToPascal(await Bun.file(fixture).bytes(), undefined, {
+    const graph = await convertIfcToAedifex(await Bun.file(fixture).bytes(), undefined, {
       simplify: false,
     })
     assertUniqueFills(graph)

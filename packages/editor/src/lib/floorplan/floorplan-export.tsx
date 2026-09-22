@@ -13,8 +13,8 @@ import {
   nodeRegistry,
   resolveBuildingForLevel,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { createElement } from 'react'
 import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
@@ -35,6 +35,7 @@ import useDrawingView, { DRAWING_TYPE_OPTIONS } from '../../store/use-drawing-vi
 import useEditor from '../../store/use-editor'
 import useFloorplanAnnotationVisibility from '../../store/use-floorplan-annotation-visibility'
 import useFloorplanMode from '../../store/use-floorplan-mode'
+import { getPlacementMetadataRecord } from '../placement-metadata'
 import {
   type FloorplanAnnotationVisibility,
   filterFloorplanAnnotationGeometry,
@@ -1043,7 +1044,7 @@ export function resolveExportLevels(nodes: Record<string, AnyNode>): ExportLevel
     levelNodes = node ? [node] : []
   }
 
-  levelNodes = levelNodes.filter((n) => n.metadata.role !== 'roof')
+  levelNodes = levelNodes.filter((n) => getPlacementMetadataRecord(n.metadata).role !== 'roof')
   levelNodes.sort((a, b) => levelIndexOf(a) - levelIndexOf(b))
   return levelNodes.map((n) => ({ id: n.id as AnyNodeId, label: levelLabelOf(n) }))
 }

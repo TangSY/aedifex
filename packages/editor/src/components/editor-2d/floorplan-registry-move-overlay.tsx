@@ -20,9 +20,9 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
-import { nodeLevelFrame } from '@pascal-app/core/procedural-items'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { nodeLevelFrame } from '@aedifex/core/procedural-items'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo } from 'react'
 import { commitFreshPlacementSubtree } from '../../lib/fresh-planar-placement'
 import { isHistoryShortcut } from '../../lib/history'

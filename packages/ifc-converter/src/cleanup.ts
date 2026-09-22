@@ -5,7 +5,7 @@ import {
   type DoorNode,
   type WallNode,
   type WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 type SceneNodes = Record<string, AnyNode>
 type OpeningNode = DoorNode | WindowNode

@@ -1,4 +1,4 @@
-import type { PipeSegmentNode } from '@pascal-app/core'
+import type { PipeSegmentNode } from '@aedifex/core'
 
 export type PipePreset = {
   id: string

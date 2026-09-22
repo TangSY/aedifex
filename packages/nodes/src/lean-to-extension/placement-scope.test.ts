@@ -6,7 +6,7 @@ import {
   RoofNode,
   RoofSegmentNode,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { isLeanToHostOnLevel } from './placement-scope'
 
 describe('lean-to placement scope', () => {

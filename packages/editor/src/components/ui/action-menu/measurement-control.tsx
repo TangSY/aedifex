@@ -3,7 +3,7 @@
 import type {
   ConstructionDimensionChainMode,
   ConstructionDimensionMode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   Box,
   Check,

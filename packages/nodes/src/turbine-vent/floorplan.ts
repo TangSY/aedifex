@@ -6,7 +6,7 @@ import type {
   RoofNode,
   RoofSegmentNode,
   TurbineVentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Floor-plan builder for a turbine vent — seen from above it reads as the

@@ -3,14 +3,14 @@ import {
   type GeometryContext,
   getMaterialPresetByRef,
   shelfBoardDimensions,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   applyMaterialPresetToMaterials,
   createDefaultMaterial,
   createMaterial,
   type RenderShading,
   resolveMaterialRef,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { BoxGeometry, Group, type Material, Mesh } from 'three'
 import { sanitizeShelfDimensions } from './dimensions'
 import type { ShelfNode } from './schema'

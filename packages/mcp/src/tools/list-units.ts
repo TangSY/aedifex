@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { buildUnitReport } from '@pascal-app/core'
-import { UnitNode } from '@pascal-app/core/schema'
+import { buildUnitReport } from '@aedifex/core'
+import { UnitNode } from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { READ_ONLY_TOOL_ANNOTATIONS } from './annotations'
@@ -51,7 +51,7 @@ export function registerListUnits(server: McpServer, bridge: SceneOperations): v
       annotations: READ_ONLY_TOOL_ANNOTATIONS,
     },
     async ({ buildingId }) => {
-      if (buildingId !== undefined) validateUnitMembers(bridge, buildingId, [])
+      if (buildingId !== undefined) validateUnitMembers({ bridge, buildingId, memberZoneIds: [] })
       const nodes = bridge.getNodes()
       const units = Object.values(nodes)
         .filter((node) => node.type === 'unit')

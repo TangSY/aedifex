@@ -4,8 +4,8 @@ import {
   type HandleDescriptor,
   type ItemNode as ItemNodeType,
   type NodeDefinition,
-} from '@pascal-app/core'
-import type { FloorplanNodeExtension } from '@pascal-app/editor'
+} from '@aedifex/core'
+import type { FloorplanNodeExtension } from '@aedifex/editor'
 import { restingFloorplanAffectedIds } from '../shared/resting-surface-plan'
 import { buildItemContextualDimensions, buildItemFloorplan } from './floorplan'
 import { itemFloorplanMoveTarget } from './floorplan-move'
@@ -175,7 +175,7 @@ export const itemDefinition: NodeDefinition<typeof ItemNode> = {
   category: 'furnish',
   surfaceRole: 'furnishing',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       contextualDimensions: buildItemContextualDimensions,
     } satisfies FloorplanNodeExtension<ItemNodeType>,
   },

@@ -10,9 +10,9 @@ import {
   type RoofSegmentNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { triggerSFX } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { triggerSFX } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useState } from 'react'
 import { Vector3 } from 'three'
 import { computeEaveY } from '../gutter/eave-snap'

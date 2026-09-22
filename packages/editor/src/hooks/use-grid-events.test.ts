@@ -8,8 +8,8 @@ import {
   SlabNode,
   useRegistry,
   WallNode,
-} from '@pascal-app/core'
-import { hideFromScene, showInScene, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { hideFromScene, showInScene, useViewer } from '@aedifex/viewer'
 import { _roots, act, createRoot } from '@react-three/fiber'
 import { createElement } from 'react'
 import {
@@ -20,7 +20,7 @@ import {
   PlaneGeometry,
   type WebGLRenderer,
 } from 'three'
-import { DRAFTING_SURFACE_EXTENSION_KEY } from '../lib/interaction/registered-drafting'
+import { DRAFTING_EXTENSION_KEY, DRAFTING_SURFACE_EXTENSION_KEY } from '../lib/interaction/registered-drafting'
 import useInteractionScope from '../store/use-interaction-scope'
 import { useGridEvents } from './use-grid-events'
 
@@ -181,8 +181,8 @@ test.each([
       capabilities: {},
       schema: kind === 'ceiling' ? CeilingNode : SlabNode,
       defaults: () => ({}),
-      drafting: { surfaceQuery: true },
       extensions: {
+        [DRAFTING_EXTENSION_KEY]: { surfaceQuery: true },
         [DRAFTING_SURFACE_EXTENSION_KEY]: {
           kind,
           ...(kind === 'ceiling' ? { raycast: 'underside' } : {}),

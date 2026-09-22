@@ -6,8 +6,8 @@ import type {
   CabinetModuleNode as CabinetModuleNodeType,
   CabinetNode as CabinetNodeType,
   SceneApi,
-} from '@pascal-app/core'
-import { cascadeDirty, createSceneApi, resolveLevelId, useScene } from '@pascal-app/core'
+} from '@aedifex/core'
+import { cascadeDirty, createSceneApi, resolveLevelId, useScene } from '@aedifex/core'
 import {
   ActionButton,
   PanelSection,
@@ -15,8 +15,8 @@ import {
   SegmentedControl,
   SliderControl,
   ToggleControl,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Copy, Equal as EqualIcon, Plus, Trash } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'

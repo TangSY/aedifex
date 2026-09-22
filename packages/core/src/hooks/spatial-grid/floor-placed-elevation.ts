@@ -6,15 +6,13 @@ import type {
   FloorPlacedFootprintsResolver,
 } from '../../registry/types'
 import type { AnyNode, AnyNodeId } from '../../schema'
+import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import { getFloorPlacedFootprints } from './floor-placed-footprints'
 
 export { getFloorPlacedFootprints } from './floor-placed-footprints'
-
 import { spatialGridManager } from './spatial-grid-manager'
 
-export { GROUND_SUPPORT_ID } from './support-host-id'
-
-import { GROUND_SUPPORT_ID } from './support-host-id'
+export { GROUND_SUPPORT_ID } from '../../lib/support-host'
 
 /**
  * Sentinel `supportSlabId` meaning "hosted by the level base (ground)".

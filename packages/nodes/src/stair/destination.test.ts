@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { LevelNode, SlabNode, StairNode } from '@pascal-app/core'
+import { LevelNode, SlabNode, StairNode } from '@aedifex/core'
 import { getStairDestinationUpdates } from './destination'
 
 function makeStair(overrides: Record<string, unknown> = {}) {

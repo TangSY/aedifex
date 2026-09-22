@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { AnyNode } from '@pascal-app/core/schema'
+import { AnyNode } from '@aedifex/core/schema'
 import { TEMPLATES, type TemplateId } from './index'
 
 describe('scene templates', () => {

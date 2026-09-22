@@ -6,8 +6,8 @@ import {
   pauseSpaceDetection,
   resumeSpaceDetection,
   useScene,
-} from '@pascal-app/core'
-import { cancelPerfAction, markPerfAction, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { cancelPerfAction, markPerfAction, useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
 import { Vector3 } from 'three'
 import {

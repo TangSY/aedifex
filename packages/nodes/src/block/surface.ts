@@ -5,7 +5,7 @@ import {
   getBlockFaceFrame,
   type SurfaceProvider,
   surfaceRegionContainsPoint,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 const topSurfaces = new WeakMap<BlockTopology, DeclaredHostSurface[]>()
 

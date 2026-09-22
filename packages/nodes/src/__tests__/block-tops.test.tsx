@@ -22,9 +22,9 @@ import {
   useLiveTransforms,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
-import { ProceduralItemNode, type Recipe } from '@pascal-app/core/procedural-items'
-import { NodeRenderer, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { ProceduralItemNode, type Recipe } from '@aedifex/core/procedural-items'
+import { NodeRenderer, useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { events, type RootStore, useThree } from '@react-three/fiber'
 import { act, create } from '@react-three/test-renderer'
@@ -56,13 +56,13 @@ import ItemTool from '../item/tool'
 import { getDefaultPanelMaterial } from '../solar-panel/geometry'
 
 // Other node tests install process-global renderer mocks; this audit must observe production modules.
-if (process.env.PASCAL_BLOCK_TOPS_ISOLATED !== '1') {
+if (process.env.AEDIFEX_BLOCK_TOPS_ISOLATED !== '1') {
   test('block tops with production registrations', async () => {
     const child = Bun.spawn(
       [process.execPath, 'run', 'test', 'src/__tests__/block-tops.test.tsx'],
       {
         cwd: new URL('../..', import.meta.url).pathname,
-        env: { ...process.env, PASCAL_BLOCK_TOPS_ISOLATED: '1' },
+        env: { ...process.env, AEDIFEX_BLOCK_TOPS_ISOLATED: '1' },
         stdout: 'pipe',
         stderr: 'pipe',
       },

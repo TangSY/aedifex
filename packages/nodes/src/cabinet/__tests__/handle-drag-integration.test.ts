@@ -9,7 +9,7 @@ import {
   registerNode,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { createLinearResizeDragBinding } from '../../../../editor/src/components/editor/handles/linear-resize-drag'
 import { cabinetDefinition, cabinetModuleDefinition } from '../definition'
 import { CabinetModuleNode as CabinetModuleSchema, CabinetNode } from '../schema'

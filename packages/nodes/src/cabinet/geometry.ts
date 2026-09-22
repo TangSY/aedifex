@@ -1,5 +1,5 @@
-import type { CabinetModuleNode, CabinetNode, GeometryContext } from '@pascal-app/core'
-import type { ColorPreset, RenderShading } from '@pascal-app/viewer'
+import type { CabinetModuleNode, CabinetNode, GeometryContext } from '@aedifex/core'
+import type { ColorPreset, RenderShading } from '@aedifex/viewer'
 import { Group } from 'three'
 import { addCooktopCompartment } from './geometry/cooktop'
 import { addDishwasherCompartment } from './geometry/dishwasher'

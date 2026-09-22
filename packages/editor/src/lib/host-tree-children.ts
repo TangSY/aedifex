@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId } from '@aedifex/core'
 import type { ComponentType } from 'react'
 
 export type EditorHostTreeChildrenProps = {

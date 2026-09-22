@@ -1,3 +1,4 @@
+import { DRAFTING_EXTENSION_KEY } from './interaction/registered-drafting'
 import { describe, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -21,8 +22,8 @@ function runSourceHistoryTest(body: string) {
       const peerConsumers = [editorConsumer, coreConsumer, viewerConsumer, nodesConsumer]
       // Resolve only from declared consumers; isolated installs cannot see sibling dependencies.
       const sharedConsumers = [
-        ['@pascal-app/core', [editorConsumer, viewerConsumer, nodesConsumer]],
-        ['@pascal-app/viewer', [editorConsumer, nodesConsumer]],
+        ['@aedifex/core', [editorConsumer, viewerConsumer, nodesConsumer]],
+        ['@aedifex/viewer', [editorConsumer, nodesConsumer]],
         ['react', peerConsumers],
         ['three', peerConsumers],
         ['@react-three/fiber', peerConsumers],
@@ -47,8 +48,8 @@ function runSourceHistoryTest(body: string) {
       globalThis.requestAnimationFrame = callback => { callback(0); return 0 }
       globalThis.cancelAnimationFrame = () => {}
       const core = await import(${JSON.stringify(resolve(import.meta.dir, '../../..', 'core/src/index.ts'))})
-      mockShared('@pascal-app/core', () => core)
-      await importShared('@pascal-app/viewer')
+      mockShared('@aedifex/core', () => core)
+      await importShared('@aedifex/viewer')
       const { useScene: scene, clearSceneHistory, useLiveTransforms: transforms, useLiveNodeOverrides: overrides } = core
       const { runUndo, runRedo, installHistoryCommandDelegate, getHistoryCommandState, shouldCancelDraftOnHistoryJump, subscribeHistoryCommandState } = await import(${JSON.stringify(resolve(import.meta.dir, 'history.ts'))})
       const { default: useInteractionScope } = await import(${JSON.stringify(resolve(import.meta.dir, '../store/use-interaction-scope.ts'))})
@@ -120,7 +121,7 @@ describe('standalone history source invalidation', () => {
       const fiber = await importShared('@react-three/fiber')
       mockShared('@react-three/fiber', () => ({ ...fiber, useFrame: frame => frames.push(frame) }))
       const selector = store => Object.assign(fn => fn(store.getState()), store)
-      mockShared('@pascal-app/core', () => ({ ...core, useScene: selector(scene), useLiveNodeOverrides: selector(overrides) }))
+      mockShared('@aedifex/core', () => ({ ...core, useScene: selector(scene), useLiveNodeOverrides: selector(overrides) }))
       const { Mesh } = await importShared('three')
       const { WallSystem, getPendingWallRebuildCount } = await import(${JSON.stringify(resolve(import.meta.dir, '../../../viewer/src/systems/wall/wall-system.tsx'))})
       const neighbor = { ...remote, start: [8,0], end: [8,4] }
@@ -215,7 +216,7 @@ describe('standalone history source invalidation', () => {
   test('one-wall undo releases only its openings and neighbour openings from the real batch store', () => {
     runSourceHistoryTest(`
       const { Group, Mesh, MeshBasicMaterial, BoxGeometry } = await importShared('three')
-      const viewer = await importShared('@pascal-app/viewer')
+      const viewer = await importShared('@aedifex/viewer')
       const { captureChangedNodes, runBatchFrame, resetNodeBatchState } = await import(${JSON.stringify(resolve(import.meta.dir, '../../../nodes/src/shared/node-batch/system.tsx'))})
       const root = new Group()
       core.sceneRegistry.nodes.set(level.id, root)
@@ -258,7 +259,7 @@ describe('standalone history source invalidation', () => {
   test('endpoint undo/redo releases exactly both endpoint neighbours and their hosted children', () => {
     runSourceHistoryTest(`
       const { Group, Mesh, MeshBasicMaterial, BoxGeometry } = await importShared('three')
-      const viewer = await importShared('@pascal-app/viewer')
+      const viewer = await importShared('@aedifex/viewer')
       const { captureChangedNodes, runBatchFrame, resetNodeBatchState } = await import(${JSON.stringify(resolve(import.meta.dir, '../../../nodes/src/shared/node-batch/system.tsx'))})
       const root = new Group()
       core.sceneRegistry.nodes.set(level.id, root)
@@ -339,8 +340,8 @@ describe('standalone history source invalidation', () => {
       const fiber = await importShared('@react-three/fiber')
       mockShared('@react-three/fiber', () => ({ ...fiber, useFrame: frame => frames.push(frame) }))
       const selector = store => Object.assign(fn => fn(store.getState()), store)
-      mockShared('@pascal-app/core', () => ({ ...core, useScene: selector(scene), useLiveNodeOverrides: selector(overrides) }))
-      const viewer = await importShared('@pascal-app/viewer')
+      mockShared('@aedifex/core', () => ({ ...core, useScene: selector(scene), useLiveNodeOverrides: selector(overrides) }))
+      const viewer = await importShared('@aedifex/viewer')
       mock.module(${JSON.stringify(resolve(import.meta.dir, '../../../viewer/src/store/use-viewer.ts'))}, () => ({ default: selector(viewer.useViewer) }))
       const { Mesh } = await importShared('three')
       const { DoorSystem } = await import(${JSON.stringify(resolve(import.meta.dir, '../../../viewer/src/systems/door/door-system.tsx'))})
@@ -500,7 +501,7 @@ describe('editor history controller', () => {
       core.emitter.on('tool:cancel', () => cancelled++)
       useInteractionScope.getState().begin({ kind: 'drafting', tool: 'plain-draft' })
       assert.equal(shouldCancelDraftOnHistoryJump(), false)
-      core.nodeRegistry._register({ kind: 'registered-draft', schemaVersion: 1, drafting: { cancelOnHistoryJump: true } })
+      core.nodeRegistry._register({ kind: 'registered-draft', schemaVersion: 1, extensions: { [${JSON.stringify(DRAFTING_EXTENSION_KEY)}]: { cancelOnHistoryJump: true } } })
       useInteractionScope.getState().begin({ kind: 'drafting', tool: 'registered-draft' })
       assert.equal(shouldCancelDraftOnHistoryJump(), true)
       edit(level.id, { level: 1 }); runUndo()

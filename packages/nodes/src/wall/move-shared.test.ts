@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { type WallMoveBridgePlan, WallNode } from '@pascal-app/core'
+import { type WallMoveBridgePlan, WallNode } from '@aedifex/core'
 import { buildBridgeWallCreates, type LinkedWallSnapshot } from './move-shared'
 
 test('bridge duplicate detection ignores identical wall segments on other levels', () => {

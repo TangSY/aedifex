@@ -16,7 +16,7 @@ import {
   type WallEvent,
   type WindowEvent,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   calculateItemRotation,
   clearPlacementSurface,
@@ -34,7 +34,7 @@ import {
   useEditor,
   useFacingPose,
   useRegistryToolContext,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BoxGeometry, EdgesGeometry, type Group, Vector3 } from 'three'
 import { LineBasicNodeMaterial } from 'three/webgpu'
@@ -498,11 +498,12 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
         getSlabElevation(target.event),
       )
       const ghostYaw = target.itemRotation - wallAngle
+      const wallBaseWorldY = ghostWorldPos[1] - target.clampedY
       setGhostPose({
         position: ghostWorldPos,
         rotationY: ghostYaw,
         tint: placement.tint,
-        floorY: getLevelYOffset() + getSlabElevation(target.event),
+        floorY: wallBaseWorldY,
         side: target.side,
       })
       // Forward-facing triangle (editor-side overlay), in the same building-local
@@ -511,7 +512,7 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
       useFacingPose.getState().set({
         position: [
           ghostWorldPos[0],
-          getLevelYOffset() + getSlabElevation(target.event),
+          wallBaseWorldY,
           ghostWorldPos[2],
         ],
         rotationY: ghostYaw,
@@ -661,6 +662,7 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
       }
 
       markHostDirty(target.wallId)
+      useLiveNodeOverrides.getState().clear(movingWindowNode.id)
       useLiveTransforms.getState().clear(movingWindowNode.id)
 
       triggerSFX('sfx:structure-build')
@@ -733,9 +735,9 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
       const sillCenterY = getSillCenterY()
       // Keep the R-flip visible while free-following (back = rotated π).
       const yaw = sideOverride === 'back' ? Math.PI : 0
-      // Scene writes, not overrides: leaving the wall must actually remove the
-      // window from the wall's `children` or the CSG cut trails the ghost
-      // around the old wall (see the wall-branch note in `applyPreview`).
+      // Only a host change writes the scene: leaving the wall must remove the
+      // window from its `children` so the old CSG cut disappears. Subsequent
+      // floor moves stay in live overrides without replacing the nodes map.
       if (currentHostId !== levelId) {
         if (currentHostId && currentHostId !== levelId) markHostDirty(currentHostId)
         useScene.getState().updateNode(movingWindowNode.id, {
@@ -752,7 +754,7 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
         })
         currentHostId = levelId
       } else {
-        useScene.getState().updateNode(movingWindowNode.id, {
+        useLiveNodeOverrides.getState().set(movingWindowNode.id, {
           position: [localX, sillCenterY, localZ],
           rotation: [0, yaw, 0],
           side: sideOverride,
@@ -1122,6 +1124,7 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
       }
 
       markHostDirty(segmentId)
+      useLiveNodeOverrides.getState().clear(movingWindowNode.id)
       useLiveTransforms.getState().clear(movingWindowNode.id)
 
       triggerSFX('sfx:structure-build')

@@ -6,7 +6,7 @@ import {
   resolveRoomRoofFootprint,
   type WallEvent,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   isStandardRoofWallEligible,
   parseRoofFootprintSource,

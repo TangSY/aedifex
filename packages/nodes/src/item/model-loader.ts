@@ -1,7 +1,7 @@
 import { DefaultLoadingManager, Group, LoadingManager } from 'three'
 import { type GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
-const ITEM_ASSET_UNAVAILABLE_KEY = 'pascalItemAssetUnavailable'
+const ITEM_ASSET_UNAVAILABLE_KEY = 'aedifexItemAssetUnavailable'
 const DEFAULT_RETRY_DELAYS_MS = [1_000, 3_000] as const
 const itemLoadGenerations = new Map<string, number>()
 

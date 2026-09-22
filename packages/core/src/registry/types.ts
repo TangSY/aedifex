@@ -957,7 +957,7 @@ export type FloorplanMoveTarget<N> = (args: {
  * the project (same `installedPlugins` gate as panels and node kinds).
  */
 export type InspectorExtension = {
-  /** Globally unique id, e.g. `pascal:bones:wall-engineering`. */
+  /** Globally unique id, e.g. `aedifex:bones:wall-engineering`. */
   id: string
   /** The contributing plugin's id — used for the install gate. */
   pluginId: string
@@ -973,7 +973,7 @@ export type InspectorExtension = {
 
 export type Plugin = {
   id: string
-  apiVersion: 1
+  apiVersion: 2
   nodes?: AnyNodeDefinition[]
   /** Sections contributed to the floating node inspector card. */
   inspectorExtensions?: InspectorExtension[]
@@ -1049,13 +1049,6 @@ export type NodeDefinition<S extends ZodObject<any>> = {
    * Kinds outside any distribution system leave this unset.
    */
   distributionRole?: DistributionRole
-  /** Optional behavior while the kind's click-to-click construction tool is active. */
-  drafting?: {
-    /** Raycast architectural hosts and emit their semantic surface data with grid events. */
-    surfaceQuery?: boolean
-    /** Cancel the in-flight draft before applying an undo or redo history jump. */
-    cancelOnHistoryJump?: boolean
-  }
   /**
    * When `distributionRole` is `'fitting'`, controls whether this fitting
    * is dragged as a rigid follower when a connected run endpoint moves.
@@ -1642,7 +1635,7 @@ export type Capabilities = {
   surfaces?: SurfacesConfig
   faceHost?: FaceHostCapability<any>
   duplicable?: boolean | DuplicableConfig
-  deletable?: boolean
+  deletable: boolean
   groupable?: boolean
   selectable?: SelectableConfig
   /**

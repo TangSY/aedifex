@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNodeId, sceneRegistry, useScene } from '@pascal-app/core'
+import { type AnyNodeId, sceneRegistry, useScene } from '@aedifex/core'
 import {
   activateQuickMeasurementHudSource,
   clearQuickMeasurementHudSource,
@@ -10,8 +10,8 @@ import {
   publishQuickMeasurementHudSource,
   resolveQuickMeasurementReport,
   useInteractionScope,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useFrame, useThree } from '@react-three/fiber'
 import { memo, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {

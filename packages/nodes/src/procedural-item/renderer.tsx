@@ -6,8 +6,8 @@ import {
   useLiveTransforms,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
-import { type ProceduralItemNode, proceduralLocalPose } from '@pascal-app/core/procedural-items'
+} from '@aedifex/core'
+import { type ProceduralItemNode, proceduralLocalPose } from '@aedifex/core/procedural-items'
 import {
   createSurfaceRoleMaterial,
   NodeRenderer,
@@ -16,7 +16,7 @@ import {
   useLibraryMaterialsVersion,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { type Group, Mesh } from 'three'
 import { acquireProceduralGeometry, type BuiltItem, geometrySignature } from './geometry'
@@ -73,7 +73,7 @@ export default function ProceduralRenderer({ node }: { node: ProceduralItemNode 
   useLayoutEffect(
     () => () => {
       for (const material of materials.values())
-        if (!material.userData.__pascalCachedMaterial) material.dispose()
+        if (!material.userData.__aedifexCachedMaterial) material.dispose()
     },
     [materials],
   )

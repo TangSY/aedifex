@@ -1,7 +1,7 @@
 'use client'
 
 import { Icon } from '@iconify/react'
-import { type IconRef, useScene } from '@pascal-app/core'
+import { type IconRef, useScene } from '@aedifex/core'
 import { Plus } from 'lucide-react'
 import {
   type ComponentType,

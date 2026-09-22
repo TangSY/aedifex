@@ -9,8 +9,8 @@ import {
   resolveSurfacePlacement,
   type SceneApi,
   useScene,
-} from '@pascal-app/core'
-import { nodeLevelFrame } from '@pascal-app/core/procedural-items'
+} from '@aedifex/core'
+import { nodeLevelFrame } from '@aedifex/core/procedural-items'
 import { builtinPlugin } from '../index'
 import { buildItemFloorplan } from './floorplan'
 

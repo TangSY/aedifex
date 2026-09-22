@@ -1,4 +1,4 @@
-import type { QuickMeasurementReport, SlabNode } from '@pascal-app/core'
+import type { QuickMeasurementReport, SlabNode } from '@aedifex/core'
 import {
   polygonBoundaryLength,
   polygonReportAnchor,

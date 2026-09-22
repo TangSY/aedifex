@@ -1,4 +1,4 @@
-import type { CabinetModuleNode as CabinetModuleNodeType } from '@pascal-app/core'
+import type { CabinetModuleNode as CabinetModuleNodeType } from '@aedifex/core'
 import { MAX_CABINET_WIDTH } from './resize-limits'
 import { cabinetMetadataRecord } from './run-ops'
 

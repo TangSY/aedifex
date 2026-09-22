@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { emitter, type GridEvent, type NodeEvent, ShelfNode, sceneRegistry } from '@pascal-app/core'
+import { emitter, type GridEvent, type NodeEvent, ShelfNode, sceneRegistry } from '@aedifex/core'
 import { Object3D } from 'three'
 import {
   getLevelLocalSnappedPosition,

@@ -1,4 +1,4 @@
-import { DEFAULT_ANGLE_STEP } from '@pascal-app/core'
+import { DEFAULT_ANGLE_STEP } from '@aedifex/core'
 
 /**
  * Shared rotation delta for the 2D corner rotate-arrow affordances (column /
