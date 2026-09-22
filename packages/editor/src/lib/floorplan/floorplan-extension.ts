@@ -86,6 +86,8 @@ type FloorplanGeometryMetadata = {
 }
 
 type FloorplanContextExtension = {
+  focusedUnitId?: string
+  focusedUnitMemberIds?: readonly string[]
   automaticDimensions: boolean
   purpose: FloorplanRenderPurpose
   metricNotation: FloorplanMetricNotation
@@ -139,6 +141,8 @@ export function createFloorplanContextExtensions(
 ): Readonly<Record<string, unknown>> {
   return {
     [FLOORPLAN_CONTEXT_EXTENSION_KEY]: {
+      focusedUnitId: values.focusedUnitId,
+      focusedUnitMemberIds: values.focusedUnitMemberIds,
       automaticDimensions: values.automaticDimensions !== false,
       purpose: values.purpose === 'document' ? 'document' : 'edit',
       metricNotation: values.metricNotation === 'millimeters' ? 'millimeters' : 'meters',
@@ -154,6 +158,8 @@ export function readFloorplanContext(ctx: GeometryContext): FloorplanContextExte
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     const extension = value as Partial<FloorplanContextExtension>
     return {
+      focusedUnitId: extension.focusedUnitId,
+      focusedUnitMemberIds: extension.focusedUnitMemberIds,
       automaticDimensions: extension.automaticDimensions !== false,
       purpose: extension.purpose === 'document' ? 'document' : 'edit',
       metricNotation: extension.metricNotation === 'millimeters' ? 'millimeters' : 'meters',

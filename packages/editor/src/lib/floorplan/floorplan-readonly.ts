@@ -56,6 +56,8 @@ export function buildFloorplanContext(
     levelData,
     sceneNodes: nodes,
     extensions: createFloorplanContextExtensions({
+      focusedUnitId: viewState.focusedUnitId,
+      focusedUnitMemberIds: viewState.focusedUnitMemberIds,
       automaticDimensions: viewState.automaticDimensions,
       metricNotation: viewState.metricNotation ?? 'meters',
       purpose: viewState.purpose ?? 'edit',
@@ -68,8 +70,6 @@ export function buildFloorplanContext(
           highlighted: viewState.highlighted,
           hovered: viewState.hovered,
           moving: viewState.moving,
-          focusedUnitId: viewState.focusedUnitId,
-          focusedUnitMemberIds: viewState.focusedUnitMemberIds,
           palette: viewState.palette,
         }
       : undefined,
