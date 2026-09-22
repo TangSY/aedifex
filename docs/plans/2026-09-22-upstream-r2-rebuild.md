@@ -28,8 +28,8 @@ Preserve package identities, MIT attribution, persisted protocol identifiers, me
 - [x] Rebuild lock with `bun install`; run `bun run check-types`, `bun run test`, `bun run build`, `bun --filter @aedifex/mcp test`; fix actual regressions and rerun affected checks.
 - [x] Relink SaaS file packages using its existing workflow, run `pnpm install --force` and `pnpm --filter @aedifex-saas/web run build`; compare namespace warning baseline30.
 - [x] Review architecture, fork assets and public repository boundaries; commit reviewed integration.
-- [ ] Return to main and immediately pull; merge-tree then normal --no-ff merge, manually reconcile each landing conflict against all three trees and reviewed integration.
-- [ ] Validate final merged tree, commit required SaaS changes, push SaaS origin and Aedifex origin/github; independently verify remote SHAs. Never push upstream or deploy.
+- [x] Return to main and immediately pull; merge-tree then normal --no-ff merge, manually reconcile each landing conflict against all three trees and reviewed integration.
+- [x] Validate final merged tree, commit required SaaS changes, push SaaS origin and Aedifex origin/github; independently verify remote SHAs. Never push upstream or deploy.
 
 No automatic side selection, whole-tree replacement, merge-driver source overrides, local Docker build, production access, or weakening verification gates.
 
@@ -38,3 +38,9 @@ No automatic side selection, whole-tree replacement, merge-driver source overrid
 Review tree `fd1398c78`: types 11/11, full test tasks 13/13 (Nodes 3401 pass, 1 existing skip, 0 fail), portable build 8/8, MCP 393 pass/0 fail. Local staged CLI smoke passed: 49 MCP tools without a web runtime and a saved scene round-trip with the local editor. SaaS relink/install and web build EXIT0, 1010 pages, 30 namespace import warnings matching baseline; no SaaS tracked changes.
 
 Reviews retained all 182 fork-only paths, found no new private-domain/credential patterns and passed the OSS boundary gate. Corrected new metadata object-only assumptions, kept 2D unit focus in editor-owned extensions, and isolated browser-schema bundle tests in fresh Bun processes without weakening import/runtime assertions. Excluded upstream-only Next promotional media and marketplace publishing files. Existing persisted compatibility identifiers and MIT attribution remain intact.
+
+## Normal main landing
+
+Merge `f82206957d9c1065f8e66061d117d83688f82940` has original main `0c0906d74806c1035c459b498b33057ee9e6eb32` as its first parent and reviewed R2 `c337eddca2bcdb64cce9d597436be83b9f27d1cb` as its second parent. All 44 landing conflicts were read and reconciled individually. The resulting Git tree exactly matched R2 (`db032f28828771db1e9eac0e1a5cb68c0d5d91b5`), including the regenerated lockfile.
+
+Final merged-tree checks passed: types 11/11, portable build 8/8, MCP 393/0. The identical tree's full test run passed 13/13 tasks. Both Aedifex remotes accepted the merge; SaaS had no tracked changes and was not pushed. This completion note is the only subsequent change. No deployment.
