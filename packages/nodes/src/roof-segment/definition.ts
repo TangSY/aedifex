@@ -351,6 +351,7 @@ export const roofSegmentDefinition: NodeDefinition<typeof RoofSegmentNode> = {
   parametrics: roofSegmentParametrics,
   handles: resolveRoofSegmentHandles,
 
+  rendersChildren: false,
   renderer: {
     kind: 'parametric',
     module: () => import('./renderer'),

@@ -169,6 +169,23 @@ export function findMatedRunEndCapIds(
   return ids
 }
 
+export function findAutomaticRunEndCapIds(
+  runId: AnyNodeId,
+  nodes: Readonly<Record<string, AnyNode>>,
+  fittingKind: 'duct-fitting' | 'pipe-fitting',
+): AnyNodeId[] {
+  return Object.values(nodes).flatMap((node) => {
+    if (
+      !node ||
+      node.type !== fittingKind ||
+      node.fittingType !== 'end-cap' ||
+      metadataRecord(node.metadata)[END_CAP_OWNER_ID_KEY] !== runId
+    )
+      return []
+    return [node.id]
+  })
+}
+
 export function planRunEndCapFollowUpdates(
   originalRun: DuctSegmentNode | PipeSegmentNode,
   nextRun: DuctSegmentNode | PipeSegmentNode,

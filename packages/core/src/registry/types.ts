@@ -6,6 +6,7 @@ import type { AssetInput, ItemNode } from '../schema/nodes/item'
 import type { MeasurementFeatureReference, MeasurementPoint } from '../schema/nodes/measurement'
 import type { SceneMaterial, SceneMaterialId } from '../schema/scene-material'
 import type { AnyNode, AnyNodeId } from '../schema/types'
+import type { SurfaceProvider } from '../services/surface-hosting'
 import type { HandleList } from './handles'
 import type { CloneNodesIntoOptions, Subtree } from './subtree'
 
@@ -1113,6 +1114,8 @@ export type NodeDefinition<S extends ZodObject<any>> = {
    * already null-guard on `def.renderer` so omitting it is safe.
    */
   renderer?: RendererSource<z.infer<S>>
+  /** Custom renderers default to mounting arbitrary children; declare false when they do not. */
+  rendersChildren?: boolean
   /**
    * Collective renderer the baked `/viewer` uses to re-render this kind live when
    * `bake === 'replace'`. It receives every node of this kind under one baked
@@ -1161,6 +1164,8 @@ export type NodeDefinition<S extends ZodObject<any>> = {
    * inputs aren't captured by the node alone.
    */
   geometryKey?: (node: z.infer<S>) => string
+  /** Child kinds whose live overrides affect this node’s generated geometry. */
+  geometryChildTypes?: readonly string[]
   /**
    * Level-batch precompute hook. Called by `<GeometrySystem>` once per
    * level per frame, **before** the per-node `def.geometry` calls in
@@ -1209,8 +1214,13 @@ export type NodeDefinition<S extends ZodObject<any>> = {
    * the legacy `floorplan-panel.tsx` monolith.
    */
   floorplan?: (node: z.infer<S>, ctx: GeometryContext) => FloorplanGeometry | null
-  /** Extra node IDs whose committed changes invalidate this node's floor-plan cache. */
-  floorplanDependencies?: (node: z.infer<S>) => readonly AnyNodeId[]
+  /** Extra node IDs whose committed changes invalidate this node's floor-plan cache.
+   *  `nodes` is the committed scene, for dependencies the node doesn't name itself
+   *  (a zone's owning unit lists the zone, not the other way round). */
+  floorplanDependencies?: (
+    node: z.infer<S>,
+    nodes: Readonly<Record<AnyNodeId, AnyNode>>,
+  ) => readonly AnyNodeId[]
   /** Stable semantic geometry that associative measurement anchors may reference. */
   measurement?: MeasurementContribution<z.infer<S>>
   /**
@@ -1603,7 +1613,8 @@ export type DuplicateSubtreeCloneResult = {
 }
 
 export type DuplicableConfig = {
-  subtree?: boolean
+  /** 'with-children' preserves the root-only draft lifecycle for childless nodes. */
+  subtree?: boolean | 'with-children'
   prepareSubtreeClone?: (args: DuplicateSubtreeCloneArgs) => DuplicateSubtreeCloneResult
 }
 
@@ -1614,6 +1625,7 @@ export type Capabilities = {
   rotatable?: RotatableConfig
   scalable?: ScalableConfig
   hostable?: HostableConfig
+  surfacePlacement?: 'floor-only'
   cuttable?: CuttableConfig
   snappable?: SnappableConfig
   surfaces?: SurfacesConfig
@@ -2214,6 +2226,7 @@ export type SnappableConfig = {
 export type SnapPointKind = 'start' | 'end' | 'midpoint' | 'center' | 'corners'
 
 export type SurfacesConfig = {
+  hosting?: SurfaceProvider | false
   top?: {
     height: number | ((n: AnyNode, context: { nodes: Record<string, AnyNode> }) => number)
   }
@@ -2448,6 +2461,8 @@ export type ParamAction<N> = {
 export type ParamGroup<N> = {
   label: string
   fields: ParamField<N>[]
+  /** Whether this inspector group is open when it is first rendered. */
+  defaultExpanded?: boolean
 }
 
 export type ParamField<N> =

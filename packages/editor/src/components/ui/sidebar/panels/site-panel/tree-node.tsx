@@ -107,6 +107,7 @@ import { SlabTreeNode } from './slab-tree-node'
 import { SolarPanelTreeNode } from './solar-panel-tree-node'
 import { SpawnTreeNode } from './spawn-tree-node'
 import { StairTreeNode } from './stair-tree-node'
+import { UnitTreeNode } from './unit-tree-node'
 import { resolveRegisteredTreeNodeComponent } from './tree-node-resolution'
 import { WallTreeNode } from './wall-tree-node'
 import { WindowTreeNode } from './window-tree-node'
@@ -176,6 +177,7 @@ const treeNodeByType: Record<string, TreeNodeComponent> = {
   roof: RoofTreeNode,
   scan: RegistryTreeNode,
   stair: StairTreeNode,
+  unit: UnitTreeNode,
   door: DoorTreeNode,
   window: WindowTreeNode,
   zone: ZoneTreeNode as React.ComponentType<{
@@ -214,6 +216,8 @@ export const TreeNode = memo(function TreeNode({ nodeId, depth = 0, isLast }: Tr
 interface TreeNodeWrapperProps {
   nodeId?: string
   icon: React.ReactNode
+  /** Keep the icon's own color when unselected (color dots are the identity). */
+  keepIconColor?: boolean
   label: React.ReactNode
   depth: number
   hasChildren: boolean
@@ -239,6 +243,7 @@ export const TreeNodeWrapper = forwardRef<HTMLDivElement, TreeNodeWrapperProps>(
     {
       nodeId,
       icon,
+      keepIconColor,
       label,
       depth,
       hasChildren,
@@ -333,7 +338,7 @@ export const TreeNodeWrapper = forwardRef<HTMLDivElement, TreeNodeWrapperProps>(
             <span
               className={cn(
                 'flex h-5 w-5 shrink-0 items-center justify-center transition-all duration-200',
-                !isSelected && 'opacity-60 grayscale',
+                !isSelected && !keepIconColor && 'opacity-60 grayscale',
               )}
             >
               {icon}

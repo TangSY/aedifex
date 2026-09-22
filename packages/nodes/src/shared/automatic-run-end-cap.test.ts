@@ -4,6 +4,7 @@ import {
   DuctSegmentNode,
   loadPlugin,
   nodeRegistry,
+  PipeFittingNode,
   PipeSegmentNode,
 } from '@aedifex/core'
 import { getDuctFittingPorts } from '../duct-fitting/ports'
@@ -12,6 +13,7 @@ import { getPipeFittingPorts } from '../pipe-fitting/ports'
 import {
   createDuctRunEndCap,
   createPipeRunEndCap,
+  findAutomaticRunEndCapIds,
   findMatedRunEndCapIds,
   isRunEndCapPort,
   planRunEndCapFollowUpdates,
@@ -154,6 +156,27 @@ describe('automatic run end caps', () => {
     ).toEqual([firstCap.id])
   })
 
+  test('finds automatic caps by run owner without matching manual caps', () => {
+    const pipe = PipeSegmentNode.parse({
+      path: [
+        [0, 1, 0],
+        [3, 1, 0],
+      ],
+    })
+    const automatic = createPipeRunEndCap(pipe)!
+    const manual = PipeFittingNode.parse({
+      fittingType: 'end-cap',
+      metadata: {},
+    })
+    const nodes = {
+      [pipe.id]: pipe,
+      [automatic.id]: automatic,
+      [manual.id]: manual,
+    } as Record<string, AnyNode>
+
+    expect(findAutomaticRunEndCapIds(pipe.id, nodes, 'pipe-fitting')).toEqual([automatic.id])
+  })
+
   test.each([
     [
       'duct',
@@ -218,6 +241,7 @@ test('legacy cap metadata is ignored while an explicitly selected cap still matc
     expect(findMatedRunEndCapIds({ ...inlet, nodeId: cap.id }, nodes, 'pipe-fitting')).toEqual([
       cap.id,
     ])
+    expect(findAutomaticRunEndCapIds(pipe.id, nodes, 'pipe-fitting')).toEqual([])
     expect(legacyCap.metadata).toEqual(metadata)
   }
 })

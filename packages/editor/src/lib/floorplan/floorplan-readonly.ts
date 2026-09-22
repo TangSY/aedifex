@@ -14,6 +14,8 @@ export type FloorplanViewState = {
   highlighted: boolean
   hovered: boolean
   moving: boolean
+  focusedUnitId?: string
+  focusedUnitMemberIds?: readonly string[]
   palette: FloorplanPalette | undefined
 }
 
@@ -54,6 +56,8 @@ export function buildFloorplanContext(
     levelData,
     sceneNodes: nodes,
     extensions: createFloorplanContextExtensions({
+      focusedUnitId: viewState.focusedUnitId,
+      focusedUnitMemberIds: viewState.focusedUnitMemberIds,
       automaticDimensions: viewState.automaticDimensions,
       metricNotation: viewState.metricNotation ?? 'meters',
       purpose: viewState.purpose ?? 'edit',

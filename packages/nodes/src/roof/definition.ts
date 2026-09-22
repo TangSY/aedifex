@@ -248,6 +248,7 @@ export const roofDefinition: NodeDefinition<typeof RoofNode> = {
   handles: resolveRoofHandles,
   floorplan: buildRoofFloorplan,
 
+  rendersChildren: false,
   renderer: {
     kind: 'parametric',
     module: () => import('./renderer'),

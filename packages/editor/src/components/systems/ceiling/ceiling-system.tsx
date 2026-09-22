@@ -1,4 +1,5 @@
 import { type AnyNodeId, sceneRegistry, useScene } from '@aedifex/core'
+import { isProceduralItem } from '@aedifex/core/procedural-items'
 import { useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
 import { Color, type Material, type Mesh } from 'three'
@@ -98,7 +99,8 @@ export const CeilingSystem = () => {
     const isCeilingToolActive =
       tool === 'ceiling' ||
       selectedItem?.attachTo === 'ceiling' ||
-      (movingNode?.type === 'item' && movingNode?.asset?.attachTo === 'ceiling')
+      (movingNode?.type === 'item' && movingNode?.asset?.attachTo === 'ceiling') ||
+      (isProceduralItem(movingNode) && movingNode.recipe.mounting?.attachTo === 'ceiling')
 
     if (isCeilingToolActive && activeLevelId) {
       levelsToShowCeilings.add(activeLevelId)

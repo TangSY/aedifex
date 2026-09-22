@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { LevelNode, WallNode } from '@aedifex/core/schema'
+import { readFloorplanContext } from './floorplan-extension'
 import { buildFloorplanContext } from './floorplan-readonly'
 
 const viewState = {
@@ -44,4 +45,19 @@ describe('read-only floorplan context', () => {
 
     expect(buildFloorplanContext(first, nodes, viewState).siblings).toEqual([second])
   })
+})
+
+test('carries unit focus through opaque extensions even without an interactive palette', () => {
+  const level = LevelNode.parse({})
+  const members = ['zone_member']
+  const ctx = buildFloorplanContext(level, { [level.id]: level }, {
+    ...viewState,
+    focusedUnitId: 'unit_focused',
+    focusedUnitMemberIds: members,
+  })
+  expect(ctx.viewState).toBeUndefined()
+  expect(readFloorplanContext(ctx).focusedUnitId).toBe('unit_focused')
+  expect(readFloorplanContext(ctx).focusedUnitMemberIds).toBe(members)
+  const unfocused = buildFloorplanContext(level, { [level.id]: level }, viewState)
+  expect(readFloorplanContext(unfocused).focusedUnitId).toBeUndefined()
 })

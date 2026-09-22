@@ -1,13 +1,15 @@
 import { levelBaseElevationAt } from '../../lib/terrain-support'
 import { nodeRegistry } from '../../registry'
 import type {
-  FloorPlacedConfig,
   FloorPlacedFootprint,
   FloorPlacedFootprintContext,
   FloorPlacedFootprintsResolver,
 } from '../../registry/types'
 import type { AnyNode, AnyNodeId } from '../../schema'
 import { GROUND_SUPPORT_ID } from '../../lib/support-host'
+import { getFloorPlacedFootprints } from './floor-placed-footprints'
+
+export { getFloorPlacedFootprints } from './floor-placed-footprints'
 import { spatialGridManager } from './spatial-grid-manager'
 
 export { GROUND_SUPPORT_ID } from '../../lib/support-host'
@@ -49,18 +51,6 @@ function withPositionAndRotation({
     position,
     ...(rotation !== undefined ? { rotation } : {}),
   } as AnyNode
-}
-
-export function getFloorPlacedFootprints(
-  floorPlaced: FloorPlacedConfig,
-  node: AnyNode,
-  ctx?: FloorPlacedFootprintContext,
-): FloorPlacedFootprint[] {
-  const rawFootprints = floorPlaced.footprints?.(node, ctx)
-  if (rawFootprints) return [...rawFootprints]
-
-  const footprint = floorPlaced.footprint?.(node, ctx)
-  return footprint ? [footprint] : []
 }
 
 export function getFloorPlacedElevation({
