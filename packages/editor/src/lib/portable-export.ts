@@ -155,7 +155,8 @@ export function expandInstancedMeshes(root: THREE.Object3D): void {
     ) as InstancedGeometryAttribute[]
 
     for (let index = 0; index < source.count; index++) {
-      const color = source.instanceColor ? source.getColorAt(index, tint).clone() : null
+      if (source.instanceColor) source.getColorAt(index, tint)
+      const color = source.instanceColor ? tint : null
       const geometry = geometryForInstance(source.geometry, instancedAttributes, index)
       const mesh = new THREE.Mesh(geometry, tintMaterials(source.material, color))
       mesh.name = source.name ? `${source.name}_${index + 1}` : `instance_${index + 1}`
