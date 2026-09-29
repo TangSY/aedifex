@@ -98,23 +98,17 @@ and accepts their arguments as a JSON array. It drives the emulated controller
 or hand through the XR input pipeline. `listSpatialTargets`, `listHandles`,
 and `readNode` help inspect targets and verify committed changes.
 
-See [browser QA results](docs/webxr-browser-qa.md) for the tested host setup,
-fixes, coverage, and remaining hardware checks.
+Run checks from the Aedifex repository root:
 
 ```bash
-cd ../editor
 bun install
-cd ../webxr-pascal-plugin
-bun run check-types
-bun test
+bun --filter @aedifex/plugin-webxr check-types
+bun --filter @aedifex/plugin-webxr test
 ```
 
-The sibling `../editor` checkout is used for local Aedifex package development.
-The editor workspace includes `../webxr-pascal-plugin` and the app depends on
-`@webxr/plugin` through `workspace:*`. Run `bun install` in `../editor` after
-cloning both sibling repositories.
-Its Turbopack aliases resolve both projects to the host's React, Three, Fiber,
-XR, and Aedifex packages so the scene and controller stores stay shared.
+The plugin lives in `packages/plugin-webxr`. Both the standalone editor and
+SaaS host share React, Three, Fiber and XR instances with this package.
+Native headset interaction still requires hardware validation.
 
 The host calls `useAedifexWebXR(webXRWandBindings)`, passes `feature.immersive`
 to `<Editor immersive={...}>`, and mounts `<AedifexWebXRButton feature={feature} />`
@@ -124,17 +118,8 @@ view, camera, wall and level modes. Build/Paint changes remain in the live scene
 
 The root package exposes its manifest, toolbar button, session wrappers, runtime
 hooks, viewer configuration, player modes, and generic wand API. Aedifex editor
-integration is exposed separately from `@webxr/plugin/aedifex-editor` so generic
+integration is exposed separately from `@aedifex/plugin-webxr/aedifex-editor` so generic
 consumers do not eagerly load editor-only modules.
-
-## pmndrs documentation
-
-The project configures the pmndrs documentation MCP server in
-`.codex/config.toml`. Codex can use it to read the current React Three Fiber,
-Drei, Zustand, and React XR documentation while working in this repository.
-
-Restart the Codex client after cloning the repository so it loads the
-project-scoped MCP configuration.
 
 ## License
 
