@@ -38,6 +38,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BoxGeometry, EdgesGeometry, type Group, Vector3 } from 'three'
 import { LineBasicNodeMaterial } from 'three/webgpu'
+import { commitOpeningMove } from '../shared/commit-opening-move'
 import {
   type DormerWindowTarget,
   dormerEventFromHostedWindow,
@@ -643,14 +644,13 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
         })
 
         history.commitStep(() => {
-          useScene.getState().updateNode(movingWindowNode.id, {
+          commitOpeningMove(movingWindowNode.id, {
             position: [target.clampedX, target.clampedY, 0],
             rotation: [0, target.itemRotation, 0],
             side: target.side,
             parentId: target.wallId,
             wallId: target.wallId,
             roofSegmentId: undefined,
-            metadata: {},
             visible: true,
           })
         })
@@ -894,7 +894,7 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
           visible: original.visible,
         })
         history.commitStep(() => {
-          useScene.getState().updateNode(movingWindowNode.id, {
+          commitOpeningMove(movingWindowNode.id, {
             position: target.position,
             rotation,
             side,
@@ -904,7 +904,6 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
             wallId: undefined,
             roofSegmentId: undefined,
             roofFace: undefined,
-            metadata: {},
             visible: true,
           })
         })
@@ -1104,7 +1103,7 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
         })
 
         history.commitStep(() => {
-          useScene.getState().updateNode(movingWindowNode.id, {
+          commitOpeningMove(movingWindowNode.id, {
             position: target.position,
             rotation: [0, 0, 0],
             side: 'front',
@@ -1112,7 +1111,6 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
             wallId: undefined,
             roofSegmentId: segmentId,
             roofFace: target.face.id,
-            metadata: {},
             visible: true,
           })
         })

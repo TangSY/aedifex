@@ -1,4 +1,9 @@
-import type { WallNode } from '@aedifex/core'
+import {
+  getCurtainWallConfig,
+  getWallCurveFrameAt,
+  getWallCurveLength,
+  type WallNode,
+} from '@aedifex/core'
 
 /**
  * Keep the door handle at the same relative height when the door is resized:
@@ -28,11 +33,10 @@ export function clampToWall(
   width: number,
   height: number,
 ): { clampedX: number; clampedY: number } {
-  const dx = wallNode.end[0] - wallNode.start[0]
-  const dz = wallNode.end[1] - wallNode.start[1]
-  const wallLength = Math.sqrt(dx * dx + dz * dz)
+  const wallLength = getWallCurveLength(wallNode)
+  const margin = wallNode.wallType === 'curtain' ? getCurtainWallConfig(wallNode).perimeterWidth : 0
 
-  const clampedX = Math.max(width / 2, Math.min(wallLength - width / 2, localX))
+  const clampedX = Math.max(margin + width / 2, Math.min(wallLength - margin - width / 2, localX))
   const clampedY = height / 2 // Doors always sit at floor level
   return { clampedX, clampedY }
 }

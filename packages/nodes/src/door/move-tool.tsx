@@ -33,6 +33,7 @@ import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BoxGeometry, EdgesGeometry, type Group, Vector3 } from 'three'
 import { LineBasicNodeMaterial } from 'three/webgpu'
+import { commitOpeningMove } from '../shared/commit-opening-move'
 import {
   clearOpeningGuides3D,
   publishOpeningGuidesForWallEvent,
@@ -574,14 +575,13 @@ const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNode }) =>
         })
 
         history.commitStep(() => {
-          useScene.getState().updateNode(movingDoorNode.id, {
+          commitOpeningMove(movingDoorNode.id, {
             position: [target.clampedX, target.clampedY, 0],
             rotation: [0, target.itemRotation, 0],
             side: target.side,
             parentId: target.wallId,
             wallId: target.wallId,
             roofSegmentId: undefined,
-            metadata: {},
             visible: true,
           })
         })
@@ -836,7 +836,7 @@ const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNode }) =>
         })
 
         history.commitStep(() => {
-          useScene.getState().updateNode(movingDoorNode.id, {
+          commitOpeningMove(movingDoorNode.id, {
             position: target.position,
             rotation: [0, 0, 0],
             side: 'front',
@@ -844,7 +844,6 @@ const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNode }) =>
             wallId: undefined,
             roofSegmentId: segmentId,
             roofFace: target.face.id,
-            metadata: {},
             visible: true,
           })
         })

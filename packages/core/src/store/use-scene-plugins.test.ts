@@ -3,7 +3,8 @@ import { z } from 'zod'
 import { loadPlugin, nodeRegistry } from '../registry'
 import type { AnyNodeDefinition } from '../registry/types'
 import type { AnyNode, AnyNodeId } from '../schema'
-import useScene from './use-scene'
+import { type SceneCommit, subscribeSceneCommits } from './history-control'
+import useScene, { applySceneOperationPatch, applySceneSnapshot } from './use-scene'
 
 const PLUGIN_ID = 'test:plugin'
 const originalRequestAnimationFrame = globalThis.requestAnimationFrame
@@ -97,6 +98,80 @@ describe('scene plugin installation state', () => {
     expect(useScene.getState().dirtyNodes.has(nodeId)).toBe(true)
   })
 
+  test('a host patch installs and uninstalls plugins as explicit shared state', async () => {
+    const kind = 'test:shared-plugin-node'
+    const definition = {
+      kind,
+      schemaVersion: 1,
+      schema: z.object({ id: z.string(), type: z.literal(kind) }),
+      category: 'utility',
+      defaults: () => ({}),
+      capabilities: { deletable: false },
+    } as unknown as AnyNodeDefinition
+    await loadPlugin({ id: 'test:shared', apiVersion: 2, nodes: [definition] })
+    const nodeId = 'shared_plugin_node' as AnyNodeId
+    useScene
+      .getState()
+      .setScene({ [nodeId]: { id: nodeId, type: kind } as unknown as AnyNode }, [nodeId], {
+        installedPlugins: ['aedifex:trees'],
+      })
+    expect(useScene.getState().dirtyNodes.has(nodeId)).toBe(false)
+    useScene.temporal.getState().clear()
+    const commits: SceneCommit[] = []
+    const unsubscribe = subscribeSceneCommits((commit) => commits.push(commit))
+    const patch = { materialChanges: [], nodeUpdates: [], nodeCreates: [], nodeDeletes: [] }
+
+    try {
+      expect(
+        applySceneOperationPatch({
+          ...patch,
+          pluginChanges: [{ id: 'test:shared', installed: true }],
+        }),
+      ).toBe(true)
+      expect(useScene.getState().installedPlugins).toEqual(['aedifex:trees', 'test:shared'])
+      expect(useScene.getState().hasExplicitPluginInstallState).toBe(true)
+      expect(useScene.getState().dirtyNodes.has(nodeId)).toBe(true)
+      expect(useScene.temporal.getState().pastStates).toHaveLength(0)
+
+      expect(
+        applySceneOperationPatch({
+          ...patch,
+          pluginChanges: [{ id: 'test:shared', installed: false }],
+        }),
+      ).toBe(true)
+      expect(useScene.getState().installedPlugins).toEqual(['aedifex:trees'])
+      expect(useScene.getState().dirtyNodes.has(nodeId)).toBe(false)
+      expect(commits.map((commit) => commit.origin)).toEqual(['host', 'host'])
+
+      expect(
+        applySceneOperationPatch({
+          ...patch,
+          pluginChanges: [
+            { id: 'test:shared', installed: true },
+            { id: 'test:shared', installed: false },
+          ],
+        }),
+      ).toBe(false)
+      expect(useScene.getState().installedPlugins).toEqual(['aedifex:trees'])
+    } finally {
+      unsubscribe()
+    }
+  })
+
+  test('a snapshot can carry an explicit plugin install state', () => {
+    const snapshot = {
+      nodes: {},
+      rootNodeIds: [],
+      collections: {},
+      materials: {},
+      installedPlugins: ['aedifex:trees'],
+    }
+    applySceneSnapshot(snapshot, { origin: 'host', explicitPluginInstallState: true })
+    expect(useScene.getState().hasExplicitPluginInstallState).toBe(true)
+
+    applySceneSnapshot({ ...snapshot, installedPlugins: [] }, { origin: 'host' })
+    expect(useScene.getState().hasExplicitPluginInstallState).toBe(false)
+  })
   test.each([true, false])(
     'dirty tracking follows plugin history with initially installed=%p',
     async (initiallyInstalled) => {

@@ -33,6 +33,7 @@ const nextConfig: NextConfig = {
     '@aedifex/editor',
     '@aedifex/mcp',
     '@aedifex/plugin-trees',
+    '@aedifex/plugin-webxr',
     '@dgreenheck/ez-tree',
   ],
   turbopack: {

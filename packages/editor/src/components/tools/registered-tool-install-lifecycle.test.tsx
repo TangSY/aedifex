@@ -107,7 +107,7 @@ function definition(kind: string, lifecycle: Lifecycle): AnyNodeDefinition {
       .passthrough(),
     category: 'utility',
     defaults: () => ({}),
-    capabilities: {},
+    capabilities: { deletable: true },
     tool: load3D,
     extensions: {
       [FLOORPLAN_NODE_EXTENSION_KEY]: { tool: load2D },

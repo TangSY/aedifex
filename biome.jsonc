@@ -108,10 +108,13 @@
       "apps/**/*.jsx",
       "!**/node_modules",
       "!**/.next",
+      "!**/.next-*",
       "!**/dist",
       "!**/build",
       "!**/public",
       "!**/components/ui",
+      // Recorded API responses; kept byte-exact.
+      "!**/__fixtures__",
       "!**/next-env.d.ts"
     ]
   },

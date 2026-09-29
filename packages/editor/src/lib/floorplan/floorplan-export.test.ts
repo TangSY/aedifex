@@ -37,7 +37,7 @@ import {
   rotateFloorplanExportBounds,
 } from './floorplan-export'
 import { floorplanGeometryMetadata } from './floorplan-extension'
-import { FloorplanPdfDocument } from './floorplan-pdfkit-document'
+import { FloorplanPdfDocument, loadFloorplanPdfFonts } from './floorplan-pdfkit-document'
 import { renderFloorplanGeometryToPdfKit } from './floorplan-pdfkit-renderer'
 
 type GroupGeometry = Extract<FloorplanGeometry, { kind: 'group' }>
@@ -306,6 +306,8 @@ describe('floor plan export policy', () => {
       openingMarks: true,
       structuralGrids: false,
       roomLabels: false,
+      roomDetails: true,
+      roofPlan: true,
       stairAnnotations: true,
     }
 
@@ -328,6 +330,8 @@ describe('floor plan export policy', () => {
       openingMarks: false,
       structuralGrids: false,
       roomLabels: true,
+      roomDetails: false,
+      roofPlan: false,
       stairAnnotations: false,
     })
   })
@@ -529,7 +533,7 @@ describe('collectFloorplanGeometry', () => {
         schema: z.object({ type: z.literal(kind) }) as never,
         category: 'utility',
         defaults: () => ({}) as never,
-        capabilities: {},
+        capabilities: { deletable: true },
         floorplanScope: 'site',
         floorplan,
       }) as AnyNodeDefinition
@@ -730,7 +734,7 @@ describe('collectFloorplanGeometry', () => {
       rawPdf.on('data', (chunk: Buffer) => chunks.push(chunk))
       const completedPdf = Promise.withResolvers<string>()
       rawPdf.on('end', () => completedPdf.resolve(Buffer.concat(chunks).toString('latin1')))
-      const pdf = new FloorplanPdfDocument(rawPdf, [200, 200])
+      const pdf = new FloorplanPdfDocument(rawPdf, [200, 200], await loadFloorplanPdfFonts())
       pdf.addPage()
       for (const { model } of full) {
         if (!model) continue
@@ -774,7 +778,9 @@ describe('collectFloorplanGeometry', () => {
         'finished-faces',
         [enabledPluginId],
       )
-      expect(hiddenSite.map(({ id }) => id)).toEqual(['level_architecture'])
+      // A hidden Site hides only its own ground and boundary; the site-scoped
+      // nodes on it keep their own flag (see `hidesDescendants`).
+      expect(hiddenSite.map(({ id }) => id)).toEqual(['site_overlay', 'level_architecture'])
 
       const structure = collectFloorplanGeometry(
         nodes,

@@ -301,10 +301,10 @@ describe('SceneBridge', () => {
 
       expect(() =>
         bridge.applyPatch([{ op: 'update', id: wall.id, data: { type: 'door' } as never }]),
-      ).toThrow(/cannot change node type/)
+      ).toThrow(/identity_change:.*cannot change "type"/)
       expect(() =>
         bridge.applyPatch([{ op: 'update', id: wall.id, data: { id: 'wall_replaced' } as never }]),
-      ).toThrow(/cannot change node id/)
+      ).toThrow(/identity_change:.*cannot change "id"/)
       expect(bridge.getNode(wall.id)?.type).toBe('wall')
     })
 
@@ -315,7 +315,7 @@ describe('SceneBridge', () => {
 
       expect(() =>
         bridge.applyPatch([{ op: 'update', id: wall.id, data: { start: [0] } as never }]),
-      ).toThrow(/schema-invalid/)
+      ).toThrow(/invalid_update:/)
       expect((bridge.getNode(wall.id) as typeof wall).start).toEqual([0, 0])
     })
 
@@ -328,7 +328,7 @@ describe('SceneBridge', () => {
           { op: 'create', node: wall, parentId: level.id },
           { op: 'update', id: wall.id, data: { end: ['invalid', 0] } as never },
         ]),
-      ).toThrow(/schema-invalid/)
+      ).toThrow(/invalid_update:/)
       expect(bridge.getNode(wall.id)).toBeNull()
     })
 

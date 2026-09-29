@@ -5,6 +5,7 @@
     "build": "turbo run build",
     "dev": "dotenv -e ./.env -e ./.env.defaults -- turbo run dev --env-mode=loose",
     "lint": "biome lint",
+    "lints": "bun run lint",
     "lint:fix": "biome lint --write",
     "format": "biome format --write",
     "format:check": "biome format",
@@ -54,5 +55,9 @@
     "apps/*",
     "packages/*",
     "tooling/*"
-  ]
+  ],
+  "patchedDependencies": {
+    "iwer@2.3.0": "patches/iwer@2.3.0.patch",
+    "three@0.186.0": "patches/three@0.186.0.patch"
+  }
 }

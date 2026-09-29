@@ -13,6 +13,7 @@ import {
 import { useViewer } from '@aedifex/viewer'
 import { type ComponentType, lazy, Suspense, useMemo } from 'react'
 import { useRegisteredToolEnabled } from '../../hooks/use-registered-tool-enabled'
+import type { ReshapeKind } from '../../lib/interaction/scope'
 import { siteBoundaryHandlesEnabled } from '../../lib/site-boundary'
 import useEditor, { type Phase, type Tool } from '../../store/use-editor'
 import useInteractionScope, {
@@ -33,7 +34,10 @@ import { WallSnapBeaconLayer } from '../editor/wall-snap-beacon-layer'
 import { ElevatorTool } from './elevator/elevator-tool'
 import { MoveTool } from './item/move-tool'
 import { RegistryToolProvider } from './registry-tool-context'
-import { getRegistryAffordanceTool } from './shared/affordance-dispatch'
+import {
+  getRegistryAffordanceTool,
+  preloadRegistryAffordanceTools,
+} from './shared/affordance-dispatch'
 import { FacingPoseIndicator } from './shared/facing-pose-indicator'
 import { SiteBoundaryEditor } from './site/site-boundary-editor'
 import { TerrainSculptTool } from './site/terrain-sculpt-tool'
@@ -44,6 +48,15 @@ import { ZoneTool } from './zone/zone-tool'
 // Cache lazy tool components keyed by their loader so React.lazy isn't
 // re-invoked across renders.
 const lazyToolCache = new WeakMap<() => Promise<unknown>, ComponentType>()
+// Reshapes with their own arm below; anything else resolves by name.
+const DEDICATED_RESHAPES = new Set<ReshapeKind>([
+  'curve',
+  'hole',
+  'endpoint',
+  'boundary',
+  'control-point',
+  'tangent',
+])
 const registryToolPreloadCache = new WeakMap<AnyNodeDefinition, Promise<void>>()
 
 export function preloadRegistryToolModules(tool: string | null): Promise<void> {
@@ -60,8 +73,7 @@ export function preloadRegistryToolModules(tool: string | null): Promise<void> {
   if (def.system) loaders.push(def.system.module)
   if (def.parametrics?.customPanel) loaders.push(def.parametrics.customPanel)
   if (def.parametrics?.trailingSection) loaders.push(def.parametrics.trailingSection)
-  const moveTool = def.affordanceTools?.move
-  if (moveTool) loaders.push(moveTool)
+  loaders.push(() => preloadRegistryAffordanceTools(tool))
 
   const preload = Promise.allSettled(loaders.map((loader) => loader())).then(() => undefined)
   registryToolPreloadCache.set(def, preload)
@@ -114,6 +126,11 @@ export const ToolManager: React.FC = () => {
   const tangentReshape = useTangentReshape()
   const isCurveReshape = useIsCurveReshape()
   const isToolDrivenReshape = useIsToolDrivenReshape()
+  const registryReshape = useInteractionScope((state) =>
+    state.scope.kind === 'reshaping' && !DEDICATED_RESHAPES.has(state.scope.reshape)
+      ? state.scope.reshape
+      : null,
+  )
   const isFloorplanDrivenReshape = useIsFloorplanDrivenReshape()
   const reshapingNode = useReshapingNode()
   // The endpoint affordance tool's `target` is kind-specific
@@ -381,6 +398,22 @@ export const ToolManager: React.FC = () => {
             return RegistryAffordance ? (
               <Suspense fallback={null}>
                 <RegistryAffordance target={tangentTarget} />
+              </Suspense>
+            ) : null
+          })()}
+        {/* Reshape kinds without an arm above mount the kind's own affordance tool
+            under the reshape's name (`def.affordanceTools[reshape]`, e.g. wall 'split'). */}
+        {isToolDrivenReshape &&
+          reshapingNode &&
+          registryReshape &&
+          (() => {
+            const RegistryAffordance = getRegistryAffordanceTool(
+              reshapingNode.type,
+              registryReshape,
+            )
+            return RegistryAffordance ? (
+              <Suspense fallback={null}>
+                <RegistryAffordance node={reshapingNode} />
               </Suspense>
             ) : null
           })()}

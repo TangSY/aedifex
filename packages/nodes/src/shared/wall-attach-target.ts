@@ -12,6 +12,7 @@ import {
   WALL_SNAP_DISTANCE_M,
   type WallNode,
 } from '@aedifex/core'
+import { metadataRecord } from './node-metadata'
 
 /**
  * Shared helpers for the kinds whose 2D move snaps onto a wall in plan
@@ -213,6 +214,13 @@ export function resolveWallAttachmentAtPlanPoint(
   }
 }
 
+export function projectPlanPointToWallLocalX(
+  wall: WallNode,
+  planPoint: readonly [number, number],
+): number {
+  return resolveWallAttachmentAtPlanPoint(wall, planPoint, Number.POSITIVE_INFINITY)?.localX ?? 0
+}
+
 /**
  * Return the closest wall attachment target in plan space, including curved
  * walls. This is deliberately separate from `findClosestWallInPlan`: doors,
@@ -353,7 +361,7 @@ export function hasWallChildOverlap(
   for (const childId of Array.isArray(wallNode.children) ? wallNode.children : []) {
     if (childId === ignoreId) continue
     const child = nodes[childId as AnyNodeId]
-    if (!child) continue
+    if (!child || metadataRecord(child.metadata).isTransient) continue
 
     let childLeft: number
     let childRight: number

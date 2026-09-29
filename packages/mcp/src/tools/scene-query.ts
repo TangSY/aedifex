@@ -1,5 +1,7 @@
 import {
+  checkOpeningWithinWall,
   DEFAULT_LEVEL_HEIGHT,
+  formatOpeningBoundsIssue,
   getStoredLevelHeight,
   getWallPlaneTop,
   levelBaseElevationAt,
@@ -18,9 +20,9 @@ import {
   polygonArea,
   polygonContainsPolygon,
   type Vec2,
-  wallLength,
 } from './geometry'
 import { layoutIssuesFromScene } from './layout-clearance'
+import { metadataRecord } from './metadata-record'
 import { NodeIdSchema } from './schemas'
 
 export const levelScopedInput = {
@@ -146,14 +148,8 @@ export function resolveReportedWallHeight(
   return resolveWallEffectiveHeight(wall, planeTop, wallBase)
 }
 
-function metadataRecord(node: AnyNode): Record<string, unknown> | null {
-  return typeof node.metadata === 'object' && node.metadata !== null
-    ? (node.metadata as Record<string, unknown>)
-    : null
-}
-
 function metadataString(node: AnyNode, key: string): string | undefined {
-  const value = metadataRecord(node)?.[key]
+  const value = metadataRecord(node.metadata)?.[key]
   return typeof value === 'string' ? value : undefined
 }
 
@@ -272,7 +268,7 @@ function toWorldPlanPoint(
   return [stair.position[0] + worldX, stair.position[2] + worldZ]
 }
 
-function computeSegmentTransforms(segments: StairSegmentLike[]): SegmentTransform[] {
+export function computeSegmentTransforms(segments: StairSegmentLike[]): SegmentTransform[] {
   const transforms: SegmentTransform[] = []
   let currentX = 0
   let currentY = 0
@@ -729,20 +725,9 @@ export function registerVerifyScene(server: McpServer, bridge: SceneOperations):
           if (!parentListsChild(parent, node.id)) {
             issues.push(`${node.type} ${node.id} is not listed in wall ${parent.id} children`)
           }
-          const length = wallLength(parent)
-          const width = node.width ?? (node.type === 'door' ? 0.9 : 1.5)
-          const height = node.height ?? (node.type === 'door' ? 2.1 : 1.5)
-          const localX = node.position[0]
-          if (localX - width / 2 < -0.01 || localX + width / 2 > length + 0.01) {
-            issues.push(`${node.type} ${node.id} extends outside wall ${parent.id}`)
-          }
           const wallHeight = resolveReportedWallHeight(bridge, parent)
-          const bottom = node.position[1] - height / 2
-          const top = node.position[1] + height / 2
-          if (bottom < -0.01 || top > wallHeight + 0.01) {
-            issues.push(
-              `${node.type} ${node.id} vertical bounds [${bottom.toFixed(2)}, ${top.toFixed(2)}] exceed wall ${parent.id} height ${wallHeight.toFixed(2)}m`,
-            )
+          for (const issue of checkOpeningWithinWall(node, parent, wallHeight)) {
+            issues.push(formatOpeningBoundsIssue(issue))
           }
         }
       }

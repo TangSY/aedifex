@@ -9,6 +9,7 @@ import {
 import { registerEditorHostPanel } from '@aedifex/editor'
 import { builtinPlugin } from '@aedifex/nodes'
 import { treesHostPanel, treesPlugin } from '@aedifex/plugin-trees'
+import { webXRHostPanel, webXRPlugin } from '@aedifex/plugin-webxr'
 
 // Idempotency guards: HMR can reload this module, but `registerNode`
 // throws on duplicate kinds. Flags live in the module closure so they
@@ -85,6 +86,8 @@ export async function loadExternalPlugins(): Promise<void> {
 // so it is registered separately from the core plugin manifest.
 extendPluginDiscovery(async () => [treesPlugin])
 registerEditorHostPanel(treesHostPanel)
+extendPluginDiscovery(async () => [webXRPlugin])
+registerEditorHostPanel(webXRHostPanel)
 
 loadBuiltinsSync()
 void loadExternalPlugins()

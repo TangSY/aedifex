@@ -38,15 +38,16 @@ function makeDefinition(
   kind: string,
   overrides: Partial<AnyNodeDefinition> = {},
 ): AnyNodeDefinition {
+  const { capabilities, ...rest } = overrides
   return {
     kind,
     schemaVersion: 1,
     schema: z.object({ type: z.literal(kind) }) as any,
     category: 'utility',
     defaults: () => ({}) as any,
-    capabilities: { deletable: false },
+    capabilities: { deletable: false, ...capabilities },
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
-    ...overrides,
+    ...rest,
   }
 }
 
@@ -299,6 +300,20 @@ describe('loadPlugin', () => {
     await expect(loadPlugin(plugin)).rejects.toThrow(/apiVersion/)
   })
 
+  test.each([
+    ['missing capabilities', undefined],
+    ['missing deletable', {}],
+    ['non-boolean deletable', { deletable: 'yes' }],
+  ])('rejects a dynamic plugin definition with %s', async (_label, capabilities) => {
+    const malformed = { ...makeDefinition('bad'), capabilities } as unknown as AnyNodeDefinition
+    const version = getRegistryVersion()
+    await expect(loadPlugin({ id: 'broken', apiVersion: 2, nodes: [malformed] })).rejects.toThrow(
+      /capabilities\.deletable must be a boolean/,
+    )
+    expect(nodeRegistry.has('bad')).toBe(false)
+    expect(getRegistryVersion()).toBe(version)
+  })
+
   test('propagates duplicate-kind error from a single plugin in production', async () => {
     const plugin: Plugin = {
       id: 'broken',
@@ -323,6 +338,93 @@ describe('loadPlugin', () => {
         }),
       ).rejects.toThrow(/duplicate node kind/)
     })
+  })
+
+  // A rejected plugin must not stay partly active: its earlier kinds would
+  // render, save and publish although the plugin never loaded.
+  test.each([
+    ['collides with a loaded kind', makeDefinition('shared')],
+    ['repeats one of its own kinds', makeDefinition('partial:a')],
+    ['has an invalid schemaVersion', makeDefinition('partial:bad', { schemaVersion: 0 })],
+    [
+      'omits required deletable',
+      { ...makeDefinition('partial:bad'), capabilities: {} } as unknown as AnyNodeDefinition,
+    ],
+  ])('a plugin whose later definition %s registers nothing', async (_label, invalid) => {
+    await inProduction(async () => {
+      await loadPlugin({ id: 'loaded', apiVersion: 2, nodes: [makeDefinition('shared')] })
+      await expect(
+        loadPlugin({
+          id: 'partial',
+          apiVersion: 2,
+          nodes: [makeDefinition('partial:a'), invalid],
+          inspectorExtensions: [
+            {
+              id: 'partial:eng',
+              pluginId: 'partial',
+              kinds: ['wall'],
+              icon: { kind: 'url', src: '/icons/test.png' },
+              title: 'Engineering',
+              component: async () => ({ default: () => null }),
+            },
+          ],
+        }),
+      ).rejects.toThrow()
+    })
+
+    expect(nodeRegistry.has('partial:a')).toBe(false)
+    expect(getNodePluginId('partial:a')).toBeUndefined()
+    expect(getNodePluginId('shared')).toBe('loaded')
+    expect(getInspectorExtensions('wall')).toEqual([])
+  })
+
+  test('a plugin with a malformed inspector extension registers nothing', async () => {
+    const malformed = {
+      id: 'partial',
+      apiVersion: 2,
+      nodes: [makeDefinition('partial:a')],
+      inspectorExtensions: [
+        {
+          id: 'partial:eng',
+          pluginId: 'partial',
+          kinds: null,
+          icon: { kind: 'url', src: '/icons/test.png' },
+          title: 'Engineering',
+          component: async () => ({ default: () => null }),
+        },
+      ],
+    } as unknown as Plugin
+
+    await expect(loadPlugin(malformed)).rejects.toThrow(/invalid inspector extension "partial:eng"/)
+    expect(nodeRegistry.has('partial:a')).toBe(false)
+    expect(getNodePluginId('partial:a')).toBeUndefined()
+  })
+
+  // State commits before listeners run, so a throwing subscriber cannot leave a
+  // kind registered without its plugin id or the plugin's other kinds missing.
+  test('a throwing registry listener sees the whole plugin committed', async () => {
+    const { onRegistryChange } = await import('./registry')
+    let calls = 0
+    const unsubscribe = onRegistryChange(() => {
+      calls += 1
+      expect(getNodePluginId('pack:a')).toBe('pack')
+      expect(nodeRegistry.has('pack:b')).toBe(true)
+      throw new Error('listener failed')
+    })
+    try {
+      await expect(
+        loadPlugin({
+          id: 'pack',
+          apiVersion: 2,
+          nodes: [makeDefinition('pack:a'), makeDefinition('pack:b')],
+        }),
+      ).rejects.toThrow('listener failed')
+    } finally {
+      unsubscribe()
+    }
+
+    expect(calls).toBe(1)
+    expect(getNodePluginId('pack:b')).toBe('pack')
   })
 
   // GATE (late-plugin subscriptions): plugins register via async dynamic
@@ -350,14 +452,14 @@ describe('loadPlugin', () => {
     expect(notified).toBe(1) // unsubscribed — no further calls
   })
 
-  test('loadPlugin notifies once per registered kind', async () => {
+  test('loadPlugin notifies once per plugin, after all of its state is committed', async () => {
     const before = getRegistryVersion()
     await loadPlugin({
       id: 'pack',
       apiVersion: 2,
       nodes: [makeDefinition('pack:a'), makeDefinition('pack:b')],
     })
-    expect(getRegistryVersion()).toBe(before + 2)
+    expect(getRegistryVersion()).toBe(before + 1)
   })
 })
 

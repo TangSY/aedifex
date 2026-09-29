@@ -9,7 +9,13 @@ import {
   useRegistry,
   useScene,
 } from '@aedifex/core'
-import { getRoofMaterialArray, NodeRenderer, useNodeEvents, useViewer } from '@aedifex/viewer'
+import {
+  getRoofMaterialArray,
+  levelWallCladdingRef,
+  NodeRenderer,
+  useNodeEvents,
+  useViewer,
+} from '@aedifex/viewer'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import type * as THREE from 'three'
 import { useShallow } from 'zustand/react/shallow'
@@ -85,9 +91,11 @@ export const RoofRenderer = ({ node: rawNode }: { node: RoofNode }) => {
   // 4 groups map 1:1 to the roof's 4-material array (see getRoofMaterialArray).
   const placeholderGeometry = useMemo(() => createPlaceholderGeometry(4), [])
 
+  // The gable band is clad like the walls below it (their assemblies).
+  const wallCladdingRef = useScene((state) => levelWallCladdingRef(state.nodes, node))
   const customMaterial = useMemo(
-    () => getRoofMaterialArray(node, shading, textures, colorPreset, sceneTheme, sceneMaterials),
-    [node, shading, textures, colorPreset, sceneTheme, sceneMaterials],
+    () => getRoofMaterialArray(node, shading, textures, colorPreset, sceneTheme, sceneMaterials, wallCladdingRef),
+    [node, shading, textures, colorPreset, sceneTheme, sceneMaterials, wallCladdingRef],
   )
 
   const material = debugColors

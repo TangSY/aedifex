@@ -2,10 +2,12 @@
 // This extends the existing viewer-owned wall cutout and material implementation.
 import {
   type AnyNodeId,
+  getEffectiveNode,
   getLibraryMaterialsVersion,
   getWallEffectiveHeightForNodes,
   getWallFaceBandConfig,
   sceneRegistry,
+  useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
   type WallNode,
@@ -19,6 +21,7 @@ import {
   getMaterialsForWall,
   getSelectionHighlightMaterials,
   type WallMaterials,
+  type WallMaterialsResolver,
 } from './wall-materials'
 
 export function sameMaterialArray(a: Material | Material[], b: Material[]): boolean {
@@ -125,8 +128,12 @@ export class WallCutoutCache {
   private selected = new Set<string>()
   private highlightKey = ''
   private transformed = new Set<string>()
+  private overrides = useLiveNodeOverrides.getState().overrides
 
-  constructor(private readonly viewerStore: WallCutoutViewerStore = useViewer) {}
+  constructor(
+    private readonly viewerStore: WallCutoutViewerStore = useViewer,
+    private readonly materialResolver: WallMaterialsResolver = getMaterialsForWall,
+  ) {}
 
   subscribeLiveTransforms(): () => void {
     return useLiveTransforms.subscribe((state, previous) => {
@@ -146,6 +153,8 @@ export class WallCutoutCache {
     const libraryVersion = getLibraryMaterialsVersion()
     const textureVersion = getMaterialTextureVersion()
     const previous = this.viewer
+    const overrides = useLiveNodeOverrides.getState().overrides
+    const overridesChanged = this.overrides !== overrides
     const nodesChanged = this.nodes !== scene.nodes
     const registryChanged =
       this.registryRevision !== sceneRegistry.revision || this.wallCount !== wallIds.size
@@ -187,6 +196,7 @@ export class WallCutoutCache {
     const releasedPreview = previewId(previous) !== previewId(viewer) ? previewId(previous) : null
     this.viewer = viewer
     const invalidated =
+      overridesChanged ||
       appearanceChanged ||
       nodesChanged ||
       registryChanged ||
@@ -256,17 +266,24 @@ export class WallCutoutCache {
         const changed = pathChanged(id)
         const rebuilt = this.rebuilt.has(id)
         if (added || changed || rebuilt) this.refreshNormal(wall, visited)
-        wall.node = node
-        if (added || appearanceChanged || (nodesChanged && changed)) this.refreshAppearance(wall)
+        const overrideChanged = this.overrides.get(id) !== overrides.get(id)
+        wall.node = getEffectiveNode(node)
+        if (added || appearanceChanged || overrideChanged || (nodesChanged && changed))
+          this.refreshAppearance(wall)
         if (
           added ||
           appearanceChanged ||
+          overrideChanged ||
           changed ||
           rebuilt ||
           releasedPreview === id ||
           cameraChanged
         ) {
-          this.apply(wall, viewer.wallMode, added || appearanceChanged || (nodesChanged && changed))
+          this.apply(
+            wall,
+            viewer.wallMode,
+            added || appearanceChanged || overrideChanged || (nodesChanged && changed),
+          )
         }
       }
     } else {
@@ -274,6 +291,7 @@ export class WallCutoutCache {
     }
     this.rebuilt.clear()
     this.transformed.clear()
+    this.overrides = overrides
     this.nodes = scene.nodes
     this.materials = scene.materials
     this.registryRevision = sceneRegistry.revision
@@ -297,7 +315,7 @@ export class WallCutoutCache {
       const height = getWallEffectiveHeightForNodes(node, scene.nodes)
       selectionHighlighted = !getWallFaceBandConfig(node, height).enabled
     }
-    const materials = getMaterialsForWall(
+    const materials = this.materialResolver(
       node,
       viewer.shading,
       viewer.textures,

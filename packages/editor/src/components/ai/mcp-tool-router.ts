@@ -15,8 +15,16 @@
  * 自己提供完整 node 数据。这是 minimum viable — 后续可逐个增加专用 case。
  */
 
+import { validateDesign } from '@aedifex/core/procedural-items'
+import { placeDesign } from '@aedifex/mcp/operations'
+import { placeDesignInput } from '@aedifex/mcp/tools/place-design'
+import { validateDesignInput } from '@aedifex/mcp/tools/validate-design'
+import { z } from 'zod'
 import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
 import { getSceneOperations } from './scene-operations-adapter'
+
+const validateDesignArgs = z.object(validateDesignInput)
+const placeDesignArgs = z.object(placeDesignInput)
 
 export interface RemoteMcpToolCall {
   toolName: string
@@ -113,6 +121,19 @@ async function dispatch(
     }
 
     // ── Validation / export ─────────────────────────────────────────────
+    case 'validate_design': {
+      const { design, parameters } = validateDesignArgs.parse(args)
+      return validateDesign(design, { parameters })
+    }
+
+    case 'place_design': {
+      const request = placeDesignArgs.parse(args)
+      return placeDesign({
+        operations: ops,
+        request: { ...request, position: request.position as [number, number, number] },
+      })
+    }
+
     case 'validate_scene':
       return ops.validateScene()
 

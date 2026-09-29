@@ -1,6 +1,7 @@
 import { customAlphabet } from 'nanoid'
 import { z } from 'zod'
 import { CameraSchema } from './camera'
+import { Provenance } from './provenance'
 
 const customId = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 16)
 
@@ -29,6 +30,7 @@ export const BaseNode = z.object({
   // Existing saved scenes may contain any JSON metadata. Keep the common
   // object fast path without rejecting or rewriting those historical values.
   metadata: z.union([z.record(z.string(), z.unknown()), z.json()]).optional().default({}),
+  provenance: Provenance.optional(),
 })
 
 export type BaseNode = z.infer<typeof BaseNode>

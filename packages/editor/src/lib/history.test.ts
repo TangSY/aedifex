@@ -218,6 +218,9 @@ describe('standalone history source invalidation', () => {
       const { Group, Mesh, MeshBasicMaterial, BoxGeometry } = await importShared('three')
       const viewer = await importShared('@aedifex/viewer')
       const { captureChangedNodes, runBatchFrame, resetNodeBatchState } = await import(${JSON.stringify(resolve(import.meta.dir, '../../../nodes/src/shared/node-batch/system.tsx'))})
+      // The node batch reads each kind's \`capabilities.batchable\` from the registry.
+      const { doorBatchable } = await import(${JSON.stringify(resolve(import.meta.dir, '../../../nodes/src/shared/node-batch/batchable.ts'))})
+      core.nodeRegistry._register({ kind: 'door', schemaVersion: 1, capabilities: { batchable: doorBatchable } })
       const root = new Group()
       core.sceneRegistry.nodes.set(level.id, root)
       core.sceneRegistry.byType.level.add(level.id)
@@ -261,6 +264,9 @@ describe('standalone history source invalidation', () => {
       const { Group, Mesh, MeshBasicMaterial, BoxGeometry } = await importShared('three')
       const viewer = await importShared('@aedifex/viewer')
       const { captureChangedNodes, runBatchFrame, resetNodeBatchState } = await import(${JSON.stringify(resolve(import.meta.dir, '../../../nodes/src/shared/node-batch/system.tsx'))})
+      // The node batch reads each kind's \`capabilities.batchable\` from the registry.
+      const { doorBatchable } = await import(${JSON.stringify(resolve(import.meta.dir, '../../../nodes/src/shared/node-batch/batchable.ts'))})
+      core.nodeRegistry._register({ kind: 'door', schemaVersion: 1, capabilities: { batchable: doorBatchable } })
       const root = new Group()
       core.sceneRegistry.nodes.set(level.id, root)
       core.sceneRegistry.byType.level.add(level.id)

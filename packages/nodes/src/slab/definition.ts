@@ -14,10 +14,13 @@ import {
   clearStructuralElevationGuide,
   DRAFTING_SURFACE_EXTENSION_KEY,
   type DraftingSurfaceExtension,
+  type FloorplanNodeExtension,
   publishStructuralElevationGuide,
   resolveStructuralElevationSnap,
 } from '@aedifex/editor'
+import { surfaceBatchable } from '../shared/node-batch/batchable'
 import { polygonMeasurementFeatures } from '../shared/polygon-measurement'
+import { sameOutlineSurfaceCounterparts } from '../shared/surface-counterparts'
 import {
   applySlabBaseElevationChange,
   applySlabThicknessChange,
@@ -278,6 +281,9 @@ export const slabDefinition: NodeDefinition<typeof SlabNode> = {
     [DRAFTING_SURFACE_EXTENSION_KEY]: {
       kind: 'slab',
     } satisfies DraftingSurfaceExtension,
+    'aedifex:editor/floorplan': {
+      selectionCounterparts: sameOutlineSurfaceCounterparts,
+    } satisfies FloorplanNodeExtension,
   },
 
   defaults: () => ({
@@ -295,6 +301,7 @@ export const slabDefinition: NodeDefinition<typeof SlabNode> = {
   }),
 
   capabilities: {
+    batchable: surfaceBatchable,
     selectable: { hitVolume: 'bbox' },
     surfaces: {
       top: { height: (n) => (n as SlabNode).elevation },

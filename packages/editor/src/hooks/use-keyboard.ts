@@ -5,11 +5,11 @@ import {
   nodeRegistry,
   pauseSpaceDetection,
   resumeSpaceDetection,
+  toggleNodeMechanism,
   useScene,
 } from '@aedifex/core'
 import { cancelPerfAction, markPerfAction, useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
-import { Vector3 } from 'three'
 import {
   cutSelectionToEditorClipboard,
   deleteSelection,
@@ -18,9 +18,9 @@ import {
 import {
   classifyParticipant,
   collectParticipants,
-  computeGroupBox,
-  expandToComponent,
+  groupPlanBounds,
   levelFrame,
+  planBoundsCenter,
   rotateGroupPatches,
 } from '../components/editor/group-transform-shared'
 import { steppedRotation } from '../components/tools/item/placement-math'
@@ -69,27 +69,20 @@ function rotateGroupSelection(direction: 1 | -1): boolean {
     (id) => classifyParticipant(nodes[id as AnyNodeId], levelId, nodes) !== null,
   )
   if (participantIds.length === 0) return false
-  const fullIds = expandToComponent(participantIds, nodes, levelId)
-  const { starts, links } = collectParticipants(fullIds, nodes, levelId)
+  const { starts, links } = collectParticipants(participantIds, nodes, levelId)
   if (starts.length === 0) return false
 
-  // Same pivot as the 3D gizmo: the selection's world bbox center, converted
-  // into the level frame before orbiting placements (a rotated building would
-  // otherwise displace the centre).
-  const box = computeGroupBox(fullIds)
-  if (!box) return false
-  const worldCenter = new Vector3(
-    (box.min.x + box.max.x) / 2,
-    box.min.y,
-    (box.min.z + box.max.z) / 2,
-  )
-  const localCenter = worldCenter.applyMatrix4(levelFrame(levelId).inverse)
+  // Same pivot as the dashed boxes and the rotate gizmo: the selection's box
+  // centre in the level frame.
+  const bounds = groupPlanBounds(starts, levelFrame(levelId).inverse)
+  if (!bounds) return false
+  const [pivotX, pivotZ] = planBoundsCenter(bounds)
 
   // R (+45° yaw) orbits by -45° in the atan2 x→z sense: yaw = rotation - delta
   // (see rotateGroupPatches), so keyboard direction matches the single-node
   // steppedRotation sense.
   const delta = -direction * (Math.PI / 4)
-  const patches = rotateGroupPatches(starts, links, { x: localCenter.x, z: localCenter.z }, delta)
+  const patches = rotateGroupPatches(starts, links, { x: pivotX, z: pivotZ }, delta)
   // Space detection stays out: a rigid rotation of existing walls must not
   // re-create the room's auto floors/ceilings at the new bearing.
   pauseSpaceDetection()
@@ -143,6 +136,20 @@ const exitToSelectAfterUnconsumedCancel = () => {
   useEditor.getState().setSelectedReferenceId(null)
 }
 
+// Cancel the active editor action with the same consume-or-exit semantics as
+// Escape. Spatial inputs use this instead of unconditionally selecting the
+// Select tool, so multi-step tools can keep their tool active after clearing
+// the current draft.
+export const cancelActiveTool = () => {
+  _toolCancelConsumed = false
+  emitter.emit('tool:cancel')
+  if (!_toolCancelConsumed) {
+    if (leaveUnitFocus()) useEditor.getState().armToolMode({ mode: 'select' })
+    else exitToSelectAfterUnconsumedCancel()
+  }
+  return _toolCancelConsumed
+}
+
 // ⌘Z pressed mid-interaction (moving a node, drawing a wall, mid-placement…)
 // reads as "abort this action", not history undo — behave exactly like Escape
 // and report whether anything was in flight so the undo/redo arms know to
@@ -185,7 +192,8 @@ export const runHistoryShortcut = (direction: 'undo' | 'redo') => {
   return true
 }
 
-export const isToolOwnedRotation = () => {
+/** Whether an armed tool owns the rotation key (`R` or `T`) instead of the selection. */
+export const isToolOwnedRotation = (key: 'r' | 't' = 'r') => {
   const editor = useEditor.getState()
   const moving = getMovingNode()
   if (
@@ -205,7 +213,10 @@ export const isToolOwnedRotation = () => {
       // exist. Without this check, selecting an existing item in the 2D plan
       // while the item tool is armed silently drops the global rotate key.
       (editor.tool === 'item' && editor.selectedItem !== null) ||
-      editor.tool === 'lean-to-extension')
+      editor.tool === 'lean-to-extension' ||
+      // R toggles the wall tool between line and rectangle drawing; T stays
+      // the selection's.
+      (editor.tool === 'wall' && key === 'r'))
   )
 }
 
@@ -226,6 +237,16 @@ export function blocksSnappingShortcut(
   if (!target) return false
   if (target.tagName === 'INPUT' && target.hasAttribute('data-run-length-input')) return false
   return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+}
+
+/** E on one selected node: the kind's own E action, else its mechanism. False when neither applies. */
+export function runNodeInteraction(node: AnyNode): boolean {
+  const action = nodeRegistry.get(node.type)?.keyboardActions?.e
+  if (action?.appliesTo(node)) {
+    action.run(node)
+    return true
+  }
+  return toggleNodeMechanism(node)
 }
 
 export const useKeyboard = ({
@@ -394,15 +415,9 @@ export const useKeyboard = ({
           return
         }
 
-        _toolCancelConsumed = false
-        emitter.emit('tool:cancel')
-
         // Only switch to select mode if no tool had an active mid-action to cancel.
         // (e.g. mid-wall draw or mid-slab polygon should only cancel the action, not exit the tool)
-        if (!_toolCancelConsumed) {
-          if (leaveUnitFocus()) useEditor.getState().armToolMode({ mode: 'select' })
-          else exitToSelectAfterUnconsumedCancel()
-        }
+        cancelActiveTool()
       } else if (e.key === '1' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault()
         useEditor.getState().setPhase('site')
@@ -628,7 +643,7 @@ export const useKeyboard = ({
       } else if (
         (e.key === 't' || e.key === 'T') &&
         !isVersionPreviewMode &&
-        !isToolOwnedRotation() &&
+        !isToolOwnedRotation('t') &&
         canRunGlobalRotationShortcut()
       ) {
         // Rotate selected node counter-clockwise
@@ -693,11 +708,9 @@ export const useKeyboard = ({
         const selectedNodeIds = useViewer.getState().selection.selectedIds as AnyNodeId[]
         if (selectedNodeIds.length === 1) {
           const node = useScene.getState().nodes[selectedNodeIds[0]!]
-          const registryE = node && nodeRegistry.get(node.type)?.keyboardActions?.e
-          if (node && registryE?.appliesTo(node)) {
+          if (node && runNodeInteraction(node)) {
             // Registry-driven E interaction. Same shape as the R/T arms.
             e.preventDefault()
-            registryE.run(node)
             sfxEmitter.emit('sfx:item-rotate')
           } else if (node?.type === 'door' && node.openingKind !== 'opening') {
             e.preventDefault()

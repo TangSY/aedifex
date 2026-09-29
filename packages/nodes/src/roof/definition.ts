@@ -7,8 +7,13 @@ import {
   type RoofSegmentNode,
   type SceneApi,
 } from '@aedifex/core'
-import { DRAFTING_SURFACE_EXTENSION_KEY, type DraftingSurfaceExtension } from '@aedifex/editor'
+import {
+  DRAFTING_SURFACE_EXTENSION_KEY,
+  type DraftingSurfaceExtension,
+  PANEL_MODEL_EXTENSION,
+} from '@aedifex/editor'
 import { buildRoofFloorplan } from './floorplan'
+import { roofPanelModel } from './panel-model'
 import { roofParametrics } from './parametrics'
 import useRoofFootprintSource from './roof-footprint-source'
 import useRoofPlacementMode, {
@@ -113,11 +118,12 @@ export const roofDefinition: NodeDefinition<typeof RoofNode> = {
   // Drafted as a 2-corner footprint (axis-aligned bbox), not a directional
   // edge → no angle-lock mode (grid / lines / off only).
   snapDraftDirectional: false,
-  schemaVersion: 3,
+  schemaVersion: 4,
   schema: RoofNode,
   category: 'structure',
   surfaceRole: 'roof',
   extensions: {
+    [PANEL_MODEL_EXTENSION]: roofPanelModel,
     [DRAFTING_SURFACE_EXTENSION_KEY]: {
       kind: 'roof',
     } satisfies DraftingSurfaceExtension,
@@ -133,6 +139,9 @@ export const roofDefinition: NodeDefinition<typeof RoofNode> = {
     selectable: { hitVolume: 'bbox' },
     duplicable: true,
     deletable: true,
+    // F2 layers stack inward from the covering-top plane along the facet
+    // normal; the body is their sum and the roof stores no thickness.
+    assembly: { reference: 'covering', measure: 'normal', body: () => null },
     slots: () => roofSlots(),
     // Contribute a plan AABB to the alignment-guide candidate pool so a roof
     // (and any moving sibling) snaps against the roof's outer silhouette.

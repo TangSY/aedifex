@@ -3,6 +3,7 @@
 import {
   type AnyNode,
   type AnyNodeId,
+  floorPlacedCollides,
   nodeRegistry,
   type TerrainVerb,
   useScene,
@@ -29,6 +30,7 @@ import useEditor, { getActiveContinuationContext } from '../../../store/use-edit
 import useInteractionScope, {
   useActiveHandleDrag,
   useMovingNode,
+  useReshapingNode,
 } from '../../../store/use-interaction-scope'
 import { BuildingHelper } from './building-helper'
 import { ContextualHelperPanel } from './contextual-helper-panel'
@@ -84,6 +86,7 @@ function terrainSculptHints(verb: TerrainVerb, sampling: boolean): ContextualSho
 }
 
 type ActiveModifierKeys = {
+  alt: boolean
   command: boolean
   shift: boolean
 }
@@ -93,6 +96,7 @@ const NO_CONTEXTUAL_HELP_SUBSCRIPTION = () => () => {}
 
 function useActiveModifierKeys(): ActiveModifierKeys {
   const [modifiers, setModifiers] = useState<ActiveModifierKeys>({
+    alt: false,
     command: false,
     shift: false,
   })
@@ -101,6 +105,7 @@ function useActiveModifierKeys(): ActiveModifierKeys {
     const updateModifiers = (event: KeyboardEvent) => {
       const isKeyDown = event.type === 'keydown'
       setModifiers({
+        alt: event.altKey || (isKeyDown && event.key === 'Alt'),
         command:
           event.metaKey ||
           event.ctrlKey ||
@@ -109,7 +114,7 @@ function useActiveModifierKeys(): ActiveModifierKeys {
       })
     }
     const clearModifiers = () => {
-      setModifiers({ command: false, shift: false })
+      setModifiers({ alt: false, command: false, shift: false })
     }
 
     window.addEventListener('keydown', updateModifiers)
@@ -135,6 +140,7 @@ export function HelperManager() {
   const workspaceMode = useEditor((s) => s.workspaceMode)
   const scope = useInteractionScope((s) => s.scope)
   const movingNode = useMovingNode()
+  const reshapingNode = useReshapingNode()
   const activeHandleDrag = useActiveHandleDrag()
   const selectedIds = useViewer((s) => s.selection.selectedIds)
   const isMobile = useIsMobile()
@@ -190,10 +196,12 @@ export function HelperManager() {
         : single?.type === 'duct-fitting' || single?.type === 'pipe-fitting'
           ? 'fitting'
           : null
+    const hasOpeningRadiusSelection = single?.type === 'door' || single?.type === 'window'
     return resolveSelectModeHelpHints({
       selectedCount: selectedNodes.length,
       hasMovableSelection: selectedNodes.some((node) => canDirectMoveNode(node)),
       hasRotatableSelection: selectedNodes.some((node) => canDirectRotateNode(node)),
+      hasOpeningRadiusSelection,
       commandPressed: modifiers.command,
       shiftPressed: modifiers.shift,
       mepSelection,
@@ -211,15 +219,16 @@ export function HelperManager() {
   // tools — editor shortcut hints would only mislead there.
   if (workspaceMode === 'studio') return null
 
-  // Rotating a node (or a multi-selection group) via its in-world gizmo:
-  // advertise Shift = free rotation, the same angle-step bypass wall drafting
-  // exposes. Takes priority over the idle select-mode hints since a handle
-  // drag is the active interaction.
   if (
     activeHandleDrag?.label === ROTATE_HANDLE_DRAG_LABEL ||
     activeHandleDrag?.label === GROUP_ROTATE_DRAG_LABEL
   ) {
-    return <ContextualHelperPanel hints={resolveRotateHandleHelpHints(modifiers.shift)} />
+    return (
+      <ContextualHelperPanel
+        hints={resolveRotateHandleHelpHints(modifiers.alt)}
+        snapContext={snapContext}
+      />
+    )
   }
 
   // Group-move drag / pick-up: the drag resolves to the 'item' snap context
@@ -254,6 +263,15 @@ export function HelperManager() {
   // before the select branch so the idle "drag selected / add objects" hints
   // never leak over an in-progress reshape — and it gets its own snapping chip.
   if (scope.kind === 'reshaping') {
+    // A kind's own reshape brings its hints (`def.affordanceHints[reshape]`).
+    const hints = reshapingNode
+      ? nodeRegistry.get(reshapingNode.type)?.affordanceHints?.[scope.reshape]
+      : undefined
+    if (hints) {
+      return (
+        <RegisteredToolHelper hints={hints} shiftPressed={modifiers.shift} snapContext={snapContext} />
+      )
+    }
     return <ContextualHelperPanel hints={reshapingHints(scope.reshape)} snapContext={snapContext} />
   }
 
@@ -265,8 +283,10 @@ export function HelperManager() {
     const movingContinuationContext = isFreshPlacementMetadata(movingNode.metadata)
       ? continuationContextOf(movingNode.type)
       : null
-    const collisionValidatesDrop =
-      nodeRegistry.get(movingNode.type)?.capabilities.floorPlaced?.collides === true
+    const collisionValidatesDrop = floorPlacedCollides(
+      nodeRegistry.get(movingNode.type)?.capabilities.floorPlaced,
+      movingNode,
+    )
     return (
       <ItemHelper
         continuationContext={movingContinuationContext}
@@ -296,6 +316,7 @@ export function HelperManager() {
   if (scope.kind === 'mesh-editing') {
     return <ContextualHelperPanel hints={contextualEditHints} snapContext={snapContext} />
   }
+
 
   // Idle select only — an active scope (handle-drag, box-select, …) must not show
   // the idle selection hints.

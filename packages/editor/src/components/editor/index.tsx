@@ -18,6 +18,7 @@ import {
   SceneEnvironment,
   useViewer,
   Viewer,
+  type ViewerImmersiveSession,
   ViewerPresentations,
 } from '@aedifex/viewer'
 import { Icon } from '@iconify/react'
@@ -104,6 +105,7 @@ import { SiteEdgeLabels } from './site-edge-labels'
 import { SlabHoleHighlights } from './slab-hole-highlights'
 import { SnapshotCaptureOverlay } from './snapshot-capture-overlay'
 import { type SnapshotCameraData, ThumbnailGenerator } from './thumbnail-generator'
+import { VectorEdgeExtractor } from './vector-edge-extractor'
 import { WallMeasurementLabel } from './wall-measurement-label'
 import { WallMoveSideHandles } from './wall-move-side-handles'
 import { WallOpeningHighlights } from './wall-opening-highlights'
@@ -234,6 +236,9 @@ export interface EditorProps {
    * module-load URL flags or shading toggles.
    */
   disablePostFx?: boolean
+
+  /** Host-provided immersive XR runtime for the main 3D canvas. */
+  immersive?: ViewerImmersiveSession
 
   // Version preview overlays (rendered by host app)
   sidebarOverlay?: ReactNode
@@ -784,6 +789,7 @@ const ViewerSceneContent = memo(function ViewerSceneContent({
   isVersionPreviewMode,
   isLoading,
   isFirstPersonMode,
+  isXRMode,
   isStudioMode,
   onThumbnailCapture,
   viewerSceneSlot,
@@ -792,6 +798,7 @@ const ViewerSceneContent = memo(function ViewerSceneContent({
   isVersionPreviewMode: boolean
   isLoading: boolean
   isFirstPersonMode: boolean
+  isXRMode: boolean
   isStudioMode: boolean
   onThumbnailCapture?: (blob: Blob, cameraData: SnapshotCameraData) => void
   viewerSceneSlot?: ReactNode
@@ -808,7 +815,7 @@ const ViewerSceneContent = memo(function ViewerSceneContent({
     <>
       <SceneEnvironment />
       {!(isFirstPersonMode || isStudioMode || isCaptureMode) && <SelectionManager />}
-      {!noEditing && <BoxSelectTool />}
+      {!(noEditing || isXRMode) && <BoxSelectTool />}
       {!noEditing && <NodeArrowHandles />}
       {!noEditing && <GroupRotateHandle />}
       {!noEditing && <GroupSelectionBox3D />}
@@ -816,10 +823,10 @@ const ViewerSceneContent = memo(function ViewerSceneContent({
       {!noEditing && <SlabHoleHighlights />}
       {!noEditing && <WallMoveSideHandles />}
       {!noEditing && <FenceTangentLines3D />}
-      {!noEditing && <FloatingActionMenu />}
-      {!noEditing && <GroupFloatingActionMenu />}
-      {!noEditing && <FloatingBuildingActionMenu />}
-      {!isFirstPersonMode && <WallMeasurementLabel />}
+      {!(noEditing || isXRMode) && <FloatingActionMenu />}
+      {!(noEditing || isXRMode) && <GroupFloatingActionMenu />}
+      {!(noEditing || isXRMode) && <FloatingBuildingActionMenu />}
+      {!(isFirstPersonMode || isXRMode) && <WallMeasurementLabel />}
       <ExportManager />
       {isFirstPersonMode ? <ViewerZoneSystem /> : <ZoneSystem />}
       <CeilingSystem />
@@ -830,11 +837,11 @@ const ViewerSceneContent = memo(function ViewerSceneContent({
       {!(isLoading || isFirstPersonMode) && <SnapAwareGrid />}
       {!(isLoading || noEditing) && <ToolManager />}
       {isFirstPersonMode && <FirstPersonControls />}
-      {isCaptureMode && <CaptureCameraRig />}
-      <CustomCameraControls />
-      <ThumbnailGenerator onThumbnailCapture={onThumbnailCapture} />
-      {!isFirstPersonMode && <SiteEdgeLabels />}
-      <InteractiveSystem />
+      {isCaptureMode && !isXRMode && <CaptureCameraRig />}
+      {!isXRMode && <CustomCameraControls />}
+      {!isXRMode && <ThumbnailGenerator onThumbnailCapture={onThumbnailCapture} />}
+      {!isXRMode && <VectorEdgeExtractor />}
+      {!(isFirstPersonMode || isXRMode) && <SiteEdgeLabels />}
       {presentationsReady ? <ViewerPresentations /> : null}
       {!noEditing && viewerSceneSlot}
     </>
@@ -1023,6 +1030,7 @@ const ViewerCanvas = memo(function ViewerCanvas({
   viewerSceneSlot,
   floorplanSceneSlot,
   disablePostFx = false,
+  immersive,
 }: {
   isVersionPreviewMode: boolean
   isLoading: boolean
@@ -1037,6 +1045,7 @@ const ViewerCanvas = memo(function ViewerCanvas({
   viewerSceneSlot?: ReactNode
   floorplanSceneSlot?: ReactNode
   disablePostFx?: boolean
+  immersive?: ViewerImmersiveSession
 }) {
   const viewMode = useEditor((s) => s.viewMode)
   const floorplanPaneRatio = useEditor((s) => s.floorplanPaneRatio)
@@ -1165,6 +1174,7 @@ const ViewerCanvas = memo(function ViewerCanvas({
             renderContext="editor"
             renderPaused={!show3d && !showLoader}
             sceneReadyKey={sceneReadyKey}
+            immersive={immersive}
             // Walk/drone framing during snapshot capture is camera-only: the
             // viewer's default selection manager would hover-highlight whatever
             // the cursor crosses, which orbit capture never does.
@@ -1173,6 +1183,7 @@ const ViewerCanvas = memo(function ViewerCanvas({
             <ViewerSceneContent
               isFirstPersonMode={isFirstPersonMode}
               isLoading={showLoader}
+              isXRMode={immersive != null}
               isStudioMode={isStudioMode}
               isVersionPreviewMode={isVersionPreviewMode}
               onThumbnailCapture={onThumbnailCapture}
@@ -1267,6 +1278,7 @@ function EditorContent({
   onLoaderChange,
   onThumbnailCapture,
   disablePostFx = false,
+  immersive,
   sidebarOverlay,
   viewerBanner,
   settingsPanelProps,
@@ -1301,7 +1313,7 @@ function EditorContent({
 
   useKeyboard({ isVersionPreviewMode, disabled: isFirstPersonMode || isStudioMode })
 
-  const { isLoadingSceneRef, saveNow } = useAutoSave({
+  const { beginSceneLoad, completeSceneLoad, saveNow } = useAutoSave({
     guardAgainstSceneWipe,
     onSave,
     onDirty,
@@ -1362,7 +1374,7 @@ function EditorContent({
     let cancelled = false
 
     async function load(attempt: number) {
-      isLoadingSceneRef.current = true
+      beginSceneLoad()
       setSceneLoadError(null)
       setHasLoadedInitialScene(false)
       setIsViewerSceneReady(false)
@@ -1377,6 +1389,9 @@ function EditorContent({
         const sceneGraph = onLoad ? await onLoad() : loadSceneFromLocalStorage()
         if (!cancelled && attempt === sceneLoadAttempt) {
           applySceneGraphToEditor(sceneGraph)
+          // The store holds the loaded graph: autosave resumes now, not on a
+          // frame — a tab loaded while hidden never gets one.
+          completeSceneLoad()
           setIsViewerSceneReady(false)
           setSceneReadyKey((key) => key + 1)
         }
@@ -1391,12 +1406,7 @@ function EditorContent({
       } finally {
         if (!cancelled) {
           setIsSceneLoading(false)
-          if (!failed) {
-            setHasLoadedInitialScene(true)
-            requestAnimationFrame(() => {
-              isLoadingSceneRef.current = false
-            })
-          }
+          if (!failed) setHasLoadedInitialScene(true)
         }
       }
     }
@@ -1406,7 +1416,7 @@ function EditorContent({
     return () => {
       cancelled = true
     }
-  }, [onLoad, isLoadingSceneRef, sceneLoadAttempt])
+  }, [onLoad, beginSceneLoad, completeSceneLoad, sceneLoadAttempt])
 
   const retrySceneLoad = useCallback(() => {
     setSceneLoadAttempt((attempt) => attempt + 1)
@@ -1525,6 +1535,7 @@ function EditorContent({
       {isFirstPersonMode && <FirstPersonControls />}
       <CustomCameraControls />
       <ThumbnailGenerator onThumbnailCapture={onThumbnailCapture} />
+      <VectorEdgeExtractor />
       <InteractiveSystem />
       {presentationsReady ? <ViewerPresentations /> : null}
     </Viewer>
@@ -1545,6 +1556,7 @@ function EditorContent({
       showLoader={showLoader}
       viewerSceneSlot={viewerSceneSlot}
       floorplanSceneSlot={floorplanSceneSlot}
+      immersive={immersive}
     />
   )
 

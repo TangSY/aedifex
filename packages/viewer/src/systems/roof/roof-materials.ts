@@ -1,9 +1,11 @@
 import {
+  type AnyNode,
   getEffectiveRoofSurfaceMaterial,
   parseMaterialRef,
   ROOF_SLOT_DEFAULTS,
   type RoofNode,
   type RoofSegmentNode,
+  wallAssemblyFinishRef,
   type RoofSlotId,
   type SceneMaterial,
   type SceneMaterialId,
@@ -88,6 +90,36 @@ function createResolvedMaterial(
   return null
 }
 
+/**
+ * The cladding the walls under a roof declare through their ASSEMBLIES
+ * (`wall.assembly.exterior.finish` → catalog ref), so the roof's gable band —
+ * the triangle of wall above the plate that the roof kind builds — is skinned
+ * like the walls it sits on instead of the bare drywall default. The most
+ * common ref among the level's walls wins; null when none declares one.
+ */
+export function levelWallCladdingRef(
+  nodes: Readonly<Record<string, AnyNode | undefined>>,
+  roof: Pick<RoofNode, 'parentId'>,
+): string | null {
+  const levelId = roof.parentId
+  if (!levelId) return null
+  const counts = new Map<string, number>()
+  for (const node of Object.values(nodes)) {
+    if (node?.type !== 'wall' || node.parentId !== levelId) continue
+    const ref = wallAssemblyFinishRef(node)
+    if (ref) counts.set(ref, (counts.get(ref) ?? 0) + 1)
+  }
+  let best: string | null = null
+  let bestCount = 0
+  for (const [ref, count] of counts) {
+    if (count > bestCount) {
+      best = ref
+      bestCount = count
+    }
+  }
+  return best
+}
+
 function roofSlotSignature(
   ref: string | undefined,
   legacySpec: ReturnType<typeof getEffectiveRoofSurfaceMaterial>,
@@ -113,6 +145,7 @@ export function getRoofMaterialArray(
   colorPreset: ColorPreset = 'clay',
   sceneTheme?: string,
   sceneMaterials?: SceneMaterials,
+  wallCladdingRef: string | null = null,
 ): RoofMaterialArray | null {
   const slotSpecs = ROOF_SLOT_ORDER.map((slotId) => {
     const ref = node.slots?.[slotId]
@@ -125,6 +158,7 @@ export function getRoofMaterialArray(
     textures,
     colorPreset,
     sceneTheme,
+    wallCladdingRef,
     slots: slotSpecs.map(({ slotId, ref, legacySpec }) => [
       slotId,
       roofSlotSignature(ref, legacySpec, sceneMaterials),
@@ -158,7 +192,7 @@ export function getRoofMaterialArray(
   // roof is unpainted and to fill any individual unpainted slot below.
   const defaultArray: RoofMaterialArray = [
     resolveSlotDefaultMaterial(ROOF_DEFAULT_REFS[0], shading),
-    resolveSlotDefaultMaterial(ROOF_DEFAULT_REFS[1], shading),
+    resolveSlotDefaultMaterial(wallCladdingRef ?? ROOF_DEFAULT_REFS[1], shading),
     resolveSlotDefaultMaterial(ROOF_DEFAULT_REFS[2], shading),
     resolveSlotDefaultMaterial(ROOF_DEFAULT_REFS[3], shading),
   ]

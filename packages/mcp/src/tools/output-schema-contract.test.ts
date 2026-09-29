@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test'
-import { DoorNode, WallNode, ZoneNode } from '@aedifex/core/schema'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
+import { DESIGN_EXAMPLE } from '@aedifex/core/procedural-items'
+import { DoorNode, WallNode, ZoneNode } from '@aedifex/core/schema'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { createAedifexMcpServer } from '../server'
 
@@ -59,6 +60,7 @@ describe('registered tool output schemas', () => {
       { name: 'get_zones', arguments: { levelId } },
       { name: 'verify_scene', arguments: {} },
       { name: 'validate_scene', arguments: {} },
+      { name: 'validate_design', arguments: { design: DESIGN_EXAMPLE } },
       { name: 'check_collisions', arguments: {} },
       { name: 'find_nodes', arguments: { type: 'wall' } },
       { name: 'export_json', arguments: {} },

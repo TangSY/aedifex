@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  CEILING_DRAW_OFFSET,
   type CeilingNode,
   getMaterialPresetByRef,
   resolveCeilingHeight,
@@ -13,6 +14,7 @@ import {
   createSurfaceRoleMaterial,
   NodeRenderer,
   resolveSurfaceColor,
+  useNodeEvents,
   useViewer,
 } from '@aedifex/viewer'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
@@ -27,6 +29,7 @@ function createEmptyGeometry() {
 
 export const CeilingRenderer = ({ node }: { node: CeilingNode }) => {
   const ref = useRef<Mesh>(null!)
+  const handlers = useNodeEvents(node, 'ceiling')
   const placeholderGeometry = useMemo(createEmptyGeometry, [])
   const gridPlaceholderGeometry = useMemo(createEmptyGeometry, [])
 
@@ -51,7 +54,7 @@ export const CeilingRenderer = ({ node }: { node: CeilingNode }) => {
   // (primitive selector, so follows-mode ceilings track level-height edits
   // and covering-slab changes without a node write).
   const resolvedHeight = useScene((s) => resolveCeilingHeight(node, s.nodes))
-  const ceilingY = resolvedHeight - 0.01 + (liveTransform?.position[1] ?? 0)
+  const ceilingY = resolvedHeight - CEILING_DRAW_OFFSET + (liveTransform?.position[1] ?? 0)
   const position: [number, number, number] = [
     liveTransform?.position[0] ?? 0,
     ceilingY,
@@ -116,6 +119,8 @@ export const CeilingRenderer = ({ node }: { node: CeilingNode }) => {
       material={materials.bottomMaterial}
       position={position}
       ref={ref}
+      visible={node.visible !== false}
+      {...handlers}
     >
       <mesh
         geometry={gridPlaceholderGeometry}

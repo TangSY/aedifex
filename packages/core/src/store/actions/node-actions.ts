@@ -14,8 +14,6 @@ import {
   type GutterNode,
   generateId,
   getDefaultGutterSide,
-  getEffectiveWallSurfaceMaterial,
-  getWallSurfaceMaterialSignature,
   isAutoGutterEnabled,
   isAutoRidgeVentEnabled,
   isDefaultDownspoutNode,
@@ -28,7 +26,16 @@ import {
   type WallNode,
 } from '../../schema'
 import type { CollectionId } from '../../schema/collections'
+import { Provenance } from '../../schema/provenance'
 import { constrainWallCurveOffsetToAvoidIntersections } from '../../systems/wall/wall-curve'
+import {
+  areWallStylesCompatible,
+  areWallsCollinearAcrossPoint,
+  buildMergedWallAttachmentUpdates,
+  getWallEndpointAtPoint,
+  resolveMergedWallEndpoints,
+  type WallAttachmentUpdate,
+} from '../../systems/wall/wall-merge'
 import {
   activeSceneCommitNodeIds,
   addActiveSceneCommitNodeIds,
@@ -40,7 +47,6 @@ type AnyContainerNode = AnyNode & { children: string[] }
 type NodeCreateOp = { node: AnyNode; parentId?: AnyNodeId }
 type NodeUpdateOp = { id: AnyNodeId; data: Partial<AnyNode> }
 type NodeDeleteOp = AnyNodeId
-type WallAttachmentUpdate = { id: AnyNodeId; data: Partial<AnyNode> }
 type WallMergePlan = {
   primaryWallId: AnyNodeId
   secondaryWallId: AnyNodeId
@@ -533,11 +539,40 @@ function warnSanitizedNodeMutation(
   }
 }
 
+/**
+ * Source ids cannot be repaired the way the numeric fallback repairs a value:
+ * any fix would drop or rewrite them (D5). A write that sets an invalid
+ * `provenance` throws, whatever the node's kind (a plain plugin kind never
+ * reaches a schema that knows the field), so the mutation applies nothing.
+ */
+function assertProvenanceWrite(nodeId: string, value: unknown): void {
+  if (value === undefined) return
+  const parsed = Provenance.safeParse(value)
+  if (parsed.success) return
+  const issue = parsed.error.issues[0]
+  const at = ['provenance', ...(issue?.path ?? [])].join('.')
+  throw new Error(`Node "${nodeId}": provenance refused at ${at}: ${issue?.message}`)
+}
+
+/**
+ * A strict kind parses everything but `provenance`, which core checks on write
+ * and carries verbatim: a stored over-cap value (kept at load) must not make
+ * the node uneditable, and a schema that never declared the base field must
+ * not drop it.
+ */
+function parseStrict(schema: { parse: (value: unknown) => unknown }, candidate: AnyNode): AnyNode {
+  if (!Object.hasOwn(candidate, 'provenance')) return schema.parse(candidate) as AnyNode
+  const { provenance, ...rest } = candidate as AnyNode & { provenance?: unknown }
+  const parsed = schema.parse(rest) as AnyNode
+  return provenance === undefined ? parsed : ({ ...parsed, provenance } as AnyNode)
+}
+
 function parseCreatedNode(node: AnyNode, parentId: AnyNodeId | null): AnyNode {
   const candidate = { ...node, parentId }
+  assertProvenanceWrite(candidate.id, (candidate as { provenance?: unknown }).provenance)
   const registered = nodeRegistry.get(candidate.type)?.schema
   // Generated definitions must reject invalid geometry instead of retaining a failed parse.
-  if (registered?.meta?.()?.strictMutations === true) return registered.parse(candidate) as AnyNode
+  if (registered?.meta?.()?.strictMutations === true) return parseStrict(registered, candidate)
   const parsed = parseNode(candidate)
   if (parsed.success) return parsed.data
 
@@ -567,6 +602,9 @@ function mergeNodeUpdate(currentNode: AnyNode, patch: Partial<AnyNode>): AnyNode
 }
 
 function parseUpdatedNode(currentNode: AnyNode, data: Partial<AnyNode>): AnyNode {
+  // Only a write of the field is checked: a stored over-cap value stays editable.
+  if (Object.hasOwn(data, 'provenance'))
+    assertProvenanceWrite(currentNode.id, (data as { provenance?: unknown }).provenance)
   const candidate = mergeNodeUpdate(currentNode, data)
   // Graph links survive schemas that omit children; only an explicit patch may change them.
   const preserveChildren = (updated: AnyNode): AnyNode =>
@@ -578,7 +616,7 @@ function parseUpdatedNode(currentNode: AnyNode, data: Partial<AnyNode>): AnyNode
   const registered = nodeRegistry.get(currentNode.type)?.schema
   // Generated definitions must reject invalid geometry instead of retaining a failed parse.
   if (registered?.meta?.()?.strictMutations === true)
-    return preserveChildren(registered.parse(candidate) as AnyNode)
+    return preserveChildren(parseStrict(registered, candidate))
   const parsed = parseNode(candidate)
   if (parsed.success) return preserveChildren(parsed.data)
 
@@ -1008,141 +1046,6 @@ function refreshDefaultGuttersForRoofIds(
 let pendingRafId: number | null = null
 let pendingUpdates: Set<AnyNodeId> = new Set()
 
-function pointsEqual(a: [number, number], b: [number, number], tolerance = 1e-6) {
-  const dx = a[0] - b[0]
-  const dz = a[1] - b[1]
-  return dx * dx + dz * dz <= tolerance * tolerance
-}
-
-function wallLength(wall: Pick<WallNode, 'start' | 'end'>) {
-  return Math.hypot(wall.end[0] - wall.start[0], wall.end[1] - wall.start[1])
-}
-
-function getWallEndpointAtPoint(
-  wall: Pick<WallNode, 'start' | 'end'>,
-  point: [number, number],
-): 'start' | 'end' | null {
-  if (pointsEqual(wall.start, point)) return 'start'
-  if (pointsEqual(wall.end, point)) return 'end'
-  return null
-}
-
-function getWallFreeEndpoint(wall: Pick<WallNode, 'start' | 'end'>, sharedPoint: [number, number]) {
-  return pointsEqual(wall.start, sharedPoint) ? wall.end : wall.start
-}
-
-function areWallStylesCompatible(a: WallNode, b: WallNode) {
-  const aInterior = getWallSurfaceMaterialSignature(getEffectiveWallSurfaceMaterial(a, 'interior'))
-  const bInterior = getWallSurfaceMaterialSignature(getEffectiveWallSurfaceMaterial(b, 'interior'))
-  const aExterior = getWallSurfaceMaterialSignature(getEffectiveWallSurfaceMaterial(a, 'exterior'))
-  const bExterior = getWallSurfaceMaterialSignature(getEffectiveWallSurfaceMaterial(b, 'exterior'))
-
-  return (
-    (a.parentId ?? null) === (b.parentId ?? null) &&
-    Math.abs((a.curveOffset ?? 0) - (b.curveOffset ?? 0)) <= 1e-6 &&
-    Math.abs((a.thickness ?? 0.2) - (b.thickness ?? 0.2)) <= 1e-6 &&
-    // Absent height means plane-bound (follows the storey), which must never
-    // merge with an explicit height — even one that currently matches the plane.
-    (a.height == null) === (b.height == null) &&
-    Math.abs((a.height ?? 0) - (b.height ?? 0)) <= 1e-6 &&
-    aInterior === bInterior &&
-    aExterior === bExterior &&
-    a.frontSide === b.frontSide &&
-    a.backSide === b.backSide &&
-    a.visible === b.visible
-  )
-}
-
-function areWallsCollinearAcrossPoint(a: WallNode, b: WallNode, sharedPoint: [number, number]) {
-  const freeA = getWallFreeEndpoint(a, sharedPoint)
-  const freeB = getWallFreeEndpoint(b, sharedPoint)
-  const ax = freeA[0] - sharedPoint[0]
-  const az = freeA[1] - sharedPoint[1]
-  const bx = freeB[0] - sharedPoint[0]
-  const bz = freeB[1] - sharedPoint[1]
-  const lenA = Math.hypot(ax, az)
-  const lenB = Math.hypot(bx, bz)
-
-  if (lenA < 1e-6 || lenB < 1e-6) return false
-
-  const cross = (ax * bz - az * bx) / (lenA * lenB)
-  const dot = (ax * bx + az * bz) / (lenA * lenB)
-  return Math.abs(cross) <= 1e-4 && dot < -0.999
-}
-
-function resolveMergedWallEndpoints(
-  primary: WallNode,
-  secondary: WallNode,
-  sharedPoint: [number, number],
-): { start: [number, number]; end: [number, number] } {
-  const primaryEndpoint = getWallEndpointAtPoint(primary, sharedPoint)
-  const secondaryEndpoint = getWallEndpointAtPoint(secondary, sharedPoint)
-
-  if (primaryEndpoint === 'end' && secondaryEndpoint === 'start') {
-    return { start: primary.start, end: secondary.end }
-  }
-  if (primaryEndpoint === 'start' && secondaryEndpoint === 'end') {
-    return { start: secondary.start, end: primary.end }
-  }
-  if (primaryEndpoint === 'start' && secondaryEndpoint === 'start') {
-    return { start: primary.end, end: secondary.end }
-  }
-
-  return { start: primary.start, end: secondary.start }
-}
-
-function buildMergedWallAttachmentUpdates(
-  primary: WallNode,
-  secondary: WallNode,
-  mergedWallId: AnyNodeId,
-  mergedStart: [number, number],
-  mergedEnd: [number, number],
-  nodes: Record<AnyNodeId, AnyNode>,
-): WallAttachmentUpdate[] {
-  const mergedLength = Math.max(
-    Math.hypot(mergedEnd[0] - mergedStart[0], mergedEnd[1] - mergedStart[1]),
-    1e-6,
-  )
-  const tangentX = (mergedEnd[0] - mergedStart[0]) / mergedLength
-  const tangentZ = (mergedEnd[1] - mergedStart[1]) / mergedLength
-  const updates: WallAttachmentUpdate[] = []
-
-  const wallChildren = [...(primary.children ?? []), ...(secondary.children ?? [])] as AnyNodeId[]
-  for (const childId of wallChildren) {
-    const child = nodes[childId]
-    if (!(child && 'position' in child && Array.isArray(child.position))) {
-      continue
-    }
-
-    const sourceWall = child.parentId === secondary.id ? secondary : primary
-    const sourceLength = Math.max(wallLength(sourceWall), 1e-6)
-    const localX = typeof child.position[0] === 'number' ? child.position[0] : 0
-    const worldX =
-      sourceWall.start[0] + ((sourceWall.end[0] - sourceWall.start[0]) * localX) / sourceLength
-    const worldZ =
-      sourceWall.start[1] + ((sourceWall.end[1] - sourceWall.start[1]) * localX) / sourceLength
-    const nextLocalX = Math.max(
-      0,
-      Math.min(
-        mergedLength,
-        (worldX - mergedStart[0]) * tangentX + (worldZ - mergedStart[1]) * tangentZ,
-      ),
-    )
-
-    updates.push({
-      id: childId,
-      data: {
-        parentId: mergedWallId,
-        wallId: mergedWallId,
-        position: [nextLocalX, child.position[1], child.position[2]] as typeof child.position,
-        ...('wallT' in child ? { wallT: nextLocalX / mergedLength } : {}),
-      } as Partial<AnyNode>,
-    })
-  }
-
-  return updates
-}
-
 function buildWallMergePlans(
   nodes: Record<AnyNodeId, AnyNode>,
   idsToDelete: AnyNodeId[],
@@ -1162,7 +1065,7 @@ function buildWallMergePlans(
         if (node?.type !== 'wall') return false
         if (skippedWallIds.has(node.id) || usedWallIds.has(node.id)) return false
         if ((node.parentId ?? null) !== (deletedWall.parentId ?? null)) return false
-        return pointsEqual(node.start, junction) || pointsEqual(node.end, junction)
+        return getWallEndpointAtPoint(node, junction) !== null
       })
 
       if (candidates.length !== 2) {
@@ -1625,175 +1528,269 @@ export const setNodeAction = (
   get().markDirty(id)
 }
 
+/** The scene record a node deletion reads and rewrites. */
+export type NodeDeletionScene = Pick<SceneState, 'nodes' | 'rootNodeIds' | 'collections'>
+
+/** What deleting `ids` does to a scene, before anything is committed. */
+export type NodeDeletionPlan = NodeDeletionScene & {
+  /** Every removed id: the requested ids, their subtrees, kind cascades, merged-away walls. */
+  deletedIds: Set<AnyNodeId>
+  parentsToMarkDirty: Set<AnyNodeId>
+  nodesToMarkDirty: Set<AnyNodeId>
+  /** Preview only: existing default gutters and downspouts the refresh may keep or replace. */
+  unsettledIds: Set<AnyNodeId>
+  /** Preview only: roof segments whose `children` the refresh rewrites. */
+  regeneratedHostIds: Set<AnyNodeId>
+}
+
+/**
+ * The delete store action's planner, without committing: the requested ids,
+ * their `children` subtrees and kind `onDeleteCascade` companions, collinear
+ * walls merged across a deleted junction, neighbour patches, support and unit
+ * cleanup, and the default gutter and downspout refresh.
+ *
+ * The refresh mints gutters, downspouts and outlets with random ids, and which
+ * existing defaults it keeps can depend on them. With `mintDefaults: false`
+ * (a preview, such as the MCP patch dry run) the refresh does not run: the
+ * existing defaults it would touch are listed in `unsettledIds`, and the plan
+ * is deterministic and equals the commit for every other existing id. The
+ * delete action mints.
+ */
+export function planNodeDeletion(
+  scene: NodeDeletionScene,
+  ids: AnyNodeId[],
+  { mintDefaults = true }: { mintDefaults?: boolean } = {},
+): NodeDeletionPlan {
+  const parentsToMarkDirty = new Set<AnyNodeId>()
+  const nodesToMarkDirty = new Set<AnyNodeId>()
+  const deletedIds = new Set<AnyNodeId>()
+  const mergePlans = buildWallMergePlans(scene.nodes, ids)
+  const requestedDeleteIds = new Set(ids)
+  const nextNodes = { ...scene.nodes }
+  const nextCollections = { ...scene.collections }
+  let nextRootIds = [...scene.rootNodeIds]
+
+  // Collect all ids to delete (the requested ids + all their descendants) before
+  // mutating anything, so the recursive walk reads consistent state.
+  const allIds = new Set<AnyNodeId>()
+  const collect = (id: AnyNodeId) => {
+    if (allIds.has(id)) return
+    allIds.add(id)
+    const node = nextNodes[id]
+    const cascadeDeletes = node
+      ? nodeRegistry
+          .get(node.type)
+          ?.parametrics?.onDeleteCascade?.(node, nextNodes, allIds, requestedDeleteIds)
+      : null
+    if (cascadeDeletes) {
+      for (const companionId of cascadeDeletes) collect(companionId)
+    }
+    if (node && 'children' in node) {
+      for (const cid of node.children as AnyNodeId[]) collect(cid)
+    }
+  }
+  for (const id of ids) collect(id)
+  for (const plan of mergePlans) {
+    allIds.add(plan.secondaryWallId)
+  }
+  const affectedRoofIds = new Set<AnyNodeId>()
+  for (const id of allIds) {
+    const node = nextNodes[id]
+    addLeanToHostRoofId(node, nextNodes, affectedRoofIds)
+    if (node?.type === 'roof-segment' && node.parentId) {
+      affectedRoofIds.add(node.parentId as AnyNodeId)
+    }
+  }
+  for (const id of allIds) deletedIds.add(id)
+
+  // Let each deleted kind undo what it imposed on its neighbours (e.g. an
+  // auto-inserted elbow re-extends the duct runs it trimmed back onto the
+  // corner it replaced). Read against pre-deletion `nextNodes`; skip
+  // patches that target a node also being deleted.
+  for (const id of allIds) {
+    const node = nextNodes[id]
+    if (!node) continue
+    const onDelete = nodeRegistry.get(node.type)?.parametrics?.onDelete
+    if (!onDelete) continue
+    for (const { id: targetId, data } of onDelete(node, nextNodes, allIds, requestedDeleteIds)) {
+      if (allIds.has(targetId)) continue
+      const target = nextNodes[targetId]
+      if (!target) continue
+      nextNodes[targetId] = { ...target, ...data } as AnyNode
+      nodesToMarkDirty.add(targetId)
+    }
+  }
+
+  for (const plan of mergePlans) {
+    const primaryWall = nextNodes[plan.primaryWallId]
+    if (!(primaryWall && primaryWall.type === 'wall') || allIds.has(plan.primaryWallId)) {
+      continue
+    }
+
+    nextNodes[plan.primaryWallId] = {
+      ...primaryWall,
+      start: plan.mergedStart,
+      end: plan.mergedEnd,
+      children: plan.mergedChildren,
+    }
+    nodesToMarkDirty.add(plan.primaryWallId)
+
+    for (const update of plan.attachmentUpdates) {
+      if (allIds.has(update.id)) continue
+      const child = nextNodes[update.id]
+      if (!child) continue
+      nextNodes[update.id] = { ...child, ...update.data } as AnyNode
+      nodesToMarkDirty.add(update.id)
+    }
+  }
+
+  // Deleting a slab strips `supportSlabId` / `deckSlabId` references from
+  // surviving nodes in the same undo commit (mirrors the collectionIds
+  // cleanup below), so those nodes re-elect their support / re-derive
+  // their rise. Deletion is the ONLY writer — a host merely reshaped away
+  // keeps the field and the read path falls back, letting hosting resume
+  // if the slab returns.
+  const deletedSlabIds = new Set<string>()
+  for (const id of allIds) {
+    if (nextNodes[id]?.type === 'slab') deletedSlabIds.add(id)
+  }
+  if (deletedSlabIds.size > 0) {
+    for (const [nodeId, node] of Object.entries(nextNodes)) {
+      if (allIds.has(nodeId as AnyNodeId)) continue
+      const patch: { supportSlabId?: undefined; deckSlabId?: undefined } = {}
+      const hostId = (node as { supportSlabId?: string }).supportSlabId
+      if (hostId && deletedSlabIds.has(hostId)) patch.supportSlabId = undefined
+      const deckId = (node as { deckSlabId?: string }).deckSlabId
+      if (deckId && deletedSlabIds.has(deckId)) patch.deckSlabId = undefined
+      if (Object.keys(patch).length > 0) {
+        nextNodes[nodeId as AnyNodeId] = { ...node, ...patch } as AnyNode
+        nodesToMarkDirty.add(nodeId as AnyNodeId)
+      }
+    }
+  }
+
+  const deletedZoneIds = new Set<string>()
+  for (const id of allIds) {
+    if (nextNodes[id]?.type === 'zone') deletedZoneIds.add(id)
+  }
+  if (deletedZoneIds.size > 0) {
+    for (const node of Object.values(nextNodes)) {
+      if (node.type !== 'unit' || allIds.has(node.id)) continue
+      const members = node.members.filter((id) => !deletedZoneIds.has(id))
+      if (members.length === node.members.length) continue
+      nextNodes[node.id] = { ...node, members }
+      nodesToMarkDirty.add(node.id)
+    }
+  }
+
+  for (const id of allIds) {
+    const node = nextNodes[id]
+    if (!node) continue
+
+    // 1. Remove reference from parent — only if the parent itself is NOT also being deleted
+    const parentId = node.parentId as AnyNodeId | null
+    if (parentId && nextNodes[parentId] && !allIds.has(parentId)) {
+      const parent = nextNodes[parentId] as AnyContainerNode
+      if (parent.children) {
+        nextNodes[parent.id] = {
+          ...parent,
+          children: parent.children.filter((cid) => cid !== id),
+        } as AnyNode
+        parentsToMarkDirty.add(parent.id)
+      }
+    }
+
+    // 2. Remove from root list
+    nextRootIds = nextRootIds.filter((rid) => rid !== id)
+
+    // 3. Remove from any collections it belongs to
+    if ('collectionIds' in node && node.collectionIds) {
+      for (const cid of node.collectionIds as CollectionId[]) {
+        const col = nextCollections[cid]
+        if (col) {
+          nextCollections[cid] = { ...col, nodeIds: col.nodeIds.filter((nid) => nid !== id) }
+        }
+      }
+    }
+
+    // 4. Delete the node itself
+    delete nextNodes[id]
+  }
+
+  const unsettledIds = new Set<AnyNodeId>()
+  const regeneratedHostIds = new Set<AnyNodeId>()
+  if (mintDefaults) {
+    refreshDefaultGuttersForRoofIds(nextNodes, affectedRoofIds, nodesToMarkDirty, deletedIds)
+  } else {
+    collectRefreshedDefaults(nextNodes, affectedRoofIds, unsettledIds, regeneratedHostIds)
+  }
+
+  return {
+    nodes: nextNodes,
+    rootNodeIds: nextRootIds,
+    collections: nextCollections,
+    deletedIds,
+    parentsToMarkDirty,
+    nodesToMarkDirty,
+    unsettledIds,
+    regeneratedHostIds,
+  }
+}
+
+/**
+ * The existing nodes the default gutter refresh of `roofIds` may keep, move or
+ * replace: each roof's default gutters and the downspouts on them. Which of
+ * them survive depends on the gutters the refresh mints, whose ids are random.
+ * `hosts` receives the roof segments whose `children` the refresh rewrites.
+ */
+function collectRefreshedDefaults(
+  nodes: Record<AnyNodeId, AnyNode>,
+  roofIds: Iterable<AnyNodeId>,
+  out: Set<AnyNodeId>,
+  hosts: Set<AnyNodeId>,
+) {
+  const gutterIds = new Set<AnyNodeId>()
+  for (const roofId of new Set(roofIds)) {
+    const roof = nodes[roofId]
+    if (roof?.type !== 'roof') continue
+    for (const segmentId of roof.children ?? []) {
+      const segment = nodes[segmentId as AnyNodeId]
+      if (segment?.type !== 'roof-segment') continue
+      hosts.add(segment.id as AnyNodeId)
+      for (const childId of segment.children ?? []) {
+        if (isDefaultGutterNode(nodes[childId as AnyNodeId], segment.id)) {
+          gutterIds.add(childId as AnyNodeId)
+        }
+      }
+    }
+  }
+  for (const id of gutterIds) out.add(id)
+  for (const node of Object.values(nodes)) {
+    if (node?.type === 'downspout' && node.gutterId && gutterIds.has(node.gutterId as AnyNodeId)) {
+      out.add(node.id as AnyNodeId)
+    }
+  }
+}
+
 const deleteNodesActionImpl = (
   set: (fn: (state: SceneState) => Partial<SceneState>) => void,
   get: () => SceneState,
   ids: AnyNodeId[],
 ) => {
   if (get().readOnly) return
-  const parentsToMarkDirty = new Set<AnyNodeId>()
-  const nodesToMarkDirty = new Set<AnyNodeId>()
-  const deletedIds = new Set<AnyNodeId>()
-  const mergePlans = buildWallMergePlans(get().nodes, ids)
-  const requestedDeleteIds = new Set(ids)
+  let deletedIds = new Set<AnyNodeId>()
+  let parentsToMarkDirty = new Set<AnyNodeId>()
+  let nodesToMarkDirty = new Set<AnyNodeId>()
 
   set((state) => {
-    const nextNodes = { ...state.nodes }
-    const nextCollections = { ...state.collections }
-    let nextRootIds = [...state.rootNodeIds]
-
-    // Collect all ids to delete (the requested ids + all their descendants) before
-    // mutating anything, so the recursive walk reads consistent state.
-    const allIds = new Set<AnyNodeId>()
-    const collect = (id: AnyNodeId) => {
-      if (allIds.has(id)) return
-      allIds.add(id)
-      const node = nextNodes[id]
-      const cascadeDeletes = node
-        ? nodeRegistry
-            .get(node.type)
-            ?.parametrics?.onDeleteCascade?.(node, nextNodes, allIds, requestedDeleteIds)
-        : null
-      if (cascadeDeletes) {
-        for (const companionId of cascadeDeletes) collect(companionId)
-      }
-      if (node && 'children' in node) {
-        for (const cid of node.children as AnyNodeId[]) collect(cid)
-      }
-    }
-    for (const id of ids) collect(id)
-    for (const plan of mergePlans) {
-      allIds.add(plan.secondaryWallId)
-    }
-    const affectedRoofIds = new Set<AnyNodeId>()
-    for (const id of allIds) {
-      const node = nextNodes[id]
-      addLeanToHostRoofId(node, nextNodes, affectedRoofIds)
-      if (node?.type === 'roof-segment' && node.parentId) {
-        affectedRoofIds.add(node.parentId as AnyNodeId)
-      }
-    }
-    for (const id of allIds) deletedIds.add(id)
-
-    // Let each deleted kind undo what it imposed on its neighbours (e.g. an
-    // auto-inserted elbow re-extends the duct runs it trimmed back onto the
-    // corner it replaced). Read against pre-deletion `nextNodes`; skip
-    // patches that target a node also being deleted.
-    for (const id of allIds) {
-      const node = nextNodes[id]
-      if (!node) continue
-      const onDelete = nodeRegistry.get(node.type)?.parametrics?.onDelete
-      if (!onDelete) continue
-      for (const { id: targetId, data } of onDelete(node, nextNodes, allIds, requestedDeleteIds)) {
-        if (allIds.has(targetId)) continue
-        const target = nextNodes[targetId]
-        if (!target) continue
-        nextNodes[targetId] = { ...target, ...data } as AnyNode
-        nodesToMarkDirty.add(targetId)
-      }
-    }
-
-    for (const plan of mergePlans) {
-      const primaryWall = nextNodes[plan.primaryWallId]
-      if (!(primaryWall && primaryWall.type === 'wall') || allIds.has(plan.primaryWallId)) {
-        continue
-      }
-
-      nextNodes[plan.primaryWallId] = {
-        ...primaryWall,
-        start: plan.mergedStart,
-        end: plan.mergedEnd,
-        children: plan.mergedChildren,
-      }
-      nodesToMarkDirty.add(plan.primaryWallId)
-
-      for (const update of plan.attachmentUpdates) {
-        if (allIds.has(update.id)) continue
-        const child = nextNodes[update.id]
-        if (!child) continue
-        nextNodes[update.id] = { ...child, ...update.data } as AnyNode
-        nodesToMarkDirty.add(update.id)
-      }
-    }
-
-    // Deleting a slab strips `supportSlabId` / `deckSlabId` references from
-    // surviving nodes in the same undo commit (mirrors the collectionIds
-    // cleanup below), so those nodes re-elect their support / re-derive
-    // their rise. Deletion is the ONLY writer — a host merely reshaped away
-    // keeps the field and the read path falls back, letting hosting resume
-    // if the slab returns.
-    const deletedSlabIds = new Set<string>()
-    for (const id of allIds) {
-      if (nextNodes[id]?.type === 'slab') deletedSlabIds.add(id)
-    }
-    if (deletedSlabIds.size > 0) {
-      for (const [nodeId, node] of Object.entries(nextNodes)) {
-        if (allIds.has(nodeId as AnyNodeId)) continue
-        const patch: { supportSlabId?: undefined; deckSlabId?: undefined } = {}
-        const hostId = (node as { supportSlabId?: string }).supportSlabId
-        if (hostId && deletedSlabIds.has(hostId)) patch.supportSlabId = undefined
-        const deckId = (node as { deckSlabId?: string }).deckSlabId
-        if (deckId && deletedSlabIds.has(deckId)) patch.deckSlabId = undefined
-        if (Object.keys(patch).length > 0) {
-          nextNodes[nodeId as AnyNodeId] = { ...node, ...patch } as AnyNode
-          nodesToMarkDirty.add(nodeId as AnyNodeId)
-        }
-      }
-    }
-
-    const deletedZoneIds = new Set<string>()
-    for (const id of allIds) {
-      if (nextNodes[id]?.type === 'zone') deletedZoneIds.add(id)
-    }
-    if (deletedZoneIds.size > 0) {
-      for (const node of Object.values(nextNodes)) {
-        if (node.type !== 'unit' || allIds.has(node.id)) continue
-        const members = node.members.filter((id) => !deletedZoneIds.has(id))
-        if (members.length === node.members.length) continue
-        nextNodes[node.id] = { ...node, members }
-        nodesToMarkDirty.add(node.id)
-      }
-    }
-
-    for (const id of allIds) {
-      const node = nextNodes[id]
-      if (!node) continue
-
-      // 1. Remove reference from parent — only if the parent itself is NOT also being deleted
-      const parentId = node.parentId as AnyNodeId | null
-      if (parentId && nextNodes[parentId] && !allIds.has(parentId)) {
-        const parent = nextNodes[parentId] as AnyContainerNode
-        if (parent.children) {
-          nextNodes[parent.id] = {
-            ...parent,
-            children: parent.children.filter((cid) => cid !== id),
-          } as AnyNode
-          parentsToMarkDirty.add(parent.id)
-        }
-      }
-
-      // 2. Remove from root list
-      nextRootIds = nextRootIds.filter((rid) => rid !== id)
-
-      // 3. Remove from any collections it belongs to
-      if ('collectionIds' in node && node.collectionIds) {
-        for (const cid of node.collectionIds as CollectionId[]) {
-          const col = nextCollections[cid]
-          if (col) {
-            nextCollections[cid] = { ...col, nodeIds: col.nodeIds.filter((nid) => nid !== id) }
-          }
-        }
-      }
-
-      // 4. Delete the node itself
-      delete nextNodes[id]
-    }
-
-    refreshDefaultGuttersForRoofIds(nextNodes, affectedRoofIds, nodesToMarkDirty, deletedIds)
+    const plan = planNodeDeletion(state, ids)
+    deletedIds = plan.deletedIds
+    parentsToMarkDirty = plan.parentsToMarkDirty
+    nodesToMarkDirty = plan.nodesToMarkDirty
 
     addActiveSceneCommitNodeIds([...deletedIds, ...parentsToMarkDirty, ...nodesToMarkDirty])
 
-    return { nodes: nextNodes, rootNodeIds: nextRootIds, collections: nextCollections }
+    return { nodes: plan.nodes, rootNodeIds: plan.rootNodeIds, collections: plan.collections }
   })
 
   // Deleted ids must leave the dirty set: every consumer skips missing
@@ -1872,3 +1869,19 @@ export const deleteNodesAction = (
   get: Parameters<typeof deleteNodesActionImpl>[1],
   ids: AnyNodeId[],
 ) => runWithSceneCommitNodeIds(ids, () => deleteNodesActionImpl(validatedSet(set), get, ids))
+
+/**
+ * What the default gutter refresh of `roofIds` would touch, without running
+ * it: the existing default gutters and downspouts it may keep or replace, and
+ * the roof segments whose `children` it rewrites. For previews of edits that
+ * trigger the refresh (a roof segment update, a delete).
+ */
+export function previewDefaultGutterRefresh(
+  nodes: Record<AnyNodeId, AnyNode>,
+  roofIds: Iterable<AnyNodeId>,
+): { unsettledIds: Set<AnyNodeId>; regeneratedHostIds: Set<AnyNodeId> } {
+  const unsettledIds = new Set<AnyNodeId>()
+  const regeneratedHostIds = new Set<AnyNodeId>()
+  collectRefreshedDefaults(nodes, roofIds, unsettledIds, regeneratedHostIds)
+  return { unsettledIds, regeneratedHostIds }
+}

@@ -65,7 +65,7 @@ const MAX_FLOORPLAN_PANE_RATIO = 0.85
 
 export type ViewMode = '3d' | '2d' | 'split'
 export type SplitOrientation = 'horizontal' | 'vertical'
-export type WorkspaceMode = 'edit' | 'studio'
+export type WorkspaceMode = 'edit' | 'studio' | 'sheets'
 
 // Snapshot capture is invoked from two surfaces with different policies.
 // `standard` mirrors the existing user-driven UX — pick region / viewport /
@@ -570,6 +570,7 @@ export const DEFAULT_PERSISTED_EDITOR_LAYOUT_STATE: PersistedEditorLayoutState =
     wall: defaultSnappingModeFor('wall'),
     item: defaultSnappingModeFor('item'),
     polygon: defaultSnappingModeFor('polygon'),
+    rotation: defaultSnappingModeFor('rotation'),
   },
   continuationByContext: {
     wall: CONTINUATION_PROFILES.wall.default,
@@ -800,8 +801,14 @@ function normalizeContinuationByContext(
   }
 }
 
-function normalizePersistedEditorLayoutState(
-  state: (Partial<PersistedEditorLayoutState> & LegacyContinuationState) | null | undefined,
+export function normalizePersistedEditorLayoutState(
+  state:
+    | (Omit<Partial<PersistedEditorLayoutState>, 'snappingModeByContext'> &
+        LegacyContinuationState & {
+          snappingModeByContext?: Partial<Record<SnapContext, unknown>>
+        })
+    | null
+    | undefined,
 ): PersistedEditorLayoutState {
   return {
     activeSidebarPanel:
@@ -821,6 +828,7 @@ function normalizePersistedEditorLayoutState(
       wall: migrateSnappingMode(state?.snappingModeByContext?.wall, 'wall'),
       item: migrateSnappingMode(state?.snappingModeByContext?.item, 'item'),
       polygon: migrateSnappingMode(state?.snappingModeByContext?.polygon, 'polygon'),
+      rotation: migrateSnappingMode(state?.snappingModeByContext?.rotation, 'rotation'),
     },
     continuationByContext: normalizeContinuationByContext(state),
     showReferenceFloor: state?.showReferenceFloor === true,
@@ -1501,10 +1509,13 @@ const useEditor = create<EditorState>()(
       _viewModeBeforeStudio: null as ViewMode | null,
       setWorkspaceMode: (mode) => {
         if (get().workspaceMode === mode) return
-        if (mode === 'studio') {
+        // Every non-'edit' workspace (studio's clean canvas, sheets' paper
+        // space) enters the same way: stash the view, go 3D-only, drop the
+        // editing chrome. Leaving any of them restores the stashed view.
+        if (mode !== 'edit') {
           const currentViewMode = get().viewMode
           set({
-            workspaceMode: 'studio',
+            workspaceMode: mode,
             _viewModeBeforeStudio: currentViewMode,
             viewMode: '3d',
             isFloorplanOpen: false,
