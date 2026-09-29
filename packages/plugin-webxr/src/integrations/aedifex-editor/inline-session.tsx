@@ -89,7 +89,8 @@ export function AedifexWebXRButton({
   const transitionPhase = useXRPlayerMode((state) => state.transitionPhase)
   const entryMessage = useXRPlayerMode((state) => state.entryMessage)
   const active = !!feature.session
-  const label = active ? 'Exit VR' : feature.entering ? 'Entering VR' : 'Enter VR'
+  const unavailable = feature.runtime.status === 'unsupported'
+  const label = active ? 'Exit VR' : feature.entering ? 'Entering VR' : unavailable ? 'VR unavailable on this device' : 'Enter VR'
   return (
     <>
       <button
@@ -98,7 +99,7 @@ export function AedifexWebXRButton({
         className={className}
         disabled={!feature.ready || feature.entering}
         onClick={() => void (active ? feature.exit() : feature.enter())}
-        title={feature.error ?? (feature.ready ? label : 'Preparing VR')}
+        title={feature.error ?? (unavailable ? 'Use a compatible headset and a WebXR-enabled browser to enter VR.' : feature.ready ? label : 'Preparing VR')}
         type="button"
       >
         <RectangleGoggles className="h-4 w-4" />

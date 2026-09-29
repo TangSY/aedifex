@@ -156,11 +156,7 @@ export function useWebXRSession(qualityPreset: XRQualityPreset = 'balanced') {
 
   const ready = runtime.status === 'ready'
   const unavailable = runtime.status === 'unsupported'
-  const sessionError = error ?? (runtime.status === 'error'
-    ? runtime.message
-    : runtime.status === 'unsupported'
-      ? 'Immersive VR is unavailable. Connect a headset and open the editor over HTTPS.'
-      : null)
+  const sessionError = error ?? (runtime.status === 'error' ? runtime.message : null)
   const controlsOwner = useRef({})
   useEffect(() => {
     useWebXRSessionControls.getState().publish(controlsOwner.current, {
