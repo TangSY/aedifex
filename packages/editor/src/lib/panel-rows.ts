@@ -60,7 +60,7 @@ export type PanelRow = { section?: string } & (
     }
 )
 
-export const PANEL_MODEL_EXTENSION = 'pascal:editor/panel-model'
+export const PANEL_MODEL_EXTENSION = 'aedifex:editor/panel-model'
 
 export type NodePanelModel<N extends AnyNode = AnyNode> = {
   rows: (context: {

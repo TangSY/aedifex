@@ -121,12 +121,12 @@ describe('pluginInstallLocks', () => {
     })
     const before = pluginInstallLocks.getSnapshot()
     setPluginInstallLocks({
-      'pascal:architect': { actionLabel: 'Upgrade', onAction: () => {}, reason: 'Pro plan' },
+      'aedifex:architect': { actionLabel: 'Upgrade', onAction: () => {}, reason: 'Pro plan' },
     })
     const after = pluginInstallLocks.getSnapshot()
 
     expect(after).not.toBe(before)
-    expect(Object.keys(after)).toEqual(['pascal:architect'])
+    expect(Object.keys(after)).toEqual(['aedifex:architect'])
     setPluginInstallLocks({})
     expect(pluginInstallLocks.getSnapshot()).toEqual({})
     expect(notified).toBe(2)

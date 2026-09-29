@@ -2,7 +2,7 @@
  * The viewer's own lines for a sheet: answers `camera-controls:extract-edges`
  * with the visible feature edges of the scene through an orthographic pose
  * — the same pose the thumbnail generator captures the picture from — as
- * world segments on a `pascal:edges` DOM event (lib/vector-edges.ts).
+ * world segments on an `aedifex:edges` DOM event (lib/vector-edges.ts).
  *
  * Runs inside the Canvas next to the ThumbnailGenerator so it shares the
  * renderer and the scene; hides what the picture hides (scan / guide /
@@ -19,7 +19,7 @@ import { extractVisibleEdges, type VisibleEdges } from '../../lib/vector-edges'
 import { hideCaptureExcluded } from './thumbnail-generator'
 
 export type ExtractEdgesRequest = {
-  /** Echoed on the `pascal:edges` event so a caller matches its own answer. */
+  /** Echoed on the `aedifex:edges` event so a caller matches its own answer. */
   requestId: string
   ortho: { position: [number, number, number]; target: [number, number, number]; viewWidth: number }
   /** width / height of the picture the edges go over. */
@@ -45,7 +45,7 @@ export function VectorEdgeExtractor() {
 
   useEffect(() => {
     const respond = (detail: ExtractEdgesResult) => {
-      window.dispatchEvent(new CustomEvent('pascal:edges', { detail }))
+      window.dispatchEvent(new CustomEvent('aedifex:edges', { detail }))
     }
     const handle = async (event: ExtractEdgesRequest) => {
       if (!event?.ortho) return

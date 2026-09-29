@@ -62,7 +62,7 @@ export const POINTS_PER_INCH = 72
 export type { FloorplanSchedule } from './floorplan-extension'
 /**
  * The schedules the kinds on a level contribute
- * (`def.extensions['pascal:editor/floorplan'].schedule`). Re-exported here so
+ * (`def.extensions['aedifex:editor/floorplan'].schedule`). Re-exported here so
  * a sheet's schedule viewport prints the SAME marks the plan's mark bubbles
  * do — both come from `resolveOpeningMarks` in `@aedifex/nodes`. A sheet
  * passes `{ drafting: true }` so its schedules number like its drafted tags.

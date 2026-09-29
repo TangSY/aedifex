@@ -14,7 +14,7 @@ export function registerDesignSchema(server: McpServer, _bridge: SceneOperations
     {
       title: 'Design schema',
       description:
-        'JSON Schema, limits, rules and an example for Pascal designs (procedural items). Author a design against it, then call validate_design, which is the authority.',
+        'JSON Schema, limits, rules and an example for Aedifex designs (procedural items). Author a design against it, then call validate_design, which is the authority.',
       mimeType: 'application/json',
     },
     async (uri) => ({
