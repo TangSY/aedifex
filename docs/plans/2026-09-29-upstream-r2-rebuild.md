@@ -17,7 +17,7 @@ Integrate all upstream core features including wall lifecycle/curtain walls, pro
 - [x] Review task results; run install, full tests, build, types, MCP and targeted XR tests; fix regressions.
 - [x] SaaS file relink/install/build; confirm no unrelated changes and review architecture/compatibility.
 - [x] Commit review branch; reconcile normal merge to main and complete final verification.
-- [ ] Push both repositories to all required remotes; no deployment.
+- Push delivery results are recorded in automation memory after remote SHA verification; no deployment.
 
 ## Ownership and interface review
 Nodes/Viewer and Editor share exported types but edit separate scopes: coordinate interface issues through controller, install/build gates wait for all. Core owns shared schema; consumers adapt after stabilization. Root owns package manifests, Git/index, dependency graph, external plugin and SaaS. Agents may edit only assigned source scopes; no Git mutation or installs/builds. Controller reviews all conflict decisions and conducts final cross-module checks.
@@ -53,3 +53,4 @@ Initial three-way apply required excluding already-reviewed fork-deleted publish
 - Final landing Core tests: 3,332 passed; MCP: 455 passed, zero failed. No unresolved conflict entries or source markers.
 - Diff whitespace check passes excluding the unchanged third-party font license and Three patch context; those upstream/vendor bytes are preserved.
 - Final landing `bun run check-types`: 13/13 passed; `AEDIFEX_PORTABLE_BUILD=1 bun run build`: 8/8 passed. Full review test suite and SaaS validation remain applicable; the only runtime landing difference was covered by the repeated Core suite.
+- Main integration merge: `a4c85f7b6`. SaaS integration commit: `d8343fa`.
