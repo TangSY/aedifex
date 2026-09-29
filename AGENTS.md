@@ -1,13 +1,13 @@
-# Agent Instructions — `pascalorg/editor`
+# Agent Instructions — `TangSY/aedifex`
 
-Public, open-source home of `@pascal-app/{core,viewer,editor,mcp}` and the standalone editor app. Consumed both as npm packages and (in `pascalorg/private-editor`) as a git submodule.
+Public, open-source home of `@aedifex/{core,viewer,editor,mcp}` and the standalone editor app. Consumed both as npm packages and (in the closed-source `aedifex-saas` repo) via `file:` workspace links.
 
 ## Repo Shape
 
 | Path | Purpose |
 |---|---|
-| `packages/core` | Scene graph, node schemas, stores, event bus, core systems — pure logic, no Three.js. `src/capture/` holds the capture-session contracts published as `@pascal-app/core/capture` |
-| `packages/viewer` | Standalone 3D canvas: renderers, viewer systems, presentation state. `src/capture/` holds the capture runtime and reference layers published as `@pascal-app/viewer/capture` |
+| `packages/core` | Scene graph, node schemas, stores, event bus, core systems — pure logic, no Three.js. `src/capture/` holds the capture-session contracts published as `@aedifex/core/capture` |
+| `packages/viewer` | Standalone 3D canvas: renderers, viewer systems, presentation state. `src/capture/` holds the capture runtime and reference layers published as `@aedifex/viewer/capture` |
 | `packages/editor` | Editor UI components reused by the standalone app and embedders |
 | `packages/mcp` | MCP server and scene storage adapters |
 | `apps/editor` | Standalone editor app — composes `viewer` + `editor` + tools |
@@ -15,7 +15,7 @@ Public, open-source home of `@pascal-app/{core,viewer,editor,mcp}` and the stand
 ## Where to look
 
 - **Architecture rules** — `wiki/architecture/` (read on demand; index in `wiki/architecture/README.md`).
-- **Skills (ready workflows)** — `.agents/skills/<name>/SKILL.md`. Same content is reachable as `.claude/skills/`, `.cursor/skills/`, `.codex/skills/` (symlinks to `.agents/skills/`).
+- **Skills (ready workflows)** — `.agents/skills/<name>/SKILL.md`. The `.cursor/skills/` and `.codex/skills/` paths are symlinks to `.agents/skills/`.
 - **Repo orientation for humans** — `README.md`, `SETUP.md`, `CONTRIBUTING.md`.
 
 `CLAUDE.md`, `GEMINI.md`, and `.github/copilot-instructions.md` are symlinks to this file. Codex reads this file directly.

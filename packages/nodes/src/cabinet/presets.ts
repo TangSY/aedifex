@@ -1,5 +1,5 @@
-import type { CabinetModuleNode, CabinetNode } from '@pascal-app/core'
-import { CABINET_METRIC_DEFAULTS } from '@pascal-app/core'
+import type { CabinetModuleNode, CabinetNode } from '@aedifex/core'
+import { CABINET_METRIC_DEFAULTS } from '@aedifex/core'
 import {
   COOKTOP_STANDARD_WIDTH,
   cooktopCabinetStack,

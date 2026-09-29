@@ -10,7 +10,7 @@
 // combinations unrepresentable: a scope is exactly one interaction at a time,
 // and `idle` carries no interaction payload at all.
 
-import type { AnyNode } from '@pascal-app/core'
+import type { AnyNode } from '@aedifex/core'
 
 export type InteractionView = '2d' | '3d'
 export type ReshapeDriver = 'tool' | 'floorplan'

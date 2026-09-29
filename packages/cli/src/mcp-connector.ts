@@ -4,13 +4,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js'
 import { CliError } from './errors.js'
 import { ensureMcpService } from './mcp-service.js'
-import type { PascalPaths } from './paths.js'
+import type { AedifexPaths } from './paths.js'
 
-/**
- * Bridges stdio to the managed MCP service. The service ships with the CLI, so this never
- * starts the web editor and never needs the downloaded web runtime.
- */
-export async function connectManagedMcp(paths: PascalPaths): Promise<void> {
+export async function connectManagedMcp(paths: AedifexPaths): Promise<void> {
   const { state } = await ensureMcpService({ paths })
   const token = await readMcpToken(paths)
 
@@ -37,12 +33,12 @@ export async function connectManagedMcp(paths: PascalPaths): Promise<void> {
   await stdio.start()
 }
 
-async function readMcpToken(paths: PascalPaths): Promise<string> {
+async function readMcpToken(paths: AedifexPaths): Promise<string> {
   let token = ''
   try {
     token = (await readFile(paths.mcpToken, 'utf8')).trim()
   } catch {}
-  if (!token) throw new CliError('mcp_unavailable', 'Pascal MCP credentials are missing.')
+  if (!token) throw new CliError('mcp_unavailable', 'Aedifex MCP credentials are missing.')
   return token
 }
 
@@ -61,5 +57,5 @@ function applyProtocolVersion(
 }
 
 function reportConnectorError(error: Error): void {
-  process.stderr.write(`[pascal-mcp] ${error.message}\n`)
+  process.stderr.write(`[aedifex-mcp] ${error.message}\n`)
 }

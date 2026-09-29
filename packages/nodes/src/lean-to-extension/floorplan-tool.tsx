@@ -1,7 +1,7 @@
 'use client'
 
-import type { AnyNode, AnyNodeId, LeanToExtensionNode } from '@pascal-app/core'
-import { getWallCurveFrameAt, getWallCurveLength, isCurvedWall } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, LeanToExtensionNode } from '@aedifex/core'
+import { getWallCurveFrameAt, getWallCurveLength, isCurvedWall } from '@aedifex/core'
 import {
   type FloorplanToolContext,
   getSegmentGridStep,
@@ -11,7 +11,7 @@ import {
   triggerSFX,
   useEditor,
   useInteractionScope,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { bendLocalPoint, isCurvedLeanTo } from './arc'
 import { createLeanToAssembly } from './assembly'

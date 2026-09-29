@@ -10,9 +10,9 @@ import {
   registerNode,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { ProceduralItemNode, parseRecipe, shelfRecipe } from '@pascal-app/core/procedural-items'
-import { usePlacementPreview } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { ProceduralItemNode, parseRecipe, shelfRecipe } from '@aedifex/core/procedural-items'
+import { usePlacementPreview } from '@aedifex/editor'
 import { proceduralItemDefinition } from './definition'
 import { createProceduralCeilingMoveSession, proceduralFloorplanMoveTarget } from './move-session'
 
@@ -177,7 +177,7 @@ test('definition gates floor lift and hosting, portals parameter arrows, and dra
 })
 
 test('fresh ceiling placement commits a clean subtree and undo removes it', async () => {
-  const { commitFreshPlacementSubtree } = await import('@pascal-app/editor')
+  const { commitFreshPlacementSubtree } = await import('@aedifex/editor')
   const draft = { ...node, parentId: level.id, metadata: { isNew: true }, visible: false }
   useScene.setState({
     nodes: {

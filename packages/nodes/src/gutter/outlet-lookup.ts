@@ -1,4 +1,4 @@
-import type { GutterNode, GutterOutlet } from '@pascal-app/core'
+import type { GutterNode, GutterOutlet } from '@aedifex/core'
 import {
   OUTLET_WALL_THICKNESS,
   type OutletShape,

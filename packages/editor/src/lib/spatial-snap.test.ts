@@ -1,6 +1,6 @@
 import { test } from 'bun:test'
 import assert from 'node:assert/strict'
-import { snapLocalXZInWorld } from '@pascal-app/core'
+import { snapLocalXZInWorld } from '@aedifex/core'
 import { Group, Vector3 } from 'three'
 
 const close = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-8)

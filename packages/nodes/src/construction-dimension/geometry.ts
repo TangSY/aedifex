@@ -7,7 +7,7 @@ import {
   getWallArcData,
   type MeasurementAnchor,
   type MeasurementPoint,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export type ConstructionDimensionSegmentLayout = {
   dimensionStart: FloorplanPoint

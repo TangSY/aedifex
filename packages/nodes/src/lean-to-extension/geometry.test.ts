@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { LeanToExtensionNode } from '@pascal-app/core'
-import { generateRoofSegmentGeometry, resolveSurfaceColor } from '@pascal-app/viewer'
+import { LeanToExtensionNode } from '@aedifex/core'
+import { generateRoofSegmentGeometry, resolveSurfaceColor } from '@aedifex/viewer'
 import {
   Box3,
   type BoxGeometry,

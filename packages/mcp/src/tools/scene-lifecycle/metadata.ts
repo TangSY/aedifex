@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
-import type { SceneGraph } from '@pascal-app/core/clone-scene-graph'
-import type { AnyNodeId } from '@pascal-app/core/schema'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
+import type { AnyNodeId } from '@aedifex/core/schema'
 import type { SceneOperations } from '../../operations'
 import type { ProjectStatus, SceneMeta } from '../../storage/types'
 

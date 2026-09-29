@@ -29,8 +29,8 @@ import type {
   ConstructionDrawingType,
   FloorplanGeometry,
   LiveNodeOverrides,
-} from '@pascal-app/core'
-import { nodeRegistry, resolveBuildingForLevel } from '@pascal-app/core'
+} from '@aedifex/core'
+import { nodeRegistry, resolveBuildingForLevel } from '@aedifex/core'
 import {
   buildContext,
   collectFloorplanLinkedLevelNodes,
@@ -64,7 +64,7 @@ export type { FloorplanSchedule } from './floorplan-extension'
  * The schedules the kinds on a level contribute
  * (`def.extensions['pascal:editor/floorplan'].schedule`). Re-exported here so
  * a sheet's schedule viewport prints the SAME marks the plan's mark bubbles
- * do — both come from `resolveOpeningMarks` in `@pascal-app/nodes`. A sheet
+ * do — both come from `resolveOpeningMarks` in `@aedifex/nodes`. A sheet
  * passes `{ drafting: true }` so its schedules number like its drafted tags.
  */
 export { collectFloorplanSchedules }

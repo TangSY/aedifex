@@ -5,8 +5,8 @@ import {
   collectSubtree,
   getEffectiveNode,
   useLiveTransforms,
-} from '@pascal-app/core'
-import { nodeLevelFrame } from '@pascal-app/core/procedural-items'
+} from '@aedifex/core'
+import { nodeLevelFrame } from '@aedifex/core/procedural-items'
 
 // Live transforms do not replace the committed snapshot; topology edits do.
 const affectedIdsBySnapshot = new WeakMap<object, Map<AnyNodeId, readonly AnyNodeId[]>>()

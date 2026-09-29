@@ -1,5 +1,5 @@
-import { emitter } from '@pascal-app/core'
-import { isEditableKeyboardTarget } from '@pascal-app/editor'
+import { emitter } from '@aedifex/core'
+import { isEditableKeyboardTarget } from '@aedifex/editor'
 import { useEffect } from 'react'
 import { create } from 'zustand'
 

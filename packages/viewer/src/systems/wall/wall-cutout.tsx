@@ -1,4 +1,4 @@
-import { type AnyNodeId, emitter, sceneRegistry, useScene, type WallNode } from '@pascal-app/core'
+import { type AnyNodeId, emitter, sceneRegistry, useScene, type WallNode } from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 import type { Camera, Material } from 'three'

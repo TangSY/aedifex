@@ -4,8 +4,8 @@ import {
   type GeometryContext,
   resolveAutoZonePolygon,
   type ZoneNode,
-} from '@pascal-app/core'
-import { floorplanGeometryMetadata, readFloorplanContext } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { floorplanGeometryMetadata, readFloorplanContext } from '@aedifex/editor'
 import {
   type ConstructionLengthProfile,
   formatConstructionLength,
@@ -44,7 +44,9 @@ export function buildZoneFloorplan(node: ZoneNode, ctx: GeometryContext): Floorp
   const tintColor = unit?.color ?? node.color
   const stroke = node.color
   const focusOpacity =
-    view?.focusedUnitId && !view.focusedUnitMemberIds?.includes(node.id) ? 0.35 : 1
+    floorplanContext.focusedUnitId && !floorplanContext.focusedUnitMemberIds?.includes(node.id)
+      ? 0.35
+      : 1
   const isRoom = node.spaceRole === 'room'
   const fillOpacity = isRoom ? (isSelected ? 0.12 : 0.04) : isSelected ? 0.28 : 0.16
 

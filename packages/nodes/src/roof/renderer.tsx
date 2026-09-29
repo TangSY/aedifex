@@ -8,14 +8,14 @@ import {
   useLiveNodeOverrides,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getRoofMaterialArray,
   levelWallCladdingRef,
   NodeRenderer,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import type * as THREE from 'three'
 import { useShallow } from 'zustand/react/shallow'
@@ -41,6 +41,7 @@ export const RoofRenderer = ({ node: rawNode }: { node: RoofNode }) => {
   const textures = useViewer((s) => s.textures)
   const colorPreset = useViewer((s) => s.colorPreset)
   const sceneTheme = useViewer((s) => s.sceneTheme)
+  const sceneMaterials = useScene((s) => s.materials)
 
   // Collect roof element IDs (chimneys, skylights, etc.) hosted by any segment.
   // Rendered outside segments-wrapper (invisible during normal mode) so elements
@@ -93,8 +94,8 @@ export const RoofRenderer = ({ node: rawNode }: { node: RoofNode }) => {
   // The gable band is clad like the walls below it (their assemblies).
   const wallCladdingRef = useScene((state) => levelWallCladdingRef(state.nodes, node))
   const customMaterial = useMemo(
-    () => getRoofMaterialArray(node, shading, textures, colorPreset, sceneTheme, wallCladdingRef),
-    [node, shading, textures, colorPreset, sceneTheme, wallCladdingRef],
+    () => getRoofMaterialArray(node, shading, textures, colorPreset, sceneTheme, sceneMaterials, wallCladdingRef),
+    [node, shading, textures, colorPreset, sceneTheme, sceneMaterials, wallCladdingRef],
   )
 
   const material = debugColors

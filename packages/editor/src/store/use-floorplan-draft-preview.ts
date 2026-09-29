@@ -11,7 +11,7 @@
 //
 // Editor-only. Producers clear on tool-inactive, commit, and unmount.
 
-import type { WallPlanPoint } from '@pascal-app/core'
+import type { WallPlanPoint } from '@aedifex/core'
 import { create } from 'zustand'
 
 /** Screen-space (SVG-local px) cursor point — drives the coordinate badge. */

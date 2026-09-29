@@ -25,7 +25,7 @@ import {
   type WallMoveAxis,
   type WallMoveJunctionPlan,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CursorSphere,
   EDITOR_LAYER,
@@ -36,8 +36,8 @@ import {
   snapScalarToGrid,
   triggerSFX,
   useEditor,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BufferGeometry, DoubleSide, Float32BufferAttribute } from 'three'
 import {

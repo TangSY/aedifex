@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { AnyNode } from '@pascal-app/core'
+import type { AnyNode } from '@aedifex/core'
 import { isVisibleInFloorplan } from './floorplan-preview-visibility'
 
 const node = (id: string, type: string, parentId: string | null, visible = true) =>

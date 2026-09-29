@@ -151,7 +151,7 @@ const markerDef: NodeDefinition<typeof Marker> = {
 
 const fixturePlugin = (): Plugin => ({
   id: 'fixture:pack',
-  apiVersion: 1,
+  apiVersion: 2,
   nodes: [
     asPluginNode(planterDef),
     asPluginNode(pumpDef),
@@ -206,11 +206,11 @@ afterEach(() => {
   useScene.temporal.getState().clear()
 })
 
-describe('plugin API v1: capabilities', () => {
+describe('plugin API v2: capabilities', () => {
   test('every optional field has a safe default for a minimal plugin kind', async () => {
     await loadPlugin({
       id: 'fixture:min',
-      apiVersion: 1,
+      apiVersion: 2,
       nodes: [asPluginNode({ ...markerDef, kind: 'fixture:min' })],
     })
     const minimal = nodeRegistry.get('fixture:min')
@@ -225,7 +225,7 @@ describe('plugin API v1: capabilities', () => {
   })
 })
 
-describe('plugin API v1: ports, surfaces and relations', () => {
+describe('plugin API v2: ports, surfaces and relations', () => {
   test('plugin ports join the system graph and port connectivity', async () => {
     await loadPlugin(fixturePlugin())
     const pump = asSceneNode(Pump.parse({}))
@@ -266,7 +266,7 @@ describe('plugin API v1: ports, surfaces and relations', () => {
   })
 })
 
-describe('plugin API v1: editing and reload', () => {
+describe('plugin API v2: editing and reload', () => {
   test('creating, updating and deleting a plugin node each undo and redo in one step', async () => {
     await loadPlugin(fixturePlugin())
     const level = loadLevel([], ['fixture:pack'])
@@ -388,7 +388,7 @@ describe('plugin API v1: editing and reload', () => {
   })
 })
 
-describe('plugin API v1: no install', () => {
+describe('plugin API v2: no install', () => {
   // The store never infers legacy visibility: a host rendering a saved scene
   // (viewer, bake) must pass installedPlugins or every plugin kind is off.
   test('a host that omits install state disables plugin kinds; only a missing list is legacy', async () => {

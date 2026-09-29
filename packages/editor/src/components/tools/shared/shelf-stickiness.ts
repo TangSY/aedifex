@@ -5,7 +5,7 @@ import {
   sceneRegistry,
   surfaceRegionContainsPoint,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Box3, type Camera, Matrix4, Ray, Vector3 } from 'three'
 
 export function createShelfStickiness() {

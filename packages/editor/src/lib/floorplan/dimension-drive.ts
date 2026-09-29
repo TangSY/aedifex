@@ -1,5 +1,5 @@
-import type { AnyNode, AnyNodeId, DoorNode, WallNode, WindowNode } from '@pascal-app/core'
-import { getLinkedWallUpdates } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, DoorNode, WallNode, WindowNode } from '@aedifex/core'
+import { getLinkedWallUpdates } from '@aedifex/core'
 
 /**
  * Driving dimensions — WS3.

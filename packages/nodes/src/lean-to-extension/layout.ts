@@ -8,7 +8,7 @@ import {
   isCurvedWall,
   LeanToExtensionNode,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { EAVE_TUCK_INWARD } from '../gutter/eave-snap'
 import { resolveWallAttachmentAtPlanPoint } from '../shared/wall-attach-target'
 import { type LeanToArcFrame, leanToArcFrameAtLocalX } from './arc'

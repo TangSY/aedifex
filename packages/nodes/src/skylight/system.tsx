@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNodeId, useInteractive, useScene } from '@pascal-app/core'
+import { type AnyNodeId, useInteractive, useScene } from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 
 const easeSkylightAnimation = (value: number) => value * value * (3 - 2 * value)

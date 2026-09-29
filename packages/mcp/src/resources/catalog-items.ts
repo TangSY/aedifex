@@ -3,7 +3,7 @@ import type { SceneOperations } from '../operations'
 import { MCP_CATALOG_ITEMS } from '../tools/asset-catalog'
 
 /**
- * `pascal://catalog/items` — small built-in item catalog for standalone MCP.
+ * `aedifex://catalog/items` — small built-in item catalog for standalone MCP.
  *
  * The editor UI owns the full catalog. MCP intentionally keeps a dependency-free
  * subset so headless agents can still place realistic furniture and fixtures.
@@ -11,7 +11,7 @@ import { MCP_CATALOG_ITEMS } from '../tools/asset-catalog'
 export function registerCatalogItems(server: McpServer, _bridge: SceneOperations): void {
   server.registerResource(
     'catalog-items',
-    'pascal://catalog/items',
+    'aedifex://catalog/items',
     {
       title: 'Item catalog',
       description:

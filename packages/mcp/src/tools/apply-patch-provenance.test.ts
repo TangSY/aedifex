@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { PROVENANCE_MAX_REFS, WallNode } from '@pascal-app/core/schema'
+import { PROVENANCE_MAX_REFS, WallNode } from '@aedifex/core/schema'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { registerApplyPatch } from './apply-patch'
 

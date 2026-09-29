@@ -1504,6 +1504,26 @@ const updateNodesActionImpl = (
   })
 }
 
+/**
+ * Replace a node entirely with the provided value (no spread merge). Used for
+ * snapshot restore, where an update cannot clear omitted fields.
+ */
+export const setNodeAction = (
+  set: (fn: (state: SceneState) => Partial<SceneState>) => void,
+  get: () => SceneState,
+  id: AnyNodeId,
+  node: AnyNode,
+) => {
+  if (get().readOnly || node.id !== id || !get().nodes[id]) return
+
+  set((state) => {
+    if (!state.nodes[id]) return {}
+    return { nodes: { ...state.nodes, [id]: node } }
+  })
+
+  get().markDirty(id)
+}
+
 /** The scene record a node deletion reads and rewrites. */
 export type NodeDeletionScene = Pick<SceneState, 'nodes' | 'rootNodeIds' | 'collections'>
 

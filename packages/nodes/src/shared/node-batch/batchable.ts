@@ -3,7 +3,7 @@ import {
   type BatchableConfig,
   itemClipRegistry,
   useInteractive,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /** One packed allocation per node mesh, for geometry each rebuild replaces. */
 export const nodeMeshBatchKey = (node: AnyNode, meshIndex: number) => `${node.id}:${meshIndex}`

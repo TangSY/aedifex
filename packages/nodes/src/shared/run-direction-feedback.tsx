@@ -1,6 +1,6 @@
 'use client'
 
-import { EDITOR_LAYER } from '@pascal-app/editor'
+import { EDITOR_LAYER } from '@aedifex/editor'
 import { useThree } from '@react-three/fiber'
 import { useMemo } from 'react'
 import { OrthographicCamera, Quaternion, Vector3 } from 'three'

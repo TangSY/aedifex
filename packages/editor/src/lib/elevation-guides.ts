@@ -7,7 +7,7 @@ import {
   getWallEffectiveHeightForNodes,
   levelBaseElevationAt,
   resolveCeilingHeight,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import useElevationGuides from '../store/use-elevation-guides'
 
 export const ELEVATION_ALIGNMENT_THRESHOLD_M = 0.08
@@ -49,7 +49,7 @@ function segmentCenter(
   return [(start[0] + end[0]) / 2, (start[1] + end[1]) / 2]
 }
 
-// Mirrors `resolveFenceLiftElevationForNodes` in `@pascal-app/nodes`, which this
+// Mirrors `resolveFenceLiftElevationForNodes` in `@aedifex/nodes`, which this
 // package cannot import (the fence definition imports the guides from here).
 // A stale host resolves to the level base — the sculpted ground under the
 // fence's start point, sampled where the builder samples it, so the guide line

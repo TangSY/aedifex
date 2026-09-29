@@ -11,7 +11,7 @@ import {
   type PipeSegmentNode,
   pointInPolygon,
   resolveCeilingHeight,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   BoxGeometry,
   CylinderGeometry,

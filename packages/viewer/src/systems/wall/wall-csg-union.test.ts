@@ -6,7 +6,7 @@ import {
   sceneRegistry,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 import { ADDITION, Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg'
 import { prepareBrushForCSG } from '../../lib/csg-utils'

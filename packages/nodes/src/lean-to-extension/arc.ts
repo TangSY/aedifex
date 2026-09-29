@@ -1,4 +1,4 @@
-import type { LeanToExtensionNode, Point2D } from '@pascal-app/core'
+import type { LeanToExtensionNode, Point2D } from '@aedifex/core'
 
 const CURVE_EPSILON = 1e-6
 

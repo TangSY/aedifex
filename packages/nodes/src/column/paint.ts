@@ -1,4 +1,4 @@
-import type { AnyNode } from '@pascal-app/core'
+import type { AnyNode } from '@aedifex/core'
 import { createSlotPaintCapability, previewSlotByUserData } from '../shared/slot-paint'
 import type { ColumnNode } from './schema'
 

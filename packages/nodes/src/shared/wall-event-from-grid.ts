@@ -4,7 +4,7 @@ import {
   type GridEvent,
   isCurvedWall,
   type WallEvent,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Matrix3, type Object3D, Vector3 } from 'three'
 
 /** Canvas surface queries still reach the host when a rendered child consumes mesh events. */

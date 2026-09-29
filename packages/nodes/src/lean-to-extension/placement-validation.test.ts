@@ -9,7 +9,7 @@ import {
   RoofSegmentNode,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { resolveLeanToCornerJoints } from './corner-joint'
 import { resolveLeanToWallPlacement } from './layout'
 import { leanToPlacementConflicts, resolveLeanToEndAbutments } from './placement-validation'

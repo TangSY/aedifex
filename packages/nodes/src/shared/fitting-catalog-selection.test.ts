@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from 'bun:test'
-import { DuctFittingNode, PipeFittingNode } from '@pascal-app/core'
-import { useEditor } from '@pascal-app/editor'
+import { DuctFittingNode, PipeFittingNode } from '@aedifex/core'
+import { useEditor } from '@aedifex/editor'
 import { Mesh } from 'three'
 import { ductFittingDefinition } from '../duct-fitting/definition'
 import { buildDuctFittingGeometry } from '../duct-fitting/geometry'

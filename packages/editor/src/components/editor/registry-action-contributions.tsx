@@ -9,8 +9,8 @@ import {
   toggleMechanism,
   useInteractive,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Play, Square } from 'lucide-react'
 import { type ComponentType, lazy, Suspense } from 'react'
 import { useShallow } from 'zustand/react/shallow'

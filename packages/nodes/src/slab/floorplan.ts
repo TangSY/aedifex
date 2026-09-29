@@ -5,8 +5,8 @@ import {
   getRenderableSlabPolygon,
   type SlabNode,
   slabPolygonContextFromGeometry,
-} from '@pascal-app/core'
-import { readFloorplanContext } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { readFloorplanContext } from '@aedifex/editor'
 
 /**
  * Stage C floor-plan builder for slab. Renders the slab polygon as a

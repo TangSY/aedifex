@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId, LiveTransform } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, LiveTransform } from '@aedifex/core'
 
 /**
  * Project per-frame wall and opening drag overrides into a fresh `nodes`

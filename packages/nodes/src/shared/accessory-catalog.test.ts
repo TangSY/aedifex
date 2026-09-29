@@ -6,7 +6,7 @@ import {
   DuctSegmentNode,
   type GeometryContext,
   PipeFittingNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Box3, Mesh, Raycaster, Vector3 } from 'three'
 import { buildDuctFittingFloorplan } from '../duct-fitting/floorplan'
 import { buildDuctFittingGeometry } from '../duct-fitting/geometry'

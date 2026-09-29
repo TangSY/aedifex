@@ -15,7 +15,7 @@ import {
   sceneRegistry,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   clearPlacementSurface,
   DimensionPill,
@@ -24,8 +24,8 @@ import {
   swallowNextClick,
   triggerSFX,
   useEditor,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { createPortal, type ThreeEvent, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -49,6 +49,7 @@ import {
   withoutAutoOffsetTag,
 } from '../shared/auto-offset-tag'
 import { planRunEndCapFollowUpdates } from '../shared/automatic-run-end-cap'
+import { fittingPartnerId } from '../shared/fitting-partner'
 import {
   detectFittingEndpoint,
   type FittingEndpoint,
@@ -534,11 +535,10 @@ const DuctPointHandles = ({ duct, target }: { duct: DuctSegmentNode; target: Obj
     const fittingEndpoint: FittingEndpoint | null = isEndpoint
       ? detectFittingEndpoint('duct-segment', initialPath, index, useScene.getState().nodes)
       : null
-    const partnerId = fittingEndpoint?.fitting.metadata?.altJoint
-      ? ((fittingEndpoint.fitting.metadata.partnerIds as string[] | undefined)?.find(
-          (id) => id !== duct.id,
-        ) as AnyNodeId | undefined)
-      : undefined
+    const partnerId = fittingPartnerId({
+      metadata: fittingEndpoint?.fitting.metadata,
+      runId: duct.id,
+    })
     const partner = partnerId ? useScene.getState().nodes[partnerId] : undefined
     const onMove = (event: PointerEvent) => {
       const drag = dragRef.current

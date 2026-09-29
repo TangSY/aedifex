@@ -1,4 +1,4 @@
-import type { EvaluatedLight } from '@pascal-app/core/procedural-items'
+import type { EvaluatedLight } from '@aedifex/core/procedural-items'
 import type { Color, Material, Mesh, Object3D } from 'three'
 
 type EmissiveMaterial = Material & {
@@ -13,7 +13,7 @@ export function cloneWithProceduralEmission(
   on: boolean,
 ): Material {
   const clone = material.clone() as EmissiveMaterial
-  clone.userData = { ...clone.userData, __pascalCachedMaterial: false }
+  clone.userData = { ...clone.userData, __aedifexCachedMaterial: false }
   if (clone.emissive) clone.emissive.set(color)
   if ('emissiveIntensity' in clone) clone.emissiveIntensity = on ? 1 : 0
   if ('emissiveMap' in clone) clone.emissiveMap = null

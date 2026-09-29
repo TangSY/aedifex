@@ -1,4 +1,4 @@
-import { getLibraryMaterialsVersion, subscribeLibraryMaterials } from '@pascal-app/core'
+import { getLibraryMaterialsVersion, subscribeLibraryMaterials } from '@aedifex/core'
 import { useSyncExternalStore } from 'react'
 
 /**

@@ -4,7 +4,7 @@ import {
   resolveTerrainWallConstructionOptions,
   useScene,
   type WallPlanPoint,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type FloorplanToolContext,
   markToolCancelConsumed,
@@ -13,7 +13,7 @@ import {
   useFloorplanDraftPreview,
   useFloorplanRender,
   useInteractionScope,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { useEffect, useRef, useState } from 'react'
 import { useWallDrawingMode, useWallDrawingModeKeys } from './drawing-mode'
 import { createWallRectangle } from './rectangle-command'

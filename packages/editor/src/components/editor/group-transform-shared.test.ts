@@ -11,7 +11,7 @@ import {
   sceneRegistry,
   useScene,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { BoxGeometry, Group, Mesh } from 'three'
 import { z } from 'zod'
 import {
@@ -37,7 +37,7 @@ function registerBuildingScopedTestKind() {
     schema: z.object({ type: z.literal(BUILDING_SCOPED_KIND) }) as never,
     category: 'structure',
     defaults: () => ({}),
-    capabilities: {},
+    capabilities: { deletable: false },
     floorplanScope: 'building',
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
   } as AnyNodeDefinition)

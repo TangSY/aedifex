@@ -7,7 +7,7 @@
 // across them would be the version that silently drifts — and drift here is not
 // cosmetic, since the whole point is that the two surfaces agree.
 
-import type { TerrainVerb } from '@pascal-app/core'
+import type { TerrainVerb } from '@aedifex/core'
 
 /**
  * One colour per verb, because the brush ring's geometry is identical for all four.

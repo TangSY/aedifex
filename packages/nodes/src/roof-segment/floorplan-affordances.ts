@@ -7,8 +7,8 @@ import {
   snapScalar,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { getSegmentGridStep, isAngleSnapActive, isGridSnapActive } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { getSegmentGridStep, isAngleSnapActive, isGridSnapActive } from '@aedifex/editor'
 import { createFloorplanCursorResolver } from '../shared/floorplan-cursor'
 import { rotateAffordanceDelta } from '../shared/rotate-affordance'
 

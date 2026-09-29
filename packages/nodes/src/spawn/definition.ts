@@ -1,4 +1,4 @@
-import type { HandleDescriptor, NodeDefinition, SpawnNode as SpawnNodeType } from '@pascal-app/core'
+import type { HandleDescriptor, NodeDefinition, SpawnNode as SpawnNodeType } from '@aedifex/core'
 import { buildSpawnFloorplan } from './floorplan'
 import { spawnRotateAffordance } from './floorplan-affordances'
 import { spawnFloorplanMoveTarget } from './floorplan-move'

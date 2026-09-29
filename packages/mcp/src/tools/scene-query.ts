@@ -1,15 +1,16 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import {
   checkOpeningWithinWall,
   DEFAULT_LEVEL_HEIGHT,
   formatOpeningBoundsIssue,
   getStoredLevelHeight,
   getWallPlaneTop,
+  levelBaseElevationAt,
   resolveStairTotalRise,
+  resolveWallBaseElevation,
   resolveWallEffectiveHeight,
-} from '@pascal-app/core'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core/schema'
-import { computeWallSlabSupport } from '@pascal-app/core/spatial-grid'
+} from '@aedifex/core'
+import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { READ_ONLY_TOOL_ANNOTATIONS } from './annotations'
@@ -140,8 +141,10 @@ export function resolveReportedWallHeight(
   const walls = levelNodes.filter(
     (node): node is Extract<AnyNode, { type: 'wall' }> => node.type === 'wall',
   )
-  const support = computeWallSlabSupport(wall, slabs, walls, wall.supportSlabId)
-  return resolveWallEffectiveHeight(wall, planeTop, support.elevation)
+  const nodes = bridge.getNodes()
+  const levelBase = levelId ? levelBaseElevationAt(nodes, levelId, wall.start[0], wall.start[1]) : 0
+  const wallBase = resolveWallBaseElevation({ wall, slabs, walls, levelBase })
+  return resolveWallEffectiveHeight(wall, planeTop, wallBase)
 }
 
 function metadataRecord(node: AnyNode): Record<string, unknown> | null {

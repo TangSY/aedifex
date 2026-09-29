@@ -7,7 +7,7 @@ import {
   nodeRegistry,
   useRegistryVersion,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { type ComponentType, lazy, Suspense, useMemo } from 'react'
 
 const DEFAULT_PRIORITY = 5

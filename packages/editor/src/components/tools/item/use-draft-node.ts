@@ -6,12 +6,15 @@ import {
   type SurfaceRejectReason,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { beginPerfAction, commitPerfAction, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { beginPerfAction, commitPerfAction, useViewer } from '@aedifex/viewer'
 import { useCallback, useMemo, useRef } from 'react'
 import type { Vector3 } from 'three'
 import { commitFreshPlacementSubtree } from '../../../lib/fresh-planar-placement'
-import { isFreshPlacementMetadata } from '../../../lib/placement-metadata'
+import {
+  getPlacementMetadataRecord,
+  isFreshPlacementMetadata,
+} from '../../../lib/placement-metadata'
 import {
   surfaceAttachmentId,
   surfaceAttachmentUpdates,
@@ -364,7 +367,7 @@ export function useDraftNode(): DraftNodeHandle {
       const live = useScene.getState().nodes[id as AnyNodeId] as ItemNode | undefined
       const livePosition = live?.position
       const externallyMoved =
-        !live?.metadata?.isTransient &&
+        !getPlacementMetadataRecord(live?.metadata).isTransient &&
         !!livePosition &&
         (livePosition[0] !== original.position[0] ||
           livePosition[1] !== original.position[1] ||

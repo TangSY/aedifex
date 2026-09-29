@@ -6,7 +6,7 @@ import {
   isCurvedWall,
   nodeRegistry,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type MouseEvent as ReactMouseEvent,
   useCallback,
@@ -143,7 +143,7 @@ export function useFloorplanBackgroundPlacement({
   worldGridSnap,
 }: UseFloorplanBackgroundPlacementArgs) {
   // Read the roof's footprint-source option through the registry, not
-  // `@pascal-app/nodes`: this file lands in the nodes package's program via
+  // `@aedifex/nodes`: this file lands in the nodes package's program via
   // its editor imports, so a direct nodes import would cycle onto nodes' own
   // dist output.
   const roofFootprintOption = nodeRegistry

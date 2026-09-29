@@ -8,7 +8,7 @@ import {
   useScene,
   type WallNode,
   WallNode as WallNodeSchema,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   isGridSnapActive,
   isMagneticSnapActive,
@@ -16,7 +16,7 @@ import {
   triggerSFX,
   useEditor,
   usePlacementPreview,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { createFloorplanCursorResolver } from '../shared/floorplan-cursor'
 import { getOpeningHostLevelId, getRoofHostedOpeningPlanPoint } from '../shared/roof-opening-host'
 import {

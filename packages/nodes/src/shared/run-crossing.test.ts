@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { DuctSegmentNode, useScene } from '@pascal-app/core'
+import { DuctSegmentNode, useScene } from '@aedifex/core'
 import type { RunSurfaceTarget } from './distribution-run-contract'
 import { findRunBodyCrossingSurface } from './ports'
 

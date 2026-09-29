@@ -5,7 +5,7 @@ import {
   type AnyNodeId,
   StructuralGridNode,
   type StructuralGridNode as StructuralGridNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   clearSurfacePlanSnapFeedback,
   type FloorplanToolContext,
@@ -17,7 +17,7 @@ import {
   triggerSFX,
   useFloorplanRender,
   useInteractionScope,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 const MIN_GRID_LENGTH = 0.01

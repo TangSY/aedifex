@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, StructuralGridNode } from '@pascal-app/core'
+import { type AnyNode, StructuralGridNode } from '@aedifex/core'
 import {
   alphabeticGridLabel,
   nextStructuralGridLabel,

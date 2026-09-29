@@ -4,7 +4,7 @@
  * server entry also bundles for the browser, where the editor runs it in-page.
  */
 export const version =
-  (typeof process !== 'undefined' && process.env?.PASCAL_MCP_VERSION) || readVersion()
+  (typeof process !== 'undefined' && process.env?.AEDIFEX_MCP_VERSION) || readVersion()
 
 function readVersion(): string {
   try {

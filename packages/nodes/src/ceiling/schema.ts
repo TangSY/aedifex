@@ -1,1 +1,1 @@
-export { CeilingNode } from '@pascal-app/core'
+export { CeilingNode } from '@aedifex/core'

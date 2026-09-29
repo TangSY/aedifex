@@ -1,4 +1,4 @@
-import type { CabinetNode } from '@pascal-app/core'
+import type { CabinetNode } from '@aedifex/core'
 
 export type CabinetWallHeightPresetId = '18' | '24' | '30' | '36' | '42'
 

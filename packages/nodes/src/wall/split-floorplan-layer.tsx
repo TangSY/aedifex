@@ -5,15 +5,15 @@ import {
   getWallThickness,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   clientToPlan,
   FloorplanDraftWallMeasurement,
   type FloorplanToolContext,
   formatLinearMeasurement,
   useFloorplanRender,
-} from '@pascal-app/editor'
-import { getSceneTheme, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { getSceneTheme, useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
 import { bindWallSplitPointer } from './split-pointer'
 import { wallSplitDistance, wallSplitMarkerColor, wallSplitSegmentLabels } from './split-preview'

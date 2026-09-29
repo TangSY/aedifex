@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNode, type SiteNode, useScene } from '@pascal-app/core'
+import { type AnyNode, type SiteNode, useScene } from '@aedifex/core'
 import {
   ActionButton,
   ActionGroup,
@@ -9,8 +9,8 @@ import {
   PanelSection,
   PanelWrapper,
   useParcelProvider,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { MapPin, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -102,7 +102,7 @@ export function SiteNodePanel() {
   // One engine for every path (Lot panel, Generate, here): resolve the
   // parcel, map the streets, pick the street-facing edge, default the
   // setbacks when the site has none, re-centre a building that fell outside
-  // the new ring. See @pascal-app/editor `dropInLot`.
+  // the new ring. See @aedifex/editor `dropInLot`.
   const findParcel = useCallback(async () => {
     if (!node) return
     const address = query.trim()

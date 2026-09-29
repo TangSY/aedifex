@@ -10,8 +10,8 @@ import {
   type SiteNode,
   useScene,
   type ZoneNode,
-} from '@pascal-app/core'
-import { markPerfAction, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { markPerfAction, useViewer } from '@aedifex/viewer'
 import {
   Camera,
   ChevronDown,
@@ -30,7 +30,7 @@ import {
 } from 'lucide-react'
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react'
 import { type ComponentType, lazy, memo, Suspense, useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { nodeRegistry } from '@pascal-app/core'
+import { nodeRegistry } from '@aedifex/core'
 
 /** The site kind's inspector (`parametrics.customPanel`), mounted under the Site header. */
 const SiteKindPanel = lazy(async () => {
@@ -52,7 +52,7 @@ import {
   buildLevelDuplicateCreateOps,
   type LevelDuplicatePreset,
 } from './../../../../../lib/level-duplication'
-import { getDefaultLevelName } from '@pascal-app/core'
+import { getDefaultLevelName } from '@aedifex/core'
 import { deleteLevelWithFallbackSelection } from './../../../../../lib/level-selection'
 import {
   formatAreaLabel,
@@ -565,6 +565,12 @@ const LevelReferences = memo(function LevelReferences({
     }
 
     if (isImage) {
+      if (onUploadAsset && projectId) {
+        clearUpload(levelId)
+        onUploadAsset(projectId, levelId, file, 'guide')
+        return
+      }
+
       useUploadStore.getState().startUpload(levelId, 'guide', file.name)
       useUploadStore.getState().setStatus(levelId, 'uploading')
 
@@ -618,7 +624,9 @@ const LevelReferences = memo(function LevelReferences({
     if (
       projectId &&
       refNode?.url &&
-      (refNode.url.startsWith('http://') || refNode.url.startsWith('https://'))
+      (refNode.url.startsWith('http://') ||
+        refNode.url.startsWith('https://') ||
+        (refNode.url.startsWith('/') && !refNode.url.startsWith('//')))
     ) {
       onDeleteAsset?.(projectId, refNode.url)
     }

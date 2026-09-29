@@ -1,5 +1,5 @@
-import { emitter, type GridEvent, sceneRegistry } from '@pascal-app/core'
-import { SCENE_LAYER, useViewer } from '@pascal-app/viewer'
+import { emitter, type GridEvent, sceneRegistry } from '@aedifex/core'
+import { SCENE_LAYER, useViewer } from '@aedifex/viewer'
 import { createPortal, type ThreeEvent, useThree } from '@react-three/fiber'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {

@@ -9,7 +9,7 @@ import {
   type UnitNode,
   unitWarnings,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   ActionButton,
   ActionGroup,
@@ -17,8 +17,8 @@ import {
   PanelSection,
   PanelWrapper,
   triggerSFX,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Trash2, X } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { PanelSelect, PanelTextField } from '../shared/panel-fields'

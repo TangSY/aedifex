@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeDefinition, AnyNodeId } from '@pascal-app/core'
+import type { AnyNode, AnyNodeDefinition, AnyNodeId } from '@aedifex/core'
 
 export type PanelIcon = { color?: string; src?: string }
 

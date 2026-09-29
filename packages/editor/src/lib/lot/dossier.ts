@@ -12,7 +12,7 @@
  * "not answered" — never a negative finding. Unknown keys are ignored
  * (the platform's additive-change policy).
  */
-import type { SiteDossier } from '@pascal-app/core'
+import type { SiteDossier } from '@aedifex/core'
 import type { ParcelProvider } from './parcel-provider'
 
 export type SectionStatus = 'available' | 'empty' | 'not_covered' | 'not_available'

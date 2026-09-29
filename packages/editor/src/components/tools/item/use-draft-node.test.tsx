@@ -8,8 +8,8 @@ import {
   LevelNode,
   type NodeEvent,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { renderToString } from 'react-dom/server'
 import { BufferGeometry, Mesh, MeshBasicMaterial, Vector3 } from 'three'
 import { commitFaceHostClick } from './face-host-commit'

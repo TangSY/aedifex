@@ -1,12 +1,12 @@
 'use client'
 
-import { type AnyNodeId, emitter, type GridEvent, sceneRegistry } from '@pascal-app/core'
+import { type AnyNodeId, emitter, type GridEvent, sceneRegistry } from '@aedifex/core'
 import {
   GRID_LAYER,
   getSceneTheme,
   useImmersiveXRPresentation,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { DoubleSide, type Mesh, PlaneGeometry, Quaternion, Vector2, Vector3 } from 'three'
@@ -19,7 +19,7 @@ import { gridLocalNormal, gridLocalPoint } from '../../lib/grid-frame'
 import useEditor, { getActiveSnapContext, isGridSnapActive } from '../../store/use-editor'
 import { getMovingNode } from '../../store/use-interaction-scope'
 
-export const EDITOR_GRID_INPUT_NAME = 'pascal-editor-grid-input'
+export const EDITOR_GRID_INPUT_NAME = 'aedifex-editor-grid-input'
 
 // Reveal radius (m) of the cursor-local grid patch shown while placing/moving in
 // grid-snap mode — much tighter than the idle reveal so only the area you're

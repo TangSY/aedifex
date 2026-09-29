@@ -22,7 +22,7 @@ import {
   type TerrainHit,
   terrainFieldOf,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /** The active site's terrain field, or null when the scene has no sculpted ground. */
 export function siteTerrainField(): TerrainField | null {

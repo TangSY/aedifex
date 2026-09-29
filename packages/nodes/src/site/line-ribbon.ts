@@ -11,7 +11,7 @@
  * The property line draws dark and thick in the standard dash-dot-dot
  * pattern; the setbacks draw black and dashed.
  */
-import { surfaceHeightAt, type TerrainField } from '@pascal-app/core'
+import { surfaceHeightAt, type TerrainField } from '@aedifex/core'
 import { BufferAttribute, BufferGeometry } from 'three'
 
 /** The standard property line: a long dash, two dots (metres). */

@@ -4,7 +4,7 @@ import {
   type ParametricDescriptor,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export type ReducedFieldValue<T = unknown> =
   | { kind: 'same'; value: T }

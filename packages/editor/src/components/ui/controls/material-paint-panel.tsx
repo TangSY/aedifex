@@ -1,6 +1,6 @@
 'use client'
 
-import { type SceneMaterialId } from '@pascal-app/core'
+import type { SceneMaterialId } from '@aedifex/core'
 import { Eraser, Plus, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { useMaterialPaintPanelModel } from '../../../lib/material-paint-panel-model'

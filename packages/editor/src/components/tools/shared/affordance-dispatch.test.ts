@@ -1,5 +1,5 @@
 import { afterAll, afterEach, expect, spyOn, test } from 'bun:test'
-import { type AnyNodeDefinition, nodeRegistry } from '@pascal-app/core'
+import { type AnyNodeDefinition, nodeRegistry } from '@aedifex/core'
 import { getRegistryAffordanceTool, preloadRegistryAffordanceTools } from './affordance-dispatch'
 
 const get = spyOn(nodeRegistry, 'get')

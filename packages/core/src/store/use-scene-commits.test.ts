@@ -162,9 +162,10 @@ describe('scene commit boundary', () => {
 
     useScene.getState().updateNode(LEVEL_ID, { level: 1 } as Partial<AnyNode>)
     expect(commits).toHaveLength(1)
-    expect(commits[0]?.origin).toBe('local')
-    expect((commits[0]?.before.nodes[LEVEL_ID] as { level: number }).level).toBe(0)
-    expect((commits[0]?.current.nodes[LEVEL_ID] as { level: number }).level).toBe(1)
+    const commit = commits[0]!
+    expect(commit.origin).toBe('local')
+    expect((commit.before.nodes[LEVEL_ID] as { level: number }).level).toBe(0)
+    expect((commit.current.nodes[LEVEL_ID] as { level: number }).level).toBe(1)
     expect(useScene.temporal.getState().pastStates).toHaveLength(1)
 
     useScene.getState().updateNode(LEVEL_ID, { level: 1 } as Partial<AnyNode>)
@@ -228,8 +229,9 @@ describe('scene commit boundary', () => {
     })
 
     expect(commits).toHaveLength(1)
-    expect((commits[0]?.before.nodes[LEVEL_ID] as { level: number }).level).toBe(0)
-    expect((commits[0]?.current.nodes[LEVEL_ID] as { level: number }).level).toBe(2)
+    const commit = commits[0]!
+    expect((commit.before.nodes[LEVEL_ID] as { level: number }).level).toBe(0)
+    expect((commit.current.nodes[LEVEL_ID] as { level: number }).level).toBe(2)
     expect(useScene.temporal.getState().pastStates).toHaveLength(1)
 
     useScene.temporal.getState().undo()
@@ -824,7 +826,7 @@ describe('scene commit boundary', () => {
     const kind = 'test:operation-forward-compatible'
     if (!nodeRegistry.has(kind)) {
       nodeRegistry._register({
-        capabilities: {},
+        capabilities: { deletable: false },
         category: 'utility',
         defaults: () => ({}),
         kind,
@@ -1099,14 +1101,14 @@ describe('scene commit boundary', () => {
       // load, so the stored storey height marks the applied snapshot instead.
       [LEVEL_ID]: { ...snapshot.nodes[LEVEL_ID], height: 8 } as AnyNode,
     }
-    snapshot.installedPlugins = ['pascal:trees']
+    snapshot.installedPlugins = ['aedifex:trees']
     const commits: SceneCommit[] = []
     unsubscribe = subscribeSceneCommits((commit) => commits.push(commit))
     useScene.getState().dirtyNodes.clear()
 
     expect(applySceneSnapshot(snapshot, { origin: 'host' })).toBe(true)
     expect((useScene.getState().nodes[LEVEL_ID] as { height?: number }).height).toBe(8)
-    expect(useScene.getState().installedPlugins).toEqual(['pascal:trees'])
+    expect(useScene.getState().installedPlugins).toEqual(['aedifex:trees'])
     expect(commits.map((commit) => commit.origin)).toEqual(['host'])
     expect(useScene.temporal.getState().pastStates).toHaveLength(0)
     expect(useScene.temporal.getState().futureStates).toHaveLength(0)

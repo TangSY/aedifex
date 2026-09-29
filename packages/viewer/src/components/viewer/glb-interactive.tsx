@@ -7,12 +7,12 @@ import {
   type SceneGraph,
   type SliderControl,
   useInteractive,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type EvaluatedLight,
   evaluateRecipe,
   type ProceduralItemNode,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import { Html } from '@react-three/drei'
 import { createPortal, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
@@ -632,7 +632,7 @@ function GlbItemControls({
         key: String(index),
         control,
         value: controlValues?.[index] ?? false,
-        onChange: (value: import('@pascal-app/core').ControlValue) =>
+        onChange: (value: import('@aedifex/core').ControlValue) =>
           setControlValue(item.pascalId, index, value),
       }))
 

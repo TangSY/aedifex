@@ -6,7 +6,7 @@ import {
   type MeasurementFeature,
   measurementCentroid,
   nodeRegistry,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   composeFrames,
   type Frame,
@@ -14,13 +14,13 @@ import {
   IDENTITY_FRAME,
   nodeLevelFrame,
   transformPoint,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import {
   AnyNode,
   type AnyNodeId,
   getRoofSegmentSurfaceY,
   nodeKindOf,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import type { Vec3 } from './geometry'
 import { computeSegmentTransforms } from './scene-query'
 
@@ -237,7 +237,7 @@ function stairSegmentFrame(node: AnyNode & { type: 'stair-segment' }, nodes: Nod
  * `floorPlaced` capability of their registered definition, and whose footprint
  * core cannot derive without it (core derives item, shelf and procedural-item
  * footprints from the node itself). Headless MCP does not load
- * `@pascal-app/nodes`, so their lift is unresolved and flagged, not guessed. A
+ * `@aedifex/nodes`, so their lift is unresolved and flagged, not guessed. A
  * test keeps this list in step with the definitions.
  */
 export const HEADLESS_UNRESOLVED_FLOOR_LIFT_KINDS = [

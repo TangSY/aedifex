@@ -12,7 +12,7 @@ import {
   type McpStartProgress,
   stopMcpService,
 } from './mcp-service.js'
-import type { PascalPaths } from './paths.js'
+import type { AedifexPaths } from './paths.js'
 import {
   errorMessage,
   findAvailablePort,
@@ -24,14 +24,10 @@ import {
 import {
   type ActiveRuntime,
   activateRuntime,
+  installBundledRuntime,
   readActiveRuntime,
   readRuntimeManifest,
 } from './runtime.js'
-import {
-  ensureWebRuntime,
-  type RuntimeProvisionProgress,
-  readRuntimeSource,
-} from './runtime-download.js'
 
 export interface EditorState {
   schemaVersion: 1
@@ -54,27 +50,22 @@ export interface EditorStatus {
 }
 
 export interface StartEditorOptions {
-  paths: PascalPaths
+  paths: AedifexPaths
   port?: number
   foreground?: boolean
-  /** A web-runtime directory or `.tar.gz` archive to install instead of downloading one. */
-  runtimeSource?: string
-  /** Overrides `dist/runtime-source.json`; tests point it at a fixture. */
-  runtimeSourceFile?: string
-  environment?: NodeJS.ProcessEnv
+  /** Local staged runtime directory. */
+  sourceDirectory?: string
   onProgress?: (event: EditorStartProgress) => void
 }
 
 export type EditorStartProgress =
   | { step: 'storage-ready'; dataDirectory: string }
   | { step: 'runtime-ready'; version: string; installed: boolean }
-  | { step: 'runtime-outdated'; active: string; pinned: string }
   | { step: 'port-ready'; port: number; preferredPort: number }
   | { step: 'process-starting'; port: number }
   | { step: 'health-checking'; port: number }
   | { step: 'ready'; port: number }
   | { step: 'already-running'; port: number }
-  | RuntimeProvisionProgress
   | McpStartProgress
 
 export interface StartEditorResult {
@@ -93,7 +84,7 @@ export interface RuntimeActivationResult {
   restarted: boolean
 }
 
-export async function ensurePascalDirectories(paths: PascalPaths): Promise<void> {
+export async function ensureAedifexDirectories(paths: AedifexPaths): Promise<void> {
   await Promise.all(
     [paths.root, paths.runtime, paths.data, paths.plugins, paths.run, paths.logs, paths.tmp].map(
       (directory) => mkdir(directory, { recursive: true, mode: 0o700 }),
@@ -101,7 +92,7 @@ export async function ensurePascalDirectories(paths: PascalPaths): Promise<void>
   )
 }
 
-export async function getEditorStatus(paths: PascalPaths): Promise<EditorStatus> {
+export async function getEditorStatus(paths: AedifexPaths): Promise<EditorStatus> {
   const [runtime, state] = await Promise.all([
     readActiveRuntime(paths),
     readJsonFile<EditorState>(paths.state),
@@ -119,30 +110,12 @@ export async function getEditorStatus(paths: PascalPaths): Promise<EditorStatus>
   }
 }
 
-/**
- * The runtime version this CLI was published with, or `null` when the caller pins a runtime
- * explicitly (or the package's manifest is unreadable, e.g. running from source). The active
- * runtime pointer survives CLI upgrades, so without this a newer CLI would keep launching the
- * runtime an older one installed.
- */
-export async function pinnedRuntimeVersion(
-  options: Pick<StartEditorOptions, 'runtimeSource' | 'runtimeSourceFile' | 'environment'>,
-): Promise<string | null> {
-  const environment = options.environment ?? process.env
-  if (options.runtimeSource || environment.PASCAL_BUNDLED_RUNTIME_DIR) return null
-  try {
-    return (await readRuntimeSource(options.runtimeSourceFile)).version
-  } catch {
-    return null
-  }
-}
-
 export async function startEditor(options: StartEditorOptions): Promise<StartEditorResult> {
   return withEditorLifecycleLock(options.paths, () => startEditorUnlocked(options))
 }
 
 async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEditorResult> {
-  await ensurePascalDirectories(options.paths)
+  await ensureAedifexDirectories(options.paths)
   options.onProgress?.({ step: 'storage-ready', dataDirectory: options.paths.data })
   let currentStatus: EditorStatus
   try {
@@ -153,43 +126,31 @@ async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEd
     await rm(options.paths.currentRuntime, { force: true })
     currentStatus = await getEditorStatus(options.paths)
   }
-  const pinned = await pinnedRuntimeVersion(options)
   if (currentStatus.healthy && currentStatus.state) {
     const mcp = await ensureMcpService({
       paths: options.paths,
       editorOrigin: currentStatus.state.url,
       onProgress: options.onProgress,
     })
-    if (pinned && currentStatus.state.version !== pinned) {
-      options.onProgress?.({
-        step: 'runtime-outdated',
-        active: currentStatus.state.version,
-        pinned,
-      })
-    }
     options.onProgress?.({ step: 'already-running', port: currentStatus.state.port })
     return { state: currentStatus.state, mcp: mcp.state, alreadyRunning: true }
   }
   if (currentStatus.running) {
     throw new CliError(
       'state_conflict',
-      'A recorded Pascal editor process is running but its identity could not be verified. Inspect "pascal status --json", then use "pascal stop --force" only if the recorded command is trusted.',
+      'A recorded Aedifex editor process is running but its identity could not be verified. Inspect "aedifex status --json", then use "aedifex stop --force" only if the recorded command is trusted.',
     )
+  }
+  if (currentStatus.state && 'mcp' in currentStatus.state) {
+    await stopMcpService(options.paths)
   }
   await rm(options.paths.state, { force: true })
 
   let runtime = await readActiveRuntime(options.paths)
   let installedRuntime = false
-  if (!runtime || options.runtimeSource || (pinned !== null && runtime.version !== pinned)) {
-    const provisioned = await ensureWebRuntime({
-      paths: options.paths,
-      runtimeSource: options.runtimeSource,
-      sourceFile: options.runtimeSourceFile,
-      environment: options.environment,
-      onProgress: options.onProgress,
-    })
-    runtime = provisioned.runtime
-    installedRuntime = provisioned.installed
+  if (!runtime || options.sourceDirectory) {
+    runtime = await installBundledRuntime(options.paths, options.sourceDirectory)
+    installedRuntime = true
   }
   options.onProgress?.({
     step: 'runtime-ready',
@@ -208,7 +169,7 @@ async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEd
     version: runtime.version,
     port,
     host: '127.0.0.1',
-    url: `http://pascal.localhost:${port}`,
+    url: `http://aedifex.localhost:${port}`,
     instanceId,
     runtimeDirectory: runtime.directory,
     startedAt: new Date().toISOString(),
@@ -219,12 +180,12 @@ async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEd
     NODE_ENV: 'production',
     HOSTNAME: state.host,
     PORT: String(port),
-    PASCAL_DATA_DIR: options.paths.data,
-    PASCAL_INSTANCE_ID: instanceId,
-    PASCAL_RUNTIME_VERSION: runtime.version,
-    MINT_PASCAL_HOST_ORIGIN: process.env.MINT_PASCAL_HOST_ORIGIN || state.url,
+    AEDIFEX_DATA_DIR: options.paths.data,
+    AEDIFEX_INSTANCE_ID: instanceId,
+    AEDIFEX_RUNTIME_VERSION: runtime.version,
+    AEDIFEX_SCENE_API_ALLOW_LOOPBACK_WITHOUT_TOKEN: 'true',
   }
-  const nodeBinary = process.env.PASCAL_NODE_BINARY || 'node'
+  const nodeBinary = process.env.AEDIFEX_NODE_BINARY || 'node'
   if (!options.foreground) await rotateEditorLog(options.paths.editorLog)
   const logDescriptor = options.foreground
     ? undefined
@@ -241,7 +202,7 @@ async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEd
   let mcp: McpServiceState
   try {
     await waitForSpawn(child, nodeBinary)
-    if (!child.pid) throw new CliError('start_failed', 'The Pascal editor process did not start.')
+    if (!child.pid) throw new CliError('start_failed', 'The Aedifex editor process did not start.')
     state.pid = child.pid
     await writeJsonFile(options.paths.state, state)
     if (!options.foreground) child.unref()
@@ -265,7 +226,7 @@ async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEd
 }
 
 export async function stopEditor(
-  paths: PascalPaths,
+  paths: AedifexPaths,
   options: StopEditorOptions = {},
 ): Promise<boolean> {
   const editorStopped = await withEditorLifecycleLock(paths, () =>
@@ -276,10 +237,11 @@ export async function stopEditor(
 }
 
 async function stopEditorUnlocked(
-  paths: PascalPaths,
+  paths: AedifexPaths,
   options: StopEditorOptions = {},
 ): Promise<boolean> {
-  const state = await readJsonFile<EditorState>(paths.state)
+  const state = await readJsonFile<EditorState & { mcp?: unknown }>(paths.state)
+  if (state?.mcp) await stopMcpService(paths, options)
   if (!state || !isProcessRunning(state.pid)) {
     await rm(paths.state, { force: true })
     return false
@@ -291,8 +253,8 @@ async function stopEditorUnlocked(
     throw new CliError(
       'state_conflict',
       options.force
-        ? 'Refusing to stop a process whose health identity and operating-system command do not match the recorded Pascal runtime.'
-        : 'The Pascal editor identity is unavailable. Inspect "pascal status --json", then use "pascal stop --force" only if the recorded command is trusted.',
+        ? 'Refusing to stop a process whose health identity and operating-system command do not match the recorded Aedifex runtime.'
+        : 'The Aedifex editor identity is unavailable. Inspect "aedifex status --json", then use "aedifex stop --force" only if the recorded command is trusted.',
     )
   }
   await terminateProcess(state.pid)
@@ -300,7 +262,7 @@ async function stopEditorUnlocked(
   return true
 }
 
-export async function restartEditor(paths: PascalPaths): Promise<StartEditorResult> {
+export async function restartEditor(paths: AedifexPaths): Promise<StartEditorResult> {
   return withEditorLifecycleLock(paths, async () => {
     const previousPort = (await readJsonFile<EditorState>(paths.state))?.port
     await stopEditorUnlocked(paths)
@@ -309,7 +271,7 @@ export async function restartEditor(paths: PascalPaths): Promise<StartEditorResu
 }
 
 export async function activateEditorRuntime(
-  paths: PascalPaths,
+  paths: AedifexPaths,
   candidate: ActiveRuntime,
 ): Promise<RuntimeActivationResult> {
   return withEditorLifecycleLock(paths, async () => {
@@ -338,7 +300,7 @@ export async function activateEditorRuntime(
     if (previousStatus.running && !previousStatus.healthy) {
       throw new CliError(
         'state_conflict',
-        'A recorded Pascal editor process is running but its identity could not be verified. Recover or stop it before updating.',
+        'A recorded Aedifex editor process is running but its identity could not be verified. Recover or stop it before updating.',
       )
     }
     if (
@@ -491,31 +453,31 @@ export async function waitForHealth(state: EditorState, timeoutMs: number): Prom
     if (health === 'foreign') {
       throw new CliError(
         'port_conflict',
-        `Port ${state.port} is responding as another application. Run Pascal again to choose another port, or pass --port <n>.`,
+        `Port ${state.port} is responding as another application. Run Aedifex again to choose another port, or pass --port <n>.`,
       )
     }
     if (!isProcessRunning(state.pid)) {
-      throw new CliError('start_failed', 'The Pascal editor exited before becoming healthy.')
+      throw new CliError('start_failed', 'The Aedifex editor exited before becoming healthy.')
     }
     await new Promise((resolve) => setTimeout(resolve, 200))
   }
-  throw new CliError('health_timeout', `Pascal did not become healthy within ${timeoutMs}ms.`)
+  throw new CliError('health_timeout', `Aedifex did not become healthy within ${timeoutMs}ms.`)
 }
 
 async function withEditorLifecycleLock<T>(
-  paths: PascalPaths,
+  paths: AedifexPaths,
   action: () => Promise<T>,
 ): Promise<T> {
   return withFileLock(
     path.join(paths.run, 'editor-lifecycle.lock'),
     'editor_locked',
-    'Another Pascal editor lifecycle operation is active.',
+    'Another Aedifex editor lifecycle operation is active.',
     action,
   )
 }
 
 async function matchesRecordedEditorProcess(
-  paths: PascalPaths,
+  paths: AedifexPaths,
   state: EditorState,
 ): Promise<boolean> {
   if (process.platform === 'win32') return false

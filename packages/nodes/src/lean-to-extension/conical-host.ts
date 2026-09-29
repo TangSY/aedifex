@@ -4,7 +4,7 @@ import {
   findLevelAncestorId,
   LeanToExtensionNode,
   type RoofSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 const CONICAL_WALL_HIT_TOLERANCE = 0.15
 const CONICAL_PLAN_HIT_TOLERANCE = 0.35

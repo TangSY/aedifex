@@ -1,8 +1,7 @@
 'use client'
 
-import type { AssetInput } from '@pascal-app/core'
-import { resolveCdnUrl } from '@pascal-app/viewer'
-import { useEffect } from 'react'
+import type { AssetInput } from '@aedifex/core'
+import { resolveCdnUrl } from '@aedifex/viewer'
 import { triggerSFX } from './../../../lib/sfx-bus'
 import { cn } from './../../../lib/utils'
 import useEditor, { type CatalogCategory } from './../../../store/use-editor'

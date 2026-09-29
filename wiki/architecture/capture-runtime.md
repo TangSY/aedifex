@@ -5,17 +5,14 @@ scene graph.
 
 ## Ownership boundaries
 
-- `@pascal-app/core/capture` (`packages/core/src/capture/`) owns versioned manifests, normalized
+- `@aedifex/core/capture` (`packages/core/src/capture/`) owns versioned manifests, normalized
   stream descriptors, stable session locators, incremental packet headers, and the `CaptureSource`
-  interface. It has no React, Three.js, authentication, database, or prescribed transport, so it
-  stays inside core's pure-logic layer rule.
-- `@pascal-app/viewer/capture` (`packages/viewer/src/capture/`) mounts inside `Viewer` through its
-  existing children slot. It resolves `scan.captureSession`, portals layers into that scan node's
-  registered group, honors per-layer visibility, composes declared local-to-parent coordinate frames
-  into session space, and supplies reference model, device-motion, point-cloud, and compact
-  color-surface renderers. `@pascal-app/viewer/capture/preview` exposes the matcap and surface-mesh
-  geometry builders on their own for capture clients that render a local preview without the runtime.
-- `@pascal-app/core` stores only the scene anchor: session locator, optional current mesh URL,
+  interface. It has no React, Three.js, authentication, database, or prescribed transport.
+- `@aedifex/viewer/capture` (`packages/viewer/src/capture/`) mounts inside `Viewer` through its
+  children slot. It resolves `scan.captureSession`, portals layers into the scan node's group,
+  honors layer visibility and coordinate frames, and supplies model, motion, point-cloud,
+  and surface-mesh renderers. `@aedifex/viewer/capture/preview` exposes preview geometry builders.
+- `@aedifex/core` stores only the scene anchor: session locator, optional current mesh URL,
   placement, opacity, and an extensible visibility map. Raw samples and artifact inventories never
   enter scene JSON.
 - A host owns source resolution, access control, signed URLs, persistence, retention, collaboration,

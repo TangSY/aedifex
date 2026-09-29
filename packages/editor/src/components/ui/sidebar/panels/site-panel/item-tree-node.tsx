@@ -1,5 +1,5 @@
-import { type AnyNodeId, type ItemNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, type ItemNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import Image from 'next/image'
 import { memo, useCallback, useEffect, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'

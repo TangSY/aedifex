@@ -9,13 +9,13 @@ import { normalizeToolSchemaDialect } from './tools/normalize-schema-dialect'
 import { registerVisionTools } from './tools/vision'
 import { version } from './version'
 
-export type PascalMcpToolExecutor = <Result>(input: {
+export type AedifexMcpToolExecutor = <Result>(input: {
   name: string
   signal: AbortSignal
   execute: () => Promise<Result>
 }) => Promise<Result>
 
-export type CreatePascalMcpServerOptions = {
+export type CreateAedifexMcpServerOptions = {
   bridge: SceneBridge
   operations?: SceneOperations
   /** Required for persistence tools. Hosted apps and CLIs inject their own store. */
@@ -27,12 +27,12 @@ export type CreatePascalMcpServerOptions = {
    * Tool renames fail closed because the SDK registration lifecycle cannot safely rename twice.
    * Experimental task-based tool registrations are outside this hook.
    */
-  executeTool?: PascalMcpToolExecutor
+  executeTool?: AedifexMcpToolExecutor
 }
 
-export function createPascalMcpServer(opts: CreatePascalMcpServerOptions): McpServer {
+export function createAedifexMcpServer(opts: CreateAedifexMcpServerOptions): McpServer {
   const server = new McpServer({
-    name: opts.name ?? 'pascal-mcp-server',
+    name: opts.name ?? 'pascal-mcp',
     version: opts.version ?? version,
   })
   if (opts.executeTool) installToolExecutor(server, opts.executeTool)
@@ -46,7 +46,7 @@ export function createPascalMcpServer(opts: CreatePascalMcpServerOptions): McpSe
   return server
 }
 
-function installToolExecutor(server: McpServer, executeTool: PascalMcpToolExecutor): void {
+function installToolExecutor(server: McpServer, executeTool: AedifexMcpToolExecutor): void {
   const registerTool = server.registerTool.bind(server)
   const wrappedRegisterTool: McpServer['registerTool'] = (name, config, callback) => {
     const runtimeCallback = callback as unknown as RuntimeToolCallback
@@ -77,7 +77,7 @@ type RuntimeToolCallback = (...args: unknown[]) => unknown
 function wrapToolCallback(
   name: string,
   callback: RuntimeToolCallback,
-  executeTool: PascalMcpToolExecutor,
+  executeTool: AedifexMcpToolExecutor,
 ): RuntimeToolCallback {
   return (...args) =>
     executeTool({
@@ -91,7 +91,7 @@ function wrapRegisteredTool(
   registration: RegisteredTool,
   initialName: string,
   initialCallback: RuntimeToolCallback,
-  executeTool: PascalMcpToolExecutor,
+  executeTool: AedifexMcpToolExecutor,
 ): RegisteredTool {
   let currentCallback = initialCallback
   const update = registration.update.bind(registration) as (

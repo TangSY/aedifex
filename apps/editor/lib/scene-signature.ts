@@ -1,4 +1,4 @@
-import type { SceneGraph } from '@pascal-app/editor'
+import type { SceneGraph } from '@aedifex/editor'
 
 export type PersistedSceneGraph = SceneGraph & {
   collections?: Record<string, unknown>

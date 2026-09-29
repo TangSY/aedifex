@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import type { AnyNodeId } from '@pascal-app/core'
-import { sceneRegistry, useInteractive } from '@pascal-app/core'
+import type { AnyNodeId } from '@aedifex/core'
+import { sceneRegistry, useInteractive } from '@aedifex/core'
 import { Group, Vector3 } from 'three'
 import { catalogLightSource } from './use-item-light-pool'
 

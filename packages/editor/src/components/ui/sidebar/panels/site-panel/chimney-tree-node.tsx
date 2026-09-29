@@ -1,5 +1,5 @@
-import { type AnyNodeId, type ChimneyNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, type ChimneyNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import Image from 'next/image'
 import { memo, useCallback, useState } from 'react'
 import { SnapTargetIcon } from '../../../snap-target-badge'

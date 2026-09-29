@@ -4,7 +4,7 @@ import {
   type CeilingNode,
   getCeilingClampBound,
   getCeilingMinHeight,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /** Handle floor for a ceiling at grade: keeps the drag arrow off the floor. */
 export const CEILING_HANDLE_MIN_HEIGHT = 0.5

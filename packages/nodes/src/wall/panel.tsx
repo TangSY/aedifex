@@ -39,7 +39,7 @@ import {
   WSP_SHEATHING,
   wallAssemblyPatch,
   wallAssemblyUnverifiedNote,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   ActionButton,
   ActionGroup,
@@ -54,8 +54,8 @@ import {
   SliderControl,
   triggerSFX,
   useInteractionScope,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Spline } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { resolveWallOpeningCeiling } from '../shared/wall-opening-ceiling'

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { HandleDescriptor, RoofNode } from '@pascal-app/core'
+import type { HandleDescriptor, RoofNode } from '@aedifex/core'
 import { roofDefinition } from './definition'
 import useRoofPlacementMode from './roof-placement-mode'
 

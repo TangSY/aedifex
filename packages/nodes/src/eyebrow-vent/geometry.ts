@@ -1,4 +1,4 @@
-import type { EyebrowVentNode } from '@pascal-app/core'
+import type { EyebrowVentNode } from '@aedifex/core'
 import * as THREE from 'three'
 import {
   copyUvToSecondaryChannel,

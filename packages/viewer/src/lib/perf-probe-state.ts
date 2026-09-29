@@ -2,7 +2,7 @@
 // history and the viewer selection, so production builds can report undo entries and
 // history pauses without dev-only store handles.
 
-import { getSceneHistoryPauseDepth } from '@pascal-app/core'
+import { getSceneHistoryPauseDepth } from '@aedifex/core'
 
 type TemporalLike = {
   temporal: {

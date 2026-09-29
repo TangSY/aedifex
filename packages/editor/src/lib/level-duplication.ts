@@ -1,5 +1,5 @@
-import { cloneLevelSubtree } from '@pascal-app/core/clone-scene-graph'
-import { type AnyNode, type AnyNodeId, type LevelNode, UnitNode } from '@pascal-app/core/schema'
+import { cloneLevelSubtree } from '@aedifex/core/clone-scene-graph'
+import { type AnyNode, type AnyNodeId, type LevelNode, UnitNode } from '@aedifex/core/schema'
 
 export type LevelDuplicatePreset =
   | 'everything'

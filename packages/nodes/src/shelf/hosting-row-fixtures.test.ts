@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { ShelfNode } from '@pascal-app/core'
+import { ShelfNode } from '@aedifex/core'
 import { shelfSurfaceRows } from '../../../core/src/services/__fixtures__/shelf-surface-rows'
 import { shelfRowSurfaceYs } from './geometry'
 

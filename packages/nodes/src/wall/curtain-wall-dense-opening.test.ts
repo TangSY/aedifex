@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import { calculateLevelMiters, DoorNode, WallNode } from '@pascal-app/core'
-import { generateExtrudedWall } from '@pascal-app/viewer'
+import { calculateLevelMiters, DoorNode, WallNode } from '@aedifex/core'
+import { generateExtrudedWall } from '@aedifex/viewer'
 import { DoubleSide, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
 import { buildCurtainWallGeometry } from './curtain-wall-geometry'
 

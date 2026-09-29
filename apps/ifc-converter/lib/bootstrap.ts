@@ -1,5 +1,5 @@
-import { type AnyNodeDefinition, nodeRegistry, registerNode } from '@pascal-app/core'
-import { builtinPlugin } from '@pascal-app/nodes'
+import { type AnyNodeDefinition, nodeRegistry, registerNode } from '@aedifex/core'
+import { builtinPlugin } from '@aedifex/nodes'
 
 // Mirrors apps/editor/lib/bootstrap.ts — registers every built-in node
 // kind synchronously so the registry is populated before the first
@@ -16,7 +16,7 @@ export function loadBuiltins(): void {
   if (typeof console !== 'undefined') {
     const kinds = Array.from(nodeRegistry.entries(), ([k]) => k)
     console.info(
-      `[pascal:registry] loaded ${builtinPlugin.id} v${builtinPlugin.apiVersion} (${kinds.length} kinds)`,
+      `[aedifex:registry] loaded ${builtinPlugin.id} v${builtinPlugin.apiVersion} (${kinds.length} kinds)`,
     )
   }
 }

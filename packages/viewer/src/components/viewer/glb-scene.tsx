@@ -6,12 +6,12 @@ import {
   bakePolicyOf,
   type SurfaceRole,
   useInteractive,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type EvaluatedMotion,
   operableParts,
   ProceduralMotionController,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import { Html, useAnimations } from '@react-three/drei'
 import { type ThreeEvent, useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
@@ -76,7 +76,7 @@ type GlbZoneEntry = {
   centroid: [number, number]
 }
 
-type PascalExtras = {
+type AedifexExtras = {
   pascalId?: string
   kind?: string
   label?: string
@@ -125,16 +125,16 @@ type HitCandidate = { object: THREE.Object3D; point?: THREE.Vector3 }
 function findIdentityAncestor(object: THREE.Object3D): THREE.Object3D | null {
   let current: THREE.Object3D | null = object
   while (current) {
-    if ((current.userData as PascalExtras).pascalId) return current
+    if ((current.userData as AedifexExtras).pascalId) return current
     current = current.parent
   }
   return null
 }
 
-function findProceduralMotionAncestor(object: THREE.Object3D): PascalExtras['proceduralMotion'] {
+function findProceduralMotionAncestor(object: THREE.Object3D): AedifexExtras['proceduralMotion'] {
   let current: THREE.Object3D | null = object
   while (current) {
-    const motion = (current.userData as PascalExtras).proceduralMotion
+    const motion = (current.userData as AedifexExtras).proceduralMotion
     if (motion) return motion
     current = current.parent
   }
@@ -144,7 +144,7 @@ function findProceduralMotionAncestor(object: THREE.Object3D): PascalExtras['pro
 function findAncestorLevelId(object: THREE.Object3D): string | null {
   let current = object.parent
   while (current) {
-    const extras = current.userData as PascalExtras
+    const extras = current.userData as AedifexExtras
     if (extras.kind === 'level' && extras.pascalId) return extras.pascalId
     current = current.parent
   }
@@ -358,7 +358,7 @@ export function GlbScene({
       }
     >()
     gltf.scene.traverse((object) => {
-      const extras = object.userData as PascalExtras
+      const extras = object.userData as AedifexExtras
       if (extras.kind === 'procedural-item' && extras.pascalId && !byNode.has(extras.pascalId))
         byNode.set(extras.pascalId, { motions: [], clips: new Map() })
       const motion = extras.proceduralMotion
@@ -467,7 +467,7 @@ export function GlbScene({
   // (`userData.__bakedMaterial`) so it survives the cached GLTF across remounts.
   useEffect(() => {
     gltf.scene.traverse((object) => {
-      const role = ROLE_BY_KIND[(object.userData as PascalExtras).kind ?? '']
+      const role = ROLE_BY_KIND[(object.userData as AedifexExtras).kind ?? '']
       if (!role) return
       object.traverse((child) => {
         const mesh = child as THREE.Mesh
@@ -534,7 +534,7 @@ export function GlbScene({
     let buildingNode: THREE.Object3D | null = null
     let siteNode: THREE.Object3D | null = null
     gltf.scene.traverse((object) => {
-      const extras = object.userData as PascalExtras
+      const extras = object.userData as AedifexExtras
       // The spawn marker is an authoring-only node (walkthrough start pose); it
       // should never render in the viewer. Its transform still feeds the
       // walkthrough controller — visibility doesn't affect that.
@@ -612,7 +612,7 @@ export function GlbScene({
     const meshes: THREE.Mesh[] = []
     const walk = (node: THREE.Object3D) => {
       for (const child of node.children) {
-        if ((child.userData as PascalExtras).pascalId) continue // hosted item — keep visible
+        if ((child.userData as AedifexExtras).pascalId) continue // hosted item — keep visible
         if ((child as THREE.Mesh).isMesh) meshes.push(child as THREE.Mesh)
         walk(child)
       }
@@ -633,7 +633,7 @@ export function GlbScene({
   const focusSelectedId = useViewer((s) => s.selection.selectedIds[0] ?? null)
   useEffect(() => {
     if (!controls) return
-    const flyToBookmark = (bookmark: NonNullable<PascalExtras['camera']>) => {
+    const flyToBookmark = (bookmark: NonNullable<AedifexExtras['camera']>) => {
       const { position: p, target: t } = bookmark
       controls.setLookAt(p[0], p[1], p[2], t[0], t[1], t[2], true)
       controls.normalizeRotations?.()
@@ -645,7 +645,7 @@ export function GlbScene({
     if (focusSelectedId) {
       const object = identity.get(focusSelectedId)
       if (!object) return
-      const itemBookmark = (object.userData as PascalExtras).camera
+      const itemBookmark = (object.userData as AedifexExtras).camera
       if (itemBookmark) {
         flyToBookmark(itemBookmark)
         return
@@ -682,7 +682,7 @@ export function GlbScene({
       _camBox.setFromObject(rootNode ?? gltf.scene)
     }
 
-    const bookmark = (bookmarkNode?.userData as PascalExtras | undefined)?.camera
+    const bookmark = (bookmarkNode?.userData as AedifexExtras | undefined)?.camera
     if (bookmark) {
       flyToBookmark(bookmark)
       return
@@ -725,11 +725,11 @@ export function GlbScene({
 
   useEffect(() => {
     onLevelsChange?.(
-      levels.map(({ id, node }) => ({ id, label: (node.userData as PascalExtras).label ?? id })),
+      levels.map(({ id, node }) => ({ id, label: (node.userData as AedifexExtras).label ?? id })),
     )
     const labels: GlbIdentity = {}
     identity.forEach((object, id) => {
-      const extras = object.userData as PascalExtras
+      const extras = object.userData as AedifexExtras
       labels[id] = { kind: extras.kind ?? 'node', label: extras.label ?? id }
     })
     onIdentityChange?.(labels)
@@ -926,7 +926,7 @@ export function GlbScene({
   )
   const toggleLoopMechanism = useCallback(
     (identityNode: THREE.Object3D) => {
-      const id = (identityNode.userData as PascalExtras).pascalId as AnyNodeId | undefined
+      const id = (identityNode.userData as AedifexExtras).pascalId as AnyNodeId | undefined
       if (!(id && loopMechanisms.has(id))) return false
       const state = useInteractive.getState()
       state.setMechanism(id, !state.mechanisms[id])
@@ -938,7 +938,7 @@ export function GlbScene({
   const openIds = useRef(new Set<string>())
   const toggleProcedural = useCallback(
     (hit: THREE.Object3D, identityNode: THREE.Object3D) => {
-      const extras = identityNode.userData as PascalExtras
+      const extras = identityNode.userData as AedifexExtras
       if (extras.kind !== 'procedural-item') return false
       const part = findProceduralMotionAncestor(hit)
       if (part?.clip) {
@@ -963,7 +963,7 @@ export function GlbScene({
   )
   const toggleOpenable = useCallback(
     (node: THREE.Object3D) => {
-      const extras = node.userData as PascalExtras
+      const extras = node.userData as AedifexExtras
       const clipName = extras.clips?.[0]
       if (!extras.openable || !clipName) return
       const action = actions[clipName]
@@ -1025,7 +1025,7 @@ export function GlbScene({
         tid: string,
         hitObject?: THREE.Object3D,
       ): Target => {
-        const e = object.userData as PascalExtras
+        const e = object.userData as AedifexExtras
         return { object, hitObject, id: tid, kind: e.kind ?? 'node', label: e.label ?? tid }
       }
       const { selection } = useViewer.getState()
@@ -1033,7 +1033,7 @@ export function GlbScene({
       // Building view → drill to the floor the hit object belongs to.
       if (!selection.levelId) {
         if (!firstNode) return null
-        const extras = firstNode.userData as PascalExtras
+        const extras = firstNode.userData as AedifexExtras
         const levelId = extras.kind === 'level' ? extras.pascalId : findAncestorLevelId(firstNode)
         const levelObject = levelId ? identity.get(levelId) : undefined
         return levelObject && levelId ? toTarget(levelObject, levelId) : null
@@ -1053,7 +1053,7 @@ export function GlbScene({
       for (const hit of hits) {
         const node = findIdentityAncestor(hit.object)
         if (!node) continue
-        const extras = node.userData as PascalExtras
+        const extras = node.userData as AedifexExtras
         const id = extras.pascalId
         if (!id || seen.has(id)) continue
         seen.add(id)
@@ -1165,7 +1165,7 @@ export function GlbScene({
       if (_walkPos.y >= level.baseY - 0.5) floor = level
       else break
     }
-    const floorLabel = floor ? ((floor.node.userData as PascalExtras).label ?? floor.id) : null
+    const floorLabel = floor ? ((floor.node.userData as AedifexExtras).label ?? floor.id) : null
     const zone = floor ? zoneAtPoint(_walkPos, floor.id) : null
 
     _reticleRaycaster.far = WALK_REACH
@@ -1176,7 +1176,7 @@ export function GlbScene({
     let door: { label: string; isOpen: boolean; verb?: string } | null = null
     if (hit) {
       const node = findIdentityAncestor(hit.object)
-      const extras = node?.userData as PascalExtras | undefined
+      const extras = node?.userData as AedifexExtras | undefined
       const lightOnly =
         extras?.pascalId &&
         interactiveItems?.some(
@@ -1245,7 +1245,7 @@ export function GlbScene({
   const activateWalkDoor = useCallback(() => {
     const target = walkDoorRef.current
     if (!target) return
-    const extras = target.node.userData as PascalExtras
+    const extras = target.node.userData as AedifexExtras
     const item = extras.kind === 'item' ? toggleableItem(extras.pascalId) : undefined
     if (item) {
       useInteractive.getState().toggleItemToggles(item.pascalId, item.interactive)

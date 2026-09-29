@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { ColumnNode, type GeometryContext, StructuralGridNode } from '@pascal-app/core'
-import { readFloorplanGeometryMetadata } from '@pascal-app/editor'
+import { ColumnNode, type GeometryContext, StructuralGridNode } from '@aedifex/core'
+import { readFloorplanGeometryMetadata } from '@aedifex/editor'
 import { buildColumnFloorplan, computeColumnFloorplanLevelData } from './floorplan'
 
 const context = {

@@ -7,8 +7,8 @@ import {
   getBlockFaceNormal,
   pointInPolygon2D,
   unionPolygons,
-} from '@pascal-app/core'
-import { readFloorplanContext } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { readFloorplanContext } from '@aedifex/editor'
 
 /**
  * The plan cut: a floor plan is the storey sliced 4 ft above the floor and

@@ -3,7 +3,7 @@ import {
   type AnyNodeId,
   getWallEffectiveHeightForNodes,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Structural subset of `SceneApi` the opening-cap readers need — matches

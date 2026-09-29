@@ -4,15 +4,15 @@ import {
   nodeRegistry,
   type RoofNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   duplicateRoofSubtree,
   type NodePanelModel,
   type PanelRow,
   triggerSFX,
   useEditor,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 
 export const roofPanelModel: NodePanelModel<RoofNode> = {
   rows({ node, nodes, update }) {

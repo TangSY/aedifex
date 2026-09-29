@@ -4,7 +4,7 @@ import {
   getBlockFaceFrame,
   type ItemNode,
   surfaceRegionContainsPoint,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Euler, Matrix4, Quaternion, Vector3 } from 'three'
 import { blockTopSurfaces } from './surface'
 

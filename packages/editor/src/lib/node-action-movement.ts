@@ -1,4 +1,4 @@
-import { type AnyNode, createSceneApi, isMovable, nodeRegistry, useScene } from '@pascal-app/core'
+import { type AnyNode, createSceneApi, isMovable, nodeRegistry, useScene } from '@aedifex/core'
 
 export function registryMoveDisabled(node: AnyNode): boolean {
   const def = nodeRegistry.get(node.type)

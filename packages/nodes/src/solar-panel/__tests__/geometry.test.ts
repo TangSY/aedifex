@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { getActiveRoofHeight, type RoofSegmentNode } from '@pascal-app/core'
+import { getActiveRoofHeight, type RoofSegmentNode } from '@aedifex/core'
 import { getAnalyticalNormal, getSurfaceY } from '../../shared/roof-surface'
 import { buildSolarPanelGeometry, computeAutoFit, flippedPanelDims } from '../geometry'
 import { SolarPanelNode } from '../schema'

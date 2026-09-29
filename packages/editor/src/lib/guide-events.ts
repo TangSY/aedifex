@@ -1,4 +1,4 @@
-import type { GuideNode } from '@pascal-app/core'
+import type { GuideNode } from '@aedifex/core'
 import mitt from 'mitt'
 
 type GuideEditorEvents = {

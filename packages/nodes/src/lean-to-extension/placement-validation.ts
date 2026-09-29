@@ -8,7 +8,7 @@ import {
   type RoofNode,
   type RoofSegmentNode,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { resolveLeanToCornerJoints } from './corner-joint'
 import { resolveLeanToLayout } from './layout'
 import { type LeanToPlanFacet, leanToPlanFootprintFacets } from './plan-footprint'

@@ -5,7 +5,7 @@ import type {
   LevelNode,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Deterministic door / window marks per level — WS3.

@@ -4,8 +4,8 @@ import {
   type InteractiveState,
   type MechanismCapability,
   useInteractive,
-} from '@pascal-app/core'
-import { operableParts } from '@pascal-app/core/procedural-items'
+} from '@aedifex/core'
+import { operableParts } from '@aedifex/core/procedural-items'
 
 // Catalog light and animation effects both read the first toggle, so on a lamp
 // that toggle is the light switch and any further toggles are the mechanisms.

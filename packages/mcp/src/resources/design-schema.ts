@@ -1,16 +1,16 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { describeDesignSchema } from '@pascal-app/core/procedural-items'
+import { describeDesignSchema } from '@aedifex/core/procedural-items'
 import type { SceneOperations } from '../operations'
 
 /**
- * `pascal://schema/design` — the design (procedural recipe, versions 1 and 2) contract: JSON Schema generated
+ * `aedifex://schema/design` — the design (procedural recipe, versions 1 and 2) contract: JSON Schema generated
  * from core's `RecipeSchema`, the limits and rules only `validate_design` can check, and one
  * valid example.
  */
 export function registerDesignSchema(server: McpServer, _bridge: SceneOperations): void {
   server.registerResource(
     'design-schema',
-    'pascal://schema/design',
+    'aedifex://schema/design',
     {
       title: 'Design schema',
       description:

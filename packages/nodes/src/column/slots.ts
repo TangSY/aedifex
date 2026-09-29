@@ -1,4 +1,4 @@
-import type { SlotDeclaration } from '@pascal-app/core'
+import type { SlotDeclaration } from '@aedifex/core'
 import type { ColumnNode } from './schema'
 
 export type ColumnSlotId = 'shaft' | 'base' | 'capital' | 'frame'

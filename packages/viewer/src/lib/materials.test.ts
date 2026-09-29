@@ -1,7 +1,7 @@
 // @ts-expect-error — bun:test is provided by the Bun runtime; viewer does not
 // depend on @types/bun so the import type is unresolved at compile time.
 import { describe, expect, test } from 'bun:test'
-import type { MaterialSchema } from '@pascal-app/core'
+import type { MaterialSchema } from '@aedifex/core'
 import { MeshLambertNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu'
 import { getTextureKey, resolveSlotDefaultMaterial, resolveTextureRepeat } from './materials'
 
@@ -36,7 +36,7 @@ describe('shared flat slot defaults', () => {
   test('interns colors by case, roughness, and shading with cache ownership', () => {
     const rendered = resolveSlotDefaultMaterial('#AbCdEf', 'rendered', 0.75)
     expect(rendered).toBe(resolveSlotDefaultMaterial('#abcdef', 'rendered', 0.75))
-    expect(rendered.userData.__pascalCachedMaterial).toBe(true)
+    expect(rendered.userData.__aedifexCachedMaterial).toBe(true)
     expect(rendered).toBeInstanceOf(MeshStandardNodeMaterial)
     expect((rendered as MeshStandardNodeMaterial).color.getHexString()).toBe('abcdef')
     expect((rendered as MeshStandardNodeMaterial).roughness).toBe(0.75)
@@ -46,6 +46,6 @@ describe('shared flat slot defaults', () => {
     expect(solid).not.toBe(rendered)
     expect(solid).toBeInstanceOf(MeshLambertNodeMaterial)
     expect(solid).toBe(resolveSlotDefaultMaterial('#abcdef', 'solid', 0.75))
-    expect(solid.userData.__pascalCachedMaterial).toBe(true)
+    expect(solid.userData.__aedifexCachedMaterial).toBe(true)
   })
 })

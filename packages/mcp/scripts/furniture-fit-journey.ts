@@ -6,7 +6,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
-import type { SceneGraph } from '@pascal-app/core/clone-scene-graph'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -15,7 +15,7 @@ import {
   LevelNode,
   SiteNode,
   ZoneNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 
 type Vec3 = [number, number, number]
 
@@ -352,7 +352,7 @@ function requireSuccess<T>(result: ToolResult, label: string): T {
 
 function inheritedEnv(databasePath: string): Record<string, string> {
   return Object.fromEntries(
-    Object.entries({ ...process.env, PASCAL_DB_PATH: databasePath }).filter(
+    Object.entries({ ...process.env, AEDIFEX_DB_PATH: databasePath }).filter(
       (entry): entry is [string, string] => typeof entry[1] === 'string',
     ),
   )
@@ -419,7 +419,7 @@ async function main() {
 
   const workingDir = mkdtempSync(join(tmpdir(), 'pascal-w02-'))
   const outputDir =
-    process.env.PASCAL_W02_OUTPUT_DIR ?? mkdtempSync(join(tmpdir(), 'pascal-mcp-furniture-fit-'))
+    process.env.AEDIFEX_W02_OUTPUT_DIR ?? mkdtempSync(join(tmpdir(), 'pascal-mcp-furniture-fit-'))
   const databasePath = join(workingDir, 'journey.db')
   mkdirSync(outputDir, { recursive: true })
 

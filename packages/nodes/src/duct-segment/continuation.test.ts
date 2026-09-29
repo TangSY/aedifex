@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, DuctFittingNode, nodeRegistry, registerNode } from '@pascal-app/core'
+import { type AnyNode, DuctFittingNode, nodeRegistry, registerNode } from '@aedifex/core'
 import { ductFittingDefinition } from '../duct-fitting/definition'
 import { getDuctFittingPorts } from '../duct-fitting/ports'
 import { createDuctRunEndCap } from '../shared/automatic-run-end-cap'

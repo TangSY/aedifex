@@ -1,25 +1,25 @@
 import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test'
+import * as realOperations from '@aedifex/mcp/operations'
+import * as realStorage from '@aedifex/mcp/storage'
 
 // bun's mock.module poisons the module registry for EVERY test file that
 // runs after this one in the same process — capture the real modules and
 // restore them when this file finishes, or route tests downstream get a
 // stub facade without saveScene/loadStoredScene (night-5 CI failure).
-const realOperations = await import('@pascal-app/mcp/operations')
-const realStorage = await import('@pascal-app/mcp/storage')
 afterAll(() => {
-  mock.module('@pascal-app/mcp/operations', () => realOperations)
-  mock.module('@pascal-app/mcp/storage', () => realStorage)
+  mock.module('@aedifex/mcp/operations', () => realOperations)
+  mock.module('@aedifex/mcp/storage', () => realStorage)
 })
 
 describe('getSceneStore', () => {
   beforeEach(() => {
-    mock.module('@pascal-app/mcp/operations', () => ({
+    mock.module('@aedifex/mcp/operations', () => ({
       createSceneOperations: ({ store }: { store: unknown }) => ({
         __store: store,
         hasStore: true,
       }),
     }))
-    mock.module('@pascal-app/mcp/storage', () => {
+    mock.module('@aedifex/mcp/storage', () => {
       let callCount = 0
       return {
         createSceneStore: async (_env?: NodeJS.ProcessEnv) => {

@@ -6,7 +6,7 @@ import {
   useLiveNodeOverrides,
   useScene,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { wallFloorplanMoveTarget } from './floorplan-move'
 
 const square = [

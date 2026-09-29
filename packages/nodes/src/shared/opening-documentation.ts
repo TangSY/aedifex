@@ -5,12 +5,12 @@ import type {
   LevelNode,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type FloorplanSchedule,
   resolveMarkDetail,
   withFloorplanGeometryMetadata,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import {
   type ConstructionLengthProfile,
   type ConstructionLinearUnit,

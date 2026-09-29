@@ -1,5 +1,5 @@
-import type { FloorplanGeometry, FloorplanPoint } from '@pascal-app/core'
-import { floorplanGeometryMetadata } from '@pascal-app/editor'
+import type { FloorplanGeometry, FloorplanPoint } from '@aedifex/core'
+import { floorplanGeometryMetadata } from '@aedifex/editor'
 
 /**
  * PERMIT-SET PLAN SYMBOLS for items — what a sheet draws instead of the

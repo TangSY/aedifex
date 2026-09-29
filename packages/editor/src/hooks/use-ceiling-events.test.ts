@@ -6,9 +6,9 @@ import {
   LevelNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { ProceduralItemNode, shelfRecipe } from '@pascal-app/core/procedural-items'
-import { hideFromScene, showInScene, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { ProceduralItemNode, shelfRecipe } from '@aedifex/core/procedural-items'
+import { hideFromScene, showInScene, useViewer } from '@aedifex/viewer'
 import { _roots, act, createRoot } from '@react-three/fiber'
 import { createElement } from 'react'
 import {

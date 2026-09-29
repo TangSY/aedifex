@@ -1,4 +1,4 @@
-import type { NodePort } from '@pascal-app/core'
+import type { NodePort } from '@aedifex/core'
 import { Vector3 } from 'three'
 import { localTrapPorts } from './geometry'
 import type { PipeTrapNode } from './schema'

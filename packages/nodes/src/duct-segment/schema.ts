@@ -1,1 +1,1 @@
-export { DuctSegmentNode } from '@pascal-app/core'
+export { DuctSegmentNode } from '@aedifex/core'

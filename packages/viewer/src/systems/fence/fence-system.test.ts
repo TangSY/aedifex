@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { FenceNode } from '@pascal-app/core'
+import type { FenceNode } from '@aedifex/core'
 import { generateFenceSlotGeometries } from './fence-system'
 
 const IN = 0.0254

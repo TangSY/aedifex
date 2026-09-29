@@ -64,7 +64,7 @@ function packageObjectSizes(data: Uint8Array): Array<{ name: string; size: THREE
   const vertices = asArray(mesh.vertices.vertex)
   const metadata = asArray<Record<string, string>>(model.metadata)
   const partManifest = JSON.parse(
-    metadata.find((entry) => entry.name === 'Pascal.PartManifest')!['#text']!,
+    metadata.find((entry) => entry.name === 'Aedifex.PartManifest')!['#text']!,
   ) as Array<{ name: string; vertexStart: number; vertexCount: number }>
   return partManifest.map((part) => {
     const bounds = new THREE.Box3()

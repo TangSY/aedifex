@@ -31,8 +31,8 @@ function runSourceTest(body: string) {
       ['react', consumers],
       ['three', consumers],
       ['@react-three/fiber', consumers],
-      ['@pascal-app/core', consumers],
-      ['@pascal-app/viewer', [nodesConsumer, editorConsumer]],
+      ['@aedifex/core', consumers],
+      ['@aedifex/viewer', [nodesConsumer, editorConsumer]],
     ]
     const sharedPaths = new Map(
       sharedConsumers.map(([specifier, consumers]) => [
@@ -51,7 +51,7 @@ function runSourceTest(body: string) {
     await importShared('react')
     await importShared('three')
     // The batch reads each kind's \`capabilities.batchable\` from the registry.
-    const registryCore = await importShared('@pascal-app/core')
+    const registryCore = await importShared('@aedifex/core')
     const batchable = await import(${sourcePath('packages/nodes/src/shared/node-batch/batchable.ts')})
     for (const [kind, config] of [['ceiling', batchable.surfaceBatchable], ['slab', batchable.surfaceBatchable], ['item', batchable.itemBatchable]])
       registryCore.nodeRegistry._register({ kind, schemaVersion: 1, capabilities: { batchable: config } })
@@ -73,10 +73,10 @@ function runSourceTest(body: string) {
 
 test('real slab top/side/skirt collection, shared defaults, transparent overrides and cache ownership', () => {
   runSourceTest(`
-    const core = await importShared('@pascal-app/core')
+    const core = await importShared('@aedifex/core')
     const sourceMaterials = await import(${sourcePath('packages/viewer/src/lib/materials.ts')})
-    const viewer = await importShared('@pascal-app/viewer')
-    mockShared('@pascal-app/viewer', () => ({ ...viewer, ...sourceMaterials }))
+    const viewer = await importShared('@aedifex/viewer')
+    mockShared('@aedifex/viewer', () => ({ ...viewer, ...sourceMaterials }))
     const { Group } = await importShared('three')
     const { buildSlabGeometry } = await import(${sourcePath('packages/nodes/src/slab/geometry.ts')})
     const { collectBatchCandidate } = await import(${sourcePath('packages/nodes/src/shared/node-batch/candidates.ts')})
@@ -150,11 +150,11 @@ test('priority-1 dirty snapshot sees the priority-2 ceiling rebuild and batches 
     const callbacks = []
     const fiber = await importShared('@react-three/fiber')
     mockShared('@react-three/fiber', () => ({ ...fiber, useThree: (selector) => selector({ invalidate: () => {} }), useFrame: (callback, priority = 0) => callbacks.push({ callback, priority }) }))
-    const core = await importShared('@pascal-app/core')
+    const core = await importShared('@aedifex/core')
     const scene = core.useScene
     const selectorHook = Object.assign((selector) => selector(scene.getState()), scene)
-    mockShared('@pascal-app/core', () => ({ ...core, useScene: selectorHook }))
-    const viewer = await importShared('@pascal-app/viewer')
+    mockShared('@aedifex/core', () => ({ ...core, useScene: selectorHook }))
+    const viewer = await importShared('@aedifex/viewer')
     const viewerStore = viewer.useViewer
     mock.module(${sourcePath('packages/viewer/src/store/use-viewer.ts')}, () => ({ default: Object.assign((selector) => selector(viewerStore.getState()), viewerStore) }))
     const { Group, Mesh, MeshBasicMaterial } = await importShared('three')
@@ -217,10 +217,10 @@ test('a column whose dirty mark the floor-elevation pass consumes first still le
     const callbacks = []
     const fiber = await importShared('@react-three/fiber')
     mockShared('@react-three/fiber', () => ({ ...fiber, useThree: (selector) => selector({ invalidate: () => {} }), useFrame: (callback, priority = 0) => callbacks.push({ callback, priority }) }))
-    const core = await importShared('@pascal-app/core')
+    const core = await importShared('@aedifex/core')
     const scene = core.useScene
-    mockShared('@pascal-app/core', () => ({ ...core, useScene: Object.assign((selector) => selector(scene.getState()), scene) }))
-    const viewer = await importShared('@pascal-app/viewer')
+    mockShared('@aedifex/core', () => ({ ...core, useScene: Object.assign((selector) => selector(scene.getState()), scene) }))
+    const viewer = await importShared('@aedifex/viewer')
     const viewerStore = viewer.useViewer
     mock.module(${sourcePath('packages/viewer/src/store/use-viewer.ts')}, () => ({ default: Object.assign((selector) => selector(viewerStore.getState()), viewerStore) }))
     const { BoxGeometry, Group, Mesh, MeshBasicMaterial } = await importShared('three')
@@ -279,15 +279,15 @@ const slabCacheFixture = `
   const fiber = await importShared('@react-three/fiber')
   mockShared('@react-three/fiber', () => ({ ...fiber, useThree: (selector) => selector({ gl: { domElement: {} }, invalidate: () => {} }), useFrame: (callback, priority) => frames.push({ callback, priority }) }))
   const selectorHook = (store) => Object.assign((selector) => selector(store.getState()), store)
-  const core = await importShared('@pascal-app/core')
+  const core = await importShared('@aedifex/core')
   const scene = core.useScene
-  mockShared('@pascal-app/core', () => ({ ...core, useScene: selectorHook(scene), useRegistryVersion: () => 0 }))
-  const viewer = await importShared('@pascal-app/viewer')
+  mockShared('@aedifex/core', () => ({ ...core, useScene: selectorHook(scene), useRegistryVersion: () => 0 }))
+  const viewer = await importShared('@aedifex/viewer')
   const viewerStore = viewer.useViewer
   viewerStore.setState({ bumpGeometryRevision: () => viewerStore.setState({ geometryRevision: viewerStore.getState().geometryRevision + 1 }) })
   mock.module(${sourcePath('packages/viewer/src/store/use-viewer.ts')}, () => ({ default: selectorHook(viewerStore) }))
   const sourceMaterials = await import(${sourcePath('packages/viewer/src/lib/materials.ts')})
-  mockShared('@pascal-app/viewer', () => ({ ...viewer, ...sourceMaterials, useViewer: selectorHook(viewerStore) }))
+  mockShared('@aedifex/viewer', () => ({ ...viewer, ...sourceMaterials, useViewer: selectorHook(viewerStore) }))
   const { Group } = await importShared('three')
   const { buildSlabGeometry } = await import(${sourcePath('packages/nodes/src/slab/geometry.ts')})
   const { GeometrySystem } = await import(${sourcePath('packages/viewer/src/systems/geometry/geometry-system.tsx')})

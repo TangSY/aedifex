@@ -9,8 +9,8 @@ import {
   useRegistry,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
-import { NodeRenderer, useNodeEvents } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { NodeRenderer, useNodeEvents } from '@aedifex/viewer'
 import { useLayoutEffect, useRef } from 'react'
 import type { Group } from 'three'
 import { resolveLeanToParentPose } from './layout'

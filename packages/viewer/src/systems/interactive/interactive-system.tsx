@@ -8,12 +8,12 @@ import {
   useInteractive,
   useScene,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   evaluateRecipe,
   operableParts,
   type ProceduralItemNode,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import { Html } from '@react-three/drei'
 import { createPortal, useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useState } from 'react'

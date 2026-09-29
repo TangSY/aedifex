@@ -5,7 +5,7 @@ import {
   type GroupMoveSnapResult,
   type HandleDescriptor,
   type NodeDefinition,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { withHostedChildren } from '../shared/hosted-resize'
 import { columnBatchable } from '../shared/node-batch/batchable'
 import {

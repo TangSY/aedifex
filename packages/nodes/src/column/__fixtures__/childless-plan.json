@@ -43,7 +43,7 @@
         "strokeWidth": 0.02,
         "opacity": 0.92,
         "metadata": {
-          "pascal:editor/floorplan": {
+          "aedifex:editor/floorplan": {
             "annotationObstacle": "bounds"
           }
         }
@@ -59,7 +59,7 @@
         "vectorEffect": "non-scaling-stroke",
         "pointerEvents": "none",
         "metadata": {
-          "pascal:editor/floorplan": {
+          "aedifex:editor/floorplan": {
             "annotationRole": "column-center"
           }
         }
@@ -75,7 +75,7 @@
         "vectorEffect": "non-scaling-stroke",
         "pointerEvents": "none",
         "metadata": {
-          "pascal:editor/floorplan": {
+          "aedifex:editor/floorplan": {
             "annotationRole": "column-center"
           }
         }
@@ -126,7 +126,7 @@
         "strokeWidth": 0.03,
         "opacity": 0.92,
         "metadata": {
-          "pascal:editor/floorplan": {
+          "aedifex:editor/floorplan": {
             "annotationObstacle": "bounds"
           }
         }
@@ -142,7 +142,7 @@
         "vectorEffect": "non-scaling-stroke",
         "pointerEvents": "none",
         "metadata": {
-          "pascal:editor/floorplan": {
+          "aedifex:editor/floorplan": {
             "annotationRole": "column-center"
           }
         }
@@ -158,7 +158,7 @@
         "vectorEffect": "non-scaling-stroke",
         "pointerEvents": "none",
         "metadata": {
-          "pascal:editor/floorplan": {
+          "aedifex:editor/floorplan": {
             "annotationRole": "column-center"
           }
         }
@@ -202,7 +202,7 @@
         "strokeWidth": 0.02,
         "opacity": 0.92,
         "metadata": {
-          "pascal:editor/floorplan": {
+          "aedifex:editor/floorplan": {
             "annotationObstacle": "bounds"
           }
         }
@@ -218,7 +218,7 @@
         "vectorEffect": "non-scaling-stroke",
         "pointerEvents": "none",
         "metadata": {
-          "pascal:editor/floorplan": {
+          "aedifex:editor/floorplan": {
             "annotationRole": "column-center"
           }
         }
@@ -234,7 +234,7 @@
         "vectorEffect": "non-scaling-stroke",
         "pointerEvents": "none",
         "metadata": {
-          "pascal:editor/floorplan": {
+          "aedifex:editor/floorplan": {
             "annotationRole": "column-center"
           }
         }
@@ -257,7 +257,7 @@
         "strokeWidth": 0.03,
         "opacity": 0.92,
         "metadata": {
-          "pascal:editor/floorplan": {
+          "aedifex:editor/floorplan": {
             "annotationObstacle": "bounds"
           }
         }
@@ -273,7 +273,7 @@
         "vectorEffect": "non-scaling-stroke",
         "pointerEvents": "none",
         "metadata": {
-          "pascal:editor/floorplan": {
+          "aedifex:editor/floorplan": {
             "annotationRole": "column-center"
           }
         }
@@ -289,7 +289,7 @@
         "vectorEffect": "non-scaling-stroke",
         "pointerEvents": "none",
         "metadata": {
-          "pascal:editor/floorplan": {
+          "aedifex:editor/floorplan": {
             "annotationRole": "column-center"
           }
         }

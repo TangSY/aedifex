@@ -1,4 +1,4 @@
-import { sceneRegistry } from '@pascal-app/core'
+import { sceneRegistry } from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import type {

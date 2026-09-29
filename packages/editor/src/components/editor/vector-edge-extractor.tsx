@@ -9,8 +9,8 @@
  * spawn, the caller's types, objects tagged `userData.excludeFromCapture`)
  * for the length of the extraction.
  */
-import { emitter } from '@pascal-app/core'
-import { GRID_LAYER, holdLiveFrame, temporarilyHideNodeTypes } from '@pascal-app/viewer'
+import { emitter } from '@aedifex/core'
+import { GRID_LAYER, holdLiveFrame, temporarilyHideNodeTypes } from '@aedifex/viewer'
 import { useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
 import * as THREE from 'three'
@@ -94,7 +94,7 @@ export function VectorEdgeExtractor() {
         releaseLiveFrame()
       }
       if (process.env.NODE_ENV !== 'production') {
-        ;(window as unknown as { __pascalLastEdges?: unknown }).__pascalLastEdges = result
+        ;(window as unknown as { __aedifexLastEdges?: unknown }).__aedifexLastEdges = result
       }
       respond(
         result

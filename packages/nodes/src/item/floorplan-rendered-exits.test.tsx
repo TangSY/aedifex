@@ -18,15 +18,15 @@ import {
   useLiveTransforms,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   frame,
   nodeLevelFrame,
   ProceduralItemNode,
   type Recipe,
   transformPoint,
-} from '@pascal-app/core/procedural-items'
-import { NodeRenderer, useViewer, WallSystem } from '@pascal-app/viewer'
+} from '@aedifex/core/procedural-items'
+import { NodeRenderer, useViewer, WallSystem } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { extend, useFrame } from '@react-three/fiber'
 import { act, create } from '@react-three/test-renderer'
@@ -735,7 +735,7 @@ test('fresh procedural preset subtree remains on floor and commits remapped atta
 
 for (const mounting of ['wall', 'roof', 'ceiling'] as const)
   test(`shared frame preserves ${mounting}-mounted item ancestry`, async () => {
-    const { WallNode, RoofNode, RoofSegmentNode, CeilingNode } = await import('@pascal-app/core')
+    const { WallNode, RoofNode, RoofSegmentNode, CeilingNode } = await import('@aedifex/core')
     const definitions = await Promise.all([
       import('../wall/definition'),
       import('../roof/definition'),
@@ -816,7 +816,7 @@ for (const mounting of ['wall', 'roof', 'ceiling'] as const)
         .worldToLocal(new Vector3().setFromMatrixPosition(worldMatrix(child.id)))
       if (mounting === 'roof') {
         // Production plan rendering uses stored roof-face Z, not the wall-side thickness offset.
-        const { getRoofWallFaceFrame, roofFacePointToSegment } = await import('@pascal-app/core')
+        const { getRoofWallFaceFrame, roofFacePointToSegment } = await import('@aedifex/core')
         const face = getRoofWallFaceFrame(segment, mounted.roofFace!)
         const local = roofFacePointToSegment(segment, mounted.roofFace!, mounted.position)
         const expected = transformPoint(
@@ -1117,7 +1117,7 @@ test('audit: procedural pickup does not enable a new plain 3D drag gesture', () 
 })
 
 test('audit: block top exit clears face storage and lands upright at the floor datum', async () => {
-  const { BlockNode, getBlockFaceFrame } = await import('@pascal-app/core')
+  const { BlockNode, getBlockFaceFrame } = await import('@aedifex/core')
   const { blockDefinition } = await import('../block/definition')
   registerNode(blockDefinition)
   const { child, level } = fixture('item', 'item', false)
@@ -1196,7 +1196,7 @@ for (const kind of ['fence', 'imported-mesh', 'plugin', 'ineligible-plugin', 'sl
   for (const childKind of ['item', 'procedural-item'] as const)
     for (const overSlab of [true, false])
       test(`review bot: generic parent exit ${kind} ${childKind} slab=${overSlab}`, async () => {
-        const { FenceNode, ImportedMeshNode, nodeType, objectId } = await import('@pascal-app/core')
+        const { FenceNode, ImportedMeshNode, nodeType, objectId } = await import('@aedifex/core')
         const { fenceDefinition } = await import('../fence/definition')
         const { importedMeshDefinition } = await import('../imported-mesh/definition')
         const { slabDefinition } = await import('../slab/definition')
@@ -1340,7 +1340,7 @@ for (const kind of ['fence', 'imported-mesh', 'plugin', 'ineligible-plugin', 'sl
 
 for (const kind of ['item', 'shelf', 'generated'] as const)
   test(`review bot: block face frame composes ${kind} ancestor and one slab lift`, async () => {
-    const { BlockNode, getBlockFaceFrame } = await import('@pascal-app/core')
+    const { BlockNode, getBlockFaceFrame } = await import('@aedifex/core')
     const { blockDefinition } = await import('../block/definition')
     registerNode(blockDefinition)
     const { child, host, level, slab } = fixture(kind, 'item', false)
@@ -1399,7 +1399,7 @@ for (const kind of ['item', 'shelf', 'generated'] as const)
 for (const kind of ['shelf', 'plugin'] as const)
   for (const check of ['frame', 'plan'] as const)
     test(`review bot 2: ${kind} named attachment ${check}`, async () => {
-      const { nodeType, objectId } = await import('@pascal-app/core')
+      const { nodeType, objectId } = await import('@aedifex/core')
       const schema = ShelfNode.extend({
         type: nodeType('review:child'),
         id: objectId('reviewchild'),

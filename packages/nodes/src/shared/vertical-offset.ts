@@ -3,7 +3,7 @@ import {
   type AnyNodeId,
   DuctSegmentNode,
   type PortConnection,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Vector3 } from 'three'
 import { fittingLegLength, getDuctFittingPorts } from '../duct-fitting/ports'
 import type { DuctFittingNode } from '../duct-fitting/schema'

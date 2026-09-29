@@ -4,7 +4,7 @@ import {
   type SkylightNode,
   useInteractive,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export const SKYLIGHT_TOGGLE_ANIMATION_MS = 520
 

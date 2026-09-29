@@ -1,6 +1,6 @@
 'use client'
 
-import type { AnyNode, ParamField } from '@pascal-app/core'
+import type { AnyNode, ParamField } from '@aedifex/core'
 import { SegmentedControl } from '../controls/segmented-control'
 import { SliderControl } from '../controls/slider-control'
 import { ToggleControl } from '../controls/toggle-control'

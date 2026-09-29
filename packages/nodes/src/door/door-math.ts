@@ -3,7 +3,7 @@ import {
   getWallCurveFrameAt,
   getWallCurveLength,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Keep the door handle at the same relative height when the door is resized:
@@ -21,20 +21,7 @@ export function scaleHandleHeight(
   return Math.min(Math.max(handleHeight * ratio, 0.5), Math.max(0.5, newHeight - 0.1))
 }
 
-/**
- * Converts wall-local (X along wall, Y = height above wall base) to world XYZ.
- */
-export function wallLocalToWorld(
-  wallNode: WallNode,
-  localX: number,
-  localY: number,
-  levelYOffset = 0,
-  slabElevation = 0,
-): [number, number, number] {
-  const wallLength = getWallCurveLength(wallNode)
-  const frame = getWallCurveFrameAt(wallNode, wallLength > 1e-6 ? localX / wallLength : 0)
-  return [frame.point.x, slabElevation + localY + levelYOffset, frame.point.y]
-}
+export { wallLocalToWorld } from '../shared/wall-local-frame'
 
 /**
  * Clamps door center X so it stays fully within wall bounds.

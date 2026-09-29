@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import { useInteractive } from '@pascal-app/core'
-import { ProceduralItemNode, parseRecipe } from '@pascal-app/core/procedural-items'
+import { useInteractive } from '@aedifex/core'
+import { ProceduralItemNode, parseRecipe } from '@aedifex/core/procedural-items'
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three'
 import pendant from '../../../core/src/procedural-items/__fixtures__/pendant_lamp.json'
 import { proceduralItemDefinition } from './definition'

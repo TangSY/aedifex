@@ -6,8 +6,8 @@ import {
   getMaxWallCurveOffset,
   getWallCurveLength,
   normalizeWallCurveOffset,
-} from '@pascal-app/core'
-import { SliderControl } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { SliderControl } from '@aedifex/editor'
 
 /**
  * Custom inspector editors for fence fields that don't map to a single

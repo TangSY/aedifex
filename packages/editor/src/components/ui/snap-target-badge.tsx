@@ -1,5 +1,5 @@
-import type { AnyNode, AssetInput } from '@pascal-app/core'
-import { isProceduralItem } from '@pascal-app/core/procedural-items'
+import type { AnyNode, AssetInput } from '@aedifex/core'
+import { isProceduralItem } from '@aedifex/core/procedural-items'
 import type { ReactNode } from 'react'
 import { cn } from '../../lib/utils'
 

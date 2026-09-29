@@ -1,4 +1,4 @@
-import { acquireSceneHistoryPause, useScene } from '@pascal-app/core'
+import { acquireSceneHistoryPause, useScene } from '@aedifex/core'
 
 /**
  * One-undo-entry-per-gesture history session for the door / window MOVE

@@ -11,7 +11,7 @@ import {
   StairNode,
   StairSegmentNode,
   spatialGridManager,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { stairDefinition } from './definition'
 import { getStairFloorPlacedFootprints, getStairSegmentFloorPlacedFootprints } from './floor-stack'
 

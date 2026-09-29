@@ -1,4 +1,5 @@
-import { type AnyNode, type NodeDefinition, useScene } from '@pascal-app/core'
+import { type AnyNode, type NodeDefinition, useScene } from '@aedifex/core'
+import { DRAFTING_EXTENSION_KEY, type RegisteredDraftingConfig } from '@aedifex/editor'
 import { ductBodyPaint, ductBodySlots } from '../shared/duct-body-paint'
 import { createPathPointMoveAffordance } from '../shared/path-point-affordance'
 import { createSegmentMoveAffordance } from '../shared/path-segment-affordance'
@@ -49,7 +50,9 @@ export const ductSegmentDefinition: NodeDefinition<typeof DuctSegmentNode> = {
   schema: DuctSegmentNode,
   category: 'utility',
   distributionRole: 'run',
-  drafting: { surfaceQuery: true, cancelOnHistoryJump: true },
+  extensions: {
+    [DRAFTING_EXTENSION_KEY]: { surfaceQuery: true, cancelOnHistoryJump: true } satisfies RegisteredDraftingConfig,
+  },
   // Directional run: like a wall, drafting sets a direction, so it takes the
   // structural snapping context (grid / lines / angles / off) with a 45° angle
   // lock available as a cyclable mode.

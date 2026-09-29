@@ -12,7 +12,7 @@ import {
   useRegistry,
   useScene,
   type WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type ColorPreset,
   createMaterial,
@@ -21,7 +21,7 @@ import {
   NodeRenderer,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { type ReactNode, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useShallow } from 'zustand/react/shallow'
@@ -232,7 +232,7 @@ function DormerWindowHostFrame({
 }
 
 // Re-export so consumers (e.g. tests) can reach the gable slot index
-// without importing from `@pascal-app/viewer` directly.
+// without importing from `@aedifex/viewer` directly.
 export { DORMER_GABLE_MATERIAL_INDEX }
 
 export default DormerRenderer

@@ -6,7 +6,7 @@ import {
   motionRestOffset,
   motionTimeline,
   type ProceduralItemNode,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import * as THREE from 'three'
 
 const playingMotions = new Set<string>()

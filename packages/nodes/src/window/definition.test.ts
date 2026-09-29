@@ -10,7 +10,7 @@ import {
   type SceneApi,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { resolveWindowHandlePortalTarget, windowDefinition } from './definition'
 
 const windowHandles = windowDefinition.handles as HandleDescriptor<WindowNode>[]

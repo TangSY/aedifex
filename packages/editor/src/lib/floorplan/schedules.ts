@@ -1,5 +1,5 @@
-import type { AnyNode, AnyNodeId, DoorNode, WallNode, WindowNode, ZoneNode } from '@pascal-app/core'
-import { deriveZoneQuantityReport, resolveAutoZonePolygon } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, DoorNode, WallNode, WindowNode, ZoneNode } from '@aedifex/core'
+import { deriveZoneQuantityReport, resolveAutoZonePolygon } from '@aedifex/core'
 import { collectFloorplanSchedules } from './floorplan-export'
 import type { FloorplanSchedule } from './floorplan-extension'
 import { resolveMarkDetail } from './marks'

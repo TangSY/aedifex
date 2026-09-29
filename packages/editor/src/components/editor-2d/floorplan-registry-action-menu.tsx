@@ -13,8 +13,8 @@ import {
   useLiveNodeOverrides,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { type MouseEvent, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useShallow } from 'zustand/react/shallow'
@@ -254,7 +254,7 @@ export function FloorplanRegistryActionMenu() {
     !registryMoveDisabled(node) &&
     (!!def.capabilities.movable || !!def.floorplanMoveTarget || !!def.affordanceTools?.move)
   const canDuplicate = def.capabilities.duplicable !== false
-  const canDelete = def.capabilities.deletable !== false
+  const canDelete = def.capabilities.deletable
   const canAddHole = node.type === 'slab' || node.type === 'ceiling'
 
   const handleMove = () => {

@@ -1,4 +1,5 @@
-import type { NodeDefinition } from '@pascal-app/core'
+import type { NodeDefinition } from '@aedifex/core'
+import { DRAFTING_EXTENSION_KEY, type RegisteredDraftingConfig } from '@aedifex/editor'
 import { createPathPointMoveAffordance } from '../shared/path-point-affordance'
 import { createRunHangerToolHint } from '../shared/run-hanger-mode'
 import { pipeBranchAffordance, pipeContinuationAffordance } from './continuation'
@@ -23,7 +24,9 @@ export const pipeSegmentDefinition: NodeDefinition<typeof PipeSegmentNode> = {
   schema: PipeSegmentNode,
   category: 'utility',
   distributionRole: 'run',
-  drafting: { surfaceQuery: true, cancelOnHistoryJump: true },
+  extensions: {
+    [DRAFTING_EXTENSION_KEY]: { surfaceQuery: true, cancelOnHistoryJump: true } satisfies RegisteredDraftingConfig,
+  },
   // Directional run: like a wall, drafting sets a direction, so it takes the
   // structural snapping context (grid / lines / angles / off) with a 45° angle
   // lock available as a cyclable mode.

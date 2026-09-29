@@ -1,5 +1,5 @@
-import type { Control, ControlValue } from '@pascal-app/core'
-import { operableParts, type ProceduralItemNode } from '@pascal-app/core/procedural-items'
+import type { Control, ControlValue } from '@aedifex/core'
+import { operableParts, type ProceduralItemNode } from '@aedifex/core/procedural-items'
 
 export type ControlDescriptor = {
   key: string

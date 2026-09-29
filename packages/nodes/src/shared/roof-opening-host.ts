@@ -4,13 +4,13 @@ import type {
   RoofNode,
   RoofSegmentNode,
   RoofWallFaceId,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getMaxRoofRectHeightFromAnchor,
   getMaxRoofRectWidthFromAnchor,
   getRoofSegmentWallFace,
   roofFacePointToSegment,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Host-side helpers for openings (door / window) hosted on a roof-segment

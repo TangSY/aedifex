@@ -5,8 +5,8 @@ import {
   planNodeDeletion,
   previewDefaultGutterRefresh,
   validateNodeRelations,
-} from '@pascal-app/core'
-import { AnyNode, type AnyNodeId, nodeKindOf, parseNode } from '@pascal-app/core/schema'
+} from '@aedifex/core'
+import { AnyNode, type AnyNodeId, nodeKindOf, parseNode } from '@aedifex/core/schema'
 import type { Patch } from '../bridge/scene-bridge'
 
 export type PatchRefusalCode =

@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId, CabinetModuleNode, CabinetNode, SceneApi } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, CabinetModuleNode, CabinetNode, SceneApi } from '@aedifex/core'
 
 export function cabinetModuleForRunInsertion(
   module: CabinetModuleNode,

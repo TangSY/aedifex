@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, useScene } from '@aedifex/core'
 import { ceilingDefinition } from '../ceiling/definition'
 import { slabDefinition } from '../slab/definition'
 import { zoneDefinition } from '../zone/definition'

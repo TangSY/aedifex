@@ -20,10 +20,12 @@ Every node shares these fields:
   name?: string             // optional display name
   parentId: string | null   // parent node ID; null = root
   visible: boolean          // defaults to true
-  metadata: Record<string, unknown>  // arbitrary JSON, defaults to {}
+  metadata: Record<string, unknown> | JSONType  // preserves historical JSON values, defaults to {}
   provenance?: Provenance   // typed source ids and lineage; absent unless a writer sets it
 }
 ```
+
+Metadata uses an object-first schema with a recursive JSON fallback. Saved scalar, array, and null values remain valid and are never silently rewritten. Zod may decline optional compilation for recursive schemas; the interpreted parser remains the compatibility baseline.
 
 `provenance` (`packages/core/src/schema/provenance.ts`) records which source elements a node reproduces: `refs` of `{ ns?, id, role? }` (role `primary` when absent, or `piece`, `absorbed`, `alias`, `derived`) and an optional `lineage` (`op` plus the `fromIds` it was split, merged or copied from). An importer writes it; the editor only carries it. Its strings are printable ASCII, so the caps are UTF-8 bytes (32 refs, 32 lineage ids, 160-byte ids; an importer percent-encodes other characters). A write over a cap is refused, by the store and every validated writer, and nothing is truncated: load keeps an over-cap node as stored. Clones copy it verbatim today. A preset never keeps it: hosts serialise preset nodes through `withoutSourceIdentity` (`registry/subtree.ts`), which also drops every other `source` reference the reference inventory strips on preset.
 
@@ -55,8 +57,8 @@ Then add `MyNode` to the `AnyNode` union in `packages/core/src/schema/types.ts`.
 Always use `.parse()` to validate and generate a proper typed ID. Never construct a plain object manually.
 
 ```ts
-import { WallNode } from '@pascal-app/core'
-import { useScene } from '@pascal-app/core'
+import { WallNode } from '@aedifex/core'
+import { useScene } from '@aedifex/core'
 
 // 1. Parse validates and fills defaults (including auto-generated id)
 const wall = WallNode.parse({ name: 'Wall 1', start: [0, 0], end: [5, 0] })

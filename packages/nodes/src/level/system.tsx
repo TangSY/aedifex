@@ -1,5 +1,5 @@
 'use client'
 
-import { LevelSystem } from '@pascal-app/viewer'
+import { LevelSystem } from '@aedifex/viewer'
 
 export default LevelSystem

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { DownspoutNode } from '@pascal-app/core'
+import { DownspoutNode } from '@aedifex/core'
 import { downspoutDefinition } from './definition'
 
 describe('downspout paint capability', () => {

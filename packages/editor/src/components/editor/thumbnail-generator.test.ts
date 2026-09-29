@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 import { Vector2 } from 'three'
 import { CanvasTarget, type WebGPURenderer } from 'three/webgpu'
 import { atCaptureSize, presentFinished, pumpFrames, tileGrid } from './thumbnail-generator'

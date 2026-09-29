@@ -9,7 +9,7 @@ import {
   type SceneApi,
   type SlabNode as SlabNodeType,
   syncStairRises,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   clearStructuralElevationGuide,
   DRAFTING_SURFACE_EXTENSION_KEY,
@@ -17,7 +17,7 @@ import {
   type FloorplanNodeExtension,
   publishStructuralElevationGuide,
   resolveStructuralElevationSnap,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { surfaceBatchable } from '../shared/node-batch/batchable'
 import { polygonMeasurementFeatures } from '../shared/polygon-measurement'
 import { sameOutlineSurfaceCounterparts } from '../shared/surface-counterparts'
@@ -281,7 +281,7 @@ export const slabDefinition: NodeDefinition<typeof SlabNode> = {
     [DRAFTING_SURFACE_EXTENSION_KEY]: {
       kind: 'slab',
     } satisfies DraftingSurfaceExtension,
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       selectionCounterparts: sameOutlineSurfaceCounterparts,
     } satisfies FloorplanNodeExtension,
   },

@@ -19,15 +19,15 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   evaluateRecipe,
   ProceduralItemNode,
   queryProceduralItem,
   type Recipe,
   radiatorRecipe,
-} from '@pascal-app/core/procedural-items'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core/procedural-items'
+import { useViewer } from '@aedifex/viewer'
 import { reconciler } from '@react-three/fiber'
 import { act, create } from '@react-three/test-renderer'
 import { StrictMode, useEffect } from 'react'

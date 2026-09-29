@@ -13,7 +13,7 @@ import {
   surfaceHeightAt,
   terrainFieldOf,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   applyMaterialPresetToMaterials,
   buildTerrainPerimeterFillGeometry,
@@ -26,7 +26,7 @@ import {
   registerMaterialCacheCleanup,
   resolveMaterialRef,
   resolveSlotDefaultMaterial,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import {
   BufferGeometry,
   Float32BufferAttribute,
@@ -196,7 +196,7 @@ function getLegacySlabMaterial(node: SlabNode, shading: RenderShading): Material
   slabMaterial.depthWrite = true
   slabMaterial.needsUpdate = true
 
-  material.userData.__pascalCachedMaterial = true
+  material.userData.__aedifexCachedMaterial = true
   slabMaterialCache.set(cacheKey, material)
   return material
 }

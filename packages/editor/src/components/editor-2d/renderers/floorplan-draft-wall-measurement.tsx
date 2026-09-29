@@ -1,6 +1,6 @@
 'use client'
 
-import type { WallPlanPoint } from '@pascal-app/core'
+import type { WallPlanPoint } from '@aedifex/core'
 
 /** Length plate + angle arcs for a drafted wall segment, in plan space. */
 export type DraftWallMeasurement = {

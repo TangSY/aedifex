@@ -4,7 +4,7 @@ import {
   LeanToExtensionNode,
   type LeanToExtensionNode as LeanToExtensionNodeType,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { createLeanToAssembly, leanToCornerPostIndex, managedLeanToPostIndex } from './assembly'
 import { resolveLeanToCornerJoints } from './corner-joint'
 import { resolveLeanToLayout } from './layout'

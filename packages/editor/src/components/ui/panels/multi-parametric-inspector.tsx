@@ -7,8 +7,8 @@ import {
   type ParamField,
   type ParametricDescriptor,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { selectionMatchesSessionGroup } from '../../../lib/session-groups'

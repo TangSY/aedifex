@@ -1,5 +1,5 @@
 'use client'
 
-import { ZoneSystem } from '@pascal-app/viewer'
+import { ZoneSystem } from '@aedifex/viewer'
 
 export default ZoneSystem

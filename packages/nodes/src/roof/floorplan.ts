@@ -8,8 +8,8 @@ import {
   roofPlanOverlapEntryOwns,
   subtractPolygonsFromPolygon,
   unionPolygons,
-} from '@pascal-app/core'
-import { floorplanGeometryMetadata, readFloorplanContext } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { floorplanGeometryMetadata, readFloorplanContext } from '@aedifex/editor'
 import { getConicalRoofPlanFootprint, getRoofSegmentPlanLinework } from '../roof-segment/floorplan'
 
 type Pt = [number, number]

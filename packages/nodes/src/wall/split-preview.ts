@@ -7,7 +7,7 @@ import {
   planWallDivisions,
   type WallNode,
   type WallPlanPoint,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export const WALL_SPLIT_MAX_CUTS = 32
 

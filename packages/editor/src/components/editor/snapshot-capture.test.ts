@@ -3,7 +3,7 @@ import type {
   SnapshotCaptureFailedEvent,
   SnapshotCapturePose,
   ThumbnailGenerateEvent,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Euler, PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import {
   applySnapshotCapturePose,

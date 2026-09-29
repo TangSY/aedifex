@@ -1,4 +1,4 @@
-import type { BlockNode, SlotDeclaration } from '@pascal-app/core'
+import type { BlockNode, SlotDeclaration } from '@aedifex/core'
 import { BLOCK_BODY_SLOT_ID, blockMaterialSlotIds } from './material-slots'
 
 export const BLOCK_SLOT_ID = BLOCK_BODY_SLOT_ID

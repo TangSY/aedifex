@@ -1,4 +1,4 @@
-import type { Point2D } from '@pascal-app/core'
+import type { Point2D } from '@aedifex/core'
 import type { FloorplanLineSegment, FloorplanSelectionBounds } from './types'
 
 // Baseline rotation (deg) that orients the plan-local scene "north up" on

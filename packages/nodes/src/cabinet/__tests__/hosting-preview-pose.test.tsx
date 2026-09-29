@@ -18,9 +18,9 @@ import {
   useLiveTransforms,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
-import { nodeLevelFrame, ProceduralItemNode, type Recipe } from '@pascal-app/core/procedural-items'
-import { NodeRenderer, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { nodeLevelFrame, ProceduralItemNode, type Recipe } from '@aedifex/core/procedural-items'
+import { NodeRenderer, useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { act, create } from '@react-three/test-renderer'
 import { Children, cloneElement, isValidElement, type ReactNode, useMemo, useRef } from 'react'

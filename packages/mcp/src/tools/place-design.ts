@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { DesignPlacementError, planDesignPlacement } from '@pascal-app/core/procedural-items'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core/schema'
+import { DesignPlacementError, planDesignPlacement } from '@aedifex/core/procedural-items'
+import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { Patch } from '../bridge/scene-bridge'
 import type { SceneOperations } from '../operations'

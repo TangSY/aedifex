@@ -13,14 +13,14 @@ import {
   sceneRegistry,
   toSceneMaterialRef,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   createMaterial,
   createMaterialFromPresetRef,
   registerMaterialCacheCleanup,
   setSurfaceRaycastLayers,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { type Material, type Mesh, type Object3D, Raycaster } from 'three'
 
 /**

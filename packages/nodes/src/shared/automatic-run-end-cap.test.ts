@@ -6,7 +6,7 @@ import {
   nodeRegistry,
   PipeFittingNode,
   PipeSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { getDuctFittingPorts } from '../duct-fitting/ports'
 import { builtinPlugin } from '../index'
 import { getPipeFittingPorts } from '../pipe-fitting/ports'
@@ -221,4 +221,27 @@ describe('automatic run end caps', () => {
     expect(inlet.direction[0]).toBeCloseTo(0)
     expect(inlet.direction[2]).toBeCloseTo(-1)
   })
+})
+
+test('legacy cap metadata is ignored while an explicitly selected cap still matches itself', () => {
+  const pipe = PipeSegmentNode.parse({
+    path: [
+      [0, 1, 0],
+      [3, 1, 0],
+    ],
+  })
+  const cap = createPipeRunEndCap(pipe)!
+  const inlet = getPipeFittingPorts(cap)[0]!
+  for (const metadata of [null, false, true, 42, 'legacy', []]) {
+    const legacyCap = { ...cap, metadata }
+    const nodes = { [pipe.id]: pipe, [cap.id]: legacyCap }
+    expect(
+      findMatedRunEndCapIds({ ...inlet, nodeId: pipe.id, id: 'end' }, nodes, 'pipe-fitting'),
+    ).toEqual([])
+    expect(findMatedRunEndCapIds({ ...inlet, nodeId: cap.id }, nodes, 'pipe-fitting')).toEqual([
+      cap.id,
+    ])
+    expect(findAutomaticRunEndCapIds(pipe.id, nodes, 'pipe-fitting')).toEqual([])
+    expect(legacyCap.metadata).toEqual(metadata)
+  }
 })

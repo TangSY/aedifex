@@ -1,5 +1,5 @@
-import { type AnyNode, type CeilingNode, resolveLevelId } from '@pascal-app/core'
-import { resolveCeilingPlanPointSnap } from '@pascal-app/editor'
+import { type AnyNode, type CeilingNode, resolveLevelId } from '@aedifex/core'
+import { resolveCeilingPlanPointSnap } from '@aedifex/editor'
 import {
   createPolygonAddVertexAffordance,
   createPolygonDeleteVertexAffordance,

@@ -1,11 +1,11 @@
-import type { AnyNode, FloorplanGeometry, HandleDescriptor, NodeDefinition } from '@pascal-app/core'
+import type { AnyNode, FloorplanGeometry, HandleDescriptor, NodeDefinition } from '@aedifex/core'
 import {
   type AnyNodeId,
   getEffectiveNode,
   toggleMechanism,
   useInteractive,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   boundsOf,
   boxCorners,
@@ -24,13 +24,14 @@ import {
   snapParameters,
   transformPoint,
   validateProceduralRelations,
-} from '@pascal-app/core/procedural-items'
-import { usePlacementPreview } from '@pascal-app/editor'
-import { decorateProceduralEmission } from '@pascal-app/viewer'
+} from '@aedifex/core/procedural-items'
+import { usePlacementPreview } from '@aedifex/editor'
+import { decorateProceduralEmission } from '@aedifex/viewer'
 import { itemPaint } from '../item/paint'
 import { proceduralMechanism, toggleItemLights } from '../shared/item-interactions'
 import { restingFloorplanAffectedIds } from '../shared/resting-surface-plan'
 import { bakeProceduralAnimationClips, isProceduralMotionPlaying } from './animation'
+import { metadataRecord } from '../shared/node-metadata'
 import { proceduralFloorplanMoveTarget } from './move-session'
 
 const GIZMO_SIDE_OFFSET = 0.3
@@ -122,7 +123,7 @@ export const proceduralItemDefinition: NodeDefinition<typeof ProceduralItemNode>
     rotation: [0, 0, 0],
   }),
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       directDrag: true,
       actionMenu: { actions: () => import('../shared/item-interaction-actions') },
     },
@@ -224,7 +225,7 @@ export const proceduralItemDefinition: NodeDefinition<typeof ProceduralItemNode>
   relations: { hosts: ['item', 'procedural-item'], cascadeDelete: 'descendants' },
   renderer: { kind: 'parametric', module: () => import('./renderer') },
   exportAnimation: ({ node, object }) => bakeProceduralAnimationClips(node, object),
-  parametrics: { groups: [], customPanel: () => import('@pascal-app/editor/procedural-items') },
+  parametrics: { groups: [], customPanel: () => import('@aedifex/editor/procedural-items') },
   affordanceTools: { move: () => import('./move-tool') },
   floorplanMoveTarget: proceduralFloorplanMoveTarget,
   floorplanAffectedIds: restingFloorplanAffectedIds,
@@ -337,7 +338,7 @@ export const proceduralItemDefinition: NodeDefinition<typeof ProceduralItemNode>
     }
     const q = queryProceduralItem(node, chain),
       b = q.levelBounds
-    const floorPlanUrl = node.metadata.floorPlanUrl
+    const floorPlanUrl = metadataRecord(node.metadata).floorPlanUrl
     if (typeof floorPlanUrl === 'string' && floorPlanUrl.trim()) {
       const local = q.localBounds
       const center = transformPoint(

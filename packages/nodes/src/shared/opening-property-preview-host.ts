@@ -1,4 +1,4 @@
-import { type AnyNode, useLiveNodeOverrides, useScene } from '@pascal-app/core'
+import { type AnyNode, useLiveNodeOverrides, useScene } from '@aedifex/core'
 import type { OpeningPropertyPreviewDependencies } from './opening-property-preview'
 
 export const openingPropertyPreviewHost: OpeningPropertyPreviewDependencies = {
