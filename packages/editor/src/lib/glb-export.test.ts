@@ -1469,7 +1469,7 @@ describe('prepareSceneForExport', () => {
             schema: DoorNode,
             category: 'furnish',
             defaults: () => ({}) as never,
-            capabilities: {},
+            capabilities: { deletable: true },
             bake: 'replace',
             bakeGeometryAsync: async () => {
               throw new Error(`Pruned async-only builder ran for ${kind}`)
@@ -2254,7 +2254,7 @@ describe('plugin bake policies through export', () => {
       schema: Overlay,
       category: 'site',
       defaults: () => base,
-      capabilities: {},
+      capabilities: { deletable: true },
       bake: 'strip',
     }
     const meadow: NodeDefinition<typeof Meadow> = {
@@ -2263,7 +2263,7 @@ describe('plugin bake policies through export', () => {
       schema: Meadow,
       category: 'site',
       defaults: () => base,
-      capabilities: {},
+      capabilities: { deletable: true },
       bake: 'replace',
       bakeGeometry: () => {
         calls.push('bakeGeometry')
@@ -2282,7 +2282,7 @@ describe('plugin bake policies through export', () => {
       schema: Rock,
       category: 'site',
       defaults: () => base,
-      capabilities: {},
+      capabilities: { deletable: true },
     }
     // Plugin boundary casts: typed definitions do not widen to AnyNodeDefinition
     // and plugin nodes are outside the AnyNode union.

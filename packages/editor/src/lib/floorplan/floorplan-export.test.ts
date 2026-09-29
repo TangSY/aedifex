@@ -533,7 +533,7 @@ describe('collectFloorplanGeometry', () => {
         schema: z.object({ type: z.literal(kind) }) as never,
         category: 'utility',
         defaults: () => ({}) as never,
-        capabilities: {},
+        capabilities: { deletable: true },
         floorplanScope: 'site',
         floorplan,
       }) as AnyNodeDefinition

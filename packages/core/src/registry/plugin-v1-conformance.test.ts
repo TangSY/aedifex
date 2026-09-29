@@ -27,11 +27,11 @@ import { createSceneApi } from './scene-api'
 import { cloneNodesInto } from './subtree'
 import type { AnyNodeDefinition, NodeDefinition, NodePort, Plugin } from './types'
 
-// Plugin API v1 at the registry and scene-store level: capabilities, ports,
+// Plugin API v2 at the registry and scene-store level: capabilities, ports,
 // surfaces, relations, editing, reload and clone for synthetic plugin kinds.
 // Rendering, systems, bake and export are pinned where they dispatch:
 // viewer `plugin-dispatch.test.tsx` and editor `glb-export.test.ts`.
-// `test.failing` marks a known v1 gap; the PR that closes it flips it to `test`.
+// `test.failing` marks a known reference-remapping gap.
 
 globalThis.requestAnimationFrame ??= (callback) => {
   callback(0)
@@ -69,7 +69,7 @@ const Marker = BaseNode.extend({
   targetIds: z.array(z.string()).default([]),
 })
 
-// The only casts: API v1 cannot type these boundaries. `NodeDefinition<S>` does
+// The only casts: API v2 cannot type these boundaries. `NodeDefinition<S>` does
 // not widen to `AnyNodeDefinition`, and plugin nodes are not members of the
 // closed `AnyNode` union, so every shipped plugin casts here too. Fixtures stay
 // typed against `NodeDefinition<S>` and their schemas, so a contract change
@@ -95,7 +95,7 @@ const planterDef: NodeDefinition<typeof Planter> = {
   schema: Planter,
   category: 'furnish',
   defaults: () => ({ ...base, size: [1.2, 0.6, 0.5] }),
-  capabilities: {},
+  capabilities: { deletable: true },
 }
 const pumpDef: NodeDefinition<typeof Pump> = {
   kind: 'fixture:pump',
@@ -103,7 +103,7 @@ const pumpDef: NodeDefinition<typeof Pump> = {
   schema: Pump,
   category: 'utility',
   defaults: () => ({ ...base, position: [0, 0, 0] }),
-  capabilities: {},
+  capabilities: { deletable: true },
   distributionRole: 'equipment',
   ports: (node) => [water('outlet', [node.position[0] + 0.5, 0, 0])],
 }
@@ -113,7 +113,7 @@ const pipeDef: NodeDefinition<typeof Pipe> = {
   schema: Pipe,
   category: 'utility',
   defaults: () => ({ ...base, path: [] }),
-  capabilities: {},
+  capabilities: { deletable: true },
   distributionRole: 'run',
   ports: ({ path }) => {
     const start = path[0]
@@ -127,7 +127,10 @@ const benchDef: NodeDefinition<typeof Bench> = {
   schema: Bench,
   category: 'furnish',
   defaults: () => ({ ...base, seatHeight: 0.45, children: [] }),
-  capabilities: { surfaces: { top: { height: (node) => Bench.parse(node).seatHeight } } },
+  capabilities: {
+    deletable: true,
+    surfaces: { top: { height: (node) => Bench.parse(node).seatHeight } },
+  },
   relations: { hosts: ['fixture:sprout'], cascadeDelete: 'descendants' },
   renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
 }
@@ -137,7 +140,7 @@ const sproutDef: NodeDefinition<typeof Sprout> = {
   schema: Sprout,
   category: 'furnish',
   defaults: () => base,
-  capabilities: {},
+  capabilities: { deletable: true },
   geometry: () => new Group(),
 }
 const markerDef: NodeDefinition<typeof Marker> = {
@@ -146,7 +149,7 @@ const markerDef: NodeDefinition<typeof Marker> = {
   schema: Marker,
   category: 'utility',
   defaults: () => ({ ...base, targetIds: [] }),
-  capabilities: {},
+  capabilities: { deletable: true },
 }
 
 const fixturePlugin = (): Plugin => ({
@@ -357,7 +360,7 @@ describe('plugin API v2: editing and reload', () => {
     expect(ofType(clone.nodes, 'fixture:bench').id).not.toBe(bench.id)
   })
 
-  // Known v1 gap (R1 portable clone hook, owner P-03): a plugin cannot declare
+  // Known gap (R1 portable clone hook, owner P-03): a plugin cannot declare
   // which of its fields hold node ids, so project clone and subtree duplicate
   // copy them verbatim and they keep pointing at the source scene.
   test.failing('project clone remaps plugin-owned node references', async () => {

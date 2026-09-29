@@ -7,7 +7,7 @@ import {
   validateNodeRelations,
 } from '@aedifex/core'
 import { AnyNode, type AnyNodeId, nodeKindOf, parseNode } from '@aedifex/core/schema'
-import type { Patch } from '../bridge/scene-bridge'
+import type { Patch } from './scene-bridge'
 
 export type PatchRefusalCode =
   | 'node_exists'
@@ -15,6 +15,7 @@ export type PatchRefusalCode =
   | 'immutable_field'
   | 'invalid_parent'
   | 'invalid_update'
+  | 'not_deletable'
   | 'regenerated_default'
 
 /**
@@ -47,6 +48,27 @@ const IMMUTABLE_FIELDS = [
 ] as const
 
 const CORE_KINDS = new Set<string>(AnyNode.options.map(nodeKindOf))
+const PROTECTED_CONTAINER_KINDS = new Set(['site', 'building'])
+
+export function isNodeDeletionBlocked(node: AnyNode): boolean {
+  return (
+    PROTECTED_CONTAINER_KINDS.has(node.type) ||
+    nodeRegistry.get(node.type)?.capabilities?.deletable === false
+  )
+}
+
+function parsePatchCreateNode(value: unknown, index: number): AnyNode {
+  const type = value && typeof value === 'object' ? (value as { type?: unknown }).type : undefined
+  const registered = typeof type === 'string' ? nodeRegistry.get(type)?.schema : undefined
+  const parsed =
+    registered && (!CORE_KINDS.has(type as string) || registered.meta?.()?.strictMutations === true)
+      ? registered.safeParse(value)
+      : parseNode(value)
+  if (!parsed.success) {
+    throw new Error(`invalid patch: patches[${index}] create node failed schema: ${parsed.error.message}`)
+  }
+  return parsed.data as AnyNode
+}
 
 const sameValue = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
@@ -101,15 +123,16 @@ function withoutChild(parent: AnyNode, childId: string): AnyNode {
  * a create may not reuse any id present at the start of the patch.
  * An update of a roof segment unsettles the default gutters its refresh may
  * regenerate, as a delete does.
- * Lives in the tool layer so every bridge behind `apply_patch` inherits it.
+ * Shared by the local bridge and the tool entry point so their refusals agree.
  */
 export function assertPatchKeepsIdentity(
   patches: readonly Patch[],
   nodes: Readonly<Record<string, AnyNode>>,
   rootNodeIds: readonly AnyNodeId[],
   planDeletion?: (scene: NodeDeletionScene, ids: AnyNodeId[]) => NodeDeletionPlan,
-): void {
+): Map<number, AnyNode> {
   const initialIds = new Set(Object.keys(nodes))
+  const parsedCreates = new Map<number, AnyNode>()
   let scene: NodeDeletionScene = {
     nodes: { ...nodes } as NodeDeletionScene['nodes'],
     rootNodeIds: [...rootNodeIds],
@@ -152,6 +175,17 @@ export function assertPatchKeepsIdentity(
     const plan = planDeletion
       ? planDeletion(scene, pendingDeletes)
       : planNodeDeletion(scene, pendingDeletes, { mintDefaults: false })
+    for (const id of plan.deletedIds) {
+      const node = scene.nodes[id]
+      if (node && isNodeDeletionBlocked(node)) {
+        throw new PatchRefusedError(
+          'not_deletable',
+          index,
+          id,
+          `node "${id}" has deletable: false and cannot be removed.`,
+        )
+      }
+    }
     for (const id of plan.unsettledIds) regenerated.set(id, index)
     for (const id of plan.regeneratedHostIds) regeneratedHosts.set(id, index)
     scene = { nodes: plan.nodes, rootNodeIds: plan.rootNodeIds, collections: plan.collections }
@@ -159,11 +193,14 @@ export function assertPatchKeepsIdentity(
   }
 
   patches.forEach((patch, index) => {
+    if (!patch || typeof patch !== 'object') {
+      throw new Error(`invalid patch: patches[${index}] is not an object`)
+    }
     if (patch.op === 'create') {
       // Parse like the store does, so defaults such as an empty `children`
       // list exist for later ops in the patch; the bridge reports schema errors.
-      const parsed = parseNode(patch.node)
-      const node = (parsed.success ? parsed.data : patch.node) as AnyNode & { id?: unknown }
+      const node = parsePatchCreateNode(patch.node, index)
+      parsedCreates.set(index, node)
       if (typeof node?.id !== 'string') return
       refuseRegenerated(index, node.id)
       const effectiveParentId = patch.parentId ?? (node.parentId as string | null | undefined)
@@ -270,6 +307,13 @@ export function assertPatchKeepsIdentity(
       if (!at(patch.id) || pendingDeletes.includes(patch.id as AnyNodeId)) {
         throw new Error(`invalid patch: patches[${index}] delete id "${patch.id}" not found`)
       }
+      if (patch.cascade === false) {
+        const children = Object.values(scene.nodes).filter((node) => node.parentId === patch.id)
+        const listed = (at(patch.id) as { children?: unknown }).children
+        if (children.length > 0 || (Array.isArray(listed) && listed.length > 0)) {
+          throw new Error(`invalid patch: patches[${index}] node "${patch.id}" has descendants; pass cascade: true`)
+        }
+      }
       pendingDeletes.push(patch.id as AnyNodeId)
       // The bridge applies a run of consecutive deletes as one deleteNodes
       // call, and wall merges and kind cascades depend on the whole id list,
@@ -277,4 +321,5 @@ export function assertPatchKeepsIdentity(
       if (patches[index + 1]?.op !== 'delete') flushDeletes(index)
     }
   })
+  return parsedCreates
 }

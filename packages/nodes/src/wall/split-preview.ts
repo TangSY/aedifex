@@ -8,6 +8,7 @@ import {
   type WallNode,
   type WallPlanPoint,
 } from '@aedifex/core'
+import { metadataRecord } from '../shared/node-metadata'
 
 export const WALL_SPLIT_MAX_CUTS = 32
 
@@ -127,7 +128,10 @@ export function wallSplitPreview(
   let message = ''
   if (
     [wall, ...Object.values(nodes).filter((n) => n.parentId === wall.id)].some(
-      (n) => n.metadata.arrayModifier || n.metadata.linkedArray,
+      (n) => {
+        const metadata = metadataRecord(n.metadata)
+        return metadata.arrayModifier || metadata.linkedArray
+      },
     )
   ) {
     message = 'Make the linked array real before splitting this wall.'

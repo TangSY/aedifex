@@ -7,7 +7,6 @@ import {
   getWallEffectiveHeightForNodes,
   getWallFaceBandConfig,
   sceneRegistry,
-  spatialGridManager,
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,

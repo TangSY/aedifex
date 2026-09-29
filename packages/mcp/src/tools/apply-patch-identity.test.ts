@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { nodeRegistry, registerNode } from '@aedifex/core'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -15,6 +16,7 @@ import {
 import { SceneBridge } from '../bridge/scene-bridge'
 import { createSceneOperations } from '../operations'
 import { registerApplyPatch } from './apply-patch'
+import { z } from 'zod'
 
 type Patch = Record<string, unknown>
 
@@ -497,5 +499,65 @@ describe('apply_patch identity and validation guards', () => {
     expect(
       (bridge.getNode(pluginNode.id as AnyNodeId) as { position?: unknown })?.position,
     ).toEqual([1, 0, 0])
+  })
+
+  test('registered plugin creation uses schema defaults before a later update in the batch', async () => {
+    const restore = nodeRegistry._snapshot()
+    try {
+      const schema = z.object({
+        object: z.literal('node').default('node'),
+        id: z.string().default('fixture_bench'),
+        type: z.literal('fixture:bench'),
+        parentId: z.string().nullable().default(null),
+        visible: z.boolean().default(true),
+        metadata: z.record(z.string(), z.unknown()).default({}),
+        children: z.array(z.string()).default([]),
+        position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+      })
+      registerNode({
+        kind: 'fixture:bench',
+        schemaVersion: 1,
+        schema: schema as never,
+        category: 'furnish',
+        defaults: () => ({}),
+        capabilities: { deletable: true },
+      })
+      const result = await apply([
+        { op: 'create', node: { type: 'fixture:bench' }, parentId: level.id },
+        { op: 'update', id: 'fixture_bench', data: { position: [2, 0, 1] } },
+      ])
+      expect(result.isError).toBe(false)
+      const stored = bridge.getNode('fixture_bench' as AnyNodeId)
+      expect(stored).toMatchObject({
+        object: 'node',
+        id: 'fixture_bench',
+        type: 'fixture:bench',
+        parentId: level.id,
+        children: [],
+        position: [2, 0, 1],
+      })
+      expect(bridge.validateScene().valid).toBe(true)
+      const rejected = await refusal([
+        { op: 'update', id: 'fixture_bench', data: { position: ['bad', 0, 0] } },
+      ])
+      expect(rejected).toMatchObject({ code: 'invalid_update', id: 'fixture_bench' })
+    } finally {
+      restore()
+    }
+  })
+
+  test('deletable false blocks both a direct delete and a cascade atomically', async () => {
+    const site = Object.values(bridge.getNodes()).find((node) => node.type === 'site')!
+    const building = Object.values(bridge.getNodes()).find((node) => node.type === 'building')!
+    expect(await refusal([{ op: 'delete', id: building.id }])).toMatchObject({
+      code: 'not_deletable',
+      id: building.id,
+    })
+    expect(await refusal([{ op: 'delete', id: site.id, cascade: true }])).toMatchObject({
+      code: 'not_deletable',
+    })
+    expect(bridge.getNode(site.id as AnyNodeId)).not.toBeNull()
+    expect(bridge.getNode(building.id as AnyNodeId)).not.toBeNull()
+    expect(() => bridge.deleteNode(building.id as AnyNodeId, true)).toThrow(/deletable: false/)
   })
 })

@@ -34,6 +34,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { type Group, Mesh, Vector3 } from 'three'
 import { canRegisterItemLight } from '../shared/item-light-placement'
+import { metadataRecord } from '../shared/node-metadata'
 import { releaseFromBatch } from '../shared/node-batch/release'
 import { setProceduralMotionPlaying } from './animation'
 import { acquireProceduralGeometry, type BuiltItem, geometrySignature } from './geometry'
@@ -274,7 +275,7 @@ export default function ProceduralRenderer({ node }: { node: ProceduralItemNode 
     return () => {
       for (const key of keys) useItemLightPool.getState().unregister(key)
     }
-  }, [built, node.id, effective.visible, effective.metadata?.isNew])
+  }, [built, node.id, effective.visible, metadataRecord(effective.metadata).isNew])
   const materialKey = JSON.stringify([effective.recipe.slots, effective.slots, libraryVersion])
   const materials = useMemo(() => {
     const [slots, overrides] = JSON.parse(materialKey) as [

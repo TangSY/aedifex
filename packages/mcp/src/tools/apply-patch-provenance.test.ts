@@ -16,7 +16,7 @@ import { registerApplyPatch } from './apply-patch'
 const OVER_CAP = {
   refs: Array.from({ length: PROVENANCE_MAX_REFS + 1 }, (_, i) => ({ ns: 'al', id: `s-${i}` })),
 }
-const PATCH_GUARDS = existsSync(new URL('./patch-guards.ts', import.meta.url))
+const PATCH_GUARDS = existsSync(new URL('../bridge/patch-guards.ts', import.meta.url))
 
 describe('apply_patch and typed provenance', () => {
   let client: Client

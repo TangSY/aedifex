@@ -7,6 +7,7 @@ import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { READ_ONLY_TOOL_ANNOTATIONS } from './annotations'
 import { ErrorCode, throwMcpError } from './errors'
+import { metadataRecord } from './metadata-record'
 import { NodeIdSchema } from './schemas'
 
 const CORE_NODE_KINDS = AnyNode.options.map(nodeKindOf)
@@ -63,7 +64,7 @@ function encodeSourceId(id: string): string {
 /** A node's import source ids: typed `provenance.refs[].id`, then legacy `metadata.sourceIds`. */
 function nodeSourceIds(node: AnyNode): string[] {
   const typed = (node.provenance?.refs ?? []).map((ref) => ref.id)
-  const legacy = node.metadata?.sourceIds
+  const legacy = metadataRecord(node.metadata)?.sourceIds
   return Array.isArray(legacy)
     ? [...typed, ...legacy.filter((id): id is string => typeof id === 'string')]
     : typed

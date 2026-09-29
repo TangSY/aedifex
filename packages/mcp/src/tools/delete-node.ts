@@ -23,7 +23,7 @@ export function registerDeleteNode(server: McpServer, bridge: SceneOperations): 
     {
       title: 'Delete node',
       description:
-        'Delete a node. If it has children, pass `cascade: true` to delete descendants recursively.',
+        'Delete a node. If it has children, pass `cascade: true` to delete descendants recursively. Site, building, and registered kinds with deletable: false cannot be removed.',
       inputSchema: deleteNodeInput,
       outputSchema: deleteNodeOutput,
       annotations: DESTRUCTIVE_TOOL_ANNOTATIONS,

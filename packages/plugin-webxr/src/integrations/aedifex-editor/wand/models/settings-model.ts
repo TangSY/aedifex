@@ -75,6 +75,29 @@ import type { XRWandSettingsOptions } from '../../../../xr/wand/adapter'
 const ROWS_PER_PAGE = 5
 const DEFAULT_SETTINGS_CONTEXT_KEY = 'default-settings'
 
+function multiNodeHooks(
+  parametrics: ParametricDescriptor<Record<string, unknown>>,
+): Pick<ParametricDescriptor<AnyNode>, 'derive' | 'reconcile'> {
+  const { derive, reconcile } = parametrics
+  // The registry erases each definition's node subtype; multi-edit only needs these hooks.
+  return {
+    derive: derive
+      ? (next, patch, previous) => ({
+          ...patch,
+          ...derive(
+            next as Record<string, unknown>,
+            patch as Record<string, unknown>,
+            previous as Record<string, unknown> | undefined,
+          ),
+        })
+      : undefined,
+    reconcile: reconcile
+      ? (previous, next) =>
+          reconcile(previous as Record<string, unknown>, next as Record<string, unknown>)
+      : undefined,
+  }
+}
+
 function cycleOption(options: readonly unknown[], current: unknown, direction: -1 | 1) {
   if (options.length === 0) return undefined
   const index = options.indexOf(current)
@@ -402,7 +425,7 @@ export function useAedifexXRWandSettingsModel(
     const multiContext = type && first ? resolveXRSettingsContext({ mode: 'select', tool: null, selectedNode: first }) : null
     const rows: XRWandSettingRow[] = []
     if (multiContext?.definition.parametrics) {
-      const parametrics = multiContext.definition.parametrics as ParametricDescriptor<AnyNode>
+      const parametrics = multiNodeHooks(multiContext.definition.parametrics)
       const heightMode = reduceHeightBoundMode(multiIds, nodes)
       for (const row of collectXRSettingRows(multiContext)) {
         if (row.kind !== 'field' || row.field.kind === 'custom' || !fieldVisibleForAll(multiIds, row.field.visibleIf, nodes)) continue

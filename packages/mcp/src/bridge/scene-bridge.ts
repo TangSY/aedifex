@@ -2,6 +2,7 @@
 import './node-shims'
 import {
   HIDDEN_SITE_NOTE,
+  nodeRegistry,
   type NodeDeletionPlan,
   type NodeDeletionScene,
   planNodeDeletion,
@@ -13,11 +14,11 @@ import {
   type AnyNodeId,
   AnyNode as AnyNodeSchema,
   type AnyNodeType,
-  parseNode,
 } from '@aedifex/core/schema'
 // Per PLAN §0.6: `useScene` is the DEFAULT export from `@aedifex/core/store`.
 import useScene from '@aedifex/core/store'
 import type { SceneMeta } from '../storage/types'
+import { assertPatchKeepsIdentity, isNodeDeletionBlocked } from './patch-guards'
 
 export type ValidationError = { nodeId: string; path: string; message: string }
 export type ValidationResult = {
@@ -325,6 +326,12 @@ export class SceneBridge {
     }
 
     const descendants = this._collectDescendants(id)
+    for (const descendantId of descendants) {
+      const descendant = state.nodes[descendantId as AnyNodeId]
+      if (descendant && isNodeDeletionBlocked(descendant)) {
+        throw new Error(`node "${descendantId}" has deletable: false and cannot be removed`)
+      }
+    }
     if (!cascade && descendants.length > 1) {
       throw new Error(
         `node has ${descendants.length - 1} descendant(s); pass cascade: true to delete recursively`,
@@ -354,80 +361,27 @@ export class SceneBridge {
     const state = useScene.getState()
     const nodes = state.nodes
 
-    // Track synthesized state as we dry-run so later ops can reference
-    // earlier-created ids and reflect earlier-deleted ids.
-    const simAvailable = new Set<string>(Object.keys(nodes))
-    const simDeleted = new Set<string>()
-    const simNodes = new Map<string, AnyNode>(Object.entries(nodes))
-    // Parsed create nodes keyed by patch index — so the apply phase can use the
-    // Zod-normalised copy (which has a generated id if the caller omitted one)
-    // instead of the unparsed input.
-    const parsedCreateNodes = new Map<number, AnyNode>()
+    // The tool and direct bridge callers use the same scene-aware guard: it
+    // previews cascades, wall merges, reparenting and schema issue deltas.
+    const parsedCreateNodes = assertPatchKeepsIdentity(
+      patches,
+      nodes,
+      state.rootNodeIds,
+      this.planDeletion.bind(this),
+    )
 
+    // Parse creates before the first mutation, retaining schema defaults for
+    // the apply phase. The shared guard checks identity and graph semantics.
     for (let i = 0; i < patches.length; i++) {
-      const p = patches[i]
-      if (!p) throw new Error(`invalid patch: patches[${i}] is undefined`)
-      if (p.op === 'create') {
-        const res = parseNode(p.node)
-        if (!res.success) {
-          throw new Error(
-            `invalid patch: patches[${i}] create node failed schema: ${res.error.message}`,
-          )
-        }
-        if (p.parentId !== undefined && !simAvailable.has(p.parentId)) {
-          throw new Error(`invalid patch: patches[${i}] create parentId "${p.parentId}" not found`)
-        }
-        if (simAvailable.has(res.data.id)) {
-          throw new Error(`invalid patch: patches[${i}] create id "${res.data.id}" already exists`)
-        }
-        parsedCreateNodes.set(i, res.data)
-        simAvailable.add(res.data.id)
-        simNodes.set(res.data.id, res.data)
-      } else if (p.op === 'update') {
-        if (!simAvailable.has(p.id) || simDeleted.has(p.id)) {
-          throw new Error(`invalid patch: patches[${i}] update id "${p.id}" not found`)
-        }
-        if (!p.data || typeof p.data !== 'object') {
+      const patch = patches[i]
+      if (!patch) throw new Error(`invalid patch: patches[${i}] is undefined`)
+      if (patch.op === 'create') {
+        if (!parsedCreateNodes.has(i)) throw new Error(`invalid patch: patches[${i}] create node failed schema`)
+      } else if (patch.op === 'update') {
+        if (!patch.data || typeof patch.data !== 'object' || Array.isArray(patch.data)) {
           throw new Error(`invalid patch: patches[${i}] update data is not an object`)
         }
-        if ('type' in p.data) {
-          throw new Error(`invalid patch: patches[${i}] update cannot change node type via data`)
-        }
-        if ('id' in p.data) {
-          throw new Error(`invalid patch: patches[${i}] update cannot change node id via data`)
-        }
-
-        const existing = simNodes.get(p.id)
-        if (!existing) {
-          throw new Error(`invalid patch: patches[${i}] update id "${p.id}" not found`)
-        }
-        const validated = AnyNodeSchema.safeParse({ ...existing, ...p.data })
-        if (!validated.success) {
-          throw new Error(
-            `invalid patch: patches[${i}] update would produce schema-invalid node: ${validated.error.message}`,
-          )
-        }
-        simNodes.set(p.id, validated.data)
-      } else if (p.op === 'delete') {
-        if (!simAvailable.has(p.id) || simDeleted.has(p.id)) {
-          throw new Error(`invalid patch: patches[${i}] delete id "${p.id}" not found`)
-        }
-        if (p.cascade === false) {
-          // Only inspect the current store state — we don't simulate
-          // descendant additions during dry-run, because that would require
-          // building a full shadow tree. This matches the semantics of the
-          // single-op deleteNode guard.
-          const desc = this._collectDescendants(p.id)
-          if (desc.length > 1) {
-            throw new Error(
-              `invalid patch: patches[${i}] delete "${p.id}" has descendants; pass cascade: true`,
-            )
-          }
-        }
-        simAvailable.delete(p.id)
-        simDeleted.add(p.id)
-        simNodes.delete(p.id)
-      } else {
+      } else if (patch.op !== 'delete') {
         throw new Error(`invalid patch: patches[${i}] unknown op`)
       }
     }
@@ -529,7 +483,8 @@ export class SceneBridge {
       if (node.type === 'site' && node.visible === false) {
         warnings.push({ nodeId: id, path: 'visible', message: HIDDEN_SITE_NOTE })
       }
-      const res = AnyNodeSchema.safeParse(node)
+      const registered = nodeRegistry.get(node.type)?.schema
+      const res = registered ? registered.safeParse(node) : AnyNodeSchema.safeParse(node)
       if (res.success) continue
       for (const issue of res.error.issues) {
         errors.push({

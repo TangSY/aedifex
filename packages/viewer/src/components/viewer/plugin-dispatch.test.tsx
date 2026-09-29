@@ -27,7 +27,7 @@ import {
 import { GlbReplaceInstances } from './glb-replace-instances'
 import { RegisteredSystems } from './registered-systems'
 
-// Plugin API v1 at dispatch: a synthetic plugin kind reaches the scene through
+// Plugin API v2 at dispatch: a synthetic plugin kind reaches the scene through
 // the registry-driven renderer, geometry and system mounts and the baked
 // viewer's strip/replace restore — only while the project has it installed.
 
@@ -43,7 +43,7 @@ const Planter = BaseNode.extend({ id: objectId('fxplanter'), type: nodeType('fix
 const Overlay = BaseNode.extend({ id: objectId('fxoverlay'), type: nodeType('fixture:overlay') })
 const Meadow = BaseNode.extend({ id: objectId('fxmeadow'), type: nodeType('fixture:meadow') })
 
-// The only casts: API v1 cannot type these boundaries (typed definitions do not
+// The only casts: The API cannot type these boundaries (typed definitions do not
 // widen to `AnyNodeDefinition`; plugin nodes are outside the `AnyNode` union).
 const asPluginNode = <S extends AnyNodeDefinition['schema']>(def: NodeDefinition<S>) =>
   def as unknown as AnyNodeDefinition
@@ -74,7 +74,7 @@ const lampDef: NodeDefinition<typeof Lamp> = {
   schema: Lamp,
   category: 'furnish',
   defaults: () => base,
-  capabilities: {},
+  capabilities: { deletable: true },
   renderer: tagged('lamp'),
   system: { module: async () => ({ default: LampSystem }) },
 }
@@ -84,7 +84,7 @@ const planterDef: NodeDefinition<typeof Planter> = {
   schema: Planter,
   category: 'furnish',
   defaults: () => base,
-  capabilities: {},
+  capabilities: { deletable: true },
   geometry: () => new Group().add(Object.assign(new Mesh(), { name: 'planter-body' })),
 }
 const overlayDef: NodeDefinition<typeof Overlay> = {
@@ -93,7 +93,7 @@ const overlayDef: NodeDefinition<typeof Overlay> = {
   schema: Overlay,
   category: 'furnish',
   defaults: () => base,
-  capabilities: {},
+  capabilities: { deletable: true },
   bake: 'strip',
   renderer: tagged('overlay'),
 }
@@ -103,7 +103,7 @@ const meadowDef: NodeDefinition<typeof Meadow> = {
   schema: Meadow,
   category: 'furnish',
   defaults: () => base,
-  capabilities: {},
+  capabilities: { deletable: true },
   bake: 'replace',
   bakeReplaceRenderer: {
     module: async () => ({
@@ -116,7 +116,7 @@ const meadowDef: NodeDefinition<typeof Meadow> = {
 
 const dispatchPlugin = (): Plugin => ({
   id: PLUGIN_ID,
-  apiVersion: 1,
+  apiVersion: 2,
   nodes: [
     asPluginNode(lampDef),
     asPluginNode(planterDef),

@@ -106,7 +106,7 @@ describe('scene plugin installation state', () => {
       schema: z.object({ id: z.string(), type: z.literal(kind) }),
       category: 'utility',
       defaults: () => ({}),
-      capabilities: {},
+      capabilities: { deletable: false },
     } as unknown as AnyNodeDefinition
     await loadPlugin({ id: 'test:shared', apiVersion: 2, nodes: [definition] })
     const nodeId = 'shared_plugin_node' as AnyNodeId

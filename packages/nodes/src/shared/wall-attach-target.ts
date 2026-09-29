@@ -12,6 +12,7 @@ import {
   WALL_SNAP_DISTANCE_M,
   type WallNode,
 } from '@aedifex/core'
+import { metadataRecord } from './node-metadata'
 
 /**
  * Shared helpers for the kinds whose 2D move snaps onto a wall in plan
@@ -360,7 +361,7 @@ export function hasWallChildOverlap(
   for (const childId of Array.isArray(wallNode.children) ? wallNode.children : []) {
     if (childId === ignoreId) continue
     const child = nodes[childId as AnyNodeId]
-    if (!child || child.metadata.isTransient) continue
+    if (!child || metadataRecord(child.metadata).isTransient) continue
 
     let childLeft: number
     let childRight: number

@@ -38,15 +38,16 @@ function makeDefinition(
   kind: string,
   overrides: Partial<AnyNodeDefinition> = {},
 ): AnyNodeDefinition {
+  const { capabilities, ...rest } = overrides
   return {
     kind,
     schemaVersion: 1,
     schema: z.object({ type: z.literal(kind) }) as any,
     category: 'utility',
     defaults: () => ({}) as any,
-    capabilities: { deletable: false },
+    capabilities: { deletable: false, ...capabilities },
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
-    ...overrides,
+    ...rest,
   }
 }
 
@@ -299,6 +300,20 @@ describe('loadPlugin', () => {
     await expect(loadPlugin(plugin)).rejects.toThrow(/apiVersion/)
   })
 
+  test.each([
+    ['missing capabilities', undefined],
+    ['missing deletable', {}],
+    ['non-boolean deletable', { deletable: 'yes' }],
+  ])('rejects a dynamic plugin definition with %s', async (_label, capabilities) => {
+    const malformed = { ...makeDefinition('bad'), capabilities } as unknown as AnyNodeDefinition
+    const version = getRegistryVersion()
+    await expect(loadPlugin({ id: 'broken', apiVersion: 2, nodes: [malformed] })).rejects.toThrow(
+      /capabilities\.deletable must be a boolean/,
+    )
+    expect(nodeRegistry.has('bad')).toBe(false)
+    expect(getRegistryVersion()).toBe(version)
+  })
+
   test('propagates duplicate-kind error from a single plugin in production', async () => {
     const plugin: Plugin = {
       id: 'broken',
@@ -331,6 +346,10 @@ describe('loadPlugin', () => {
     ['collides with a loaded kind', makeDefinition('shared')],
     ['repeats one of its own kinds', makeDefinition('partial:a')],
     ['has an invalid schemaVersion', makeDefinition('partial:bad', { schemaVersion: 0 })],
+    [
+      'omits required deletable',
+      { ...makeDefinition('partial:bad'), capabilities: {} } as unknown as AnyNodeDefinition,
+    ],
   ])('a plugin whose later definition %s registers nothing', async (_label, invalid) => {
     await inProduction(async () => {
       await loadPlugin({ id: 'loaded', apiVersion: 2, nodes: [makeDefinition('shared')] })

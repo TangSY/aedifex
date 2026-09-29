@@ -61,7 +61,7 @@ function ceilingCustomHeight(node: CeilingNode, nodes: Record<string, AnyNode>):
 export function applyMultiHeightMode(
   nodeIds: AnyNodeId[],
   next: 'storey' | 'custom',
-  parametrics: ParametricDescriptor<AnyNode>,
+  parametrics: Pick<ParametricDescriptor<AnyNode>, 'derive' | 'reconcile'>,
 ) {
   const nodes = useScene.getState().nodes as Record<string, AnyNode>
   commitMultiNodeFields(

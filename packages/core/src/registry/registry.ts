@@ -86,6 +86,20 @@ function assertValidDefinition(def: AnyNodeDefinition): void {
   }
 }
 
+function assertValidPluginDefinition(def: AnyNodeDefinition): void {
+  assertValidDefinition(def)
+  if (
+    !def.capabilities ||
+    typeof def.capabilities !== 'object' ||
+    Array.isArray(def.capabilities) ||
+    typeof def.capabilities.deletable !== 'boolean'
+  ) {
+    throw new Error(
+      `[registry] NodeDefinition.capabilities.deletable must be a boolean (kind: "${def.kind}")`,
+    )
+  }
+}
+
 function duplicateKindError(kind: string): Error {
   return new Error(`[registry] duplicate node kind: "${kind}" already registered`)
 }
@@ -400,7 +414,7 @@ export async function loadPlugin(plugin: Plugin): Promise<void> {
   const nodes = plugin.nodes ?? []
   const kinds = new Set<string>()
   for (const def of nodes) {
-    assertValidDefinition(def)
+    assertValidPluginDefinition(def)
     if (!isDevMode() && (kinds.has(def.kind) || nodeRegistry.has(def.kind))) {
       throw duplicateKindError(def.kind)
     }

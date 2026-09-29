@@ -6,6 +6,7 @@ import {
   type WallEvent,
 } from '@aedifex/core'
 import { Matrix3, type Object3D, Vector3 } from 'three'
+import { metadataRecord } from './node-metadata'
 
 /** Canvas surface queries still reach the host when a rendered child consumes mesh events. */
 export function wallEventFromGrid(
@@ -19,7 +20,7 @@ export function wallEventFromGrid(
   if (
     wall?.type !== 'wall' ||
     wall.visible === false ||
-    wall.metadata.isTransient ||
+    metadataRecord(wall.metadata).isTransient ||
     wall.parentId !== activeLevelId ||
     isCurvedWall(wall)
   )

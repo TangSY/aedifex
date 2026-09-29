@@ -22,6 +22,7 @@ import {
   type Vec2,
 } from './geometry'
 import { layoutIssuesFromScene } from './layout-clearance'
+import { metadataRecord } from './metadata-record'
 import { NodeIdSchema } from './schemas'
 
 export const levelScopedInput = {
@@ -147,14 +148,8 @@ export function resolveReportedWallHeight(
   return resolveWallEffectiveHeight(wall, planeTop, wallBase)
 }
 
-function metadataRecord(node: AnyNode): Record<string, unknown> | null {
-  return typeof node.metadata === 'object' && node.metadata !== null
-    ? (node.metadata as Record<string, unknown>)
-    : null
-}
-
 function metadataString(node: AnyNode, key: string): string | undefined {
-  const value = metadataRecord(node)?.[key]
+  const value = metadataRecord(node.metadata)?.[key]
   return typeof value === 'string' ? value : undefined
 }
 
