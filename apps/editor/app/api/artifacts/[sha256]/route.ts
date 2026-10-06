@@ -1,4 +1,4 @@
-import { DiskArtifactStore, resolveDefaultDatabasePath } from '@pascal-app/mcp/storage'
+import { DiskArtifactStore, resolveDefaultDatabasePath } from '@aedifex/mcp/storage'
 import {
   guardSceneApiRequest,
   sceneApiJson,

@@ -5,13 +5,13 @@ import type {
   CabinetNode,
   GeometryContext,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getWallBodyCenterOffset,
   getWallBodyLine,
   getWallFaceOffsets,
   resolveLevelId,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Straight-line run layout math — the single home for the "modules sit on the

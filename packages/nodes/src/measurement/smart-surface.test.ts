@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { SlabNode, WallNode, ZoneNode } from '@pascal-app/core'
+import { SlabNode, WallNode, ZoneNode } from '@aedifex/core'
 import { resolveSmartMeasurementSurfaceHit } from './smart-surface'
 import type { LocalSurfaceHit } from './surface-query'
 

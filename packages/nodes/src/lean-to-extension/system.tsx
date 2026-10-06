@@ -11,7 +11,7 @@ import type {
   RoofSegmentNode,
   SceneApi,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useEffect } from 'react'
 import { isLeanToPostOmitted } from '../shared/lean-to-post-omissions'
 import { bendLocalPoint } from './arc'

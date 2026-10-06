@@ -11,7 +11,7 @@ import {
   SlabNode,
   slabPolygonContextFromGeometry,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { type Group, Mesh, type MeshStandardMaterial } from 'three'
 import { buildSlabGeometry } from '../geometry'
 

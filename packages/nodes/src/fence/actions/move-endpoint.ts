@@ -9,14 +9,14 @@ import {
   resolveFenceSupportSlabPatch,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   isAlignmentGuideActive,
   isAngleSnapActive,
   isMagneticSnapActive,
   isSegmentLongEnough,
   useAlignmentGuides,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { type FencePlanPoint, snapFenceDraftPoint } from '../drafting'
 
 /**

@@ -1,5 +1,5 @@
-import { type AnyNode, type AnyNodeId, useScene, type ZoneNode } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNode, type AnyNodeId, useScene, type ZoneNode } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { getRoomSelectionIndex } from '../hooks/use-selected-room'
 import useEditor from '../store/use-editor'
 import type { RoomKey } from './room-selection'

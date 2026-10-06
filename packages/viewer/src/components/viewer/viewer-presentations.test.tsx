@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, mock, spyOn, test } from 'bun:test'
-import { useScene } from '@pascal-app/core'
+import { useScene } from '@aedifex/core'
 import { act, create } from '@react-three/test-renderer'
 import {
   registerViewerPresentation,

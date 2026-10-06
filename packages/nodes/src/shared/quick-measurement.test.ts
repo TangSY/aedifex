@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type SlabNode, type WallNode, ZoneNode } from '@pascal-app/core'
+import { type SlabNode, type WallNode, ZoneNode } from '@aedifex/core'
 import { slabQuickMeasurement } from '../slab/quick-measurement'
 import { wallQuickMeasurement } from '../wall/quick-measurement'
 import { buildZoneContextualDimensions } from '../zone/contextual-dimensions'

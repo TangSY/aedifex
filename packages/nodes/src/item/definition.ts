@@ -7,8 +7,8 @@ import {
   type NodeDefinition,
   resolveCutterHost,
   toggleMechanism,
-} from '@pascal-app/core'
-import type { FloorplanNodeExtension } from '@pascal-app/editor'
+} from '@aedifex/core'
+import type { FloorplanNodeExtension } from '@aedifex/editor'
 import { itemHasLights, itemMechanism, toggleItemLights } from '../shared/item-interactions'
 import { itemBatchable } from '../shared/node-batch/batchable'
 import { restingFloorplanAffectedIds } from '../shared/resting-surface-plan'
@@ -181,7 +181,7 @@ export const itemDefinition: NodeDefinition<typeof ItemNode> = {
   category: 'furnish',
   surfaceRole: 'furnishing',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       contextualDimensions: buildItemContextualDimensions,
       actionMenu: { actions: () => import('../shared/item-interaction-actions') },
     } satisfies FloorplanNodeExtension<ItemNodeType>,

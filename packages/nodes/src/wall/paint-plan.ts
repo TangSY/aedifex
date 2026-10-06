@@ -8,7 +8,7 @@ import {
   type WallFaceRegion,
   type WallNode,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * What one wall paint click changes, as plain node updates — the commit writes

@@ -5,8 +5,8 @@ import {
   getOpeningFloorDatum,
   type WallNode,
   wallSupportForNodes,
-} from '@pascal-app/core'
-import { resolveWallOpeningCeiling } from '@pascal-app/core/building'
+} from '@aedifex/core'
+import { resolveWallOpeningCeiling } from '@aedifex/core/building'
 
 /**
  * Structural subset of `SceneApi` the opening-cap readers need — matches

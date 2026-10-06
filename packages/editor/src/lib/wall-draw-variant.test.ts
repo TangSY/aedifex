@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { emitter } from '@pascal-app/core'
+import { emitter } from '@aedifex/core'
 import useEditor from '../store/use-editor'
 import { toolHudTitle } from './hud-title'
 import {

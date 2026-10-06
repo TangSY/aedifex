@@ -11,7 +11,7 @@ import {
   structureChangeBatch,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { IfcMeshPart } from '../src/export'
 
 type Nodes = Record<string, AnyNode>

@@ -4,13 +4,13 @@ import type {
   FloorplanPoint,
   GeometryContext,
   WallNode,
-} from '@pascal-app/core'
-import { getWallBodyCenterOffset } from '@pascal-app/core'
+} from '@aedifex/core'
+import { getWallBodyCenterOffset } from '@aedifex/core'
 import {
   readFloorplanContext,
   readFloorplanGeometryMetadata,
   withFloorplanGeometryMetadata,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import {
   buildOpeningMarkAnnotation,
   type OpeningFloorplanLevelData,

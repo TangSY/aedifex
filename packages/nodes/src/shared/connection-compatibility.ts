@@ -1,4 +1,4 @@
-import type { NodePort } from '@pascal-app/core'
+import type { NodePort } from '@aedifex/core'
 
 export type ConnectionProfile = Pick<NodePort, 'system' | 'diameter' | 'shape' | 'width' | 'height'>
 export type ConnectionCompatibility = {

@@ -8,7 +8,7 @@ import {
   LevelNode,
   useInteractive,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   bedRecipe,
   evaluateRecipe,
@@ -16,7 +16,7 @@ import {
   parseRecipe,
   queryProceduralItem,
   radiatorRecipe,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import { Euler, Vector3 } from 'three'
 import cabinetJson from '../../../core/src/procedural-items/__fixtures__/cabinet_two_doors_drawer.json'
 import {
@@ -303,5 +303,13 @@ test('floor and wall height arrows keep upward growth and clearance', () => {
       new Euler(...resolveLinearHandleRotation(arrow, arrow.placement.position(node, scene))),
     )
     expect(pointing.y).toBeCloseTo(1)
+  }
+})
+
+test('legacy scalar, array and null metadata still render the procedural floorplan', () => {
+  for (const metadata of [null, false, true, 42, 'legacy', []]) {
+    const node = ProceduralItemNode.parse({ recipe, metadata })
+    expect(node.metadata).toEqual(metadata)
+    expect(proceduralItemDefinition.floorplan!(node, floorplanContext)?.kind).toBe('rect')
   }
 })

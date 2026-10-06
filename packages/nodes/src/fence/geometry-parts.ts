@@ -8,7 +8,7 @@ import {
   getFenceGateLeaves,
   type ResolvedFenceFeature,
   resolveFenceFeatures,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 

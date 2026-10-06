@@ -1,4 +1,4 @@
-import type { ParametricDescriptor } from '@pascal-app/core'
+import type { ParametricDescriptor } from '@aedifex/core'
 import { findAutomaticRunEndCapIds } from '../shared/automatic-run-end-cap'
 import { fittingDeletionPlansForRun } from '../shared/fitting-deletion-cleanup'
 import type { PipeSegmentNode } from './schema'

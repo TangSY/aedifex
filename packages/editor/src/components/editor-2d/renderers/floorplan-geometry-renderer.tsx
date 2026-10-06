@@ -1,6 +1,6 @@
 'use client'
 
-import { type FloorplanGeometry, loadAssetUrl } from '@pascal-app/core'
+import { type FloorplanGeometry, loadAssetUrl } from '@aedifex/core'
 import { memo, useEffect, useState } from 'react'
 import { readFloorplanGeometryMetadata } from '../../../lib/floorplan/floorplan-extension'
 import {

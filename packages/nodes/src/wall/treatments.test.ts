@@ -4,7 +4,7 @@ import {
   getWallThickness,
   type WallNode,
   type WallTrimConfig,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   buildWallTreatmentLevelData,
   createWallTreatmentSelector,

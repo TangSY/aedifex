@@ -6,7 +6,7 @@ import {
   useLiveNodeOverrides,
   useScene,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { getCurtainWallUpdate } from './curtain-wall-panel'
 import { createWallPropertyPreview } from './property-preview'
 

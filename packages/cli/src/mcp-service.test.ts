@@ -8,15 +8,16 @@ import {
   type McpServiceState,
   stopMcpService,
 } from './mcp-service.js'
-import { type PascalPaths, resolvePascalPaths } from './paths.js'
+import { type AedifexPaths, resolveAedifexPaths } from './paths.js'
+import { isProcessRunning } from './process-control.js'
 import { readActiveRuntime } from './runtime.js'
 import { writeFakeMcpService } from './test-support/fake-mcp-service.js'
 
 const roots: string[] = []
-const started: PascalPaths[] = []
+const started: AedifexPaths[] = []
 /** The MCP service ships with the CLI; the tests inject a stand-in for the bundled bundle. */
-const serviceRoot = await mkdtemp(path.join(os.tmpdir(), 'pascal-cli-mcp-service-'))
-process.env.PASCAL_MCP_SERVICE_PATH = await writeFakeMcpService(serviceRoot)
+const serviceRoot = await mkdtemp(path.join(os.tmpdir(), 'aedifex-cli-mcp-service-'))
+process.env.AEDIFEX_MCP_SERVICE_PATH = await writeFakeMcpService(serviceRoot)
 
 afterEach(async () => {
   for (const paths of started.splice(0)) {
@@ -70,7 +71,7 @@ describe('managed MCP service', () => {
 
   test('keeps the recorded editor origin when the caller does not run the editor', async () => {
     const paths = await temporaryPaths()
-    const editorOrigin = 'http://pascal.localhost:41234'
+    const editorOrigin = 'http://aedifex.localhost:41234'
     const first = await ensureMcpService({ paths, editorOrigin })
 
     const connected = await ensureMcpService({ paths })
@@ -83,14 +84,14 @@ describe('managed MCP service', () => {
 
   test('restarts with the new origin when the editor moves to another port', async () => {
     const paths = await temporaryPaths()
-    const first = await ensureMcpService({ paths, editorOrigin: 'http://pascal.localhost:41234' })
+    const first = await ensureMcpService({ paths, editorOrigin: 'http://aedifex.localhost:41234' })
 
-    const moved = await ensureMcpService({ paths, editorOrigin: 'http://pascal.localhost:41235' })
+    const moved = await ensureMcpService({ paths, editorOrigin: 'http://aedifex.localhost:41235' })
 
     expect(moved.alreadyRunning).toBe(false)
     expect(moved.state.pid).not.toBe(first.state.pid)
-    expect(moved.state.editorOrigin).toBe('http://pascal.localhost:41235')
-    expect(await reportedEditorOrigin(paths, moved.state)).toBe('http://pascal.localhost:41235')
+    expect(moved.state.editorOrigin).toBe('http://aedifex.localhost:41235')
+    expect(await reportedEditorOrigin(paths, moved.state)).toBe('http://aedifex.localhost:41235')
   })
 
   test('stops the service once and clears its state and token', async () => {
@@ -108,6 +109,47 @@ describe('managed MCP service', () => {
     expect(await exists(paths.mcpToken)).toBe(false)
   })
 
+  test('retires an authenticated legacy MCP before replacing its shared token', async () => {
+    const paths = await temporaryPaths()
+    const first = await ensureMcpService({ paths })
+    await writeFile(paths.state, JSON.stringify({
+      schemaVersion: 1,
+      pid: 999_999,
+      version: first.state.version,
+      instanceId: first.state.instanceId,
+      runtimeDirectory: path.join(paths.runtime, first.state.version),
+      mcp: { pid: first.state.pid, port: first.state.port },
+    }))
+    await rm(paths.mcpState)
+    const previousToken = await readFile(paths.mcpToken, 'utf8')
+
+    const migrated = await ensureMcpService({ paths })
+
+    expect(migrated.state.pid).not.toBe(first.state.pid)
+    expect(isProcessRunning(first.state.pid)).toBe(false)
+    expect((await getMcpServiceStatus(paths)).healthy).toBe(true)
+    expect(JSON.parse(await readFile(paths.state, 'utf8')).mcp).toBeUndefined()
+    expect(await readFile(paths.mcpToken, 'utf8')).not.toBe(previousToken)
+  })
+
+  test('does not replace legacy credentials or kill an unverified process', async () => {
+    const paths = await temporaryPaths(false)
+    const legacyState = {
+      version: '1.0.0',
+      instanceId: 'foreign',
+      runtimeDirectory: path.join(paths.runtime, '1.0.0'),
+      mcp: { pid: process.pid, port: 1 },
+    }
+    await writeFile(paths.state, JSON.stringify(legacyState))
+    await writeFile(paths.mcpToken, 'preserved-token')
+
+    await expect(ensureMcpService({ paths })).rejects.toMatchObject({ code: 'state_conflict' })
+    await expect(stopMcpService(paths, { force: true })).rejects.toMatchObject({ code: 'state_conflict' })
+    expect(await readFile(paths.mcpToken, 'utf8')).toBe('preserved-token')
+    expect(JSON.parse(await readFile(paths.state, 'utf8'))).toEqual(legacyState)
+    expect(await exists(paths.mcpState)).toBe(false)
+  })
+
   test('refuses to stop a recorded process that is not the MCP service', async () => {
     const paths = await temporaryPaths(false)
     await writeFile(
@@ -120,7 +162,7 @@ describe('managed MCP service', () => {
         url: 'http://127.0.0.1:1/mcp',
         version: '0.0.0',
         instanceId: 'not-the-service',
-        servicePath: path.join(serviceRoot, 'pascal-mcp.mjs'),
+        servicePath: path.join(serviceRoot, 'aedifex-mcp.mjs'),
         editorOrigin: null,
         startedAt: new Date().toISOString(),
       }),
@@ -134,10 +176,10 @@ describe('managed MCP service', () => {
   })
 })
 
-async function temporaryPaths(tracked = true): Promise<PascalPaths> {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'pascal-cli-mcp-test-'))
+async function temporaryPaths(tracked = true): Promise<AedifexPaths> {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'aedifex-cli-mcp-test-'))
   roots.push(root)
-  const paths = resolvePascalPaths({ PASCAL_HOME: path.join(root, 'home') })
+  const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
   await mkdir(paths.run, { recursive: true, mode: 0o700 })
   if (tracked) started.push(paths)
   return paths
@@ -145,7 +187,7 @@ async function temporaryPaths(tracked = true): Promise<PascalPaths> {
 
 /** The stand-in service echoes the origin it was started with, proving the restart repointed it. */
 async function reportedEditorOrigin(
-  paths: PascalPaths,
+  paths: AedifexPaths,
   state: McpServiceState,
 ): Promise<string | null> {
   const token = (await readFile(paths.mcpToken, 'utf8')).trim()

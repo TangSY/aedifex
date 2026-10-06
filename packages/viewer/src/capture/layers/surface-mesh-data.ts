@@ -1,4 +1,4 @@
-import { SurfaceMeshPayloadSchema } from '@pascal-app/core/capture'
+import { SurfaceMeshPayloadSchema } from '@aedifex/core/capture'
 import { BufferGeometry, Float32BufferAttribute, Uint16BufferAttribute } from 'three'
 
 export type SurfaceMeshData = {

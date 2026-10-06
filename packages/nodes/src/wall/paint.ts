@@ -27,14 +27,14 @@ import {
   wallRoomFaceRole,
   wallRoomFinishRole,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getWallFaceBaseAt,
   getWallFinishData,
   getWallFinishRefs,
   hasMaterialsForGroups,
   setSurfaceRaycastLayers,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import {
   type BufferGeometry,
   type Material,

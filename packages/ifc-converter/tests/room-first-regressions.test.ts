@@ -10,9 +10,9 @@ import {
   type SlabNode,
   type WallNode,
   type ZoneNode,
-} from '@pascal-app/core'
-import { migrateRoomZones } from '@pascal-app/core/scene-migrations'
-import { convertIfcToPascal } from '../src'
+} from '@aedifex/core'
+import { migrateRoomZones } from '@aedifex/core/scene-migrations'
+import { convertIfcToAedifex } from '../src'
 import { boxWalls, IfcBuilder, rectangle } from './ifc-builder'
 import { loadScene } from './load-scene'
 
@@ -30,7 +30,7 @@ afterAll(() => {
 
 type Nodes = Record<string, AnyNode>
 const convert = async (builder: IfcBuilder) =>
-  (await convertIfcToPascal(new TextEncoder().encode(builder.toString()), undefined, { wasmPath }))
+  (await convertIfcToAedifex(new TextEncoder().encode(builder.toString()), undefined, { wasmPath }))
     .nodes as Nodes
 const ofType = <T extends AnyNode>(nodes: Nodes, type: T['type']) =>
   Object.values(nodes).filter((node): node is T => node.type === type)

@@ -178,7 +178,7 @@ describe('validateBuildJson with registered plugin kinds', () => {
       }),
       category: 'utility',
       defaults: () => ({}),
-      capabilities: {},
+      capabilities: { deletable: false },
     } as unknown as AnyNodeDefinition)
   })
 

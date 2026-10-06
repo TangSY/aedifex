@@ -1,6 +1,6 @@
 'use client'
 
-import { type CameraPose, emitter } from '@pascal-app/core'
+import { type CameraPose, emitter } from '@aedifex/core'
 import { useEffect, useRef } from 'react'
 import { subscribeCameraPose } from '../../store/camera-pose-store'
 import { subscribeNavigationSyncPose } from '../../store/navigation-sync-pose-store'

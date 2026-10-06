@@ -1,4 +1,4 @@
-import { getLevelElevations, type LevelNode, sceneRegistry, useScene } from '@pascal-app/core'
+import { getLevelElevations, type LevelNode, sceneRegistry, useScene } from '@aedifex/core'
 import { applyShadowOnly, clearShadowOnly } from '../../lib/shadow-only'
 import { shadowOnlyLevels } from './shadow-only-levels'
 

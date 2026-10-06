@@ -15,7 +15,7 @@ import {
   WallNode,
   WindowNode,
   wallSupportForNodes,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 import structure from '../../../../core/src/utils/__fixtures__/project_hrY3qVVq16yo5Out.json'
 import openings from './__fixtures__/wawa-house-openings.json'

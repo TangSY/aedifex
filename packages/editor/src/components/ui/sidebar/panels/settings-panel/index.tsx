@@ -13,8 +13,8 @@ import {
   useRegistryVersion,
   useScene,
   validateBuildJson,
-} from '@pascal-app/core'
-import { useViewer, viewerPresentationRegistry } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer, viewerPresentationRegistry } from '@aedifex/viewer'
 import { TreeView, VisualJson } from '@visual-json/react'
 import {
   ArrowDown,

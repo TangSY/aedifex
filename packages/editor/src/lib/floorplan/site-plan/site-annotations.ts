@@ -17,7 +17,7 @@ import {
   type SiteNode,
   type TerrainField,
   terrainContours,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type SitePlanServicePoint,
   type SitePlanServiceRole,

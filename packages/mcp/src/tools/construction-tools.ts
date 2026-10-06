@@ -5,9 +5,9 @@ import {
   cutFloorOpening,
   generateId,
   resolveStairTotalRise,
-} from '@pascal-app/core'
-import { unknownMaterialPresetRefusal } from '@pascal-app/core/agent-operations'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core/schema'
+} from '@aedifex/core'
+import { unknownMaterialPresetRefusal } from '@aedifex/core/agent-operations'
+import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
 import {
   getActiveRoofHeight,
   LevelNode,
@@ -15,12 +15,13 @@ import {
   RoofSegmentNode,
   StairNode,
   StairSegmentNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { ADDITIVE_TOOL_ANNOTATIONS, DESTRUCTIVE_TOOL_ANNOTATIONS } from './annotations'
 import { liveSyncOutput, persistencePayload, publishLiveSceneSnapshot } from './live-sync'
 import { measurement } from './measurement'
+import { metadataRecord } from './metadata-record'
 import { NodeIdSchema, Vec2Schema, Vec3Schema } from './schemas'
 
 const ROOF_TYPES = [
@@ -680,7 +681,7 @@ export function registerConstructionTools(server: McpServer, bridge: SceneOperat
                   node: {
                     ...change.node,
                     metadata: {
-                      ...change.node.metadata,
+                      ...metadataRecord(change.node.metadata),
                       ownerPose: {
                         position: stair.position,
                         rotation: stair.rotation,

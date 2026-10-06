@@ -1,4 +1,4 @@
-import { type FloorplanGeometry, type FloorplanPoint, loadAssetUrl } from '@pascal-app/core'
+import { type FloorplanGeometry, type FloorplanPoint, loadAssetUrl } from '@aedifex/core'
 import {
   type ArchitecturalDimensionLayout,
   computeArchitecturalDimensionLayout,

@@ -1,4 +1,4 @@
-import type { AnyNode } from '@pascal-app/core'
+import type { AnyNode } from '@aedifex/core'
 
 const ZONE_NAME = /^Zone (\d+)$/
 

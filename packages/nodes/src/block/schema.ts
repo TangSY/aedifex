@@ -1,1 +1,1 @@
-export { BlockNode } from '@pascal-app/core'
+export { BlockNode } from '@aedifex/core'

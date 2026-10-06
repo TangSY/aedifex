@@ -10,8 +10,8 @@ import type {
   Plugin,
 } from './types'
 
-const HOST_API_VERSION = 1 as const
-const BUILTIN_PLUGIN_ID = 'pascal:core'
+const HOST_API_VERSION = 2 as const
+const BUILTIN_PLUGIN_ID = 'aedifex:core'
 
 const pluginIdsByKind = new Map<string, string>()
 
@@ -82,6 +82,20 @@ function assertValidDefinition(def: AnyNodeDefinition): void {
   if (typeof def.schemaVersion !== 'number' || def.schemaVersion < 1) {
     throw new Error(
       `[registry] NodeDefinition.schemaVersion must be a positive integer (kind: "${def.kind}")`,
+    )
+  }
+}
+
+function assertValidPluginDefinition(def: AnyNodeDefinition): void {
+  assertValidDefinition(def)
+  if (
+    !def.capabilities ||
+    typeof def.capabilities !== 'object' ||
+    Array.isArray(def.capabilities) ||
+    typeof def.capabilities.deletable !== 'boolean'
+  ) {
+    throw new Error(
+      `[registry] NodeDefinition.capabilities.deletable must be a boolean (kind: "${def.kind}")`,
     )
   }
 }
@@ -400,7 +414,7 @@ export async function loadPlugin(plugin: Plugin): Promise<void> {
   const nodes = plugin.nodes ?? []
   const kinds = new Set<string>()
   for (const def of nodes) {
-    assertValidDefinition(def)
+    assertValidPluginDefinition(def)
     if (!isDevMode() && (kinds.has(def.kind) || nodeRegistry.has(def.kind))) {
       throw duplicateKindError(def.kind)
     }

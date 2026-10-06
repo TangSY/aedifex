@@ -5,7 +5,7 @@ import {
   LevelNode,
   loadPlugin,
   nodeRegistry,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { z } from 'zod'
 import { FloorplanPreview } from '../../components/viewer/floorplan-preview'
@@ -13,7 +13,7 @@ import { DEFAULT_FLOORPLAN_ANNOTATION_VISIBILITY } from './annotation-visibility
 import { collectFloorplanGeometry, floorplanExportInstalledPlugins } from './floorplan-export'
 import { FLOORPLAN_NODE_EXTENSION_KEY } from './floorplan-extension'
 
-// Plugin API v1, no-install case: a plugin kind's floor-plan output appears in
+// Plugin API v2, no-install case: a plugin kind's floor-plan output appears in
 // the read-only preview and the PDF export only while the project has the
 // plugin installed.
 
@@ -52,7 +52,7 @@ beforeEach(async () => {
   restoreRegistry = nodeRegistry._snapshot()
   await loadPlugin({
     id: PLUGIN_ID,
-    apiVersion: 1,
+    apiVersion: 2,
     nodes: [
       {
         kind: KIND,
@@ -60,7 +60,7 @@ beforeEach(async () => {
         schema: z.looseObject({ id: z.string(), type: z.literal(KIND) }),
         category: 'structure',
         defaults: () => ({}),
-        capabilities: {},
+        capabilities: { deletable: true },
         floorplan: () => ({ kind: 'rect', x: 0, y: 0, width: 2, height: 1, fill: MARKER_FILL }),
       } as unknown as AnyNodeDefinition,
       {
@@ -69,7 +69,7 @@ beforeEach(async () => {
         schema: z.looseObject({ id: z.string(), type: z.literal(LINKED_KIND) }),
         category: 'structure',
         defaults: () => ({}),
-        capabilities: {},
+        capabilities: { deletable: true },
         extensions: { [FLOORPLAN_NODE_EXTENSION_KEY]: { linkedLevelIds: () => [level.id] } },
         floorplan: () => ({ kind: 'rect', x: 3, y: 0, width: 1, height: 1 }),
       } as unknown as AnyNodeDefinition,

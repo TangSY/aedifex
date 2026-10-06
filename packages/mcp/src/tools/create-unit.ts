@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { AnyNodeId } from '@pascal-app/core/schema'
-import { UnitNode } from '@pascal-app/core/schema'
+import type { AnyNodeId } from '@aedifex/core/schema'
+import { UnitNode } from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { ADDITIVE_TOOL_ANNOTATIONS } from './annotations'
@@ -33,7 +33,7 @@ export function registerCreateUnit(server: McpServer, bridge: SceneOperations): 
       annotations: ADDITIVE_TOOL_ANNOTATIONS,
     },
     async ({ buildingId, name, kind, color, memberZoneIds }) => {
-      const members = validateUnitMembers(bridge, buildingId, memberZoneIds ?? [])
+      const members = validateUnitMembers({ bridge, buildingId, memberZoneIds: memberZoneIds ?? [] })
       const unit = UnitNode.parse({ name, kind, color, members })
       const id = bridge.createNode(unit, buildingId as AnyNodeId)
       const persistence = await publishLiveSceneSnapshot(bridge, 'create_unit')

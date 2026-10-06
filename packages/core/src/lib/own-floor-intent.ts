@@ -1,3 +1,4 @@
+import { metadataRecord } from '../utils/metadata-record'
 import { boundaries, diffStructure, roomFace } from '../commands/structure/shared'
 import type { AnyNode, AnyNodeId, SlabNode, ZoneNode } from '../schema'
 import { resolveCeilingHeight } from '../services/level-height'
@@ -173,7 +174,7 @@ export function ownFloorIntentChanges(
     if (Math.abs(height - resolveCeilingHeight(current, next)) > 1e-6)
       ceilingUpdates.push({
         id: old.id,
-        data: { height, metadata: { ...old.metadata, floorReassignmentHeight: true } },
+        data: { height, metadata: { ...metadataRecord(old.metadata), floorReassignmentHeight: true } },
       })
   }
   if (ceilingUpdates.length) {

@@ -19,8 +19,8 @@ import {
   normalizeWallCurveOffset,
   sampleFenceSpline,
   useScene,
-} from '@pascal-app/core'
-import { SliderControl } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { SliderControl } from '@aedifex/editor'
 
 export function FencePatternInfo({ node }: { node: FenceNode }) {
   const subject =

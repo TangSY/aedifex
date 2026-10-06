@@ -13,9 +13,10 @@ import {
   registerNode,
   useInteractive,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useSidebarStore } from '../components/ui/primitives/sidebar'
 import { runRedo, runUndo } from '../lib/history'
+import { DRAFTING_EXTENSION_KEY } from '../lib/interaction/registered-drafting'
 import { meshEditScope } from '../lib/interaction/scope'
 import { setSidebarTabIds } from '../lib/sidebar-panel'
 import useEditor from '../store/use-editor'
@@ -187,7 +188,7 @@ describe('history while drawing distribution runs', () => {
       nodeRegistry._register({
         kind,
         schemaVersion: 1,
-        drafting: { cancelOnHistoryJump: true },
+        extensions: { [DRAFTING_EXTENSION_KEY]: { cancelOnHistoryJump: true } },
       } as never)
     }
   })

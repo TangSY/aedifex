@@ -33,7 +33,7 @@ import {
   terrainFieldOf,
   useScene,
   withHostedCutterHoles,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   applyMaterialPresetToMaterials,
   buildTerrainPerimeterFillGeometry,
@@ -46,7 +46,7 @@ import {
   registerMaterialCacheCleanup,
   resolveMaterialRef,
   resolveSlotDefaultMaterial,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { type BufferGeometry, FrontSide, Group, type Material, Mesh, type Texture } from 'three'
 import { generateFenceSlotGeometries } from '../fence/geometry-parts'
 import { creaseCrossings } from '../site/terrain-drape'
@@ -166,7 +166,7 @@ function getLegacySlabMaterial(node: SlabNode, shading: RenderShading): Material
   slabMaterial.depthWrite = true
   slabMaterial.needsUpdate = true
 
-  material.userData.__pascalCachedMaterial = true
+  material.userData.__aedifexCachedMaterial = true
   slabMaterialCache.set(cacheKey, material)
   return material
 }

@@ -22,7 +22,7 @@ import {
   WallNode,
   WindowNode,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as WebIFC from 'web-ifc'
 import { extractBeamGeometry } from './beam-geometry'
 import { type IfcConversionSimplificationOptions, simplifyConvertedSceneGraph } from './cleanup'
@@ -30,6 +30,7 @@ import { importCollections } from './collections'
 import { doorGlazingStyle, doorStyleFromIfcOperation } from './door-semantics'
 import { nextId, seedIds } from './ids'
 import { applyRoomFirstStructure } from './room-first'
+import { collectPlacementChain } from './placement-chain'
 import { selectStoreyForElevation } from './storey-semantics'
 import { redundantWallIds } from './wall-joins'
 
@@ -38,19 +39,16 @@ export type {
   IfcConversionSimplificationStats,
 } from './cleanup'
 
-export type PascalNode = AnyNode
+export type AedifexNode = AnyNode
 
-export interface PascalSceneGraph {
+export interface AedifexSceneGraph {
   nodes: Record<AnyNodeId, AnyNode>
   rootNodeIds: AnyNodeId[]
   collections?: Record<string, Collection>
 }
 
-// Pascal's BaseNode.metadata is typed as `Record<string, unknown>` — an
-// open object with unchecked values. The converter writes a fixed shape;
-// this typed accessor keeps dot-access ergonomics without spraying `as any`
-// through the post-processing loops. Read-side only — writes still inline
-// literals.
+// The converter writes a fixed metadata shape; this accessor preserves
+// typed reads while BaseNode accepts an open record.
 type ConverterMetadata = {
   ifcType?: string
   expressID?: number
@@ -67,10 +65,7 @@ function meta(node: { metadata?: unknown } | null | undefined): ConverterMetadat
   return (node?.metadata ?? {}) as ConverterMetadata
 }
 
-// The converter pulls many metadata fields from optional IFC properties
-// that often return `undefined`. Those keys vanish the moment the graph is
-// serialized, so stripping them here keeps the in-memory scene identical to
-// the persisted one instead of spraying `?? null` through every assignment.
+// Omit absent IFC properties so in-memory metadata matches serialized scenes.
 function buildMetadata(input: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(input)) {
@@ -275,16 +270,10 @@ function buildAxis2Placement3DMatrix(
 // --- Placement chain resolver ---
 
 function resolveWorldTransform(ifcApi: WebIFC.IfcAPI, modelID: number, placementId: number): Mat4 {
-  const chain: number[] = []
-  let current: number | null = placementId
-
-  while (current) {
-    const placement = ifcApi.GetLine(modelID, current)
-    if (placement.RelativePlacement?.value) {
-      chain.push(placement.RelativePlacement.value)
-    }
-    current = placement.PlacementRelTo?.value ?? null
-  }
+  const chain = collectPlacementChain({
+    placementId,
+    getPlacement: (current) => ifcApi.GetLine(modelID, current),
+  })
 
   // Multiply from root to leaf
   let result = identity()
@@ -641,7 +630,7 @@ function wallHeightThicknessFromExtents(
   return null
 }
 
-type PascalPointTransform = (
+type AedifexPointTransform = (
   scenePoint: number[],
   levelElevation: number,
 ) => [number, number, number]
@@ -869,11 +858,11 @@ export const VARIANT_PRESETS: Record<string, ConversionOptions> = {
   },
 }
 
-export async function convertIfcToPascal(
+export async function convertIfcToAedifex(
   ifcData: Uint8Array,
   onProgress?: (message: string, percent: number) => void,
   options?: ConversionOptions,
-): Promise<PascalSceneGraph> {
+): Promise<AedifexSceneGraph> {
   const opts = {
     swapYZ: options?.swapYZ ?? true,
     extrusionDepthIsHeight: options?.extrusionDepthIsHeight ?? true,
@@ -888,7 +877,7 @@ export async function convertIfcToPascal(
         : undefined
 
   const progress = (msg: string, pct: number) => {
-    console.log(`[IFC→Pascal] ${msg} (${pct}%)`)
+    console.log(`[IFC→Aedifex] ${msg} (${pct}%)`)
     onProgress?.(msg, pct)
   }
 
@@ -902,9 +891,9 @@ export async function convertIfcToPascal(
   seedIds(ifcData)
 
   console.log(
-    `[IFC→Pascal] Model opened, ID: ${modelID}, File size: ${(ifcData.length / 1024).toFixed(1)} KB`,
+    `[IFC→Aedifex] Model opened, ID: ${modelID}, File size: ${(ifcData.length / 1024).toFixed(1)} KB`,
   )
-  const nodes: Record<string, PascalNode> = {}
+  const nodes: Record<string, AedifexNode> = {}
   const rootNodeIds: string[] = []
 
   function attachNodeToGraph(nodeId: string, parentNodeId: string | null | undefined) {
@@ -957,7 +946,7 @@ export async function convertIfcToPascal(
     ]
   }
 
-  const toPascalPoint: PascalPointTransform = (scenePoint, levelElevation) =>
+  const toAedifexPoint: AedifexPointTransform = (scenePoint, levelElevation) =>
     opts.swapYZ
       ? [scenePoint[0]!, scenePoint[2]! - levelElevation, scenePoint[1]!]
       : [scenePoint[0]!, scenePoint[1]!, scenePoint[2]! - levelElevation]
@@ -1082,7 +1071,7 @@ export async function convertIfcToPascal(
   // Some IFC authoring tools aggregate roof elements under IfcRoof ->
   // IfcBuilding instead of spatially containing them in an IfcBuildingStorey.
   // Infer the most appropriate storey from the element elevation so those
-  // elements still become reachable, level-local Pascal nodes.
+  // elements still become reachable, level-local Aedifex nodes.
   function resolveStoreyForElement(expressId: number): number | null {
     const containedStorey = findStoreyForElement(expressId)
     if (containedStorey != null) return containedStorey
@@ -1245,7 +1234,7 @@ export async function convertIfcToPascal(
   progress('Processing sites...', 30)
   // Process sites
   const sites = ifcApi.GetLineIDsWithType(modelID, WebIFC.IFCSITE)
-  console.log(`[IFC→Pascal] Found ${sites.size()} sites`)
+  console.log(`[IFC→Aedifex] Found ${sites.size()} sites`)
   for (let i = 0; i < sites.size(); i++) {
     const siteExpressID = sites.get(i)
     const site = ifcApi.GetLine(modelID, siteExpressID)
@@ -1286,7 +1275,7 @@ export async function convertIfcToPascal(
   progress('Processing buildings...', 40)
   // Process buildings
   const buildings = ifcApi.GetLineIDsWithType(modelID, WebIFC.IFCBUILDING)
-  console.log(`[IFC→Pascal] Found ${buildings.size()} buildings`)
+  console.log(`[IFC→Aedifex] Found ${buildings.size()} buildings`)
   for (let i = 0; i < buildings.size(); i++) {
     const buildingExpressID = buildings.get(i)
     const building = ifcApi.GetLine(modelID, buildingExpressID)
@@ -1322,7 +1311,7 @@ export async function convertIfcToPascal(
   progress('Processing levels...', 50)
   // Process building storeys (levels)
   const storeys = ifcApi.GetLineIDsWithType(modelID, WebIFC.IFCBUILDINGSTOREY)
-  console.log(`[IFC→Pascal] Found ${storeys.size()} levels`)
+  console.log(`[IFC→Aedifex] Found ${storeys.size()} levels`)
   for (let i = 0; i < storeys.size(); i++) {
     const storeyExpressID = storeys.get(i)
     const storey = ifcApi.GetLine(modelID, storeyExpressID)
@@ -1370,7 +1359,7 @@ export async function convertIfcToPascal(
     attachNodeToGraph(nodeId, parentNodeId)
   }
 
-  // Pascal stacks levels from their stored heights. Match those heights to
+  // Aedifex stacks levels from their stored heights. Match those heights to
   // IFC storey elevations, while normalizing the lowest IFC storey to y=0.
   const storeysByBuilding = new Map<number | null, number[]>()
   for (let i = 0; i < storeys.size(); i++) {
@@ -1802,7 +1791,7 @@ export async function convertIfcToPascal(
           // Vertical centering is now handled: door center Y = height/2 so the
           // opening sits at the correct position. Remaining caveat: door bottom
           // is assumed at floor y=0 (i.e. the door starts at the wall's base).
-          // Defaults match @pascal-app/core door schema fallbacks.
+          // Defaults match @aedifex/core door schema fallbacks.
           const doorPosition: [number, number, number] = [position ?? 0, (height ?? 2.1) / 2, 0]
           const doorNode = tryParse(DoorNode, 'door', {
             object: 'node',
@@ -1877,7 +1866,7 @@ export async function convertIfcToPascal(
   // placement. We recover it by projecting the element's world position
   // onto the nearest wall segment. Anything farther than
   // HOST_WALL_MAX_DIST from every wall is left for the exact imported-mesh
-  // fallback below. A standalone Pascal door/window has wall-local
+  // fallback below. A standalone Aedifex door/window has wall-local
   // coordinates, so putting one at its spatial container's origin silently
   // moves it away from its IFC placement.
   const HOST_WALL_MAX_DIST = 1.0 // metres
@@ -1956,7 +1945,7 @@ export async function convertIfcToPascal(
       const element = ifcApi.GetLine(modelID, fillId)
       const isDoor = doorExpressIds.has(fillId)
 
-      // A Pascal WindowNode is always hosted vertically in a wall. Roof
+      // An Aedifex WindowNode is always hosted vertically in a wall. Roof
       // windows need their full IFC transform, so leave skylights unmapped
       // here and preserve them as imported mesh geometry below.
       if (!isDoor && String(element.PredefinedType?.value ?? '').toUpperCase() === 'SKYLIGHT') {
@@ -1983,7 +1972,7 @@ export async function convertIfcToPascal(
       const effWidth = width ?? (isDoor ? 0.9 : 1.0)
       const hosted = scene ? findHostWall(scene[0], scene[1], effWidth) : null
 
-      // Native Pascal openings require a native Pascal wall. Preserve
+      // Native Aedifex openings require a native Aedifex wall. Preserve
       // unhosted openings as exact IFC meshes instead of inventing a
       // wall-local position at [0, 0, 0].
       if (!hosted) continue
@@ -2055,13 +2044,13 @@ export async function convertIfcToPascal(
 
   // Process slabs
   const slabs = ifcApi.GetLineIDsWithType(modelID, WebIFC.IFCSLAB)
-  console.log(`[IFC→Pascal] Found ${slabs.size()} slabs`)
+  console.log(`[IFC→Aedifex] Found ${slabs.size()} slabs`)
   for (let i = 0; i < slabs.size(); i++) {
     const slabExpressID = slabs.get(i)
     const slab = ifcApi.GetLine(modelID, slabExpressID)
 
     // SlabNode represents a horizontal plan polygon and participates in
-    // Pascal's storey-wide wall-support calculation. Preserve roofs and stair
+    // Aedifex's storey-wide wall-support calculation. Preserve roofs and stair
     // landings as exact meshes: roofs may be sloped, while a local landing is
     // not a storey floor and must not raise adjacent wall bases.
     const slabPredefinedType = String(slab.PredefinedType?.value ?? '').toUpperCase()
@@ -2296,7 +2285,7 @@ export async function convertIfcToPascal(
       parentId: parentNodeId || null,
       visible: true,
       elevation,
-      // TODO(ifc-fix): Pascal RoofNode is composed of roof-segments. The
+      // TODO(ifc-fix): Aedifex RoofNode is composed of roof-segments. The
       // converter only has the flat polygon + height; pass them through
       // metadata until we map the IFC roof onto the segment-based shape.
       metadata: buildMetadata({
@@ -2349,7 +2338,7 @@ export async function convertIfcToPascal(
           ? resolveWorldTransform(ifcApi, modelID, col.ObjectPlacement.value)
           : identity()
         const s = worldToScene(transformPoint3(worldMat, [0, 0, 0]))
-        position = toPascalPoint(s, elementLevelElevation(colExpressID))
+        position = toAedifexPoint(s, elementLevelElevation(colExpressID))
 
         const body = getBodyExtrusionData(ifcApi, modelID, col)
         if (body.depth) height = body.depth * unitFactor
@@ -2415,7 +2404,7 @@ export async function convertIfcToPascal(
     }
   }
 
-  // Spaces become editable Pascal room zones. Prefer their swept-area
+  // Spaces become editable Aedifex room zones. Prefer their swept-area
   // profile (preserves concavity); fall back to the mesh's plan hull.
   let importedSpaceCount = 0
   try {
@@ -2557,7 +2546,7 @@ export async function convertIfcToPascal(
         convertedBeamCount++
       } catch (error) {
         skippedBeamCount++
-        console.warn(`[IFC→Pascal] Could not convert beam #${beamExpressID}:`, error)
+        console.warn(`[IFC→Aedifex] Could not convert beam #${beamExpressID}:`, error)
       }
     }
   }
@@ -2651,7 +2640,7 @@ export async function convertIfcToPascal(
 
   // Post-process: extract property sets and materials
   const elementExpressIds = new Set<number>()
-  const expressIdToNode = new Map<number, PascalNode>()
+  const expressIdToNode = new Map<number, AedifexNode>()
   for (const node of Object.values(nodes)) {
     const m = meta(node)
     if (m.expressID != null) {
@@ -2879,11 +2868,11 @@ export async function convertIfcToPascal(
     simplificationStats.removedDuplicateOpenings > 0 ||
     simplificationStats.joinedWallEnds > 0
   ) {
-    console.log('[IFC→Pascal] Simplification:', simplificationStats)
+    console.log('[IFC→Aedifex] Simplification:', simplificationStats)
   }
 
   const roomFirstStats = applyRoomFirstStructure(nodes, wallBodySides)
-  console.log('[IFC→Pascal] Room-first structure:', roomFirstStats)
+  console.log('[IFC→Aedifex] Room-first structure:', roomFirstStats)
 
   fitSitePolygons()
 
@@ -2893,8 +2882,8 @@ export async function convertIfcToPascal(
   progress('Building scene graph...', 95)
 
   const totalNodes = Object.keys(nodes).length
-  console.log(`[IFC→Pascal] Conversion complete! Generated ${totalNodes} nodes`)
-  console.log(`[IFC→Pascal] Node breakdown:`, {
+  console.log(`[IFC→Aedifex] Conversion complete! Generated ${totalNodes} nodes`)
+  console.log(`[IFC→Aedifex] Node breakdown:`, {
     sites: Object.values(nodes).filter((n) => n.type === 'site').length,
     buildings: Object.values(nodes).filter((n) => n.type === 'building').length,
     levels: Object.values(nodes).filter((n) => n.type === 'level').length,

@@ -13,9 +13,9 @@ import {
   type WallNode,
   type WindowNode,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as WebIFC from 'web-ifc'
-import { convertIfcToPascal, type PascalSceneGraph } from '../src'
+import { convertIfcToAedifex, type AedifexSceneGraph } from '../src'
 import { buildIfcExport, exportSceneToIfc, type IfcMeshPart } from '../src/export'
 import { columnScene, roomWithOpenings, twoLevelScene, wallsOn } from './export-scenes'
 import { expectWellFormedStep } from './export-step-check'
@@ -165,8 +165,8 @@ function triangleCount(modelID: number, expressID: number): number {
   return triangles
 }
 
-async function reimport(text: string): Promise<PascalSceneGraph> {
-  return convertIfcToPascal(new TextEncoder().encode(text), undefined, {
+async function reimport(text: string): Promise<AedifexSceneGraph> {
+  return convertIfcToAedifex(new TextEncoder().encode(text), undefined, {
     simplify: false,
     wasmPath,
   })
@@ -403,12 +403,12 @@ describe('IFC export — columns', () => {
 })
 
 describe('IFC export — sample house round trip', () => {
-  let first: PascalSceneGraph
-  let second: PascalSceneGraph
+  let first: AedifexSceneGraph
+  let second: AedifexSceneGraph
   let ifc: string
 
   beforeAll(async () => {
-    first = await convertIfcToPascal(await readFile(sampleHouse), undefined, {
+    first = await convertIfcToAedifex(await readFile(sampleHouse), undefined, {
       simplify: false,
       wasmPath,
     })

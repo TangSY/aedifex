@@ -1,6 +1,6 @@
 import { afterAll, afterEach, describe, expect, spyOn, test } from 'bun:test'
-import { sceneRegistry, useScene, WallNode } from '@pascal-app/core'
-import { getVisibleWallMaterials, useViewer } from '@pascal-app/viewer'
+import { sceneRegistry, useScene, WallNode } from '@aedifex/core'
+import { getVisibleWallMaterials, useViewer } from '@aedifex/viewer'
 import { BufferGeometry, Float32BufferAttribute, type Material, Mesh, Object3D } from 'three'
 import { canonicalWallMaterials, materialSetKey, runBatchFrame } from './wall-batch-system'
 

@@ -1,6 +1,6 @@
 'use client'
 
-import type { Point2D } from '@pascal-app/core'
+import type { Point2D } from '@aedifex/core'
 
 function toSvgX(value: number) {
   return value

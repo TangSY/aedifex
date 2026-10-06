@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import { emitter, type GridEvent } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { emitter, type GridEvent } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { act } from '@react-three/fiber'
 import { cancelActiveTool } from '../../../hooks/use-keyboard'
 import { selectionEnabled } from '../../../lib/interaction/scope'

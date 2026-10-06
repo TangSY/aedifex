@@ -1,5 +1,5 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
-import { isAgentRefusal } from '@pascal-app/core/agent-tools'
+import { isAgentRefusal } from '@aedifex/core/agent-tools'
 
 /**
  * Throw a structured MCP error. The SDK translates `McpError` into a

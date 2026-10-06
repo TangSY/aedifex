@@ -6,12 +6,12 @@ import type {
   GeometryContext,
   NodeDefinition,
   SceneApi,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { ComponentType } from 'react'
 
-export const FLOORPLAN_NODE_EXTENSION_KEY = 'pascal:editor/floorplan'
-export const FLOORPLAN_GEOMETRY_METADATA_KEY = 'pascal:editor/floorplan'
-export const FLOORPLAN_CONTEXT_EXTENSION_KEY = 'pascal:editor/floorplan'
+export const FLOORPLAN_NODE_EXTENSION_KEY = 'aedifex:editor/floorplan'
+export const FLOORPLAN_GEOMETRY_METADATA_KEY = 'aedifex:editor/floorplan'
+export const FLOORPLAN_CONTEXT_EXTENSION_KEY = 'aedifex:editor/floorplan'
 
 export type FloorplanRenderPurpose = 'edit' | 'document'
 export type FloorplanMetricNotation = 'meters' | 'millimeters'
@@ -114,6 +114,8 @@ type FloorplanGeometryMetadata = {
 }
 
 type FloorplanContextExtension = {
+  focusedUnitId?: string
+  focusedUnitMemberIds?: readonly string[]
   automaticDimensions: boolean
   purpose: FloorplanRenderPurpose
   /**
@@ -174,6 +176,8 @@ export function createFloorplanContextExtensions(
 ): Readonly<Record<string, unknown>> {
   return {
     [FLOORPLAN_CONTEXT_EXTENSION_KEY]: {
+      focusedUnitId: values.focusedUnitId,
+      focusedUnitMemberIds: values.focusedUnitMemberIds,
       automaticDimensions: values.automaticDimensions !== false,
       purpose: values.purpose === 'document' ? 'document' : 'edit',
       drafting: values.drafting === true,
@@ -190,6 +194,8 @@ export function readFloorplanContext(ctx: GeometryContext): FloorplanContextExte
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     const extension = value as Partial<FloorplanContextExtension>
     return {
+      focusedUnitId: extension.focusedUnitId,
+      focusedUnitMemberIds: extension.focusedUnitMemberIds,
       automaticDimensions: extension.automaticDimensions !== false,
       purpose: extension.purpose === 'document' ? 'document' : 'edit',
       drafting: extension.drafting === true,

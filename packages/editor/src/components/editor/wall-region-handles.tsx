@@ -11,8 +11,8 @@ import {
   type WallFace,
   type WallFaceRegion,
   type WallNode,
-} from '@pascal-app/core'
-import { getWallFaceBaseAt, getWallFinishData, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { getWallFaceBaseAt, getWallFinishData, useViewer } from '@aedifex/viewer'
 import { createPortal, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {

@@ -1,4 +1,4 @@
-import type { WallNode } from '@pascal-app/core'
+import type { WallNode } from '@aedifex/core'
 import { create } from 'zustand'
 import type { WallSplitPreview, WallSplitSnap } from './split-preview'
 

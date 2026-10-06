@@ -1,4 +1,4 @@
-import { type AnyNode, pointInPolygon2D, type ZoneNode } from '@pascal-app/core'
+import { type AnyNode, pointInPolygon2D, type ZoneNode } from '@aedifex/core'
 import type { LocalSurfaceHit } from './surface-query'
 
 function polygonArea(polygon: ReadonlyArray<readonly [number, number]>) {

@@ -11,8 +11,8 @@ import {
   useLiveNodeOverrides,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import type { ThreeEvent } from '@react-three/fiber'
 import { createElement } from 'react'
 import { Object3D, OrthographicCamera, Raycaster } from 'three'

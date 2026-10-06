@@ -1,5 +1,5 @@
-import type { HandleDescriptor, NodeDefinition, ShelfNode as ShelfNodeType } from '@pascal-app/core'
-import { shelfSlots } from '@pascal-app/core'
+import type { HandleDescriptor, NodeDefinition, ShelfNode as ShelfNodeType } from '@aedifex/core'
+import { shelfSlots } from '@aedifex/core'
 import { restingFloorplanAffectedIds } from '../shared/resting-surface-plan'
 import { sanitizeShelfDimensions } from './dimensions'
 import { buildShelfFloorplan } from './floorplan'

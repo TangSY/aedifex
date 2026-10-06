@@ -1,8 +1,8 @@
 'use client'
 
-import { emitter, type GridEvent, PipeTrapNode, useScene } from '@pascal-app/core'
-import { isGridSnapActive, isMagneticSnapActive, triggerSFX, useEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+import { emitter, type GridEvent, PipeTrapNode, useScene } from '@aedifex/core'
+import { isGridSnapActive, isMagneticSnapActive, triggerSFX, useEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { subscribeAccessorySnapping } from '../shared/accessory-snapping'

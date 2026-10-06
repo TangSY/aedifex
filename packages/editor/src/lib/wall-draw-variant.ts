@@ -1,4 +1,4 @@
-import { emitter } from '@pascal-app/core'
+import { emitter } from '@aedifex/core'
 import useEditor from '../store/use-editor'
 import type { ContinuationMode } from './continuation'
 

@@ -12,8 +12,8 @@ import {
   wallRegionRole,
   wallRoomFaceRole,
   ZoneNode,
-} from '@pascal-app/core'
-import { eyedropperMaterial } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { eyedropperMaterial } from '@aedifex/editor'
 import { Mesh, MeshStandardMaterial } from 'three'
 import { ceilingDefinition } from '../ceiling/definition'
 import { slabDefinition } from '../slab/definition'

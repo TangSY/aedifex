@@ -1,5 +1,5 @@
-import type { AnyNode } from '@pascal-app/core'
-import { setSurfaceRaycastLayers } from '@pascal-app/viewer'
+import type { AnyNode } from '@aedifex/core'
+import { setSurfaceRaycastLayers } from '@aedifex/viewer'
 import { type Intersection, Mesh, type Object3D, type Ray, Raycaster } from 'three'
 
 /**

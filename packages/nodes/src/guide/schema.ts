@@ -1,1 +1,1 @@
-export { GuideNode } from '@pascal-app/core'
+export { GuideNode } from '@aedifex/core'

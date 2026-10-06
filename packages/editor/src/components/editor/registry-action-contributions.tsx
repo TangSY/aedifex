@@ -9,8 +9,8 @@ import {
   toggleMechanism,
   useInteractive,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { DoorClosed, DoorOpen, PanelTopClose, PanelTopOpen, Play, Square } from 'lucide-react'
 import { type ComponentType, lazy, Suspense } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -99,7 +99,7 @@ function MechanismAction() {
 
 /**
  * The buttons kinds add to the action menu for selections holding them
- * (`extensions['pascal:editor/floorplan'].actionMenu.actions`), in 2D and 3D
+ * (`extensions['aedifex:editor/floorplan'].actionMenu.actions`), in 2D and 3D
  * alike. Each contribution reads the selection and decides its own visibility.
  */
 export function RegistryActionContributions() {

@@ -1,4 +1,4 @@
-import type { AnyNode } from '@pascal-app/core'
+import type { AnyNode } from '@aedifex/core'
 import {
   ensureSceneOpenings,
   healSceneNodes,
@@ -17,7 +17,7 @@ import {
   reconcileStructureOnLoad,
   removeRetiredDrawingSheetNodes,
   STRUCTURE_NODE_KINDS,
-} from '@pascal-app/core/scene-migrations'
+} from '@aedifex/core/scene-migrations'
 
 type Nodes = Record<string, AnyNode>
 

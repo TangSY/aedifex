@@ -15,8 +15,8 @@ import {
   runSceneHistoryDraftWrite,
   type SurfaceRejectReason,
   useScene,
-} from '@pascal-app/core'
-import { evaluateRecipe, isProceduralItem } from '@pascal-app/core/procedural-items'
+} from '@aedifex/core'
+import { evaluateRecipe, isProceduralItem } from '@aedifex/core/procedural-items'
 import useInteractionScope from '../store/use-interaction-scope'
 import usePlacementPreview from '../store/use-placement-preview'
 import { getPlacementMetadataRecord, stripPlacementMetadataFlags } from './placement-metadata'

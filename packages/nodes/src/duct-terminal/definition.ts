@@ -1,4 +1,4 @@
-import type { NodeDefinition } from '@pascal-app/core'
+import type { NodeDefinition } from '@aedifex/core'
 import { buildDuctTerminalFloorplan } from './floorplan'
 import { buildDuctTerminalGeometry } from './geometry'
 import { ductTerminalParametrics } from './parametrics'

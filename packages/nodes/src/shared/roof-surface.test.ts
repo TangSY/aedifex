@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { RoofSegmentNode } from '@pascal-app/core'
+import type { RoofSegmentNode } from '@aedifex/core'
 import { getDownSlopeYaw, getRoofSurfaceFaceBoundsAt, getSurfaceY } from './roof-surface'
 
 const fixtureSegment = (overrides?: Partial<RoofSegmentNode>): RoofSegmentNode =>

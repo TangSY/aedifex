@@ -12,7 +12,7 @@ import {
   type SceneMaterialId,
   slotPaintMaterial,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { type Mesh, type Object3D, Raycaster } from 'three'
 import { buildSlotPreviewMaterial, resolveSlotPaintMaterialRef } from '../shared/slot-paint'
 import { setBlockMaterialSlot } from './material-slots'

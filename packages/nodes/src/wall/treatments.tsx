@@ -22,13 +22,13 @@ import {
   type WallTrimProfile,
   type WallTrimSlotId,
   wallDoorStepRuns,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   baseMaterial,
   createMaterialFromPresetRef,
   type RenderShading,
   resolveMaterialRef,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { memo, useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { mergeGeometries as mergeBufferGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'

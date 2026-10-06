@@ -10,7 +10,7 @@ import {
   RoofSegmentNode,
   spatialGridManager,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { getRoofTopSurfaceY } from '../shared/roof-surface'
 import { leanToRoofSegmentLayoutPatch } from './assembly'
 import {

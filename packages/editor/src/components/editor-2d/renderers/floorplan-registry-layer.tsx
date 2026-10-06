@@ -28,8 +28,8 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
-import { beginPerfAction, cancelPerfAction, commitPerfAction, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { beginPerfAction, cancelPerfAction, commitPerfAction, useViewer } from '@aedifex/viewer'
 import {
   type ComponentProps,
   memo,
@@ -2444,6 +2444,8 @@ export function buildFloorplanEntryGeometry({
         parent: ctxOverrides.parent,
         levelData,
         extensions: createFloorplanContextExtensions({
+          focusedUnitId: unitFocus?.focusedUnitId,
+          focusedUnitMemberIds: unitFocus?.focusedUnitMemberIds,
           automaticDimensions,
           metricNotation,
           purpose: 'edit',
@@ -2456,8 +2458,6 @@ export function buildFloorplanEntryGeometry({
               highlighted,
               hovered,
               moving,
-              focusedUnitId: unitFocus?.focusedUnitId,
-              focusedUnitMemberIds: unitFocus?.focusedUnitMemberIds,
               palette,
             }
           : undefined,

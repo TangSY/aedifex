@@ -5,7 +5,7 @@ import {
   BuildingNode,
   CeilingNode,
   LevelNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { CEILING_PANEL_MIN_HEIGHT, ceilingHeightRange, clampCeilingHeight } from './height-bounds'
 
 const polygon: Array<[number, number]> = [

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, spyOn, test } from 'bun:test'
-import * as core from '@pascal-app/core'
+import * as core from '@aedifex/core'
 import {
   type AnyNodeId,
   BlockNode,
@@ -17,10 +17,10 @@ import {
   sceneRegistry,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { nodeLevelFrame, ProceduralItemNode } from '@pascal-app/core/procedural-items'
-import { meshEditScope, useEditor, useInteractionScope } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { nodeLevelFrame, ProceduralItemNode } from '@aedifex/core/procedural-items'
+import { meshEditScope, useEditor, useInteractionScope } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useThree } from '@react-three/fiber'
 import { act, type create } from '@react-three/test-renderer'
 import React, { type ReactNode, useMemo } from 'react'

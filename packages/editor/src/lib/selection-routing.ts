@@ -6,8 +6,8 @@ import {
   nodeRegistry,
   resolveSelectionProxyId,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import useEditor from '../store/use-editor'
 import { emitDeleteSFX } from './sfx-bus'
 

@@ -8,7 +8,7 @@ import {
   useScene,
   type WallFaceRegion,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Matrix4, Ray, Vector3 } from 'three'
 import { commitHandleDragPatch } from '../components/editor/handles/handle-drag-history'
 import { updateWallRegion } from './paint-regions'

@@ -1,4 +1,4 @@
-import { GROUND_SUPPORT_ID } from '../../hooks/spatial-grid/support-host-id'
+import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import { terrainSupportLift } from '../../lib/terrain-support'
 import {
   type AnyNode,

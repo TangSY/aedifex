@@ -14,7 +14,7 @@ import {
   useLiveTransforms,
   useScene,
   type WallEvent,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   calculateItemRotation,
   clearPlacementSurface,
@@ -30,8 +30,8 @@ import {
   useAlignmentGuides,
   useEditor,
   useFacingPose,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BoxGeometry, EdgesGeometry, type Group, Vector3 } from 'three'
 import { LineBasicNodeMaterial } from 'three/webgpu'
@@ -452,6 +452,7 @@ const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNode }) =>
         planeOffsetOn(target.wallId),
       )
       const ghostYaw = target.itemRotation - wallAngle
+      const wallBaseWorldY = ghostWorldPos[1] - target.clampedY
       setGhostPose({
         position: ghostWorldPos,
         rotationY: ghostYaw,
@@ -464,7 +465,7 @@ const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNode }) =>
       useFacingPose.getState().set({
         position: [
           ghostWorldPos[0],
-          getLevelYOffset() + getSlabElevation(target.event),
+          wallBaseWorldY,
           ghostWorldPos[2],
         ],
         rotationY: ghostYaw,

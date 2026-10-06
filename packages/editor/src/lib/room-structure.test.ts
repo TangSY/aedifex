@@ -14,8 +14,8 @@ import {
   structureChangeBatch,
   useScene,
   WallNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { deleteConfirmationContent } from '../components/editor/delete-confirmation-dialog'

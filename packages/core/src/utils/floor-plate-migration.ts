@@ -1,3 +1,4 @@
+import { metadataRecord } from './metadata-record'
 import { isFloorAnchoredOpening } from '../lib/floor-opening-footprints'
 import { floorPlateId } from '../lib/floor-plate-id'
 import {
@@ -107,7 +108,7 @@ export function associateLegacyManualFloors(
     a.minX < b.maxX && b.minX < a.maxX && a.minZ < b.maxZ && b.minZ < a.maxZ
   let nodes = source
   for (const level of Object.values(source)) {
-    if (level.type !== 'level' || level.metadata?.floorOwnershipMigrated === true) continue
+    if (level.type !== 'level' || metadataRecord(level.metadata).floorOwnershipMigrated === true) continue
     const children = Object.values(source).filter((node) => node.parentId === level.id)
     const authored = children.filter(
       (node): node is SlabNode =>
@@ -222,7 +223,7 @@ export function associateLegacyManualFloors(
           ({ slab, overlap }) =>
             overlap >= faceArea * 0.05 ||
             (overlap > 1e-4 &&
-              (slab.metadata?.plateMigration as { demoted?: string } | undefined)?.demoted !==
+              (metadataRecord(slab.metadata).plateMigration as { demoted?: string } | undefined)?.demoted !==
                 undefined),
         )
         .sort(
@@ -238,7 +239,7 @@ export function associateLegacyManualFloors(
         .reduce((best, entry) => Math.max(best, area(intersection(face, entry.footprint))), 0)
       if (automaticCover >= faceArea * 0.95 && providerCoverage < faceArea * 0.95) continue
       const finishOnly =
-        (provider.metadata?.plateMigration as { demoted?: string } | undefined)?.demoted ===
+        (metadataRecord(provider.metadata).plateMigration as { demoted?: string } | undefined)?.demoted ===
           undefined &&
         providerCoverage >= faceArea * 0.95 &&
         Object.values(legacy).some(
@@ -267,7 +268,7 @@ export function associateLegacyManualFloors(
       nodes[level.id] = {
         ...level,
         metadata: {
-          ...level.metadata,
+          ...metadataRecord(level.metadata),
           floorOwnershipMigrated: true,
           ...(hadLegacyAutoPlate ? { legacyAutoOpeningsMigrated: true } : {}),
         },
@@ -367,7 +368,7 @@ function absorbCompleteManualFloors(source: Record<string, AnyNode>) {
       slab.support === 'open' ||
       slab.recessed ||
       slab.visible === false ||
-      (slab.metadata?.plateMigration as { demoted?: string } | undefined)?.demoted !== undefined ||
+      (metadataRecord(slab.metadata).plateMigration as { demoted?: string } | undefined)?.demoted !== undefined ||
       !slab.parentId
     )
       continue
@@ -500,7 +501,7 @@ function runFloorPlateMigration(
   let changed = slotMigration.changed
   if (clearDanglingFloorSources(nodes)) changed = true
   for (const level of Object.values(nodes)) {
-    if (level.type !== 'level' || !level.metadata?.legacyRoomMigrationPending) continue
+    if (level.type !== 'level' || !metadataRecord(level.metadata).legacyRoomMigrationPending) continue
     if (Object.values(nodes).some((node) => node.type === 'slab' && node.parentId === level.id))
       continue
     for (const zone of Object.values(nodes)) {
@@ -656,7 +657,7 @@ function runFloorPlateMigration(
             autoFromWalls: false,
             boundary: undefined,
             metadata: {
-              ...node.metadata,
+              ...metadataRecord(node.metadata),
               plateMigration: {
                 demoted:
                   demotionReasons.get(node.id) === 'has-floor-disabled'

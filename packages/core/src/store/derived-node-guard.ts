@@ -13,7 +13,7 @@ import type { SurfaceHoleMetadata } from '../schema/nodes/surface-hole-metadata'
  * and lets the reconciler derive the construction.
  *
  * The capability is this module-private token. It is deliberately NOT
- * re-exported from the package index, so no caller outside `@pascal-app/core`
+ * re-exported from the package index, so no caller outside `@aedifex/core`
  * can mint a write that bypasses the guard — the sanctioned entry points
  * (`applyStructureReconciliation`, `detachDerivedNode`) hold it instead.
  */

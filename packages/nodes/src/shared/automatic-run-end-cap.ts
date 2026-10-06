@@ -5,13 +5,14 @@ import {
   type DuctSegmentNode,
   PipeFittingNode,
   type PipeSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Euler, Quaternion, Vector3 } from 'three'
 import { localFittingPorts } from '../duct-fitting/ports'
 import { ductPortDiameterIn } from '../duct-segment/geometry'
 import { localPipeFittingPorts } from '../pipe-fitting/ports'
 import { accessoryMateQuaternion } from './accessory-placement'
 import type { ScenePort } from './ports'
+import { metadataRecord } from './node-metadata'
 
 const END_CAP_OWNER_ID_KEY = 'automaticRunEndCapOwnerId'
 const END_CAP_ENDPOINT_KEY = 'automaticRunEndCapEndpoint'
@@ -158,9 +159,10 @@ export function findMatedRunEndCapIds(
       ids.push(node.id)
       continue
     }
+    const metadata = metadataRecord(node.metadata)
     if (
-      node.metadata[END_CAP_OWNER_ID_KEY] === source.nodeId &&
-      node.metadata[END_CAP_ENDPOINT_KEY] === source.id
+      metadata[END_CAP_OWNER_ID_KEY] === source.nodeId &&
+      metadata[END_CAP_ENDPOINT_KEY] === source.id
     )
       ids.push(node.id)
   }
@@ -177,7 +179,7 @@ export function findAutomaticRunEndCapIds(
       !node ||
       node.type !== fittingKind ||
       node.fittingType !== 'end-cap' ||
-      node.metadata[END_CAP_OWNER_ID_KEY] !== runId
+      metadataRecord(node.metadata)[END_CAP_OWNER_ID_KEY] !== runId
     )
       return []
     return [node.id]

@@ -13,7 +13,7 @@ import {
   useLiveNodeOverrides,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   buildMeasurementAngleArcPoints,
   formatAngleRadians,
@@ -23,8 +23,8 @@ import {
   measurementPolygonLabelAnchor,
   measurementPresentationColor,
   triangulateMeasurementPolygon,
-} from '@pascal-app/editor'
-import { OVERLAY_LAYER, useNodeEvents, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { OVERLAY_LAYER, useNodeEvents, useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'

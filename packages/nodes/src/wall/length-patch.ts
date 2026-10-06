@@ -1,4 +1,4 @@
-import { getClampedWallCurveOffset, getWallCurveLength, type WallNode } from '@pascal-app/core'
+import { getClampedWallCurveOffset, getWallCurveLength, type WallNode } from '@aedifex/core'
 
 export function buildWallLengthPatch(node: WallNode, nextLength: number): Partial<WallNode> {
   const length = getWallCurveLength(node)

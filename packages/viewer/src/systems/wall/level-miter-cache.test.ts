@@ -1,7 +1,7 @@
 // @ts-expect-error — bun:test is provided by the Bun runtime; viewer does not
 // depend on @types/bun so the import type is unresolved at compile time.
 import { describe, expect, test } from 'bun:test'
-import { WallNode } from '@pascal-app/core'
+import { WallNode } from '@aedifex/core'
 import { clearLevelMiterCache, getCachedLevelMiters, sameMiterInputs } from './level-miter-cache'
 
 function wall(overrides: Record<string, unknown> = {}) {

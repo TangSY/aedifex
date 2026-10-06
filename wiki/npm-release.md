@@ -1,3 +1,5 @@
+> Upstream reference only. This documents pascalorg/editor publishing; TangSY/aedifex disables these release workflows and does not publish these packages. Do not execute this runbook for this fork.
+
 # Releasing `@pascal-app/*` to npm
 
 Seven packages ship from this repository: `core`, `viewer`, `editor`, `nodes`, `mcp`, `ifc-converter`, `cli`. They publish in that order — each one depends on the ones before it — and **every package carries the same version**. A release bumps all seven together from the highest version in the tree, so a package that ran ahead (the cli-only 1.0.2 hotfix) pulls the others up to it on the next run, and every `@pascal-app/*` range in their manifests is rewritten to that one version. There is no per-package release.

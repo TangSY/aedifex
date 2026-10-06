@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { AnyNodeId } from '@pascal-app/core/schema'
+import type { AnyNodeId } from '@aedifex/core/schema'
 import {
   openingScene,
   WALL_OPENING_CASES,

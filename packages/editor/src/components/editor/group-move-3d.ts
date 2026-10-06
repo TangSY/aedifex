@@ -11,10 +11,11 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { type Camera, Plane, type Raycaster, Vector2, Vector3 } from 'three'
 import { GROUP_MOVE_DRAG_LABEL } from '../../lib/contextual-help'
+import { bindWindowBlurCancel } from '../../lib/interaction/window-blur-cancel'
 import { isHistoryShortcut } from '../../lib/history'
 import { sfxEmitter } from '../../lib/sfx-bus'
 import useAlignmentGuides from '../../store/use-alignment-guides'
@@ -100,6 +101,7 @@ export function armGroupMove3d(args: {
     lastDelta: Vec2 | null
   }
   let session: Session | null = null
+  let unbindBlurCancel = () => {}
 
   const engage = (): Session | null => {
     const nodes = useScene.getState().nodes
@@ -289,6 +291,7 @@ export function armGroupMove3d(args: {
     window.removeEventListener('pointerup', onUp, true)
     window.removeEventListener('pointercancel', onPointerCancel)
     window.removeEventListener('keydown', onKeyDown, true)
+    unbindBlurCancel()
   }
 
   // History resume is NOT here — it pairs one-to-one with the
@@ -421,5 +424,6 @@ export function armGroupMove3d(args: {
   window.addEventListener('pointerup', onUp, true)
   window.addEventListener('pointercancel', onPointerCancel)
   window.addEventListener('keydown', onKeyDown, true)
+  unbindBlurCancel = bindWindowBlurCancel(cancel)
   return true
 }

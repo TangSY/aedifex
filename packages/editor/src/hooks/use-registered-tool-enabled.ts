@@ -1,6 +1,6 @@
 'use client'
 
-import { isNodeKindEnabled, useScene } from '@pascal-app/core'
+import { isNodeKindEnabled, useScene } from '@aedifex/core'
 import { useEffect } from 'react'
 import useEditor, { type Tool } from '../store/use-editor'
 

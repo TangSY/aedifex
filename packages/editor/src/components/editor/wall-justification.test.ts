@@ -6,7 +6,7 @@ import {
   useScene,
   type WallEvent,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Mesh, Vector3 } from 'three'
 import { wallPushHandles } from '../../lib/room-handle-drag'
 import { duplicateNodesToLevel } from '../../lib/scene-clipboard'

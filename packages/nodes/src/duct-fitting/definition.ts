@@ -1,5 +1,5 @@
-import type { NodeDefinition } from '@pascal-app/core'
-import { ductBodySlots } from '@pascal-app/core'
+import type { NodeDefinition } from '@aedifex/core'
+import { ductBodySlots } from '@aedifex/core'
 import { ductBodyPaint } from '../shared/duct-body-paint'
 import { rotateFittingNode } from '../shared/fitting-rotation'
 import { ductFittingToolOptions } from '../shared/fitting-tool-options'

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { type AnyNode, CeilingNode, ZoneNode } from '@pascal-app/core'
+import { type AnyNode, CeilingNode, ZoneNode } from '@aedifex/core'
 import { type BufferGeometry, type Material, Mesh, MeshBasicMaterial } from 'three'
 import {
   CEILING_REGION_MESH,

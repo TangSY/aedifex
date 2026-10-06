@@ -1,4 +1,5 @@
 import {
+  metadataRecord,
   type AnyNode,
   type AnyNodeId,
   type BuildingNode,
@@ -35,7 +36,7 @@ import {
   type WindowNode,
   wallSupportForNodes,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { doorGlazingFraction, doorOperationForIfc } from './door-operation'
 import {
   bool,
@@ -303,7 +304,7 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
   const step = model.step
   const skipped: IfcExportSkip[] = []
   const timestamp = input.timestamp ?? new Date()
-  const projectName = input.projectName?.trim() || 'Pascal project'
+  const projectName = input.projectName?.trim() || 'Aedifex project'
   const excludedTypes = new Set(input.excludedNodeTypes ?? [])
 
   const parentOf = (node: AnyNode): AnyNode | undefined =>
@@ -358,7 +359,7 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
   // IfcPerson needs an identification or a name (IdentifiablePerson rule).
   const person = step.add(
     'IFCPERSON',
-    'Pascal user',
+    'Aedifex user',
     input.author?.trim() || null,
     null,
     null,
@@ -370,7 +371,7 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
   const organization = step.add(
     'IFCORGANIZATION',
     null,
-    input.organization?.trim() || 'Pascal',
+    input.organization?.trim() || 'Aedifex',
     null,
     null,
     null,
@@ -380,8 +381,8 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
     'IFCAPPLICATION',
     organization,
     '1.0',
-    'Pascal Editor',
-    'Pascal Editor',
+    'Aedifex Editor',
+    'Aedifex Editor',
   )
   model.ownerHistory = step.add(
     'IFCOWNERHISTORY',
@@ -484,7 +485,7 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
     const placement = model.localPlacement(null, IDENTITY_FRAME)
     const ref = step.add(
       'IFCSITE',
-      model.guid(seed, site?.metadata?.globalId),
+      model.guid(seed, metadataRecord(site?.metadata).globalId),
       ownerHistory,
       site ? nodeName(site, 'Site') : 'Site',
       null,
@@ -544,7 +545,7 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
     const placement = model.localPlacement(site.placement, frame)
     const ref = step.add(
       'IFCBUILDING',
-      model.guid(key, node?.metadata?.globalId),
+      model.guid(key, metadataRecord(node?.metadata).globalId),
       ownerHistory,
       node ? nodeName(node, 'Building') : 'Building',
       null,
@@ -592,7 +593,7 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
       })
       const ref = step.add(
         'IFCBUILDINGSTOREY',
-        model.guid(level.id, level.metadata?.globalId),
+        model.guid(level.id, metadataRecord(level.metadata).globalId),
         ownerHistory,
         nodeName(level, `Level ${level.level}`),
         null,
@@ -658,7 +659,7 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
   ): StepRef => {
     const ref = step.add(
       cls.entity,
-      model.guid(seed, node?.metadata?.globalId),
+      model.guid(seed, metadataRecord(node?.metadata).globalId),
       ownerHistory,
       name,
       null,
@@ -1198,7 +1199,7 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
     const roomNumber = zone.roomNumber?.trim() ?? ''
     const ref = step.add(
       'IFCSPACE',
-      model.guid(zone.id, zone.metadata?.globalId),
+      model.guid(zone.id, metadataRecord(zone.metadata).globalId),
       ownerHistory,
       roomNumber || zone.name,
       null,
@@ -1342,7 +1343,7 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
     }
     const ref = step.add(
       containerClass.entity,
-      model.guid(`${container.id}:assembly`, container.metadata?.globalId),
+      model.guid(`${container.id}:assembly`, metadataRecord(container.metadata).globalId),
       ownerHistory,
       nodeName(container, containerClass.entity),
       null,
@@ -1406,7 +1407,7 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
     if (members.length === 0) continue
     const zone = step.add(
       'IFCZONE',
-      model.guid(unit.id, unit.metadata?.globalId),
+      model.guid(unit.id, metadataRecord(unit.metadata).globalId),
       ownerHistory,
       nodeName(unit, 'Unit'),
       null,
@@ -1475,8 +1476,8 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
     timestamp: timestamp.toISOString().replace(/\.\d{3}Z$/, ''),
     author: input.author?.trim() || '',
     organization: input.organization?.trim() || '',
-    preprocessor: 'Pascal IFC writer',
-    originatingSystem: 'Pascal Editor',
+    preprocessor: 'Aedifex IFC writer',
+    originatingSystem: 'Aedifex Editor',
     schema: 'IFC4',
   })
 

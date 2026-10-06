@@ -4,7 +4,7 @@ import {
   spatialGridManager,
   useScene,
   type WallTrimConfig,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { floorStepFixture } from '../../../core/src/systems/slab/__fixtures__/floor-step'
 import { createSlabDependencyTracker } from '../slab/dependency-tracker'
 import { resetWallTreatmentLevels, updateWallTreatmentLevels } from './system'
@@ -91,7 +91,7 @@ test('moving and raising a door invalidate plate exposure even when the wall is 
 
 test('unrelated live transforms and scene edits do not recompute wall support', async () => {
   const { spyOn } = await import('bun:test')
-  const { useLiveTransforms } = await import('@pascal-app/core')
+  const { useLiveTransforms } = await import('@aedifex/core')
   const { walls, nodes } = floorStepFixture()
   useScene.setState({ nodes, dirtyNodes: new Set(walls.map((wall) => wall.id)) })
   for (const node of Object.values(nodes)) spatialGridManager.handleNodeCreated(node, 'level_step')
@@ -117,7 +117,7 @@ test('unrelated live transforms and scene edits do not recompute wall support', 
 
 test('floor-length windows expose plate steps and invalidate plate partitions', async () => {
   const { WindowNode, computePlateSurfacePartition, classifyPlateSideAt, plateLevelContext } =
-    await import('@pascal-app/core')
+    await import('@aedifex/core')
   const { divider, nodes, door, slabs, level } = floorStepFixture()
   const window = WindowNode.parse({
     ...door,
@@ -148,7 +148,7 @@ test('floor-length windows expose plate steps and invalidate plate partitions', 
 })
 
 test('low-side skirting stops at floor-length windows and continues below high sills', async () => {
-  const { WindowNode } = await import('@pascal-app/core')
+  const { WindowNode } = await import('@aedifex/core')
   const { divider, walls, slabs, nodes, door } = floorStepFixture()
   useScene.setState({ nodes })
   const support = computeWallSlabSupport(divider, slabs, walls, undefined, undefined, 0, nodes)

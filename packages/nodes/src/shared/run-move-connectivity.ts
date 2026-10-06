@@ -6,7 +6,7 @@ import {
   resolveConnectivityUpdates,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 type Vec3 = [number, number, number]
 

@@ -100,7 +100,7 @@ function finalize(outcome: PerfActionReceipt['outcome']): void {
         devtools: {
           dataType: 'track-entry',
           track: 'Actions',
-          trackGroup: 'Pascal',
+          trackGroup: 'Aedifex',
           color: outcome === 'settled' ? 'secondary' : 'error',
           properties: [
             ['outcome', outcome],

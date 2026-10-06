@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import { useLiveNodeOverrides, useScene, WallNode, WindowNode } from '@pascal-app/core'
+import { useLiveNodeOverrides, useScene, WallNode, WindowNode } from '@aedifex/core'
 import { createOpeningPropertyPreview } from '../shared/opening-property-preview'
 import { openingPropertyPreviewHost } from '../shared/opening-property-preview-host'
 

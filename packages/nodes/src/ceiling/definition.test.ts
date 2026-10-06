@@ -7,7 +7,7 @@ import {
   createSceneApi,
   LevelNode,
   type SceneStoreLike,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { ceilingDefinition } from './definition'
 
 const polygon: Array<[number, number]> = [

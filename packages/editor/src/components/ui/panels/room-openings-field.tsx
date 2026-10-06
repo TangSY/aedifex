@@ -1,7 +1,7 @@
 'use client'
 
-import { area, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { area, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useMemo } from 'react'
 import {
   endFloorEdit,

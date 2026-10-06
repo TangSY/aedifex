@@ -18,7 +18,7 @@ import {
   type SiteNode,
   unionPolygons,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { type Pt, pointInPolygon, polygonArea, polygonBounds } from './geometry'
 
 /**

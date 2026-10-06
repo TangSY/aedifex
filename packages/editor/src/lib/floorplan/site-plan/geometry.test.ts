@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { sightTriangle, streetCorners } from '@pascal-app/core'
+import { sightTriangle, streetCorners } from '@aedifex/core'
 import {
   boundsInsidePolygon,
   castYardDimensions,

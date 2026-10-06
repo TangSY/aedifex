@@ -16,16 +16,16 @@ import {
   useLiveNodeOverrides,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   frame,
   nodeLevelFrame,
   ProceduralItemNode,
   type Recipe,
   transformPoint,
-} from '@pascal-app/core/procedural-items'
-import { useEditor, useInteractionScope } from '@pascal-app/editor'
-import { NodeRenderer, useViewer, WallSystem } from '@pascal-app/viewer'
+} from '@aedifex/core/procedural-items'
+import { useEditor, useInteractionScope } from '@aedifex/editor'
+import { NodeRenderer, useViewer, WallSystem } from '@aedifex/viewer'
 import { extend, useFrame } from '@react-three/fiber'
 import { act, create } from '@react-three/test-renderer'
 import { useRef } from 'react'
@@ -662,7 +662,7 @@ test('fresh procedural preset subtree remains on floor and commits remapped atta
 
 for (const mounting of ['wall', 'roof', 'ceiling'] as const)
   test(`shared frame preserves ${mounting}-mounted item ancestry`, async () => {
-    const { WallNode, RoofNode, RoofSegmentNode, CeilingNode } = await import('@pascal-app/core')
+    const { WallNode, RoofNode, RoofSegmentNode, CeilingNode } = await import('@aedifex/core')
     const definitions = await Promise.all([
       import('../wall/definition'),
       import('../roof/definition'),
@@ -743,7 +743,7 @@ for (const mounting of ['wall', 'roof', 'ceiling'] as const)
         .worldToLocal(new Vector3().setFromMatrixPosition(worldMatrix(child.id)))
       if (mounting === 'roof') {
         // Production plan rendering uses stored roof-face Z, not the wall-side thickness offset.
-        const { getRoofWallFaceFrame, roofFacePointToSegment } = await import('@pascal-app/core')
+        const { getRoofWallFaceFrame, roofFacePointToSegment } = await import('@aedifex/core')
         const face = getRoofWallFaceFrame(segment, mounted.roofFace!)
         const local = roofFacePointToSegment(segment, mounted.roofFace!, mounted.position)
         const expected = transformPoint(

@@ -13,7 +13,7 @@ import type {
   ShelfNode,
   WallEvent,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   clampRectToRoofWallFace,
   clearFaceHostItemFields,
@@ -29,7 +29,7 @@ import {
   snapLocalXZInWorld,
   useScene,
   wouldCreateHostingCycle,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Euler, Quaternion, Vector3 } from 'three'
 import { hasRoofFaceChildOverlap, resolveRoofWallHit } from '../../../lib/roof-wall-hit'
 import { getActiveBuildingPose } from '../../../lib/world-grid-snap'

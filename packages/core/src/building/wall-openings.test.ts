@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { type AgentRefusal, isAgentRefusal } from '../agent-tools/refusal'
 import { openingScene, WALL_OPENING_CASES } from './__fixtures__/wall-opening-cases'
-import { planWallOpening } from './wall-openings'
+import { findWallChildOverlap, planWallOpening } from './wall-openings'
 
 // Layer 1 of 3: the operation both agent surfaces call. The cases are the spec.
 describe('planWallOpening', () => {
@@ -30,3 +30,12 @@ describe('planWallOpening', () => {
     })
   }
 })
+
+for (const metadata of [null, false, 7, 'legacy', ['legacy']]) {
+  test(`legacy JSON metadata ${JSON.stringify(metadata)} still blocks overlapping openings`, () => {
+    const { nodes } = openingScene()
+    nodes.door_existing = { ...nodes.door_existing!, metadata }
+    expect(findWallChildOverlap('wall_busy', nodes, 2, 1.05, 0.9, 2.1)?.id).toBe('door_existing')
+    expect(nodes.door_existing.metadata).toEqual(metadata)
+  })
+}

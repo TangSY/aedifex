@@ -1,11 +1,12 @@
 import { describe, expect, test } from 'bun:test'
+import { DRAFTING_EXTENSION_KEY } from '@aedifex/editor'
 import { pipeSegmentDefinition } from './definition'
 import { buildPipeSegmentFloorplan } from './floorplan'
 import { PipeSegmentNode } from './schema'
 
 describe('pipe segment defaults', () => {
   test('declares surface-aware, history-cancellable drafting behavior', () => {
-    expect(pipeSegmentDefinition.drafting).toEqual({
+    expect(pipeSegmentDefinition.extensions?.[DRAFTING_EXTENSION_KEY]).toEqual({
       surfaceQuery: true,
       cancelOnHistoryJump: true,
     })

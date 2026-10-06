@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { applyHeightPatch, createTerrainField, type Ring } from '@pascal-app/core'
+import { applyHeightPatch, createTerrainField, type Ring } from '@aedifex/core'
 import { Group, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
 import { raisedRoomFixture } from '../../../core/src/systems/slab/__fixtures__/raised-room'
 import { getRecessedSlabGroundHoles } from './recessed-slab-ground-holes'

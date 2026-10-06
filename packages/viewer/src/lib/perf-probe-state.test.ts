@@ -7,7 +7,7 @@ import {
   resetSceneHistoryPauseDepth,
   resumeSceneHistory,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import useViewer from '../store/use-viewer'
 import { readPerfHistory, readPerfSelection } from './perf-probe-state'
 

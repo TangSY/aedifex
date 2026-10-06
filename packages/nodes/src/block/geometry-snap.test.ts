@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type BlockTopology, createBoxBlockTopology } from '@pascal-app/core'
+import { type BlockTopology, createBoxBlockTopology } from '@aedifex/core'
 import { PerspectiveCamera, Vector3 } from 'three'
 import { blockGeometrySnapThreshold, resolveBlockGeometrySnap } from './geometry-snap'
 

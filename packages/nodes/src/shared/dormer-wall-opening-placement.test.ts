@@ -5,7 +5,7 @@ import {
   DormerNode,
   type WindowEvent,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Object3D } from 'three'
 import {
   dormerEventFromHostedWindow,

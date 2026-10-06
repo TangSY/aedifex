@@ -7,8 +7,8 @@ import {
   resolveCeilingHeight,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { getSceneTheme, setSurfaceRaycastLayers, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { getSceneTheme, setSurfaceRaycastLayers, useViewer } from '@aedifex/viewer'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Pentagon, Square } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'

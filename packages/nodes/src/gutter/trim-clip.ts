@@ -1,4 +1,4 @@
-import type { GutterNode, RoofSegmentNode } from '@pascal-app/core'
+import type { GutterNode, RoofSegmentNode } from '@aedifex/core'
 
 export function segmentForGutterTrimClip(
   gutter: Pick<GutterNode, 'arc'>,

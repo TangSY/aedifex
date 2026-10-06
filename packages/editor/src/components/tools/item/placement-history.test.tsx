@@ -20,8 +20,8 @@ import {
   useLiveTransforms,
   useScene,
   WallNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { act, create } from '@react-three/test-renderer'
 import { Children, Component, cloneElement, isValidElement, type ReactNode } from 'react'

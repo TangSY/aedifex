@@ -1,6 +1,6 @@
 'use client'
 
-import { type ArtifactStore, configureArtifactStore, getArtifactStore } from '@pascal-app/core'
+import { type ArtifactStore, configureArtifactStore, getArtifactStore } from '@aedifex/core'
 import { useEffect } from 'react'
 
 const artifactUrl = (sha256: string) => `/api/artifacts/${sha256}`

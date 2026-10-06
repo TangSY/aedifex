@@ -1,4 +1,4 @@
-import type { MeasurementFeature, MeasurementPoint } from '@pascal-app/core'
+import type { MeasurementFeature, MeasurementPoint } from '@aedifex/core'
 
 type PolygonPoint = readonly [number, number]
 

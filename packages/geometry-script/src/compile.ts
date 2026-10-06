@@ -4,9 +4,9 @@ import type {
   GeometryScriptMount,
   GeometryScriptParamSpec,
   GeometryScriptParamValue,
-} from '@pascal-app/core'
-import { type Ring, union } from '@pascal-app/core/polygon-boolean'
-import { GEOMETRY_MANIFEST_MAX_BYTES, GEOMETRY_SCRIPT_MAX_BYTES } from '@pascal-app/core/schema'
+} from '@aedifex/core'
+import { type Ring, union } from '@aedifex/core/polygon-boolean'
+import { GEOMETRY_MANIFEST_MAX_BYTES, GEOMETRY_SCRIPT_MAX_BYTES } from '@aedifex/core/schema'
 import * as THREE from 'three'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
 import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js'

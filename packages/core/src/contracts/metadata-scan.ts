@@ -128,7 +128,7 @@ export function discoverMetadataKeys(source: string, fileName = 'source.tsx'): s
   }
 
   const visit = (node: ts.Node) => {
-    if (isMetadataExpression(node)) {
+    if (isMetadataExpression(node, bindings)) {
       collectRead(node as ts.Expression)
       const parent = outermost(node as ts.Expression).parent
       if (
@@ -152,7 +152,7 @@ export function discoverMetadataKeys(source: string, fileName = 'source.tsx'): s
       ts.isVariableDeclaration(node) &&
       ts.isObjectBindingPattern(node.name) &&
       node.initializer &&
-      isMetadataExpression(unwrap(node.initializer))
+      isMetadataExpression(unwrap(node.initializer), bindings)
     )
       for (const element of node.name.elements) {
         if (element.dotDotDotToken) continue
@@ -242,25 +242,35 @@ function outermost(expression: ts.Expression): ts.Expression {
   return e
 }
 
-/** `metadata`, `x.metadata`, `x?.metadata`, or a one-argument call wrapping one. */
-function isMetadataExpression(node: ts.Node): boolean {
-  if (ts.isIdentifier(node))
-    return (
-      node.text === 'metadata' &&
-      !(ts.isPropertyAccessExpression(node.parent) && node.parent.name === node) &&
-      !ts.isPropertyAssignment(node.parent) &&
-      !ts.isVariableDeclaration(node.parent) &&
-      !ts.isParameter(node.parent) &&
-      !ts.isBindingElement(node.parent) &&
-      !ts.isShorthandPropertyAssignment(node.parent)
-    )
+/** `metadata`, `x.metadata`, a metadata-record helper, or an alias of one. */
+function isMetadataExpression(
+  node: ts.Node,
+  bindings: ReadonlyMap<string, ts.Expression>,
+  seen = new Set<string>(),
+): boolean {
+  if (ts.isIdentifier(node)) {
+    if (
+      (ts.isPropertyAccessExpression(node.parent) && node.parent.name === node) ||
+      ts.isPropertyAssignment(node.parent) ||
+      ts.isVariableDeclaration(node.parent) ||
+      ts.isParameter(node.parent) ||
+      ts.isBindingElement(node.parent) ||
+      ts.isShorthandPropertyAssignment(node.parent)
+    ) return false
+    if (node.text === 'metadata') return true
+    if (seen.has(node.text)) return false
+    const bound = bindings.get(node.text)
+    if (!bound) return false
+    seen.add(node.text)
+    return isMetadataExpression(unwrap(bound), bindings, seen)
+  }
   if (ts.isPropertyAccessExpression(node)) return node.name.text === 'metadata'
   if (ts.isCallExpression(node) && node.arguments.length === 1) {
     const argument = unwrap(node.arguments[0]!)
     return (
       /meta|record/i.test(node.expression.getText()) &&
       (ts.isIdentifier(argument) || ts.isPropertyAccessExpression(argument)) &&
-      isMetadataExpression(argument)
+      isMetadataExpression(argument, bindings, seen)
     )
   }
   return false

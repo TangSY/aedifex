@@ -15,14 +15,14 @@ import {
   SiteNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { evaluateRecipe, ProceduralItemNode, parseRecipe } from '@pascal-app/core/procedural-items'
+} from '@aedifex/core'
+import { evaluateRecipe, ProceduralItemNode, parseRecipe } from '@aedifex/core/procedural-items'
 import {
   buildDoorPreviewMesh,
   markViewerPresentationTextureBorrowed,
   type ViewerPresentationContribution,
   viewerPresentationRegistry,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import * as THREE from 'three'
 import type { GLTFWriter } from 'three/examples/jsm/exporters/GLTFExporter.js'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
@@ -325,7 +325,7 @@ describe('prepareSceneForExport', () => {
     const pool = meshWithNodeMaterial(nodeMaterial())
     pool.userData = { waterEffect: { material: effectMaterial, onFrame: () => {} } }
     const overlay = meshWithNodeMaterial(nodeMaterial())
-    overlay.userData = { pascalExport: 'strip', mesh: pool }
+    overlay.userData = { aedifexExport: 'strip', mesh: pool }
     root.add(pool, overlay)
     expect(() => structuredClone(pool.userData)).toThrow()
 
@@ -674,7 +674,7 @@ describe('prepareSceneForExport', () => {
     stamped.flipY = false
     stamped.colorSpace = THREE.SRGBColorSpace
     stamped.updateMatrix()
-    stamped.userData.pascalTextureRef = {
+    stamped.userData.aedifexTextureRef = {
       v: 1,
       kind: 'library-material',
       src: `${STORAGE_ORIGIN}/storage/v1/object/public/materials/user/material/oak_basecolor_512.ktx2`,
@@ -707,12 +707,12 @@ describe('prepareSceneForExport', () => {
     expect(placeholder.rotation).toBe(stamped.rotation)
     expect(placeholder.flipY).toBe(stamped.flipY)
     expect(placeholder.colorSpace).toBe(stamped.colorSpace)
-    expect(placeholder.userData.pascalTextureRef).toEqual(stamped.userData.pascalTextureRef)
+    expect(placeholder.userData.aedifexTextureRef).toEqual(stamped.userData.aedifexTextureRef)
     expect(material.normalMap).toBeInstanceOf(THREE.DataTexture)
     expect(Array.from((material.normalMap as THREE.DataTexture).image.data as Uint8Array)).toEqual([
       128, 128, 255, 255,
     ])
-    expect(material.normalMap?.userData.pascalTextureRef).toBeUndefined()
+    expect(material.normalMap?.userData.aedifexTextureRef).toBeUndefined()
     const sharedMaterial = (scene.children[1] as THREE.Mesh).material as THREE.MeshStandardMaterial
     expect(sharedMaterial.map).toBe(placeholder)
   })
@@ -727,16 +727,16 @@ describe('prepareSceneForExport', () => {
       map: 'normal',
       colorSpace: 'linear',
     }
-    texture.userData.pascalTextureRef = ref
+    texture.userData.aedifexTextureRef = ref
     const imageDef: { extras?: Record<string, unknown> } = {}
     const textureDef: { source: number; extras?: Record<string, unknown> } = { source: 0 }
     const writer = { json: { images: [imageDef] } } as unknown as GLTFWriter
 
     writeTextureReferenceExtras(writer, texture, textureDef)
 
-    expect(textureDef.extras?.pascalTextureRef).toEqual(ref)
-    expect(imageDef.extras?.pascalTextureRef).toEqual(ref)
-    expect(textureDef.extras?.pascalTextureRef).toEqual(imageDef.extras?.pascalTextureRef)
+    expect(textureDef.extras?.aedifexTextureRef).toEqual(ref)
+    expect(imageDef.extras?.aedifexTextureRef).toEqual(ref)
+    expect(textureDef.extras?.aedifexTextureRef).toEqual(imageDef.extras?.aedifexTextureRef)
   })
 
   test('strips editor overlays that live off the scene layer', () => {
@@ -759,7 +759,7 @@ describe('prepareSceneForExport', () => {
     const root = new THREE.Group()
     const siteGround = meshWithNodeMaterial(nodeMaterial())
     const horizonDisc = meshWithNodeMaterial(nodeMaterial())
-    horizonDisc.userData.pascalExport = 'strip'
+    horizonDisc.userData.aedifexExport = 'strip'
     root.add(siteGround, horizonDisc)
 
     const { scene } = prepareSceneForExport(root, {})
@@ -1182,7 +1182,7 @@ describe('prepareSceneForExport', () => {
       schemaVersion: 1,
       category: 'fixtures',
       defaults: () => ({}),
-      capabilities: {},
+      capabilities: { deletable: false },
       exportAnimation: ({ node, object }: { node: AnyNode; object: THREE.Object3D }) => {
         const target = object.children[0]!
         const clip = new THREE.AnimationClip(`${node.id}: open`, 1, [
@@ -1469,7 +1469,7 @@ describe('prepareSceneForExport', () => {
             schema: DoorNode,
             category: 'furnish',
             defaults: () => ({}) as never,
-            capabilities: {},
+            capabilities: { deletable: true },
             bake: 'replace',
             bakeGeometryAsync: async () => {
               throw new Error(`Pruned async-only builder ran for ${kind}`)
@@ -1481,7 +1481,7 @@ describe('prepareSceneForExport', () => {
         }
         await loadPlugin({
           id: disabledPluginId,
-          apiVersion: 1,
+          apiVersion: 2,
           nodes: [asyncOnlyDefinition(disabledKind)],
         })
         useScene.getState().setInstalledPlugins([], { explicit: true })
@@ -1846,7 +1846,7 @@ describe('prepareSceneForExport', () => {
       const presentation = selectedArtifact.scene.getObjectByProperty('name', contribution.id)
       expect(presentation?.userData).toMatchObject({
         label: 'Acceptance surroundings',
-        pascalPresentationId: contribution.id,
+        aedifexPresentationId: contribution.id,
       })
       const bounds = new THREE.Box3().setFromObject(presentation!)
       expect(bounds.getSize(new THREE.Vector3()).toArray()).toEqual([3, 1, 2])
@@ -2097,7 +2097,7 @@ describe('normal maps in async export preparation', () => {
     await withCanvasCapture(async () => {
       const root = new THREE.Group()
       const stamped = new THREE.CompressedTexture([], 4, 4)
-      stamped.userData.pascalTextureRef = {
+      stamped.userData.aedifexTextureRef = {
         v: 1,
         kind: 'library-material',
         src: `${STORAGE_ORIGIN}/storage/v1/object/public/materials/user/material/oak_normal_512.ktx2`,
@@ -2122,8 +2122,8 @@ describe('normal maps in async export preparation', () => {
 
       const exported = (prepared.scene.children[0] as THREE.Mesh)
         .material as THREE.MeshStandardMaterial
-      expect(exported.normalMap?.userData.pascalTextureRef).toEqual(
-        stamped.userData.pascalTextureRef,
+      expect(exported.normalMap?.userData.aedifexTextureRef).toEqual(
+        stamped.userData.aedifexTextureRef,
       )
       expect(exported.normalScale.toArray()).toEqual([1, -1])
     })
@@ -2254,7 +2254,7 @@ describe('plugin bake policies through export', () => {
       schema: Overlay,
       category: 'site',
       defaults: () => base,
-      capabilities: {},
+      capabilities: { deletable: true },
       bake: 'strip',
     }
     const meadow: NodeDefinition<typeof Meadow> = {
@@ -2263,7 +2263,7 @@ describe('plugin bake policies through export', () => {
       schema: Meadow,
       category: 'site',
       defaults: () => base,
-      capabilities: {},
+      capabilities: { deletable: true },
       bake: 'replace',
       bakeGeometry: () => {
         calls.push('bakeGeometry')
@@ -2282,9 +2282,9 @@ describe('plugin bake policies through export', () => {
       schema: Rock,
       category: 'site',
       defaults: () => base,
-      capabilities: {},
+      capabilities: { deletable: true },
     }
-    // API v1 boundary casts: typed definitions do not widen to AnyNodeDefinition
+    // Plugin boundary casts: typed definitions do not widen to AnyNodeDefinition
     // and plugin nodes are outside the AnyNode union.
     const asPluginNode = <S extends AnyNodeDefinition['schema']>(def: NodeDefinition<S>) =>
       def as unknown as AnyNodeDefinition
@@ -2292,7 +2292,7 @@ describe('plugin bake policies through export', () => {
     try {
       await loadPlugin({
         id: pluginId,
-        apiVersion: 1,
+        apiVersion: 2,
         nodes: [asPluginNode(overlay), asPluginNode(meadow), asPluginNode(rock)],
       })
       useScene.setState({ installedPlugins, hasExplicitPluginInstallState: true })

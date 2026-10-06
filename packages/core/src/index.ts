@@ -723,6 +723,10 @@ export {
   wallLayerBoundaryOffsets,
 } from './systems/wall/wall-assembly'
 export {
+  type ResolveWallBaseElevationArgs,
+  resolveWallBaseElevation,
+} from './systems/wall/wall-base'
+export {
   constrainWallCurveOffsetToAvoidIntersections,
   getClampedWallCurveOffset,
   getMaxWallCurveOffset,
@@ -824,7 +828,15 @@ export {
 } from './systems/wall/wall-topology'
 export type { SceneGraph } from './utils/clone-scene-graph'
 export { cloneLevelSubtree, cloneSceneGraph, forkSceneGraph } from './utils/clone-scene-graph'
+export { metadataRecord } from './utils/metadata-record'
 export { isObject } from './utils/types'
+
+/**
+ * Public mirror of Zod v4's internal JSON value type. Metadata consumers need
+ * this recursive shape without depending on Zod's private type declarations.
+ */
+export type JSONType = string | number | boolean | null | JSONType[] | { [key: string]: JSONType }
+
 export {
   checkOpeningWithinWall,
   formatOpeningBoundsIssue,

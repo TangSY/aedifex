@@ -9,8 +9,8 @@ import {
   type LevelNode,
   resolveLevelId,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
 import { create } from 'zustand'
 import { markToolCancelConsumed } from '../hooks/use-keyboard'

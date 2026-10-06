@@ -10,8 +10,8 @@ import {
   type NodeCategory,
   nodeRegistry,
   registerNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import PDFDocument from 'pdfkit'
 import { z } from 'zod'
 import { splitFloorplanOverlay } from '../../components/editor-2d/renderers/floorplan-registry-layer'
@@ -363,14 +363,14 @@ describe('floor plan export policy', () => {
       isFloorplanExportAnnotationGeometry({
         kind: 'group',
         children: [],
-        metadata: { 'pascal:editor/floorplan': { annotationRole: 'measurement' } },
+        metadata: { 'aedifex:editor/floorplan': { annotationRole: 'measurement' } },
       }),
     ).toBe(true)
     expect(
       isFloorplanExportAnnotationGeometry({
         kind: 'group',
         children: [],
-        metadata: { 'pascal:editor/floorplan': { annotationRole: 'manual-dimension' } },
+        metadata: { 'aedifex:editor/floorplan': { annotationRole: 'manual-dimension' } },
       }),
     ).toBe(true)
     expect(isFloorplanExportAnnotationGeometry({ kind: 'polygon', points: [] })).toBe(false)
@@ -459,7 +459,7 @@ describe('collectFloorplanSchedules', () => {
         defaults: () => ({}) as never,
         capabilities: {},
         extensions: {
-          'pascal:editor/floorplan': {
+          'aedifex:editor/floorplan': {
             schedule: () => scheduleFor('Doors'),
           },
         },
@@ -472,7 +472,7 @@ describe('collectFloorplanSchedules', () => {
         defaults: () => ({}) as never,
         capabilities: {},
         extensions: {
-          'pascal:editor/floorplan': {
+          'aedifex:editor/floorplan': {
             schedule: () => scheduleFor('Rooms'),
           },
         },
@@ -533,7 +533,7 @@ describe('collectFloorplanGeometry', () => {
         schema: z.object({ type: z.literal(kind) }) as never,
         category: 'utility',
         defaults: () => ({}) as never,
-        capabilities: {},
+        capabilities: { deletable: true },
         floorplanScope: 'site',
         floorplan,
       }) as AnyNodeDefinition
@@ -591,12 +591,12 @@ describe('collectFloorplanGeometry', () => {
       } as AnyNodeDefinition)
       await loadPlugin({
         id: enabledPluginId,
-        apiVersion: 1,
+        apiVersion: 2,
         nodes: [enabledDefinition],
       })
       await loadPlugin({
         id: disabledPluginId,
-        apiVersion: 1,
+        apiVersion: 2,
         nodes: [siteDefinition(disabledKind, () => ({ kind: 'circle', cx: 0, cy: 0, r: 1 }))],
       })
 
@@ -822,6 +822,11 @@ describe('resolveExportLevels', () => {
   const nodes: Record<string, AnyNode> = Object.fromEntries(
     [building, ground, upper, roof, attic].map((node) => [node.id, node]),
   )
+  const expectedLevels = [
+    { id: ground.id, label: 'Ground floor' },
+    { id: upper.id, label: 'Floor 1' },
+    { id: attic.id, label: 'Floor 3' },
+  ]
 
   // The viewer store is a process-wide singleton, so an earlier test file can
   // leak a selection into these tests; restore it instead of leaving ours.
@@ -840,20 +845,24 @@ describe('resolveExportLevels', () => {
   test('skips a dedicated roof support level', () => {
     selectLevel(ground.id)
 
-    expect(resolveExportLevels(nodes)).toEqual([
-      { id: ground.id, label: 'Ground floor' },
-      { id: upper.id, label: 'Floor 1' },
-      { id: attic.id, label: 'Floor 3' },
-    ])
+    expect(resolveExportLevels(nodes)).toEqual(expectedLevels)
   })
+
+  test.each([[null], ['legacy floor'], [7], [true], [['legacy']]])(
+    'exports ordinary levels with historical metadata %p without changing it',
+    (metadata) => {
+      const legacyLevel = LevelNode.parse({ ...ground, metadata })
+      const legacyNodes = { ...nodes, [ground.id]: legacyLevel }
+      selectLevel(ground.id)
+
+      expect(resolveExportLevels(legacyNodes)).toEqual(expectedLevels)
+      expect(legacyNodes[ground.id].metadata).toEqual(metadata)
+    },
+  )
 
   test('skips the roof level when it is the selected level', () => {
     selectLevel(roof.id)
 
-    expect(resolveExportLevels(nodes)).toEqual([
-      { id: ground.id, label: 'Ground floor' },
-      { id: upper.id, label: 'Floor 1' },
-      { id: attic.id, label: 'Floor 3' },
-    ])
+    expect(resolveExportLevels(nodes)).toEqual(expectedLevels)
   })
 })

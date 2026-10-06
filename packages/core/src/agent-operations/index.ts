@@ -22,6 +22,7 @@ export * from './list-levels'
 export * from './material-preset'
 export * from './plan-geometry'
 export * from './scene-queries'
+export * from './structure'
 export * from './types'
 export * from './verify-scene'
 

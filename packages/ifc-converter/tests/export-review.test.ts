@@ -10,7 +10,7 @@ import {
   SlabNode,
   WallNode,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as WebIFC from 'web-ifc'
 import { buildIfcExport, exportSceneToIfc, type IfcMeshPart } from '../src/export'
 import { box, node } from './export-scenes'

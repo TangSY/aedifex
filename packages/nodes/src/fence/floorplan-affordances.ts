@@ -12,7 +12,7 @@ import {
   useLiveNodeOverrides,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   alignFloorplanDraftPoint,
   getSegmentGridStep,
@@ -24,7 +24,7 @@ import {
   snapBuildingLocalToWorldGrid,
   snapScalarToGrid,
   useAlignmentGuides,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { type FencePlanPoint, snapFenceDraftPoint } from './drafting'
 
 /**

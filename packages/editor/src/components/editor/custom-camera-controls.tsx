@@ -8,8 +8,8 @@ import {
   emitter,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { GRID_LAYER, getLevelPresentationY, useViewer, ZONE_LAYER } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { GRID_LAYER, getLevelPresentationY, useViewer, ZONE_LAYER } from '@aedifex/viewer'
 import { CameraControls, CameraControlsImpl } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
@@ -484,17 +484,17 @@ export const CustomCameraControls = ({ paused = false }: { paused?: boolean }) =
     // camera changes, so a captured instance goes stale.
     if (process.env.NODE_ENV !== 'development') return
     const w = window as typeof window & {
-      __pascalCameraControls?: (() => CameraControlsImpl | null) | null
-      __pascalScene?: (() => unknown) | null
-      __pascalCapture?: (() => Promise<string>) | null
+      __aedifexCameraControls?: (() => CameraControlsImpl | null) | null
+      __aedifexScene?: (() => unknown) | null
+      __aedifexCapture?: (() => Promise<string>) | null
     }
-    w.__pascalCameraControls = () => controls.current
+    w.__aedifexCameraControls = () => controls.current
     // the live three.js scene, for the same tooling (a probe can walk the
     // meshes for an empty geometry the WebGPU validator complains about)
-    w.__pascalScene = () => scene
+    w.__aedifexScene = () => scene
     // a fresh frame read back as a PNG data URL: the canvas is cleared after
     // each presented frame, so a capture has to render and read in one task
-    w.__pascalCapture = async () => {
+    w.__aedifexCapture = async () => {
       const r = gl as unknown as {
         renderAsync?: (s: unknown, c: unknown) => Promise<void>
         render: (s: unknown, c: unknown) => void
@@ -505,9 +505,9 @@ export const CustomCameraControls = ({ paused = false }: { paused?: boolean }) =
       return r.domElement.toDataURL('image/png')
     }
     return () => {
-      w.__pascalCameraControls = null
-      w.__pascalScene = null
-      w.__pascalCapture = null
+      w.__aedifexCameraControls = null
+      w.__aedifexScene = null
+      w.__aedifexCapture = null
     }
   }, [scene, gl, camera])
 

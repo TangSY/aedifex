@@ -6,7 +6,7 @@ import {
   MIN_SLAB_THICKNESS,
   type SlabNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   ActionButton,
   ActionGroup,
@@ -22,8 +22,8 @@ import {
   useEditingHole,
   useEditor,
   useInteractionScope,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Edit, Move, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
 import {

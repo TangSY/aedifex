@@ -3,7 +3,8 @@ import { roomFloorChoices } from '../lib/room-floor-choices'
 import type { AnyNode, AnyNodeId, ItemNode, LevelNode, WallNode, ZoneNode } from '../schema'
 import { DEFAULT_LEVEL_HEIGHT } from '../services/level-height'
 import { getWallPlaneTop } from '../services/storey'
-import { computeWallSlabSupport } from '../systems/slab/slab-support'
+import { resolveWallBaseElevation } from '../systems/wall/wall-base'
+import { levelBaseElevationAt } from '../lib/terrain-support-query'
 import { resolveWallEffectiveHeight } from '../systems/wall/wall-top'
 import { type LevelTargetInput, targetLevel } from './level-target'
 import { contentCounts, levelIdOf, levelRole, nodesOnLevel } from './scene-queries'
@@ -23,17 +24,15 @@ export function wallResolvedHeight(nodes: SceneNodes, wall: WallNode): number {
   const levelId = levelIdOf(nodes, wall.id)
   if (!levelId) return resolveWallEffectiveHeight(wall, DEFAULT_LEVEL_HEIGHT, 0)
   const onLevel = nodesOnLevel(nodes, levelId)
-  const support = computeWallSlabSupport(
+  const wallBase = resolveWallBaseElevation({
     wall,
-    ofType(onLevel, 'slab'),
-    ofType(onLevel, 'wall'),
-    wall.supportSlabId,
-    undefined,
-    0,
-    nodes as Record<AnyNodeId, AnyNode>,
-  )
+    slabs: ofType(onLevel, 'slab'),
+    walls: ofType(onLevel, 'wall'),
+    levelBase: levelBaseElevationAt(nodes, levelId, wall.start[0], wall.start[1]),
+    nodes,
+  })
   const planeTop = getWallPlaneTop(wall, levelId, nodes as Record<AnyNodeId, AnyNode>)
-  return resolveWallEffectiveHeight(wall, planeTop, support.elevation)
+  return resolveWallEffectiveHeight(wall, planeTop, wallBase)
 }
 
 export function wallSummary(nodes: SceneNodes, wall: WallNode) {

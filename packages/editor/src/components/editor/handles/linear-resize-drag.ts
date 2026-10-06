@@ -8,7 +8,7 @@ import {
   type SceneApi,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { replacePreviewOverrideIds } from './preview-overrides'
 
 export function linearResizeFactor<N>(

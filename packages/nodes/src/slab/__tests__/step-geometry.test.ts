@@ -23,8 +23,8 @@ import {
   WallNode,
   WindowNode,
   ZoneNode,
-} from '@pascal-app/core'
-import { generateSlabGeometry } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { generateSlabGeometry } from '@aedifex/viewer'
 import { FrontSide, Group, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
 import { floorStepFixture as rawFloorStepFixture } from '../../../../core/src/systems/slab/__fixtures__/floor-step'
 import { reconcileStructureOnLoad } from '../../../../core/src/utils/reconcile-structure-on-load'
@@ -809,7 +809,7 @@ test('downturn has a closed bottom and back while the original soffit is removed
 
 test('curved interior doorway shares its arc aperture with the plate and has one lower-face riser', async () => {
   const { getWallCurveLength, getWallCurveFrameAt, getOpeningWallCut } = await import(
-    '@pascal-app/core'
+    '@aedifex/core'
   )
   const source = floorStepFixture()
   const wall = { ...source.divider, curveOffset: 0.5, children: [source.door.id] }
@@ -857,7 +857,7 @@ test('a wall-anchored window exposes only its rectangular overlap with a raised 
 
 test('a T-junction trims the shared aperture and retains one wall face at the return', async () => {
   const { getOpeningWallCut, getWallPlanFootprint, intersection, area } = await import(
-    '@pascal-app/core'
+    '@aedifex/core'
   )
   const source = floorStepFixture()
   const stub = WallNode.parse({

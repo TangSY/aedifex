@@ -6,8 +6,8 @@ import {
   getFenceCenterlineFrameAt,
   getFenceCenterlineLength,
   getFenceGateLeaves,
-} from '@pascal-app/core'
-import type { ColorPreset, RenderShading } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import type { ColorPreset, RenderShading } from '@aedifex/viewer'
 import { BoxGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial } from 'three'
 import { buildFenceGeometry } from '../fence/geometry'
 import { getFenceFeatureDimensions } from '../fence/geometry-parts'

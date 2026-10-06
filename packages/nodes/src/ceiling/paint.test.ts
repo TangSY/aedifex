@@ -6,8 +6,8 @@ import {
   LevelNode,
   useScene,
   ZoneNode,
-} from '@pascal-app/core'
-import { CEILING_REGION_MESH } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { CEILING_REGION_MESH } from '@aedifex/viewer'
 import { Mesh, MeshBasicMaterial, Object3D } from 'three'
 import { ceilingPaint } from './paint'
 

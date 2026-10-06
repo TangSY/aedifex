@@ -4,8 +4,8 @@ import type { SceneOperations } from '../operations'
 import { SCENE_DESIGN_GUIDANCE } from './scene-guidance'
 
 const PREAMBLE = [
-  'You are iterating on an existing Pascal scene based on user feedback.',
-  'Given the current state (read via the `pascal://scene/current` resource) and the user feedback below, propose the MINIMUM set of `apply_patch` operations that satisfies the feedback.',
+  'You are iterating on an existing Aedifex scene based on user feedback.',
+  'Given the current state (read via the `aedifex://scene/current` resource) and the user feedback below, propose the MINIMUM set of `apply_patch` operations that satisfies the feedback.',
   'Rules:',
   '  - Prefer updates over create+delete pairs when a field change will do.',
   '  - Do not re-create nodes that already exist.',

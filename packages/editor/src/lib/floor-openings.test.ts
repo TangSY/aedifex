@@ -10,8 +10,8 @@ import {
   LevelNode,
   structureChangeBatch,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import useEditor from '../store/use-editor'
 import { installImmediateAnimationFrames } from '../test-utils/immediate-animation-frames'
 import {

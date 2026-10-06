@@ -6,8 +6,8 @@ import {
   StairNode,
   StairSegmentNode,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import useInteractionScope, { getMovingNode } from '../store/use-interaction-scope'
 import { duplicateStairSubtree } from './stair-duplication'
 

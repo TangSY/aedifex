@@ -10,8 +10,8 @@ import {
   type StructurePlan,
   structureChangeBatch,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { create } from 'zustand'
 import { getRoomSelectionIndex } from '../hooks/use-selected-room'
 import useEditor from '../store/use-editor'

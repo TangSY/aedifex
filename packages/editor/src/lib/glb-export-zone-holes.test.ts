@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { sceneRegistry, ZoneNode } from '@pascal-app/core'
+import { sceneRegistry, ZoneNode } from '@aedifex/core'
 import { Group } from 'three'
 import { prepareSceneForExport } from './glb-export'
 

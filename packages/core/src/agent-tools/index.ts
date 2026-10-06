@@ -11,6 +11,7 @@ import {
   verifySceneTool,
 } from './levels'
 import { deleteNodeTool, getNodeTool } from './nodes'
+import { STRUCTURE_TOOL_CONTRACTS } from './structure'
 import { addDoorTool, addWindowTool } from './wall-openings'
 
 export * from './add-object'
@@ -22,6 +23,7 @@ export * from './measurement'
 export { NodeId } from './node-id'
 export * from './nodes'
 export * from './refusal'
+export * from './structure'
 export * from './wall-openings'
 
 /**
@@ -46,4 +48,5 @@ export const AGENT_TOOL_CONTRACTS = [
   findByTypeTool,
   editCollectionTool,
   listCollectionsTool,
+  ...STRUCTURE_TOOL_CONTRACTS,
 ] as const

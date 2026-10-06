@@ -3,7 +3,7 @@ import {
   AGENT_OPERATIONS,
   type AgentOperation,
   type SceneChanges,
-} from '@pascal-app/core/agent-operations'
+} from '@aedifex/core/agent-operations'
 import {
   deleteNodeTool,
   duplicateLevelTool,
@@ -14,8 +14,8 @@ import {
   getZonesTool,
   listLevelsTool,
   verifySceneTool,
-} from '@pascal-app/core/agent-tools'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core/schema'
+} from '@aedifex/core/agent-tools'
+import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { Patch } from '../bridge/scene-bridge'
 import type { SceneOperations } from '../operations'

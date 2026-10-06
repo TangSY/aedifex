@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from 'bun:test'
-import { type AnyNode, type AnyNodeId, useScene, WallNode } from '@pascal-app/core'
-import { getNodePanelModel } from '@pascal-app/editor'
+import { type AnyNode, type AnyNodeId, useScene, WallNode } from '@aedifex/core'
+import { getNodePanelModel } from '@aedifex/editor'
 import { wallDefinition } from './definition'
 
 globalThis.requestAnimationFrame ??= () => 0

@@ -5,9 +5,9 @@ import type {
   NodeDefinition,
   RoofSegmentNode,
   WallNode,
-} from '@pascal-app/core'
-import { doorSlots } from '@pascal-app/core'
-import type { FloorplanNodeExtension } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { doorSlots } from '@aedifex/core'
+import type { FloorplanNodeExtension } from '@aedifex/editor'
 import { curtainOpeningResizeMax } from '../shared/curtain-opening-limits'
 import { doorBatchable } from '../shared/node-batch/batchable'
 import {
@@ -218,7 +218,7 @@ export const doorDefinition: NodeDefinition<typeof DoorNode> = {
   schema: DoorNode,
   category: 'structure',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       contextualDimensions: buildDoorContextualDimensions,
       schedule: buildDoorFloorplanSchedule,
     } satisfies FloorplanNodeExtension<DoorNodeType>,

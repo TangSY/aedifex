@@ -8,7 +8,7 @@ import {
   LevelNode,
   useScene,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import useEditor from '../store/use-editor'
 import {
   describeCeilingRegionRoom,

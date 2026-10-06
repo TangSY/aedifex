@@ -1,5 +1,5 @@
-import type { FenceNode } from '@pascal-app/core'
-import type { NodePanelModel } from '@pascal-app/editor'
+import type { FenceNode } from '@aedifex/core'
+import type { NodePanelModel } from '@aedifex/editor'
 import { beginFenceFeaturePlacement } from './features'
 
 export const fencePanelModel: NodePanelModel<FenceNode> = {

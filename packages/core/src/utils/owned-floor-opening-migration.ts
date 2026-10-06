@@ -1,3 +1,4 @@
+import { metadataRecord } from './metadata-record'
 import { canonicalOpeningRing } from '../lib/canonical-opening-ring'
 import { area, type Ring } from '../lib/polygon-boolean'
 import type { AnyNode, CeilingNode, SlabNode, StairNode } from '../schema'
@@ -140,7 +141,7 @@ function collapseOwnedOpenings(sourceNodes: Record<string, unknown>) {
     openings.sort(
       (a, b) =>
         Number(!!b.surfaceId) - Number(!!a.surfaceId) ||
-        Number(!!b.metadata?.ownerPose) - Number(!!a.metadata?.ownerPose) ||
+        Number(!!metadataRecord(b.metadata).ownerPose) - Number(!!metadataRecord(a.metadata).ownerPose) ||
         a.id.localeCompare(b.id),
     )
     const keeper = openings[0]!

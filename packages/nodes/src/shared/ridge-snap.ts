@@ -2,7 +2,7 @@ import {
   getRidgeVentLinesForSegment,
   getRoofSegmentVisibleTopBounds,
   type RoofSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Shared ridge-line snap math for ridge-vent placement + move tools.

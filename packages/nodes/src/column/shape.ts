@@ -1,4 +1,4 @@
-import type { ColumnNode } from '@pascal-app/core'
+import type { ColumnNode } from '@aedifex/core'
 export function getSegments(node: ColumnNode) {
   if (node.crossSection === 'octagonal') return 8
   if (node.crossSection === 'sixteen-sided') return 16

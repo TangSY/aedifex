@@ -8,7 +8,8 @@ import {
   Editor,
   type SceneGraph,
   type SidebarTab,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
+import { AedifexWebXRButton } from '@aedifex/plugin-webxr/aedifex-editor'
 import { Hammer, Layers, Settings } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -20,6 +21,11 @@ import { type PersistedSceneGraph, sceneGraphSignature } from '@/lib/scene-signa
 import { cn } from '@/lib/utils'
 import { BuildTab } from './build-tab'
 import { CommunityViewerToolbarLeft, CommunityViewerToolbarRight } from './viewer-toolbar'
+import {
+  useWebXRInstalled,
+  WebXRFeatureConsumer,
+  WebXRFeatureRuntime,
+} from './webxr-feature-gate'
 
 export interface SceneMeta {
   id: string
@@ -111,6 +117,7 @@ function isLightPreviewQuery(searchParams: URLSearchParams): boolean {
 
 export function SceneLoader({ initialScene, meta }: SceneLoaderProps) {
   useLocalArtifactStore()
+  const webXRInstalled = useWebXRInstalled()
   const router = useRouter()
   const searchParams = useSearchParams()
   const versionRef = useRef(meta.version)
@@ -295,17 +302,36 @@ export function SceneLoader({ initialScene, meta }: SceneLoaderProps) {
           All scenes
         </Link>
       </div>
-      <Editor
-        disablePostFx={lightPreview}
-        layoutVersion="v2"
-        onLoad={handleLoad}
-        onSave={handleSave}
-        onThumbnailCapture={handleThumb}
-        projectId={meta.projectId ?? 'default'}
-        sidebarTabs={SIDEBAR_TABS}
-        viewerToolbarLeft={<CommunityViewerToolbarLeft />}
-        viewerToolbarRight={<CommunityViewerToolbarRight />}
-      />
+      <WebXRFeatureRuntime enabled={webXRInstalled}>
+        <WebXRFeatureConsumer>
+          {(vr) => (
+            <Editor
+              disablePostFx={lightPreview}
+              immersive={vr?.session ? vr.immersive : undefined}
+              layoutVersion="v2"
+              onLoad={handleLoad}
+              onSave={handleSave}
+              onThumbnailCapture={handleThumb}
+              projectId={meta.projectId ?? 'default'}
+              sidebarTabs={SIDEBAR_TABS}
+              viewerToolbarLeft={<CommunityViewerToolbarLeft />}
+              viewerToolbarRight={
+                <CommunityViewerToolbarRight
+                  vrButton={
+                    vr ? (
+                      <AedifexWebXRButton
+                        className="flex h-8 w-8 items-center justify-center text-muted-foreground hover:bg-accent disabled:opacity-50"
+                        feature={vr}
+                      />
+                    ) : null
+                  }
+                  vrLabel="Enter VR"
+                />
+              }
+            />
+          )}
+        </WebXRFeatureConsumer>
+      </WebXRFeatureRuntime>
     </div>
   )
 }

@@ -6,7 +6,7 @@ import {
   SlabNode,
   StairNode,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Raycaster, Vector3 } from 'three'
 import { migrateOwnedFloorOpenings } from '../../../../core/src/utils/owned-floor-opening-migration'
 import { buildSlabGeometry } from '../geometry'

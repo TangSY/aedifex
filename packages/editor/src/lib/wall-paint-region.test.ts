@@ -8,7 +8,7 @@ import {
   WALL_FACE_REGION_LIMIT,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { BoxGeometry, BufferGeometry } from 'three'
 import useEditor from '../store/use-editor'
 import useInteractionScope from '../store/use-interaction-scope'

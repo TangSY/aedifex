@@ -5,7 +5,7 @@ import {
   type ItemNode,
   mountsFlush,
   sceneRegistry,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { type BufferGeometry, type Mesh, Quaternion, Triangle, Vector3 } from 'three'
 
 /** Faces pointing at least this far down take ceiling items (a vault plane at up to ~70°). */

@@ -9,7 +9,7 @@ import {
   getMaterialPresetByRef,
   liftedManualSlab,
   plateLevelContext,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   applyMaterialPresetToMaterials,
   type ColorPreset,
@@ -19,7 +19,7 @@ import {
   type RenderShading,
   resolveMaterialRef,
   resolveSlotDefaultMaterial,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { FrontSide, Group, type Material, Mesh, type Texture } from 'three'
 import {
   type FenceCornerNeighbors,

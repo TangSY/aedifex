@@ -1,4 +1,4 @@
-import { type BlockTopology, blockUndirectedEdgeKey } from '@pascal-app/core'
+import { type BlockTopology, blockUndirectedEdgeKey } from '@aedifex/core'
 import type { IfcAPI } from 'web-ifc'
 
 type Point = [number, number, number]

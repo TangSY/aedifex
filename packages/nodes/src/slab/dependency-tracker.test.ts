@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { SlabNode } from '@pascal-app/core'
+import { SlabNode } from '@aedifex/core'
 import { createSlabDependencyTracker } from './dependency-tracker'
 
 describe('createSlabDependencyTracker', () => {
@@ -30,7 +30,7 @@ for (const [field, value] of [
   ['floorStepOverrides', [{ key: 'door_1', finish: 'library:preset-white' }]],
 ] as const)
   test(`${field} changes invalidate the room plate without changing floor intent`, async () => {
-    const { LevelNode, ZoneNode } = await import('@pascal-app/core')
+    const { LevelNode, ZoneNode } = await import('@aedifex/core')
     const zone = ZoneNode.parse({
       id: 'zone_paint',
       name: 'Room',

@@ -6,7 +6,7 @@ import {
   type WallNode,
   type WallPlanPoint,
   wallRectangleCorners,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CursorSphere,
   clearPlacementSurface,
@@ -27,8 +27,8 @@ import {
   useLinearDisplay,
   useRegistryToolContext,
   useWallSnapIndicator,
-} from '@pascal-app/editor'
-import { getSceneTheme, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { getSceneTheme, useViewer } from '@aedifex/viewer'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useState } from 'react'
 import { DoubleSide } from 'three'

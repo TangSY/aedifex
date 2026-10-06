@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { FloorOpeningNode, type FloorplanGeometry, type GeometryContext } from '@pascal-app/core'
+import { FloorOpeningNode, type FloorplanGeometry, type GeometryContext } from '@aedifex/core'
 import { buildFloorOpeningFloorplan } from './floorplan'
 
 const opening = FloorOpeningNode.parse({

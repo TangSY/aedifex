@@ -6,8 +6,8 @@ import {
   projectPointToFence,
   type SceneApi,
   sampleFenceCenterline,
-} from '@pascal-app/core'
-import { createSceneSupportHeightSampler } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { createSceneSupportHeightSampler } from '@aedifex/viewer'
 
 export function pickFenceTarget(
   point: readonly [number, number],

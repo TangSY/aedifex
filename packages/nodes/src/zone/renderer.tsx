@@ -6,14 +6,14 @@ import {
   useRegistry,
   useScene,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   createZoneShape,
   createZoneWallGeometry,
   useNodeEvents,
   useViewer,
   ZONE_LAYER,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useEffect, useMemo, useRef } from 'react'
 import { Color, DoubleSide, type Group } from 'three'

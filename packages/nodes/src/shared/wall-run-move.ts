@@ -1,4 +1,4 @@
-import type { AnyNode, GridEvent } from '@pascal-app/core'
+import type { AnyNode, GridEvent } from '@aedifex/core'
 import type { RunWallAttachment } from './distribution-run-contract'
 
 type Point = [number, number, number]

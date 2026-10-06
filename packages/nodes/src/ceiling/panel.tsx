@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNode, type CeilingNode, resolveCeilingHeight, useScene } from '@pascal-app/core'
+import { type AnyNode, type CeilingNode, resolveCeilingHeight, useScene } from '@aedifex/core'
 import {
   ActionButton,
   ActionGroup,
@@ -20,8 +20,8 @@ import {
   useEditingHole,
   useEditor,
   useInteractionScope,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Edit, Move, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
 import { CEILING_PANEL_MIN_HEIGHT, ceilingHeightRange, clampCeilingHeight } from './height-bounds'

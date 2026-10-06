@@ -1,5 +1,5 @@
-import { type AnyNodeId, type ImportedMeshNode, useScene } from '@pascal-app/core'
-import { registerMaterialCacheCleanup } from '@pascal-app/viewer'
+import { type AnyNodeId, type ImportedMeshNode, useScene } from '@aedifex/core'
+import { registerMaterialCacheCleanup } from '@aedifex/viewer'
 import {
   BufferGeometry,
   Float32BufferAttribute,
@@ -37,7 +37,7 @@ function importedMaterial(color: string, opacity: number): MeshStandardMaterial 
       roughness: 0.8,
       side: FrontSide,
     })
-    material.userData.__pascalCachedMaterial = true
+    material.userData.__aedifexCachedMaterial = true
     importedMaterials.set(key, material)
   }
   return material

@@ -6,7 +6,7 @@ import {
   type RoofSegmentNode,
   type RoofType,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { DoubleSide, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
 import { buildDormerRoofCut, generateDormerGeometry } from '../csg-geometry'
 import { buildDormerGhostGeometry } from '../geometry'

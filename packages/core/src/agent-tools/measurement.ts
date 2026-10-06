@@ -1,4 +1,4 @@
-import { type Kind, parseQuantity } from '@pascal-app/lingo'
+import { type Kind, parseQuantity } from '@aedifex/lingo'
 import { z } from 'zod'
 
 /**
@@ -6,7 +6,7 @@ import { z } from 'zod'
  * number OR as natural language. `measurement('length', 'm')` accepts `0.15`,
  * `"6 in"`, `"180cm"`, `"2 ft 3 in"`; `measurement('angle', 'deg')` accepts
  * `45`, `"45°"`, `"1.57rad"`, `"0.25 turn"`. The value is canonicalized (via
- * `@pascal-app/lingo`) to a number in `unit` — the exact unit the tool handler
+ * `@aedifex/lingo`) to a number in `unit` — the exact unit the tool handler
  * already expects — so no handler change is needed. `min`/`max` (in `unit`)
  * reject out-of-range values with a model-readable message.
  *
@@ -22,7 +22,7 @@ import { z } from 'zod'
  * (MCP tools) and `packages/ai/src/tools/scene/measurement.ts` (AI-chat tools).
  * The two tool stacks live in different packages — one inside the `editor`
  * submodule — so they can't share a module. Keep the two copies identical; the
- * clean long-term dedup is a zod-field adapter exported from `@pascal-app/lingo`.
+ * clean long-term dedup is a zod-field adapter exported from `@aedifex/lingo`.
  */
 
 export interface MeasurementOptions {

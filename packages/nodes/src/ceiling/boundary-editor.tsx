@@ -6,7 +6,7 @@ import {
   resolveLevelId,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   boundaryReshapeScope,
   clearCeilingSnapFeedback,
@@ -15,8 +15,8 @@ import {
   resolveCeilingPlanPointSnap,
   triggerSFX,
   useInteractionScope,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 /**

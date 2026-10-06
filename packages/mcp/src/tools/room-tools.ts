@@ -1,5 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { createZone, generateId } from '@pascal-app/core'
+import { createZone, generateId } from '@aedifex/core'
 import {
   collectDoorKeepouts,
   collectOccupiedFootprints,
@@ -13,9 +12,9 @@ import {
   polygonBounds,
   rescriptOpening,
   type Vec2,
-} from '@pascal-app/core/agent-operations'
-import { addDoorTool, addWindowTool, isAgentRefusal } from '@pascal-app/core/agent-tools'
-import { planWallOpening } from '@pascal-app/core/building'
+} from '@aedifex/core/agent-operations'
+import { addDoorTool, addWindowTool, isAgentRefusal } from '@aedifex/core/agent-tools'
+import { planWallOpening } from '@aedifex/core/building'
 import type {
   AnyNode,
   AnyNodeId,
@@ -23,11 +22,17 @@ import type {
   CompiledGeometryScript,
   GeometryScriptParamValue,
   WallNode as WallNodeType,
-} from '@pascal-app/core/schema'
-import { ItemNode } from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
+import { ItemNode } from '@aedifex/core/schema'
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
-import { compileAndStore, type GeometryScriptHost, readScript } from './add-object'
+import {
+  assertGeometrySceneCurrent,
+  compileAndStore,
+  type GeometryScriptHost,
+  readScript,
+} from './add-object'
 import { ADDITIVE_TOOL_ANNOTATIONS, READ_ONLY_TOOL_ANNOTATIONS } from './annotations'
 import { findCatalogItem, searchCatalogItems } from './asset-catalog'
 import { ErrorCode, refusalResult, throwMcpError, toolError } from './errors'
@@ -557,25 +562,32 @@ async function rebuildOpening(
   },
 ) {
   if (!host)
-    return toolError('This Pascal server cannot run geometry scripts.', {
+    return toolError('This Aedifex server cannot run geometry scripts.', {
       code: 'scripts_unavailable',
     })
   const scene = bridge.getActiveScene()
   if (!scene) return toolError('Open or save a scene first.', { code: 'no_active_scene' })
   const nodes = bridge.getNodes() as Record<string, AnyNode>
   let outcome: ReturnType<typeof rescriptOpening>
+  let compiled: CompiledGeometryScript
   try {
     const code = input.code ?? (await readScript(host, scene.id, bridge, input.nodeId))
     const params = editedScriptParams(nodes[input.nodeId], input.params)
-    const compiled = await compileAndStore(host, scene.id, code, params, kind)
-    outcome = rescriptOpening(nodes, { nodeId: input.nodeId, compiled }, { activeLevelId: null })
+    compiled = await compileAndStore(host, scene.id, code, params, kind)
+    assertGeometrySceneCurrent({ bridge, sceneId: scene.id })
+    outcome = rescriptOpening(
+      bridge.getNodes(),
+      { nodeId: input.nodeId, compiled },
+      { activeLevelId: null },
+    )
   } catch (error) {
     if (isAgentRefusal(error)) return refusalResult(error)
     return toolError(error instanceof Error ? error.message : String(error), {
       code: 'script_failed',
     })
   }
-  if (outcome.changes) bridge.applyPatch(toPatches(outcome.changes))
+  if (outcome.changes)
+    bridge.applyCompiledGeometryPatch({ patches: toPatches(outcome.changes), compiled })
   const node = bridge.getNodes()[input.nodeId as AnyNodeId] as AnyNode & {
     position: [number, number, number]
     height: number
@@ -610,7 +622,7 @@ async function compileOpeningScript(
   if (!input.code) return {}
   if (!host)
     return {
-      error: toolError('This Pascal server cannot run geometry scripts; use the fields.', {
+      error: toolError('This Aedifex server cannot run geometry scripts; use the fields.', {
         code: 'scripts_unavailable',
       }),
     }
@@ -618,7 +630,9 @@ async function compileOpeningScript(
   if (!scene)
     return { error: toolError('Open or save a scene first.', { code: 'no_active_scene' }) }
   try {
-    return { script: await compileAndStore(host, scene.id, input.code, input.params, kind) }
+    const script = await compileAndStore(host, scene.id, input.code, input.params, kind)
+    assertGeometrySceneCurrent({ bridge, sceneId: scene.id })
+    return { script }
   } catch (error) {
     if (isAgentRefusal(error)) return { error: refusalResult(error) }
     return {

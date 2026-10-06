@@ -8,8 +8,8 @@ import {
   type LevelNode,
   useScene,
   type ZoneNode,
-} from '@pascal-app/core'
-import { markPerfAction, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { markPerfAction, useViewer } from '@aedifex/viewer'
 import { ArrowLeft, ChevronRight, Layers } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'

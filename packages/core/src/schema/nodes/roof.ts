@@ -12,6 +12,20 @@ export type RoofSurfaceMaterialSpec = {
   materialPreset?: string
 }
 
+export type RoofSlotId = 'shingle' | 'gable' | 'fascia' | 'soffit'
+
+export const ROOF_SHINGLE_SLOT_DEFAULT = 'library:roof-terracottatiles'
+export const ROOF_GABLE_SLOT_DEFAULT = 'library:preset-softwhite'
+export const ROOF_FASCIA_SLOT_DEFAULT = 'library:concrete-drywall'
+export const ROOF_SOFFIT_SLOT_DEFAULT = 'library:preset-softwhite'
+
+export const ROOF_SLOT_DEFAULTS: Record<RoofSlotId, string> = {
+  shingle: ROOF_SHINGLE_SLOT_DEFAULT,
+  gable: ROOF_GABLE_SLOT_DEFAULT,
+  fascia: ROOF_FASCIA_SLOT_DEFAULT,
+  soffit: ROOF_SOFFIT_SLOT_DEFAULT,
+}
+
 export const RoofSupport = z
   .discriminatedUnion('kind', [
     z.object({ kind: z.literal('level') }),

@@ -4,7 +4,7 @@ import {
   nodeRegistry,
   type ParametricDescriptor,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export function commitParametricNodeFields(
   nodeId: AnyNodeId,

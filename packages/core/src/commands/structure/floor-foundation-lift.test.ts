@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import { GROUND_SUPPORT_ID } from '../../hooks/spatial-grid/support-host-id'
+import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import { floorConstructionLift, liftedManualSlab } from '../../lib/floor-construction-lift'
 import { automaticFloorHeight } from '../../lib/floor-foundation-datum'
 import { expandFloorIntentChanges, floorIntentConflicts } from '../../lib/floor-intent-changes'

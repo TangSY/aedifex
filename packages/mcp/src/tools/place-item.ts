@@ -4,10 +4,10 @@ import {
   geometrySurfaceAt,
   geometryUndersideAt,
   mountsFlush,
-} from '@pascal-app/core'
-import { projectWorldPointToWallLocalX, wallLength } from '@pascal-app/core/agent-operations'
-import type { AnyNodeId } from '@pascal-app/core/schema'
-import { ItemNode } from '@pascal-app/core/schema'
+} from '@aedifex/core'
+import { projectWorldPointToWallLocalX, wallLength } from '@aedifex/core/agent-operations'
+import type { AnyNodeId } from '@aedifex/core/schema'
+import { ItemNode } from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { ADDITIVE_TOOL_ANNOTATIONS } from './annotations'

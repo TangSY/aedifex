@@ -6,15 +6,15 @@ import {
   getLevelElevations,
   LevelNode,
   SlabNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { SceneBridge } from '../bridge/scene-bridge'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 
 test('set_floor_foundation sets one footprint in one call and one undo; raw updates preserve intent', async () => {
   const bridge = new SceneBridge()
   bridge.setScene({}, [])
   bridge.loadDefault()
-  const server = createPascalMcpServer({ bridge })
+  const server = createAedifexMcpServer({ bridge })
   const [st, ct] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: 'foundation-contract', version: '1' })
   await Promise.all([server.connect(st), client.connect(ct)])
@@ -155,7 +155,7 @@ test('set_floor_foundation sets one footprint in one call and one undo; raw upda
 test('set_floor_foundation and raw thickness edits lift a supported upper plate without a foundation', async () => {
   const bridge = new SceneBridge()
   bridge.loadDefault()
-  const server = createPascalMcpServer({ bridge })
+  const server = createAedifexMcpServer({ bridge })
   const [st, ct] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: 'upper-floor-contract', version: '1' })
   await Promise.all([server.connect(st), client.connect(ct)])
@@ -222,7 +222,7 @@ test('room-owned floor construction and reference rebase are single MCP undo ste
   const bridge = new SceneBridge()
   bridge.setScene({}, [])
   bridge.loadDefault()
-  const server = createPascalMcpServer({ bridge })
+  const server = createAedifexMcpServer({ bridge })
   const [st, ct] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: 'room-floor-contract', version: '1' })
   await Promise.all([server.connect(st), client.connect(ct)])

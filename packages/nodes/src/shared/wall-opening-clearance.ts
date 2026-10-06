@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId, WallNode } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, WallNode } from '@aedifex/core'
 
 const OVERLAP_EPSILON_M = 1e-5
 

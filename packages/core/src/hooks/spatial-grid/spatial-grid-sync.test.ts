@@ -17,7 +17,7 @@ import {
   markSlabChangeDependents,
   markTerrainSupportDependents,
 } from './spatial-grid-sync'
-import { GROUND_SUPPORT_ID } from './support-host-id'
+import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 
 const SQUARE: Array<[number, number]> = [
   [0, 0],

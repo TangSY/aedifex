@@ -19,10 +19,10 @@ import {
   spatialGridManager,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { ProceduralItemNode } from '@pascal-app/core/procedural-items'
-import { MoveRegistryNodeTool, useEditor, useInteractionScope } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { ProceduralItemNode } from '@aedifex/core/procedural-items'
+import { MoveRegistryNodeTool, useEditor, useInteractionScope } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { events, type RootStore, useThree } from '@react-three/fiber'
 import { act, create } from '@react-three/test-renderer'
 import React, { useRef } from 'react'

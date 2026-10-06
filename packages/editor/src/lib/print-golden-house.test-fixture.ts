@@ -13,8 +13,8 @@ import {
   sceneRegistry,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
-import { generateRoofSegmentGeometry, generateSlabGeometry } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { generateRoofSegmentGeometry, generateSlabGeometry } from '@aedifex/viewer'
 import * as THREE from 'three'
 
 const EMPTY_SLAB_CONTEXT: SlabPolygonContext = { walls: [], siblingSlabs: [] }
@@ -107,7 +107,7 @@ export function createPrintGoldenHouseFixture(): PrintGoldenHouseFixture {
       schemaVersion: 1,
       category: 'structure',
       defaults: () => ({}),
-      capabilities: {},
+      capabilities: { deletable: false },
     } as never)
   }
   const groundWalls = [
@@ -161,7 +161,7 @@ export function createPrintGoldenHouseFixture(): PrintGoldenHouseFixture {
       schemaVersion: 1,
       category: 'furnish',
       defaults: () => ({}),
-      capabilities: {},
+      capabilities: { deletable: false },
     } as never)
   }
   const visibleFurniture = {

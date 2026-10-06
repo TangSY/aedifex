@@ -9,8 +9,8 @@ import {
   MIN_SLAB_THICKNESS,
   roomDrawnFloor,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Check, ChevronDown, ChevronRight } from 'lucide-react'
 import Image from 'next/image'
 import { type ReactNode, useMemo, useState } from 'react'
@@ -337,7 +337,7 @@ export function BuiltOnField({ zoneId }: { zoneId: string }) {
  */
 export function roomInsideHeight(
   room: RoomSelectionRecord,
-  nodes: Record<string, import('@pascal-app/core').AnyNode>,
+  nodes: Record<string, import('@aedifex/core').AnyNode>,
 ): { floor: number; ceiling: number | null; height: number | null } {
   const { floorY, wallTops, ceiling } = resolveRoomAssemblyHeights(room, nodes)
   const top = ceiling?.y ?? (wallTops.size ? Math.max(...wallTops.values()) : null)
@@ -474,8 +474,8 @@ export function RoomFloorConstructionField({ zoneId }: { zoneId: string }) {
  * or on the ground); upstairs, its lift above resting on the walls below.
  */
 function footprintStanding(
-  nodes: Record<string, import('@pascal-app/core').AnyNode>,
-  plate: import('@pascal-app/core').SlabNode,
+  nodes: Record<string, import('@aedifex/core').AnyNode>,
+  plate: import('@aedifex/core').SlabNode,
 ) {
   const supported = floorFootprintSupportClass(nodes, plate) === 'supported'
   return {
@@ -486,7 +486,7 @@ function footprintStanding(
 
 /** Rooms sharing any of `wallIds` with `zoneId`, by name. */
 function sharingRoomNames(
-  nodes: Record<string, import('@pascal-app/core').AnyNode>,
+  nodes: Record<string, import('@aedifex/core').AnyNode>,
   zoneId: string,
   wallIds: readonly string[],
 ) {

@@ -8,7 +8,7 @@ import {
   sceneRegistry,
   useInteractive,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Canvas, extend, type ThreeElement, useFrame, useThree } from '@react-three/fiber'
 import {
   type ComponentType,
@@ -20,6 +20,10 @@ import {
   useState,
 } from 'react'
 import * as THREE from 'three/webgpu'
+import {
+  clearScreenshotRenderer,
+  setScreenshotRenderer,
+} from '../../lib/capture-screenshot'
 import { hasDrawableGeometry } from '../../lib/drawable-geometry'
 import { PERF_OVERLAY_ENABLED } from '../../lib/gpu-perf'
 import { applyIsolation, clearIsolation } from '../../lib/isolation'
@@ -100,6 +104,18 @@ const DIRTY_BUILD_KINDS = new Set([
 
 const warnedEmptyDraw = process.env.NODE_ENV === 'production' ? null : new WeakSet<object>()
 
+function ScreenshotRendererBridge() {
+  const renderer = useThree((state) => state.gl)
+  const scene = useThree((state) => state.scene)
+
+  useEffect(() => {
+    setScreenshotRenderer(renderer, scene)
+    return () => clearScreenshotRenderer(renderer)
+  }, [renderer, scene])
+
+  return null
+}
+
 /**
  * Renderer-level safety net against the empty-vertex-buffer crash.
  *
@@ -126,10 +142,10 @@ function installEmptyDrawGuard(renderer: THREE.WebGPURenderer) {
   // 2026-09-10) and poisons the whole encoder, so it is dropped here.
   const backend = (
     renderer as unknown as {
-      backend?: { draw?: (...args: unknown[]) => unknown; __pascalDrawGuard?: boolean }
+      backend?: { draw?: (...args: unknown[]) => unknown; __aedifexDrawGuard?: boolean }
     }
   ).backend
-  if (backend && typeof backend.draw === 'function' && !backend.__pascalDrawGuard) {
+  if (backend && typeof backend.draw === 'function' && !backend.__aedifexDrawGuard) {
     const draw = backend.draw.bind(backend)
     backend.draw = (renderObject: unknown, ...rest: unknown[]) => {
       const geometry = (renderObject as { geometry?: THREE.BufferGeometry } | null)?.geometry
@@ -148,7 +164,7 @@ function installEmptyDrawGuard(renderer: THREE.WebGPURenderer) {
       }
       return draw(renderObject, ...rest)
     }
-    backend.__pascalDrawGuard = true
+    backend.__aedifexDrawGuard = true
   }
   renderer.setRenderObjectFunction(
     (
@@ -508,7 +524,7 @@ const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
   useEffect(() => {
     if (nodeRegistry.size === 0) {
       console.warn(
-        '[viewer] Node registry is empty. Install @pascal-app/nodes and call await loadPlugin(builtinPlugin) before mounting <Viewer>.',
+        '[viewer] Node registry is empty. Install @aedifex/nodes and call await loadPlugin(builtinPlugin) before mounting <Viewer>.',
       )
     }
   }, [])
@@ -702,6 +718,7 @@ const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
           enabled: shadowsEnabled,
         }}
       >
+        <ScreenshotRendererBridge />
         <ImmersiveXRPresentationProvider enabled={immersiveActive}>
           {ImmersiveSession ? (
             <ImmersiveSession>

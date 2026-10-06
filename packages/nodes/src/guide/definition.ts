@@ -1,4 +1,4 @@
-import { GuideNode as GuideNodeSchema, type NodeDefinition } from '@pascal-app/core'
+import { GuideNode as GuideNodeSchema, type NodeDefinition } from '@aedifex/core'
 import { guideParametrics } from './parametrics'
 import { GuideNode } from './schema'
 

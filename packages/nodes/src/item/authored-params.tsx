@@ -4,14 +4,14 @@ import type {
   GeometryScriptParamSpec,
   GeometryScriptParamValue,
   ScriptedNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   PanelSection,
   rebuildAuthoredObject,
   SegmentedControl,
   SliderControl,
   ToggleControl,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { useState } from 'react'
 
 /**

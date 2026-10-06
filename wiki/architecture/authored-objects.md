@@ -43,11 +43,11 @@ The compiler also derives upward surfaces (where things rest) and undersides (wh
 
 ## Compiling
 
-`@pascal-app/geometry-script` compiles a module to a GLB and manifest in a browser worker, Bun or Node, and returns both hashes. The host decides the isolation: the editor runs it in a worker with network and storage removed; an MCP server receives a `GeometryScriptHost` (compile, store, read) or answers `scripts_unavailable`. The default in-memory artifact store lasts one session. Local MCP and the standalone editor use a disk store beside the SQLite database that holds their saved scenes (`<database-path>.artifacts/<sha256>`). Keep this directory with the database. Writes verify the hash and publish complete bytes atomically without replacing existing artifacts. Local MCP compilation is opt-in (`PASCAL_SERVER_SCRIPT_COMPILE=1`); reading saved source does not require compilation.
+`@aedifex/geometry-script` compiles a module to a GLB and manifest in a browser worker, Bun or Node, and returns both hashes. The host decides the isolation: the editor runs a worker inside an opaque-origin iframe with a restrictive CSP and a deadline; an MCP server receives a `GeometryScriptHost` (compile, store, read) or answers `scripts_unavailable`. The default in-memory artifact store lasts one session. Local MCP and the standalone editor use a disk store beside the SQLite database that holds their saved scenes (`<database-path>.artifacts/<sha256>`). Keep this directory with the database. Writes verify the hash and publish complete bytes atomically without replacing existing artifacts. Local MCP compilation is disabled by default. The explicit `AEDIFEX_SERVER_SCRIPT_COMPILE=1` opt-in executes trusted code with the local user's file and network privileges; an empty environment and process deadline do not provide a security sandbox. Hosted deployments must not enable this local compiler. Reading saved source does not require compilation.
 
 ## Agent tools
 
-`add_object` (create, or edit by `nodeId`: new code, or params alone to rebuild the stored script), `get_source` (the module and its params, for an edit) and `find_by_type` (nodes and typed parts of one type) are shared contracts in `@pascal-app/core/agent-tools`, one operation each; only the compile step differs per surface. See [agent-surfaces.md](agent-surfaces.md).
+`add_object` (create, or edit by `nodeId`: new code, or params alone to rebuild the stored script), `get_source` (the module and its params, for an edit) and `find_by_type` (nodes and typed parts of one type) are shared contracts in `@aedifex/core/agent-tools`, one operation each; only the compile step differs per surface. See [agent-surfaces.md](agent-surfaces.md).
 
 ## Cutter binding
 

@@ -9,8 +9,8 @@ import {
   plateLevelContext,
   slabPolygonContextFromGeometry,
   useScene,
-} from '@pascal-app/core'
-import { generateSlabGeometry } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { generateSlabGeometry } from '@aedifex/viewer'
 import { type BufferGeometry, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
 import { generateExtrudedWall } from '../../../../viewer/src/systems/wall/wall-system'
 import saved from '../__fixtures__/ghost-scene.json'

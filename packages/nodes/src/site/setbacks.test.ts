@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { createTerrainField, quantize, surfaceHeightAt } from '@pascal-app/core'
+import { createTerrainField, quantize, surfaceHeightAt } from '@aedifex/core'
 import {
   buildPatternedRibbon,
   PROPERTY_LINE_PATTERN,

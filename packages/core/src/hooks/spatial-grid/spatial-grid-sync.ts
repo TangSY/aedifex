@@ -18,7 +18,7 @@ import {
   spatialGridManager,
   wallOverlapsPolygon,
 } from './spatial-grid-manager'
-import { GROUND_SUPPORT_ID } from './support-host-id'
+import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 
 export {
   findLevelAncestorId,

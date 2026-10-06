@@ -5,7 +5,7 @@ import {
   type AnyNodeId,
   type Interactive,
   useInteractive,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import { type RefObject, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import {

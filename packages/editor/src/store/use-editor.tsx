@@ -1,6 +1,6 @@
 'use client'
 
-import type { AssetInput } from '@pascal-app/core'
+import type { AssetInput } from '@aedifex/core'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -17,8 +17,8 @@ import {
   type TerrainVerb,
   useScene,
   type WallSurfaceSide,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import {

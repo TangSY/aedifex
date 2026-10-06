@@ -1,16 +1,16 @@
 import { describe, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { DoorNode, ItemNode, WallNode } from '@pascal-app/core'
+import { DoorNode, ItemNode, WallNode } from '@aedifex/core'
 import { SceneBridge } from '../bridge/scene-bridge'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 
 describe('MCP structure adapters', () => {
   test('cut_floor_opening and remove_floor_opening round-trip room construction', async () => {
     const bridge = new SceneBridge()
     bridge.setScene({}, [])
     bridge.loadDefault()
-    const server = createPascalMcpServer({ bridge })
+    const server = createAedifexMcpServer({ bridge })
     const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
     const client = new Client({ name: 'floor-opening-contract', version: '1' })
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])
@@ -62,7 +62,7 @@ describe('MCP structure adapters', () => {
       const bridge = new SceneBridge()
       bridge.setScene({}, [])
       bridge.loadDefault()
-      const server = createPascalMcpServer({ bridge })
+      const server = createAedifexMcpServer({ bridge })
       const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
       const client = new Client({ name: 'divide-path-contract', version: '1' })
       await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])
@@ -141,7 +141,7 @@ describe('MCP structure adapters', () => {
     const bridge = new SceneBridge()
     bridge.setScene({}, [])
     bridge.loadDefault()
-    const server = createPascalMcpServer({ bridge })
+    const server = createAedifexMcpServer({ bridge })
     const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
     const client = new Client({ name: 'structure-contract', version: '1' })
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])
@@ -283,7 +283,7 @@ describe('MCP room transform contracts', () => {
     const bridge = new SceneBridge()
     bridge.setScene({}, [])
     bridge.loadDefault()
-    const server = createPascalMcpServer({ bridge })
+    const server = createAedifexMcpServer({ bridge })
     const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
     const client = new Client({ name: 'ceiling-copy-contract', version: '1' })
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])
@@ -352,7 +352,7 @@ describe('MCP room transform contracts', () => {
     const bridge = new SceneBridge()
     bridge.setScene({}, [])
     bridge.loadDefault()
-    const server = createPascalMcpServer({ bridge })
+    const server = createAedifexMcpServer({ bridge })
     const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
     const client = new Client({ name: 'divided-room-contract', version: '1' })
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])
@@ -415,7 +415,7 @@ describe('MCP room transform contracts', () => {
     const bridge = new SceneBridge()
     bridge.setScene({}, [])
     bridge.loadDefault()
-    const server = createPascalMcpServer({ bridge })
+    const server = createAedifexMcpServer({ bridge })
     const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
     const client = new Client({ name: 'room-transform-contract', version: '1' })
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])
@@ -528,7 +528,7 @@ describe('MCP Sims placement', () => {
     const bridge = new SceneBridge()
     bridge.setScene({}, [])
     bridge.loadDefault()
-    const server = createPascalMcpServer({ bridge })
+    const server = createAedifexMcpServer({ bridge })
     const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
     const client = new Client({ name: 'sims-placement', version: '1' })
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])
@@ -605,7 +605,7 @@ describe('MCP Sims placement', () => {
     const bridge = new SceneBridge()
     bridge.setScene({}, [])
     bridge.loadDefault()
-    const server = createPascalMcpServer({ bridge })
+    const server = createAedifexMcpServer({ bridge })
     const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
     const client = new Client({ name: 'occupied-placement', version: '1' })
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])

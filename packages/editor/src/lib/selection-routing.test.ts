@@ -6,8 +6,8 @@ import {
   nodeRegistry,
   registerNode,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { z } from 'zod'
 import useEditor from '../store/use-editor'
 import {
@@ -27,7 +27,7 @@ function registerTestDefinition(kind: string, overrides: Record<string, unknown>
     schema: z.object({ type: z.literal(kind) }) as never,
     category: 'furnish',
     defaults: () => ({ type: kind }) as never,
-    capabilities: {},
+    capabilities: { deletable: false },
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
     ...overrides,
   } as never)

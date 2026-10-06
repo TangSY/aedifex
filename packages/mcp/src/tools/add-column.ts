@@ -1,13 +1,14 @@
+import { type AddColumnInput, addColumn, columnScriptParams } from '@aedifex/core/agent-operations'
+import { addColumnTool, isAgentRefusal, refuse } from '@aedifex/core/agent-tools'
+import type { AnyNode } from '@aedifex/core/schema'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import {
-  type AddColumnInput,
-  addColumn,
-  columnScriptParams,
-} from '@pascal-app/core/agent-operations'
-import { addColumnTool, isAgentRefusal, refuse } from '@pascal-app/core/agent-tools'
-import type { AnyNode } from '@pascal-app/core/schema'
 import type { SceneOperations } from '../operations'
-import { compileAndStore, type GeometryScriptHost, readScript } from './add-object'
+import {
+  assertGeometrySceneCurrent,
+  compileAndStore,
+  type GeometryScriptHost,
+  readScript,
+} from './add-object'
 import { DESTRUCTIVE_TOOL_ANNOTATIONS } from './annotations'
 import { refusalResult, toolError } from './errors'
 import { persistencePayload, publishLiveSceneSnapshot } from './live-sync'
@@ -34,14 +35,19 @@ export function registerAddColumn(
         let compiled: AddColumnInput['compiled']
         if (params) {
           if (!host)
-            refuse('scripts_unavailable', 'This Pascal server cannot run geometry scripts.')
+            refuse('scripts_unavailable', 'This Aedifex server cannot run geometry scripts.')
           const scene = bridge.getActiveScene()
           if (!scene) refuse('no_active_scene', 'Open or save a scene first.')
           const code = input.code ?? (await readScript(host, scene.id, bridge, input.nodeId!))
           compiled = await compileAndStore(host, scene.id, code, params, 'column')
+          assertGeometrySceneCurrent({ bridge, sceneId: scene.id })
         }
         const outcome = addColumn(nodes, { ...input, compiled }, { activeLevelId: null })
-        if (outcome.changes) bridge.applyPatch(toPatches(outcome.changes))
+        if (outcome.changes) {
+          const patches = toPatches(outcome.changes)
+          if (compiled) bridge.applyCompiledGeometryPatch({ patches, compiled })
+          else bridge.applyPatch(patches)
+        }
         const payload = {
           ...outcome.result,
           ...persistencePayload(await publishLiveSceneSnapshot(bridge, addColumnTool.name)),

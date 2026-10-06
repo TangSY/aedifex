@@ -1,4 +1,4 @@
-import type { FloorOpeningNode, FloorplanGeometry, GeometryContext } from '@pascal-app/core'
+import type { FloorOpeningNode, FloorplanGeometry, GeometryContext } from '@aedifex/core'
 import {
   createPolygonAddVertexAffordance,
   createPolygonDeleteVertexAffordance,

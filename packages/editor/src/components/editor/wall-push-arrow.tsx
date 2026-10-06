@@ -1,6 +1,6 @@
 'use client'
 
-import { sceneRegistry } from '@pascal-app/core'
+import { sceneRegistry } from '@aedifex/core'
 import { type ThreeEvent, useThree } from '@react-three/fiber'
 import { useState } from 'react'
 import { OrthographicCamera, Plane, type Ray, Vector2, Vector3 } from 'three'

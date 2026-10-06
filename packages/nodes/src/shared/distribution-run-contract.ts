@@ -1,4 +1,4 @@
-import type { AnyNodeId } from '@pascal-app/core'
+import type { AnyNodeId } from '@aedifex/core'
 
 export type RunPoint = [number, number, number]
 

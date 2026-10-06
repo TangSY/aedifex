@@ -11,7 +11,7 @@ import {
   nearestWallSegment,
   WALL_SNAP_DISTANCE_M,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Shared helpers for the kinds whose 2D move snaps onto a wall in plan
@@ -332,7 +332,7 @@ export function snapLocalXToNeighbors(args: {
  * Whether a wall-hosted opening would overlap another child of its wall. The rule lives in
  * core, shared with every agent surface (`planWallOpening`); re-exported for the tools here.
  */
-export { hasWallChildOverlap } from '@pascal-app/core/building'
+export { hasWallChildOverlap } from '@aedifex/core/building'
 
 /** Placement state for a wall-hosted opening — the SINGLE decision the preview
  *  tint and the commit gate both consume so they can never disagree. */

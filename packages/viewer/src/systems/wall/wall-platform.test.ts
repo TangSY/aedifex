@@ -6,7 +6,7 @@ import {
   encodeTerrainField,
   levelBaseElevationAt,
   sceneRegistry,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { DoubleSide, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
 import { raisedRoomFixture } from '../../../../core/src/systems/slab/__fixtures__/raised-room'
 import { generateExtrudedWall } from './wall-system'

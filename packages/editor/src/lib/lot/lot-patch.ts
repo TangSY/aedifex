@@ -22,7 +22,7 @@
  * - `northRotation` is 0: the parcel frame is x east / z south, so plan up
  *   is true north.
  */
-import type { SiteNode, SiteSetbacks } from '@pascal-app/core'
+import type { SiteNode, SiteSetbacks } from '@aedifex/core'
 import {
   detectFrontEdgeFromRoads,
   type FrontEdgeMatch,

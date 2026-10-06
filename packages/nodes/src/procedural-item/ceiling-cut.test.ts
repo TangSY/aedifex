@@ -7,14 +7,14 @@ import {
   registerNode,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   ProceduralItemNode,
   parseRecipe,
   type Recipe,
   shelfRecipe,
-} from '@pascal-app/core/procedural-items'
-import { usePlacementPreview } from '@pascal-app/editor'
+} from '@aedifex/core/procedural-items'
+import { usePlacementPreview } from '@aedifex/editor'
 import { proceduralItemDefinition } from './definition'
 
 // A 0.2 m square trim flush with the ceiling and a can recessed 0.1 m above it, inside the cut.

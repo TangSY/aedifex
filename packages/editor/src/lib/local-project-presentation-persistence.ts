@@ -1,9 +1,9 @@
 'use client'
 
-import { type ViewerPresentationContribution, viewerPresentationRegistry } from '@pascal-app/viewer'
+import { type ViewerPresentationContribution, viewerPresentationRegistry } from '@aedifex/viewer'
 import { z } from 'zod'
 
-export const LOCAL_PROJECT_PRESENTATION_STORAGE_KEY_PREFIX = 'pascal:project-presentation:v1:'
+export const LOCAL_PROJECT_PRESENTATION_STORAGE_KEY_PREFIX = 'aedifex:project-presentation:v1:'
 const LOCAL_PROJECT_PRESENTATION_VERSION = 1 as const
 const DEFAULT_FLUSH_DELAY_MS = 250
 

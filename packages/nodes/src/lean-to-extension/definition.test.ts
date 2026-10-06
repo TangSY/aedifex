@@ -7,7 +7,7 @@ import {
   type LinearResizeHandle,
   RoofSegmentNode,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { resolveConicalLeanToPlacement } from './conical-host'
 import { leanToExtensionDefinition } from './definition'
 import { resolveLeanToLayout } from './layout'

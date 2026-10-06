@@ -3,7 +3,7 @@ import {
   type BlockTopology,
   blockMaterialSlotIds,
   type MaterialRef,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export type BlockMaterialSlots = Record<string, MaterialRef> | undefined
 export type BlockMaterialSlotNames = Record<string, string> | undefined

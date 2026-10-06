@@ -1,4 +1,4 @@
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
 import type { CaptureMode } from '../store/use-editor'
 

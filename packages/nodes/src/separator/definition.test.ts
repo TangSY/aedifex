@@ -6,7 +6,7 @@ import {
   isRegistrySelectable,
   nodeRegistry,
   registerNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { separatorDefinition } from './definition'
 
 test('separator registers selectable dashed plan and 3D renderers, without movement or baking', () => {

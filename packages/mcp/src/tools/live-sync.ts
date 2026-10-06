@@ -1,4 +1,4 @@
-import type { SceneGraph } from '@pascal-app/core/clone-scene-graph'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { SceneVersionConflictError } from '../storage/types'

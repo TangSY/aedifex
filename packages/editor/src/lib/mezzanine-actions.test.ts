@@ -12,8 +12,8 @@ import {
   type Point,
   useScene,
   type ZoneNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { roomTransformSource } from '../components/editor/room-controls'
 import { runHistoryShortcut } from '../hooks/use-keyboard'
 import { getRoomSelectionIndex } from '../hooks/use-selected-room'

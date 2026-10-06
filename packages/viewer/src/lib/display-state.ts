@@ -1,4 +1,4 @@
-import type { Discipline, DisplayFamily, DisplayMode } from '@pascal-app/core'
+import type { Discipline, DisplayFamily, DisplayMode } from '@aedifex/core'
 
 /**
  * Personal display state (F4, owner decision O3, frozen): kept per project in

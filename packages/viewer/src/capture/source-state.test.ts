@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { CaptureStreamPacket } from '@pascal-app/core/capture'
+import type { CaptureStreamPacket } from '@aedifex/core/capture'
 import {
   appendCapturePacket,
   captureSubscriptionStreamIds,

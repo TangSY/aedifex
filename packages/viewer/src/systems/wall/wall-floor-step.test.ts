@@ -6,7 +6,7 @@ import {
   sceneRegistry,
   WallNode,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { DoubleSide, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
 import { floorStepFixture } from '../../../../core/src/systems/slab/__fixtures__/floor-step'
 import { generateExtrudedWall } from './wall-system'
@@ -116,7 +116,7 @@ test('piecewise face bases cut only the corresponding side and longitudinal run'
 
 test('equal-elevation fixture meshes retain every pre-phase-5 geometry byte', async () => {
   const { createHash } = await import('node:crypto')
-  const { SlabNode } = await import('@pascal-app/core')
+  const { SlabNode } = await import('@aedifex/core')
   const { default: fixtures } = await import(
     '../../../../core/src/systems/wall/__fixtures__/wall-frame-golden.json'
   )
@@ -150,7 +150,7 @@ test('equal-elevation fixture meshes retain every pre-phase-5 geometry byte', as
 })
 
 test('curved wall halves retain their own floors along the arc', async () => {
-  const { getWallCurveFrameAt } = await import('@pascal-app/core')
+  const { getWallCurveFrameAt } = await import('@aedifex/core')
   const wall = WallNode.parse({ start: [0, 0], end: [4, 0], thickness: 0.2, curveOffset: 0.6 })
   const geometry = generateExtrudedWall(
     wall,
@@ -283,7 +283,7 @@ test('floor-anchored door follows its local face datums along a mixed support wa
 })
 
 test('a floor-length window removes wall fill where the plate supplies the step', async () => {
-  const { WindowNode } = await import('@pascal-app/core')
+  const { WindowNode } = await import('@aedifex/core')
   const { walls, divider, slabs, nodes, door } = floorStepFixture()
   const window = WindowNode.parse({
     ...door,
@@ -323,7 +323,7 @@ test('a floor-length window removes wall fill where the plate supplies the step'
 })
 
 test('a door crossing face datums keeps an upstand without a carrying plate', async () => {
-  const { DoorNode } = await import('@pascal-app/core')
+  const { DoorNode } = await import('@aedifex/core')
   const wall = WallNode.parse({ start: [0, 0], end: [4, 0], thickness: 0.2 })
   const door = DoorNode.parse({
     parentId: wall.id,

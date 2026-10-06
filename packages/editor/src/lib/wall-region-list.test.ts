@@ -6,7 +6,7 @@ import {
   WALL_FACE_REGION_LIMIT,
   type WallFaceRegion,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   describeRegionFinish,
   formatRegionBounds,

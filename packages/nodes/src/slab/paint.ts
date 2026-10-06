@@ -29,7 +29,7 @@ import {
   useScene,
   withFloorStepOverride,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { Material, Mesh } from 'three'
 import {
   buildSlotPreviewMaterial,

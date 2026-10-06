@@ -10,7 +10,7 @@ import {
   sightTriangle,
   streetCorners,
   terrainFieldOf,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { sitePlanContributions } from './contributors'
 import {
   computeSiteCoverage,

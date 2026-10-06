@@ -22,7 +22,7 @@ function stubDef(
     category: 'utility',
     distributionRole,
     defaults: () => ({}),
-    capabilities: {},
+    capabilities: { deletable: false },
     ports,
   } as unknown as AnyNodeDefinition)
 }

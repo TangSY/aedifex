@@ -1,6 +1,6 @@
 'use client'
 
-import { type ValidateBuildJsonResult, validateBuildJson } from '@pascal-app/core'
+import { type ValidateBuildJsonResult, validateBuildJson } from '@aedifex/core'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MAX_IMPORT_BYTES, parseImportSrc } from '@/lib/import-src'

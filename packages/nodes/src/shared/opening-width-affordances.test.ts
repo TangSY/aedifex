@@ -6,7 +6,7 @@ import {
   useScene,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { columnResizeAffordance } from '../column/floorplan-affordances'
 import { doorWidthAffordance } from '../door/floorplan-affordances'
 import { spawnRotateAffordance } from '../spawn/floorplan-affordances'

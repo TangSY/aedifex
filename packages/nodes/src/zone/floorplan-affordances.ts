@@ -1,4 +1,4 @@
-import type { ZoneNode } from '@pascal-app/core'
+import type { ZoneNode } from '@aedifex/core'
 import {
   createPolygonAddVertexAffordance,
   createPolygonDeleteVertexAffordance,

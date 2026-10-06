@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { CameraPose } from '@pascal-app/core'
+import type { CameraPose } from '@aedifex/core'
 import { publishInitialCameraPose } from '../../lib/camera-pose'
 import type { NavigationSyncPose } from '../../store/use-editor'
 import {

@@ -6,7 +6,7 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /** Geometry remains derived; only dirty marks cross into the scene store. */
 export function initializeObjectCutInvalidation() {

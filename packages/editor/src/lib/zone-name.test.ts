@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { AnyNode } from '@pascal-app/core'
+import type { AnyNode } from '@aedifex/core'
 import { nextZoneName } from './zone-name'
 
 const zone = (id: string, name?: string) => ({ id, type: 'zone', name }) as unknown as AnyNode

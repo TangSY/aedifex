@@ -27,17 +27,17 @@ import {
   useLiveTransforms,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
-import type { Recipe } from '@pascal-app/core/procedural-items'
-import { MoveRegistryNodeTool, useEditor, useInteractionScope } from '@pascal-app/editor'
-import { NodeRenderer, resolveCdnUrl, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import type { Recipe } from '@aedifex/core/procedural-items'
+import { MoveRegistryNodeTool, useEditor, useInteractionScope } from '@aedifex/editor'
+import { NodeRenderer, resolveCdnUrl, useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useLoader } from '@react-three/fiber'
 import { act, create } from '@react-three/test-renderer'
 import { type ReactElement, type ReactNode, useMemo, useRef } from 'react'
 import * as ReactDOM from 'react-dom'
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from 'three'
-// `GeometrySystem` is not exported by @pascal-app/viewer; these three come from its source so a
+// `GeometrySystem` is not exported by @aedifex/viewer; these three come from its source so a
 // mounted scene runs the same frame systems as the editor. Keep viewer-source imports here only.
 import { FloorElevationSystem } from '../../../viewer/src/systems/floor-elevation/floor-elevation-system'
 import { GeometrySystem } from '../../../viewer/src/systems/geometry/geometry-system'

@@ -4,9 +4,9 @@ import {
   type DuctFittingNode,
   type FloorplanAffordance,
   useScene,
-} from '@pascal-app/core'
-import { useEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import {
   findMatedScenePorts,
   planDuctElbowBranchPromotion,

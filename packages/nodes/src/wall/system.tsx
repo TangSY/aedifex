@@ -9,8 +9,8 @@ import {
   useScene,
   type WallNode,
   type WallSlabSupport,
-} from '@pascal-app/core'
-import { timeSpan, WallCutout, WallSystem } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { timeSpan, WallCutout, WallSystem } from '@aedifex/viewer'
 import { useFrame } from '@react-three/fiber'
 import { useEffect } from 'react'
 import { curtainWallGeometryAdapter } from './curtain-wall-adapter'

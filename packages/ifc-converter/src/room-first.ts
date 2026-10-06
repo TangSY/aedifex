@@ -1,4 +1,5 @@
 import {
+  metadataRecord,
   type AnyNode,
   area,
   type CeilingNode,
@@ -14,8 +15,8 @@ import {
   union,
   type WallNode,
   type ZoneNode,
-} from '@pascal-app/core'
-import { migrateRoomZones } from '@pascal-app/core/scene-migrations'
+} from '@aedifex/core'
+import { migrateRoomZones } from '@aedifex/core/scene-migrations'
 import { nextId } from './ids'
 
 /**
@@ -75,7 +76,7 @@ function safeArea(run: () => Polygon[]): number {
 }
 
 function meta(node: AnyNode): Record<string, unknown> {
-  return (node.metadata ?? {}) as Record<string, unknown>
+  return metadataRecord(node.metadata)
 }
 
 const isIfcSpace = (node: AnyNode): node is ZoneNode =>
@@ -259,7 +260,7 @@ function materializeRooms(nodes: SceneNodes, rooms: PreviewRoom[]) {
     if (room.zoneId) continue
     attach(nodes, {
       ...room.preview,
-      metadata: { ...room.preview.metadata, ifcDerived: 'wall-loop' },
+      metadata: { ...metadataRecord(room.preview.metadata), ifcDerived: 'wall-loop' },
     })
     room.zoneId = room.preview.id
   }
@@ -786,7 +787,7 @@ function assignLevelFloors(
           polygon: part.outer,
           holes: part.holes,
           holeMetadata: part.holes.map(() => ({ source: 'manual' as const })),
-          metadata: { ...slab.metadata, ifcSplit: 'outside-rooms' },
+          metadata: { ...metadataRecord(slab.metadata), ifcSplit: 'outside-rooms' },
         })
         stats.manualFloors++
       }
@@ -1003,7 +1004,7 @@ export function applyRoomFirstStructure(
     // hand-drawn floors (adopting pieces, absorbing whole levels) stay off.
     nodes[level.id] = {
       ...level,
-      metadata: { ...(level.metadata ?? {}), floorOwnershipMigrated: true },
+      metadata: { ...metadataRecord(level.metadata), floorOwnershipMigrated: true },
     } as AnyNode
   }
   assignCeilings(nodes, rooms, stats)

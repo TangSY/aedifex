@@ -1,4 +1,4 @@
-import { GROUND_SUPPORT_ID } from '../hooks/spatial-grid/support-host-id'
+import { GROUND_SUPPORT_ID } from '../lib/support-host'
 import type { AnyNode, AnyNodeId } from '../schema/types'
 import { deriveLegacyLevelHeight } from '../services/level-height'
 import { getCeilingClampBound } from '../services/storey'

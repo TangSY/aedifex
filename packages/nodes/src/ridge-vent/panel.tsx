@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNode, type AnyNodeId, type RoofSegmentNode, useScene } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, type RoofSegmentNode, useScene } from '@aedifex/core'
 import {
   ActionButton,
   ActionGroup,
@@ -11,8 +11,8 @@ import {
   SliderControl,
   triggerSFX,
   useEditor,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Copy, Move, Trash2 } from 'lucide-react'
 import { useCallback } from 'react'
 import type { RidgeVentNode } from './schema'

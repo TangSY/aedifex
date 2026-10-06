@@ -5,7 +5,7 @@ import {
   type SlabNode,
   type SlabPolygonContext,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export function getRecessedSlabGroundHoles(
   nodes: Record<string, AnyNode>,

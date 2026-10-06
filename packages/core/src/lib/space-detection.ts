@@ -94,7 +94,7 @@ function wallGeometrySignature(wall: WallNode, nodes: Record<string, any>, level
     (wall.supportOffset ?? 0).toFixed(4),
     getClampedWallCurveOffset(wall).toFixed(4),
     // The ground under this wall, sampled at the SAME point
-    // `boundaryWallBase` samples it. Sculpting changes only `site.terrain`,
+    // `resolveWallBaseElevation` samples it. Sculpting changes only `site.terrain`,
     // so without a terrain term here every signature stays byte-identical
     // and the sync early-exits — a room's floor and ceiling could never
     // follow ground that moved beneath its walls.

@@ -1,6 +1,6 @@
 'use client'
 
-import { nodeRegistry, type ToolOption } from '@pascal-app/core'
+import { nodeRegistry, type ToolOption } from '@aedifex/core'
 import Image from 'next/image'
 import { useSyncExternalStore } from 'react'
 import { cn } from '../../../lib/utils'

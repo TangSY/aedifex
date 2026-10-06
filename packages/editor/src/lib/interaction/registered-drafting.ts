@@ -3,13 +3,18 @@ import {
   type AnyNodeDefinition,
   type GridEvent,
   nodeRegistry,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { InteractionScope } from './scope'
 
-type RegisteredDraftingConfig = NonNullable<AnyNodeDefinition['drafting']>
+export type RegisteredDraftingConfig = {
+  surfaceQuery?: boolean
+  cancelOnHistoryJump?: boolean
+}
 type SurfaceHit = NonNullable<GridEvent['surfaceHit']>
 
-export const DRAFTING_SURFACE_EXTENSION_KEY = 'pascal:editor/drafting-surface'
+export const DRAFTING_EXTENSION_KEY = 'aedifex:editor/drafting'
+
+export const DRAFTING_SURFACE_EXTENSION_KEY = 'aedifex:editor/drafting-surface'
 
 export type DraftingSurfaceExtension = {
   kind: SurfaceHit['kind']
@@ -22,7 +27,11 @@ export type DraftingSurfaceExtension = {
 
 export function registeredDraftingConfig(scope: InteractionScope): RegisteredDraftingConfig | null {
   if (scope.kind !== 'drafting') return null
-  return nodeRegistry.get(scope.tool)?.drafting ?? null
+  return (
+    (nodeRegistry.get(scope.tool)?.extensions?.[DRAFTING_EXTENSION_KEY] as
+      | RegisteredDraftingConfig
+      | undefined) ?? null
+  )
 }
 
 export function registeredDraftingSurface(

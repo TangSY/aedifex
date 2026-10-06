@@ -1,7 +1,7 @@
 // @ts-expect-error — bun:test is provided by the Bun runtime; viewer does not
 // depend on @types/bun so the import type is unresolved at compile time.
 import { describe, expect, test } from 'bun:test'
-import { calculateLevelMiters, WALL_SURFACE_SLOT_DEFAULTS, WallNode } from '@pascal-app/core'
+import { calculateLevelMiters, WALL_SURFACE_SLOT_DEFAULTS, WallNode } from '@aedifex/core'
 import * as THREE from 'three'
 import { getWallFinishRefs } from './wall-finish-data'
 import { generateExtrudedWall } from './wall-system'

@@ -1,4 +1,4 @@
-import { GROUND_SUPPORT_ID } from '../../hooks/spatial-grid/support-host-id'
+import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import { itemOverlapsPolygon } from '../../lib/item-polygon-overlap'
 import { resolveLevelId } from '../../lib/node-ancestry'
 import { getRenderableSlabPolygon } from '../../lib/slab-polygon'

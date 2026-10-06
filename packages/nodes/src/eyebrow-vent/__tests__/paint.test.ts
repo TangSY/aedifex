@@ -39,6 +39,6 @@ describe('eyebrow vent paint', () => {
     ).toBe('library:metal')
     expect(
       eyebrowVentPaint.getEffectiveMaterial?.({ node, role: 'front', nodes: {} })?.materialPreset,
-    ).toBe('preset-white')
+    ).toBe('library:preset-white')
   })
 })

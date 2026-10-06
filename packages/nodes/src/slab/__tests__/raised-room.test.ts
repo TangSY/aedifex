@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import type { AnyNode, GeometryContext, SlabNode } from '@pascal-app/core'
-import { reconcileStructureOnLoad } from '@pascal-app/core/scene-migrations'
+import type { AnyNode, GeometryContext, SlabNode } from '@aedifex/core'
+import { reconcileStructureOnLoad } from '@aedifex/core/scene-migrations'
 import { type Mesh, Raycaster, Vector3 } from 'three'
 import { raisedRoomFixture } from '../../../../core/src/systems/slab/__fixtures__/raised-room'
 import { buildSlabGeometry } from '../geometry'
@@ -49,7 +49,7 @@ for (const fillToTerrain of [false, true])
     }
     // The opt-in legacy fill reads persisted terrain from the ancestry.
     const site = Object.values(nodes).find((node) => node.type === 'site')!
-    const { createTerrainField, encodeTerrainField } = require('@pascal-app/core')
+    const { createTerrainField, encodeTerrainField } = require('@aedifex/core')
     const field = createTerrainField({ origin: [-1, -1], cols: 12, rows: 8, spacing: 1 })
     field.heights.fill(-40)
     nodes[site.id] = { ...site, terrain: encodeTerrainField(field) }

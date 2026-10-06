@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { getEffectiveDormerSurfaceMaterial } from '@pascal-app/core'
+import { getEffectiveDormerSurfaceMaterial } from '@aedifex/core'
 import { DormerNode } from '../schema'
 
 describe('DormerNode schema', () => {

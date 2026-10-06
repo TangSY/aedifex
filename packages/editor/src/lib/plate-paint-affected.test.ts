@@ -7,7 +7,7 @@ import {
   SlabNode,
   WallNode,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { paintScopeRole, resolvePaintScopeTargets } from './paint-scope'
 import {
   mergePaintSurfaces,

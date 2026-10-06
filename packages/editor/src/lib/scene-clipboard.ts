@@ -14,9 +14,9 @@ import {
   type StairNode,
   scriptedSize,
   useScene,
-} from '@pascal-app/core'
-import { clampDoorToWall, clampWindowToWall } from '@pascal-app/core/building'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { clampDoorToWall, clampWindowToWall } from '@aedifex/core/building'
+import { useViewer } from '@aedifex/viewer'
 import { referencedSceneMaterialIds, remapSceneMaterialRefs } from './scene-material-refs'
 
 type ClipboardPayload = {

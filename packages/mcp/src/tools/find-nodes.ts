@@ -1,12 +1,13 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { measurementCentroid, nodeRegistry } from '@pascal-app/core'
-import { type Frame, nodeLevelFrame, transformPoint } from '@pascal-app/core/procedural-items'
-import { AnyNode, type AnyNodeId, type AnyNodeType, nodeKindOf } from '@pascal-app/core/schema'
-import { pointInPolygon } from '@pascal-app/core/spatial-grid'
+import { measurementCentroid, nodeRegistry } from '@aedifex/core'
+import { type Frame, nodeLevelFrame, transformPoint } from '@aedifex/core/procedural-items'
+import { AnyNode, type AnyNodeId, type AnyNodeType, nodeKindOf } from '@aedifex/core/schema'
+import { pointInPolygon } from '@aedifex/core/spatial-grid'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { READ_ONLY_TOOL_ANNOTATIONS } from './annotations'
 import { ErrorCode, throwMcpError } from './errors'
+import { metadataRecord } from './metadata-record'
 import { NodeIdSchema } from './schemas'
 
 const CORE_NODE_KINDS = AnyNode.options.map(nodeKindOf)
@@ -63,7 +64,7 @@ function encodeSourceId(id: string): string {
 /** A node's import source ids: typed `provenance.refs[].id`, then legacy `metadata.sourceIds`. */
 function nodeSourceIds(node: AnyNode): string[] {
   const typed = (node.provenance?.refs ?? []).map((ref) => ref.id)
-  const legacy = node.metadata?.sourceIds
+  const legacy = metadataRecord(node.metadata)?.sourceIds
   return Array.isArray(legacy)
     ? [...typed, ...legacy.filter((id): id is string => typeof id === 'string')]
     : typed

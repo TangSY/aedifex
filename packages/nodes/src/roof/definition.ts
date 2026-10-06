@@ -6,12 +6,12 @@ import {
   type RoofNode as RoofNodeType,
   type RoofSegmentNode,
   type SceneApi,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   DRAFTING_SURFACE_EXTENSION_KEY,
   type DraftingSurfaceExtension,
   PANEL_MODEL_EXTENSION,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { buildRoofFloorplan } from './floorplan'
 import { roofPanelModel } from './panel-model'
 import { roofParametrics } from './parametrics'
@@ -21,6 +21,7 @@ import useRoofPlacementMode, {
   standardRoofToolHintVisibility,
 } from './roof-placement-mode'
 import { RoofNode } from './schema'
+import { roofSlots } from './slots'
 
 const MOVE_FRONT_OFFSET = 0.35
 const MIN_ROOF_FOOTPRINT = 1
@@ -141,6 +142,7 @@ export const roofDefinition: NodeDefinition<typeof RoofNode> = {
     // F2 layers stack inward from the covering-top plane along the facet
     // normal; the body is their sum and the roof stores no thickness.
     assembly: { reference: 'covering', measure: 'normal', body: () => null },
+    slots: () => roofSlots(),
     // Contribute a plan AABB to the alignment-guide candidate pool so a roof
     // (and any moving sibling) snaps against the roof's outer silhouette.
     // Roof has no centred-box footprint — it's the union of its

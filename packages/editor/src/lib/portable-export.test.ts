@@ -84,6 +84,50 @@ describe('portable vertex-color boundary', () => {
 })
 
 describe('portable geometry normalization', () => {
+  test.each([false, true])(
+    'reads instance color targets without relying on a return value (material array: %s)',
+    (useMaterialArray) => {
+      const sourceMaterials = [
+        new MeshStandardMaterial({ color: new Color(0.5, 0.75, 0.25) }),
+        new MeshStandardMaterial({ color: new Color(0.25, 0.5, 1) }),
+      ]
+      const originalColors = sourceMaterials.map((material) => material.color.clone())
+      const tints = [new Color(1, 0.25, 0.5), new Color(0.5, 1, 0.25)]
+      const instances = new InstancedMesh(
+        new BoxGeometry(),
+        useMaterialArray ? sourceMaterials : sourceMaterials[0]!,
+        tints.length,
+      )
+      for (const [index, color] of tints.entries()) instances.setColorAt(index, color)
+      instances.getColorAt = (index, target): void => {
+        InstancedMesh.prototype.getColorAt.call(instances, index, target)
+      }
+      const root = new Group()
+      root.add(instances)
+
+      expandInstancedMeshes(root)
+
+      const meshes = root.children[0]!.children as Mesh[]
+      expect(meshes).toHaveLength(tints.length)
+      for (const [instanceIndex, mesh] of meshes.entries()) {
+        const materials = (
+          Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        ) as MeshStandardMaterial[]
+        expect(materials).toHaveLength(useMaterialArray ? 2 : 1)
+        for (const [materialIndex, material] of materials.entries()) {
+          expect(material).not.toBe(sourceMaterials[materialIndex])
+          expectColor(
+            material.color,
+            originalColors[materialIndex]!.clone().multiply(tints[instanceIndex]!),
+          )
+        }
+      }
+      for (const [index, material] of sourceMaterials.entries()) {
+        expectColor(material.color, originalColors[index]!)
+      }
+    },
+  )
+
   test('preserves two transformed instance populations without changing source data', () => {
     const sourceMaterial = new MeshStandardMaterial({ color: '#808080' })
     const sourceGeometry = new BoxGeometry(1, 2, 3)

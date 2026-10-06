@@ -16,7 +16,7 @@ import {
   subscribeSceneCommits,
   useScene,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { moveTogetherLabel } from '../components/ui/panels/floor-foundation-panel'
 import {
   applyFloorFoundation,

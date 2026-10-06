@@ -1,4 +1,4 @@
-import type { FloorplanGeometry, FloorplanPoint } from '@pascal-app/core'
+import type { FloorplanGeometry, FloorplanPoint } from '@aedifex/core'
 import { useDimensionEditAllowed } from './floorplan-dimension-edit-overlay'
 import { resolveFloorplanLabelAngle } from './floorplan-label-angle'
 

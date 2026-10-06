@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { mkdtemp, readdir, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DiskArtifactStore } from '@pascal-app/mcp/storage'
+import { DiskArtifactStore } from '@aedifex/mcp/storage'
 
 test('artifacts survive reopening, verify content, and never replace an existing hash', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'pascal-artifacts-'))

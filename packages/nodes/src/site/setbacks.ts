@@ -1,4 +1,4 @@
-import { arcRuns, insetPolygon, type KeepOut, sightTriangle, streetCorners } from '@pascal-app/core'
+import { arcRuns, insetPolygon, type KeepOut, sightTriangle, streetCorners } from '@aedifex/core'
 /**
  * The setback envelope in the 3D site — the same rules the site plan draws
  * (packages/editor/src/lib/floorplan/site-plan/geometry.ts: front edge,

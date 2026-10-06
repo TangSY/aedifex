@@ -3,7 +3,7 @@ import {
   parseMaterialRef,
   type SceneMaterialId,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useMemo } from 'react'
 import { usePaintRegionMode } from '../../../lib/paint-region-mode'
 import useEditor from '../../../store/use-editor'

@@ -11,18 +11,18 @@ import {
   levelBaseElevationAt,
   type NodeDefinition,
   type SceneApi,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   clearStructuralElevationGuide,
   PANEL_MODEL_EXTENSION,
   publishStructuralElevationGuide,
   REGISTERED_DRAFT_SNAP_EXTENSION,
   resolveStructuralElevationSnap,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import {
   createNodeTopSurfaceHeightSampler,
   createSceneSupportHeightSampler,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { snapFenceDraftPoint } from './drafting'
 import { buildFenceFloorplan } from './floorplan'
 import {
@@ -451,7 +451,7 @@ export const fenceDefinition: NodeDefinition<typeof FenceNode> = {
   // Stage D — all four fence drag-affordances live in this folder.
   // curve / move-endpoint / move are 1:1 ports of the legacy tools
   // (same snap pipeline, same history dance, same cursor render),
-  // relocated under `@pascal-app/nodes` and dispatched via
+  // relocated under `@aedifex/nodes` and dispatched via
   // `def.affordanceTools`. Placement lives in `def.tool` (see below).
   affordanceTools: {
     curve: () => import('./curve-tool'),

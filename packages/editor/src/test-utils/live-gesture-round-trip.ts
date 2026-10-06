@@ -12,7 +12,7 @@ import {
   useLiveNodeOverrides,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { commitRoomElevation } from '../lib/room-handle-drag'
 import { applyRoomPlan } from '../lib/room-structure-commands'
 

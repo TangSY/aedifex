@@ -1,10 +1,10 @@
-import type { MechanismCapability } from '@pascal-app/core'
+import type { MechanismCapability } from '@aedifex/core'
 import {
   closeWindowOpenState,
   getDisplayedWindowValue,
   isOperableWindowType,
   openWindowOpenState,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { scriptedOpening } from '../shared/scripted-opening'
 
 /** A window's sash: Open and Close preview it without touching the saved open state. */

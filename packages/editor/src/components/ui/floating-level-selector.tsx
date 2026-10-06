@@ -26,17 +26,9 @@ import {
   getStoredLevelHeight,
   LevelNode,
   useScene,
-} from '@pascal-app/core'
-import { markPerfAction, useViewer } from '@pascal-app/viewer'
-import {
-  ClipboardPaste,
-  Copy,
-  GripVertical,
-  MoreVertical,
-  Plus,
-  Trash2,
-  X,
-} from 'lucide-react'
+} from '@aedifex/core'
+import { markPerfAction, useViewer } from '@aedifex/viewer'
+import { ClipboardPaste, Copy, GripVertical, MoreVertical, Plus, Trash2, X } from 'lucide-react'
 import {
   type ButtonHTMLAttributes,
   type CSSProperties,
@@ -50,8 +42,8 @@ import { pasteSelectionAndPickUp } from '../editor/group-actions'
 import {
   buildLevelDuplicateCreateOps,
   type LevelDuplicatePreset,
-} from '@pascal-app/core/building'
-import { getDefaultLevelName, getLevelDisplayName } from '@pascal-app/core'
+} from '@aedifex/core/building'
+import { getDefaultLevelName, getLevelDisplayName } from '@aedifex/core'
 import { deleteLevelWithFallbackSelection } from '../../lib/level-selection'
 import { unitMemberLevels, leaveUnitFocus } from '../../lib/units'
 import { useLinearDisplay } from '../../lib/use-linear-display'

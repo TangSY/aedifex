@@ -6,7 +6,7 @@ import {
   PipeSegmentNode,
   registerNode,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { pipeSegmentDefinition } from '../pipe-segment/definition'
 import { checkDistributionSystems } from './system-checks'
 

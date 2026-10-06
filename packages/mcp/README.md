@@ -1,12 +1,10 @@
-# @pascal-app/mcp
+# @aedifex/mcp
 
-Model Context Protocol server for the Pascal 3D editor. Drives the
-`@pascal-app/core` scene graph from any MCP-compatible AI host.
+Model Context Protocol server for the Aedifex 3D editor. Drives the
+`@aedifex/core` scene graph from any MCP-compatible AI host.
 
-For the hosted Pascal MCP endpoint and copy-ready setup for Claude Code, Codex,
-Cursor, and OpenClaw, read [Connect an AI agent](https://editor.pascal.app/docs/developers/mcp).
-The hosted endpoint edits projects in a Pascal account; this package is the
-open-source, local server for custom hosts and local scene storage.
+This package is the open-source local server for custom hosts and local scene
+storage, with copy-ready setup for Claude Code, Codex, Cursor, and other MCP clients.
 
 The server runs headlessly in Node.js 22.13 or newer or Bun, with no browser,
 WebGPU, React, or external database service. It exposes the same scene mutations used
@@ -15,27 +13,33 @@ resources, and prompts.
 
 ## Recommended local setup
 
-For a local editor and MCP that share projects automatically, install the Pascal CLI:
+The CLI is repository-local and is not published to npm. For local development, build
+and link it from this checkout before starting the managed editor and MCP service:
 
 ```bash
-npx @pascal-app/cli editor
-pascal mcp setup codex
+cd packages/cli
+bun run build-runtime
+bun run build
+bun run stage-runtime
+bun link
+aedifex editor
+aedifex mcp setup codex
 ```
 
-`pascal editor` starts the editor and an authenticated MCP service together.
-`pascal mcp connect` is a stable stdio connector that discovers the dynamic loopback
+`aedifex editor` starts the editor and an authenticated MCP service together.
+`aedifex mcp connect` is a stable stdio connector that discovers the dynamic loopback
 port, so MCP client configuration contains neither a changing port nor a secret.
 
 Use this package directly when embedding the MCP server, supplying a custom store, or
-running MCP without the Pascal editor.
+running MCP without the Aedifex editor.
 
 ## Install the package directly
 
 ```bash
-bun add @pascal-app/mcp
+bun add @aedifex/mcp
 ```
 
-`@pascal-app/core` is a peer dependency. The local store uses Bun SQLite under Bun and
+`@aedifex/core` is a peer dependency. The local store uses Bun SQLite under Bun and
 Node's built-in SQLite driver under Node.js.
 
 ## Quick start
@@ -43,28 +47,28 @@ Node's built-in SQLite driver under Node.js.
 Launch the server over stdio in one line:
 
 ```bash
-bunx @pascal-app/mcp
+bunx @aedifex/mcp
 # or
-npm exec --package=@pascal-app/mcp -- pascal-mcp
+npm exec --package=@aedifex/mcp -- aedifex-mcp
 ```
 
 Load an initial scene from disk:
 
 ```bash
-bunx @pascal-app/mcp --stdio --scene ./my-scene.json
+bunx @aedifex/mcp --stdio --scene ./my-scene.json
 ```
 
 Expose it over loopback HTTP:
 
 ```bash
-bunx @pascal-app/mcp --http --port 8787
+bunx @aedifex/mcp --http --port 8787
 ```
 
 Binding a non-loopback host requires a bearer token:
 
 ```bash
-PASCAL_MCP_HTTP_TOKEN="$(openssl rand -hex 32)" \
-  bunx @pascal-app/mcp --http --host 0.0.0.0 --port 8787 --cors-origin https://editor.example
+AEDIFEX_MCP_HTTP_TOKEN="$(openssl rand -hex 32)" \
+  bunx @aedifex/mcp --http --host 0.0.0.0 --port 8787 --cors-origin https://editor.example
 ```
 
 ## Local scene storage
@@ -72,11 +76,11 @@ PASCAL_MCP_HTTP_TOKEN="$(openssl rand -hex 32)" \
 Scenes saved through MCP are stored in a local SQLite database:
 
 ```text
-~/.pascal/data/pascal.db
+~/.pascal/data/aedifex.db
 ```
 
-Set `PASCAL_DATA_DIR` when you want the MCP server and the running editor to
-share a different directory, or `PASCAL_DB_PATH` when you need an exact database
+Set `AEDIFEX_DATA_DIR` when you want the MCP server and the running editor to
+share a different directory, or `AEDIFEX_DB_PATH` when you need an exact database
 file path. The store uses WAL mode and transactional version checks so separate
 local processes can save and open the same scene database.
 
@@ -84,10 +88,10 @@ During workspace development, run both sides with the same data directory:
 
 ```bash
 # Terminal 1: run the editor
-PASCAL_DATA_DIR="$HOME/.pascal/data" bun run dev
+AEDIFEX_DATA_DIR="$HOME/.pascal/data" bun run dev
 
 # Terminal 2 or an MCP host: run the server
-PASCAL_DATA_DIR="$HOME/.pascal/data" bun packages/mcp/dist/bin/pascal-mcp.js
+AEDIFEX_DATA_DIR="$HOME/.pascal/data" bun packages/mcp/dist/bin/aedifex-mcp.js
 ```
 
 ### Local geometry artifacts
@@ -98,13 +102,16 @@ first scene); keep that directory with the database. Files are verified against 
 written once, so saved scenes and undo history keep their original geometry. The standalone
 editor reads and writes the same database-side store.
 
-Local MCP compilation is opt-in with `PASCAL_SERVER_SCRIPT_COMPILE=1`. It runs in a separate
-process without inherited environment variables, with a deadline; this is not a sandbox for
-untrusted code. `get_source` can read saved scripts without enabling compilation.
+Local MCP compilation is disabled by default and requires `AEDIFEX_SERVER_SCRIPT_COMPILE=1`.
+Enable it only for code you trust: scripts run with the local user's filesystem and network
+permissions. Clearing the subprocess environment and stopping it after 20 seconds do not
+isolate those permissions; this is not a sandbox for untrusted code. Hosted SaaS uses the
+browser's opaque-origin sandbox instead and must not enable this local host. `get_source`
+can read saved scripts without enabling compilation.
 
 ## Live editor updates
 
-When the editor and MCP server share the same `PASCAL_DATA_DIR`, MCP mutations
+When the editor and MCP server share the same `AEDIFEX_DATA_DIR`, MCP mutations
 against a loaded saved scene are persisted to SQLite and recorded in a local
 `scene_events` stream. The editor page subscribes to that stream at
 `/api/scenes/:id/events` with server-sent events, so an open browser tab can
@@ -133,8 +140,8 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
 ```json
 {
   "mcpServers": {
-    "pascal": {
-      "command": "pascal",
+    "aedifex": {
+      "command": "aedifex",
       "args": ["mcp", "connect"]
     }
   }
@@ -146,7 +153,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
 Via the CLI:
 
 ```bash
-pascal mcp setup claude
+aedifex mcp setup claude
 ```
 
 Or add to `.mcp.json` at the repo root:
@@ -154,8 +161,8 @@ Or add to `.mcp.json` at the repo root:
 ```json
 {
   "mcpServers": {
-    "pascal": {
-      "command": "pascal",
+    "aedifex": {
+      "command": "aedifex",
       "args": ["mcp", "connect"]
     }
   }
@@ -168,11 +175,11 @@ Code at the built binary:
 ```json
 {
   "mcpServers": {
-    "pascal": {
+    "aedifex": {
       "command": "node",
-      "args": ["/absolute/path/to/editor/packages/mcp/dist/bin/pascal-mcp.js"],
+      "args": ["/absolute/path/to/editor/packages/mcp/dist/bin/aedifex-mcp.js"],
       "env": {
-        "PASCAL_DATA_DIR": "/Users/you/.pascal/data"
+        "AEDIFEX_DATA_DIR": "/Users/you/.pascal/data"
       }
     }
   }
@@ -184,27 +191,27 @@ Code at the built binary:
 Via the CLI:
 
 ```bash
-pascal mcp setup codex
+aedifex mcp setup codex
 ```
 
 For local workspace testing before publish:
 
 ```bash
 bun run --cwd packages/mcp build
-codex mcp add pascal-dev \
-  --env PASCAL_DATA_DIR="$HOME/.pascal/data" \
-  -- node "$PWD/packages/mcp/dist/bin/pascal-mcp.js"
+codex mcp add aedifex-dev \
+  --env AEDIFEX_DATA_DIR="$HOME/.pascal/data" \
+  -- node "$PWD/packages/mcp/dist/bin/aedifex-mcp.js"
 ```
 
 This writes an entry like this to `~/.codex/config.toml`:
 
 ```toml
-[mcp_servers.pascal-dev]
+[mcp_servers.aedifex-dev]
 command = "node"
-args = ["/absolute/path/to/editor/packages/mcp/dist/bin/pascal-mcp.js"]
+args = ["/absolute/path/to/editor/packages/mcp/dist/bin/aedifex-mcp.js"]
 
-[mcp_servers.pascal-dev.env]
-PASCAL_DATA_DIR = "/Users/you/.pascal/data"
+[mcp_servers.aedifex-dev.env]
+AEDIFEX_DATA_DIR = "/Users/you/.pascal/data"
 ```
 
 ### Cursor config
@@ -214,8 +221,8 @@ In Cursor settings (`settings.json`):
 ```json
 {
   "mcp.servers": {
-    "pascal": {
-      "command": "pascal",
+    "aedifex": {
+      "command": "aedifex",
       "args": ["mcp", "connect"]
     }
   }
@@ -229,13 +236,13 @@ example below runs a full client/server pair inside a single script — useful
 for agent frameworks and tests.
 
 ```ts
-import { createPascalMcpServer, SceneBridge } from '@pascal-app/mcp'
+import { createAedifexMcpServer, SceneBridge } from '@aedifex/mcp'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 
 const bridge = new SceneBridge()
 bridge.loadDefault()
-const server = createPascalMcpServer({ bridge })
+const server = createAedifexMcpServer({ bridge })
 
 const [srvT, cliT] = InMemoryTransport.createLinkedPair()
 const client = new Client({ name: 'my-agent', version: '0.1.0' })
@@ -253,7 +260,7 @@ compilable version.
 
 ## Coordinate conventions
 
-Pascal is a **right-handed** scene where **X and Z form the ground plane and Y
+Aedifex is a **right-handed** scene where **X and Z form the ground plane and Y
 is up**. Lengths are in **metres**; rotations are **radians**, stored as Euler
 `[x, y, z]` tuples.
 
@@ -273,7 +280,7 @@ stacked height as computed by the level system from accumulated level heights,
 plus the element's own height; slabs additionally carry an absolute
 `elevation`.
 
-**Heads-up when you compute coordinates outside the editor.** Pascal's
+**Heads-up when you compute coordinates outside the editor.** Aedifex's
 viewports apply their own rotations on top of the world axes: the 2-D plan
 panel rotates its content by the user's view rotation (north-aligned = 0°,
 `FLOORPLAN_VIEW_ROTATION_DEG` baseline, north = world −Z), and
@@ -282,7 +289,7 @@ from the iso default position, world and screen axes are offset by ~45° until
 you orbit to an axis-aligned view. So a layout authored as if
 *"Y = north, viewed top-down"* — common in land surveys, north-up site plans,
 and 2-D plotting libraries — will arrive **rotated** relative to its source
-when viewed in Pascal (and possibly further reflected, depending on which
+when viewed in Aedifex (and possibly further reflected, depending on which
 viewport and camera state you're in). The editor's own 2-D and 3-D tools are
 internally consistent with their stored coordinates, so this only affects
 geometry authored programmatically. To verify orientation before trusting
@@ -296,7 +303,7 @@ external-coordinate gotcha — lives in
 [`examples/coordinate-conventions-demo.md`](./examples/coordinate-conventions-demo.md)
 and [`examples/coordinate-conventions-demo.json`](./examples/coordinate-conventions-demo.json).
 Load the JSON with
-`bunx @pascal-app/mcp --stdio --scene examples/coordinate-conventions-demo.json`.
+`bunx @aedifex/mcp --stdio --scene examples/coordinate-conventions-demo.json`.
 
 **Example — a 6 × 4 m slab rotated 30° about its first corner** (coordinates
 rounded to 3 dp; sides ≈ 6 m / 4 m; not axis-aligned, so the mapping is
@@ -360,7 +367,7 @@ captured by Zundo's temporal middleware as a single undoable step.
 | `export_json` | Serialize the scene graph as JSON. | `{ pretty? }` | `{ json: string }` |
 | `export_glb` | Stubbed: GLB export requires the browser renderer. | — | throws `not_implemented` |
 | `validate_scene` | Zod-validate every node and parent-child integrity. | — | `{ valid, errors: { nodeId, path, message }[] }` |
-| `validate_design` | Read-only: validate a design (procedural item recipe, object or JSON string) and measure it. The authority over `pascal://schema/design`. | `{ design, parameters? }` | `{ valid, diagnostics[], design, sweep, measurements }` |
+| `validate_design` | Read-only: validate a design (procedural item recipe, object or JSON string) and measure it. The authority over `aedifex://schema/design`. | `{ design, parameters? }` | `{ valid, diagnostics[], design, sweep, measurements }` |
 | `verify_scene` | High-level check with validation status, per-level counts and roles, empty levels, and typed practical issues (storeys with no stair, openings off their wall, stairs off their slab, blocked doors…). | — | `{ valid, levels[], issues: { type, message }[], hasIssues }` |
 | `check_collisions` | Find overlapping items and out-of-bounds placements. | `{ levelId? }` | `{ collisions: { aId, bId, kind }[] }` |
 | `analyze_floorplan_image` | Vision tool: extract walls, rooms, and approximate dimensions from a floorplan image. | `{ image, scaleHint? }` | `{ walls, rooms, approximateDimensions, confidence }` |
@@ -374,12 +381,12 @@ The vision tools require the MCP host to support the sampling capability
 
 | URI | MIME | Purpose |
 | --- | --- | --- |
-| `pascal://scene/current` | `application/json` | Full `{ nodes, rootNodeIds, collections }` snapshot. |
-| `pascal://scene/current/summary` | `text/markdown` | Human-readable summary with node counts, bounding box, and level areas. |
-| `pascal://agent/guide` | `text/markdown` | MCP-first construction workflow, scene invariants, and tool preferences for agents. |
-| `pascal://catalog/items` | `application/json` | Dependency-free built-in catalog subset for common residential furniture and fixtures. |
-| `pascal://constraints/{levelId}` | `application/json` | Slab footprints and wall polygons for the given level — useful as planner context. |
-| `pascal://schema/design` | `application/json` | Design contract: JSON Schema generated from core's `RecipeSchema`, limits, rules only `validate_design` checks, and an example. |
+| `aedifex://scene/current` | `application/json` | Full `{ nodes, rootNodeIds, collections }` snapshot. |
+| `aedifex://scene/current/summary` | `text/markdown` | Human-readable summary with node counts, bounding box, and level areas. |
+| `aedifex://agent/guide` | `text/markdown` | MCP-first construction workflow, scene invariants, and tool preferences for agents. |
+| `aedifex://catalog/items` | `application/json` | Dependency-free built-in catalog subset for common residential furniture and fixtures. |
+| `aedifex://constraints/{levelId}` | `application/json` | Slab footprints and wall polygons for the given level — useful as planner context. |
+| `aedifex://schema/design` | `application/json` | Design contract: JSON Schema generated from core's `RecipeSchema`, limits, rules only `validate_design` checks, and an example. |
 
 ## Prompts
 
@@ -401,7 +408,7 @@ The vision tools require the MCP host to support the sampling capability
 - Systems (wall mitering, slab triangulation, CSG cutouts, roof / stair
   generation) run inside React hooks in the editor. Headless mode doesn't
   regenerate derived geometry — but all node data remains fully manipulable.
-  Consumers that need rendered geometry run `@pascal-app/viewer` in a browser
+  Consumers that need rendered geometry run `@aedifex/viewer` in a browser
   host.
 - Core's `loadAssetUrl` / `saveAsset` are browser-only; items that reference
   `asset://<id>` URLs aren't resolvable in Node. Supply absolute URLs or

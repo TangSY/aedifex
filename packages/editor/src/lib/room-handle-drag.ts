@@ -27,8 +27,8 @@ import {
   useLiveNodeOverrides,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import type { Ray } from 'three'
 import { create } from 'zustand'
 import { ARROW_COLOR } from '../components/editor/handles/handle-arrow'

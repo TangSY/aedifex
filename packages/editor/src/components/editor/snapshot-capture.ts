@@ -3,7 +3,7 @@ import type {
   SnapshotCapturePose,
   SnapshotSavedEvent,
   ThumbnailGenerateEvent,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { MathUtils, type PerspectiveCamera } from 'three'
 
 export function isOverlaySnapshotSave(event: SnapshotSavedEvent | undefined, projectId: string) {

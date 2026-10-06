@@ -1,7 +1,7 @@
 import dedent from 'dedent'
 import { z } from 'zod'
 import { BaseNode, nodeType, objectId } from '../base'
-import { SurfacePaintRegion } from './surface-paint-region'
+import { ZoneCeilingIntent, ZoneFloorIntent, ZoneFloorStepOverrides } from './zone-intent'
 
 export const ZoneNode = BaseNode.extend({
   id: objectId('zone'),
@@ -17,36 +17,12 @@ export const ZoneNode = BaseNode.extend({
   boundarySeparatorIds: z.array(z.string()).default([]),
   hostZoneId: z.string().optional(),
   seed: z.tuple([z.number(), z.number()]).optional(),
-  floor: z
-    .object({
-      elevation: z.number().optional(),
-      support: z.literal('open').optional(),
-      footprint: z.string().min(1).optional(),
-      thickness: z.number().min(0.02).optional(),
-      sourceSlabId: z.templateLiteral(['slab_', z.string()]).optional(),
-      finish: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
-      regions: z.array(SurfacePaintRegion).optional(),
-    })
-    .optional(),
-  // Painted parts of the room's ceiling. The automatic ceilings are rebuilt
-  // from the room, so what the user painted on them lives here.
-  ceiling: z
-    .object({
-      regions: z.array(SurfacePaintRegion).optional(),
-    })
-    .optional(),
+  floor: ZoneFloorIntent.optional(),
+  // Painted parts of the room ceiling survive automatic surface reconciliation.
+  ceiling: ZoneCeilingIntent.optional(),
   floorStepFinish: z.string().optional(),
-  // Per-doorway step paint over `floorStepFinish`, keyed by the door the step
-  // sits under or the lower room it looks at (see `lib/floor-step-finish`).
-  floorStepOverrides: z
-    .array(
-      z.object({
-        key: z.string(),
-        step: z.number().int().min(0).optional(),
-        finish: z.string(),
-      }),
-    )
-    .optional(),
+  // Per-doorway step paint, keyed by its door or the lower room it faces.
+  floorStepOverrides: ZoneFloorStepOverrides.optional(),
   floorEdgeFinish: z.string().optional(),
   wallMaterial: z.string().optional(),
   wallOverrides: z
@@ -73,7 +49,6 @@ export const ZoneNode = BaseNode.extend({
   clearDimensionPolicy: z.enum(['none', 'inside-faces', 'finish-faces']).default('none'),
   // Visual styling
   color: z.string().default('#3b82f6'), // Default blue
-  metadata: z.record(z.string(), z.unknown()).optional().default({}),
 }).describe(
   dedent`
   Zone schema - a polygon zone attached to a level

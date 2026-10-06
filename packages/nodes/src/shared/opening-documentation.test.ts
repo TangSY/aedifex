@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, DoorNode, LevelNode, WallNode, WindowNode } from '@pascal-app/core'
+import { type AnyNode, DoorNode, LevelNode, WallNode, WindowNode } from '@aedifex/core'
 import {
   buildDoorFloorplanSchedule,
   buildOpeningMarkAnnotation,

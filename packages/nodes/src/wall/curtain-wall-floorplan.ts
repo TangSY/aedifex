@@ -6,7 +6,7 @@ import {
   getWallCurveLength,
   getWallThickness,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { curtainOpeningProfile, curtainProfileSpan } from './curtain-opening-frame'
 import { buildCurtainWallLayout, type CurtainWallPiece } from './curtain-wall-layout'
 

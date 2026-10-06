@@ -30,12 +30,12 @@ import {
   toggleNodeMechanism,
   useInteractive,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   operablePartFor,
   operableParts,
   type ProceduralItemNode,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import {
   BVHEcctrl,
   type BVHEcctrlApi,
@@ -52,7 +52,7 @@ import {
   setSurfaceRaycastLayers,
   useViewer,
   WALKTHROUGH_FOV,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { KeyboardControls } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -1535,23 +1535,32 @@ export const FirstPersonControls = () => {
     }
 
     const handleKeyUp = (event: KeyboardEvent) => {
-      if ((event.code === 'ControlLeft' || event.code === 'ControlRight') && !suspendRef.current) {
+      if (
+        (event.code === 'ControlLeft' || event.code === 'ControlRight') &&
+        (isDroneMode || !suspendRef.current)
+      ) {
         crouchKeyRef.current = false
       }
-      if (event.code === 'KeyQ' && !suspendRef.current) {
+      if (event.code === 'KeyQ') {
         droneDescendKeyRef.current = false
       }
-      if (event.code === 'KeyE' && !suspendRef.current) {
+      if (event.code === 'KeyE') {
         droneAscendKeyRef.current = false
       }
-      if ((event.code === 'AltLeft' || event.code === 'AltRight') && !suspendRef.current) {
+      if (event.code === 'AltLeft' || event.code === 'AltRight') {
         droneSlowKeyRef.current = false
       }
       applyMovementKey(event, false)
     }
 
     const handleBlur = () => {
-      if (!suspendRef.current) {
+      // A blurred window may never deliver keyup. Drone input must not resume
+      // from a held key after the user returns to the capture camera.
+      if (isDroneMode) {
+        Object.assign(movementInputRef.current, inactiveMovementInput)
+        droneVelocityRef.current.set(0, 0, 0)
+      }
+      if (isDroneMode || !suspendRef.current) {
         crouchKeyRef.current = false
         droneAscendKeyRef.current = false
         droneDescendKeyRef.current = false
@@ -1808,6 +1817,12 @@ export const FirstPersonControls = () => {
   // rises, Q (or Ctrl) sinks, and Shift boosts.
   useFrame((_, delta) => {
     if (!isDroneMode) return
+    // Releasing pointer lock holds the authored frame. Drop inertia too, so
+    // resuming after keyup cannot continue the movement from before the pause.
+    if (suspendRef.current) {
+      droneVelocityRef.current.set(0, 0, 0)
+      return
+    }
     // Shutter hold: freeze the drone mid-air while the shot renders.
     if (useEditor.getState().captureShutterHold) return
 

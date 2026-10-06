@@ -22,7 +22,7 @@ import {
   useScene,
   type WallNode,
   wallRoomFinishRole,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Painter application scope — how far one paint click spreads. The scope set is

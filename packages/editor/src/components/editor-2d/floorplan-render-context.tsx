@@ -1,6 +1,6 @@
 'use client'
 
-import type { FloorplanPalette } from '@pascal-app/core'
+import type { FloorplanPalette } from '@aedifex/core'
 import {
   createContext,
   type ReactNode,

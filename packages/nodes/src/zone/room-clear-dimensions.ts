@@ -7,8 +7,8 @@ import {
   type SpaceBoundaryFace,
   type WallNode,
   type ZoneNode,
-} from '@pascal-app/core'
-import { readFloorplanContext } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { readFloorplanContext } from '@aedifex/editor'
 import {
   type ConstructionLengthProfile,
   type ConstructionMetricNotation,

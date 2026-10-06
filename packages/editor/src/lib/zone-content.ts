@@ -8,7 +8,7 @@ import {
   type SlabNode,
   type WallNode,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 type Point2D = [number, number]
 

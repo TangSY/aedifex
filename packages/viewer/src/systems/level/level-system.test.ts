@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core'
-import { sceneRegistry, useScene } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId } from '@aedifex/core'
+import { sceneRegistry, useScene } from '@aedifex/core'
 import { create } from '@react-three/test-renderer'
 import { createElement } from 'react'
 import { Object3D } from 'three'

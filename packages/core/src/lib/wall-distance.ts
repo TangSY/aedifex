@@ -4,7 +4,7 @@ import { isCurvedWall } from '../systems/wall/wall-curve'
 
 /**
  * Pure plan-space wall-distance math shared by the 2D opening snap
- * (`findClosestWallInPlan` in @pascal-app/nodes) and the editor's 2D
+ * (`findClosestWallInPlan` in @aedifex/nodes) and the editor's 2D
  * Voronoi debug overlay. One source of truth means the overlay is a
  * faithful picture of what the snap actually decides.
  *

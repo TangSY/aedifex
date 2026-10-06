@@ -12,7 +12,7 @@ import {
   isCurvedWall,
   type WallNode,
   type WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { getColumnFloorplanFootprint } from '../column/floorplan'
 import {
   type ConstructionDimensionDrawingStandard,

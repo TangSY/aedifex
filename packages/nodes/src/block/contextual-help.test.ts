@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { getContextualHelpNodeExtension } from '@pascal-app/editor'
+import { getContextualHelpNodeExtension } from '@aedifex/editor'
 import { blockDefinition } from './definition'
 import useBlockEditSession from './edit-session'
 import { createBlockSelection } from './selection-model'

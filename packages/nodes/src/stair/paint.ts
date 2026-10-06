@@ -4,7 +4,7 @@ import type {
   PaintResolveArgs,
   StairNode,
   StairSlotId,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { Mesh, Object3D } from 'three'
 import { buildSlotPreviewMaterial, createSlotPaintCapability } from '../shared/slot-paint'
 import { swapPreviewMaterial } from '../shared/swap-preview-material'

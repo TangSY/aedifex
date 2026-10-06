@@ -7,7 +7,7 @@ import {
   onRegistryChange,
   type RendererSource,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { type ComponentType, lazy, Suspense, useCallback, useSyncExternalStore } from 'react'
 import { ParametricNodeRenderer } from './parametric-node-renderer'
 

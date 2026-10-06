@@ -6,7 +6,7 @@ import {
   type SlabNode,
   useScene,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { Group, Mesh } from 'three'
 import { doorwayStepsFixture } from '../../../../core/src/systems/slab/__fixtures__/doorway-steps'
 import { buildSlabGeometry } from '../geometry'

@@ -1,5 +1,5 @@
-import { type AnyNode, deriveZoneQuantityReport, type ZoneNode } from '@pascal-app/core'
-import type { FloorplanSchedule } from '@pascal-app/editor'
+import { type AnyNode, deriveZoneQuantityReport, type ZoneNode } from '@aedifex/core'
+import type { FloorplanSchedule } from '@aedifex/editor'
 import {
   type ConstructionLengthProfile,
   type ConstructionLinearUnit,

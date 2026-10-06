@@ -1,6 +1,6 @@
 'use client'
 
-import { type Point, useScene } from '@pascal-app/core'
+import { type Point, useScene } from '@aedifex/core'
 import { useEffect, useMemo } from 'react'
 import {
   BufferGeometry,

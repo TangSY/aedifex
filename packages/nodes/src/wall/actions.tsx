@@ -4,7 +4,7 @@ import {
   planWallMerge,
   runAsSingleSceneHistoryStep,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   captureElementActionOrigin,
   completeElementAction,
@@ -12,8 +12,8 @@ import {
   TooltipContent,
   TooltipTrigger,
   triggerSFX,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { FoldHorizontal, Scissors } from 'lucide-react'
 import { useMemo } from 'react'
 import { openWallSplit } from './split-session'

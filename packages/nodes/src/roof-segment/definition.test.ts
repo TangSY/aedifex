@@ -5,7 +5,7 @@ import {
   type LinearResizeHandle,
   type RadialResizeHandle,
   type RoofSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { roofSegmentDefinition } from './definition'
 
 function segment(overrides: Partial<RoofSegmentNode> = {}): RoofSegmentNode {

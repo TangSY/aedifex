@@ -9,8 +9,8 @@ import {
   SiteNode,
   useScene,
   ZoneNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { create } from '@react-three/test-renderer'
 import { createElement } from 'react'
 import { cancelActiveTool } from '../hooks/use-keyboard'

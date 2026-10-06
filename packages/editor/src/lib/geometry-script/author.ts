@@ -6,14 +6,14 @@ import {
   getArtifactStore,
   runAsSingleSceneHistoryStep,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   addColumn,
   addObject,
   authoredObject,
   editedScriptParams,
   rescriptOpening,
-} from '@pascal-app/core/agent-operations'
+} from '@aedifex/core/agent-operations'
 import { compileGeometryScriptInWorker } from './client'
 
 /**
@@ -26,16 +26,20 @@ export async function compileAndStoreGeometryScript(input: {
   code?: string
   nodeId?: string
   params?: Record<string, GeometryScriptParamValue>
+  assertCurrent?: () => void
 }): Promise<CompiledGeometryScript> {
+  const store = getArtifactStore()
   const code = input.code ?? (await storedScript(input.nodeId))
+  input.assertCurrent?.()
   const node = input.nodeId ? useScene.getState().nodes[input.nodeId as AnyNodeId] : undefined
   const params = editedScriptParams(node, input.params)
   const { glb, ...compiled } = await compileGeometryScriptInWorker({ code, params })
-  const store = getArtifactStore()
+  input.assertCurrent?.()
   await Promise.all([
     store.put(compiled.sha256, glb, 'model/gltf-binary'),
     store.put(compiled.script, new TextEncoder().encode(code), GEOMETRY_SCRIPT_MIME_TYPE),
   ])
+  input.assertCurrent?.()
   return compiled
 }
 

@@ -2,15 +2,15 @@
  * The viewer's own lines for a sheet: answers `camera-controls:extract-edges`
  * with the visible feature edges of the scene through an orthographic pose
  * — the same pose the thumbnail generator captures the picture from — as
- * world segments on a `pascal:edges` DOM event (lib/vector-edges.ts).
+ * world segments on an `aedifex:edges` DOM event (lib/vector-edges.ts).
  *
  * Runs inside the Canvas next to the ThumbnailGenerator so it shares the
  * renderer and the scene; hides what the picture hides (scan / guide /
  * spawn, the caller's types, objects tagged `userData.excludeFromCapture`)
  * for the length of the extraction.
  */
-import { emitter } from '@pascal-app/core'
-import { GRID_LAYER, holdLiveFrame, temporarilyHideNodeTypes } from '@pascal-app/viewer'
+import { emitter } from '@aedifex/core'
+import { GRID_LAYER, holdLiveFrame, temporarilyHideNodeTypes } from '@aedifex/viewer'
 import { useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
 import * as THREE from 'three'
@@ -19,7 +19,7 @@ import { extractVisibleEdges, type VisibleEdges } from '../../lib/vector-edges'
 import { hideCaptureExcluded } from './thumbnail-generator'
 
 export type ExtractEdgesRequest = {
-  /** Echoed on the `pascal:edges` event so a caller matches its own answer. */
+  /** Echoed on the `aedifex:edges` event so a caller matches its own answer. */
   requestId: string
   ortho: { position: [number, number, number]; target: [number, number, number]; viewWidth: number }
   /** width / height of the picture the edges go over. */
@@ -45,7 +45,7 @@ export function VectorEdgeExtractor() {
 
   useEffect(() => {
     const respond = (detail: ExtractEdgesResult) => {
-      window.dispatchEvent(new CustomEvent('pascal:edges', { detail }))
+      window.dispatchEvent(new CustomEvent('aedifex:edges', { detail }))
     }
     const handle = async (event: ExtractEdgesRequest) => {
       if (!event?.ortho) return
@@ -94,7 +94,7 @@ export function VectorEdgeExtractor() {
         releaseLiveFrame()
       }
       if (process.env.NODE_ENV !== 'production') {
-        ;(window as unknown as { __pascalLastEdges?: unknown }).__pascalLastEdges = result
+        ;(window as unknown as { __aedifexLastEdges?: unknown }).__aedifexLastEdges = result
       }
       respond(
         result

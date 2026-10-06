@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId, CabinetModuleNode, CabinetNode } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, CabinetModuleNode, CabinetNode } from '@aedifex/core'
 
 export type CabinetModulePanelContext = {
   parentRun: CabinetNode

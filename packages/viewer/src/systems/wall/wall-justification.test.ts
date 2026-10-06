@@ -10,7 +10,7 @@ import {
   useScene,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { act, create } from '@react-three/test-renderer'
 import { createElement } from 'react'
 import { Box3, DoubleSide, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'

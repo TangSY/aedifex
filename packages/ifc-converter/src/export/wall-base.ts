@@ -6,7 +6,7 @@ import {
   resolveWallFaceBottom,
   type WallNode,
   type wallSupportForNodes,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 type WallSupport = ReturnType<typeof wallSupportForNodes>
 type Segment = WallSupport['baseSegments'][number]

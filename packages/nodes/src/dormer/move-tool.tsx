@@ -7,9 +7,9 @@ import {
   type RoofSegmentNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { commitFreshPlacementSubtree, useEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { commitFreshPlacementSubtree, useEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo } from 'react'
 import { DormerPlacementGuides } from './placement-guides'
 import DormerPreview from './preview'

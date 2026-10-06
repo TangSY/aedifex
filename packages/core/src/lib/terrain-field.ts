@@ -15,7 +15,7 @@
  *    predicate, and the tests cannot disagree about where the ground is.
  *
  * Pure data — no Three.js, per the core layer rule. The mesh built from this
- * lives in `@pascal-app/nodes`.
+ * lives in `@aedifex/nodes`.
  */
 
 /**

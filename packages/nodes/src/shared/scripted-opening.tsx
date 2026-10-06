@@ -13,8 +13,8 @@ import {
   useInteractive,
   useScene,
   type WindowNode,
-} from '@pascal-app/core'
-import { SCRIPTED_MODEL_FLAG } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { SCRIPTED_MODEL_FLAG } from '@aedifex/viewer'
 import { useCallback, useMemo, useRef } from 'react'
 import type { Group } from 'three'
 import { ScriptedModel } from '../item/renderer'

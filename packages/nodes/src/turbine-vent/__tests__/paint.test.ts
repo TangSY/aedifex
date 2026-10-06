@@ -26,7 +26,7 @@ describe('turbine vent paint', () => {
     ).toBe('library:steel')
     expect(
       turbineVentPaint.getEffectiveMaterial?.({ node, role: 'head', nodes: {} })?.materialPreset,
-    ).toBe('preset-white')
+    ).toBe('library:preset-white')
   })
 
   test('previews only the selected mesh', () => {

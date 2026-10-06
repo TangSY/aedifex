@@ -26,10 +26,10 @@ import {
   useScene,
   WallNode,
   ZoneNode,
-} from '@pascal-app/core'
-import { ProceduralItemNode } from '@pascal-app/core/procedural-items'
-import { useEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { ProceduralItemNode } from '@aedifex/core/procedural-items'
+import { useEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import { renderToString } from 'react-dom/server'
 import gridTableRecipe from '../../../core/src/procedural-items/__fixtures__/grid-table.json'

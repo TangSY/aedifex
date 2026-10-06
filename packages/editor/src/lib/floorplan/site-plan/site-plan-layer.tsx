@@ -6,7 +6,7 @@ import {
   pauseSceneHistory,
   resumeSceneHistory,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { type PointerEvent as ReactPointerEvent, useCallback, useMemo, useRef } from 'react'
 import { FloorplanGeometryRenderer } from '../../../components/editor-2d/renderers/floorplan-geometry-renderer'
 import { clientToPlan } from '../plan-coords'

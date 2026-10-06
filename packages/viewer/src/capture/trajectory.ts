@@ -2,7 +2,7 @@ import {
   DeviceMotionSampleSchema,
   type DeviceMotionTrajectoryPayload,
   DeviceMotionTrajectorySchema,
-} from '@pascal-app/core/capture'
+} from '@aedifex/core/capture'
 import { Matrix4, Quaternion, Vector3 } from 'three'
 
 export type DeviceTrajectoryPose = {

@@ -12,7 +12,7 @@ import {
   spatialGridManager,
   useScene,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Raycaster, Vector3 } from 'three'
 import { columnDefinition } from '../../column/definition'
 import { buildFenceGeometry } from '../../fence/geometry'

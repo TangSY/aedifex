@@ -6,8 +6,8 @@ import {
   type StairSegmentNode,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { isAngleSnapActive } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { isAngleSnapActive } from '@aedifex/editor'
 import { rotateAffordanceDelta } from '../shared/rotate-affordance'
 
 // Minimums + max sweep mirror the 3D handles in

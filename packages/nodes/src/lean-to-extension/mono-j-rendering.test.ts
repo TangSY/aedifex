@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, LeanToExtensionNode, LevelNode, WallNode } from '@pascal-app/core'
-import { generateRoofSegmentGeometry } from '@pascal-app/viewer'
+import { type AnyNode, LeanToExtensionNode, LevelNode, WallNode } from '@aedifex/core'
+import { generateRoofSegmentGeometry } from '@aedifex/viewer'
 import { Matrix4, Mesh, Quaternion, Raycaster, Vector3 } from 'three'
 import { createLeanToAssembly } from './assembly'
 import { leanToWallLocalPose, resolveLeanToWallPlacement } from './layout'

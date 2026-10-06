@@ -44,6 +44,6 @@ describe('cupola paint', () => {
     ).toBe('library:louver')
     expect(
       cupolaPaint.getEffectiveMaterial?.({ node, role: 'base', nodes: {} })?.materialPreset,
-    ).toBe('preset-white')
+    ).toBe('library:preset-white')
   })
 })

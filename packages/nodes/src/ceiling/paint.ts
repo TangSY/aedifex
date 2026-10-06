@@ -15,8 +15,8 @@ import {
   resolveMaterial,
   type SceneMaterialId,
   useScene,
-} from '@pascal-app/core'
-import { CEILING_REGION_MESH } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { CEILING_REGION_MESH } from '@aedifex/viewer'
 import type { Material, Mesh, Object3D } from 'three'
 import { createSlotPaintCapability, resolveSlotPaintMaterialRef } from '../shared/slot-paint'
 import { swapPreviewMaterial } from '../shared/swap-preview-material'

@@ -1,1 +1,1 @@
-export { SkylightNode } from '@pascal-app/core'
+export { SkylightNode } from '@aedifex/core'

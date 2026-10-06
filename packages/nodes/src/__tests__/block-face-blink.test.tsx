@@ -11,9 +11,9 @@ import {
   sceneRegistry,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { useDraftNode, useEditor, usePlacementCoordinator } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useDraftNode, useEditor, usePlacementCoordinator } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import { type Mesh, Vector3 } from 'three'
 import { getInitialState } from '../item/move-tool'

@@ -4,7 +4,7 @@
 
 Applies to: `packages/mcp/**`, `skills/**`, and the scene operations and tool contracts in `packages/core/src/**` that agents call.
 
-Pascal has two agent surfaces: the MCP server in this repo, used by external agents (Claude Code, Codex, …), and the AI chat of the hosted editor, whose loop lives in the hosted product. Both drive the same scene. What agents know about building in Pascal travels with them as the `pascal-3d` skill (`skills/pascal-3d/`) and the `pascal://agent-guide` resource. Treat these as **three presentations of the same capabilities** — the same default expectation as [2D ↔ 3D behavioral parity](tools.md).
+Pascal has two agent surfaces: the MCP server in this repo, used by external agents (Claude Code, Codex, …), and the AI chat of the hosted editor, whose loop lives in the hosted product. Both drive the same scene. What agents know about building in Pascal travels with them as the `pascal-3d` skill (`skills/pascal-3d/`) and the `aedifex://agent-guide` resource. Treat these as **three presentations of the same capabilities** — the same default expectation as [2D ↔ 3D behavioral parity](tools.md).
 
 ## The rule
 
@@ -18,7 +18,7 @@ Pascal has two agent surfaces: the MCP server in this repo, used by external age
 
 A tool has three layers, and only the last one may differ between surfaces:
 
-1. **Contract** — name, description, input schema — one definition in `@pascal-app/core/agent-tools`, registered by the MCP and defined by the chat from the same object. Kept zod-only: the chat declares tools inside a sandbox that rejects Node-dependent packages (`contracts-purity.test.ts`).
+1. **Contract** — name, description, input schema — one definition in `@aedifex/core/agent-tools`, registered by the MCP and defined by the chat from the same object. Kept zod-only: the chat declares tools inside a sandbox that rejects Node-dependent packages (`contracts-purity.test.ts`).
 2. **Operation** — validation, defaults, clamping, refusals, the nodes to create — one pure function in core (`planWallOpening`, `verifyScene`, `duplicateLevel`…).
 3. **Executor** — applying to a store (the chat's live store, the MCP's bridge) and the result envelope (live sync, persistence). Surface context resolves here too: "the active floor" is what the person is viewing in the chat.
 
@@ -43,5 +43,5 @@ A tool has three layers, and only the last one may differ between surfaces:
 
 ## Enforcement
 
-- `@pascal-app/core/agent-tools` holds the shared contracts; the hosted repo's `agent-surface-parity.test.ts` fails when a shared tool's name, description or input schema differs between the MCP and the chat. Tools still defined twice are tracked in its tool-surface alignment plan.
+- `@aedifex/core/agent-tools` holds the shared contracts; the hosted repo's `agent-surface-parity.test.ts` fails when a shared tool's name, description or input schema differs between the MCP and the chat. Tools still defined twice are tracked in its tool-surface alignment plan.
 - `review-architecture` loads this page for changes under `packages/mcp/**` and `skills/**`.

@@ -3,7 +3,7 @@ import {
   type NodeDefinition,
   StairSegmentNode as StairSegmentNodeSchema,
   type StairSegmentNode as StairSegmentNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { stairSegmentParametrics } from './parametrics'
 import { StairSegmentNode } from './schema'
 

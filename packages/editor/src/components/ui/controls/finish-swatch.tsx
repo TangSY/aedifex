@@ -7,7 +7,7 @@ import {
   getSceneMaterialIdFromRef,
   nodeRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '../primitives/popover'
 import { MaterialPicker } from './material-picker'

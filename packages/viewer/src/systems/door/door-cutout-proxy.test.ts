@@ -9,7 +9,7 @@ import {
   sceneRegistry,
   useScene,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { act, create } from '@react-three/test-renderer'
 import { createElement } from 'react'
 import * as THREE from 'three'

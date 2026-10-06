@@ -3,7 +3,7 @@ import {
   getSceneMaterialIdFromRef,
   type SceneMaterialId,
   toSceneMaterialRef,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 // Where a scene material (`scene:<id>`) is used. A node carries refs in more
 // places than its `slots`: a room's floor finish and floor regions, its wall

@@ -5,8 +5,8 @@ import type {
   CabinetNode as CabinetNodeType,
   MovableParentFrame,
   ParentFrameSnapMatch,
-} from '@pascal-app/core'
-import { findLevelAncestorId } from '@pascal-app/core'
+} from '@aedifex/core'
+import { findLevelAncestorId } from '@aedifex/core'
 import { findWallOpeningConflicts } from '../shared/wall-opening-clearance'
 import { moduleMaxX, moduleMinX, planToRunLocal, runLocalToPlan } from './run-layout'
 import {

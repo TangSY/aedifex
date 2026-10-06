@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import type { CompiledGeometryScript } from '@pascal-app/core'
+import type { CompiledGeometryScript } from '@aedifex/core'
 import { DiskArtifactStore } from '../storage/disk-artifact-store'
 import type { GeometryScriptHost } from './add-object'
 
@@ -9,8 +9,8 @@ export function localGeometryScripts(projectPath: string): GeometryScriptHost {
   const artifacts = new DiskArtifactStore(projectPath)
   return {
     compile: async (input) => {
-      if (process.env.PASCAL_SERVER_SCRIPT_COMPILE !== '1') {
-        throw new Error('Local script compilation requires PASCAL_SERVER_SCRIPT_COMPILE=1')
+      if (process.env.AEDIFEX_SERVER_SCRIPT_COMPILE !== '1') {
+        throw new Error('Local script compilation requires AEDIFEX_SERVER_SCRIPT_COMPILE=1')
       }
       return new Promise((resolve, reject) => {
         const child = spawn(

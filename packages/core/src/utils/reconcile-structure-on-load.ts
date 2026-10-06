@@ -1,3 +1,4 @@
+import { metadataRecord } from './metadata-record'
 import { automaticFloorHeight, floorPlateHoldsUnderside } from '../lib/floor-foundation-datum'
 import { upperStoreyFootprints } from '../lib/floor-foundation-stack'
 import { area, intersection } from '../lib/polygon-boolean'
@@ -289,8 +290,8 @@ function reconcileStructureOnView(
   nodes = ensureSceneOpenings(nodes).nodes
   nodes = preserveLegacyWallDatums(legacyNodes as Record<string, AnyNode>, nodes)
   for (const level of Object.values(nodes)) {
-    if (level.type !== 'level' || !level.metadata?.legacyRoomMigrationPending) continue
-    const { legacyRoomMigrationPending: _pending, ...metadata } = level.metadata
+    if (level.type !== 'level' || !metadataRecord(level.metadata).legacyRoomMigrationPending) continue
+    const { legacyRoomMigrationPending: _pending, ...metadata } = metadataRecord(level.metadata)
     nodes = { ...nodes, [level.id]: { ...level, metadata } }
   }
   const followed = migrateFootprintFollowing(nodes)

@@ -1,8 +1,8 @@
 'use client'
 
-import { type SeparatorNode, useRegistry, useScene } from '@pascal-app/core'
-import { useEditor } from '@pascal-app/editor'
-import { useNodeEvents, useViewer } from '@pascal-app/viewer'
+import { type SeparatorNode, useRegistry, useScene } from '@aedifex/core'
+import { useEditor } from '@aedifex/editor'
+import { useNodeEvents, useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef } from 'react'
 import { BufferGeometry, Float32BufferAttribute, type Group } from 'three'
 import { LineBasicNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu'

@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeDefinition, AnyNodeId } from '@pascal-app/core'
+import type { AnyNode, AnyNodeDefinition, AnyNodeId } from '@aedifex/core'
 
 export type PanelIcon = { color?: string; src?: string }
 
@@ -60,7 +60,7 @@ export type PanelRow = { section?: string } & (
     }
 )
 
-export const PANEL_MODEL_EXTENSION = 'pascal:editor/panel-model'
+export const PANEL_MODEL_EXTENSION = 'aedifex:editor/panel-model'
 
 /**
  * A control the multi-selection inspector renders for every selected node of

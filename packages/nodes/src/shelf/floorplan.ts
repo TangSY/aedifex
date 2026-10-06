@@ -1,4 +1,4 @@
-import type { AnyNodeId, FloorplanGeometry, GeometryContext } from '@pascal-app/core'
+import type { AnyNodeId, FloorplanGeometry, GeometryContext } from '@aedifex/core'
 import { restingNodePlanFrame } from '../shared/resting-surface-plan'
 import { sanitizeShelfDimensions } from './dimensions'
 import type { ShelfResizePayload } from './floorplan-affordances'

@@ -1,5 +1,5 @@
 import { getFloorPlacedFootprints } from '../../hooks/spatial-grid/floor-placed-footprints'
-import { GROUND_SUPPORT_ID } from '../../hooks/spatial-grid/support-host-id'
+import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import { resolvedFootprintPlane } from '../../lib/floor-foundation-datum'
 import { itemOverlapsPolygon } from '../../lib/item-polygon-overlap'
 import { area, difference } from '../../lib/polygon-boolean'

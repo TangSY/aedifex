@@ -9,7 +9,7 @@ import {
   type WallFace,
   type WallFaceRegion,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { getLinearUnitLabel, type LinearUnit, metersToLinearUnit } from './measurements'
 
 // Rows for the wall panel's "Paint regions" list: finish swatch + name, the

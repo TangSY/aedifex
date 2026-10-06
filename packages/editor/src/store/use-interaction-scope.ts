@@ -7,13 +7,13 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   beginPerfAction,
   commitPerfAction,
   getActivePerfActionId,
   hasUncommittedPerfAction,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useRef } from 'react'
 import { create } from 'zustand'
 import { useShallow } from 'zustand/react/shallow'

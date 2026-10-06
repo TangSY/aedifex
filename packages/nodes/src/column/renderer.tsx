@@ -14,7 +14,7 @@ import {
   useLiveTransforms,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   baseMaterial,
   type ColorPreset,
@@ -31,7 +31,7 @@ import {
   resolveSlotDefaultMaterial,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef } from 'react'
 import { BufferGeometry, Float32BufferAttribute, type Group, type Material } from 'three'
 import { ScriptedOpeningModel } from '../shared/scripted-opening'

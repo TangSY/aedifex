@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import type {
   ViewerPresentationConfiguration,
   ViewerPresentationContribution,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import {
   createLocalProjectPresentationPersistence,
   getLocalProjectPresentationStorageKey,

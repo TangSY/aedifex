@@ -1,4 +1,4 @@
-import { MIN_SLAB_THICKNESS, type ParametricDescriptor } from '@pascal-app/core'
+import { MIN_SLAB_THICKNESS, type ParametricDescriptor } from '@aedifex/core'
 import type { SlabNode } from './schema'
 
 /**

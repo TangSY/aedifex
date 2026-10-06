@@ -10,9 +10,9 @@ import {
   structureChangeBatch,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
-import { useEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { installImmediateAnimationFrames } from '../../../editor/src/test-utils/immediate-animation-frames'
 import { closeWallSplit, commitWallSplit, openWallSplit } from './split-session'
 

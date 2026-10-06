@@ -1,6 +1,6 @@
 'use client'
 
-import { sceneRegistry, useScene } from '@pascal-app/core'
+import { sceneRegistry, useScene } from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, type Group } from 'three'

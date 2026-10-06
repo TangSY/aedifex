@@ -27,7 +27,7 @@ Plain data: no Three.js, no `useFrame` (DECISIONS.md E-001). Pure helpers, plus 
 
 ### Viewer — `packages/viewer/src/systems/`
 
-Three.js side-effects on registered objects (`sceneRegistry`). `<Viewer>` mounts the framework systems directly: `FloorElevationSystem`, `GeometrySystem`, core's `StairOpeningSystem` and `RoofElevationSystem`, and `<RegisteredSystems>`, which mounts every registered kind's `def.system`. The per-kind implementations below are exported by `@pascal-app/viewer` and wrapped by the kinds' `def.system` modules in `packages/nodes`.
+Three.js side-effects on registered objects (`sceneRegistry`). `<Viewer>` mounts the framework systems directly: `FloorElevationSystem`, `GeometrySystem`, core's `StairOpeningSystem` and `RoofElevationSystem`, and `<RegisteredSystems>`, which mounts every registered kind's `def.system`. The per-kind implementations below are exported by `@aedifex/viewer` and wrapped by the kinds' `def.system` modules in `packages/nodes`.
 
 | Directory | Owns |
 |---|---|
@@ -96,7 +96,7 @@ scheduling applies — small edits rebuild immediately, larger queues progressiv
 with an 80 ms trailing quiet window for neighbour invalidation. The wall batch waits
 for the pending-neighbour queue; node batching keeps its 180 ms quiet clock.
 `isWallInitialBuildActive()` and `getPendingWallRebuildCount()` report the state; with
-`?perf`, `__pascalPerf.batchStats().wallDrain` and the `wall-initial-build` span add
+`?perf`, `__aedifexPerf.batchStats().wallDrain` and the `wall-initial-build` span add
 per-frame counters.
 
 ### Floor elevation and hosted children
@@ -119,7 +119,7 @@ A kind's system is a React component that renders nothing and does its per-frame
 
 ```tsx
 // packages/nodes/src/my-kind/system.tsx
-import { sceneRegistry, useScene } from '@pascal-app/core'
+import { sceneRegistry, useScene } from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 
 export default function MyKindSystem() {

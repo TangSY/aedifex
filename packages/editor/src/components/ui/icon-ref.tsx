@@ -1,7 +1,7 @@
 'use client'
 
 import { Icon } from '@iconify/react'
-import type { IconRef } from '@pascal-app/core'
+import type { IconRef } from '@aedifex/core'
 import { type ComponentType, lazy, Suspense } from 'react'
 import { cn } from '../../lib/utils'
 

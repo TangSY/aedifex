@@ -20,8 +20,8 @@ import {
   sceneRegistry,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
-import { SelectionManager } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { SelectionManager } from '@aedifex/editor'
 import {
   CeilingSystem,
   clearMaterialCache,
@@ -30,7 +30,7 @@ import {
   resolveSlotDefaultMaterial,
   SCENE_LAYER,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { flushGlobalEffects } from '@react-three/fiber'
 import { act, create } from '@react-three/test-renderer'
 import type { ReactElement } from 'react'

@@ -12,7 +12,7 @@ import {
   useScene,
   ZoneNode,
   type ZoneNode as ZoneNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { roomBuiltOn, roomFloorChoices, roomFloorKey, separateFloorSummary } from './room-built-on'
 import { roomConstructionState } from './room-construction'
 import {

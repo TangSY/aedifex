@@ -5,8 +5,8 @@ import {
   type FloorplanGeometry,
   type GeometryContext,
   ZoneNode,
-} from '@pascal-app/core'
-import { createFloorplanContextExtensions, readFloorplanGeometryMetadata } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { createFloorplanContextExtensions, readFloorplanGeometryMetadata } from '@aedifex/editor'
 import { buildZoneFloorplan } from './floorplan'
 
 const context = {
@@ -167,7 +167,7 @@ describe('buildZoneFloorplan floor lift chip', () => {
 
 describe('buildZoneFloorplan after a scene load', () => {
   test('legacy zones stored without holes build once loaded, and the editor loads like the viewer', async () => {
-    const { materializeRegisteredNodeDefaults, useScene } = await import('@pascal-app/core')
+    const { materializeRegisteredNodeDefaults, useScene } = await import('@aedifex/core')
     const source = JSON.parse(
       readFileSync(
         new URL(

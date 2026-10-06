@@ -10,7 +10,7 @@ import {
   sampleFenceCenterline,
   snapPointAlongAngleRay,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   findWallSnapTarget,
   getSegmentGridStep,
@@ -19,7 +19,7 @@ import {
   triggerSFX,
   useEditor,
   type WallPlanPoint,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 
 export type FencePlanPoint = WallPlanPoint
 

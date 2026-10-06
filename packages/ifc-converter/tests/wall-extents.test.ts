@@ -2,8 +2,8 @@ import { expect, test } from 'bun:test'
 import { readFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { WallNode } from '@pascal-app/core'
-import { convertIfcToPascal } from '../src'
+import type { WallNode } from '@aedifex/core'
+import { convertIfcToAedifex } from '../src'
 
 const fixture = fileURLToPath(new URL('./fixtures/wall-extents.ifc', import.meta.url))
 const wasmPath = `${dirname(fileURLToPath(import.meta.resolve('web-ifc')))}/`
@@ -17,7 +17,7 @@ for (const [swapYZ, name] of [true, false].flatMap((swap) =>
   ['Brep wall', 'Mapped wall'].map((wall) => [swap, wall] as const),
 )) {
   test(`${name} keeps its measured height and thickness (swapYZ: ${swapYZ})`, async () => {
-    const scene = await convertIfcToPascal(await readFile(fixture), undefined, {
+    const scene = await convertIfcToAedifex(await readFile(fixture), undefined, {
       simplify: false,
       swapYZ,
       wasmPath,

@@ -6,7 +6,7 @@ import {
   sceneRegistry,
   useInteractive,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Object3D } from 'three'
 import { mechanismHudInteract, mechanismTargetIds } from './mechanism-targets'
 

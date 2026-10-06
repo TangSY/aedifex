@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { type AnyNode, registerNode, useInteractive } from '@pascal-app/core'
+import { type AnyNode, registerNode, useInteractive } from '@aedifex/core'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MechanismButton, selectedMechanismNode } from './registry-action-contributions'
 

@@ -1,10 +1,11 @@
+import type { AnyNodeId } from '@aedifex/core/schema'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import {
   findItemItemCollisions,
   inspectItemPlanFootprint,
   resolveNodeLevelId,
-} from '@pascal-app/core/agent-operations'
-import { ItemNode } from '@pascal-app/core/schema'
+} from '@aedifex/core/agent-operations'
+import { ItemNode } from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { READ_ONLY_TOOL_ANNOTATIONS } from './annotations'

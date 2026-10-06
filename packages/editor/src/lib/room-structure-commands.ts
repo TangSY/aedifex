@@ -7,8 +7,8 @@ import {
   setZoneIntent,
   structureChangeBatch,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import useDeleteConfirmation from '../store/use-delete-confirmation'
 import useEditor from '../store/use-editor'
 import { showRoomNotice } from './room-transform-session'

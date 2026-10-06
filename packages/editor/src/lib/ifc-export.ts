@@ -1,6 +1,6 @@
-import { type AnyNode, bakePolicyOf, type Collection, sceneRegistry } from '@pascal-app/core'
-import { buildIfcExport, type IfcMeshPart } from '@pascal-app/ifc-converter/export'
-import { SCENE_LAYER } from '@pascal-app/viewer'
+import { type AnyNode, bakePolicyOf, type Collection, sceneRegistry } from '@aedifex/core'
+import { buildIfcExport, type IfcMeshPart } from '@aedifex/ifc-converter/export'
+import { SCENE_LAYER } from '@aedifex/viewer'
 import * as THREE from 'three'
 
 // Kinds the IFC writer always rebuilds parametrically from node data; their

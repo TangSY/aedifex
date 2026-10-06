@@ -1,4 +1,4 @@
-import { calculateLevelMiters, type WallMiterData, type WallNode } from '@pascal-app/core'
+import { calculateLevelMiters, type WallMiterData, type WallNode } from '@aedifex/core'
 
 // Progressive rebuilds span frames (initial hydration uses an 8 ms budget;
 // interactive bulk edits also cap at 8 walls). The miter solution is stable

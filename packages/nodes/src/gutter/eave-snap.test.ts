@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { RoofSegmentNode } from '@pascal-app/core'
+import { RoofSegmentNode } from '@aedifex/core'
 import { resolveEaveSnap } from './eave-snap'
 
 describe('resolveEaveSnap', () => {

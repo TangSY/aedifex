@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import { emitter, type GridEvent, useScene, WallNode } from '@pascal-app/core'
-import { useEditor, useInteractionScope } from '@pascal-app/editor'
+import { emitter, type GridEvent, useScene, WallNode } from '@aedifex/core'
+import { useEditor, useInteractionScope } from '@aedifex/editor'
 import { useThree } from '@react-three/fiber'
 import { act, create } from '@react-three/test-renderer'
 import { useDistributionRunTool } from './distribution-run-tool'

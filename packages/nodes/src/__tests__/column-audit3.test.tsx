@@ -19,10 +19,10 @@ import {
   useLiveTransforms,
   useScene,
   WallNode,
-} from '@pascal-app/core'
-import { ProceduralItemNode } from '@pascal-app/core/procedural-items'
-import { MoveRegistryNodeTool, useEditor, useInteractionScope } from '@pascal-app/editor'
-import { useViewer, WallSystem } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { ProceduralItemNode } from '@aedifex/core/procedural-items'
+import { MoveRegistryNodeTool, useEditor, useInteractionScope } from '@aedifex/editor'
+import { useViewer, WallSystem } from '@aedifex/viewer'
 import { events, type RootStore } from '@react-three/fiber'
 import { act, create } from '@react-three/test-renderer'
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial, type Object3D, Vector3 } from 'three'

@@ -1,4 +1,4 @@
-import { getLevelElevations, type LevelNode, sceneRegistry, useScene } from '@pascal-app/core'
+import { getLevelElevations, type LevelNode, sceneRegistry, useScene } from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import { lerp } from 'three/src/math/MathUtils.js'
 import { applyShadowOnly, clearShadowOnly } from '../../lib/shadow-only'

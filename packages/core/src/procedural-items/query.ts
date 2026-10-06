@@ -242,7 +242,7 @@ function resolveNodeLevelFrame(
       nodes as Record<string, AnyNode>,
     )
     return frame(
-      [node.start[0], support.elevation + (node.supportOffset ?? 0), node.start[1]],
+      [node.start[0], support.elevation, node.start[1]],
       rotation,
     )
   }
@@ -452,7 +452,12 @@ export function validateProceduralRelations(raw: AnyNode | ProceduralItemNode, n
     )
       throw new Error(`The hosted item does not fit on ${surface.label}`)
     // A fresh duplicate initially overlaps its source; only committed children occupy a surface.
-    if (child.metadata?.isNew === true) continue
+    if (
+      child.metadata &&
+      typeof child.metadata === 'object' &&
+      'isNew' in child.metadata &&
+      child.metadata.isNew === true
+    ) continue
     const occupied = regions.get(surface.id) ?? []
     if (occupied.some((a) => attachmentRegionsOverlap(a, b)))
       throw new Error(`Another item occupies ${surface.label}`)

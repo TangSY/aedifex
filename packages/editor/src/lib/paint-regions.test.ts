@@ -6,7 +6,7 @@ import {
   WALL_FACE_REGION_LIMIT,
   WallNode,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { paintHints, paintRegionHints } from '../components/ui/helpers/helper-manager'
 import { paintRegionHovering } from './paint-region-hover'
 import { paintRegionModeActive, paintRegionTargets, usePaintRegionMode } from './paint-region-mode'

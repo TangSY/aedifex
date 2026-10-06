@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, scriptSource } from '@pascal-app/core'
-import { editedScriptParams } from '@pascal-app/core/agent-operations'
-import { GeometryArtifactManifest } from '@pascal-app/core/schema'
+import { type AnyNode, scriptSource } from '@aedifex/core'
+import { editedScriptParams } from '@aedifex/core/agent-operations'
+import { GeometryArtifactManifest } from '@aedifex/core/schema'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { compileGeometryScript } from './index'
 

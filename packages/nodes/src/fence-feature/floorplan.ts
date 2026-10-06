@@ -8,7 +8,7 @@ import {
   getFenceCenterlineFrameAt,
   getFenceCenterlineLength,
   getFenceGateLeaves,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 export function buildFenceFeatureFloorplan(
   child: FenceFeatureNode,
   ctx: GeometryContext,

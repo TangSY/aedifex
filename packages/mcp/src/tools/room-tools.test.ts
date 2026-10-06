@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { AnyNodeId } from '@pascal-app/core/schema'
-import { CeilingNode, LevelNode, SlabNode } from '@pascal-app/core/schema'
+import type { AnyNodeId } from '@aedifex/core/schema'
+import { CeilingNode, LevelNode, SlabNode } from '@aedifex/core/schema'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { registerRoomTools } from './room-tools'
 
@@ -364,7 +364,7 @@ describe('room tools', () => {
     const parsed = JSON.parse((furnish.content as Array<{ type: string; text: string }>)[0]!.text)
     expect(parsed.placed + parsed.skipped.length).toBeGreaterThan(0)
 
-    const { findBlockedDoors } = await import('@pascal-app/core/agent-operations')
+    const { findBlockedDoors } = await import('@aedifex/core/agent-operations')
     const blocked = findBlockedDoors({ nodes: Object.values(bridge.getNodes()) })
     expect(blocked).toEqual([])
     // If the heuristic wanted a fixture in the clear zone, it must be skipped explicitly.
@@ -400,7 +400,7 @@ describe('room tools', () => {
     })
     expect(furnish.isError).toBeFalsy()
     const { findItemItemCollisions, findBlockedDoors } = await import(
-      '@pascal-app/core/agent-operations'
+      '@aedifex/core/agent-operations'
     )
     const nodes = Object.values(bridge.getNodes())
     expect(findItemItemCollisions({ nodes })).toEqual([])
@@ -440,7 +440,7 @@ describe('room tools', () => {
     })
     expect(furnish.isError).toBeFalsy()
     const parsed = JSON.parse((furnish.content as Array<{ type: string; text: string }>)[0]!.text)
-    const { findBlockedDoors } = await import('@pascal-app/core/agent-operations')
+    const { findBlockedDoors } = await import('@aedifex/core/agent-operations')
     expect(findBlockedDoors({ nodes: Object.values(bridge.getNodes()) })).toEqual([])
     // Bed is placed against the back wall where the door is; expect clearance skip or empty bed.
     const bedPlaced = Object.values(bridge.getNodes()).some(

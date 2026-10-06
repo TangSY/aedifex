@@ -1,4 +1,4 @@
-import type { AnyNode, FenceNode, PaintResolveArgs } from '@pascal-app/core'
+import type { AnyNode, FenceNode, PaintResolveArgs } from '@aedifex/core'
 import { createSlotPaintCapability, previewGeometrySlot } from '../shared/slot-paint'
 
 const FENCE_SLOT_IDS = new Set<string>(['posts', 'infill', 'base', 'rail'])

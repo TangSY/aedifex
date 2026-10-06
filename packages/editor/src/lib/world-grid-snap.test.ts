@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { BuildingNode, LevelNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { BuildingNode, LevelNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { getActiveBuildingId } from './world-grid-snap'
 
 const originalNodes = useScene.getState().nodes

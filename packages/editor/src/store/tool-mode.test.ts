@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { type AnyNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { beginGesture } from '../lib/gesture-lifecycle'
 import useEditor, { normalizePersistedEditorUiState } from './use-editor'
 import useInteractionScope from './use-interaction-scope'

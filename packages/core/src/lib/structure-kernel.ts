@@ -1,3 +1,4 @@
+import { metadataRecord } from '../utils/metadata-record'
 import type { AnyNode, AnyNodeId, SeparatorNode, WallNode } from '../schema'
 import { CeilingNode } from '../schema/nodes/ceiling'
 import { SlabNode } from '../schema/nodes/slab'
@@ -723,7 +724,7 @@ function planLevelStructure({
         levelId,
         nodes,
         updated.polygon,
-        updated.metadata.floorReassignmentHeight === true
+        metadataRecord(updated.metadata).floorReassignmentHeight === true
           ? updated.height + CEILING_CLAMP_MARGIN
           : undefined,
       ),
