@@ -14,12 +14,16 @@ import {
   useInteractive,
   useScene,
 } from '@aedifex/core'
+import { useSidebarStore } from '../components/ui/primitives/sidebar'
 import { runRedo, runUndo } from '../lib/history'
 import { DRAFTING_EXTENSION_KEY } from '../lib/interaction/registered-drafting'
 import { meshEditScope } from '../lib/interaction/scope'
+import { setSidebarTabIds } from '../lib/sidebar-panel'
 import useEditor from '../store/use-editor'
 import useInteractionScope from '../store/use-interaction-scope'
 import {
+  armPaintFromShortcut,
+  armWallToolFromShortcut,
   blocksSnappingShortcut,
   canCycleSnappingModeShortcut,
   canRunGlobalRotationShortcut,
@@ -110,11 +114,10 @@ describe('rotation shortcut ownership', () => {
     expect(isToolOwnedRotation()).toBe(true)
   })
 
-  test('leaves R to the wall tool for its line / rectangle toggle, but not T', () => {
+  test('does not reserve R for the wall tool: its shape is picked in the Build panel', () => {
     useEditor.getState().armToolMode({ mode: 'build', tool: 'wall' })
 
-    expect(isToolOwnedRotation('r')).toBe(true)
-    expect(isToolOwnedRotation('t')).toBe(false)
+    expect(isToolOwnedRotation()).toBe(false)
   })
 
   test('leaves R and T to a moving lean-to extension', () => {
@@ -304,5 +307,43 @@ describe('E on a single selected node', () => {
     })
     expect(runNodeInteraction(node)).toBe(false)
     expect(runNodeInteraction(registerKind({}))).toBe(false)
+  })
+})
+
+describe('B and P open their panel', () => {
+  afterEach(() => {
+    setSidebarTabIds([])
+    useSidebarStore.getState().setIsCollapsed(false)
+    useEditor.getState().setContinuation('wall', 'room')
+    useEditor.getState().armToolMode({ mode: 'select' })
+  })
+
+  test('B arms the wall tool on Rectangle and shows the Build panel', () => {
+    setSidebarTabIds(['site', 'build', 'paint', 'items'])
+    useEditor.getState().setActiveSidebarPanel('items')
+    useSidebarStore.getState().setIsCollapsed(true)
+    useEditor.getState().setContinuation('wall', 'single')
+
+    armWallToolFromShortcut()
+
+    const editor = useEditor.getState()
+    expect(editor.mode).toBe('build')
+    expect(editor.tool).toBe('wall')
+    expect(editor.getContinuation('wall')).toBe('rectangle')
+    expect(editor.activeSidebarPanel).toBe('build')
+    expect(useSidebarStore.getState().isCollapsed).toBe(false)
+  })
+
+  test('P arms paint and shows the Paint panel, or Build where the host has none', () => {
+    setSidebarTabIds(['build', 'paint', 'items'])
+    useEditor.getState().setActiveSidebarPanel('items')
+    armPaintFromShortcut()
+    expect(useEditor.getState().mode).toBe('material-paint')
+    expect(useEditor.getState().activeSidebarPanel).toBe('paint')
+
+    setSidebarTabIds(['site', 'build', 'items'])
+    useEditor.getState().setActiveSidebarPanel('items')
+    armPaintFromShortcut()
+    expect(useEditor.getState().activeSidebarPanel).toBe('build')
   })
 })

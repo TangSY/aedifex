@@ -2,7 +2,7 @@
 
 import type { LevelNode } from '@aedifex/core'
 import { useEffect, useState } from 'react'
-import type { LevelDuplicatePreset } from '../../lib/level-duplication'
+import type { LevelDuplicatePreset } from '@aedifex/core/building'
 import { getLevelDisplayName } from '@aedifex/core'
 import { cn } from '../../lib/utils'
 import {

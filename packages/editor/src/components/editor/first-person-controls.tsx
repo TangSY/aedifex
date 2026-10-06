@@ -18,8 +18,10 @@ import {
   getLevelDisplayName,
   getLevelElevations,
   getResolvedElevatorDoorStyle,
+  itemPrompt,
   nodeMechanism,
   openElevatorDoor,
+  operateItem,
   pointInPolygon2D,
   requestElevatorLevel,
   resolveElevatorDispatchTarget,
@@ -377,12 +379,12 @@ function resolveHudInteract(target: FirstPersonInteractableTarget | null): Walkt
   if (target.type === 'mechanism') return node ? mechanismHudInteract(node) : null
   if (target.type === 'item') {
     if (node?.type !== 'item' || !node.asset.interactive) return null
-    const indices = node.asset.interactive.controls.flatMap((control, index) =>
-      control.kind === 'toggle' ? [index] : [],
+    const { label, verb } = itemPrompt(
+      target.id,
+      node.name ?? node.asset.name,
+      node.asset.interactive,
     )
-    const values = useInteractive.getState().items[target.id]?.controlValues
-    const isOn = indices.some((index) => Boolean(values?.[index]))
-    return { label: node.name ?? node.asset.name, verb: isOn ? 'turn off' : 'turn on' }
+    return { label, verb }
   }
   if (target.type === 'procedural') {
     if (node?.type !== 'procedural-item') return null
@@ -1074,6 +1076,9 @@ export const FirstPersonControls = () => {
         closestDistance = hit.distance
       }
     }
+    // Doors and windows have their own walkthrough targets (resolveInteractable*Id).
+    for (const rawId of sceneRegistry.byType.door ?? []) covered.add(rawId)
+    for (const rawId of sceneRegistry.byType.window ?? []) covered.add(rawId)
     for (const id of mechanismTargetIds(covered)) {
       const object = sceneRegistry.nodes.get(id)
       const hit = object && proceduralInteractionRaycaster.intersectObject(object, true)[0]
@@ -1119,7 +1124,7 @@ export const FirstPersonControls = () => {
     if (target.type === 'item') {
       const node = useScene.getState().nodes[target.id]
       if (node?.type === 'item' && node.asset.interactive)
-        useInteractive.getState().toggleItemToggles(target.id, node.asset.interactive)
+        operateItem(target.id, node.asset.interactive)
       return
     }
 

@@ -6,7 +6,7 @@ import {
   useScene,
 } from '@aedifex/core'
 import {
-  duplicateRoofSubtree,
+  duplicateNodeAndPickUp,
   type NodePanelModel,
   type PanelRow,
   triggerSFX,
@@ -40,7 +40,12 @@ export const roofPanelModel: NodePanelModel<RoofNode> = {
       kind: 'action',
       section: 'Segments',
       label: 'Draw Segment',
-      onSelect: () => activate('roof'),
+      // Arming a tool ends the selection; the roof tool draws into the roof
+      // selected while it is armed, so hand it this one explicitly.
+      onSelect: () => {
+        activate('roof')
+        select(node.id)
+      },
     })
     for (const axis of [0, 1, 2] as const)
       rows.push({
@@ -142,9 +147,8 @@ export const roofPanelModel: NodePanelModel<RoofNode> = {
           id: 'duplicate',
           label: 'Duplicate',
           onSelect: () => {
-            if (!useScene.getState().nodes[node.id]) return
-            triggerSFX('sfx:item-pick')
-            duplicateRoofSubtree(node.id, { mode: 'move' })
+            const live = useScene.getState().nodes[node.id]
+            if (live) duplicateNodeAndPickUp(live)
           },
         },
         {

@@ -59,6 +59,7 @@ export function OperationSummary({
               {op.type === 'update_material' && '* '}
             </span>
             <span className="truncate">
+              {op.type === 'shared_agent' && op.toolName.replaceAll('_', ' ')}
               {op.type === 'add_item' && `Add ${op.asset?.name ?? 'item'}`}
               {op.type === 'add_wall' && 'Add wall'}
               {op.type === 'add_door' && 'Add door'}
@@ -108,8 +109,8 @@ export function OperationSummary({
               className="ml-2 rounded px-1.5 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
               onClick={() => {
                 const { operationLog, undoOperation } = useAIChat.getState()
-                const log = operationLog.find((l) => l.messageId === messageId && l.status === 'confirmed')
-                if (log) undoOperation(log.id)
+                const logs = operationLog.filter((l) => l.messageId === messageId && l.status === 'confirmed')
+                for (const log of logs.reverse()) undoOperation(log.id)
               }}
               type="button"
             >

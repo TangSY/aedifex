@@ -41,7 +41,6 @@ export const RoofRenderer = ({ node: rawNode }: { node: RoofNode }) => {
   const textures = useViewer((s) => s.textures)
   const colorPreset = useViewer((s) => s.colorPreset)
   const sceneTheme = useViewer((s) => s.sceneTheme)
-  const sceneMaterials = useScene((s) => s.materials)
 
   // Collect roof element IDs (chimneys, skylights, etc.) hosted by any segment.
   // Rendered outside segments-wrapper (invisible during normal mode) so elements
@@ -93,9 +92,19 @@ export const RoofRenderer = ({ node: rawNode }: { node: RoofNode }) => {
 
   // The gable band is clad like the walls below it (their assemblies).
   const wallCladdingRef = useScene((state) => levelWallCladdingRef(state.nodes, node))
+  const sceneMaterials = useScene((state) => state.materials)
   const customMaterial = useMemo(
-    () => getRoofMaterialArray(node, shading, textures, colorPreset, sceneTheme, sceneMaterials, wallCladdingRef),
-    [node, shading, textures, colorPreset, sceneTheme, sceneMaterials, wallCladdingRef],
+    () =>
+      getRoofMaterialArray(
+        node,
+        shading,
+        textures,
+        colorPreset,
+        sceneTheme,
+        wallCladdingRef,
+        sceneMaterials,
+      ),
+    [node, shading, textures, colorPreset, sceneTheme, wallCladdingRef, sceneMaterials],
   )
 
   const material = debugColors

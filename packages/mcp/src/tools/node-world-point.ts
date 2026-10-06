@@ -1,4 +1,5 @@
 import {
+  computeSegmentTransforms,
   type GeometryContext,
   getFenceCenterlineFrameAt,
   getLevelElevations,
@@ -7,6 +8,7 @@ import {
   measurementCentroid,
   nodeRegistry,
 } from '@aedifex/core'
+import type { Vec3 } from '@aedifex/core/agent-operations'
 import {
   composeFrames,
   type Frame,
@@ -21,8 +23,6 @@ import {
   getRoofSegmentSurfaceY,
   nodeKindOf,
 } from '@aedifex/core/schema'
-import type { Vec3 } from './geometry'
-import { computeSegmentTransforms } from './scene-query'
 
 type Nodes = Readonly<Record<string, AnyNode>>
 

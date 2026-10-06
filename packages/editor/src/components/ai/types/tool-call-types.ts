@@ -1,6 +1,12 @@
 // ============================================================================
 // Claude Tool Call Types
 // ============================================================================
+import type { SharedAgentToolName } from '../contracts/shared-agent-tools'
+
+export interface SharedAgentToolCall {
+  tool: SharedAgentToolName
+  sharedInput: Record<string, unknown>
+}
 
 export interface AddItemToolCall {
   tool: 'add_item'
@@ -48,12 +54,12 @@ export interface UpdateMaterialToolCall {
   reason?: string
 }
 
-/** Update wall surface material (interior or exterior side). */
+/** Update wall surface material (geometric face a or b). */
 export interface UpdateWallMaterialToolCall {
   tool: 'update_wall_material'
   nodeId: string
-  /** Which face to apply material to. Use 'both' to set the legacy single-face material. */
-  side: 'interior' | 'exterior' | 'both'
+  /** Which face to apply material to. Use 'both' to paint both geometric faces. */
+  side: 'a' | 'b' | 'both'
   /** Material catalog ID (preset). Mutually exclusive with materialColor. */
   materialPreset?: string
   /** Color value (hex string). Mutually exclusive with materialPreset. */
@@ -97,7 +103,7 @@ export interface PaintSlotToolCall {
   nodeId: string
   /**
    * Slot identifier within the node's kind. Valid values per kind:
-   * - wall: 'interior' | 'exterior'
+   * - wall: 'a' | 'b'
    * - slab: 'surface' | 'side'
    * - ceiling: 'surface'
    * - stair: 'treads' | 'body' | 'railing'
@@ -694,6 +700,7 @@ export interface AlignOpeningToNearestToolCall {
 }
 
 export type AIToolCall =
+  | SharedAgentToolCall
   | AddItemToolCall
   | RemoveItemToolCall
   | MoveItemToolCall

@@ -42,7 +42,7 @@ import { pasteSelectionAndPickUp } from '../editor/group-actions'
 import {
   buildLevelDuplicateCreateOps,
   type LevelDuplicatePreset,
-} from '../../lib/level-duplication'
+} from '@aedifex/core/building'
 import { getDefaultLevelName, getLevelDisplayName } from '@aedifex/core'
 import { deleteLevelWithFallbackSelection } from '../../lib/level-selection'
 import { unitMemberLevels, leaveUnitFocus } from '../../lib/units'

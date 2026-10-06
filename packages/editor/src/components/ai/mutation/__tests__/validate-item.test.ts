@@ -294,9 +294,9 @@ describe('guessToolType', () => {
     expect(guessToolType({ nodeId: 's1', role: 'tread' })).toBe('update_stair_material')
   })
 
-  it('returns update_wall_material when side is interior/exterior/both', () => {
-    expect(guessToolType({ nodeId: 'w1', side: 'interior' })).toBe('update_wall_material')
-    expect(guessToolType({ nodeId: 'w1', side: 'exterior' })).toBe('update_wall_material')
+  it('returns update_wall_material when side is a/b/both', () => {
+    expect(guessToolType({ nodeId: 'w1', side: 'a' })).toBe('update_wall_material')
+    expect(guessToolType({ nodeId: 'w1', side: 'b' })).toBe('update_wall_material')
     expect(guessToolType({ nodeId: 'w1', side: 'both' })).toBe('update_wall_material')
   })
 

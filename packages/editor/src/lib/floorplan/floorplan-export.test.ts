@@ -822,6 +822,11 @@ describe('resolveExportLevels', () => {
   const nodes: Record<string, AnyNode> = Object.fromEntries(
     [building, ground, upper, roof, attic].map((node) => [node.id, node]),
   )
+  const expectedLevels = [
+    { id: ground.id, label: 'Ground floor' },
+    { id: upper.id, label: 'Floor 1' },
+    { id: attic.id, label: 'Floor 3' },
+  ]
 
   // The viewer store is a process-wide singleton, so an earlier test file can
   // leak a selection into these tests; restore it instead of leaving ours.
@@ -840,11 +845,7 @@ describe('resolveExportLevels', () => {
   test('skips a dedicated roof support level', () => {
     selectLevel(ground.id)
 
-    expect(resolveExportLevels(nodes)).toEqual([
-      { id: ground.id, label: 'Level 0' },
-      { id: upper.id, label: 'Level 1' },
-      { id: attic.id, label: 'Level 3' },
-    ])
+    expect(resolveExportLevels(nodes)).toEqual(expectedLevels)
   })
 
   test.each([[null], ['legacy floor'], [7], [true], [['legacy']]])(
@@ -854,11 +855,7 @@ describe('resolveExportLevels', () => {
       const legacyNodes = { ...nodes, [ground.id]: legacyLevel }
       selectLevel(ground.id)
 
-      expect(resolveExportLevels(legacyNodes)).toEqual([
-        { id: ground.id, label: 'Level 0' },
-        { id: upper.id, label: 'Level 1' },
-        { id: attic.id, label: 'Level 3' },
-      ])
+      expect(resolveExportLevels(legacyNodes)).toEqual(expectedLevels)
       expect(legacyNodes[ground.id].metadata).toEqual(metadata)
     },
   )
@@ -866,10 +863,6 @@ describe('resolveExportLevels', () => {
   test('skips the roof level when it is the selected level', () => {
     selectLevel(roof.id)
 
-    expect(resolveExportLevels(nodes)).toEqual([
-      { id: ground.id, label: 'Level 0' },
-      { id: upper.id, label: 'Level 1' },
-      { id: attic.id, label: 'Level 3' },
-    ])
+    expect(resolveExportLevels(nodes)).toEqual(expectedLevels)
   })
 })

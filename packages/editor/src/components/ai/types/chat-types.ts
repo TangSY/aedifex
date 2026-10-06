@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId } from '@aedifex/core'
+import type { AnyNode, AnyNodeId, Collection } from '@aedifex/core'
 import type { AIToolCall } from './tool-call-types'
 import type { ValidatedOperation } from './validated-types'
 import type { SceneContext } from './scene-types'
@@ -42,6 +42,7 @@ export interface AIOperationLog {
   previousSnapshot: Record<AnyNodeId, AnyNode>
   /** Parent mapping for removed nodes (for undo: re-create with correct parent) */
   removedNodes: { node: AnyNode; parentId: AnyNodeId }[]
+  previousCollections?: Record<string, Collection>
 }
 
 // ============================================================================
@@ -86,6 +87,7 @@ export interface ToolResult {
     createdNodeIds?: string[]
     /** IDs of nodes removed by this operation (so the LLM doesn't re-issue deletes for already-gone ids) */
     removedNodeIds?: string[]
+    results?: Record<string, unknown>[]
   }
 }
 

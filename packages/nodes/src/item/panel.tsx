@@ -1,10 +1,10 @@
 'use client'
 
-import { type AnyNode, getScaledDimensions, ItemNode, useScene } from '@aedifex/core'
+import { type AnyNode, getScaledDimensions, type ItemNode, useScene } from '@aedifex/core'
 import {
   ActionButton,
   ActionGroup,
-  CollectionsPopover,
+  duplicateNodeAndPickUp,
   PanelSection,
   PanelWrapper,
   SliderControl,
@@ -14,14 +14,13 @@ import {
 import { useViewer } from '@aedifex/viewer'
 import { Copy, Link, Link2Off, Move, Trash2 } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
+import { AuthoredParams } from './authored-params'
 
 /**
  * Stage E inspector for item. 1:1 port of the legacy
  * `editor/components/ui/panels/item-panel.tsx`, relocated into the
  * kind's folder so `parametrics.customPanel` mounts it through the
- * registry inspector. The catalog popover (`<CollectionsPopover>`) is
- * the only kind-specific UI that can't be expressed via the generic
- * auto-inspector today — kept inline.
+ * registry inspector.
  *
  * Slider-drag fix recipe applied: scale / position / rotation slider
  * `onChange` callbacks read from a `useRef(node)` instead of the
@@ -74,20 +73,8 @@ export default function ItemPanel() {
   }, [node, setMovingNode, setSelection])
 
   const handleDuplicate = useCallback(() => {
-    if (!node) return
-    triggerSFX('sfx:item-pick')
-    const proto = ItemNode.parse({
-      position: [...node.position] as [number, number, number],
-      rotation: [...node.rotation] as [number, number, number],
-      name: node.name,
-      asset: node.asset,
-      parentId: node.parentId,
-      side: node.side,
-      metadata: { isNew: true },
-    })
-    setMovingNode(proto)
-    setSelection({ selectedIds: [] })
-  }, [node, setMovingNode, setSelection])
+    if (node) duplicateNodeAndPickUp(node)
+  }, [node])
 
   const handleDelete = useCallback(() => {
     if (!selectedId) return
@@ -105,6 +92,8 @@ export default function ItemPanel() {
       title={node.name || node.asset.name}
       width={300}
     >
+      <AuthoredParams node={node} />
+
       <PanelSection title="Position">
         <SliderControl
           label={
@@ -157,6 +146,7 @@ export default function ItemPanel() {
       </PanelSection>
 
       <PanelSection title="Rotation">
+        <TiltSlider axis={0} label="X" node={node} onUpdate={handleUpdate} />
         <SliderControl
           label={
             <>
@@ -174,6 +164,7 @@ export default function ItemPanel() {
           unit="°"
           value={Math.round((node.rotation[1] * 180) / Math.PI)}
         />
+        <TiltSlider axis={2} label="Z" node={node} onUpdate={handleUpdate} />
         <div className="flex gap-1.5 px-1 pt-2 pb-1">
           <ActionButton
             label="-45°"
@@ -296,17 +287,6 @@ export default function ItemPanel() {
         </div>
       </PanelSection>
 
-      <PanelSection title="Collections">
-        <ActionGroup>
-          <CollectionsPopover
-            collectionIds={node.collectionIds}
-            nodeId={selectedId as AnyNode['id']}
-          >
-            <ActionButton label="Manage collections…" />
-          </CollectionsPopover>
-        </ActionGroup>
-      </PanelSection>
-
       <PanelSection title="Actions">
         <ActionGroup>
           <ActionButton icon={<Move className="h-3.5 w-3.5" />} label="Move" onClick={handleMove} />
@@ -324,5 +304,40 @@ export default function ItemPanel() {
         </ActionGroup>
       </PanelSection>
     </PanelWrapper>
+  )
+}
+
+/** Tilt about X or Z: aiming a spotlight, leaning a frame. Y stays the main turn above. */
+function TiltSlider({
+  axis,
+  label,
+  node,
+  onUpdate,
+}: {
+  axis: 0 | 2
+  label: string
+  node: ItemNode
+  onUpdate: (updates: Partial<ItemNode>) => void
+}) {
+  return (
+    <SliderControl
+      label={
+        <>
+          {label}
+          <sub className="ml-[1px] text-[11px] opacity-70">rot</sub>
+        </>
+      }
+      max={180}
+      min={-180}
+      onChange={(degrees) => {
+        const rotation = [...node.rotation] as [number, number, number]
+        rotation[axis] = (degrees * Math.PI) / 180
+        onUpdate({ rotation })
+      }}
+      precision={0}
+      step={1}
+      unit="°"
+      value={Math.round((node.rotation[axis] * 180) / Math.PI)}
+    />
   )
 }

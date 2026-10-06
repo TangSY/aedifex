@@ -284,7 +284,7 @@ describe('validateUpdateWallMaterial', () => {
     const result = validateUpdateWallMaterial({
       tool: 'update_wall_material',
       nodeId: 'w1',
-      side: 'interior',
+      side: 'a',
     } as any)
     expect(result.status).toBe('invalid')
   })
@@ -294,7 +294,7 @@ describe('validateUpdateWallMaterial', () => {
     const result = validateUpdateWallMaterial({
       tool: 'update_wall_material',
       nodeId: 'w1',
-      side: 'interior',
+      side: 'a',
       materialPreset: 'does-not-exist',
     } as any)
     expect(result.status).toBe('invalid')
@@ -306,7 +306,7 @@ describe('validateUpdateWallMaterial', () => {
     const result = validateUpdateWallMaterial({
       tool: 'update_wall_material',
       nodeId: 'w1',
-      side: 'interior',
+      side: 'a',
       materialPreset: 'wall-wood1',
     } as any)
     expect(result.status).toBe('valid')

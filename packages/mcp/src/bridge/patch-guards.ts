@@ -4,9 +4,19 @@ import {
   nodeRegistry,
   planNodeDeletion,
   previewDefaultGutterRefresh,
+  scriptedSize,
+  scriptSource,
   validateNodeRelations,
 } from '@aedifex/core'
-import { AnyNode, type AnyNodeId, nodeKindOf, parseNode } from '@aedifex/core/schema'
+import { scriptedFieldRefusal, unknownMaterialPresetRefusal } from '@aedifex/core/agent-operations'
+import {
+  AnyNode,
+  type AnyNodeId,
+  type CompiledGeometryScript,
+  GeometryScriptSource,
+  nodeKindOf,
+  parseNode,
+} from '@aedifex/core/schema'
 import type { Patch } from './scene-bridge'
 
 export type PatchRefusalCode =
@@ -17,6 +27,7 @@ export type PatchRefusalCode =
   | 'invalid_update'
   | 'not_deletable'
   | 'regenerated_default'
+  | 'scripted_field'
 
 /**
  * A patch op refused because it would break node identity, the hierarchy or
@@ -65,12 +76,39 @@ function parsePatchCreateNode(value: unknown, index: number): AnyNode {
       ? registered.safeParse(value)
       : parseNode(value)
   if (!parsed.success) {
-    throw new Error(`invalid patch: patches[${index}] create node failed schema: ${parsed.error.message}`)
+    throw new Error(
+      `invalid patch: patches[${index}] create node failed schema: ${parsed.error.message}`,
+    )
   }
   return parsed.data as AnyNode
 }
 
 const sameValue = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
+
+/** Only the host's compiled artifact may replace a script's source and owned dimensions. */
+function matchesCompiledUpdate({
+  node,
+  data,
+  compiled,
+}: {
+  node: AnyNode
+  data: Record<string, unknown>
+  compiled?: CompiledGeometryScript
+}): boolean {
+  if (!compiled) return false
+  const source = GeometryScriptSource.safeParse(data.source)
+  const expected = GeometryScriptSource.safeParse(scriptSource(compiled))
+  if (!source.success || !expected.success || !sameValue(source.data, expected.data)) return false
+  const dimensions = scriptedSize(expected.data.manifest)
+  if (dimensions.some((value) => !Number.isFinite(value) || value < 0)) return false
+  if (node.type === 'item') {
+    const asset = data.asset as Record<string, unknown> | undefined
+    return asset?.src === `artifact://${compiled.sha256}` && sameValue(asset.dimensions, dimensions)
+  }
+  if (node.type !== 'window' && node.type !== 'door' && node.type !== 'column') return false
+  const fields = node.type === 'column' ? ['width', 'height', 'depth'] : ['width', 'height']
+  return fields.every((field, index) => data[field] === dimensions[index])
+}
 
 /**
  * Schema issues of a node, keyed `path: message`, from its kind's schema: the
@@ -112,6 +150,11 @@ function withoutChild(parent: AnyNode, childId: string): AnyNode {
  *   (`immutable_field`); restating the current value passes;
  * - an update whose merged node has schema issues the node did not have
  *   before (`invalid_update`); kinds without a schema in this runtime pass;
+ * - an update writing a material preset the catalog does not know
+ *   (`invalid_update`; a create is rejected like other invalid creates): it
+ *   would render as the default finish;
+ * - an update of what a node's script owns, its `source` or the size it
+ *   built (`scripted_field`): only a rebuild keeps them and the geometry in step;
  * - any op on a node an earlier delete in the patch removed, or on a default
  *   gutter or downspout that delete regenerates, and any update of the roof
  *   segment holding them (`regenerated_default`).
@@ -130,6 +173,7 @@ export function assertPatchKeepsIdentity(
   nodes: Readonly<Record<string, AnyNode>>,
   rootNodeIds: readonly AnyNodeId[],
   planDeletion?: (scene: NodeDeletionScene, ids: AnyNodeId[]) => NodeDeletionPlan,
+  compiled?: CompiledGeometryScript,
 ): Map<number, AnyNode> {
   const initialIds = new Set(Object.keys(nodes))
   const parsedCreates = new Map<number, AnyNode>()
@@ -202,6 +246,8 @@ export function assertPatchKeepsIdentity(
       const node = parsePatchCreateNode(patch.node, index)
       parsedCreates.set(index, node)
       if (typeof node?.id !== 'string') return
+      const preset = unknownMaterialPresetRefusal(node as Record<string, unknown>)
+      if (preset) throw new Error(`invalid patch: patches[${index}] create "${node.id}": ${preset}`)
       refuseRegenerated(index, node.id)
       const effectiveParentId = patch.parentId ?? (node.parentId as string | null | undefined)
       if (effectiveParentId) refuseRegenerated(index, effectiveParentId)
@@ -255,6 +301,11 @@ export function assertPatchKeepsIdentity(
           )
         }
       }
+      const scripted = scriptedFieldRefusal(current, data)
+      if (scripted && !matchesCompiledUpdate({ node: current, data, compiled }))
+        throw new PatchRefusedError('scripted_field', index, patch.id, scripted)
+      const preset = unknownMaterialPresetRefusal(data, current as Record<string, unknown>)
+      if (preset) throw new PatchRefusedError('invalid_update', index, patch.id, preset)
       const merged = { ...current, ...data } as AnyNode
       const issuesAfter = schemaIssues(merged as Record<string, unknown>)
       if (issuesAfter && issuesAfter.size > 0) {
@@ -311,7 +362,9 @@ export function assertPatchKeepsIdentity(
         const children = Object.values(scene.nodes).filter((node) => node.parentId === patch.id)
         const listed = (at(patch.id) as { children?: unknown }).children
         if (children.length > 0 || (Array.isArray(listed) && listed.length > 0)) {
-          throw new Error(`invalid patch: patches[${index}] node "${patch.id}" has descendants; pass cascade: true`)
+          throw new Error(
+            `invalid patch: patches[${index}] node "${patch.id}" has descendants; pass cascade: true`,
+          )
         }
       }
       pendingDeletes.push(patch.id as AnyNodeId)

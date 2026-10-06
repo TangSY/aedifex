@@ -16,15 +16,20 @@
  */
 
 import { validateDesign } from '@aedifex/core/procedural-items'
+import { isAgentRefusal } from '@aedifex/core/agent-tools'
 import { placeDesign } from '@aedifex/mcp/operations'
 import { placeDesignInput } from '@aedifex/mcp/tools/place-design'
 import { validateDesignInput } from '@aedifex/mcp/tools/validate-design'
 import { z } from 'zod'
 import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
 import { getSceneOperations } from './scene-operations-adapter'
+import { isSharedAgentToolName } from './contracts/shared-agent-tools'
+import { runSharedAgentTool } from './ai-shared-agent-executor'
 
 const validateDesignArgs = z.object(validateDesignInput)
 const placeDesignArgs = z.object(placeDesignInput)
+
+export { SUPPORTED_REMOTE_MCP_TOOL_NAMES } from './contracts/remote-tools'
 
 export interface RemoteMcpToolCall {
   toolName: string
@@ -35,12 +40,18 @@ export interface RemoteMcpToolResult {
   ok: boolean
   result?: unknown
   error?: string
+  code?: string
+  details?: Record<string, unknown>
 }
 
 export async function executeRemoteMcpToolCall(
   call: RemoteMcpToolCall,
 ): Promise<RemoteMcpToolResult> {
   try {
+    if (isSharedAgentToolName(call.toolName)) {
+      const { result } = await runSharedAgentTool({ name: call.toolName, input: call.args })
+      return { ok: true, result }
+    }
     const ops = getSceneOperations()
     const result = await dispatch(ops, call)
     return { ok: true, result }
@@ -48,6 +59,7 @@ export async function executeRemoteMcpToolCall(
     return {
       ok: false,
       error: err instanceof Error ? err.message : String(err),
+      ...(isAgentRefusal(err) ? { code: err.code, details: err.details } : {}),
     }
   }
 }

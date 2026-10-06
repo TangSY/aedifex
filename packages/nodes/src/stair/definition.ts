@@ -8,6 +8,7 @@ import {
   type StairNode as StairNodeType,
   type StairSegmentNode,
   stairFootprintAABB,
+  stairSlots,
   useScene,
 } from '@aedifex/core'
 import type { FloorplanNodeExtension } from '@aedifex/editor'
@@ -403,7 +404,7 @@ function stairHandles(node: StairNodeType): HandleDescriptor<StairNodeType>[] {
 import {
   computeStairSegmentFloorStackTransforms,
   getStairFloorPlacedFootprints,
-} from './floor-stack'
+} from '@aedifex/core'
 import { buildStairFloorplan } from './floorplan'
 import {
   curvedStairInnerRadiusAffordance,
@@ -417,7 +418,6 @@ import { stairFloorplanMoveTarget } from './floorplan-move'
 import { stairPaint } from './paint'
 import { stairParametrics } from './parametrics'
 import { StairNode } from './schema'
-import { stairSlots } from './slots'
 
 /**
  * Stair — Stage A. Composite node like roof: owns overall framing,

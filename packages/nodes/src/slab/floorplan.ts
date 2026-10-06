@@ -1,12 +1,25 @@
 import {
+  cutterContextNodes,
   type FloorplanGeometry,
   type FloorplanPoint,
   type GeometryContext,
   getRenderableSlabPolygon,
+  hostedCutterHoles,
+  isDerivedNode,
   type SlabNode,
   slabPolygonContextFromGeometry,
 } from '@aedifex/core'
 import { readFloorplanContext } from '@aedifex/editor'
+
+/**
+ * Whether the plan offers the slab's outline and hole handles: only a slab the
+ * user drew. A floor plate's outline (and its room-cut holes) follow the rooms
+ * and walls, so its handles would edit data the reconciler owns — the 3D view
+ * hides them for the same reason.
+ */
+export function slabOutlineEditable(node: SlabNode): boolean {
+  return !node.plateRole && !isDerivedNode(node)
+}
 
 /**
  * Stage C floor-plan builder for slab. Renders the slab polygon as a
@@ -48,7 +61,7 @@ export function buildSlabFloorplan(node: SlabNode, ctx: GeometryContext): Floorp
   const segments: string[] = [ring(outer)]
 
   const holes = node.holes ?? []
-  for (const hole of holes) {
+  for (const hole of [...holes, ...hostedCutterHoles(node, cutterContextNodes(node, ctx))]) {
     if (hole.length < 3) continue
     const holePts: FloorplanPoint[] = hole.map(([x, z]) => [x, z] as FloorplanPoint)
     segments.push(ring(holePts))
@@ -90,8 +103,9 @@ export function buildSlabFloorplan(node: SlabNode, ctx: GeometryContext): Floorp
     })
   }
 
-  // Boundary editor — visible only when the slab is the active selection.
-  if (isSelected) {
+  // Boundary editor — visible only when the slab is the active selection, and
+  // only on a slab the user drew.
+  if (isSelected && slabOutlineEditable(node)) {
     // Handles operate on the STORED polygon while the fill shows the
     // band-healed render polygon; when the two diverge (edges projected
     // onto wall faces / interior centerline seams), a dashed skeleton of the

@@ -763,7 +763,7 @@ export function guessToolType(op: Record<string, unknown>): string {
   // Surface material tools (must check BEFORE update_material/move_item/remove_item
   // fallthroughs since they share nodeId but have role/side discriminators).
   if ('nodeId' in op && typeof op.nodeId === 'string') {
-    if ('side' in op && (op.side === 'interior' || op.side === 'exterior' || op.side === 'both')) {
+    if ('side' in op && (op.side === 'a' || op.side === 'b' || op.side === 'both')) {
       return 'update_wall_material'
     }
     if ('role' in op && typeof op.role === 'string') {

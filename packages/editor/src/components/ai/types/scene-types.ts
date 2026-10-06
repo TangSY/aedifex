@@ -10,7 +10,7 @@ export interface SceneWallSummary {
   length?: number
   /** Sagitta offset (meters). Present only when the wall is curved (omitted when 0/undefined). */
   curveOffset?: number
-  /** Set when the wall has a role-specific (interior/exterior/legacy) material assignment. */
+  /** Set when the wall has a face-specific (a/b/legacy) material assignment. */
   hasMaterial?: boolean
   children?: { type: string; id: string; localX: number; width: number }[]
 }

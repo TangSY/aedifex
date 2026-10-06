@@ -13,7 +13,7 @@ export const DownspoutNode = BaseNode.extend({
   slots: z.record(z.string(), z.string()).optional(),
   // Match the gutter family default — paint inspector reads "White"
   // instead of "no material" on a freshly placed downspout.
-  materialPreset: z.string().default('preset-white'),
+  materialPreset: z.string().default('library:preset-white'),
 
   // Logical attachment: the gutter this downspout drains. Scene-graph
   // parent is the same roof-segment that hosts the gutter, so the

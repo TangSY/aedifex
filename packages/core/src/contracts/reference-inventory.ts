@@ -157,8 +157,8 @@ export const EXISTING_REFERENCES: readonly ExistingReference[] = [
     kind: 'procedural-item',
     path: 'attachments.@key',
     ...policy('node', 'hierarchy', 'drop', 'keep'),
-    remaps: ['clone-nodes-into'],
-    note: 'Record key: a hosted child id. Only cloneNodesInto remaps it; the other clones keep the old key.',
+    remaps: ['clone-scene-graph', 'clone-nodes-into'],
+    note: 'Record key: a hosted child id. The level-subtree clone keeps the old key.',
   }),
   row({
     kind: 'procedural-item',
@@ -198,8 +198,8 @@ export const EXISTING_REFERENCES: readonly ExistingReference[] = [
     ...policy('node', 'host', 'cascade', 'strip'),
     targetKinds: ['dormer'],
     dependents: ['dormerFace'],
-
-    note: 'Clone remaps the window `parentId` but not `dormerId`.',
+    remaps: ['clone-scene-graph'],
+    note: 'Only the whole-graph clone remaps `dormerId`.',
   }),
   row({
     kind: 'item',
@@ -216,6 +216,12 @@ export const EXISTING_REFERENCES: readonly ExistingReference[] = [
     sentinels: ['ground'],
     remaps: [...CLONES, 'delete-nodes'],
     note: "'ground' pins the node to the level base; deleting the slab strips the field.",
+  }),
+  row({
+    kind: 'fence',
+    path: 'supportSurfaceNodeId',
+    ...policy('node', 'host', 'drop', 'strip'),
+    remaps: ['clone-scene-graph'],
   }),
   row({
     kind: 'stair',
@@ -253,6 +259,7 @@ export const EXISTING_REFERENCES: readonly ExistingReference[] = [
     ...policy('node', 'host', 'drop', 'strip'),
     targetKinds: ['slab'],
     dependents: ['hostSlabEdgeIndex', 'hostSlabEdgeT', 'hostKind', 'hostHeightOffset'],
+    remaps: ['clone-scene-graph'],
   }),
   row({
     kind: '*',
@@ -265,6 +272,7 @@ export const EXISTING_REFERENCES: readonly ExistingReference[] = [
       'wallAttachment.endUV',
       'wallAttachment.offset',
     ],
+    remaps: ['clone-scene-graph'],
     note: 'Duct and pipe runs drafted on a wall; the level-local path is the frozen pose.',
   }),
   row({
@@ -272,6 +280,7 @@ export const EXISTING_REFERENCES: readonly ExistingReference[] = [
     path: 'hangerOverrides.*.hostId',
     ...policy('node', 'host', 'drop', 'strip'),
     targetKinds: ['wall', 'ceiling'],
+    remaps: ['clone-scene-graph'],
     note: 'Pinned hanger host; absent re-elects the nearest wall or ceiling.',
   }),
   row({
@@ -279,6 +288,23 @@ export const EXISTING_REFERENCES: readonly ExistingReference[] = [
     path: 'gutterId',
     ...policy('node', 'host', 'drop', 'strip'),
     targetKinds: ['gutter'],
+    remaps: ['clone-scene-graph'],
+  }),
+  row({
+    kind: 'zone',
+    path: 'hostZoneId',
+    ...policy('node', 'host', 'drop', 'strip'),
+    targetKinds: ['zone'],
+    remaps: CLONES,
+    note: 'A mezzanine room: the room whose volume it stands in.',
+  }),
+  row({
+    kind: 'floor-opening',
+    path: 'hostZoneId',
+    ...policy('node', 'host', 'drop', 'strip'),
+    targetKinds: ['zone'],
+    remaps: CLONES,
+    note: 'A hosted mezzanine opening cuts only that room’s plate.',
   }),
   row({
     kind: 'downspout',
@@ -347,8 +373,40 @@ export const EXISTING_REFERENCES: readonly ExistingReference[] = [
     path: 'boundaryWallIds[]',
     ...policy('node', 'membership', 'drop', 'strip'),
     targetKinds: ['wall'],
-    remaps: WALL_TOPOLOGY,
-    note: 'Clone copies the old wall ids into the cloned zone.',
+    remaps: ['clone-scene-graph', ...WALL_TOPOLOGY],
+    note: 'The level-subtree and subtree clones copy the old wall ids into the cloned zone.',
+  }),
+  row({
+    kind: 'zone',
+    path: 'boundarySeparatorIds[]',
+    ...policy('node', 'membership', 'drop', 'strip'),
+    targetKinds: ['separator'],
+    remaps: ['clone-scene-graph'],
+    note: 'Derived by the structure reconciler, which rewrites it on the next pass.',
+  }),
+  row({
+    kind: 'slab',
+    path: 'zoneIds[]',
+    ...policy('node', 'membership', 'drop', 'strip'),
+    targetKinds: ['zone'],
+    remaps: ['clone-scene-graph', 'clone-level-subtree'],
+    note: 'Rooms a derived plate carries; rewritten by the structure reconciler.',
+  }),
+  row({
+    kind: 'slab',
+    path: 'associatedZoneIds[]',
+    ...policy('node', 'membership', 'drop', 'strip'),
+    targetKinds: ['zone'],
+    remaps: ['clone-scene-graph'],
+    note: 'Rooms whose construction overlaps a manual slab, resolved once by the legacy migration.',
+  }),
+  row({
+    kind: 'ceiling',
+    path: 'zoneId',
+    ...policy('node', 'membership', 'drop', 'strip'),
+    targetKinds: ['zone'],
+    remaps: ['clone-scene-graph', 'clone-level-subtree'],
+    note: 'The room a derived ceiling covers; rewritten by the structure reconciler.',
   }),
   row({
     kind: 'unit',
@@ -362,6 +420,7 @@ export const EXISTING_REFERENCES: readonly ExistingReference[] = [
     path: 'collectionIds[]',
     ...policy('collection', 'membership', 'drop', 'strip'),
     remaps: ['clone-scene-graph'],
+    note: 'Node creation (`joinCollections`) adds a copy to the collections it names that exist and drops the rest.',
   }),
   row({
     kind: '#scene',
@@ -375,7 +434,7 @@ export const EXISTING_REFERENCES: readonly ExistingReference[] = [
       path,
       ...policy('node', 'membership', 'drop', 'strip'),
       targetKinds: ['level'],
-      remaps: ['scene-clipboard'],
+      remaps: ['clone-scene-graph', 'scene-clipboard'],
       note: 'Pasting a stair re-derives both from the target level.',
     }),
   ),
@@ -394,6 +453,7 @@ export const EXISTING_REFERENCES: readonly ExistingReference[] = [
       path,
       ...policy('node', 'membership', 'drop', 'strip'),
       targetKinds: ['level'],
+      remaps: ['clone-scene-graph'],
     }),
   ),
   row({
@@ -418,15 +478,72 @@ export const EXISTING_REFERENCES: readonly ExistingReference[] = [
     targetKinds: ['construction-dimension'],
     remaps: [...CLONES, 'clone-nodes-into'],
   }),
-  ...(['stairId', 'elevatorId'] as const).map((field) =>
+  ...(['stairId', 'elevatorId', 'openingId'] as const).map((field) =>
     row({
       kind: '*',
       path: `holeMetadata[].${field}`,
       ...policy('node', 'control', 'drop', 'strip'),
-      targetKinds: [field === 'stairId' ? 'stair' : 'elevator'],
+      targetKinds: [
+        field === 'stairId' ? 'stair' : field === 'elevatorId' ? 'elevator' : 'floor-opening',
+      ],
+      remaps: field === 'openingId' ? CLONES : ['clone-scene-graph'],
       note: 'The cutter that owns this auto hole; its sync replaces only its own holes.',
     }),
   ),
+  row({
+    kind: 'ceiling',
+    path: 'openingIds[]',
+    ...policy('node', 'control', 'drop', 'strip'),
+    targetKinds: ['floor-opening'],
+    remaps: ['clone-scene-graph'],
+    note: 'Openings that cut a derived ceiling; rewritten by the structure reconciler.',
+  }),
+  row({
+    kind: 'floor-opening',
+    path: 'ownerId',
+    ...policy('node', 'control', 'cascade', 'strip'),
+    remaps: CLONES,
+    note: 'The stair, elevator or plugin node that owns this opening and moves it with its pose.',
+  }),
+  row({
+    kind: 'floor-opening',
+    path: 'surfaceId',
+    ...policy('node', 'internal', 'drop', 'strip'),
+    targetKinds: ['slab', 'ceiling'],
+    remaps: ['clone-scene-graph'],
+    note: 'The surface an owned opening was migrated from; merge tie-break only.',
+  }),
+  ...(
+    [
+      ['legacyPlateCuts.@key', 'slab'],
+      ['legacyCeilingCuts.@key', 'ceiling'],
+    ] as const
+  ).map(([path, target]) =>
+    row({
+      kind: 'floor-opening',
+      path,
+      ...policy('node', 'internal', 'drop', 'strip'),
+      targetKinds: [target],
+      remaps: target === 'slab' ? CLONES : ['clone-scene-graph'],
+      note: 'Record key: the legacy surface whose exact cut rings this opening keeps.',
+    }),
+  ),
+  row({
+    kind: 'zone',
+    path: 'floor.sourceSlabId',
+    ...policy('node', 'internal', 'drop', 'strip'),
+    targetKinds: ['slab'],
+    remaps: ['clone-scene-graph'],
+    note: 'The drawn slab this room’s floor was adopted from.',
+  }),
+  row({
+    kind: 'zone',
+    path: 'wallOverrides[].wallId',
+    ...policy('node', 'internal', 'drop', 'strip'),
+    targetKinds: ['wall'],
+    remaps: ['clone-scene-graph'],
+    note: 'A per-wall-face finish over the room’s wall material.',
+  }),
 
   // ─── Measurements and dimensions ──────────────────────────────────
   ...measurementAnchorRows('measurement', 'measurement.points[]', [
@@ -460,6 +577,37 @@ export const EXISTING_REFERENCES: readonly ExistingReference[] = [
     note: 'Library material; `#rrggbb` values are literal colours.',
   }),
   ...materialRows,
+  ...(['legacyFaceMaterials.a', 'legacyFaceMaterials.b', 'foundation'] as const).map((prefix) =>
+    row({
+      kind: '*',
+      path: `${prefix}.material.texture.url`,
+      ...policy('asset', 'content', 'freeze', 'keep'),
+      note: 'Texture by URL; a dangling URL renders the untextured material.',
+    }),
+  ),
+  ...(['legacyFaceMaterials.a', 'legacyFaceMaterials.b'] as const).map((prefix) =>
+    row({
+      kind: 'wall',
+      path: `${prefix}.materialPreset`,
+      ...policy('material', 'content', 'freeze', 'keep'),
+      note: 'Library material preset name of the legacy per-face finish.',
+    }),
+  ),
+  ...(
+    [
+      ['zone', 'floor.finish.*'],
+      ['zone', 'floor.regions[].finish.*'],
+      ['zone', 'ceiling.regions[].finish.*'],
+      ['ceiling', 'regions[].finish.*'],
+    ] as const
+  ).map(([kind, path]) =>
+    row({
+      kind,
+      path,
+      ...policy('material', 'content', 'freeze', 'keep'),
+      note: 'A paint finish: a MaterialRef string, or this inline material record.',
+    }),
+  ),
   ...(['asset.id', 'asset.src', 'asset.thumbnail', 'asset.floorPlanUrl'] as const).map((path) =>
     row({
       kind: 'item',
@@ -534,11 +682,32 @@ export const NON_REFERENCES: readonly { kind: string; path: string; reason: stri
   { kind: '*', path: 'slots.@key', reason: 'Slot id declared by the kind or its asset.' },
   { kind: 'block', path: 'slotNames.@key', reason: 'Slot id declared by the block.' },
   { kind: 'block', path: 'slotNames.*', reason: 'Display name.' },
-  ...MATERIAL_FIELDS.map((field) => ({
+  ...[
+    ...MATERIAL_FIELDS,
+    'legacyFaceMaterials.a.material',
+    'legacyFaceMaterials.b.material',
+    'foundation.material',
+  ].map((field) => ({
     kind: '*',
     path: `${field}.id`,
     reason: 'Optional label of an inline material; no reader dereferences it.',
   })),
+  ...(
+    [
+      ['zone', 'floor.finish.@key'],
+      ['zone', 'floor.regions[].finish.@key'],
+      ['zone', 'ceiling.regions[].finish.@key'],
+      ['ceiling', 'regions[].finish.@key'],
+    ] as const
+  ).map(([kind, path]) => ({ kind, path, reason: 'Field name of an inline material record.' })),
+  ...(
+    [
+      ['zone', 'floor.regions[].id'],
+      ['zone', 'ceiling.regions[].id'],
+      ['ceiling', 'regions[].id'],
+      ['wall', 'faceRegions[].id'],
+    ] as const
+  ).map(([kind, path]) => ({ kind, path, reason: 'Defines a paint region key.' })),
   { kind: 'block', path: 'topology.vertices[].id', reason: 'Defines a topology key.' },
   { kind: 'block', path: 'topology.edges[].id', reason: 'Defines a topology key.' },
   { kind: 'block', path: 'topology.faces[].id', reason: 'Defines a topology key.' },
@@ -559,6 +728,24 @@ export const NON_REFERENCES: readonly { kind: string; path: string; reason: stri
     reason: 'Inline versioned recipe (R7 stores recipes above 24 KiB by hash).',
   },
   { kind: 'procedural-item', path: 'parameters.@key', reason: 'Recipe parameter name.' },
+  // Scripted nodes (an authored item, or a window or door built from code) share one `source`.
+  ...(['item', 'window', 'door', 'column'] as const).flatMap((kind) => [
+    ...(
+      [
+        'source.manifest.anchors[].id',
+        'source.manifest.lights[].id',
+        'source.manifest.params[].id',
+        'source.manifest.parts[].id',
+        'source.manifest.slots[].id',
+      ] as const
+    ).map((path) => ({
+      kind,
+      path,
+      reason: "Defines a key in a scripted node's compiled manifest, read from its script.",
+    })),
+    { kind, path: 'source.params.@key', reason: 'Script parameter name.' },
+    { kind, path: 'source.params.*', reason: 'Script parameter value.' },
+  ]),
   { kind: 'scan', path: 'layers.@key', reason: 'Layer visibility flag name.' },
   { kind: 'site', path: 'frontEdge', reason: "Index of the lot polygon's street-facing edge." },
   ...[
@@ -674,13 +861,32 @@ export const METADATA_REFERENCES: readonly ExistingReference[] = [
   ),
   meta('floorPlanUrl', { ...policy('asset', 'content', 'freeze', 'keep') }),
   ...(
-    ['expressID', 'globalId', 'hostWallExpressID', 'ifcSimplification.mergedExpressIDs[]'] as const
+    [
+      'expressID',
+      'globalId',
+      'hostWallExpressID',
+      'ifcHostExpressID',
+      'ifcSimplification.mergedExpressIDs[]',
+    ] as const
   ).map((key) =>
     meta(key, {
       ...policy('source', 'content', 'freeze', 'keep'),
       note: 'IFC provenance written by the IFC converter.',
     }),
   ),
+  meta('poolManagedOpenings[].poolId', {
+    ...policy('node', 'control', 'drop', 'strip'),
+    note: 'Pool plugin cuts on a slab: the pool item that owns each opening.',
+  }),
+  meta('plateHoleAuthoring', {
+    ...policy('node', 'internal', 'drop', 'strip'),
+    targetKinds: ['slab'],
+    note: 'The plate whose manual hole a floor opening was converted from.',
+  }),
+  meta('pascalNodeId', {
+    ...policy('source', 'content', 'freeze', 'strip'),
+    note: 'Import provenance: the Pascal node id an IFC element carried in its Pascal property set, so a re-import keeps identity.',
+  }),
   meta('sourceIds[]', {
     ...policy('source', 'content', 'freeze', 'strip'),
     note: 'Import provenance: the source element ids an importer recorded (the /next converter writes them); find_nodes filters on them.',
@@ -704,8 +910,12 @@ export const METADATA_NON_REFERENCES: readonly { path: string; reason: string }[
     'deferParentRebuild',
     'drawingCoordinationLocked',
     'floor',
+    'floorOwnershipMigrated',
+    'floorReassignmentHeight',
     'footprintApproximated',
     'generatedBy',
+    'ifcDerived',
+    'ifcSplit',
     'isFloorplanPreview',
     'isGhostPreview',
     'isGhostRemoval',
@@ -719,9 +929,14 @@ export const METADATA_NON_REFERENCES: readonly { path: string; reason: string }[
     'leanToPostSide',
     'leanToRole',
     'leanToRoofPlane',
+    'legacyAutoOpeningsMigrated',
+    'legacyRoomMigrationPending',
     'locked',
     'openingManaged',
+    'ownerOpeningTarget',
     'placementAdjusted',
+    'plateMigration',
+    'plateMigration.demoted',
     'previewMaterial',
     'porch',
     'renderPass',
@@ -730,20 +945,31 @@ export const METADATA_NON_REFERENCES: readonly { path: string; reason: string }[
     'storyShell',
     'suppressedDimensionSegmentIndexes',
   ]),
-  ...described('Read as a truthy flag only; no editor writer.', ['arrayModifier', 'linkedArray']),
+  ...described('Read as a truthy flag only; no editor writer.', [
+    'arrayModifier',
+    'curvedWindowMaster',
+    'linkedArray',
+  ]),
+  ...described('The owner pose an owned floor opening last followed: values, not ids.', [
+    'ownerPose',
+    'ownerPose.position',
+    'ownerPose.rotation',
+    'ownerPose.runLength',
+    'ownerPose.width',
+  ]),
   ...described('Display or authoring label written by the MCP tools.', [
     'label',
     'name',
     'roomName',
     'roomType',
     'mcpTool',
-    'edgeIndex',
   ]),
   ...described('IFC attribute copy: a value or IFC label, not an id.', [
     'elevation',
     'height',
-    'thickness',
     'sillHeight',
+    'sourceColor',
+    'typeName',
     'polygon',
     'material',
     'materialLayers',
@@ -757,8 +983,11 @@ export const METADATA_NON_REFERENCES: readonly { path: string; reason: string }[
   ...described('MCP template descriptor metadata, not scene-node metadata.', ['id', 'description']),
   ...described(
     'A `holeMetadata` entry held in a local named `metadata`; inventoried as holeMetadata[].',
-    ['stairId', 'elevatorId', 'source', 'metadata'],
+    ['stairId', 'elevatorId', 'openingId', 'source', 'metadata'],
   ),
+  ...described('A `holeMetadata` array held in a local named `metadata`: an array method.', [
+    'flatMap',
+  ]),
   ...described('Print-export artifact metadata, not scene-node metadata.', ['status']),
   ...described('Derived floorplan drawing metadata, not scene-node metadata.', [
     'at',

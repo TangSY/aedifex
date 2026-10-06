@@ -1,4 +1,5 @@
 import type { GeometryContext } from '@aedifex/core'
+import { DUCT_BODY_SLOT_ID } from '@aedifex/core'
 import type { ColorPreset, RenderShading } from '@aedifex/viewer'
 import {
   BufferGeometry,
@@ -20,7 +21,6 @@ import {
   createDuctMaterial,
   INCHES_TO_METERS,
 } from '../duct-segment/geometry'
-import { DUCT_BODY_SLOT_ID } from '../shared/duct-body-paint'
 import { buildDuctAccessory } from './accessory-geometry'
 import { adapterShape, localFittingPorts } from './ports'
 import type { DuctFittingNode } from './schema'

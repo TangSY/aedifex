@@ -5,6 +5,7 @@ import {
   BuildingNode,
   CeilingNode,
   ChimneyNode,
+  collectSubtree,
   cloneLevelSubtree,
   CupolaNode,
   DoorNode,
@@ -41,7 +42,9 @@ import {
   WindowNode,
   ZoneNode,
   useScene,
+  runAsSingleSceneHistoryStep,
 } from '@aedifex/core'
+import { applyStructureOperation, writeCollections } from '@aedifex/core/agent-operations'
 import { useViewer } from '@aedifex/viewer'
 import { nanoid } from 'nanoid'
 import {
@@ -96,6 +99,7 @@ import {
   resetPreviewState,
   stripTransientMetadata,
 } from './ghost-node-helpers'
+import { buildMaterialSlotsPatch } from './material-slots'
 
 /**
  * SceneOperations 抽象层 — 所有 createNode/deleteNode/setNode/applyPatch
@@ -122,8 +126,6 @@ const ops = () => getSceneOperations()
 /** Whitelist of node fields that surface material writes are allowed to touch. */
 type SurfaceMaterialField =
   | 'material' | 'materialPreset'
-  | 'interiorMaterial' | 'interiorMaterialPreset'
-  | 'exteriorMaterial' | 'exteriorMaterialPreset'
   | 'topMaterial' | 'topMaterialPreset'
   | 'edgeMaterial' | 'edgeMaterialPreset'
   | 'wallMaterial' | 'wallMaterialPreset'
@@ -181,6 +183,9 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
   // already carries those flags. Undo restores via setNode (full replace), which
   // would otherwise permanently embed transient flags into the post-undo state.
   const previousSnapshot: Record<AnyNodeId, AnyNode> = {}
+  const previousCollections = operations.some((op) => op.type === 'shared_agent' && op.outcome?.changes?.collections)
+    ? { ...useScene.getState().collections }
+    : undefined
   const removedNodesForUndo: { node: AnyNode; parentId: AnyNodeId }[] = []
 
   const cleanSnapshot = (node: AnyNode): AnyNode => {
@@ -196,6 +201,19 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
 
   for (const op of operations) {
     if (op.status === 'invalid') continue
+    if (op.type === 'shared_agent') {
+      const changes = op.outcome?.changes
+      for (const { id } of changes?.update ?? []) {
+        const node = nodes[id as AnyNodeId]
+        if (node) previousSnapshot[id as AnyNodeId] = cleanSnapshot(node)
+      }
+      for (const id of changes?.delete ?? []) {
+        const subtree = collectSubtree(nodes, id as AnyNodeId)
+        if (subtree) for (const node of [subtree.root, ...subtree.descendants]) {
+          removedNodesForUndo.push({ node: cleanSnapshot(node), parentId: node.parentId as AnyNodeId })
+        }
+      }
+    }
     if ('nodeId' in op) {
       const nodeId = (op as { nodeId: AnyNodeId }).nodeId
       if (nodeId) {
@@ -253,6 +271,55 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
     if (op.status === 'invalid') continue
 
     switch (op.type) {
+      case 'shared_agent': {
+        if (op.structurePlan && op.outcome) {
+          const before = useScene.getState().nodes
+          op.outcome.result = applyStructureOperation({
+            plan: op.structurePlan,
+            force: op.force,
+            runtime: {
+              getNodes: () => useScene.getState().nodes,
+              applyChanges: (changes) => ops().applyPatch(changes.map((change) => change.op === 'create'
+                ? { ...change, parentId: change.node.parentId ?? undefined }
+                : change) as Parameters<ReturnType<typeof getSceneOperations>['applyPatch']>[0]),
+              reconcile: () => { ops().deriveStructure() },
+              runAsSingleHistoryStep: (run) => { ops().runAsSingleHistoryStep(run) },
+            },
+          })
+          const after = useScene.getState().nodes
+          for (const id of new Set([...Object.keys(before), ...Object.keys(after)])) {
+            const typedId = id as AnyNodeId
+            if (before[typedId] === after[typedId]) continue
+            affectedNodeIds.push(typedId)
+            const previous = before[typedId]
+            if (!previous && after[typedId]) createdNodeIds.push(typedId)
+            else if (previous && !after[typedId]) removedNodesForUndo.push({ node: cleanSnapshot(previous), parentId: previous.parentId as AnyNodeId })
+            else if (previous) previousSnapshot[typedId] = cleanSnapshot(previous)
+          }
+          break
+        }
+        const changes = op.outcome?.changes
+        if (!changes) break
+        runAsSingleSceneHistoryStep(useScene, () => {
+          const patches = [
+            ...(changes.delete ?? []).map((id) => ({ op: 'delete' as const, id: id as AnyNodeId })),
+            ...(changes.update ?? []).map(({ id, data }) => ({ op: 'update' as const, id: id as AnyNodeId, data })),
+            ...(changes.create ?? []).map(({ node, parentId }) => ({ op: 'create' as const, node, parentId: parentId as AnyNodeId | undefined })),
+          ]
+          if (op.compiled) ops().applyCompiledGeometryPatch({ patches, compiled: op.compiled })
+          else ops().applyPatch(patches)
+          if (changes.collections) useScene.setState({
+            collections: writeCollections(useScene.getState().collections, changes.collections),
+          })
+        })
+        for (const { node } of changes.create ?? []) {
+          createdNodeIds.push(node.id)
+          affectedNodeIds.push(node.id)
+        }
+        affectedNodeIds.push(...(changes.update ?? []).map(({ id }) => id as AnyNodeId))
+        affectedNodeIds.push(...(changes.delete ?? []).map((id) => id as AnyNodeId))
+        break
+      }
       case 'add_item': {
         if (!op.asset) break
         const finalNode = ItemNode.parse({
@@ -1094,23 +1161,29 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
       }
       case 'update_wall_material': {
         const uOp = op as ValidatedUpdateWallMaterial
-        const updates = applySurfaceMaterialUpdate({
-          preset: uOp.materialPreset,
-          color: uOp.materialColor,
-          presetField: uOp.side === 'interior'
-            ? 'interiorMaterialPreset'
-            : uOp.side === 'exterior'
-              ? 'exteriorMaterialPreset'
-              : 'materialPreset',
-          materialField: uOp.side === 'interior'
-            ? 'interiorMaterial'
-            : uOp.side === 'exterior'
-              ? 'exteriorMaterial'
-              : 'material',
-        })
-        if (updates) {
-          useScene.getState().updateNode(uOp.nodeId, updates)
+        const node = useScene.getState().nodes[uOp.nodeId]
+        const materialRef = uOp.materialPreset
+          ? `library:${uOp.materialPreset}`
+          : uOp.materialColor
+        if (node?.type === 'wall' && materialRef) {
+          useScene.getState().updateNode(uOp.nodeId, buildMaterialSlotsPatch({
+            node,
+            slotIds: uOp.side === 'both' ? ['a', 'b'] : [uOp.side],
+            materialRef,
+          }))
           affectedNodeIds.push(uOp.nodeId)
+        }
+        break
+      }
+      case 'paint_slot': {
+        const node = useScene.getState().nodes[op.nodeId]
+        if (node) {
+          useScene.getState().updateNode(op.nodeId, buildMaterialSlotsPatch({
+            node,
+            slotIds: [op.slotId],
+            materialRef: op.materialRef,
+          }))
+          affectedNodeIds.push(op.nodeId)
         }
         break
       }
@@ -1423,6 +1496,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
     )
   }
   } catch (err) {
+    if (operations.some((op) => op.type === 'shared_agent')) throw err
     // A late throw here means one or more downstream mutations couldn't apply —
     // log for debugging but keep partial progress. The finally block still runs
     // resetPreviewState() so ghost/transient state doesn't leak.
@@ -1443,6 +1517,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
     createdNodeIds,
     previousSnapshot,
     removedNodes: removedNodesForUndo,
+    ...(previousCollections ? { previousCollections } : {}),
   }
 }
 
@@ -1456,6 +1531,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
  */
 export function undoConfirmedOperation(log: AIOperationLog): void {
   if (log.status !== 'confirmed') return
+  if (log.previousCollections) useScene.setState({ collections: log.previousCollections })
 
   // Step 1: Delete nodes that were created by this operation.
   // cascade=true: when the confirmed op created a parent + children

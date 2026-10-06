@@ -247,7 +247,7 @@ export function isNodeKindEnabled(kind: string, installedPlugins?: readonly stri
 export function getSelectableKinds(): string[] {
   const result: string[] = []
   for (const [kind, def] of nodeRegistry.entries()) {
-    if (def.capabilities.selectable !== undefined) {
+    if (def.capabilities.selectable) {
       result.push(kind)
     }
   }
@@ -259,7 +259,7 @@ export function getSelectableKinds(): string[] {
  * in expression chains like `if (node.type === 'wall' || isRegistrySelectable(node.type))`.
  */
 export function isRegistrySelectable(kind: string): boolean {
-  return nodeRegistry.get(kind)?.capabilities.selectable !== undefined
+  return Boolean(nodeRegistry.get(kind)?.capabilities.selectable)
 }
 
 /** Whether `node` takes part in floor-placement collision (`FloorPlacedConfig.collides`). */
@@ -299,8 +299,8 @@ export function kindsWithFloorplanScope(scope: FloorplanScope): string[] {
 /**
  * A kind's {@link BakePolicy} from the registry, defaulting to `'static'` for
  * kinds that don't declare one (or aren't registered). The bake and the baked
- * `/viewer` consult this instead of hardcoding kind names — see
- * plans/editor-plugin-trees-example.md → Part D.
+ * `/viewer` consult this instead of hardcoding kind names — see "Bake policy" in
+ * wiki/architecture/node-definitions.md.
  */
 export function bakePolicyOf(kind: string): BakePolicy {
   return nodeRegistry.get(kind)?.bake ?? 'static'

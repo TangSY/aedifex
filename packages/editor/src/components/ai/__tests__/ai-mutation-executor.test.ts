@@ -385,15 +385,15 @@ describe('validateToolCall — update_wall_material', () => {
     mockNodes['wall_1'] = { id: 'wall_1', type: 'wall', visible: true }
   })
 
-  it('accepts a valid catalog preset on the interior side', () => {
+  it('accepts a valid catalog preset on face a', () => {
     const result = validateToolCall({
       tool: 'update_wall_material',
       nodeId: 'wall_1',
-      side: 'interior',
+      side: 'a',
       materialPreset: 'wall-wood1',
     } as any)[0]!
     expect(result.status).toBe('valid')
-    expect((result as any).side).toBe('interior')
+    expect((result as any).side).toBe('a')
     expect((result as any).materialPreset).toBe('wall-wood1')
   })
 
@@ -401,7 +401,7 @@ describe('validateToolCall — update_wall_material', () => {
     const result = validateToolCall({
       tool: 'update_wall_material',
       nodeId: 'wall_1',
-      side: 'exterior',
+      side: 'b',
       materialColor: '#aabbcc',
     } as any)[0]!
     expect(result.status).toBe('valid')
@@ -422,7 +422,7 @@ describe('validateToolCall — update_wall_material', () => {
     const result = validateToolCall({
       tool: 'update_wall_material',
       nodeId: 'wall_1',
-      side: 'interior',
+      side: 'a',
       materialPreset: 'wood_oak', // not in catalog
     } as any)[0]!
     expect(result.status).toBe('invalid')
@@ -445,7 +445,7 @@ describe('validateToolCall — update_wall_material', () => {
     const result = validateToolCall({
       tool: 'update_wall_material',
       nodeId: 'stair_1',
-      side: 'interior',
+      side: 'a',
       materialColor: '#ffffff',
     } as any)[0]!
     expect(result.status).toBe('invalid')

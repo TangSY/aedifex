@@ -29,7 +29,9 @@
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",
     "three": "^0.186",
-    "@aedifex/mcp": "^0.3.2"
+    "@aedifex/mcp": "^0.3.2",
+    "@aedifex/geometry-script": "^1.0.3",
+    "@aedifex/ifc-converter": "^0.1.3"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -83,7 +85,9 @@
     "@types/react-dom": "19.2.2",
     "@types/three": "^0.184.0",
     "fast-xml-parser": "^5.4.2",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "@aedifex/geometry-script": "workspace:*",
+    "@aedifex/ifc-converter": "workspace:*"
   },
   "repository": {
     "type": "git",

@@ -3,6 +3,7 @@
 @import "../../../styles/elevation.css";
 @source "../../../packages/editor/src";
 @source "../../../packages/nodes/src";
+@source "../../../packages/plugin-webxr/src/integrations/aedifex-editor/host";
 @source "../../../node_modules/@aedifex/plugin-trees/src";
 
 @custom-variant dark (&:is(.dark *));

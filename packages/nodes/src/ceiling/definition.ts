@@ -1,5 +1,6 @@
 import {
   type CeilingNode as CeilingNodeType,
+  ceilingSlots,
   type HandleDescriptor,
   type NodeDefinition,
   resolveCeilingHeight,
@@ -29,7 +30,6 @@ import { CEILING_HANDLE_MIN_HEIGHT, ceilingHeightRange } from './height-bounds'
 import { ceilingPaint } from './paint'
 import { ceilingParametrics } from './parametrics'
 import { CeilingNode } from './schema'
-import { ceilingSlots } from './slots'
 
 const HEIGHT_HANDLE_OFFSET = 0.22
 
@@ -115,10 +115,10 @@ function ceilingHandles(_node: CeilingNodeType): HandleDescriptor<CeilingNodeTyp
  *
  * **Stage B intentionally skipped**: pure `def.geometry` extraction
  * would lose the React children rendering (hosted items) and the
- * named-mesh structure. Ceiling keeps `def.renderer` as the custom
- * escape hatch (per plans/editor-node-registry.md "custom-behavior
- * escape hatch"). Renderer wraps the legacy CeilingRenderer; system
- * wraps the legacy CeilingSystem.
+ * named-mesh structure. Ceiling keeps `def.renderer` as its escape hatch
+ * ("Opting out of a generic path" in wiki/architecture/node-definitions.md).
+ * Renderer wraps the legacy CeilingRenderer; system wraps the legacy
+ * CeilingSystem.
  *
  * **Stage C completed**: `def.floorplan` builder draws the ceiling
  * polygon as a dashed outline in floor plan; legacy `ceilingPolygons`
@@ -211,6 +211,7 @@ export const ceilingDefinition: NodeDefinition<typeof CeilingNode> = {
     priority: 4,
   },
   floorplan: buildCeilingFloorplan,
+  floorplanDependsOnSiblings: true,
   // 2D move handler — translates polygon by cursor delta from first
   // pointer position. Mirror of slab; 3D `MoveCeilingTool` skips
   // 2D-sourced grid events so they don't double-write on commit.

@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
+import { migrateLegacyWallAssemblies } from '@aedifex/core/scene-migrations'
 import { AnyNode } from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { SceneOperations } from '../../operations'
@@ -18,12 +19,14 @@ export const saveSceneInput = {
     .enum(['draft', 'checkpoint'])
     .default('draft')
     .describe(
-      '`draft` updates the browser-visible working model without polluting version history. `checkpoint` creates a meaningful saved version.',
+      '`draft` updates the browser-visible working model without polluting version history. `checkpoint` creates a meaningful saved version; it does not publish.',
     ),
   publish: z
     .boolean()
     .optional()
-    .describe('For checkpoint saves, publish the checkpoint as the browser-visible version.'),
+    .describe(
+      "Hosted Pascal: also publish this checkpoint, making it the version the project's viewers see. Only when the user asks to publish.",
+    ),
   thumbnail: z.string().url().optional(),
   includeCurrentScene: z
     .boolean()
@@ -101,8 +104,9 @@ export function registerSaveScene(server: McpServer, bridge: SceneOperations): v
         if (!rawNodes || typeof rawNodes !== 'object') {
           throwMcpError(ErrorCode.InvalidParams, 'graph.nodes must be an object')
         }
+        const migration = migrateLegacyWallAssemblies(rawNodes as Record<string, unknown>)
         const errors: { nodeId: string; path: string; message: string }[] = []
-        for (const [nodeId, node] of Object.entries(rawNodes as Record<string, unknown>)) {
+        for (const [nodeId, node] of Object.entries(migration.nodes)) {
           const res = AnyNode.safeParse(node)
           if (!res.success) {
             for (const issue of res.error.issues) {
@@ -117,7 +121,7 @@ export function registerSaveScene(server: McpServer, bridge: SceneOperations): v
         if (errors.length > 0) {
           throwMcpError(ErrorCode.InvalidParams, 'graph_invalid', { errors })
         }
-        sceneGraph = graph as unknown as SceneGraph
+        sceneGraph = { ...graph, nodes: migration.nodes } as unknown as SceneGraph
       }
 
       try {

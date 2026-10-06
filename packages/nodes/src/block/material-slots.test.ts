@@ -1,9 +1,8 @@
 import { describe, expect, test } from 'bun:test'
-import { createBoxBlockTopology } from '@aedifex/core'
+import { blockMaterialSlotIds, createBoxBlockTopology } from '@aedifex/core'
 import {
   assignBlockMaterial,
   blockMaterialSelection,
-  blockMaterialSlotIds,
   createAssignedBlockMaterialSlot,
   createBlockMaterialSlot,
   removeBlockMaterialSlot,

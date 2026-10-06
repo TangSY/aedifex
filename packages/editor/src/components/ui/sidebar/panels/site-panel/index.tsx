@@ -51,8 +51,8 @@ import {
 import {
   buildLevelDuplicateCreateOps,
   type LevelDuplicatePreset,
-} from './../../../../../lib/level-duplication'
-import { getDefaultLevelName } from '@aedifex/core'
+} from '@aedifex/core/building'
+import { getDefaultLevelName, getLevelDisplayName } from '@aedifex/core'
 import { deleteLevelWithFallbackSelection } from './../../../../../lib/level-selection'
 import {
   formatAreaLabel,
@@ -64,12 +64,19 @@ import {
 } from './../../../../../lib/measurements'
 import { createLocalGuideImage, createLocalScan } from './../../../../../lib/local-guide-image'
 import { editorHostTreeChildrenRegistry } from './../../../../../lib/host-tree-children'
+import { requestRoomDeletion } from './../../../../../lib/room-structure-commands'
+import {
+  selectZoneOrRoom,
+  useZoneSelected,
+  zoneKindLabel,
+} from './../../../../../lib/room-zone-routing'
 import { createUnitInBuilding, toggleZoneMembership } from './../../../../../lib/units'
 import { cn } from './../../../../../lib/utils'
 import useEditor from './../../../../../store/use-editor'
 import { useUploadStore } from '../../../../../store/use-upload'
 import { MetricControl } from '../../../controls/metric-control'
 import { LevelDuplicateDialog } from '../../../level-duplicate-dialog'
+import { CollectionsSection } from './collection-tree-node'
 import { InlineRenameInput } from './inline-rename-input'
 import { ZoneMembershipCheckbox } from './zone-membership-checkbox'
 import { focusTreeNode, TreeNode, TreeNodeWrapper } from './tree-node'
@@ -857,6 +864,7 @@ const LevelItem = memo(function LevelItem({
           />
           <InlineRenameInput
             defaultName={getDefaultLevelName(level.level)}
+            displayName={getLevelDisplayName(level)}
             isEditing={isEditing}
             nodeId={level.id}
             onStartEditing={() => setIsEditing(true)}
@@ -1279,14 +1287,14 @@ const LayerToggle = memo(function LayerToggle() {
         )}
         <div className="relative z-10 flex flex-col items-center">
           <img
-            alt="Zones"
+            alt="Rooms"
             className={cn(
               'mb-1 h-6 w-6 transition-all',
               activeTab !== 'zones' && 'opacity-50 grayscale',
             )}
             src="/icons/kitchen.webp"
           />
-          Zones
+          Rooms
         </div>
         <div className="absolute right-1.5 bottom-1 z-10 rounded border border-border/40 bg-background/40 px-1 py-[2px] backdrop-blur-md">
           <span className="block font-medium font-mono text-[9px] text-muted-foreground/70 leading-none">
@@ -1308,7 +1316,6 @@ const ZoneItem = memo(function ZoneItem({ zone, isLast }: { zone: ZoneNode; isLa
     const unit = focusedUnitId ? s.nodes[focusedUnitId] : undefined
     return unit?.type === 'unit' ? unit : null
   })
-  const selectedZoneId = useViewer((state) => state.selection.zoneId)
   const hoveredId = useViewer((state) => state.hoveredId)
   const setSelection = useViewer((state) => state.setSelection)
   const setHoveredId = useViewer((state) => state.setHoveredId)
@@ -1316,7 +1323,8 @@ const ZoneItem = memo(function ZoneItem({ zone, isLast }: { zone: ZoneNode; isLa
   const setMode = useEditor((state) => state.setMode)
   const unit = useViewer((state) => state.unit)
 
-  const isSelected = selectedZoneId === zone.id
+  const isSelected = useZoneSelected(zone.id)
+  const isRoom = zone.spaceRole === 'room'
   const isHovered = hoveredId === zone.id
 
   const itemRef = useRef<HTMLDivElement>(null)
@@ -1327,12 +1335,12 @@ const ZoneItem = memo(function ZoneItem({ zone, isLast }: { zone: ZoneNode; isLa
     }
   }, [isSelected])
 
-  const defaultName = `Zone (${formatAreaLabel(calculatePolygonArea(zone.polygon), unit)})`
+  const defaultName = `${zoneKindLabel(zone)} (${formatAreaLabel(calculatePolygonArea(zone.polygon), unit)})`
 
   const handleClick = () => {
-    setSelection({ zoneId: zone.id })
     setPhase('structure')
     setMode('select')
+    selectZoneOrRoom(zone.id)
   }
 
   const handleDoubleClick = () => {
@@ -1341,6 +1349,8 @@ const ZoneItem = memo(function ZoneItem({ zone, isLast }: { zone: ZoneNode; isLa
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
+    // A room goes the way the room panel deletes it (its walls, or merged back).
+    if (isRoom) return requestRoomDeletion(zone.id)
     deleteNode(zone.id)
     if (isSelected) {
       setSelection({ zoneId: null })
@@ -1542,19 +1552,35 @@ const ContentSection = memo(function ContentSection() {
     if (levelZones.length === 0) {
       return (
         <div className="px-3 py-4 text-muted-foreground text-sm">
-          No zones on this level.{' '}
+          No rooms on this level. Close walls around a space to make one, or{' '}
           <button className="cursor-pointer text-primary hover:underline" onClick={handleAddZone}>
-            Add one
+            draw a zone
           </button>
+          .
         </div>
       )
     }
 
+    const rooms = levelZones.filter((zone) => zone.spaceRole === 'room')
+    const others = levelZones.filter((zone) => zone.spaceRole !== 'room')
     return (
       <div className="flex flex-col">
-        {levelZones.map((zone, index) => (
-          <ZoneItem isLast={index === levelZones.length - 1} key={zone.id} zone={zone} />
+        {rooms.map((zone, index) => (
+          <ZoneItem isLast={index === rooms.length - 1} key={zone.id} zone={zone} />
         ))}
+        {others.length > 0 && (
+          <>
+            <div
+              className="px-3 pt-3 pb-1 font-medium text-[11px] text-muted-foreground"
+              data-other-zones
+            >
+              Other zones
+            </div>
+            {others.map((zone, index) => (
+              <ZoneItem isLast={index === others.length - 1} key={zone.id} zone={zone} />
+            ))}
+          </>
+        )}
       </div>
     )
   }
@@ -1732,6 +1758,7 @@ const BuildingItem = memo(function BuildingItem({
                   projectId={projectId}
                 />
                 <UnitsSection buildingId={building.id} />
+                <CollectionsSection />
                 <LayerToggle />
               </div>
               <div className="subtle-scrollbar relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden">

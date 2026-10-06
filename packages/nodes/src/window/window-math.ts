@@ -1,13 +1,3 @@
-import {
-  type AnyNode,
-  type AnyNodeId,
-  getCurtainWallConfig,
-  getWallCurveFrameAt,
-  getWallCurveLength,
-  type WallNode,
-} from '@aedifex/core'
-import { resolveWallOpeningCeiling } from '../shared/wall-opening-ceiling'
-
 /**
  * Default sill height (metres from the floor to the BOTTOM of a window) for a
  * fresh window that has no wall-face height yet — the off-wall ghost and the
@@ -19,29 +9,8 @@ export const DEFAULT_WINDOW_SILL_M = 0.5
 
 export { wallLocalToWorld } from '../shared/wall-local-frame'
 
-/**
- * Clamps window center position so it stays fully within wall bounds. The Y
- * ceiling is the wall's RESOLVED top (storey plane for plane-bound walls,
- * stored height for explicit ones, minus the elected slab base) — `nodes` is
- * required because a plane-bound wall's top lives on its level, not on the
- * wall record.
- */
-export function clampToWall(
-  wallNode: WallNode,
-  localX: number,
-  localY: number,
-  width: number,
-  height: number,
-  nodes: Readonly<Record<AnyNodeId, AnyNode>>,
-): { clampedX: number; clampedY: number } {
-  const wallLength = getWallCurveLength(wallNode)
-  const wallHeight = resolveWallOpeningCeiling(wallNode, nodes)
-  const margin = wallNode.wallType === 'curtain' ? getCurtainWallConfig(wallNode).perimeterWidth : 0
-
-  const clampedX = Math.max(margin + width / 2, Math.min(wallLength - margin - width / 2, localX))
-  const clampedY = Math.max(margin + height / 2, Math.min(wallHeight - margin - height / 2, localY))
-  return { clampedX, clampedY }
-}
+/** Window centre on its wall and under its ceiling: the shared rule in core (`clampWindowToWall`). */
+export { clampWindowToWall as clampToWall } from '@aedifex/core/building'
 
 /**
  * Wall-child overlap is shared by door + window placement (one source of

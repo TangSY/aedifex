@@ -5,16 +5,15 @@ import {
   ROOF_SLOT_DEFAULTS,
   type RoofNode,
   type RoofSegmentNode,
-  wallAssemblyFinishRef,
-  type RoofSlotId,
   type SceneMaterial,
   type SceneMaterialId,
+  wallAssemblyFinishRef,
+  type RoofSlotId,
 } from '@aedifex/core'
 import type * as THREE from 'three'
 import {
   type ColorPreset,
   createMaterial,
-  createMaterialFromPresetRef,
   createSurfaceRoleMaterial,
   type RenderShading,
   resolveMaterialRef,
@@ -67,21 +66,29 @@ function getCachedRoofMaterialArray(key: string): RoofMaterialArray | undefined 
 
 function getSurfaceMaterialSignature(
   spec: ReturnType<typeof getEffectiveRoofSurfaceMaterial>,
+  sceneMaterials: SceneMaterials,
 ): string {
+  const ref = parseMaterialRef(spec.materialPreset)
   return JSON.stringify({
     material: spec.material ?? null,
     materialPreset: spec.materialPreset ?? null,
+    sceneMaterial:
+      ref?.kind === 'scene'
+        ? (sceneMaterials?.[ref.id as SceneMaterialId]?.material ?? null)
+        : null,
   })
 }
 
 function createResolvedMaterial(
   material: RoofNode['material'] | RoofSegmentNode['material'] | undefined,
   materialPreset: string | undefined,
+  sceneMaterials: SceneMaterials,
   shading: RenderShading,
 ): THREE.Material | null {
-  if (materialPreset) {
-    return createMaterialFromPresetRef(materialPreset, shading)
-  }
+  // An unknown or dangling ref resolves to nothing: fall through to the
+  // colour, then the slot default, as the segment renderer does.
+  const preset = resolveMaterialRef(materialPreset, sceneMaterials, shading)
+  if (preset) return preset
 
   if (material) {
     return createMaterial(material, shading)
@@ -125,17 +132,15 @@ function roofSlotSignature(
   legacySpec: ReturnType<typeof getEffectiveRoofSurfaceMaterial>,
   sceneMaterials: SceneMaterials,
 ): string {
-  if (ref) {
-    const parsed = parseMaterialRef(ref)
-    if (parsed?.kind === 'scene') {
-      return JSON.stringify({
-        ref,
-        material: sceneMaterials?.[parsed.id as SceneMaterialId]?.material ?? null,
-      })
-    }
-    return JSON.stringify({ ref })
-  }
-  return getSurfaceMaterialSignature(legacySpec)
+  const parsed = parseMaterialRef(ref)
+  return JSON.stringify({
+    ref: ref ?? null,
+    material:
+      parsed?.kind === 'scene'
+        ? (sceneMaterials?.[parsed.id as SceneMaterialId]?.material ?? null)
+        : null,
+    legacy: getSurfaceMaterialSignature(legacySpec, sceneMaterials),
+  })
 }
 
 export function getRoofMaterialArray(
@@ -144,8 +149,8 @@ export function getRoofMaterialArray(
   textures = true,
   colorPreset: ColorPreset = 'clay',
   sceneTheme?: string,
-  sceneMaterials?: SceneMaterials,
   wallCladdingRef: string | null = null,
+  sceneMaterials?: SceneMaterials,
 ): RoofMaterialArray | null {
   const slotSpecs = ROOF_SLOT_ORDER.map((slotId) => {
     const ref = node.slots?.[slotId]
@@ -206,6 +211,7 @@ export function getRoofMaterialArray(
     const legacyMaterial = createResolvedMaterial(
       legacySpec.material,
       legacySpec.materialPreset,
+      sceneMaterials,
       shading,
     )
     return legacyMaterial ?? (defaultArray[index] as THREE.Material)

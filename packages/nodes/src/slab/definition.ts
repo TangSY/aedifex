@@ -2,12 +2,14 @@ import {
   type AnyNode,
   type AnyNodeId,
   type HandleDescriptor,
+  liftedManualSlab,
   MIN_SLAB_THICKNESS,
   markSlabChangeDependents,
   type NodeDefinition,
   pointInPolygon2D,
   type SceneApi,
   type SlabNode as SlabNodeType,
+  slabSlots,
   syncStairRises,
 } from '@aedifex/core'
 import {
@@ -41,7 +43,6 @@ import { slabPaint } from './paint'
 import { slabParametrics } from './parametrics'
 import { slabQuickMeasurement } from './quick-measurement'
 import { SlabNode } from './schema'
-import { slabSlots } from './slots'
 
 const HEIGHT_HANDLE_OFFSET = 0.22
 const MIN_SLAB_ELEVATION = -1
@@ -249,6 +250,10 @@ function slabBaseElevationHandle(): HandleDescriptor<SlabNodeType> {
 }
 
 function slabHandles(node: SlabNodeType): HandleDescriptor<SlabNodeType>[] {
+  // A footprint's floor (base plate) has one control, its height above the
+  // ground, drawn by the editor's footprint height handle; room plates are
+  // reached through their room. Only user-drawn slabs keep these handles.
+  if (node.plateRole) return []
   return node.recessed
     ? [slabRecessedDepthHandle()]
     : [slabThicknessHandle(), slabBaseElevationHandle()]
@@ -304,7 +309,22 @@ export const slabDefinition: NodeDefinition<typeof SlabNode> = {
     batchable: surfaceBatchable,
     selectable: { hitVolume: 'bbox' },
     surfaces: {
-      top: { height: (n) => (n as SlabNode).elevation },
+      top: {
+        height: (n) => (n as SlabNode).elevation,
+        supportHeight: (node, x, z, context) => {
+          const slab = node as SlabNodeType
+          if (
+            slab.polygon.length < 3 ||
+            !pointInPolygon2D([x, z], slab.polygon, { includeBoundary: true }) ||
+            slab.holes.some(
+              (hole) =>
+                hole.length >= 3 && pointInPolygon2D([x, z], hole, { includeBoundary: false }),
+            )
+          )
+            return null
+          return liftedManualSlab(context.nodes, slab).elevation
+        },
+      },
     },
     duplicable: true,
     deletable: true,

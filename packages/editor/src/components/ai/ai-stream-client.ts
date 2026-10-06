@@ -1,3 +1,4 @@
+import { isSharedAgentToolName } from './contracts/shared-agent-tools'
 import type { AIToolCall } from './types'
 
 // ============================================================================
@@ -298,6 +299,7 @@ export async function parseSseChatStream(
 // ============================================================================
 
 function parseToolCall(name: string, input: Record<string, unknown>): AIToolCall | null {
+  if (isSharedAgentToolName(name)) return { tool: name, sharedInput: input }
   switch (name) {
     case 'add_item':
       return {
@@ -702,7 +704,7 @@ function parseToolCall(name: string, input: Record<string, unknown>): AIToolCall
       return {
         tool: 'update_wall_material',
         nodeId: input.nodeId as string,
-        side: input.side as 'interior' | 'exterior' | 'both',
+        side: input.side as 'a' | 'b' | 'both',
         materialPreset: input.materialPreset as string | undefined,
         materialColor: input.materialColor as string | undefined,
         reason: input.reason as string | undefined,

@@ -1,5 +1,6 @@
 import type { NodeDefinition } from '@aedifex/core'
-import { ductBodyPaint, ductBodySlots } from '../shared/duct-body-paint'
+import { ductBodySlots } from '@aedifex/core'
+import { ductBodyPaint } from '../shared/duct-body-paint'
 import { rotateFittingNode } from '../shared/fitting-rotation'
 import { ductFittingToolOptions } from '../shared/fitting-tool-options'
 import { buildDuctFittingFloorplan } from './floorplan'

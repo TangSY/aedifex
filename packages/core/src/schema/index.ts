@@ -15,6 +15,11 @@ export { BaseNode, generateId, Material, nodeType, objectId } from './base'
 // Camera
 export { CameraSchema } from './camera'
 // Collections
+export {
+  COLLECTION_TEMPLATE_IDS,
+  COLLECTION_TEMPLATES,
+  type CollectionTemplateId,
+} from './collection-templates'
 export { type Collection, type CollectionId, generateCollectionId } from './collections'
 // Compiled per-kind parsers (opt-in)
 export {
@@ -24,6 +29,17 @@ export {
 } from './compiled-node-parsers'
 // Cut intents (F5b)
 export { CutIntent, CutShape } from './cut'
+export {
+  type CompiledGeometryScript,
+  GEOMETRY_MANIFEST_MAX_BYTES,
+  GEOMETRY_SCRIPT_MAX_BYTES,
+  GEOMETRY_SCRIPT_MIME_TYPE,
+  GeometryArtifactManifest,
+  GeometryScriptMount,
+  GeometryScriptParamSpec,
+  GeometryScriptParamValue,
+  GeometryScriptSource,
+} from './geometry-source'
 export type {
   MaterialMapProperties,
   MaterialMaps,
@@ -157,7 +173,16 @@ export {
   ElevatorShaftStyle,
 } from './nodes/elevator'
 export { EyebrowVentMaterialRole, EyebrowVentNode } from './nodes/eyebrow-vent'
-export { FenceBaseStyle, FenceGuardInfill, FenceNode, FenceStyle } from './nodes/fence'
+export {
+  clampFencePicketRailProjection,
+  FenceBaseStyle,
+  FenceGuardInfill,
+  FenceNode,
+  FenceStyle,
+  maxFencePicketRailProjection,
+} from './nodes/fence'
+export { type FenceFeatureNode, FenceGateNode, FenceOpeningNode } from './nodes/fence-feature'
+export { FloorOpeningNode } from './nodes/floor-opening'
 export { GuideNode, GuideScaleReference } from './nodes/guide'
 export {
   computeGutterEaveY,
@@ -308,6 +333,7 @@ export {
   type CaptureSessionReferenceInput,
   ScanNode,
 } from './nodes/scan'
+export { SeparatorNode } from './nodes/separator'
 export { ShelfNode } from './nodes/shelf'
 export {
   migrateSiteMetadata,
@@ -327,7 +353,7 @@ export {
   SkylightType,
   type SkylightTypePreset,
 } from './nodes/skylight'
-export { MIN_SLAB_THICKNESS, SlabNode } from './nodes/slab'
+export { MIN_GROUND_FLOOR_THICKNESS, MIN_SLAB_THICKNESS, SlabNode } from './nodes/slab'
 export {
   SolarPanelMaterialRole,
   SolarPanelNode,
@@ -346,31 +372,29 @@ export {
 export { AttachmentSide, StairSegmentNode, StairSegmentType } from './nodes/stair-segment'
 export { StructuralGridNode } from './nodes/structural-grid'
 export { SurfaceHoleMetadata } from './nodes/surface-hole-metadata'
+export { SurfacePaintRegion } from './nodes/surface-paint-region'
 export { TurbineVentMaterialRole, TurbineVentNode } from './nodes/turbine-vent'
 export { DEFAULT_UNIT_COLOR, UNIT_KINDS, type UnitKind, UnitNode } from './nodes/unit'
 export type {
-  WallBandSurfaceSlotId,
-  WallFaceBand,
-  WallFaceBandConfig,
+  WallFace,
   WallSurfaceMaterialSpec,
   WallSurfaceSide,
   WallSurfaceSlotId,
   WallTrimConfig,
+  WallTrimKind,
+  WallTrimSlotId,
 } from './nodes/wall'
 export {
-  buildEnabledWallFaceBandPatch,
-  buildWallFaceBandCountPatch,
+  getEffectiveWallFaceMaterial,
   getEffectiveWallSurfaceMaterial,
-  getWallBandSlotId,
-  getWallFaceBandConfig,
-  getWallFaceBandForHeight,
   getWallSurfaceMaterialSignature,
-  getWallSurfaceSideFromBandSlot,
+  getWallTrimFaces,
+  getWallTrimSlotId,
   WALL_CHAIR_RAIL_DEFAULT,
   WALL_CHAIR_RAIL_SLOT_DEFAULT,
   WALL_CROWN_DEFAULT,
   WALL_CROWN_SLOT_DEFAULT,
-  WALL_FACE_BAND_DEFAULT,
+  WALL_FACE_REGION_LIMIT,
   WALL_SKIRTING_DEFAULT,
   WALL_SKIRTING_SLOT_DEFAULT,
   WALL_SLOT_DEFAULT,
@@ -381,6 +405,7 @@ export {
   WallAssemblyFramingKind,
   WallAssemblyInteriorFinish,
   WallAssemblySheathingMaterial,
+  WallFaceRegion,
   WallNode,
   WallTreatmentSide,
   WallTrimProfile,

@@ -1,11 +1,12 @@
 import type { ChatCompletionTool } from 'openai/resources/chat/completions'
+import { isSharedAgentToolName, SHARED_OPENAI_TOOLS } from '../contracts/shared-agent-tools'
 
 // ============================================================================
 // OpenAI Tool Definitions
 // Shared between open-source editor and SaaS.
 // ============================================================================
 
-export const OPENAI_TOOLS: ChatCompletionTool[] = [
+const LEGACY_OPENAI_TOOLS: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
@@ -79,12 +80,12 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'update_wall_material',
-      description: 'Legacy whole-side wall material — writes `materialPreset` / `material` / interior/exterior single-fields. ⚠️ Prefer `paint_slot` with slotId="interior" or "exterior" for the unified paint-slots model. Use this tool only when you need to set the legacy single-face material (side="both") for backward compatibility with older scenes.',
+      description: 'Paint the wall geometric face a (left of start → end), b (right), or both. Writes the unified wall slots and preserves other parts. Prefer `paint_slot` for individual trim or foundation slots.',
       parameters: {
         type: 'object',
         properties: {
           nodeId: { type: 'string', description: 'The node ID of the wall.' },
-          side: { type: 'string', enum: ['interior', 'exterior', 'both'], description: 'Which face to apply the material to.' },
+          side: { type: 'string', enum: ['a', 'b', 'both'], description: 'Geometric wall face: a is left of start → end, b is right; both paints the two faces.' },
           materialPreset: { type: 'string', enum: ['wall-wood1', 'wall-wood2', 'wall-wood3', 'wall-wood4', 'wall-wood5', 'wall-wallpaper1', 'wall-wallpaper2', 'wall-wallpaper3', 'preset-white', 'preset-metal', 'preset-glass'], description: 'Catalog preset ID. Only IDs valid for wall surfaces are allowed. Mutually exclusive with materialColor; if both are provided, preset wins.' },
           materialColor: { type: 'string', description: 'Inline color hex string (e.g. "#aabbcc"). Use when no catalog preset matches.' },
           reason: { type: 'string', description: 'Brief reason for the change.' },
@@ -133,12 +134,12 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'paint_slot',
-      description: 'Unified per-slot paint. Writes a single MaterialRef into node.slots[slotId]. Use this instead of update_*_material when painting per-part (window glass vs frame, stair treads vs railing, fence posts vs infill, door handle vs panel, etc.). Supported kinds and slots: wall (interior, exterior), roof (shingle, gable, fascia, soffit), slab (surface, side), ceiling (surface), stair (treads, body, railing), column (shaft, base, capital, frame), elevator (cab, doors, shaft, glass), fence (posts, infill, base, rail), shelf (shelves, frame, back), door (panel, frame, glass, hardware), window (frame, glass). For item nodes (furniture/GLB), slotId is the GLB mesh-defined name; any string is accepted and resolved at paint time. NOTE: Some slots are conditional on node properties (e.g. fence "base" only exists when baseStyle !== "floating"; column "frame" only when the column is structural; shelf "back" only when the shelf has a back panel). If the validator rejects your call with a "Valid slots" list, retry with one of the listed slot ids instead of guessing.',
+      description: 'Unified per-slot paint. Writes a single MaterialRef into node.slots[slotId]. Use this instead of update_*_material when painting per-part (window glass vs frame, stair treads vs railing, fence posts vs infill, door handle vs panel, etc.). Supported kinds and slots: wall (a, b), roof (shingle, gable, fascia, soffit), slab (surface, side), ceiling (surface), stair (treads, body, railing), column (shaft, base, capital, frame), elevator (cab, doors, shaft, glass), fence (posts, infill, base, rail), shelf (shelves, frame, back), door (panel, frame, glass, hardware), window (frame, glass). For item nodes (furniture/GLB), slotId is the GLB mesh-defined name; any string is accepted and resolved at paint time. NOTE: Some slots are conditional on node properties (e.g. fence "base" only exists when baseStyle !== "floating"; column "frame" only when the column is structural; shelf "back" only when the shelf has a back panel). If the validator rejects your call with a "Valid slots" list, retry with one of the listed slot ids instead of guessing.',
       parameters: {
         type: 'object',
         properties: {
           nodeId: { type: 'string', description: 'Target node ID. The node must already exist.' },
-          slotId: { type: 'string', description: 'Slot identifier within the node kind. Per-kind enumeration: wall="interior"|"exterior"; roof="shingle"|"gable"|"fascia"|"soffit"; slab="surface"|"side"; ceiling="surface"; stair="treads"|"body"|"railing"; column="shaft"|"base"|"capital"|"frame"; elevator="cab"|"doors"|"shaft"|"glass"; fence="posts"|"infill"|"base"|"rail"; shelf="shelves"|"frame"|"back"; door="panel"|"frame"|"glass"|"hardware"; window="frame"|"glass". For item/GLB nodes, any mesh-name string is accepted.' },
+          slotId: { type: 'string', description: 'Slot identifier within the node kind. Per-kind enumeration: wall="a"|"b"; roof="shingle"|"gable"|"fascia"|"soffit"; slab="surface"|"side"; ceiling="surface"; stair="treads"|"body"|"railing"; column="shaft"|"base"|"capital"|"frame"; elevator="cab"|"doors"|"shaft"|"glass"; fence="posts"|"infill"|"base"|"rail"; shelf="shelves"|"frame"|"back"; door="panel"|"frame"|"glass"|"hardware"; window="frame"|"glass". For item/GLB nodes, any mesh-name string is accepted.' },
           materialRef: { type: 'string', description: 'MaterialRef. Use "library:<preset-id>" for a catalog preset (e.g. "library:preset-charcoal", "library:wall-wood1"), or "scene:<id>" for a previously minted scene material. Pass an empty string ("") to clear the slot back to its declared default.' },
           reason: { type: 'string', description: 'Brief reason for the change.' },
         },
@@ -1093,4 +1094,9 @@ export const OPENAI_TOOLS: ChatCompletionTool[] = [
       },
     },
   },
+]
+
+export const OPENAI_TOOLS: ChatCompletionTool[] = [
+  ...LEGACY_OPENAI_TOOLS.filter((tool) => tool.type !== 'function' || !isSharedAgentToolName(tool.function.name)),
+  ...SHARED_OPENAI_TOOLS,
 ]

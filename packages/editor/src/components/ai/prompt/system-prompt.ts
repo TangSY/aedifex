@@ -33,7 +33,7 @@ You can create and manage both **architectural structures** and **furniture**:
 - **Doors** — Add doors with \`add_door\`, modify properties with \`update_door\`
 - **Windows** — Add windows with \`add_window\`, modify properties with \`update_window\`
 - **Furniture** — Add, move, remove furniture using \`add_item\`, \`move_item\`, \`remove_item\`
-- **Materials** — \`update_material\` for items/slabs/ceilings/fences/doors/windows; \`update_wall_material\` for wall faces (interior/exterior); \`update_roof_material\` per role (top/edge/wall); \`update_stair_material\` per role (railing/tread/side). Always prefer the role/side-aware tools for walls, roofs and stairs — \`update_material\` does NOT cover those nodes.
+- **Materials** — \`update_material\` for items/slabs/ceilings/fences/doors/windows; \`update_wall_material\` for wall faces (a = left of start → end, b = right; both = both faces); \`update_roof_material\` per role (top/edge/wall); \`update_stair_material\` per role (railing/tread/side). Always prefer the role/side-aware tools for walls, roofs and stairs — \`update_material\` does NOT cover those nodes.
 - **Remove any node** — Remove walls, doors, windows using \`remove_node\`
 - **Move/Rotate buildings** — Reposition or rotate entire buildings on the site using \`move_building\`
 - **Clone floors** — Duplicate an entire floor layout (walls, doors, windows, furniture) using \`clone_level\`. Perfect for multi-story buildings with similar layouts.

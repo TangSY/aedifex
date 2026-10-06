@@ -6,7 +6,6 @@ import {
   assemblyThickness,
   BRICK_AIR_SPACE,
   BRICK_VENEER,
-  buildWallFaceBandCountPatch,
   FIBER_CEMENT,
   GROUND_SUPPORT_ID,
   GYPSUM_HALF,
@@ -15,7 +14,6 @@ import {
   getMaxWallCurveOffset,
   getWallAssemblyPreset,
   getWallCurveLength,
-  getWallFaceBandConfig,
   normalizeWallCurveOffset,
   resolveWallAssembly,
   SIDING_LAP,
@@ -27,7 +25,6 @@ import {
   WALL_ASSEMBLY_PRESETS,
   WALL_CHAIR_RAIL_DEFAULT,
   WALL_CROWN_DEFAULT,
-  WALL_FACE_BAND_DEFAULT,
   WALL_SKIRTING_DEFAULT,
   type WallAssembly,
   type WallAssemblyExteriorFinish,
@@ -37,7 +34,9 @@ import {
   type WallNode,
   type WallTrimProfile,
   WSP_SHEATHING,
+  wallAssemblyFromLegacy,
   wallAssemblyPatch,
+  wallAssemblyToLegacy,
   wallAssemblyUnverifiedNote,
 } from '@aedifex/core'
 import {
@@ -54,6 +53,7 @@ import {
   SliderControl,
   triggerSFX,
   useInteractionScope,
+  WallPaintRegionList,
 } from '@aedifex/editor'
 import { useViewer } from '@aedifex/viewer'
 import { Spline } from 'lucide-react'
@@ -62,6 +62,7 @@ import { resolveWallOpeningCeiling } from '../shared/wall-opening-ceiling'
 import { CurtainWallPanel } from './curtain-wall-panel'
 import { hasWallCurveBlockingChildren } from './curve-eligibility'
 import { buildWallLengthPatch } from './length-patch'
+import { wallReferenceModel } from './panel-model'
 import { createWallPropertyPreview } from './property-preview'
 
 /**
@@ -154,6 +155,12 @@ export default function WallPanel() {
     if (wall?.type !== 'wall') return undefined
     return resolveWallOpeningCeiling(wall, s.nodes)
   })
+
+  const sceneNodes = useScene((s) => s.nodes)
+  const reference = useMemo(
+    () => (node ? wallReferenceModel([node], sceneNodes) : null),
+    [node, sceneNodes],
+  )
 
   // Mirror the latest node into a ref so the slider handlers below have
   // stable identities across re-renders. Without this, every store tick
@@ -383,6 +390,15 @@ export default function WallPanel() {
             value={Math.round(displayThickness * 1000) / 1000}
           />
         )}
+        <div className="px-1 font-medium text-[10px] text-muted-foreground/80">Reference</div>
+        {reference && (
+          <SegmentedControl
+            mixed={reference.value === null}
+            onChange={(value) => reference.apply(value)}
+            options={reference.options}
+            value={reference.value ?? 'center'}
+          />
+        )}
         {!hasWallChildrenBlockingCurve && (
           <SliderControl
             onCommit={handleCommit}
@@ -426,13 +442,7 @@ export default function WallPanel() {
         <>
           <WallAssemblySection node={node} onUpdate={handleUpdate} unit={unit} />
 
-          <WallFaceBandSection
-            node={node}
-            onUpdate={handleUpdate}
-            unit={unit}
-            unitLabel={unitLabel}
-            wallHeightMeters={wallHeightMeters}
-          />
+          <WallPaintRegionList wallId={node.id} />
 
           <WallTrimSection
             node={node}
@@ -482,107 +492,6 @@ export default function WallPanel() {
   )
 }
 
-function WallFaceBandSection({
-  node,
-  onUpdate,
-  unit,
-  unitLabel,
-  wallHeightMeters,
-}: {
-  node: WallNode
-  onUpdate: (updates: Partial<WallNode>) => void
-  unit: 'metric' | 'imperial'
-  unitLabel: string
-  wallHeightMeters: number
-}) {
-  const bandConfig = getWallFaceBandConfig(node, wallHeightMeters)
-  const bandCount = bandConfig.count
-  const lowerHeight = bandConfig.lowerHeight
-  const middleHeight = bandConfig.middleHeight
-  const upperHeight = bandConfig.upperHeight
-  const updateBands = (patch: Partial<NonNullable<WallNode['faceBands']>>) =>
-    onUpdate({
-      faceBands: {
-        ...WALL_FACE_BAND_DEFAULT,
-        ...(node.faceBands ?? {}),
-        enabled: bandCount > 1,
-        count: bandCount,
-        ...patch,
-      },
-    })
-
-  return (
-    <PanelSection title="Wall bands">
-      <SliderControl
-        label="Bands"
-        max={4}
-        min={1}
-        onChange={(value) => onUpdate(buildWallFaceBandCountPatch(node, Math.round(value)))}
-        precision={0}
-        step={1}
-        value={bandCount}
-      />
-      {bandCount >= 2 && (
-        <SliderControl
-          label="Lower"
-          max={metersToLinearUnit(wallHeightMeters, unit)}
-          min={metersToLinearUnit(0, unit)}
-          onChange={(value) =>
-            updateBands({
-              lowerHeight: linearControlValueToMeters(value, unit, {
-                maxMeters: wallHeightMeters,
-                minMeters: 0,
-              }),
-            })
-          }
-          precision={2}
-          step={0.01}
-          unit={unitLabel}
-          value={metersToLinearUnit(lowerHeight, unit)}
-        />
-      )}
-      {bandCount >= 3 && (
-        <SliderControl
-          label="Middle"
-          max={metersToLinearUnit(Math.max(0, wallHeightMeters - lowerHeight), unit)}
-          min={metersToLinearUnit(0, unit)}
-          onChange={(value) =>
-            updateBands({
-              middleHeight: linearControlValueToMeters(value, unit, {
-                maxMeters: Math.max(0, wallHeightMeters - lowerHeight),
-                minMeters: 0,
-              }),
-            })
-          }
-          precision={2}
-          step={0.01}
-          unit={unitLabel}
-          value={metersToLinearUnit(middleHeight, unit)}
-        />
-      )}
-      {bandCount >= 4 && (
-        <SliderControl
-          label="Upper"
-          max={metersToLinearUnit(Math.max(0, wallHeightMeters - lowerHeight - middleHeight), unit)}
-          min={metersToLinearUnit(0, unit)}
-          onChange={(value) =>
-            updateBands({
-              upperHeight: linearControlValueToMeters(value, unit, {
-                maxMeters: Math.max(0, wallHeightMeters - lowerHeight - middleHeight),
-                minMeters: 0,
-              }),
-            })
-          }
-          precision={2}
-          step={0.01}
-          unit={unitLabel}
-          value={metersToLinearUnit(upperHeight, unit)}
-        />
-      )}
-    </PanelSection>
-  )
-}
-
 function WallTrimSection({
   node,
   onUpdate,
@@ -627,11 +536,17 @@ function WallTrimSection({
           <SegmentedControl
             onChange={(next) => updateTrim({ sides: next as any })}
             options={[
-              { label: 'Interior', value: 'interior' },
-              { label: 'Exterior', value: 'exterior' },
+              { label: 'Side A', value: 'a' },
+              { label: 'Side B', value: 'b' },
               { label: 'Both', value: 'both' },
             ]}
-            value={trimValue.sides}
+            value={
+              trimValue.sides === 'interior'
+                ? 'a'
+                : trimValue.sides === 'exterior'
+                  ? 'b'
+                  : trimValue.sides
+            }
           />
           <SegmentedControl
             onChange={(next) => updateTrim({ profile: next })}
@@ -867,13 +782,16 @@ function WallAssemblySection({
   onUpdate: (updates: Partial<WallNode>) => void
   unit: 'metric' | 'imperial'
 }) {
-  const assembly = node.assembly
+  const stack = node.assembly
+  // The cladding / sheathing / framing / interior editor works on the WS5 view
+  // of the F2 stack; a stack it cannot express is listed read-only.
+  const assembly = stack ? (wallAssemblyToLegacy(stack) ?? undefined) : undefined
   const resolved = resolveWallAssembly(node)
   const presetNote = wallAssemblyUnverifiedNote(node)
 
   // Every write goes through wallAssemblyPatch so `thickness` is re-derived.
   // Changing any layer clears `preset` — the stack is no longer that preset.
-  const apply = (next: WallAssembly) => onUpdate(wallAssemblyPatch(next))
+  const apply = (next: WallAssembly) => onUpdate(wallAssemblyPatch(wallAssemblyFromLegacy(next)))
   const edit = (mutate: (draft: WallAssembly) => WallAssembly) => {
     if (!assembly) return
     const next = mutate({ ...assembly })
@@ -892,11 +810,11 @@ function WallAssemblySection({
               return
             }
             const preset = getWallAssemblyPreset(id)
-            if (preset) apply({ ...preset.assembly })
+            if (preset) onUpdate(wallAssemblyPatch(preset.assembly))
           }}
-          value={assembly?.preset ?? ''}
+          value={stack?.presetId ?? ''}
         >
-          <option value="">{assembly ? 'Custom' : 'None (single layer)'}</option>
+          <option value="">{stack ? 'Custom' : 'None (single layer)'}</option>
           {WALL_ASSEMBLY_PRESETS.map((preset) => (
             <option key={preset.id} value={preset.id}>
               {preset.label}
@@ -1048,7 +966,7 @@ function WallAssemblySection({
               Total thickness
             </span>
             <span className="font-medium text-[11px] text-foreground tabular-nums">
-              {formatLayerThickness(assemblyThickness(assembly), unit)}
+              {formatLayerThickness(assemblyThickness(stack!), unit)}
             </span>
           </div>
 
@@ -1060,7 +978,7 @@ function WallAssemblySection({
           {resolved.kind === 'envelope' && resolved.exteriorSide == null && (
             <div className="px-2 pb-1.5 text-[10px] text-muted-foreground">
               Which face is outside is undetermined (no room detected on either side) — the exterior
-              layers are drawn on the front face.
+              layers are drawn on side B.
             </div>
           )}
           {presetNote && (
@@ -1071,6 +989,25 @@ function WallAssemblySection({
           <div className="px-2 pb-2 text-[10px] text-muted-foreground">
             Layer thicknesses follow the 2021 IRC assembly data. Drafting aid, not engineering —
             verify with the authority having jurisdiction.
+          </div>
+        </>
+      )}
+      {stack && !assembly && (
+        <>
+          {resolved.layers.map((layer, index) => (
+            <LayerRow key={`${layer.role}-${index}`} label={layer.material}>
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                {formatLayerThickness(layer.thickness, unit)}
+              </span>
+            </LayerRow>
+          ))}
+          <div className="flex items-center justify-between px-2 py-1.5">
+            <span className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">
+              Total thickness
+            </span>
+            <span className="font-medium text-[11px] text-foreground tabular-nums">
+              {formatLayerThickness(assemblyThickness(stack), unit)}
+            </span>
           </div>
         </>
       )}

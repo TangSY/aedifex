@@ -6,10 +6,12 @@ import {
   DoorNode as DoorNodeSchema,
   getDoorRenderOpenAmount,
   getEffectiveNode,
+  getOpeningWallPlacement,
   getWallThickness,
   type SceneMaterial,
   type SceneMaterialId,
   sceneRegistry,
+  scriptedSize,
   useInteractive,
   useLiveNodeOverrides,
   useScene,
@@ -22,6 +24,7 @@ import { applyWorldScaleBoxUVs } from '../../lib/box-uv'
 import {
   type ColorPreset,
   createDefaultMaterial,
+  createMaterial,
   createSurfaceRoleMaterial,
   glassMaterial as defaultGlassMaterial,
   baseMaterial as getBaseMaterial,
@@ -29,6 +32,7 @@ import {
   resolveMaterialRef,
 } from '../../lib/materials'
 import { timeSpan } from '../../lib/perf-tracks'
+import { settleScriptedOpening } from '../../lib/scripted-opening'
 import useViewer from '../../store/use-viewer'
 import { getOpeningCutoutProxyDepth } from '../wall/opening-cutout-geometry'
 
@@ -177,9 +181,11 @@ export const DoorSystem = () => {
       // rebuild reflects the in-flight drag without zustand churn. When
       // no override is set this returns the scene node unchanged.
       const effectiveNode = getEffectiveNode(node as DoorNode)
-      timeSpan('door', () => updateDoorMesh(effectiveNode, mesh), {
+      const built = timeSpan('door', () => updateDoorMesh(effectiveNode, mesh), {
         properties: [['node', id]],
       })
+      // A scripted opening stays dirty until its artifact has loaded.
+      if (!built) continue
       clearDirty(id as AnyNodeId)
       rebuiltDoorsThisFrame += 1
 
@@ -253,14 +259,19 @@ function doorSlotDefault(slotId: DoorMaterialSlotId): THREE.Material {
 }
 
 // Resolve a door's slot to a material: the `node.slots` override (colored mode
-// only) → the body/glass/hardware default. Textures-off ignores overrides — the
-// monochrome escape hatch.
+// only) → the door-wide `material` for the body (panel and frame; glass and
+// hardware keep their own finish) → the body/glass/hardware default.
+// Textures-off ignores overrides — the monochrome escape hatch.
 function resolveDoorSlotMaterial(node: DoorNode, slotId: DoorMaterialSlotId): THREE.Material {
   const fallback = doorSlotDefault(slotId)
   if (!currentTextures) return fallback
   const ref = node.slots?.[slotId]
-  if (!ref) return fallback
-  return resolveMaterialRef(ref, currentSceneMaterials, currentShading) ?? fallback
+  const painted = ref ? resolveMaterialRef(ref, currentSceneMaterials, currentShading) : null
+  if (painted) return painted
+  if (node.material && (slotId === 'panel' || slotId === 'frame')) {
+    return createMaterial(node.material, currentShading)
+  }
+  return fallback
 }
 
 function addBox(
@@ -2300,7 +2311,7 @@ function getEffectiveOpeningShape(node: DoorNode): DoorNode['openingShape'] {
     : (node.openingShape ?? 'rectangle')
 }
 
-function updateDoorMesh(rawNode: DoorNode, mesh: THREE.Mesh) {
+function updateDoorMesh(rawNode: DoorNode, mesh: THREE.Mesh): boolean {
   const node = normalizeDoorNodeForRender(rawNode)
   currentDoorSlot = undefined
 
@@ -2310,8 +2321,21 @@ function updateDoorMesh(rawNode: DoorNode, mesh: THREE.Mesh) {
   mesh.material = hitboxMaterial
 
   // Sync transform from node (React may lag behind the system by a frame during drag)
-  mesh.position.set(node.position[0], node.position[1], node.position[2])
-  mesh.rotation.set(node.rotation[0], node.rotation[1], node.rotation[2])
+  const parent = node.parentId ? useScene.getState().nodes[node.parentId as AnyNodeId] : undefined
+  const placement =
+    parent?.type === 'wall' && !node.roofSegmentId
+      ? getOpeningWallPlacement(getEffectiveNode(parent), node, useScene.getState().nodes)
+      : node
+  mesh.position.set(...placement.position)
+  mesh.rotation.set(...placement.rotation)
+
+  // Built from a script: the renderer shows its artifact, not the parametric
+  // frame, and the hit box is what the script built.
+  if (node.source) {
+    mesh.geometry.dispose()
+    mesh.geometry = new THREE.BoxGeometry(...scriptedSize(node.source.manifest))
+    return settleScriptedOpening(mesh)
+  }
 
   // Dispose and remove all old visual children; preserve 'cutout'
   for (const child of [...mesh.children]) {
@@ -2362,7 +2386,7 @@ function updateDoorMesh(rawNode: DoorNode, mesh: THREE.Mesh) {
 
   if (openingKind === 'opening') {
     syncDoorCutout(node, mesh)
-    return
+    return true
   }
 
   const insideWidth = width - 2 * frameThickness
@@ -2681,12 +2705,13 @@ function updateDoorMesh(rawNode: DoorNode, mesh: THREE.Mesh) {
   // … was not set" on a Draw(0, …)). Hide any empty mesh so it is never
   // drawn (it would render nothing anyway).
   hideEmptyGeometryMeshes(mesh)
+  return true
 }
 
 function hideEmptyGeometryMeshes(root: THREE.Object3D) {
   root.traverse((obj) => {
     const child = obj as THREE.Mesh
-    if (!child.isMesh || !child.geometry) return
+    if (!(child.isMesh && child.geometry)) return
     const position = child.geometry.getAttribute('position')
     if (!position || position.count === 0) child.visible = false
   })
@@ -2707,7 +2732,15 @@ function syncDoorCutout(node: DoorNode, mesh: THREE.Mesh) {
     mesh.add(cutout)
   }
   cutout.geometry.dispose()
-  const depth = resolveOpeningCutoutProxyDepth(node)
+  const { depth, center } = resolveOpeningCutoutProxy(node)
+  cutout.position.set(0, 0, 0)
+  if (center) {
+    // Curved and justified walls place openings off the reference line. Remove
+    // only the visual plane offset, preserving the frame's resolved floor datum.
+    cutout.position
+      .set(center[0] - mesh.position.x, 0, center[2] - mesh.position.z)
+      .applyQuaternion(mesh.quaternion.clone().invert())
+  }
   const openingShape = getEffectiveOpeningShape(node)
   if (openingShape === 'arch') {
     cutout.geometry = new THREE.ExtrudeGeometry(
@@ -2751,12 +2784,26 @@ function syncDoorCutout(node: DoorNode, mesh: THREE.Mesh) {
 // the proxy stays proud of both wall faces (front/back selection) without the
 // old 1m depth that blanketed the floor. Falls back to the default thickness
 // when the parent wall isn't a resolvable wall node.
-function resolveOpeningCutoutProxyDepth(node: DoorNode): number {
+function resolveOpeningCutoutProxy(node: DoorNode): {
+  depth: number
+  center: [number, number, number] | undefined
+} {
   const parentId = node.parentId
-  const parent = parentId ? useScene.getState().nodes[parentId as AnyNodeId] : undefined
-  const wallThickness =
-    parent?.type === 'wall' ? getWallThickness(parent as WallNode) : DEFAULT_WALL_THICKNESS
-  return getOpeningCutoutProxyDepth(wallThickness)
+  const nodes = useScene.getState().nodes
+  const parent = parentId ? nodes[parentId as AnyNodeId] : undefined
+  const wall = parent?.type === 'wall' ? getEffectiveNode(parent as WallNode) : undefined
+  const wallThickness = wall ? getWallThickness(wall) : DEFAULT_WALL_THICKNESS
+  return {
+    depth: getOpeningCutoutProxyDepth(wallThickness),
+    center:
+      wall && !node.roofSegmentId && node.position[2] !== 0
+        ? getOpeningWallPlacement(
+            wall,
+            { ...node, position: [node.position[0], node.position[1], 0] },
+            nodes,
+          ).position
+        : undefined,
+  }
 }
 
 /**

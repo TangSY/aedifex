@@ -17,6 +17,11 @@
       "import": "./dist/utils/clone-scene-graph.js",
       "default": "./dist/utils/clone-scene-graph.js"
     },
+    "./structure-kernel": {
+      "types": "./dist/lib/structure-kernel.d.ts",
+      "import": "./dist/lib/structure-kernel.js",
+      "default": "./dist/lib/structure-kernel.js"
+    },
     "./scene-migrations": {
       "types": "./dist/utils/scene-migrations.d.ts",
       "import": "./dist/utils/scene-migrations.js",
@@ -31,6 +36,11 @@
       "types": "./dist/registry/index.d.ts",
       "import": "./dist/registry/index.js",
       "default": "./dist/registry/index.js"
+    },
+    "./polygon-boolean": {
+      "types": "./dist/lib/polygon-boolean.d.ts",
+      "import": "./dist/lib/polygon-boolean.js",
+      "default": "./dist/lib/polygon-boolean.js"
     },
     "./schema": {
       "types": "./dist/schema/index.d.ts",
@@ -76,6 +86,21 @@
       "types": "./dist/procedural-items/index.d.ts",
       "import": "./dist/procedural-items/index.js",
       "default": "./dist/procedural-items/index.js"
+    },
+    "./building": {
+      "types": "./dist/building/index.d.ts",
+      "import": "./dist/building/index.js",
+      "default": "./dist/building/index.js"
+    },
+    "./agent-tools": {
+      "types": "./dist/agent-tools/index.d.ts",
+      "import": "./dist/agent-tools/index.js",
+      "default": "./dist/agent-tools/index.js"
+    },
+    "./agent-operations": {
+      "types": "./dist/agent-operations/index.d.ts",
+      "import": "./dist/agent-operations/index.js",
+      "default": "./dist/agent-operations/index.js"
     }
   },
   "files": [
@@ -98,10 +123,12 @@
     "three": "^0.186"
   },
   "dependencies": {
+    "@aedifex/lingo": "npm:@pascal-app/lingo@^0.2.0",
     "dedent": "^1.7.1",
     "idb-keyval": "^6.2.2",
     "mitt": "^3.0.1",
     "nanoid": "^5.1.6",
+    "polygon-clipping": "0.15.7",
     "zod": ">=4.5.4 <4.6",
     "zundo": "^2.3.0",
     "zustand": "^5"

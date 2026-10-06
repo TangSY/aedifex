@@ -118,7 +118,7 @@ export interface ValidatedUpdateWallMaterial {
   type: 'update_wall_material'
   status: ValidatedOperationStatus
   nodeId: AnyNodeId
-  side: 'interior' | 'exterior' | 'both'
+  side: 'a' | 'b' | 'both'
   materialPreset?: string
   materialColor?: string
   errorReason?: string
@@ -687,6 +687,7 @@ export interface ValidatedAlignOpeningToNearest {
 }
 
 export type ValidatedOperation =
+  | ValidatedSharedAgentOperation
   | ValidatedAddItem
   | ValidatedRemoveItem
   | ValidatedMoveItem
@@ -738,3 +739,17 @@ export type ValidatedOperation =
   | ValidatedAddLineset
   | ValidatedAddLiquidLine
   | ValidatedAlignOpeningToNearest
+import type { AgentOperationOutcome, StructureOperationPlan } from '@aedifex/core/agent-operations'
+import type { SharedAgentToolName } from '../contracts/shared-agent-tools'
+import type { CompiledGeometryScript } from '@aedifex/core'
+
+export interface ValidatedSharedAgentOperation {
+  type: 'shared_agent'
+  toolName: SharedAgentToolName
+  status: 'valid' | 'invalid'
+  outcome?: AgentOperationOutcome
+  structurePlan?: StructureOperationPlan
+  force?: boolean
+  compiled?: CompiledGeometryScript
+  errorReason?: string
+}

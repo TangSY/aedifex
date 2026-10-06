@@ -22,6 +22,7 @@ const TOOL_POLICIES = [
       'export_glb',
       'export_json',
       'find_nodes',
+      'find_by_type',
       'get_level_summary',
       'get_node',
       'get_scene',
@@ -32,6 +33,8 @@ const TOOL_POLICIES = [
       'list_templates',
       'list_units',
       'measure',
+      'get_source',
+      'list_collections',
       'search_assets',
       'validate_design',
       'validate_scene',
@@ -57,6 +60,7 @@ const TOOL_POLICIES = [
       'add_door',
       'add_window',
       'create_level',
+      'create_mezzanine',
       'create_project',
       'create_roof',
       'create_room',
@@ -64,12 +68,16 @@ const TOOL_POLICIES = [
       'create_unit',
       'create_wall',
       'cut_opening',
+      'cut_floor_opening',
       'duplicate_level',
       'furnish_room',
       'generate_variants',
       'place_design',
       'place_item',
       'set_zone',
+      'set_zone_intent',
+      'set_floor_foundation',
+      'set_room_floor_construction',
     ],
   },
   {
@@ -80,10 +88,22 @@ const TOOL_POLICIES = [
     },
     tools: [
       'apply_patch',
+      'add_object',
+      'add_column',
+      'edit_collection',
       'create_from_template',
       'create_house_from_brief',
       'create_stair_between_levels',
       'delete_node',
+      'remove_floor_opening',
+      'rebase_floor_reference',
+      'delete_zone',
+      'divide_zone',
+      'duplicate_zone',
+      'move_zone',
+      'rotate_zone',
+      'lock_outside_faces',
+      'merge_zones',
       'delete_scene',
       'get_project_status',
       'load_scene',
@@ -142,6 +162,7 @@ describe('MCP tool annotations', () => {
     try {
       const listed = await client.listTools()
       const byName = new Map(listed.tools.map((tool) => [tool.name, tool]))
+      expect(byName.size).toBe(71)
       expect([...byName.keys()].toSorted()).toEqual(EXPECTED_TOOL_NAMES)
 
       for (const policy of TOOL_POLICIES) {

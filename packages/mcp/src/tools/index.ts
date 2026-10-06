@@ -1,5 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { SceneOperations } from '../operations'
+import { registerAddColumn } from './add-column'
+import { type GeometryScriptHost, registerAddObject, registerGetSource } from './add-object'
 import { registerApplyPatch } from './apply-patch'
 import { registerCheckCollisions } from './check-collisions'
 import { registerConstructionTools } from './construction-tools'
@@ -7,13 +9,10 @@ import { registerCreateLevel } from './create-level'
 import { registerCreateUnit } from './create-unit'
 import { registerCreateWall } from './create-wall'
 import { registerCutOpening } from './cut-opening'
-import { registerDeleteNode } from './delete-node'
 import { registerDescribeNode } from './describe-node'
-import { registerDuplicateLevel } from './duplicate-level'
 import { registerExportGlb } from './export-glb'
 import { registerExportJson } from './export-json'
 import { registerFindNodes } from './find-nodes'
-import { registerGetNode } from './get-node'
 import { registerGetScene } from './get-scene'
 import { registerListUnits } from './list-units'
 import { registerMeasure } from './measure'
@@ -23,9 +22,10 @@ import { registerPlaceItem } from './place-item'
 import { registerRedo } from './redo'
 import { registerRoomTools } from './room-tools'
 import { registerSceneLifecycleTools } from './scene-lifecycle'
-import { registerSceneQueryTools } from './scene-query'
 import { registerSetUnitMembers } from './set-unit-members'
 import { registerSetZone } from './set-zone'
+import { registerSharedTools } from './shared-tools'
+import { registerStructureTools } from './structure-tools'
 import { registerTemplateTools } from './templates'
 import { registerUndo } from './undo'
 import { registerValidateDesign } from './validate-design'
@@ -40,15 +40,21 @@ import { registerVariantTools } from './variants'
  * Scene-lifecycle tools (save/load/list/delete/rename scene) are registered
  * when persistence operations are available.
  */
-export function registerTools(server: McpServer, operations: SceneOperations): void {
+export function registerTools(
+  server: McpServer,
+  operations: SceneOperations,
+  geometryScripts?: GeometryScriptHost,
+): void {
   registerGetScene(server, operations)
-  registerGetNode(server, operations)
   registerDescribeNode(server, operations)
   registerFindNodes(server, operations)
-  registerSceneQueryTools(server, operations)
+  registerSharedTools(server, operations)
+  registerAddColumn(server, operations, geometryScripts)
+  registerAddObject(server, operations, geometryScripts)
+  registerGetSource(server, operations, geometryScripts)
   registerMeasure(server, operations)
   registerConstructionTools(server, operations)
-  registerRoomTools(server, operations)
+  registerRoomTools(server, operations, geometryScripts)
   registerApplyPatch(server, operations)
   registerCreateLevel(server, operations)
   registerCreateUnit(server, operations)
@@ -59,8 +65,7 @@ export function registerTools(server: McpServer, operations: SceneOperations): v
   registerPlaceDesign(server, operations)
   registerCutOpening(server, operations)
   registerSetZone(server, operations)
-  registerDuplicateLevel(server, operations)
-  registerDeleteNode(server, operations)
+  registerStructureTools(server, operations)
   registerUndo(server, operations)
   registerRedo(server, operations)
   registerExportJson(server, operations)

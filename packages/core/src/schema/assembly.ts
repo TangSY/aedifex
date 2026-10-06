@@ -2,19 +2,20 @@ import { z } from 'zod'
 import { SourceRefString } from './source-ref'
 
 /**
- * Assembly layers (F2, `editor-fidelity-foundations.md` §2.3), frozen by plan
- * item WL-01. A host kind that declares `capabilities.assembly` stores one
- * optional `assembly` field. Roofs take it here; walls move onto it from the
- * WS5 `WallAssembly` in the follow-up migration. Nothing renders it yet, and a
- * node without it keeps today's geometry byte for byte.
+ * Assembly layers (F2). Wall and roof kinds that declare `capabilities.assembly`
+ * store one optional `assembly` field. Saved WS5 wall assemblies migrate to this
+ * shape, and wall readers and renderers consume it. Nodes without an assembly
+ * keep their existing geometry.
  *
- * The stack sets the body (owner ruling 2026-09-27, WS5's rule): a host's
- * thickness is the sum of its body layers, and a writer that edits the layers
- * writes that sum to the host's thickness field in the same patch. Body
- * layers run from the host's reference face inward (walls: the front face, +n,
- * or the exterior face with `face: 'exterior'`; roofs: the covering-top
- * plane). Thickness is measured along the host's `measure` axis. The
- * generators of §2.4 (F3) join this object when F3 lands.
+ * The stack sets the body (the WS5 rule): a host's thickness is the sum of its
+ * body layers, and a writer that edits the layers writes that sum to the host's
+ * thickness field in the same patch. Body layers run from the host's reference
+ * face inward (walls: the front face, +n, or the exterior face with
+ * `face: 'exterior'`; roofs: the covering-top plane). Thickness is measured
+ * along the host's `measure` axis.
+ *
+ * Thickness, preset ids and cavity notes keep WS5's unbounded valid values
+ * so migration never rejects or truncates a saved wall.
  */
 
 export const LayerRole = z.enum([
@@ -47,7 +48,7 @@ export const AssemblyLayer = z.object({
   id: AssemblyLayerId,
   role: LayerRole,
   /** Metres along the host's measure axis. */
-  thickness: z.number().nonnegative().max(5),
+  thickness: z.number().finite().nonnegative(),
   /** Body only, at most one: the structural layer (framing, block), the one generators frame. */
   core: z.literal(true).optional(),
   /**
@@ -91,9 +92,9 @@ export const Assembly = z
      * fallback, so the stack follows the outside when rooms are re-detected.
      */
     face: z.enum(['front', 'exterior']).optional(),
-    presetId: z.string().min(1).max(80).optional(),
+    presetId: z.string().optional(),
     /** A note on cavity insulation (`R-21 batt`); no geometry. */
-    cavityInsulation: z.string().min(1).max(120).optional(),
+    cavityInsulation: z.string().optional(),
   })
   .superRefine((assembly, ctx) => {
     if (assembly.layers.length === 0 && !assembly.backing?.length) {

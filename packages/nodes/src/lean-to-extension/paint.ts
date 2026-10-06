@@ -1,5 +1,5 @@
+import type { LeanToSlotId } from '@aedifex/core'
 import { createSlotPaintCapability, previewGeometrySlot } from '../shared/slot-paint'
-import type { LeanToSlotId } from './slots'
 
 const SLOT_IDS = new Set<LeanToSlotId>([
   'flashing',

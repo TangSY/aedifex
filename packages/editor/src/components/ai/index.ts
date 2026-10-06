@@ -69,6 +69,7 @@ export {
 } from './scene-operations-adapter'
 export {
   executeRemoteMcpToolCall,
+  SUPPORTED_REMOTE_MCP_TOOL_NAMES,
   type RemoteMcpToolCall,
   type RemoteMcpToolResult,
 } from './mcp-tool-router'

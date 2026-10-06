@@ -1,6 +1,6 @@
-import { type AnyNode, type NodeDefinition, useScene } from '@aedifex/core'
+import { type AnyNode, ductBodySlots, type NodeDefinition, useScene } from '@aedifex/core'
 import { DRAFTING_EXTENSION_KEY, type RegisteredDraftingConfig } from '@aedifex/editor'
-import { ductBodyPaint, ductBodySlots } from '../shared/duct-body-paint'
+import { ductBodyPaint } from '../shared/duct-body-paint'
 import { createPathPointMoveAffordance } from '../shared/path-point-affordance'
 import { createSegmentMoveAffordance } from '../shared/path-segment-affordance'
 import { createRunHangerToolHint } from '../shared/run-hanger-mode'

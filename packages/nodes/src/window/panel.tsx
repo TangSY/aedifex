@@ -5,12 +5,13 @@ import {
   type AnyNodeId,
   useInteractive,
   useScene,
-  WindowNode,
+  type WindowNode,
 } from '@aedifex/core'
 import {
   ActionButton,
   ActionGroup,
   cn,
+  duplicateNodeAndPickUp,
   PanelSection,
   PanelWrapper,
   SegmentedControl,
@@ -22,6 +23,7 @@ import {
 import { useViewer } from '@aedifex/viewer'
 import { Copy, FlipHorizontal2, Move, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo } from 'react'
+import { AuthoredParams } from '../item/authored-params'
 import { constrainCurtainOpening, curtainOpeningLimits } from '../shared/curtain-opening-limits'
 import { createOpeningPropertyPreview } from '../shared/opening-property-preview'
 import { openingPropertyPreviewHost } from '../shared/opening-property-preview-host'
@@ -107,8 +109,8 @@ export default function WindowPanel() {
     selectedId ? (s.nodes[selectedId as AnyNode['id']] as WindowNode | undefined) : undefined,
   )
 
-  // Panel slider-drag fix recipe (plans/editor-node-registry.md). Without
-  // it, the 15+ SliderControls in this panel would loop on drag.
+  // Stable handler refs ("Custom panels" in wiki/architecture/node-definitions.md).
+  // Without them, the 15+ SliderControls in this panel would loop on drag.
   const handleUpdate = useCallback(
     (updates: Partial<WindowNode>) => {
       if (!selectedId) return
@@ -163,50 +165,8 @@ export default function WindowPanel() {
   }, [selectedId, node, deleteNode, setSelection])
 
   const handleDuplicate = useCallback(() => {
-    if (!node?.parentId) return
-    triggerSFX('sfx:item-pick')
-    useScene.temporal.getState().pause()
-    const duplicate = WindowNode.parse({
-      position: [...node.position] as [number, number, number],
-      rotation: [...node.rotation] as [number, number, number],
-      side: node.side,
-      wallId: node.wallId,
-      dormerId: node.dormerId,
-      dormerFace: node.dormerFace,
-      roofSegmentId: node.roofSegmentId,
-      roofFace: node.roofFace,
-      parentId: node.parentId,
-      width: node.width,
-      height: node.height,
-      roughOpeningWidth: node.roughOpeningWidth,
-      roughOpeningHeight: node.roughOpeningHeight,
-      windowType: node.windowType,
-      operationState: node.operationState,
-      awningDirection: node.awningDirection,
-      casementStyle: node.casementStyle,
-      hingesSide: node.hingesSide,
-      frameThickness: node.frameThickness,
-      frameDepth: node.frameDepth,
-      openingKind: node.openingKind,
-      openingShape: node.openingShape,
-      openingRadiusMode: node.openingRadiusMode ?? 'all',
-      openingCornerRadii: [...(node.openingCornerRadii ?? [0.15, 0.15, 0.15, 0.15])],
-      cornerRadius: node.cornerRadius,
-      archHeight: node.archHeight,
-      openingRevealRadius: node.openingRevealRadius,
-      columnRatios: [...node.columnRatios],
-      rowRatios: [...node.rowRatios],
-      columnDividerThickness: node.columnDividerThickness,
-      rowDividerThickness: node.rowDividerThickness,
-      sill: node.sill,
-      sillDepth: node.sillDepth,
-      sillThickness: node.sillThickness,
-      metadata: { isNew: true },
-    })
-    useScene.getState().createNode(duplicate, node.parentId as AnyNodeId)
-    setMovingNode(duplicate)
-    setSelection({ selectedIds: [] })
-  }, [node, setMovingNode, setSelection])
+    if (node) duplicateNodeAndPickUp(node)
+  }, [node])
 
   if (!(node && node.type === 'window' && selectedId)) return null
 
@@ -219,6 +179,8 @@ export default function WindowPanel() {
   const normCols = node.columnRatios.map((r) => r / colSum)
   const normRows = node.rowRatios.map((r) => r / rowSum)
   const isOpening = node.openingKind === 'opening'
+  // Built from a script: its params replace the parametric frame's fields, as on an authored item.
+  const scripted = Boolean(node.source)
   const openingShape = node.openingShape ?? 'rectangle'
   const windowShape =
     openingShape === 'arch' || openingShape === 'rounded' ? openingShape : 'rectangle'
@@ -243,15 +205,15 @@ export default function WindowPanel() {
   const supportsWindowShape = shapedWindowTypes.has(node.windowType ?? 'fixed')
   const supportsGrid = isFixedWindow
   const supportsSill = !silllessWindowTypes.has(node.windowType)
-  const showWindowTypeSection = !isOpening
-  const showWindowShapeSection = !isOpening && supportsWindowShape
-  const showOpeningShapeSection = isOpening
-  const showFrameSection = !isOpening
-  const showGridSection = !isOpening && supportsGrid
-  const showSillSection = !isOpening && supportsSill
-  const showOperationSection = !isOpening && isOperableWindow
-  const showAwningDirectionSection = !isOpening && displayedWindowType === 'awning'
-  const showCasementSection = !isOpening && windowType === 'casement'
+  const showWindowTypeSection = !scripted && !isOpening
+  const showWindowShapeSection = !scripted && !isOpening && supportsWindowShape
+  const showOpeningShapeSection = !scripted && isOpening
+  const showFrameSection = !scripted && !isOpening
+  const showGridSection = !scripted && !isOpening && supportsGrid
+  const showSillSection = !scripted && !isOpening && supportsSill
+  const showOperationSection = !scripted && !isOpening && isOperableWindow
+  const showAwningDirectionSection = !scripted && !isOpening && displayedWindowType === 'awning'
+  const showCasementSection = !scripted && !isOpening && windowType === 'casement'
   const showFlipSide = !isOpening
   const operationLabel = isTrackSashWindow
     ? windowType === 'sliding'
@@ -342,30 +304,32 @@ export default function WindowPanel() {
       title={node.name || 'Window'}
       width={320}
     >
-      <PanelSection title="Type">
-        <SegmentedControl
-          onChange={(value) =>
-            handleUpdate({
-              openingKind: value as WindowNode['openingKind'],
-              ...(value === 'opening'
-                ? {
-                    openingShape,
-                    openingRadiusMode,
-                    openingCornerRadii,
-                    cornerRadius,
-                    archHeight,
-                    openingRevealRadius,
-                  }
-                : {}),
-            })
-          }
-          options={[
-            { value: 'window', label: 'Window' },
-            { value: 'opening', label: 'Opening' },
-          ]}
-          value={node.openingKind ?? 'window'}
-        />
-      </PanelSection>
+      {!scripted && (
+        <PanelSection title="Type">
+          <SegmentedControl
+            onChange={(value) =>
+              handleUpdate({
+                openingKind: value as WindowNode['openingKind'],
+                ...(value === 'opening'
+                  ? {
+                      openingShape,
+                      openingRadiusMode,
+                      openingCornerRadii,
+                      cornerRadius,
+                      archHeight,
+                      openingRevealRadius,
+                    }
+                  : {}),
+              })
+            }
+            options={[
+              { value: 'window', label: 'Window' },
+              { value: 'opening', label: 'Opening' },
+            ]}
+            value={node.openingKind ?? 'window'}
+          />
+        </PanelSection>
+      )}
 
       {showWindowTypeSection && (
         <PanelSection title="Window Type">
@@ -495,41 +459,45 @@ export default function WindowPanel() {
         )}
       </PanelSection>
 
-      <PanelSection title="Dimensions">
-        {limits && (
-          <p className="text-[11px] text-muted-foreground">
-            Size is limited to the wall, including clearance for the opening frame.
-          </p>
-        )}
-        <SliderControl
-          label="Width"
-          max={limits?.width}
-          min={0.01}
-          onChange={(v) => preview?.preview(getDimensionUpdates({ width: v }))}
-          onCommit={(v) => preview?.commit(getDimensionUpdates({ width: v }))}
-          onCancel={() => preview?.cancel()}
-          previewWhileTyping
-          precision={2}
-          restoreOnCommit={false}
-          step={0.01}
-          unit="m"
-          value={node.width}
-        />
-        <SliderControl
-          label="Height"
-          max={limits?.height}
-          min={0.01}
-          onChange={(v) => preview?.preview(getDimensionUpdates({ height: v }))}
-          onCommit={(v) => preview?.commit(getDimensionUpdates({ height: v }))}
-          onCancel={() => preview?.cancel()}
-          previewWhileTyping
-          precision={2}
-          restoreOnCommit={false}
-          step={0.01}
-          unit="m"
-          value={node.height}
-        />
-      </PanelSection>
+      {scripted && <AuthoredParams node={node} />}
+
+      {!scripted && (
+        <PanelSection title="Dimensions">
+          {limits && (
+            <p className="text-[11px] text-muted-foreground">
+              Size is limited to the wall, including clearance for the opening frame.
+            </p>
+          )}
+          <SliderControl
+            label="Width"
+            max={limits?.width}
+            min={0.01}
+            onChange={(v) => preview?.preview(getDimensionUpdates({ width: v }))}
+            onCommit={(v) => preview?.commit(getDimensionUpdates({ width: v }))}
+            onCancel={() => preview?.cancel()}
+            previewWhileTyping
+            precision={2}
+            restoreOnCommit={false}
+            step={0.01}
+            unit="m"
+            value={node.width}
+          />
+          <SliderControl
+            label="Height"
+            max={limits?.height}
+            min={0.01}
+            onChange={(v) => preview?.preview(getDimensionUpdates({ height: v }))}
+            onCommit={(v) => preview?.commit(getDimensionUpdates({ height: v }))}
+            onCancel={() => preview?.cancel()}
+            previewWhileTyping
+            precision={2}
+            restoreOnCommit={false}
+            step={0.01}
+            unit="m"
+            value={node.height}
+          />
+        </PanelSection>
+      )}
 
       {showWindowShapeSection && (
         <PanelSection title="Top Shape">
@@ -749,7 +717,7 @@ export default function WindowPanel() {
         </PanelSection>
       )}
 
-      {!isOpening && (
+      {!isOpening && !scripted && (
         <>
           {showFrameSection && (
             <PanelSection title="Frame">

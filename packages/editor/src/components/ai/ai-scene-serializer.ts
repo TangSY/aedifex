@@ -95,21 +95,13 @@ function serializeWallNode(
     }
   }
 
-  const wallWithSurface = wallNode as WallNode & {
-    interiorMaterial?: unknown
-    interiorMaterialPreset?: string
-    exteriorMaterial?: unknown
-    exteriorMaterialPreset?: string
-    material?: unknown
-    materialPreset?: string
-  }
   const hasWallMaterial =
-    wallWithSurface.interiorMaterial !== undefined
-    || typeof wallWithSurface.interiorMaterialPreset === 'string'
-    || wallWithSurface.exteriorMaterial !== undefined
-    || typeof wallWithSurface.exteriorMaterialPreset === 'string'
-    || wallWithSurface.material !== undefined
-    || typeof wallWithSurface.materialPreset === 'string'
+    ['a', 'b'].some((face) => Boolean(wallNode.slots?.[face]))
+    || Object.values(wallNode.legacyFaceMaterials ?? {}).some(
+      (spec) => spec.material !== undefined || typeof spec.materialPreset === 'string',
+    )
+    || wallNode.material !== undefined
+    || typeof wallNode.materialPreset === 'string'
 
   walls.push({
     id: wallNode.id,

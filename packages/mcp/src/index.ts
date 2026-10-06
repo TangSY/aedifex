@@ -5,4 +5,5 @@ export {
   type CreateAedifexMcpServerOptions,
   createAedifexMcpServer,
 } from './server'
+export type { GeometryScriptHost, ScriptedKind } from './tools/add-object'
 export { version } from './version'

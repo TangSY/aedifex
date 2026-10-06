@@ -51,6 +51,10 @@ export type GeometryContext = {
    * in 2D.
    */
   levelBaseAt?: (x: number, z: number) => number
+  /** Height of a rendered node's upward-facing top at level-local XZ, or null outside it. */
+  surfaceHeightAt?: (hostId: AnyNodeId, x: number, z: number) => number | null
+  /** Highest terrain, slab, or shaped top at a level-local point. */
+  supportHeightAt?: (x: number, z: number, selectedHostId?: AnyNodeId) => number
   /**
    * Pre-computed level-batch data, populated by the dispatcher when the
    * kind declares `def.computeLevelData` (3D) or
@@ -1024,8 +1028,8 @@ export type DistributionRole = 'run' | 'fitting' | 'terminal' | 'equipment'
 export type SnapProfile = 'item' | 'structural'
 
 /**
- * How a kind is treated by the GLB bake and the baked `/viewer`. See
- * plans/editor-plugin-trees-example.md → Part D.
+ * How a kind is treated by the GLB bake and the baked `/viewer`. See "Bake policy" in
+ * wiki/architecture/node-definitions.md.
  * - `'static'` (default) — baked as geometry; the viewer shows the baked mesh.
  * - `'strip'` — excluded from the bake; the viewer rebuilds it live from
  *   `scene_graph` via the registry renderer (heavy reference assets: scans, guides).
@@ -1147,7 +1151,7 @@ export type NodeDefinition<S extends ZodObject<any>> = {
    * free) instead of the frozen baked meshes (which the viewer hides). Needed when
    * the normal per-node `renderer` can't stand alone in a baked scene (e.g. an
    * instanced kind whose `renderer` is an invisible selection proxy and whose real
-   * geometry comes from a `system`). See plans/editor-plugin-trees-example.md → Part D.
+   * geometry comes from a `system`). See "Bake policy" in wiki/architecture/node-definitions.md.
    */
   bakeReplaceRenderer?: BakeReplaceRenderer<z.infer<S>>
   /**
@@ -1676,7 +1680,7 @@ export type Capabilities = {
   duplicable?: boolean | DuplicableConfig
   deletable: boolean
   groupable?: boolean
-  selectable?: SelectableConfig
+  selectable?: SelectableConfig | false
   /**
    * Whether selecting this kind should replace its rendered mesh materials
    * with the editor's selection tint. Defaults to `true`. Set to `false` for
@@ -1891,6 +1895,12 @@ export type PaintCapability = {
    */
   resolveRole: (args: PaintResolveArgs) => string | null
   /**
+   * Optional: label for a role that is NOT one of the kind's declared slots.
+   * A slab plate resolves per-room roles carrying a zone id, which would read
+   * back to the user as the raw id. Return `null` to keep the derived label.
+   */
+  roleLabel?: (node: AnyNode, role: string) => string | null
+  /**
    * Build the node-update patch that applies the new material at
    * `role`. Returned partial is merged into the node by the editor.
    */
@@ -1966,6 +1976,8 @@ export type MechanismCapability = {
   set: (node: AnyNode, on: boolean) => void
   /** Walkthrough wording: `open` parts open and close; `run` parts (the default) turn on and off. */
   verb?: 'open' | 'run'
+  /** Action-menu glyph: openable kinds show their own instead of Play/Stop. */
+  icon?: 'door' | 'window'
 }
 
 export type NodeQuickActionIcon = 'add-left' | 'add-right' | 'add' | 'convert'
@@ -2045,6 +2057,12 @@ export type PaintEffectiveMaterialArgs = {
   role: string
   /** Snapshot of the scene `nodes` map — kinds whose effective material walks the parent chain (roof-segment → roof) read parents through it. */
   nodes: Record<AnyNodeId, AnyNode>
+  /**
+   * Resolve what the surface shows, falling through to the finish an unpainted
+   * derived role draws with (the eyedropper). A slot role's declared `default`
+   * stays the caller's to apply.
+   */
+  rendered?: boolean
 }
 
 /**
@@ -2350,6 +2368,13 @@ export type SurfacesConfig = {
   hosting?: SurfaceProvider | false
   top?: {
     height: number | ((n: AnyNode, context: { nodes: Record<string, AnyNode> }) => number)
+    /** Resolve support from node data; null means this point is outside the support footprint. */
+    supportHeight?: (
+      node: AnyNode,
+      x: number,
+      z: number,
+      context: { nodes: Readonly<Record<AnyNodeId, AnyNode>> },
+    ) => number | null
   }
   sides?: { faces: 'all' | ReadonlyArray<readonly [number, number, number]> }
   custom?: SurfaceQuery

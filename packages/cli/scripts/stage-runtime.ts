@@ -53,10 +53,15 @@ const packageJson = JSON.parse(
 }
 
 await chmod(path.join(packageDirectory, 'dist/bin/aedifex.js'), 0o755)
-await bundleMcpServer(
-  path.join(packageDirectory, 'dist/services/aedifex-mcp.mjs'),
-  packageJson.version,
-)
+await bundleMcpServer({
+  output: path.join(packageDirectory, 'dist/services/aedifex-mcp.mjs'),
+  version: packageJson.version,
+})
+await bundleMcpServer({
+  output: path.join(packageDirectory, 'dist/services/geometry-script-worker.js'),
+  version: packageJson.version,
+  entry: 'packages/mcp/src/tools/geometry-script-worker.ts',
+})
 await assertFile(path.join(standaloneAppDirectory, 'server.js'))
 await rm(outputDirectory, { recursive: true, force: true })
 await mkdir(path.dirname(outputDirectory), { recursive: true })
@@ -93,13 +98,17 @@ await writeFile(
 
 console.log(`Staged Aedifex editor runtime ${packageJson.version} at ${outputDirectory}`)
 
-async function bundleMcpServer(output: string, version: string): Promise<void> {
+async function bundleMcpServer({
+  output,
+  version,
+  entry = 'packages/mcp/src/bin/aedifex-mcp.ts',
+}: { output: string; version: string; entry?: string }): Promise<void> {
   await mkdir(path.dirname(output), { recursive: true })
   const child = spawn(
     process.execPath,
     [
       'build',
-      path.join(repositoryRoot, 'packages/mcp/src/bin/aedifex-mcp.ts'),
+      path.join(repositoryRoot, entry),
       '--outfile',
       output,
       '--target',

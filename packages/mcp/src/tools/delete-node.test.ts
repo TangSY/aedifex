@@ -4,7 +4,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { WallNode } from '@aedifex/core/schema'
 import { SceneBridge } from '../bridge/scene-bridge'
-import { registerDeleteNode } from './delete-node'
+import { registerSharedTools } from './shared-tools'
 
 describe('delete_node', () => {
   let client: Client
@@ -15,7 +15,7 @@ describe('delete_node', () => {
     bridge.setScene({}, [])
     bridge.loadDefault()
     const server = new McpServer({ name: 'test', version: '0.0.0' })
-    registerDeleteNode(server, bridge)
+    registerSharedTools(server, bridge)
     const [srvT, cliT] = InMemoryTransport.createLinkedPair()
     client = new Client({ name: 'test-client', version: '0.0.0' })
     await Promise.all([server.connect(srvT), client.connect(cliT)])
@@ -36,13 +36,17 @@ describe('delete_node', () => {
     expect(bridge.getNode(wall.id)).toBeNull()
   })
 
-  test('refuses to delete a node with children without cascade', async () => {
-    const building = Object.values(bridge.getNodes()).find((n) => n.type === 'building')!
+  test('deletes a node with everything under it, as the editor does', async () => {
+    const level = Object.values(bridge.getNodes()).find((n) => n.type === 'level')!
+    const wall = WallNode.parse({ start: [0, 0], end: [2, 0] })
+    bridge.createNode(wall, level.id)
     const result = await client.callTool({
       name: 'delete_node',
-      arguments: { id: building.id },
+      arguments: { id: level.id },
     })
-    expect(result.isError).toBe(true)
+    expect(result.isError).toBeFalsy()
+    expect(bridge.getNode(level.id)).toBeNull()
+    expect(bridge.getNode(wall.id)).toBeNull()
   })
 
   test('cascades when cascade=true', async () => {

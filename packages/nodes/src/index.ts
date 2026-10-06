@@ -17,6 +17,8 @@ import { ductTerminalDefinition } from './duct-terminal'
 import { elevatorDefinition } from './elevator'
 import { eyebrowVentDefinition } from './eyebrow-vent'
 import { fenceDefinition } from './fence'
+import { fenceGateDefinition, fenceOpeningDefinition } from './fence-feature/definition'
+import { floorOpeningDefinition } from './floor-opening/definition'
 import { guideDefinition } from './guide'
 import { gutterDefinition } from './gutter'
 import { hvacEquipmentDefinition } from './hvac-equipment'
@@ -35,6 +37,7 @@ import { ridgeVentDefinition } from './ridge-vent'
 import { roofDefinition } from './roof'
 import { roofSegmentDefinition } from './roof-segment'
 import { scanDefinition } from './scan'
+import { separatorDefinition } from './separator/definition'
 import { shelfDefinition } from './shelf'
 import { siteDefinition } from './site'
 import { skylightDefinition } from './skylight'
@@ -75,8 +78,12 @@ export const builtinPlugin: Plugin = {
     blockDefinition as unknown as AnyNodeDefinition,
     spawnDefinition as unknown as AnyNodeDefinition,
     wallDefinition as unknown as AnyNodeDefinition,
+    separatorDefinition as unknown as AnyNodeDefinition,
+    floorOpeningDefinition as unknown as AnyNodeDefinition,
     leanToExtensionDefinition as unknown as AnyNodeDefinition,
     fenceDefinition as unknown as AnyNodeDefinition,
+    fenceGateDefinition as unknown as AnyNodeDefinition,
+    fenceOpeningDefinition as unknown as AnyNodeDefinition,
     slabDefinition as unknown as AnyNodeDefinition,
     ceilingDefinition as unknown as AnyNodeDefinition,
     doorDefinition as unknown as AnyNodeDefinition,
@@ -170,12 +177,14 @@ export { ductSegmentDefinition } from './duct-segment'
 export { ductTerminalDefinition } from './duct-terminal'
 export { elevatorDefinition } from './elevator'
 export { eyebrowVentDefinition } from './eyebrow-vent'
-export { fenceDefinition } from './fence'
+export { beginFenceFeaturePlacement, fenceDefinition } from './fence'
+export { fenceGateDefinition, fenceOpeningDefinition } from './fence-feature/definition'
+export { floorOpeningDefinition } from './floor-opening/definition'
 export { guideDefinition } from './guide'
 export { gutterDefinition } from './gutter'
 export { hvacEquipmentDefinition } from './hvac-equipment'
 export { importedMeshDefinition } from './imported-mesh'
-export { itemDefinition } from './item'
+export { getPendingItemModelLoadCount, itemDefinition } from './item'
 export { leanToExtensionDefinition } from './lean-to-extension'
 export { levelDefinition } from './level'
 export { linesetDefinition } from './lineset'
@@ -199,6 +208,7 @@ export {
   SEGMENT_SLOT_DEFAULTS as ROOF_SEGMENT_SLOT_DEFAULTS,
 } from './roof-segment/slots'
 export { scanDefinition } from './scan'
+export { separatorDefinition } from './separator/definition'
 export { shelfDefinition } from './shelf'
 export { siteDefinition } from './site'
 export { skylightDefinition } from './skylight'

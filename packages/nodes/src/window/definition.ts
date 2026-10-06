@@ -11,6 +11,7 @@ import type {
 import {
   getDormerWallHorizontalBoundsAtHeight,
   getDormerWallOpeningVerticalBounds,
+  windowSlots,
 } from '@aedifex/core'
 import type { FloorplanNodeExtension } from '@aedifex/editor'
 import { curtainOpeningResizeMax } from '../shared/curtain-opening-limits'
@@ -24,16 +25,17 @@ import { createOpeningPropertyPreview } from '../shared/opening-property-preview
 import { openingPropertyPreviewHost } from '../shared/opening-property-preview-host'
 import { readRoofFaceHeightMax, readRoofFaceWidthMax } from '../shared/roof-opening-host'
 import { buildRoofWallOpeningCut } from '../shared/roof-wall-opening-cut'
+import { scriptedOpeningHandles } from '../shared/scripted-opening-handles'
 import { readHostWallCeiling } from '../shared/wall-opening-ceiling'
 import { wallFloorplanSiblingOverrides } from '../wall/floorplan-overrides'
 import { buildWindowContextualDimensions } from './contextual-dimensions'
 import { buildWindowFloorplan } from './floorplan'
 import { windowWidthAffordance } from './floorplan-affordances'
 import { windowFloorplanMoveTarget } from './floorplan-move'
+import { windowMechanism } from './mechanism'
 import { windowPaint } from './paint'
 import { windowParametrics } from './parametrics'
 import { WindowNode } from './schema'
-import { windowSlots } from './slots'
 
 const SIDE_HANDLE_OFFSET = 0.24
 const HEIGHT_HANDLE_OFFSET = 0.24
@@ -175,7 +177,7 @@ function windowHeightHandle(edge: 'top' | 'bottom'): HandleDescriptor<WindowNode
       // bottom arrow caps at top (positive Y room above the floor).
       const curtainMax = curtainOpeningResizeMax(n, scene.nodes(), 'y', sign)
       if (curtainMax !== undefined) return curtainMax
-      const wallH = readHostWallCeiling(n.wallId, scene)
+      const wallH = readHostWallCeiling(n.wallId, scene, n)
       const anchored = edge === 'top' ? n.position[1] - n.height / 2 : n.position[1] + n.height / 2
       return edge === 'top'
         ? Math.max(MIN_WINDOW_HEIGHT, wallH - anchored)
@@ -309,10 +311,14 @@ export const windowDefinition: NodeDefinition<typeof WindowNode> = {
     // each mesh with its `userData.slotId`; paint writes `node.slots`.
     slots: () => windowSlots(),
     paint: windowPaint,
+    mechanism: windowMechanism,
   },
 
   parametrics: windowParametrics,
-  handles: windowHandles,
+  handles: (node) =>
+    node.source
+      ? scriptedOpeningHandles(node, windowWidthHandle, () => windowHeightHandle('top'))
+      : windowHandles,
 
   rendersChildren: false,
   renderer: {

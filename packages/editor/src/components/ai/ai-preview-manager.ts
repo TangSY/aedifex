@@ -180,6 +180,7 @@ export function applyGhostPreview(operations: ValidatedOperation[]): AnyNodeId[]
       case 'update_item':
       case 'update_fence':
       case 'update_wall_material':
+      case 'paint_slot':
       case 'update_roof_material':
       case 'update_stair_material': {
         // Update operations — handled at confirm time

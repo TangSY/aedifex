@@ -6,7 +6,7 @@ Applies to: `packages/core/src/registry/`, `packages/nodes/src/<kind>/`, `packag
 
 A *node kind* — shelf, wall, door, item, spawn, zone — is described by a `NodeDefinition` registered with `nodeRegistry`. The definition is plain data + lazy module references. Three optional fields decide how the kind appears in the scene at runtime; pick whichever combination matches the kind's needs.
 
-This page covers those three fields. For the broader registry contract (schemas, capabilities, parametrics, MCP), see [the registry plan](../../../plans/editor-node-registry.md) in the private repo.
+This page covers those three fields. For the broader registry contract (schemas, capabilities, parametrics, MCP), see the public [registry type definitions](../../packages/core/src/registry/types.ts).
 
 ## The three-checkbox model
 
@@ -66,6 +66,12 @@ to retain the actual child ID in `children`; renderability alone is insufficient
 hosted child; it does not prevent the kind from hosting other objects. Cabinets,
 columns, stairs, elevators and fences use this child-placement restriction.
 
+`capabilities.surfaces.top` opts a kind into support-height sampling. The viewer
+samples its registered mesh by default. A top surface with a data-defined footprint
+can supply `supportHeight(node, x, z, { nodes })`; return its height where it
+supports a point and `null` elsewhere. Keep footprint and hole rules in the
+kind's definition so viewer code can discover support through the registry.
+
 ### `surfaceRole`
 
 A kind may declare `surfaceRole?: SurfaceRole` on its definition. It is a colour token only (`core` stores no material), used to resolve the per-role clay/theme colour for untextured surfaces. See [materials-and-themes](materials-and-themes.md).
@@ -120,6 +126,29 @@ renderer and PDFKit export preserve it. `FloorplanImage.url` may also be an
 inline `data:` URL, which PDF export passes directly to PDFKit rather than
 through the asset resolver.
 
+## Bake policy
+
+`def.bake` says how a kind is treated by the GLB bake and the baked `/viewer`.
+The bake and the viewer read it through `bakePolicyOf(kind)` /
+`kindsWithBakePolicy(policy)`; neither names kinds.
+
+| `def.bake` | In the GLB | Pascal's baked viewer | For |
+|---|---|---|---|
+| `'static'` (default) | yes | shows the baked mesh | walls, doors, items |
+| `'strip'` | no | rebuilds the node live from `scene_graph` with its registry renderer | heavy reference assets (scans, guides) |
+| `'replace'` | yes, static | hides the baked meshes and re-renders the kind live | dynamic content (wind-animated plants, interactivity) |
+
+Do not re-apply a runtime effect to baked meshes. The bake optimises geometry
+(quantised positions with a per-node scale, instancing dropped, vertices
+welded), so a shader written for the live coordinate space distorts on the
+baked one. `'replace'` keeps a static snapshot for any glTF viewer and gives
+Pascal's viewer the kind's own render path. Its `bakeReplaceRenderer` is
+collective: it receives every node of the kind under one baked level and is
+portaled into that level's `Object3D`, so it rides level stacking and can draw
+instanced meshes in level-local space — per-instance phase for animated
+content, and a few non-raycast meshes instead of one per node under the baked
+scene's pointer handlers.
+
 ## Export-only geometry
 
 `def.bakeGeometry(node, ctx)` replaces the registered node's cloned subtree
@@ -172,6 +201,28 @@ The selection manager and outliner query this capability through the registry,
 including after late plugin registration. The capability does not change
 selectability, inspector ownership, tool activation, keyboard behavior or
 deletion policy. Host code must not special-case the opting-out kind.
+
+## Opting out of a generic path
+
+The registry lets a kind opt in to generic behaviour; it never forces it. Where
+a generic path would over-generalise, the kind **omits** the capability or
+**supplies its own** module, and its `definition.ts` says why:
+
+- `capabilities.movable` — omit it when the move is bespoke (an endpoint drag
+  with a linked-corner cascade, a polygon vertex edit) and supply
+  `def.affordanceTools.move`. `MoveTool` routes to the generic
+  `MoveRegistryNodeTool` only when `movable` is set, never merely because the
+  kind is registered.
+- `def.renderer` — set it for JSX-only features (GLB via `useGLTF`, `<Html>`,
+  TSL materials, React-mounted hosted children) and skip `def.geometry`.
+- `def.system` — set it for per-frame imperative work beyond a geometry
+  rebuild (door and window animation, zone uniforms).
+- `parametrics.customPanel` — replace the generic inspector for a kind with
+  non-numeric editors (see [the slider-drag pitfall](#custom-panels-keep-handlers-stable-during-slider-drags)).
+
+A need that fits none of these becomes a new optional definition field
+(additive, so existing kinds are untouched), never a `case '<kind>'` in the
+framework (DECISIONS.md E-002).
 
 ## Choosing the right combination
 
@@ -329,6 +380,42 @@ If your kind declares `relations.hosts: [...]`, add `children: z.array(...).defa
 
 Migrations matter: if your kind shipped before hosting was added, patch existing nodes in `migrateNodes` so `Array.isArray(node.children)` holds for every loaded scene before the renderer reads it.
 
+### Custom panels: keep handlers stable during slider drags
+
+A `parametrics.customPanel` that selects the whole node
+(`useScene((s) => s.nodes[id])`) and lists it as a `useCallback` dependency gets
+new handlers on every store tick of a slider drag. `SliderControl` then rebuilds
+its pointer handlers while pointer capture is active, and the cascade ends in
+React's "Maximum update depth exceeded". Make handlers depend on the selection
+only and read the latest node from a ref:
+
+```tsx
+const nodeRef = useRef(node)
+nodeRef.current = node
+
+const handleUpdate = useCallback(
+  (updates: Partial<DoorNode>) => {
+    if (!selectedId) return
+    useScene.getState().updateNode(selectedId, updates)
+  },
+  [selectedId],
+)
+
+// Keep the aspect ratio: derived from the latest node, not one captured at render.
+const handleWidthChange = useCallback(
+  (width: number) => {
+    const current = nodeRef.current
+    if (!current || width <= 0) return
+    handleUpdate({ width, height: current.height * (width / current.width) })
+  },
+  [handleUpdate],
+)
+```
+
+Handlers now change only when the selection does, never mid-drag.
+`<ParametricInspector>` already works this way (per-field subscriptions,
+`useScene.getState()` in handlers), so kinds without a custom panel need nothing.
+
 ## Capability reference
 
 ### `capabilities.roofAccessory`
@@ -428,7 +515,7 @@ capabilities: {
 
 ### `capabilities.assembly`
 
-Frozen contract (F2 assembly layers), not read by any renderer yet. A kind that declares it stores an optional `assembly` field (`Assembly` in `core/src/schema/assembly.ts`): body `layers` from the reference face inward, each with a stable `id` (its `#layer:<id>` address), a `role`, a `thickness`, an optional `material` kind (`stucco`, `osb`, `wood`, …), `slot` and provenance `src`, one source reference `<ns>:<id>[::<sub>]` (`SourceRefString`: printable ASCII, ns ≤ 48 bytes, id ≤ 160 bytes, the `ProvenanceRef` caps). At most one body layer is the `core`, and only a structural role (`structure`, `deck`, `shell`) may be; a layer `slot` is a key into the host's own `slots` (roofs carry a `slots` record for it); `inset`, `bottom` and `lift` belong to `backing` layers only. Preset capture removes every `src` with `provenance` through `withoutSourceIdentity`.
+F2 assembly layers are consumed by the wall readers and renderers; roofs declare the same optional contract. A kind that declares it stores an optional `assembly` field (`Assembly` in `core/src/schema/assembly.ts`): body `layers` from the reference face inward, each with a stable `id` (its `#layer:<id>` address), a `role`, a `thickness`, an optional `material` kind (`stucco`, `osb`, `wood`, …), `slot` and provenance `src`, one source reference `<ns>:<id>[::<sub>]` (`SourceRefString`: printable ASCII, ns ≤ 48 bytes, id ≤ 160 bytes, the `ProvenanceRef` caps). At most one body layer is the `core`, and only a structural role (`structure`, `deck`, `shell`) may be; a layer `slot` is a key into the host's own `slots` (roofs carry a `slots` record for it); `inset`, `bottom` and `lift` belong to `backing` layers only. Preset capture removes every `src` with `provenance` through `withoutSourceIdentity`.
 
 **The stack sets the body.** A host's thickness is the sum of its layers; a writer that edits the layers writes the sum to the host's thickness in the same patch (the WS5 rule). `face: 'exterior'` lists the layers from the outside, resolved from `frontSide` / `backSide` with the front face as fallback.
 
@@ -444,7 +531,7 @@ type AssemblyHostConfig = {
 | Host | `reference` | `body` | Rule |
 |---|---|---|---|
 | `roof` (declared in `nodes/src/roof/definition.ts`) | `covering` top plane | `null` | One contiguous stack along the facet normal; `air` for gaps. |
-| `wall` | `front` (+n) or the exterior face | `thickness` | Declared once walls move from WS5's `WallAssembly` onto F2. |
+| `wall` (declared in `nodes/src/wall/definition.ts`) | `front` (+n) or the exterior face (`face: 'exterior'`) | `thickness` | The layer sum; `wallAssemblyPatch` writes both. The Architect's WS5 helpers (`resolveWallAssembly`, `wallAssemblyFinishRef`, `wallAssemblyFraming`, the presets) read F2. Scenes saved with the WS5 `WallAssembly` shape are converted on load by `migrateLegacyWallAssemblies` (`wallAssemblyFromLegacy`: exterior → `finish`, sheathing → `sheathing`, framing → the `core` structure layer, interior → `lining`), and the inspector edits through `wallAssemblyToLegacy`, a WS5 view plugin readers can use too. |
 
 Each kind declares its own host in its definition; core ships none. `resolveAssemblyStack(assembly, host)` returns each layer's depth and thickness exactly as declared, and, on a host that accepts backing, the backing layers with their depth from the body's far face (a ceiling with no body and insulation backing resolves), never throwing; a stored thickness that disagrees with the sum is reported as `assembly.thickness-mismatch`. `getWallLayerBands(wall, assembly, miters)` slices the mitred plan footprint into one band per layer (`back`/`front` offsets from the centreline along +n, and the footprint ∩ strip rings); it draws no bands on a mismatch.
 
@@ -522,7 +609,7 @@ mechanism: {
 
 ## See also
 
-- [renderers.md](renderers.md) — the legacy renderer pattern (still authoritative for kinds with custom `def.renderer`).
+- [renderers.md](renderers.md) — `NodeRenderer` dispatch and the contract for a custom `def.renderer`.
 - [systems.md](systems.md) — per-kind systems, frame-priority ordering, and core/viewer split.
 - [scene-registry.md](scene-registry.md) — how `sceneRegistry` indexes nodes by ID and type.
-- [Node registry plan](../../../plans/editor-node-registry.md) *(in private-editor)* — the multi-phase migration that produced this model.
+- [Registry type definitions](../../packages/core/src/registry/types.ts) — schemas, capabilities, parametrics and MCP contracts for node kinds.

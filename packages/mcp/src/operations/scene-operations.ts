@@ -1,10 +1,18 @@
 import type { NodeDeletionPlan, NodeDeletionScene } from '@aedifex/core'
 import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
-import type { AnyNode, AnyNodeId, AnyNodeType } from '@aedifex/core/schema'
+import type {
+  AnyNode,
+  AnyNodeId,
+  AnyNodeType,
+  Collection,
+  CollectionId,
+  CompiledGeometryScript,
+} from '@aedifex/core/schema'
 import type { ActiveSceneMeta, Patch, SceneBridge, ValidationResult } from '../bridge/scene-bridge'
 import type {
   ProjectCreateOptions,
   ProjectStatus,
+  SceneDeleteResult,
   SceneEvent,
   SceneEventAppendOptions,
   SceneEventListOptions,
@@ -41,6 +49,9 @@ export interface SceneOperations {
   loadJSON(json: string | SceneGraph): void
   getNode(id: AnyNodeId): AnyNode | null
   getNodes(): Record<AnyNodeId, AnyNode>
+  getCollections(): Record<CollectionId, Collection>
+  /** Replace the scene's collections (one undo step, like any edit). */
+  setCollections(collections: Record<CollectionId, Collection>): void
   getRootNodeIds(): AnyNodeId[]
   getChildren(parentId: AnyNodeId): AnyNode[]
   getAncestry(id: AnyNodeId): AnyNode[]
@@ -58,24 +69,32 @@ export interface SceneOperations {
     deletedIds: AnyNodeId[]
     createdIds: AnyNodeId[]
   }
+  /** Only compiled internal tools call this; raw patches cannot opt out of script ownership. */
+  applyCompiledGeometryPatch(input: { patches: Patch[]; compiled: CompiledGeometryScript }): {
+    appliedOps: number
+    deletedIds: AnyNodeId[]
+    createdIds: AnyNodeId[]
+  }
   /**
    * The active bridge's deletion preview, when it has one. Absent for bridges
    * that cannot preview their own deletes; the apply_patch guard is then stricter.
    */
   readonly planDeletion?: (scene: NodeDeletionScene, ids: AnyNodeId[]) => NodeDeletionPlan
+  deriveStructure(levelIds?: AnyNodeId[]): { createdIds: AnyNodeId[]; deletedIds: AnyNodeId[] }
   undo(steps?: number): number
   redo(steps?: number): number
   validateScene(): ValidationResult
   flushDirty(): string[]
   getHistory(): { pastCount: number; futureCount: number }
   clearHistory(): void
+  runAsSingleHistoryStep<T>(run: () => T): T
 
   createProject(options: ProjectCreateOptions): Promise<ProjectStatus>
   getProjectStatus(id: string): Promise<ProjectStatus | null>
   saveScene(options: SceneSaveOptions): Promise<SceneMeta>
   loadStoredScene(id: string): Promise<SceneWithGraph | null>
   listScenes(options?: SceneListOptions): Promise<SceneMeta[]>
-  deleteStoredScene(id: string, options?: SceneMutateOptions): Promise<boolean>
+  deleteStoredScene(id: string, options?: SceneMutateOptions): Promise<SceneDeleteResult>
   renameStoredScene(id: string, newName: string, options?: SceneMutateOptions): Promise<SceneMeta>
   appendSceneEvent(options: SceneEventAppendOptions): Promise<SceneEvent | null>
   listSceneEvents(id: string, options?: SceneEventListOptions): Promise<SceneEvent[]>
@@ -170,7 +189,9 @@ class SceneOperationsFacade implements SceneOperations {
   }
 
   loadJSON(json: string | SceneGraph): void {
-    this.requireBridge().loadJSON(json)
+    const bridge = this.requireBridge()
+    bridge.loadJSON(json)
+    bridge.clearHistory()
   }
 
   getNode(id: AnyNodeId): AnyNode | null {
@@ -179,6 +200,14 @@ class SceneOperationsFacade implements SceneOperations {
 
   getNodes(): Record<AnyNodeId, AnyNode> {
     return this.requireBridge().getNodes()
+  }
+
+  getCollections(): Record<CollectionId, Collection> {
+    return this.requireBridge().getCollections()
+  }
+
+  setCollections(collections: Record<CollectionId, Collection>): void {
+    this.requireBridge().setCollections(collections)
   }
 
   getRootNodeIds(): AnyNodeId[] {
@@ -225,6 +254,23 @@ class SceneOperationsFacade implements SceneOperations {
     return this.requireBridge().applyPatch(patches)
   }
 
+  applyCompiledGeometryPatch(input: { patches: Patch[]; compiled: CompiledGeometryScript }): {
+    appliedOps: number
+    deletedIds: AnyNodeId[]
+    createdIds: AnyNodeId[]
+  } {
+    return this.requireBridge().applyCompiledGeometryPatch(input)
+  }
+
+  /**
+   * Derive construction from the intent the tools just wrote. The hosted
+   * bridge reconciles inside every mutation and exposes no hook, so the call
+   * is optional: there it is already done by the time a tool builds its result.
+   */
+  deriveStructure(levelIds?: AnyNodeId[]): { createdIds: AnyNodeId[]; deletedIds: AnyNodeId[] } {
+    return this.requireBridge().deriveStructure?.(levelIds) ?? { createdIds: [], deletedIds: [] }
+  }
+
   undo(steps?: number): number {
     return this.requireBridge().undo(steps)
   }
@@ -247,6 +293,10 @@ class SceneOperationsFacade implements SceneOperations {
 
   clearHistory(): void {
     this.requireBridge().clearHistory()
+  }
+
+  runAsSingleHistoryStep<T>(run: () => T): T {
+    return this.requireBridge().runAsSingleHistoryStep(run)
   }
 
   async createProject(options: ProjectCreateOptions): Promise<ProjectStatus> {
@@ -299,7 +349,7 @@ class SceneOperationsFacade implements SceneOperations {
     return this.requireStore().list(options)
   }
 
-  async deleteStoredScene(id: string, options?: SceneMutateOptions): Promise<boolean> {
+  async deleteStoredScene(id: string, options?: SceneMutateOptions): Promise<SceneDeleteResult> {
     return this.requireStore().delete(id, options)
   }
 

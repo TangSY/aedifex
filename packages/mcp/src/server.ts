@@ -5,12 +5,15 @@ import { registerPrompts } from './prompts'
 import { registerResources } from './resources'
 import type { SceneStore } from './storage/types'
 import { registerTools } from './tools'
+import type { GeometryScriptHost } from './tools/add-object'
 import { normalizeToolSchemaDialect } from './tools/normalize-schema-dialect'
 import { registerVisionTools } from './tools/vision'
 import { version } from './version'
 
 export type AedifexMcpToolExecutor = <Result>(input: {
   name: string
+  /** The call's parsed arguments; undefined for a tool without inputs. */
+  arguments: unknown
   signal: AbortSignal
   execute: () => Promise<Result>
 }) => Promise<Result>
@@ -28,6 +31,8 @@ export type CreateAedifexMcpServerOptions = {
    * Experimental task-based tool registrations are outside this hook.
    */
   executeTool?: AedifexMcpToolExecutor
+  /** Runs and stores `add_object` modules; without it the tool answers `scripts_unavailable`. */
+  geometryScripts?: GeometryScriptHost
 }
 
 export function createAedifexMcpServer(opts: CreateAedifexMcpServerOptions): McpServer {
@@ -38,7 +43,7 @@ export function createAedifexMcpServer(opts: CreateAedifexMcpServerOptions): Mcp
   if (opts.executeTool) installToolExecutor(server, opts.executeTool)
   const operations =
     opts.operations ?? createSceneOperations({ bridge: opts.bridge, store: opts.store })
-  registerTools(server, operations)
+  registerTools(server, operations, opts.geometryScripts)
   registerVisionTools(server, operations)
   registerResources(server, operations)
   registerPrompts(server, operations)
@@ -82,6 +87,7 @@ function wrapToolCallback(
   return (...args) =>
     executeTool({
       name,
+      arguments: args.length > 1 ? args[0] : undefined,
       signal: toolRequestSignal(args),
       execute: () => Promise.resolve(Reflect.apply(callback, undefined, args)),
     })

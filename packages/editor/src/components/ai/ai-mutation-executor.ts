@@ -91,6 +91,7 @@ export function validateToolCall(
   wallCache?: Map<string, WallNode[]>,
   pendingRemovalIds?: Set<string>,
 ): ValidatedOperation[] {
+  if ('sharedInput' in toolCall) return []
   switch (toolCall.tool) {
     case 'add_item':
       return [validateAddItem(toolCall, wallCache)]

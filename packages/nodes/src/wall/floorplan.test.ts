@@ -5,8 +5,13 @@ import {
   type FloorplanPalette,
   type GeometryContext,
   WallNode,
+  wallAssemblyFromLegacy,
 } from '@aedifex/core'
-import { createFloorplanContextExtensions, readFloorplanGeometryMetadata } from '@aedifex/editor'
+import {
+  createFloorplanContextExtensions,
+  readFloorplanGeometryMetadata,
+  WALL_PUSH_AFFORDANCE,
+} from '@aedifex/editor'
 import { buildWallFloorplan } from './floorplan'
 
 const palette: FloorplanPalette = {
@@ -213,14 +218,25 @@ describe('buildWallFloorplan render purpose', () => {
     })
   })
 
-  test('places selected move arrows on the curved wall midpoint', () => {
+  test('places selected push arrows on the curved wall midpoint', () => {
     const curved = WallNode.parse({ ...wall, curveOffset: 1 })
     const geometry = buildWallFloorplan(curved, context('edit', true))
     const arrows = geometry ? flatten(geometry).filter((entry) => entry.kind === 'move-arrow') : []
 
     expect(arrows).toHaveLength(2)
-    expect(arrows[0]).toMatchObject({ kind: 'move-arrow', angle: Math.PI / 2 })
-    expect(arrows[1]).toMatchObject({ kind: 'move-arrow', angle: -Math.PI / 2 })
+    // Each arrow is the 3D side arrow's push for its face, not a free move.
+    expect(arrows[0]).toMatchObject({
+      kind: 'move-arrow',
+      angle: Math.PI / 2,
+      affordance: WALL_PUSH_AFFORDANCE,
+      payload: { wallId: curved.id, side: 'a' },
+    })
+    expect(arrows[1]).toMatchObject({
+      kind: 'move-arrow',
+      angle: -Math.PI / 2,
+      affordance: WALL_PUSH_AFFORDANCE,
+      payload: { wallId: curved.id, side: 'b' },
+    })
     if (arrows[0]?.kind !== 'move-arrow' || arrows[1]?.kind !== 'move-arrow') return
     expect(arrows[0].point[0]).toBeCloseTo(2)
     expect(arrows[0].point[1]).toBeCloseTo(-0.885)
@@ -247,13 +263,14 @@ describe('buildWallFloorplan render purpose', () => {
 })
 
 describe('buildWallFloorplan assembly layers', () => {
-  const assembly = {
+  // The WS5 stack #937 drew, stored as F2 layers.
+  const assembly = wallAssemblyFromLegacy({
     preset: 'exterior-2x6-siding',
-    exterior: { finish: 'siding' as const, thickness: 0.75 * 0.0254 },
-    sheathing: { material: 'osb' as const, thickness: 0.4375 * 0.0254 },
-    framing: { kind: 'wood' as const, depth: 5.5 * 0.0254 },
-    interior: { finish: 'drywall' as const, thickness: 0.5 * 0.0254 },
-  }
+    exterior: { finish: 'siding', thickness: 0.75 * 0.0254 },
+    sheathing: { material: 'osb', thickness: 0.4375 * 0.0254 },
+    framing: { kind: 'wood', depth: 5.5 * 0.0254 },
+    interior: { finish: 'drywall', thickness: 0.5 * 0.0254 },
+  })
   const layered = WallNode.parse({
     id: 'wall_layered',
     parentId: 'level_main',

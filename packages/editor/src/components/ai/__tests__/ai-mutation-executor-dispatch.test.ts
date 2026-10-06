@@ -167,13 +167,13 @@ function payload(name: string): AIToolCall {
     case 'add_roof_accessory':
       return { tool: 'add_roof_accessory', kind: 'chimney', roofSegmentId: 'rseg_1', position: [0, 0, 0] } as AIToolCall
     case 'update_wall_material':
-      return { tool: 'update_wall_material', nodeId: 'wall_1', side: 'interior', materialPreset: 'wall-wood1' } as AIToolCall
+      return { tool: 'update_wall_material', nodeId: 'wall_1', side: 'a', materialPreset: 'wall-wood1' } as AIToolCall
     case 'update_roof_material':
       return { tool: 'update_roof_material', nodeId: 'roof_1', role: 'top', materialPreset: 'roof-tile1' } as AIToolCall
     case 'update_stair_material':
       return { tool: 'update_stair_material', nodeId: 'stair_1', role: 'tread', materialPreset: 'stair-wood1' } as AIToolCall
     case 'paint_slot':
-      return { tool: 'paint_slot', nodeId: 'wall_1', slotId: 'interior', materialRef: 'library:preset-charcoal' } as AIToolCall
+      return { tool: 'paint_slot', nodeId: 'wall_1', slotId: 'a', materialRef: 'library:preset-charcoal' } as AIToolCall
     case 'add_duct_segment':
       return { tool: 'add_duct_segment', points: [[0, 2.6, 0], [3, 2.6, 0]], crossSection: 'round', diameter: 6 } as AIToolCall
     case 'add_duct_fitting':

@@ -13,14 +13,13 @@ import {
 } from '@aedifex/core'
 import {
   createMaterial,
-  createMaterialFromPresetRef,
   getRoofMaterialArray,
   levelWallCladdingRef,
   resolveMaterialRef,
   useNodeEvents,
   useViewer,
 } from '@aedifex/viewer'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { getRoofDebugMaterials, getRoofMaterials } from '../roof/roof-materials'
 import { createPlaceholderGeometry } from '../shared/placeholder-geometry'
@@ -41,11 +40,27 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
   )
   const needsSceneMaterials = Boolean(
     (node.slots && Object.keys(node.slots).length > 0) ||
-      (parentNode?.slots && Object.keys(parentNode.slots).length > 0),
+      (parentNode?.slots && Object.keys(parentNode.slots).length > 0) ||
+      [
+        node.materialPreset,
+        node.topMaterialPreset,
+        node.edgeMaterialPreset,
+        node.wallMaterialPreset,
+        parentNode?.materialPreset,
+        parentNode?.topMaterialPreset,
+        parentNode?.edgeMaterialPreset,
+        parentNode?.wallMaterialPreset,
+      ].some((ref) => ref?.startsWith('scene:')),
   )
   const sceneMaterials = useScene((state) => (needsSceneMaterials ? state.materials : undefined))
 
   useRegistry(node.id, 'roof-segment', ref)
+  // The renderer loads lazily, so the scene-load dirty mark can be consumed
+  // before this mesh registers. A painted segment is built only from its own
+  // mesh (the merged shell skips it), so it would keep its empty placeholder.
+  useLayoutEffect(() => {
+    useScene.getState().markDirty(node.id)
+  }, [node.id])
 
   const handlers = useNodeEvents(node, 'roof-segment')
   const debugColors = useViewer((s) => s.debugColors)
@@ -84,7 +99,7 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
       const role = ROOF_LEGACY_ROLE_BY_SLOT[slotId]
       const segmentSpec = getEffectiveSegmentSurfaceMaterial(node, role)
       if (typeof segmentSpec.materialPreset === 'string') {
-        const resolved = createMaterialFromPresetRef(segmentSpec.materialPreset, shading)
+        const resolved = resolveMaterialRef(segmentSpec.materialPreset, sceneMaterials, shading)
         if (resolved) return resolved
       }
       if (segmentSpec.material !== undefined) {
@@ -99,7 +114,7 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
 
       const parentSpec = parentNode ? getEffectiveRoofSurfaceMaterial(parentNode, role) : undefined
       if (typeof parentSpec?.materialPreset === 'string') {
-        const resolved = createMaterialFromPresetRef(parentSpec.materialPreset, shading)
+        const resolved = resolveMaterialRef(parentSpec.materialPreset, sceneMaterials, shading)
         if (resolved) return resolved
       }
       if (parentSpec?.material !== undefined) {
@@ -111,7 +126,15 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
     // Themed parent-roof array (per-role scene-theme colours) — used both as the
     // full fallback and to fill any individual untextured slot below.
     const themedArray = parentNode
-      ? getRoofMaterialArray(parentNode, shading, textures, colorPreset, sceneTheme, sceneMaterials, wallCladdingRef)
+      ? getRoofMaterialArray(
+          parentNode,
+          shading,
+          textures,
+          colorPreset,
+          sceneTheme,
+          wallCladdingRef,
+          sceneMaterials,
+        )
       : null
 
     const resolved = ROOF_SLOT_ORDER.map((slotId) => resolveSlot(slotId))
@@ -139,11 +162,11 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
     node.wallMaterialPreset,
     node.slots,
     parentNode,
+    sceneMaterials,
     shading,
     textures,
     colorPreset,
     sceneTheme,
-    sceneMaterials,
   ])
 
   const material = debugColors

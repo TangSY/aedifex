@@ -1,13 +1,18 @@
 import {
   type AnyNode,
   type AnyNodeId,
+  beginSceneHistoryPauseSession,
+  type CloneNodesIntoResult,
   cloneNodesInto,
+  collectionIdsOf,
   collectSubtree,
   createSceneApi,
   type DuplicableConfig,
+  getSceneHistoryPauseDepth,
   getSurfaceProvider,
   nodeRegistry,
   resolveSurfacePlacement,
+  runSceneHistoryDraftWrite,
   type SurfaceRejectReason,
   useScene,
 } from '@aedifex/core'
@@ -32,6 +37,20 @@ function cleanPlacementMetadata<N extends AnyNode>(node: N): N {
 function parentIdOf(node: AnyNode): AnyNodeId | undefined {
   const parentId = (node as { parentId?: AnyNodeId | null }).parentId
   return parentId ?? undefined
+}
+
+/**
+ * Create ops for a clone of scene nodes: each copy joins the collections its
+ * source is in, whatever its kind.
+ */
+export function copyCreateOps(cloned: CloneNodesIntoResult, parentId: AnyNodeId | undefined) {
+  const collections = useScene.getState().collections
+  const sourceIds = new Map([...cloned.idMap].map(([source, copy]) => [copy, source]))
+  return cloned.nodes.map((node, index) => ({
+    node,
+    ...(index === 0 && parentId ? { parentId } : {}),
+    collectionIds: collectionIdsOf(collections, sourceIds.get(node.id as AnyNodeId)!),
+  }))
 }
 
 function duplicableConfigFor(node: AnyNode): DuplicableConfig | null {
@@ -114,9 +133,7 @@ export function createFreshPlacementSubtree(
   })
 
   scene.applyNodeChanges({
-    create: cloned.nodes.map((node, index) =>
-      index === 0 && parentId ? { node, parentId } : { node },
-    ),
+    create: copyCreateOps(cloned, parentId),
     update: surfaceAttachmentUpdates(cloned.rootId, parentId, surfaceAttachmentId(subtree.root)),
   })
 
@@ -203,6 +220,21 @@ function namedSurfaceRejection(
 }
 
 /**
+ * Runs a placement's one committing write as a history step. The moving node's gesture
+ * sessions (the 2D move overlay's) are lifted for it; any other owner's pause still holds, so
+ * the write then records nothing. A legacy caller's raw `temporal.pause()` is kept afterwards.
+ */
+function recordPlacementStep(rootId: AnyNodeId, wasTracking: boolean, write: () => void): void {
+  const step = beginSceneHistoryPauseSession(useScene, { gesture: rootId })
+  try {
+    step.commitStep(write)
+  } finally {
+    step.end()
+    if (!wasTracking && getSceneHistoryPauseDepth() === 0) useScene.temporal.getState().pause()
+  }
+}
+
+/**
  * Replace the draft in one validated write. History already excludes fresh
  * subtrees, so this records one creation without first deleting the preview.
  */
@@ -226,6 +258,8 @@ export function commitFreshPlacementSubtree(
   const descendants = subtree.descendants.map((node) => cleanPlacementMetadata(node))
   const parentId = parentIdOf(root)
   const cloned = cloneNodesInto([root, ...descendants], { rootId, parentId })
+  // The drafts' memberships, read before they are deleted.
+  const create = copyCreateOps(cloned, parentId)
   const updates = surfaceAttachmentUpdates(rootId, null, null)
   for (const update of surfaceAttachmentUpdates(cloned.rootId, parentId, surfaceId)) {
     const attachments = { ...(update.data as { attachments: Record<string, string> }).attachments }
@@ -243,43 +277,32 @@ export function commitFreshPlacementSubtree(
   const wasTracking = temporal.isTracking
   if (!factoryCreated && descendants.length === 0 && surfaceId === null) {
     // Preserve the established root-only lifecycle for placements outside the subtree factory.
-    if (wasTracking) temporal.pause()
-    updateSurfaceNode(rootId, {}, null)
-    useScene.getState().deleteNode(rootId)
-    temporal.resume()
-    useScene.getState().applyNodeChanges({
-      create: cloned.nodes.map((node, index) =>
-        index === 0 && parentId ? { node, parentId } : { node },
-      ),
-      update: updates,
+    runSceneHistoryDraftWrite(() => {
+      updateSurfaceNode(rootId, {}, null)
+      useScene.getState().deleteNode(rootId)
     })
-    if (!wasTracking) temporal.pause()
+    recordPlacementStep(rootId, wasTracking, () =>
+      useScene.getState().applyNodeChanges({ create, update: updates }),
+    )
   } else {
-    temporal.resume()
-    try {
-      // applyNodeChanges validates the complete proposed graph before publishing any part of it.
-      scene.applyNodeChanges({
-        delete: [rootId],
-        create: cloned.nodes.map((node, index) =>
-          index === 0 && parentId ? { node, parentId } : { node },
-        ),
-        update: updates,
-      })
-      for (const node of [subtree.root, ...subtree.descendants]) scene.clearDirty(node.id)
-    } catch (error) {
-      // Zustand publishes before notifying subscribers. A subscriber error must restore
-      // the draft and its ownership/history, never masquerade as a placement refusal.
-      temporal.pause()
+    recordPlacementStep(rootId, wasTracking, () => {
       try {
-        if (useScene.getState() !== scene) useScene.setState(scene, true)
-      } finally {
-        useInteractionScope.setState(scope)
-        useScene.temporal.setState(temporal)
+        // applyNodeChanges validates the complete proposed graph before publishing any part of it.
+        scene.applyNodeChanges({ delete: [rootId], create, update: updates })
+        for (const node of [subtree.root, ...subtree.descendants]) scene.clearDirty(node.id)
+      } catch (error) {
+        // Zustand publishes before notifying subscribers. A subscriber error must restore
+        // the draft and its ownership/history, never masquerade as a placement refusal.
+        useScene.temporal.getState().pause()
+        try {
+          if (useScene.getState() !== scene) useScene.setState(scene, true)
+        } finally {
+          useInteractionScope.setState(scope)
+          useScene.temporal.setState(temporal)
+        }
+        throw error
       }
-      throw error
-    } finally {
-      if (!wasTracking) temporal.pause()
-    }
+    })
   }
   useInteractionScope.getState().finishSubtree(rootId)
   if (usePlacementPreview.getState().node?.id === rootId) usePlacementPreview.getState().clear()

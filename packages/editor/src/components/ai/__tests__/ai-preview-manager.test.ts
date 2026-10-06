@@ -622,47 +622,51 @@ describe('confirmGhostPreview — surface material tools', () => {
         const data = entry.data as Record<string, unknown>
         // Skip pure metadata-restore writes; we want the one carrying material fields.
         const keys = Object.keys(data)
-        if (keys.some((k) => k.includes('Material') || k.includes('material'))) return data
+        if (keys.some((k) => k === 'slots' || k.includes('Material') || k.includes('material'))) return data
       }
     }
     return undefined
   }
 
-  it('update_wall_material side=interior with preset writes interiorMaterialPreset and clears interiorMaterial', () => {
+  it('update_wall_material side=a writes the face slot and keeps the other face and trims', () => {
+    mockNodes['wall_x'] = {
+      ...mockNodes['wall_x'],
+      slots: { b: 'scene:existing', aSkirting: 'library:preset-white' },
+    }
     confirmGhostPreview([
       {
         type: 'update_wall_material',
         status: 'valid',
         nodeId: 'wall_x' as any,
-        side: 'interior',
+        side: 'a',
         materialPreset: 'wall-wood1',
       } as any,
     ])
     const update = lastUpdateFor('wall_x')
     expect(update).toBeDefined()
-    expect(update?.interiorMaterialPreset).toBe('wall-wood1')
-    expect(update?.interiorMaterial).toBeUndefined()
+    expect(update?.slots).toEqual({
+      a: 'library:wall-wood1', b: 'scene:existing', aSkirting: 'library:preset-white',
+    })
+    expect(update).not.toHaveProperty('interiorMaterialPreset')
   })
 
-  it('update_wall_material side=exterior with hex color writes properties.color (not bare color)', () => {
+  it('update_wall_material side=b with hex color writes the face slot', () => {
     confirmGhostPreview([
       {
         type: 'update_wall_material',
         status: 'valid',
         nodeId: 'wall_x' as any,
-        side: 'exterior',
+        side: 'b',
         materialColor: '#aabbcc',
       } as any,
     ])
     const update = lastUpdateFor('wall_x')
     expect(update).toBeDefined()
-    expect(update?.exteriorMaterialPreset).toBeUndefined()
-    expect(update?.exteriorMaterial).toEqual({ properties: { color: '#aabbcc' } })
-    // Regression: must NOT write `{ color }` directly (would be silently dropped by MaterialSchema).
-    expect((update?.exteriorMaterial as any)?.color).toBeUndefined()
+    expect(update?.slots).toEqual({ b: '#aabbcc' })
+    expect(update).not.toHaveProperty('exteriorMaterial')
   })
 
-  it('update_wall_material side=both writes legacy material/materialPreset', () => {
+  it('update_wall_material side=both paints the two geometric faces', () => {
     confirmGhostPreview([
       {
         type: 'update_wall_material',
@@ -673,8 +677,8 @@ describe('confirmGhostPreview — surface material tools', () => {
       } as any,
     ])
     const update = lastUpdateFor('wall_x')
-    expect(update?.materialPreset).toBe('wall-brick1')
-    expect(update?.material).toBeUndefined()
+    expect(update?.slots).toEqual({ a: 'library:wall-brick1', b: 'library:wall-brick1' })
+    expect(update).not.toHaveProperty('materialPreset')
   })
 
   it.each([
@@ -728,7 +732,7 @@ describe('confirmGhostPreview — surface material tools', () => {
         type: 'update_wall_material',
         status: 'valid',
         nodeId: 'wall_x' as any,
-        side: 'interior',
+        side: 'a',
       } as any,
     ])
     // Nothing material-shaped written.
@@ -736,6 +740,26 @@ describe('confirmGhostPreview — surface material tools', () => {
     // Some non-material updates may still happen (metadata cleanup is skipped because
     // applySurfaceMaterialUpdate returned null), so we only assert no material fields were written.
     expect(mockUpdatedNodes.length).toBeGreaterThanOrEqual(before)
+  })
+
+  it('paint_slot commits the requested slot without overwriting unrelated parts', () => {
+    mockNodes['wall_x'] = { ...mockNodes['wall_x'], slots: { b: 'scene:existing' } }
+    const log = confirmGhostPreview([{
+      type: 'paint_slot', status: 'valid', nodeId: 'wall_x',
+      slotId: 'a', materialRef: 'library:wall-wood1',
+    } as any])
+    expect(lastUpdateFor('wall_x')?.slots).toEqual({ a: 'library:wall-wood1', b: 'scene:existing' })
+    expect(log.affectedNodeIds).toContain('wall_x')
+  })
+
+  it('paint_slot clears only the requested slot back to its default', () => {
+    mockNodes['wall_x'] = {
+      ...mockNodes['wall_x'], slots: { a: 'scene:clear-me', b: 'scene:keep-me' },
+    }
+    confirmGhostPreview([{
+      type: 'paint_slot', status: 'valid', nodeId: 'wall_x', slotId: 'a', materialRef: '',
+    } as any])
+    expect(lastUpdateFor('wall_x')?.slots).toEqual({ b: 'scene:keep-me' })
   })
 })
 

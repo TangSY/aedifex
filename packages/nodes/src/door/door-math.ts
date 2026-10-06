@@ -1,10 +1,3 @@
-import {
-  getCurtainWallConfig,
-  getWallCurveFrameAt,
-  getWallCurveLength,
-  type WallNode,
-} from '@aedifex/core'
-
 /**
  * Keep the door handle at the same relative height when the door is resized:
  * scale it by the height ratio, then clamp to the panel's slider bounds
@@ -23,23 +16,8 @@ export function scaleHandleHeight(
 
 export { wallLocalToWorld } from '../shared/wall-local-frame'
 
-/**
- * Clamps door center X so it stays fully within wall bounds.
- * Y is always height/2 — doors sit at floor level.
- */
-export function clampToWall(
-  wallNode: WallNode,
-  localX: number,
-  width: number,
-  height: number,
-): { clampedX: number; clampedY: number } {
-  const wallLength = getWallCurveLength(wallNode)
-  const margin = wallNode.wallType === 'curtain' ? getCurtainWallConfig(wallNode).perimeterWidth : 0
-
-  const clampedX = Math.max(margin + width / 2, Math.min(wallLength - margin - width / 2, localX))
-  const clampedY = height / 2 // Doors always sit at floor level
-  return { clampedX, clampedY }
-}
+/** Door centre on its wall: the shared rule in core (`clampDoorToWall`). */
+export { clampDoorToWall as clampToWall } from '@aedifex/core/building'
 
 // Wall-child overlap is shared by door + window placement (one source of
 // truth in `shared/wall-attach-target.ts`). Re-exported here so existing

@@ -14,7 +14,7 @@ describe('BoxVentNode schema', () => {
     expect(parsed.position).toEqual([0, 0, 0])
     expect(parsed.rotation).toBe(0)
     expect(parsed.material).toBeUndefined()
-    expect(parsed.materialPreset).toBe('preset-white')
+    expect(parsed.materialPreset).toBe('library:preset-white')
     expect(parsed.roofSegmentId).toBeUndefined()
   })
 

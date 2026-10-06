@@ -3,6 +3,7 @@ import { captureScreenshot, useViewer } from '@aedifex/viewer'
 import { generateExecutionPlan, buildPlanningContext } from './ai-planner'
 import { useAIChat } from './ai-chat-store'
 import { buildToolResult, validateAllToolCalls } from './ai-mutation-executor'
+import { executeSharedAgentToolCalls, isSharedAgentToolCall } from './ai-shared-agent-executor'
 import {
   applyGhostPreview,
   clearGhostPreview,
@@ -405,9 +406,33 @@ export async function runAgentLoop({
         continue
       }
 
+      const sharedCalls = toolCalls.filter(isSharedAgentToolCall)
+      if (sharedCalls.length > 0) {
+        const result = await executeSharedAgentToolCalls({ calls: sharedCalls, messageId: lastMessageId, signal })
+        totalToolCalls += sharedCalls.length
+        invalidateSceneCache()
+        conversationMessages.push({ role: 'assistant', content: text || '' })
+        for (let i = 0; i < toolCalls.length; i++) {
+          if (!isSharedAgentToolCall(toolCalls[i]!)) continue
+          conversationMessages.push({
+            role: 'tool', tool_call_id: toolCallIds?.[i] ?? `call_${i}`,
+            content: JSON.stringify(result),
+          })
+        }
+        if (toolCalls.every(isSharedAgentToolCall)) {
+          if (result.details.validCount === 0) consecutiveFailures++
+          else consecutiveFailures = 0
+          if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+            conversationMessages.push({ role: 'user', content: '[System: Repeated tool failures. Stop repeating the same request; explain the refusal or ask the user what to change.]' })
+          }
+          onIterationEnd?.(iteration, result)
+          continue
+        }
+      }
+
       // Execute mutation tool calls
       const mutationCalls = toolCalls.filter(
-        (tc) => !['ask_user', 'confirm_preview', 'reject_preview', 'propose_placement'].includes(tc.tool),
+        (tc) => !isSharedAgentToolCall(tc) && !['ask_user', 'confirm_preview', 'reject_preview', 'propose_placement'].includes(tc.tool),
       )
 
       if (mutationCalls.length > 0) {
@@ -435,7 +460,10 @@ export async function runAgentLoop({
         // (avoids showing empty "Preview 0 operations" bar that needs manual confirm)
         if (validOps.length > 0) {
           if (lastMessageId) {
-            useAIChat.getState().setOperations(lastMessageId, validated)
+            const sharedOperations = sharedCalls.length
+              ? useAIChat.getState().messages.find((message) => message.id === lastMessageId)?.operations ?? []
+              : []
+            useAIChat.getState().setOperations(lastMessageId, [...sharedOperations, ...validated])
           }
           applyGhostPreview(validOps)
         } else if (lastMessageId) {
@@ -458,12 +486,13 @@ export async function runAgentLoop({
           consecutiveFailures++
           if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
             // Inject a system hint so the LLM stops retrying placements
-            conversationMessages.push({
+            if (sharedCalls.length === 0) conversationMessages.push({
               role: 'assistant',
               content: text || '',
             })
             for (let i = 0; i < mutationCalls.length; i++) {
-              const callId = toolCallIds?.[i] ?? `call_${i}`
+              const originalIndex = toolCalls.indexOf(mutationCalls[i]!)
+              const callId = toolCallIds?.[originalIndex] ?? `call_${originalIndex}`
               const toolResult = buildToolResult(
                 mutationCalls.map((tc) => tc.tool).join('+'),
                 validated,
@@ -559,13 +588,14 @@ export async function runAgentLoop({
         onIterationEnd?.(iteration, toolResult)
 
         // Feed result back to LLM for next iteration
-        conversationMessages.push({
+        if (sharedCalls.length === 0) conversationMessages.push({
           role: 'assistant',
           content: text || '',
         })
 
         for (let i = 0; i < mutationCalls.length; i++) {
-          const callId = toolCallIds?.[i] ?? `call_${i}`
+          const originalIndex = toolCalls.indexOf(mutationCalls[i]!)
+          const callId = toolCallIds?.[originalIndex] ?? `call_${originalIndex}`
           conversationMessages.push({
             role: 'tool',
             content: JSON.stringify(toolResult),

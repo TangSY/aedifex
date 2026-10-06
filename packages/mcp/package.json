@@ -66,7 +66,8 @@
     "prepublishOnly": "bun run build && bun test && bun run smoke:node"
   },
   "peerDependencies": {
-    "@aedifex/core": "^0.10.0"
+    "@aedifex/core": "^0.10.0",
+    "@aedifex/geometry-script": "^1.0.3"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
@@ -77,7 +78,8 @@
     "@aedifex/core": "^0.10.0",
     "@repo/typescript-config": "*",
     "@types/node": "^22.19.20",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "@aedifex/geometry-script": "workspace:*"
   },
   "keywords": [
     "mcp",

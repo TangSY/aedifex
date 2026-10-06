@@ -1,5 +1,4 @@
-import { GROUND_SUPPORT_ID } from '../../lib/support-host'
-import type { SlabNode, WallNode } from '../../schema'
+import type { AnyNode, SlabNode, WallNode } from '../../schema'
 import { computeWallSlabSupport } from '../slab/slab-support'
 
 export type ResolveWallBaseElevationArgs = {
@@ -7,6 +6,7 @@ export type ResolveWallBaseElevationArgs = {
   slabs: readonly SlabNode[]
   walls: WallNode[]
   levelBase?: number
+  nodes?: Readonly<Record<string, AnyNode>>
 }
 
 /**
@@ -21,10 +21,8 @@ export function resolveWallBaseElevation({
   slabs,
   walls,
   levelBase = 0,
+  nodes,
 }: ResolveWallBaseElevationArgs): number {
-  const offset = wall.supportOffset ?? 0
-  if (wall.supportSlabId === GROUND_SUPPORT_ID) return levelBase + offset
-
   return (
     computeWallSlabSupport(
       wall,
@@ -33,6 +31,7 @@ export function resolveWallBaseElevation({
       wall.supportSlabId ?? null,
       null,
       levelBase,
-    ).elevation + offset
+      nodes,
+    ).elevation
   )
 }

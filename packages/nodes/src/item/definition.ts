@@ -1,15 +1,18 @@
 import {
   type AnyNode,
+  getEffectiveCutterNode,
   getScaledDimensions,
   type HandleDescriptor,
   type ItemNode as ItemNodeType,
   type NodeDefinition,
+  resolveCutterHost,
   toggleMechanism,
 } from '@aedifex/core'
 import type { FloorplanNodeExtension } from '@aedifex/editor'
 import { itemHasLights, itemMechanism, toggleItemLights } from '../shared/item-interactions'
 import { itemBatchable } from '../shared/node-batch/batchable'
 import { restingFloorplanAffectedIds } from '../shared/resting-surface-plan'
+import { authoredItemFaceHost } from './authored-face-host'
 import { buildItemContextualDimensions, buildItemFloorplan } from './floorplan'
 import { itemFloorplanMoveTarget } from './floorplan-move'
 import { itemPaint } from './paint'
@@ -144,8 +147,8 @@ function itemWallMoveHandle(): HandleDescriptor<ItemNodeType> {
 /**
  * Item — Phase 5 batch kind. Catalog-backed, GLB-rendered, multi-host.
  *
- * Demonstrates the **custom `def.renderer` escape hatch** (see
- * plans/editor-node-registry.md): items use `useGLTF` from drei to
+ * Demonstrates the **custom `def.renderer` escape hatch** ("Opting out of a
+ * generic path" in wiki/architecture/node-definitions.md): items use `useGLTF` from drei to
  * load CDN assets, plus a non-trivial interactive-widget layer inside
  * the rendered scene. Not expressible as a pure `def.geometry`. The
  * registry mounts the custom React renderer as-is.
@@ -212,6 +215,8 @@ export const itemDefinition: NodeDefinition<typeof ItemNode> = {
   capabilities: {
     batchable: itemBatchable,
     selectable: { hitVolume: 'bbox' },
+    // Authored objects host ceiling items on their undersides; catalog items do not.
+    faceHost: authoredItemFaceHost,
     surfaces: {
       top: {
         height: (node) => {
@@ -329,7 +334,21 @@ export const itemDefinition: NodeDefinition<typeof ItemNode> = {
   // Stage C: floor-plan polygon. ctx.resolve walks the parent chain
   // (wall / nested item / level) to compute the world-space transform.
   floorplan: buildItemFloorplan,
-  floorplanAffectedIds: restingFloorplanAffectedIds,
+  floorplanAffectedIds: (args) => {
+    const ids = [...restingFloorplanAffectedIds(args)]
+    for (const node of [args.node, getEffectiveCutterNode(args.node)]) {
+      if (node.type !== 'item') continue
+      for (const cutter of node.source?.manifest.cutters ?? []) {
+        const host = resolveCutterHost(
+          node,
+          cutter.host === 'mounted' ? 'cutout' : `cut:${cutter.host}`,
+          args.nodes,
+        )
+        if (host) ids.push(host.id)
+      }
+    }
+    return ids
+  },
   // 2D move-on-floorplan handler. Branches on `asset.attachTo`:
   // wall items snap to walls (like door / window), ceiling items
   // snap to ceiling polygons, floor items snap to slabs. attachTo

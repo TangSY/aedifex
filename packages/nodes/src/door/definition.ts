@@ -6,6 +6,7 @@ import type {
   RoofSegmentNode,
   WallNode,
 } from '@aedifex/core'
+import { doorSlots } from '@aedifex/core'
 import type { FloorplanNodeExtension } from '@aedifex/editor'
 import { curtainOpeningResizeMax } from '../shared/curtain-opening-limits'
 import { doorBatchable } from '../shared/node-batch/batchable'
@@ -18,6 +19,7 @@ import { createOpeningPropertyPreview } from '../shared/opening-property-preview
 import { openingPropertyPreviewHost } from '../shared/opening-property-preview-host'
 import { readRoofFaceHeightMax, readRoofFaceWidthMax } from '../shared/roof-opening-host'
 import { buildRoofWallOpeningCut } from '../shared/roof-wall-opening-cut'
+import { scriptedOpeningHandles } from '../shared/scripted-opening-handles'
 import { readHostWallCeiling } from '../shared/wall-opening-ceiling'
 import { wallFloorplanSiblingOverrides } from '../wall/floorplan-overrides'
 import { buildDoorContextualDimensions } from './contextual-dimensions'
@@ -25,10 +27,10 @@ import { scaleHandleHeight } from './door-math'
 import { buildDoorFloorplan } from './floorplan'
 import { doorWidthAffordance } from './floorplan-affordances'
 import { doorFloorplanMoveTarget } from './floorplan-move'
+import { doorMechanism } from './mechanism'
 import { doorPaint } from './paint'
 import { doorParametrics } from './parametrics'
 import { DoorNode } from './schema'
-import { doorSlots } from './slots'
 
 const SIDE_HANDLE_OFFSET = 0.24
 const HEIGHT_HANDLE_OFFSET = 0.24
@@ -107,7 +109,7 @@ function doorHeightHandle(): HandleDescriptor<DoorNodeType> {
       const curtainMax = curtainOpeningResizeMax(n, scene.nodes(), 'y', 1)
       if (curtainMax !== undefined) return curtainMax
       const bottom = n.position[1] - n.height / 2
-      return Math.max(MIN_DOOR_HEIGHT, readHostWallCeiling(n.wallId, scene) - bottom)
+      return Math.max(MIN_DOOR_HEIGHT, readHostWallCeiling(n.wallId, scene, n) - bottom)
     },
     currentValue: (n) => n.height,
     onDrag: (node) => publishOpeningResizeGuides(node, false),
@@ -258,10 +260,14 @@ export const doorDefinition: NodeDefinition<typeof DoorNode> = {
     // each mesh with its `userData.slotId`; paint writes `node.slots`.
     slots: () => doorSlots(),
     paint: doorPaint,
+    mechanism: doorMechanism,
   },
 
   parametrics: doorParametrics,
-  handles: doorHandles,
+  handles: (node) =>
+    node.source
+      ? [doorMoveHandle(), ...scriptedOpeningHandles(node, doorWidthHandle, doorHeightHandle)]
+      : doorHandles,
 
   rendersChildren: false,
   renderer: {

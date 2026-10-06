@@ -4,6 +4,12 @@ import {
   type AnyNode,
   type AnyNodeId,
   bakePolicyOf,
+  containsPoint,
+  distanceToBoundary,
+  itemInteraction,
+  itemPrompt,
+  operateItem,
+  polygonInteriorPoint,
   type SurfaceRole,
   useInteractive,
 } from '@aedifex/core'
@@ -12,7 +18,7 @@ import {
   operableParts,
   ProceduralMotionController,
 } from '@aedifex/core/procedural-items'
-import { Html, useAnimations } from '@react-three/drei'
+import { Html } from '@react-three/drei'
 import { type ThreeEvent, useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
@@ -24,7 +30,9 @@ import { useGLTFKTX2 } from '../../hooks/use-gltf-ktx2'
 import { ZONE_LAYER } from '../../lib/layers'
 import { createSurfaceRoleMaterial } from '../../lib/materials'
 import { applyShadowOnly, clearShadowOnly } from '../../lib/shadow-only'
+import { createZoneShape, createZoneWallGeometry } from '../../lib/zone-geometry'
 import useViewer from '../../store/use-viewer'
+import { useClipActions } from '../../systems/interactive/scripted-clips'
 import { GlbInteractive, type GlbInteractiveItem } from './glb-interactive'
 import { bakedLoopMechanisms } from './glb-mechanisms'
 import { GlbReferenceNodes } from './glb-reference-nodes'
@@ -70,9 +78,10 @@ type GlbZoneEntry = {
   node: THREE.Object3D
   levelId: string | null
   polygon: [number, number][]
+  holes: [number, number][][]
   label: string
   color: string
-  /** Polygon centroid (zone-local x, z) for placing the room label. */
+  /** Interior pole (zone-local x, z), outside any room holes. */
   centroid: [number, number]
 }
 
@@ -91,6 +100,7 @@ type AedifexExtras = {
     activeWindow?: [number, number]
   }
   polygon?: [number, number][]
+  holes?: [number, number][][]
   color?: string
   camera?: { position: [number, number, number]; target: [number, number, number] }
 }
@@ -172,49 +182,17 @@ const ZONE_FOOTPRINT_EPSILON = 0.05
 
 const NO_RAYCAST: THREE.Mesh['raycast'] = () => {}
 
-/** Ray-cast point-in-polygon (polygon is a list of [x, z] in the test frame). */
-function pointInPolygon(x: number, z: number, polygon: [number, number][]): boolean {
-  let inside = false
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const [xi, zi] = polygon[i]!
-    const [xj, zj] = polygon[j]!
-    if (zi > z !== zj > z && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) inside = !inside
-  }
-  return inside
-}
-
-function pointOnSegment(
-  x: number,
-  z: number,
-  ax: number,
-  az: number,
-  bx: number,
-  bz: number,
-): boolean {
-  const dx = bx - ax
-  const dz = bz - az
-  const lengthSq = dx * dx + dz * dz
-  if (lengthSq === 0) return Math.hypot(x - ax, z - az) <= ZONE_FOOTPRINT_EPSILON
-  const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / lengthSq))
-  const px = ax + t * dx
-  const pz = az + t * dz
-  return Math.hypot(x - px, z - pz) <= ZONE_FOOTPRINT_EPSILON
-}
-
-function pointInPolygonInclusive(x: number, z: number, polygon: [number, number][]): boolean {
-  if (pointInPolygon(x, z, polygon)) return true
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const [xi, zi] = polygon[i]!
-    const [xj, zj] = polygon[j]!
-    if (pointOnSegment(x, z, xi, zi, xj, zj)) return true
-  }
-  return false
+function pointInZone(x: number, z: number, zone: GlbZoneEntry): boolean {
+  const polygon = [{ outer: zone.polygon, holes: zone.holes }]
+  return (
+    containsPoint(polygon, [x, z]) || distanceToBoundary(polygon, [x, z]) <= ZONE_FOOTPRINT_EPSILON
+  )
 }
 
 function worldPointInZoneFootprint(worldPoint: THREE.Vector3, zone: GlbZoneEntry): boolean {
   _local.copy(worldPoint)
   zone.node.worldToLocal(_local)
-  return pointInPolygonInclusive(_local.x, _local.z, zone.polygon)
+  return pointInZone(_local.x, _local.z, zone)
 }
 
 function objectFootprintTouchesZone(object: THREE.Object3D, zone: GlbZoneEntry): boolean {
@@ -274,40 +252,6 @@ function createZoneWallMaterial(zoneColor: string) {
   return material
 }
 
-/** Vertical quads along each polygon edge (UV.y 0 at the floor, 1 at the top). */
-function createZoneWallGeometry(polygon: [number, number][]): THREE.BufferGeometry {
-  const positions: number[] = []
-  const uvs: number[] = []
-  const indices: number[] = []
-  for (let i = 0; i < polygon.length; i++) {
-    const [cx, cz] = polygon[i]!
-    const [nx, nz] = polygon[(i + 1) % polygon.length]!
-    const base = i * 4
-    positions.push(
-      cx,
-      Y_OFFSET,
-      cz,
-      nx,
-      Y_OFFSET,
-      nz,
-      nx,
-      Y_OFFSET + ZONE_WALL_HEIGHT,
-      nz,
-      cx,
-      Y_OFFSET + ZONE_WALL_HEIGHT,
-      cz,
-    )
-    uvs.push(0, 0, 1, 0, 1, 1, 0, 1)
-    indices.push(base, base + 1, base + 2, base, base + 2, base + 3)
-  }
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
-  geometry.setIndex(indices)
-  geometry.computeVertexNormals()
-  return geometry
-}
-
 /**
  * GLB-consuming viewer scene (plan phase 2). Loads a baked artifact and drives
  * the editor's presentation/interaction with no parametric scene graph. Hover
@@ -348,7 +292,7 @@ export function GlbScene({
     animations: THREE.AnimationClip[]
   }
   const rootRef = useRef<THREE.Group>(null!)
-  const { actions } = useAnimations(gltf.animations, rootRef)
+  const actions = useClipActions(gltf.animations, rootRef)
   const proceduralPlayback = useMemo(() => {
     const byNode = new Map<
       string,
@@ -561,15 +505,14 @@ export function GlbScene({
       }
       if (extras.kind === 'zone' && extras.polygon && extras.polygon.length >= 3) {
         const polygon = extras.polygon
-        const centroid: [number, number] = [
-          polygon.reduce((sum, [x]) => sum + x, 0) / polygon.length,
-          polygon.reduce((sum, [, z]) => sum + z, 0) / polygon.length,
-        ]
+        const holes = extras.holes ?? []
+        const centroid = polygonInteriorPoint({ polygon, holes })
         zoneList.push({
           id: extras.pascalId,
           node: object,
           levelId: findAncestorLevelId(object),
           polygon,
+          holes,
           label: extras.label ?? extras.pascalId,
           color: extras.color ?? '#3b82f6',
           centroid,
@@ -786,12 +729,7 @@ export function GlbScene({
   useEffect(() => {
     const built: ZoneFill[] = []
     for (const entry of zoneEntries) {
-      const shape = new THREE.Shape()
-      entry.polygon.forEach(([x, z], i) => {
-        if (i === 0) shape.moveTo(x, -z)
-        else shape.lineTo(x, -z)
-      })
-      shape.closePath()
+      const shape = createZoneShape(entry)
 
       const floorMaterial = createZoneFloorMaterial(entry.color)
       const floor = new THREE.Mesh(new THREE.ShapeGeometry(shape), floorMaterial)
@@ -799,7 +737,7 @@ export function GlbScene({
       floor.position.y = 0.02
 
       const wallMaterial = createZoneWallMaterial(entry.color)
-      const walls = new THREE.Mesh(createZoneWallGeometry(entry.polygon), wallMaterial)
+      const walls = new THREE.Mesh(createZoneWallGeometry(entry), wallMaterial)
 
       const meshes = [floor, walls]
       for (const mesh of meshes) {
@@ -874,9 +812,14 @@ export function GlbScene({
   }, -1)
 
   useEffect(() => {
+    const scriptedPrefixes = (interactiveItems ?? [])
+      .filter((item) => item.scripted)
+      .map((item) => `${item.pascalId}: `)
     for (const [name, action] of Object.entries(actions)) {
       if (!action) continue
       if (proceduralPlayback.actions.has(name)) continue
+      // ScriptedClips owns each authored clip's playback mode.
+      if (scriptedPrefixes.some((prefix) => name.startsWith(prefix))) continue
       if (name.endsWith(': loop')) {
         action.loop = THREE.LoopRepeat
         action.clampWhenFinished = false
@@ -885,7 +828,7 @@ export function GlbScene({
         action.clampWhenFinished = true
       }
     }
-  }, [actions, proceduralPlayback])
+  }, [actions, proceduralPlayback, interactiveItems])
 
   useEffect(() => {
     if (loopMechanisms.size === 0) return
@@ -923,6 +866,17 @@ export function GlbScene({
           item.interactive.controls.some((control) => control.kind === 'toggle'),
       ),
     [interactiveItems],
+  )
+  // A click opens and closes an item with an `open` clip (an authored object,
+  // a scripted window or door), like a door.
+  const toggleOpenControl = useCallback(
+    (identityNode: THREE.Object3D) => {
+      const item = toggleableItem((identityNode.userData as AedifexExtras).pascalId)
+      if (!item || itemInteraction(item.interactive).kind !== 'open') return false
+      operateItem(item.pascalId, item.interactive)
+      return true
+    },
+    [toggleableItem],
   )
   const toggleLoopMechanism = useCallback(
     (identityNode: THREE.Object3D) => {
@@ -964,7 +918,7 @@ export function GlbScene({
   const toggleOpenable = useCallback(
     (node: THREE.Object3D) => {
       const extras = node.userData as AedifexExtras
-      const clipName = extras.clips?.[0]
+      const clipName = extras.clips?.find((name) => name.endsWith(': open'))
       if (!extras.openable || !clipName) return
       const action = actions[clipName]
       if (!action) return
@@ -991,7 +945,7 @@ export function GlbScene({
         if (entry.levelId !== levelId) continue
         _local.copy(worldPoint)
         entry.node.worldToLocal(_local)
-        if (pointInPolygonInclusive(_local.x, _local.z, entry.polygon)) return entry
+        if (pointInZone(_local.x, _local.z, entry)) return entry
       }
       return null
     },
@@ -1185,7 +1139,7 @@ export function GlbScene({
             item.procedural?.lights.length &&
             operableParts(item.procedural.recipe ?? { parts: item.procedural.parts }).length === 0,
         )
-      const item = extras?.kind === 'item' ? toggleableItem(extras.pascalId) : undefined
+      const item = toggleableItem(extras?.pascalId)
       if (node && extras?.kind === 'procedural-item' && (extras.clips?.length || lightOnly)) {
         doorNode = { hit: hit.object, node }
         const part = findProceduralMotionAncestor(hit.object)
@@ -1211,15 +1165,8 @@ export function GlbScene({
       } else if (node && item) {
         doorNode = { hit: hit.object, node }
         doorId = item.pascalId
-        const values = useInteractive.getState().items[item.pascalId]?.controlValues
-        const isOpen = item.interactive.controls.some(
-          (control, index) => control.kind === 'toggle' && Boolean(values?.[index]),
-        )
-        door = {
-          label: item.label,
-          isOpen,
-          verb: isOpen ? 'turn off' : 'turn on',
-        }
+        const prompt = itemPrompt(item.pascalId, item.label, item.interactive)
+        door = { label: prompt.label, isOpen: prompt.isOn, verb: prompt.verb }
       } else if (node && extras?.openable && extras.clips?.length) {
         doorNode = { hit: hit.object, node }
         doorId = extras.pascalId as string
@@ -1245,10 +1192,9 @@ export function GlbScene({
   const activateWalkDoor = useCallback(() => {
     const target = walkDoorRef.current
     if (!target) return
-    const extras = target.node.userData as AedifexExtras
-    const item = extras.kind === 'item' ? toggleableItem(extras.pascalId) : undefined
+    const item = toggleableItem((target.node.userData as AedifexExtras).pascalId)
     if (item) {
-      useInteractive.getState().toggleItemToggles(item.pascalId, item.interactive)
+      operateItem(item.pascalId, item.interactive)
       return
     }
     if (!(toggleProcedural(target.hit, target.node) || toggleLoopMechanism(target.node)))
@@ -1347,6 +1293,7 @@ export function GlbScene({
         setSelection({ selectedIds: [target.id] })
         if (
           !(
+            toggleOpenControl(target.object) ||
             toggleProcedural(target.hitObject ?? target.object, target.object) ||
             toggleLoopMechanism(target.object)
           )
@@ -1356,7 +1303,14 @@ export function GlbScene({
         setSelection({ zoneId: null })
       }
     },
-    [resolveTarget, toggleLoopMechanism, toggleOpenable, toggleProcedural, walkthroughMode],
+    [
+      resolveTarget,
+      toggleLoopMechanism,
+      toggleOpenControl,
+      toggleOpenable,
+      toggleProcedural,
+      walkthroughMode,
+    ],
   )
 
   // A click that hits nothing (empty space) steps one level back up the drill

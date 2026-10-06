@@ -1,22 +1,8 @@
 import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
-import { syncAutoStairOpenings } from '@aedifex/core/stair-openings'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { SceneVersionConflictError } from '../storage/types'
-import { ErrorCode, throwMcpError } from './errors'
-
-export function syncDerivedStairOpenings(operations: SceneOperations): number {
-  const updates = syncAutoStairOpenings(operations.getNodes())
-  if (updates.length === 0) return 0
-  operations.applyPatch(
-    updates.map((update) => ({
-      op: 'update' as const,
-      id: update.id,
-      data: update.data,
-    })),
-  )
-  return updates.length
-}
+import { ErrorCode, McpError, throwMcpError } from './errors'
 
 export type LiveSyncStatus = 'published' | 'unbound' | 'events_unsupported'
 
@@ -54,6 +40,16 @@ export function persistencePayload(status: LiveSyncStatus): {
   return { persistence: { status, warning: LIVE_SYNC_WARNINGS[status] } }
 }
 
+const LIVE_SYNC_VERSION_CONFLICT = 'live_sync_version_conflict'
+
+/**
+ * Whether a tool call failed because the stored scene changed after the session
+ * loaded it. The store refuses before writing, so nothing from the call persisted.
+ */
+export function isLiveSyncVersionConflict(error: unknown): boolean {
+  return error instanceof McpError && error.message.endsWith(LIVE_SYNC_VERSION_CONFLICT)
+}
+
 /**
  * Persist the bridge's current graph to the active scene and append a live
  * event for browser subscribers. Skips persistence — reporting why — when the
@@ -65,8 +61,6 @@ export async function publishLiveSceneSnapshot(
   operations: SceneOperations,
   kind: string,
 ): Promise<LiveSyncStatus> {
-  syncDerivedStairOpenings(operations)
-
   const active = operations.getActiveScene()
   if (!active) return 'unbound'
   if (!operations.canAppendSceneEvents) return 'events_unsupported'
@@ -82,6 +76,7 @@ export async function publishLiveSceneSnapshot(
       thumbnailUrl: active.thumbnailUrl,
       graph,
       expectedVersion: active.version,
+      ...(active.graphHash !== undefined ? { expectedGraphHash: active.graphHash } : {}),
       saveMode: 'draft',
       publish: false,
       operation: kind,
@@ -95,7 +90,7 @@ export async function publishLiveSceneSnapshot(
     })
   } catch (error) {
     if (error instanceof SceneVersionConflictError) {
-      throwMcpError(ErrorCode.InvalidRequest, 'live_sync_version_conflict', {
+      throwMcpError(ErrorCode.InvalidRequest, LIVE_SYNC_VERSION_CONFLICT, {
         sceneId: active.id,
         expectedVersion: active.version,
       })

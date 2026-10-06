@@ -57,11 +57,21 @@ vi.mock('../ai-mutation-executor', () => ({
   buildToolResult: vi.fn(() => ({ ok: true })),
 }))
 
+vi.mock('../ai-shared-agent-executor', () => ({
+  isSharedAgentToolCall: (call: AIToolCall) => 'sharedInput' in call,
+  executeSharedAgentToolCalls: vi.fn(async () => ({
+    toolName: 'list_levels', success: true, summary: 'Levels read',
+    details: { validCount: 1, invalidCount: 0, adjustedCount: 0, errors: [], adjustments: [], results: [] },
+  })),
+}))
+
 // ============================================================================
 // Imports — done after vi.mock declarations
 // ============================================================================
 
 import { runAgentLoop, abortActiveLoop } from '../ai-agent-loop'
+import { validateAllToolCalls } from '../ai-mutation-executor'
+import { executeSharedAgentToolCalls } from '../ai-shared-agent-executor'
 import { setAIRuntime, resetAIRuntimeForTesting } from '../runtime'
 import { useAIChat } from '../ai-chat-store'
 import { invalidateSceneCache } from '../ai-scene-serializer'
@@ -406,5 +416,22 @@ describe('runAgentLoop — empty-response fallback', () => {
     const state = useAIChat.getState()
     const lastAssistant = [...state.messages].reverse().find((m) => m.role === 'assistant')
     expect(lastAssistant?.content).toMatch(/unable to process/i)
+  })
+})
+
+describe('runAgentLoop — shared and legacy tools', () => {
+  it('executes legacy mutations from a response that also contains a shared query', async () => {
+    setBuildingWithLevels(1)
+    vi.mocked(validateAllToolCalls).mockClear()
+    vi.mocked(executeSharedAgentToolCalls).mockClear()
+    const wall: AIToolCall = { tool: 'add_wall', start: [0, 0], end: [2, 0] }
+    fakeTransport.setReplies([
+      { text: 'Read and build', toolCalls: [{ tool: 'list_levels', sharedInput: {} }, wall], toolCallIds: ['query_id', 'wall_id'] },
+      { text: 'Finished', toolCalls: [] },
+    ])
+    await runAgentLoop({ userMessage: 'add a wall', catalogSummary: '' })
+    expect(executeSharedAgentToolCalls).toHaveBeenCalledOnce()
+    expect(validateAllToolCalls).toHaveBeenCalledWith([wall])
+    expect(fakeTransport.callCount).toBe(2)
   })
 })

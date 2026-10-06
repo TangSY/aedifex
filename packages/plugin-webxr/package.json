@@ -33,6 +33,10 @@
     "./host/webxr-feature-gate": {
       "types": "./src/integrations/aedifex-editor/host/webxr-feature-gate.tsx",
       "default": "./src/integrations/aedifex-editor/host/webxr-feature-gate.tsx"
+    },
+    "./host/build-tab": {
+      "types": "./src/integrations/aedifex-editor/host/build-tab.tsx",
+      "default": "./src/integrations/aedifex-editor/host/build-tab.tsx"
     }
   },
   "files": [

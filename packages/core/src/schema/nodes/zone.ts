@@ -1,6 +1,7 @@
 import dedent from 'dedent'
 import { z } from 'zod'
 import { BaseNode, nodeType, objectId } from '../base'
+import { ZoneCeilingIntent, ZoneFloorIntent, ZoneFloorStepOverrides } from './zone-intent'
 
 export const ZoneNode = BaseNode.extend({
   id: objectId('zone'),
@@ -10,8 +11,31 @@ export const ZoneNode = BaseNode.extend({
   polygon: z.array(z.tuple([z.number(), z.number()])),
   // Procedural room zones retain the walls that prove their enclosure. The
   // stored polygon remains a fallback for missing or temporarily open walls.
+  holes: z.array(z.array(z.tuple([z.number(), z.number()]))).default([]),
   autoFromWalls: z.boolean().default(false),
   boundaryWallIds: z.array(objectId('wall')).default([]),
+  boundarySeparatorIds: z.array(z.string()).default([]),
+  hostZoneId: z.string().optional(),
+  seed: z.tuple([z.number(), z.number()]).optional(),
+  floor: ZoneFloorIntent.optional(),
+  // Painted parts of the room ceiling survive automatic surface reconciliation.
+  ceiling: ZoneCeilingIntent.optional(),
+  floorStepFinish: z.string().optional(),
+  // Per-doorway step paint, keyed by its door or the lower room it faces.
+  floorStepOverrides: ZoneFloorStepOverrides.optional(),
+  floorEdgeFinish: z.string().optional(),
+  wallMaterial: z.string().optional(),
+  wallOverrides: z
+    .array(
+      z.object({
+        wallId: z.string(),
+        face: z.enum(['a', 'b']),
+        finish: z.string(),
+      }),
+    )
+    .optional(),
+  hasFloor: z.literal(false).optional(),
+  hasCeiling: z.literal(false).optional(),
   // Generic zones remain available for sites and analysis. Architectural
   // room documentation is opt-in so legacy zone behavior is unchanged.
   spaceRole: z.enum(['generic', 'room']).default('generic'),
@@ -37,6 +61,8 @@ export const ZoneNode = BaseNode.extend({
   - boundaryWallIds: wall ids that prove the procedural enclosure
   - spaceRole: generic site/analysis zone or architectural room
   - roomNumber/finishes/ceilingHeight/occupancy: construction-document room metadata
+  - floor.regions / ceiling.regions: painted parts of the room's floor and ceiling ([x, z] polygons, later wins)
+  - floorStepFinish: finish of the room's steps; floorStepOverrides: per-doorway step finishes keyed by door id (or the lower room id), optional step index
   - enclosureStatus: auto-detected, explicitly enclosed, or open
   - clearDimensionPolicy: optional room clear-dimension datum preference
   - color: hex color for visual styling

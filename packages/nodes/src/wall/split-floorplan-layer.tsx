@@ -1,14 +1,15 @@
 'use client'
+
 import {
   getWallCurveFrameAt,
   getWallCurveLength,
-  getWallThickness,
+  getWallFaceOffsets,
   useScene,
   type WallNode,
 } from '@aedifex/core'
 import {
   clientToPlan,
-  FloorplanDraftWallMeasurement,
+  FloorplanDraftMeasurement,
   type FloorplanToolContext,
   formatLinearMeasurement,
   useFloorplanRender,
@@ -36,7 +37,7 @@ export default function WallSplitFloorplanLayer(_props: FloorplanToolContext) {
     const surface = scene?.ownerSVGElement
     if (!surface) return
     return bindWallSplitPointer(surface, (event) => {
-      if (!(event.target instanceof Node) || !surface.contains(event.target)) return null
+      if (!(event.target instanceof Node && surface.contains(event.target))) return null
       const point = clientToPlan(event.clientX, event.clientY)
       const current = useScene.getState().nodes[wallId]
       if (!point || current?.type !== 'wall') return null
@@ -56,7 +57,7 @@ export default function WallSplitFloorplanLayer(_props: FloorplanToolContext) {
   const color = wallSplitMarkerColor(preview.valid)
   const cut = preview.frames[0]?.point
   return (
-    <g pointerEvents="none" data-testid="pascal-split-marker-2d">
+    <g data-testid="pascal-split-marker-2d" pointerEvents="none">
       {snap?.kind === 'alignment' && cut && (
         <line
           stroke="#818cf8"
@@ -78,8 +79,8 @@ export default function WallSplitFloorplanLayer(_props: FloorplanToolContext) {
         }
         return (
           <g key={index}>
-            <line {...line} stroke="#f7f3ed" strokeWidth={7 * upp} strokeLinecap="round" />
-            <line {...line} stroke={color} strokeWidth={3 * upp} strokeLinecap="round" />
+            <line {...line} stroke="#f7f3ed" strokeLinecap="round" strokeWidth={7 * upp} />
+            <line {...line} stroke={color} strokeLinecap="round" strokeWidth={3 * upp} />
           </g>
         )
       })}
@@ -98,7 +99,7 @@ export default function WallSplitFloorplanLayer(_props: FloorplanToolContext) {
         </text>
       ) : (
         wallSplitSegmentLabels(wall, preview).map((segment, index) => (
-          <FloorplanDraftWallMeasurement
+          <FloorplanDraftMeasurement
             key={index}
             labelBackground={isDark ? '#0f172a' : '#ffffff'}
             labelText={isDark ? '#e2e8f0' : '#171717'}
@@ -120,7 +121,7 @@ export default function WallSplitFloorplanLayer(_props: FloorplanToolContext) {
 
 /** The wall's stroke plus a finger's width, so the cut can be grabbed at any zoom. */
 function hitHalfWidth(wall: WallNode, upp: number) {
-  return getWallThickness(wall) / 2 + 8 * upp
+  return Math.max(getWallFaceOffsets(wall).a, -getWallFaceOffsets(wall).b) + 8 * upp
 }
 
 function frameAt(wall: WallNode, distance: number) {

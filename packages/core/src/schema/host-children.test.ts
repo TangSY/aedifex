@@ -34,15 +34,51 @@ function load(nodes: Record<string, unknown>, rootId: string) {
   return JSON.parse(JSON.stringify(useScene.getState().nodes))
 }
 
-test('frozen pre-slice corpus covers every existing kind', () => {
-  expect(baseline.map((n) => n.type).sort()).toEqual([...NODE_KINDS].sort())
+test('frozen pre-slice corpus covers every kind predating separators', () => {
+  expect(baseline.map((n) => n.type).sort()).toEqual(
+    NODE_KINDS.filter(
+      (kind) =>
+        kind !== 'separator' &&
+        kind !== 'floor-opening' &&
+        kind !== 'fence-gate' &&
+        kind !== 'fence-opening',
+    ).sort(),
+  )
 })
 test.each(
   baseline,
 )('pre-slice $type parses, saves and loads without changing existing fields', (saved) => {
   const expected = saved.type === 'column' ? { ...saved, children: [] } : saved
-  expect(JSON.parse(JSON.stringify(AnyNode.parse(saved)))).toEqual(expected)
-  const graph = { [saved.id]: expected }
+  const parsedExpected =
+    saved.type === 'zone'
+      ? { ...expected, boundarySeparatorIds: [], holes: [] }
+      : saved.type === 'door' || saved.type === 'window'
+        ? { ...expected, floorThresholdVersion: 1 }
+        : saved.type === 'fence'
+          ? {
+              ...expected,
+              children: [],
+              surfaceMode: 'auto',
+              transitionMode: 'slope',
+              transitionWidth: 0.8,
+              picketSpacing: 0.27,
+              patternDistribution: 'automatic',
+              patternAlignment: 'center',
+              patternCount: 4,
+              patternRemainder: 'leave',
+              picketWidth: 0.07,
+              picketTop: 'flat',
+              picketProfile: 'level',
+              picketTopClearance: 0.2,
+              picketVariation: 0.23,
+              picketRailProjection: 0.001,
+              picketRailCount: 2,
+              infillPlacement: 'center',
+            }
+          : expected
+  expect(JSON.parse(JSON.stringify(AnyNode.parse(saved)))).toEqual(parsedExpected)
+  // Loading fills the schema defaults a stored node leaves out, nothing else.
+  const graph = { [saved.id]: parsedExpected }
   expect(load({ [saved.id]: saved }, saved.id)).toEqual(graph)
   expect(load(graph, saved.id)).toEqual(graph)
 })

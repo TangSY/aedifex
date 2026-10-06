@@ -169,10 +169,11 @@ export {
   WHITE_PALETTE,
 } from './lib/materials'
 export { mergedOutline } from './lib/merged-outline-node'
+export { createNodeTopSurfaceHeightSampler } from './lib/node-top-surface-height'
 export * from './lib/perf-actions'
 export { type PerfBatchStats, publishPerfBatchStats } from './lib/perf-panel-store'
 export * from './lib/perf-tracks'
-export { markPureRaycast } from './lib/pointer-events'
+export { hasMaterialsForGroups, markPureRaycast } from './lib/pointer-events'
 export {
   cloneWithProceduralEmission,
   decorateProceduralEmission,
@@ -188,6 +189,7 @@ export {
   type RendererInitializationResult,
   type RendererPowerPreference,
 } from './lib/renderer-capability'
+export { createSceneSupportHeightSampler } from './lib/scene-support-height'
 export {
   getSceneTheme,
   SCENE_THEME_IDS,
@@ -200,6 +202,7 @@ export {
   showInScene,
   temporarilyShowShadowOnly,
 } from './lib/scene-visibility'
+export { SCRIPTED_MODEL_FLAG } from './lib/scripted-opening'
 export {
   createPlainSnapshotPipeline,
   createSnapshotPipeline,
@@ -228,6 +231,7 @@ export {
   textureMapForSlot,
 } from './lib/texture-reference'
 export { packNormalToRGB, unpackRGBToNormal } from './lib/tsl-compat'
+export { createZoneShape, createZoneWallGeometry } from './lib/zone-geometry'
 export type { LightSource } from './store/use-item-light-pool'
 export { catalogLightSource, useItemLightPool } from './store/use-item-light-pool'
 export {
@@ -236,7 +240,11 @@ export {
   type MetricNotation,
   type WallMode,
 } from './store/use-viewer'
-export { CeilingSystem } from './systems/ceiling/ceiling-system'
+export {
+  CEILING_REGION_MESH,
+  type CeilingRegionMaterial,
+  CeilingSystem,
+} from './systems/ceiling/ceiling-system'
 export {
   createColumnBoxGeometry,
   createColumnCylinderGeometry,
@@ -246,14 +254,6 @@ export {
 export { DoorAnimationSystem } from './systems/door/door-animation-system'
 export { buildDoorPreviewMesh, DoorSystem, poseDoorMovingParts } from './systems/door/door-system'
 export { ElevatorInteractionSystem } from './systems/elevator/elevator-interaction-system'
-// Fence system follows the wall re-export pattern — composed into the
-// registry-driven fence definition's `def.system`. Removed in Phase 6
-// alongside the legacy fence mount point.
-export {
-  FenceSystem,
-  generateFenceGeometry,
-  generateFenceSlotGeometries,
-} from './systems/fence/fence-system'
 // Generic floor-elevation system. Lifts the rendered mesh of any kind
 // whose definition declares `capabilities.floorPlaced` by the slab
 // elevation under its footprint. Replaces the per-kind elevation block
@@ -261,6 +261,11 @@ export {
 export { FloorElevationSystem } from './systems/floor-elevation/floor-elevation-system'
 export { GuideSystem } from './systems/guide/guide-system'
 export { InteractiveSystem } from './systems/interactive/interactive-system'
+export {
+  type ScriptedClipActions,
+  ScriptedClips,
+  useClipActions,
+} from './systems/interactive/scripted-clips'
 // Item systems for the registry-driven item definition. ItemSystem
 // applies attachTo-driven transforms each frame; ItemLightSystem
 // manages item-mounted light sources.
@@ -315,6 +320,12 @@ export {
   type WallCutoutViewerState,
   type WallCutoutViewerStore,
 } from './systems/wall/wall-cutout-cache'
+export {
+  getWallFaceBaseAt,
+  getWallFinishData,
+  getWallFinishRefs,
+  type WallFinishGeometryData,
+} from './systems/wall/wall-finish-data'
 export {
   getMaterialsForWall,
   getVisibleWallMaterials,

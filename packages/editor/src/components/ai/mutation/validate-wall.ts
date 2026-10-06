@@ -307,7 +307,7 @@ export function validateUpdateWall(call: UpdateWallToolCall, _wallCache?: Map<st
   }
 }
 
-const VALID_WALL_SIDES = new Set(['interior', 'exterior', 'both'])
+const VALID_WALL_SIDES = new Set(['a', 'b', 'both'])
 
 export function validateUpdateWallMaterial(call: UpdateWallMaterialToolCall): ValidatedUpdateWallMaterial {
   const { nodes } = useScene.getState()
@@ -337,7 +337,7 @@ export function validateUpdateWallMaterial(call: UpdateWallMaterialToolCall): Va
       status: 'invalid',
       nodeId: call.nodeId as AnyNodeId,
       side: call.side,
-      errorReason: `Invalid side "${call.side}". Must be one of: interior, exterior, both.`,
+      errorReason: `Invalid side "${call.side}". Must be one of: a, b, both.`,
     }
   }
   if (!call.materialPreset && !call.materialColor) {
