@@ -33,6 +33,7 @@ import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { LineBasicNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu'
 import { EDITOR_LAYER } from '../../../lib/constants'
 import { isHistoryShortcut } from '../../../lib/history'
+import { isModalKeyboardTarget } from '../../../lib/modal-keyboard'
 import { getHoveredRoofSegmentOutlineProxyName } from '../../../lib/roof-hover-outline-proxy'
 import useInteractionScope, { useMovingNode } from '../../../store/use-interaction-scope'
 import { swallowNextClick } from '../../editor/handles/use-handle-drag'
@@ -1385,6 +1386,7 @@ function RoofTrimHandles() {
     // Escape / ⌘Z abort the trim drag — capture phase so they win over the
     // global use-keyboard arms (⌘Z must never history-jump mid-gesture).
     const onKeyDown = (e: KeyboardEvent) => {
+      if (isModalKeyboardTarget(e.target)) return
       if (e.key !== 'Escape' && !isHistoryShortcut(e)) return
       e.preventDefault()
       e.stopPropagation()

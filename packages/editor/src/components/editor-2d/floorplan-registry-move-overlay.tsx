@@ -30,6 +30,7 @@ import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo } from 'react'
 import { commitFreshPlacementSubtree } from '../../lib/fresh-planar-placement'
 import { isHistoryShortcut } from '../../lib/history'
+import { isModalKeyboardTarget } from '../../lib/modal-keyboard'
 import { isFreshPlacementMetadata, stripPlacementMetadataFlags } from '../../lib/placement-metadata'
 import { resolvePrioritizedPlanarCursorPosition } from '../../lib/planar-cursor-placement'
 import {
@@ -497,6 +498,7 @@ export function FloorplanRegistryMoveOverlay() {
       }
 
       const onKey = (event: KeyboardEvent) => {
+        if (isModalKeyboardTarget(event.target)) return
         // R flips a directional kind's facing mid-placement (door / window:
         // front ↔ back). The session records the flip and re-runs its last
         // apply so the 2D symbol updates immediately; kinds without a facing
@@ -964,6 +966,7 @@ export function FloorplanRegistryMoveOverlay() {
     }
 
     const onKey = (event: KeyboardEvent) => {
+      if (isModalKeyboardTarget(event.target)) return
       if (event.key !== 'Escape' && !isHistoryShortcut(event)) return
       if (isHistoryShortcut(event)) {
         // ⌘Z mid-move cancels like Escape — keep it from reaching the

@@ -48,6 +48,7 @@ import {
 } from '../../lib/elevation-guides'
 import { isHistoryShortcut } from '../../lib/history'
 import { endpointReshapeScope } from '../../lib/interaction/scope'
+import { isModalKeyboardTarget } from '../../lib/modal-keyboard'
 import { useRoomHandleDrag, wallPushHandles } from '../../lib/room-handle-drag'
 import { sfxEmitter } from '../../lib/sfx-bus'
 import { intersectSpatialDragPlane, spatialDragLocalY } from '../../lib/spatial-drag-plane'
@@ -1052,6 +1053,7 @@ function WallHeightArrowHandle({ wall }: { wall: WallNode }) {
     // Escape / ⌘Z abort the drag — capture phase so they win over the global
     // use-keyboard arms (⌘Z must never history-jump under a live pointer).
     const onKeyDown = (e: KeyboardEvent) => {
+      if (isModalKeyboardTarget(e.target)) return
       if (e.key !== 'Escape' && !isHistoryShortcut(e)) return
       e.preventDefault()
       e.stopPropagation()

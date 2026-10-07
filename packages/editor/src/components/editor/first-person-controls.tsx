@@ -72,6 +72,7 @@ import {
   Vector3,
 } from 'three'
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh'
+import { isModalKeyboardTarget } from '../../lib/modal-keyboard'
 import '../../three-types'
 import {
   closeDoorOpenState,
@@ -1464,6 +1465,7 @@ export const FirstPersonControls = () => {
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (isModalKeyboardTarget(event.target)) return
       const handledMovement = applyMovementKey(event, true)
       if (handledMovement) return
 

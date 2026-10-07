@@ -30,6 +30,7 @@ import { cancelGestures } from '../lib/gesture-lifecycle'
 import { guideEmitter } from '../lib/guide-events'
 import { isHistoryShortcut, runRedo, runUndo, shouldCancelDraftOnHistoryJump } from '../lib/history'
 import { isActive } from '../lib/interaction/scope'
+import { isModalKeyboardTarget } from '../lib/modal-keyboard'
 import { paintRegionModeActive } from '../lib/paint-region-mode'
 import { popRoomSelection } from '../lib/room-selection-commands'
 import { copySelectedNodesToEditorClipboard } from '../lib/scene-clipboard'
@@ -314,7 +315,15 @@ export const useKeyboard = ({
     let ctrlTapClean = false
     let shiftTapClean = false
 
+    const blocksModalKey = (event: Event) => {
+      if (!isModalKeyboardTarget(event.target)) return false
+      ctrlTapClean = false
+      shiftTapClean = false
+      return true
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (blocksModalKey(e)) return
       if (e.key === 'Shift') {
         shiftTapClean = !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey
       } else {
@@ -784,6 +793,7 @@ export const useKeyboard = ({
       }
     }
     const handleKeyUp = (e: KeyboardEvent) => {
+      if (blocksModalKey(e)) return
       if (e.key === 'Shift') {
         const wasClean = shiftTapClean
         shiftTapClean = false
@@ -818,6 +828,7 @@ export const useKeyboard = ({
     // registry move overlay) — safe only because none of them claim Ctrl/Cmd+G.
     // `e.code` keeps it on the physical G key across keyboard layouts.
     const handleSessionGroupKeyDown = (e: KeyboardEvent) => {
+      if (blocksModalKey(e)) return
       if (e.key !== 'Shift') shiftTapClean = false
       if (e.key !== 'Control' && e.key !== 'Meta') ctrlTapClean = false
       if (
@@ -841,10 +852,12 @@ export const useKeyboard = ({
       }
     }
 
+    window.addEventListener('focusin', blocksModalKey, true)
     window.addEventListener('keydown', handleSessionGroupKeyDown, true)
     window.addEventListener('keydown', handleKeyDown)
     window.addEventListener('keyup', handleKeyUp)
     return () => {
+      window.removeEventListener('focusin', blocksModalKey, true)
       window.removeEventListener('keydown', handleSessionGroupKeyDown, true)
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)

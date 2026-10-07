@@ -16,6 +16,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { OrthographicCamera, Plane, type Ray, Vector2, Vector3 } from 'three'
 import { GROUP_MOVE_DRAG_LABEL, GROUP_ROTATE_DRAG_LABEL } from '../../lib/contextual-help'
 import { isHistoryShortcut } from '../../lib/history'
+import { isModalKeyboardTarget } from '../../lib/modal-keyboard'
 import { sfxEmitter } from '../../lib/sfx-bus'
 import { intersectSpatialDragPlane } from '../../lib/spatial-drag-plane'
 import { getSpatialPointerId, spatialPointerInput } from '../../lib/spatial-pointer-input'
@@ -377,6 +378,7 @@ function GroupRotateHandleInner({ ids, meshEpoch }: { ids: string[]; meshEpoch: 
     // Escape / ⌘Z abort the rotate — capture phase so they win over the global
     // use-keyboard arms (⌘Z must never history-jump under a live pointer).
     const onKeyDown = (e: KeyboardEvent) => {
+      if (isModalKeyboardTarget(e.target)) return
       if (e.key === 'Alt') {
         altKey = true
         return
