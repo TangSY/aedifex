@@ -241,7 +241,7 @@ const TEMPLATES: BuildingTemplate[] = [
  * Matches against id, name, nameCN, and description keywords.
  */
 export function findTemplate(userInput: string): BuildingTemplate | null {
-  const input = userInput.toLowerCase()
+  const input = userInput.trim().toLowerCase().replace(/[‐‑‒–—]/g, '-')
 
   // Direct ID match
   const byId = TEMPLATES.find((t) => t.id === input)
@@ -251,26 +251,30 @@ export function findTemplate(userInput: string): BuildingTemplate | null {
   const byCN = TEMPLATES.find((t) => input.includes(t.nameCN))
   if (byCN) return byCN
 
-  // Match by English name keywords
-  const byName = TEMPLATES.find((t) => input.includes(t.name.toLowerCase()))
+  // Exact names remain valid without letting a generic name override a specific count.
+  const byName = TEMPLATES.find((t) => input === t.name.toLowerCase())
   if (byName) return byName
 
-  // Fuzzy matching by keywords
-  const keywords: Record<string, string[]> = {
-    'villa-3-story': ['三层', '3层', '3-story', '三楼', 'villa', '别墅'],
-    'villa-2-story': ['两层', '2层', '2-story', '二楼', '二层别墅'],
-    'studio-apartment': ['开间', 'studio', '单身公寓', '小公寓'],
-    'one-bedroom-apartment': ['一室', '一房', '一居', 'one-bed', '1室'],
-    'two-bedroom-apartment': ['两室', '两房', '两居', 'two-bed', '2室', '二室'],
-    'office-space': ['办公', 'office', '工作室', '写字楼'],
-    'single-room': ['单间', '房间', 'room', '一个房间'],
-  }
+  // Specific counts win before generic building words; English matches use word boundaries.
+  const patterns: [string, RegExp][] = [
+    ['villa-3-story', /(?:三|3)\s*(?:层|楼)|\b(?:3|three)[\s-]*(?:stor(?:y|ies)|store(?:y|ys)|floors?)\b/],
+    ['villa-2-story', /(?:两|二|2)\s*(?:层|楼)|\b(?:2|two)[\s-]*(?:stor(?:y|ies)|store(?:y|ys)|floors?)\b/],
+    ['studio-apartment', /开间|单身公寓|小公寓|\bstudio\b/],
+    ['one-bedroom-apartment', /(?:一|1)\s*(?:室|房|居)|\b(?:1|one)[\s-]*bed(?:[\s-]*rooms?)?\b/],
+    ['two-bedroom-apartment', /(?:两|二|2)\s*(?:室|房|居)|\b(?:2|two)[\s-]*bed(?:[\s-]*rooms?)?\b/],
+    ['office-space', /办公|工作室|\boffice\b/],
+    ['villa-3-story', /别墅|\bvilla\b/],
+  ]
 
-  for (const [templateId, kws] of Object.entries(keywords)) {
-    if (kws.some((kw) => input.includes(kw))) {
+  for (const [templateId, pattern] of patterns) {
+    if (pattern.test(input)) {
       return TEMPLATES.find((t) => t.id === templateId) ?? null
     }
   }
+
+  // Unmatched apartments/bedroom counts need generic planning, not a single-room fallback.
+  if (/公寓|卧室|[三四五六七八九十]\s*(?:室|居)|\b(?:apartments?|bedrooms?|beds?)\b/.test(input)) return null
+  if (/单间|房间|\broom\b/.test(input)) return TEMPLATES.find((t) => t.id === 'single-room') ?? null
 
   return null
 }
