@@ -70,6 +70,8 @@ vi.mock('../ai-shared-agent-executor', () => ({
 // ============================================================================
 
 import { runAgentLoop, abortActiveLoop } from '../ai-agent-loop'
+import { captureScreenshot } from '@aedifex/viewer'
+import { isGhostPreviewActive } from '../ai-preview-manager'
 import { validateAllToolCalls } from '../ai-mutation-executor'
 import { executeSharedAgentToolCalls } from '../ai-shared-agent-executor'
 import { setAIRuntime, resetAIRuntimeForTesting } from '../runtime'
@@ -265,6 +267,9 @@ beforeEach(() => {
   ;(fakeTelemetry.toolValidated as ReturnType<typeof vi.fn>).mockClear()
   ;(fakeTelemetry.error as ReturnType<typeof vi.fn>).mockClear()
   fakeTransport.setReplies([])
+  vi.mocked(captureScreenshot).mockReset().mockResolvedValue('data:image/png;base64,fake')
+  vi.mocked(isGhostPreviewActive).mockReset().mockReturnValue(false)
+  vi.mocked(validateAllToolCalls).mockReset().mockReturnValue([])
   resetScene()
   useAIChat.setState({
     messages: [],
@@ -289,6 +294,8 @@ beforeEach(() => {
 
 afterEach(() => {
   abortActiveLoop()
+  vi.restoreAllMocks()
+  vi.useRealTimers()
   resetAIRuntimeForTesting()
 })
 
@@ -433,5 +440,95 @@ describe('runAgentLoop — shared and legacy tools', () => {
     expect(executeSharedAgentToolCalls).toHaveBeenCalledOnce()
     expect(validateAllToolCalls).toHaveBeenCalledWith([wall])
     expect(fakeTransport.callCount).toBe(2)
+  })
+})
+
+describe('runAgentLoop — final operation screenshots', () => {
+  function startMutation() {
+    vi.mocked(isGhostPreviewActive).mockReturnValueOnce(false).mockReturnValue(true)
+    vi.mocked(validateAllToolCalls).mockReturnValue([
+      { type: 'add_wall', status: 'valid', start: [0, 0], end: [2, 0], thickness: 0.2 },
+    ])
+    fakeTransport.setReplies([
+      { text: 'Adding a wall', toolCalls: [{ tool: 'add_wall', start: [0, 0], end: [2, 0] }] },
+      { text: 'Done', toolCalls: [] },
+    ])
+    useAIChat.getState().addUserMessage('Add a wall')
+    return runAgentLoop({ userMessage: 'Add a wall', catalogSummary: '' })
+  }
+
+  it('waits for the actual capture result before completing the turn', async () => {
+    vi.useFakeTimers()
+    let finishCapture!: (url: string) => void
+    vi.mocked(captureScreenshot).mockResolvedValueOnce('data:image/png;base64,before')
+      .mockImplementationOnce(() => new Promise(resolve => { finishCapture = resolve }))
+    const run = startMutation()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(captureScreenshot).toHaveBeenCalledTimes(2)
+    expect(useAIChat.getState().loopState).toBe('running')
+    finishCapture('data:image/png;base64,after')
+    await run
+    expect(useAIChat.getState().messages.some(message => message.screenshotAfter === 'data:image/png;base64,after')).toBe(true)
+    expect(useAIChat.getState().loopState).toBe('complete')
+  })
+
+  it('settles an aborted capture without allowing its result into the next conversation', async () => {
+    vi.useFakeTimers()
+    let finishCapture!: (url: string) => void
+    vi.mocked(captureScreenshot).mockResolvedValueOnce('data:image/png;base64,before')
+      .mockImplementationOnce(() => new Promise(resolve => { finishCapture = resolve }))
+    const run = startMutation()
+    await vi.advanceTimersByTimeAsync(200)
+    const write = vi.spyOn(useAIChat.getState(), 'setScreenshotAfter')
+    useAIChat.getState().clearChat()
+    await run
+    vi.mocked(isGhostPreviewActive).mockReturnValue(false)
+    fakeTransport.setReplies([{ text: 'New reply', toolCalls: [] }])
+    useAIChat.getState().addUserMessage('New request')
+    await runAgentLoop({ userMessage: 'New request', catalogSummary: '' })
+    finishCapture('data:image/png;base64,stale')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(write).not.toHaveBeenCalled()
+    expect(useAIChat.getState().messages).toHaveLength(2)
+    expect(useAIChat.getState().loopState).toBe('complete')
+    write.mockRestore()
+  })
+
+  it('settles cancelled screenshot timers before capture starts', async () => {
+    vi.useFakeTimers()
+    const run = startMutation()
+    await vi.advanceTimersByTimeAsync(0)
+    useAIChat.getState().clearChat()
+    await run
+    await vi.advanceTimersByTimeAsync(200)
+    expect(captureScreenshot).toHaveBeenCalledTimes(1)
+    expect(useAIChat.getState().loopState).toBe('idle')
+  })
+
+  it('keeps screenshot failures optional and completes the turn', async () => {
+    vi.useFakeTimers()
+    vi.mocked(captureScreenshot).mockResolvedValueOnce('data:image/png;base64,before')
+      .mockRejectedValueOnce(new Error('capture unavailable'))
+    const run = startMutation()
+    await vi.advanceTimersByTimeAsync(200)
+    await run
+    expect(useAIChat.getState().loopState).toBe('complete')
+    expect(useAIChat.getState().error).toBeNull()
+  })
+
+  it('also waits for the delayed screenshot from confirm_preview', async () => {
+    vi.useFakeTimers()
+    useAIChat.setState({ messages: [{ id: 'pending', role: 'assistant', content: 'Preview', timestamp: 0,
+      operationStatus: 'pending', operations: [{ type: 'add_wall', status: 'valid', start: [0, 0], end: [2, 0], thickness: 0.2 }] }] })
+    let finishCapture!: (url: string) => void
+    vi.mocked(captureScreenshot).mockImplementationOnce(() => new Promise(resolve => { finishCapture = resolve }))
+    fakeTransport.setReplies([{ text: 'Confirmed', toolCalls: [{ tool: 'confirm_preview' }] }])
+    const run = runAgentLoop({ userMessage: 'Confirm', catalogSummary: '' })
+    await vi.advanceTimersByTimeAsync(200)
+    expect(useAIChat.getState().loopState).toBe('running')
+    finishCapture('data:image/png;base64,confirmed')
+    await run
+    expect(useAIChat.getState().messages.find(message => message.id === 'pending')?.screenshotAfter).toBe('data:image/png;base64,confirmed')
+    expect(useAIChat.getState().loopState).toBe('complete')
   })
 })

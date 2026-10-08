@@ -42,8 +42,8 @@ import type {
 // Auto-compresses conversation context at CONTEXT_COMPRESS_THRESHOLD.
 // ============================================================================
 
-// Track pending screenshot timers so they can be cancelled on cleanup
-const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
+type PendingScreenshot = { signal?: AbortSignal; done: Promise<void>; cancel: () => void }
+const pendingScreenshots = new Set<PendingScreenshot>()
 
 /**
  * Global AbortController for the current agent loop.
@@ -61,11 +61,41 @@ export function abortActiveLoop(): void {
     activeLoopController.abort()
     activeLoopController = null
   }
-  // Cancel any pending screenshot timers
-  for (const timer of pendingTimers) {
+  for (const screenshot of pendingScreenshots) screenshot.cancel()
+}
+
+function scheduleAfterScreenshot({ messageId, signal = activeLoopController?.signal }: { messageId: string; signal?: AbortSignal }): void {
+  if (signal?.aborted) return
+  let settled = false
+  let resolve!: () => void
+  const done = new Promise<void>(finish => { resolve = finish })
+  const finish = () => {
+    if (settled) return
+    settled = true
     clearTimeout(timer)
+    signal?.removeEventListener('abort', finish)
+    pendingScreenshots.delete(task)
+    resolve()
   }
-  pendingTimers.clear()
+  const task: PendingScreenshot = { signal, done, cancel: finish }
+  const timer = setTimeout(() => {
+    void (async () => {
+      try {
+        const url = await captureScreenshot()
+        if (settled || signal?.aborted) {
+          if (url?.startsWith('blob:')) URL.revokeObjectURL(url)
+        } else if (url) {
+          useAIChat.getState().setScreenshotAfter(messageId, url)
+        }
+      } catch {
+        // Screenshot failure must not turn a committed scene operation into an AI failure.
+      } finally {
+        finish()
+      }
+    })()
+  }, 200)
+  pendingScreenshots.add(task)
+  signal?.addEventListener('abort', finish, { once: true })
 }
 
 /** Total token budget per agent loop run (prompt + completion summed) */
@@ -568,13 +598,7 @@ export async function runAgentLoop({
           }
           // Capture after screenshot (async, non-blocking)
           if (lastMessageId) {
-            const msgId = lastMessageId
-            const timerId = setTimeout(async () => {
-              pendingTimers.delete(timerId)
-              const afterUrl = await captureScreenshot()
-              if (afterUrl) useAIChat.getState().setScreenshotAfter(msgId, afterUrl)
-            }, 200)
-            pendingTimers.add(timerId)
+            scheduleAfterScreenshot({ messageId: lastMessageId, signal })
           }
         }
 
@@ -625,6 +649,9 @@ export async function runAgentLoop({
     loopExitReason = 'failed'
     telemetry?.error?.({ phase: 'stream', message: errorMessage, messageId: loopMessageId })
   } finally {
+    // Completion observers archive once; include captures still rendering for this turn.
+    await Promise.all([...pendingScreenshots].filter(screenshot => screenshot.signal === signal).map(screenshot => screenshot.done))
+    if (signal.aborted) loopExitReason = 'aborted'
     // Determine the technical reason for loop exit (success/budget/iteration-cap)
     // if no explicit override was set in catch.
     if (loopExitReason === 'success') {
@@ -808,15 +835,7 @@ async function executeConfirmation(
   log.messageId = messageId
   useAIChat.getState().addOperationLog(log)
 
-  // Capture after-screenshot with tracked timer
-  const timerId = setTimeout(async () => {
-    pendingTimers.delete(timerId)
-    const afterScreenshot = await captureScreenshot()
-    if (afterScreenshot) {
-      useAIChat.getState().setScreenshotAfter(messageId, afterScreenshot)
-    }
-  }, 200)
-  pendingTimers.add(timerId)
+  scheduleAfterScreenshot({ messageId })
 }
 
 // ============================================================================
