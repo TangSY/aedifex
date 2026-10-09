@@ -331,7 +331,7 @@ export function buildPlanningContext(plan: ExecutionPlan): string {
   lines.push('')
 
   if (plan.template) {
-    lines.push(`Matched template: ${plan.template.name} (${plan.template.nameCN})`)
+    lines.push(`Matched template: ${plan.template.name}`)
     lines.push(`Footprint: ${plan.template.footprint[0]}m × ${plan.template.footprint[1]}m`)
     lines.push('')
   }

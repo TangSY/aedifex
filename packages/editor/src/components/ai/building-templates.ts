@@ -297,7 +297,7 @@ export function getAvailableTemplates(): { id: string; name: string; nameCN: str
  */
 export function generatePlanFromTemplate(template: BuildingTemplate, phased = false): string {
   const lines: string[] = []
-  lines.push(`Building Plan: ${template.name} (${template.nameCN})`)
+  lines.push(`Building Plan: ${template.name}`)
   lines.push(`Footprint: ${template.footprint[0]}m x ${template.footprint[1]}m`)
   lines.push('')
 

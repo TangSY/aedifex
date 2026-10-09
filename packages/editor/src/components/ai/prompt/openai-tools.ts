@@ -19,7 +19,7 @@ const LEGACY_OPENAI_TOOLS: ChatCompletionTool[] = [
           position: { type: 'array', items: { type: 'number' }, description: 'Position in meters [x, y, z]. Y is up (usually 0 for floor items).' },
           rotationY: { type: 'number', description: 'Y-axis rotation in radians. Against-wall items should face away from wall.' },
           levelId: { type: 'string', description: 'Target level ID (from scene context). Required for multi-level buildings when targeting a level other than the currently selected one.' },
-          outdoor: { type: 'boolean', description: 'Set true ONLY when the user explicitly asks for an outdoor placement (e.g. "在房子外面", "在院子里", "outdoor", landscape items on the site). Default false — items must stay inside a zone polygon and out-of-zone positions will be clamped back inside.' },
+          outdoor: { type: 'boolean', description: 'Set true ONLY when the user explicitly asks for an outdoor placement (e.g. "outside the house", "in the yard", "outdoor", landscape items on the site). Default false — items must stay inside a zone polygon and out-of-zone positions will be clamped back inside.' },
           description: { type: 'string', description: 'Brief description of why this item was placed here.' },
         },
         required: ['catalogSlug', 'position', 'rotationY'],
@@ -53,7 +53,7 @@ const LEGACY_OPENAI_TOOLS: ChatCompletionTool[] = [
           position: { type: 'array', items: { type: 'number' }, description: 'New position in meters [x, y, z].' },
           rotationY: { type: 'number', description: 'New Y-axis rotation in radians.' },
           levelId: { type: 'string', description: 'Target level ID (from scene context). Required for multi-level buildings when targeting a level other than the currently selected one.' },
-          outdoor: { type: 'boolean', description: 'Set true ONLY when the user explicitly asks to move the item outdoors (e.g. "把桌子搬到院子里"). Default false — out-of-zone destinations are clamped back inside the zone.' },
+          outdoor: { type: 'boolean', description: 'Set true ONLY when the user explicitly asks to move the item outdoors (e.g. "move the table into the yard"). Default false — out-of-zone destinations are clamped back inside the zone.' },
           reason: { type: 'string', description: 'Brief reason for the move.' },
         },
         required: ['nodeId', 'position'],
@@ -98,7 +98,7 @@ const LEGACY_OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'update_roof_material',
-      description: '⚠️ 仅做整体上色（写 materialPreset 字段）。如需 per-part 上色（山墙面/檐口/披水板/瓦片单独），请改用 paint_slot。Change roof surface material per role: top (sheet), edge (fascia), wall (gable wall under roof). Falls back through node defaults when a role-specific material is not set. Note: roof now supports the paint-slots model via `paint_slot` with slotId="shingle" | "gable" | "fascia" | "soffit" — prefer that tool for per-part painting; this tool remains for whole-role material changes.',
+      description: '⚠️ Whole-role painting only (writes materialPreset). For per-part painting of gables, eaves, fascia or shingles, use paint_slot instead. Change roof surface material per role: top (sheet), edge (fascia), wall (gable wall under roof). Falls back through node defaults when a role-specific material is not set. Note: roof now supports the paint-slots model via `paint_slot` with slotId="shingle" | "gable" | "fascia" | "soffit" — prefer that tool for per-part painting; this tool remains for whole-role material changes.',
       parameters: {
         type: 'object',
         properties: {
@@ -415,7 +415,7 @@ const LEGACY_OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'add_elevator',
-      description: 'Create a passenger elevator core attached to a building. The shaft spans levels [fromLevelId, toLevelId] (or servedLevelIds) and the system auto-cuts the slab/ceiling openings on every served floor — DO NOT call add_cut_out for the elevator shaft. Use add_stair when the user wants a visible stairway; use add_elevator for vertical transport that crosses three or more floors or whenever the user explicitly asks for an elevator / lift / 电梯 / エレベーター.',
+      description: 'Create a passenger elevator core attached to a building. The shaft spans levels [fromLevelId, toLevelId] (or servedLevelIds) and the system auto-cuts the slab/ceiling openings on every served floor — DO NOT call add_cut_out for the elevator shaft. Use add_stair when the user wants a visible stairway; use add_elevator for vertical transport that crosses three or more floors or whenever the user explicitly asks for an elevator / lift.',
       parameters: {
         type: 'object',
         properties: {
@@ -853,7 +853,7 @@ const LEGACY_OPENAI_TOOLS: ChatCompletionTool[] = [
           kind: {
             type: 'string',
             enum: ['chimney', 'dormer', 'skylight', 'solar-panel', 'ridge-vent', 'box-vent', 'turbine-vent', 'eyebrow-vent', 'cupola', 'gutter', 'downspout'],
-            description: 'Accessory kind. chimney=砖砌烟囱, dormer=老虎窗, skylight=天窗, solar-panel=太阳能光伏板, ridge-vent=屋脊通风器, box-vent=方形通风口, turbine-vent=涡轮通风器(whirlybird), eyebrow-vent=眉形通风口, cupola=屋顶塔楼(louvered roof lantern), gutter=檐沟(rain gutter), downspout=落水管.',
+            description: 'Accessory kind. chimney=brick chimney, dormer=dormer window, skylight=roof skylight, solar-panel=photovoltaic panel, ridge-vent=roof ridge vent, box-vent=box roof vent, turbine-vent=whirlybird, eyebrow-vent=eyebrow roof vent, cupola=louvered roof lantern, gutter=rain gutter, downspout=rainwater drain pipe.',
           },
           roofSegmentId: { type: 'string', description: 'Node ID of the parent roof-segment (look up "roof-segment" entries in scene context). REQUIRED for every kind except downspout. For kind="downspout" it may be omitted — the validator derives it from the host gutter automatically and ignores any value passed here.' },
           position: { type: 'array', items: { type: 'number' }, description: 'Segment-local position [x, y, z] in meters. Y is anchored to roof surface automatically. For kind="gutter" the position is snapped to the nearest eave (X/Z pick which eave side). Ignored for kind="downspout" (mount derives from the gutter outlet).' },
@@ -878,12 +878,12 @@ const LEGACY_OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'save_room_preset',
-      description: 'Save an existing room (zone) as a reusable preset in the user\'s preset library. Use when the user says "save this room", "存为预设", "保存这个房间". The room is matched by name against the zones in the scene context. Saving is handled by the deployment backend — if presets are unavailable or the quota is full, relay the returned message to the user.',
+      description: 'Save an existing room (zone) as a reusable preset in the user\'s preset library. Use when the user says "save this room", "save as a preset". The room is matched by name against the zones in the scene context. Saving is handled by the deployment backend — if presets are unavailable or the quota is full, relay the returned message to the user.',
       parameters: {
         type: 'object',
         properties: {
-          roomName: { type: 'string', description: 'Room (zone) name to save, matched case-insensitively against zone names in the scene context (substring match allowed, e.g. "书房" matches "日式书房").' },
-          levelName: { type: 'string', description: 'Optional level name or number to narrow the search when multiple levels contain similarly-named rooms (e.g. "2", "Second Floor", "二层").' },
+          roomName: { type: 'string', description: 'Room (zone) name to save, matched case-insensitively against zone names in the scene context (substring match allowed, e.g. "Study" matches "Japanese Study").' },
+          levelName: { type: 'string', description: 'Optional level name or number to narrow the search when multiple levels contain similarly-named rooms (e.g. "2", "Second Floor").' },
         },
         required: ['roomName'],
       },
@@ -893,7 +893,7 @@ const LEGACY_OPENAI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'insert_room_preset',
-      description: 'Insert one of the user\'s saved room presets into the scene. Use when the user says "insert my X preset", "放一个我的XX预设", "插入预设". The preset is matched by name against the saved-presets list in the context — if the name does not match, ask the user instead of guessing. Insertion is handled by the deployment backend; the created nodes are selected automatically and can be undone from the AI operation log.',
+      description: 'Insert one of the user\'s saved room presets into the scene. Use when the user says "insert my X preset", "use my saved room". The preset is matched by name against the saved-presets list in the context — if the name does not match, ask the user instead of guessing. Insertion is handled by the deployment backend; the created nodes are selected automatically and can be undone from the AI operation log.',
       parameters: {
         type: 'object',
         properties: {

@@ -161,7 +161,7 @@ export function formatRoomAnalysis(analysis: RoomAnalysis): string {
   if (analysis.type === 'unknown') return ''
 
   const parts: string[] = [
-    `Room type: ${analysis.label} (${analysis.labelCN})`,
+    `Room type: ${analysis.label}`,
   ]
 
   if (analysis.missingItems.length > 0) {

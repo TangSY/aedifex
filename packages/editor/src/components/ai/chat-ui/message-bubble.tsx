@@ -8,6 +8,7 @@ import { useAIChat } from '../ai-chat-store'
 import type { ChatMessage } from '../types'
 import { BeforeAfterComparison, OperationSummary } from './operation-cards'
 import { PlacementProposalCards } from './proposal-cards'
+import { buildPlacementOptionMessage } from '../placement-option-message'
 
 // ============================================================================
 // Message Bubble
@@ -81,8 +82,7 @@ export const MessageBubble = memo(function MessageBubble({ message }: { message:
               // and a clear "do not remove" guard, the LLM may regenerate the
               // whole layout — which previously caused all existing furniture
               // to be cleared (Bug 1, QA report 2026-04-30).
-              const pos = option.position
-              const text = `Apply placement option "${option.id}: ${option.label}" using a single add_item call: catalogSlug="${option.catalogSlug}", position=[${pos[0]}, ${pos[1]}, ${pos[2]}], rotationY=${option.rotationY}. Do NOT remove, move, or modify any existing items in the scene — only add this one item.`
+              const text = buildPlacementOptionMessage(option)
               window.dispatchEvent(new CustomEvent('ai-select-option', { detail: text }))
             }}
           />

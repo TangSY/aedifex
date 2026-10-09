@@ -23,8 +23,12 @@ describe('response language prompt', () => {
     expect(prompt).toContain('For a short confirmation')
   })
 
-  it('keeps summary language tied to the last actual user instruction instead of the summarization wrapper', () => {
+  it('uses English internal summaries while preserving the actual user reply language preference', () => {
+    expect(SUMMARIZE_SYSTEM_PROMPT).toContain('Write this internal context summary in English')
+    expect(SUMMARIZE_SYSTEM_PROMPT).toContain("Preserve the user's reply language preference")
     expect(SUMMARIZE_SYSTEM_PROMPT).toContain('latest actual user instruction in the conversation')
     expect(SUMMARIZE_SYSTEM_PROMPT).toContain('not from the summarization wrapper')
+    expect(buildSystemPrompt('', '')).toContain('use the reply language preference recorded in the English summary')
+    expect(buildSystemPrompt('', '')).toContain('A generated "Apply placement option ..." instruction confirms a selection')
   })
 })

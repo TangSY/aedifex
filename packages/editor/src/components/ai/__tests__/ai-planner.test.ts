@@ -244,7 +244,7 @@ describe('buildPlanningContext', () => {
       phased: false,
     })
     expect(out).toContain('Test Villa')
-    expect(out).toContain('测试别墅')
+    expect(out).not.toContain('测试别墅')
     expect(out).toContain('12m × 10m')
     expect(out).toContain('plan body')
   })
