@@ -5,7 +5,7 @@ import { temporal } from 'zundo'
 import { create, type StateCreator, type StoreApi, type UseBoundStore } from 'zustand'
 import { toSceneMaterialRef } from '../material-library'
 import { getNodePluginId, isNodeKindEnabled, nodeRegistry } from '../registry/registry'
-import { BuildingNode } from '../schema'
+import { BuildingNode, type GeometryScriptSource } from '../schema'
 import type { Collection, CollectionId } from '../schema/collections'
 import { generateCollectionId } from '../schema/collections'
 import { compiledNodeSchema } from '../schema/compiled-node-parsers'
@@ -33,6 +33,7 @@ import { StairSegmentNode as StairSegmentNodeSchema } from '../schema/nodes/stai
 import { WindowNode as WindowNodeSchema } from '../schema/nodes/window'
 import { SceneMaterial, type SceneMaterialId } from '../schema/scene-material'
 import { type AnyNode, type AnyNodeId, AnyNode as AnyNodeSchema } from '../schema/types'
+import { DEFAULT_LEVEL_HEIGHT } from '../services/level-height'
 import { ensureSceneOpenings } from '../utils/ensure-scene-openings'
 import { migrateFloorPlates, migrateSlabSlots } from '../utils/floor-plate-migration'
 import { healSceneNodes } from '../utils/heal-scene-graph'
@@ -79,6 +80,12 @@ import {
   withDraftsRestored,
 } from './history-drafts'
 import { getHistoryDirtyNodeIds } from './history-invalidation'
+import {
+  retainSceneAnnotations,
+  withoutSceneAnnotations,
+  withoutSceneNodeAnnotations,
+  writeSceneNodeField,
+} from './scene-annotations'
 import {
   invalidatePendingHydration,
   isHydrationNormalization,
@@ -1211,53 +1218,19 @@ type UseSceneStore = UseBoundStore<StoreApi<SceneState>> & {
   temporal: StoreApi<TemporalState<SceneSnapshot>>
 }
 
-function sceneHistorySnapshotFromState(
-  state: Pick<
-    SceneState,
-    | 'nodes'
-    | 'rootNodeIds'
-    | 'collections'
-    | 'materials'
-    | 'installedPlugins'
-    | 'hasExplicitPluginInstallState'
-  >,
-): SceneSnapshot {
-  const {
-    nodes,
-    rootNodeIds,
-    collections,
-    materials,
-    installedPlugins,
-    hasExplicitPluginInstallState,
-  } = state
-  // Fresh placement nodes are renderable drafts, not document history. Excluding their
-  // entire subtree here protects both local undo and external commit subscribers. Carried
-  // drafts (history-drafts.ts) are kept out the same way.
-  const transientNodeIds = new Set<AnyNodeId>(
-    createdSceneHistoryDraftIds().filter((id) => Boolean(nodes[id])),
-  )
-  for (const node of Object.values(nodes)) {
-    const metadata = node.metadata
-    if (
-      metadata &&
-      typeof metadata === 'object' &&
-      !Array.isArray(metadata) &&
-      (metadata as Record<string, unknown>).isNew === true
-    ) {
-      transientNodeIds.add(node.id)
-    }
-  }
+type SceneDocumentParts = Pick<SceneState, 'nodes' | 'rootNodeIds' | 'collections'>
 
-  if (transientNodeIds.size === 0) {
-    return {
-      nodes: withAdoptedDraftsAsOriginal(nodes, nodes),
-      rootNodeIds,
-      collections,
-      materials,
-      installedPlugins,
-      hasExplicitPluginInstallState,
-    }
-  }
+/**
+ * `parts` without the subtrees of `draftIds`, and without the references to them (children,
+ * procedural attachments, collections, roots). Returns `parts` itself when there is nothing to drop.
+ */
+function withoutDraftSubtrees(
+  parts: SceneDocumentParts,
+  draftIds: Iterable<AnyNodeId>,
+): SceneDocumentParts {
+  const { nodes, rootNodeIds, collections } = parts
+  const transientNodeIds = new Set<AnyNodeId>([...draftIds].filter((id) => Boolean(nodes[id])))
+  if (transientNodeIds.size === 0) return parts
 
   const childIdsByParentId = new Map<AnyNodeId, Set<AnyNodeId>>()
   const addChild = (parentId: AnyNodeId, childId: AnyNodeId) => {
@@ -1281,7 +1254,7 @@ function sceneHistorySnapshotFromState(
     }
   }
 
-  const historyNodes = {} as Record<AnyNodeId, AnyNode>
+  const documentNodes = {} as Record<AnyNodeId, AnyNode>
   for (const [id, sourceNode] of Object.entries(nodes) as [AnyNodeId, AnyNode][]) {
     if (transientNodeIds.has(id)) continue
     let node = sourceNode
@@ -1295,35 +1268,94 @@ function sceneHistorySnapshotFromState(
       if (attachments) node = { ...node, attachments }
     }
     if (!('children' in node && Array.isArray(node.children))) {
-      historyNodes[id] = node
+      documentNodes[id] = node
       continue
     }
     const children = (node.children as AnyNodeId[]).filter(
       (childId) => !transientNodeIds.has(childId as AnyNodeId),
     )
-    historyNodes[id] =
+    documentNodes[id] =
       children.length === node.children.length ? node : ({ ...node, children } as AnyNode)
   }
 
-  const historyCollections = {} as Record<CollectionId, Collection>
+  const documentCollections = {} as Record<CollectionId, Collection>
   for (const [id, collection] of Object.entries(collections) as [CollectionId, Collection][]) {
     const nodeIds = collection.nodeIds.filter((nodeId) => !transientNodeIds.has(nodeId))
     if (collection.controlNodeId && transientNodeIds.has(collection.controlNodeId)) {
       const { controlNodeId: _controlNodeId, ...rest } = collection
-      historyCollections[id] = { ...rest, nodeIds }
+      documentCollections[id] = { ...rest, nodeIds }
     } else {
-      historyCollections[id] =
+      documentCollections[id] =
         nodeIds.length === collection.nodeIds.length ? collection : { ...collection, nodeIds }
     }
   }
 
   return {
-    nodes: withAdoptedDraftsAsOriginal(nodes, historyNodes),
+    nodes: documentNodes,
     rootNodeIds: rootNodeIds.filter((id) => !transientNodeIds.has(id)),
-    collections: historyCollections,
+    collections: documentCollections,
+  }
+}
+
+function isFreshPlacementNode(node: AnyNode): boolean {
+  const metadata = node.metadata
+  return (
+    !!metadata &&
+    typeof metadata === 'object' &&
+    !Array.isArray(metadata) &&
+    (metadata as Record<string, unknown>).isNew === true
+  )
+}
+
+/**
+ * Fresh placement nodes are renderable drafts, not document history. Excluding their entire
+ * subtree here protects both local undo and external commit subscribers. Carried drafts
+ * (history-drafts.ts) are kept out the same way.
+ */
+function sceneHistorySnapshotFromState(
+  state: Pick<
+    SceneState,
+    | 'nodes'
+    | 'rootNodeIds'
+    | 'collections'
+    | 'materials'
+    | 'installedPlugins'
+    | 'hasExplicitPluginInstallState'
+  >,
+): SceneSnapshot {
+  const { nodes, materials, installedPlugins, hasExplicitPluginInstallState } = state
+  const kept = withoutDraftSubtrees(state, [
+    ...createdSceneHistoryDraftIds(),
+    ...Object.values(nodes)
+      .filter(isFreshPlacementNode)
+      .map((node) => node.id),
+  ])
+  return {
+    nodes: withAdoptedDraftsAsOriginal(nodes, kept.nodes),
+    rootNodeIds: kept.rootNodeIds,
+    collections: kept.collections,
     materials,
     installedPlugins,
     hasExplicitPluginInstallState,
+  }
+}
+
+/**
+ * The current scene as every save writes it: without the drafts an interaction is carrying —
+ * created carry drafts (history-drafts.ts) and the `drafts` the caller owns — and with adopted
+ * carry drafts as they were before the carry. Never inferred from metadata: committed nodes can
+ * still carry `metadata.isNew`, so only explicitly owned drafts are left out.
+ */
+export function getSceneDocument(drafts: Iterable<AnyNodeId> = []): SceneSnapshot {
+  const state = useScene.getState()
+  const kept = withoutDraftSubtrees(state, [...createdSceneHistoryDraftIds(), ...drafts])
+  return {
+    nodes: withAdoptedDraftsAsOriginal(state.nodes, kept.nodes),
+    rootNodeIds: kept.rootNodeIds,
+    collections: kept.collections,
+    materials: state.materials,
+    installedPlugins: state.installedPlugins,
+    hasExplicitPluginInstallState: state.hasExplicitPluginInstallState,
   }
 }
 
@@ -1394,8 +1426,12 @@ function createSceneStore(config: TemporalSceneCreator): UseSceneStore {
 function runTemporalJump(target: Partial<SceneSnapshot> | undefined, restore: () => void): void {
   const draftsBefore = useScene.getState().nodes
   const restoreDrafts = () => {
-    const nodes = withDraftsRestored(draftsBefore, useScene.getState().nodes)
-    if (!nodes) return
+    const current = useScene.getState().nodes
+    const nodes = retainSceneAnnotations(
+      draftsBefore,
+      withDraftsRestored(draftsBefore, current) ?? current,
+    )
+    if (nodes === current) return
     // The carry's own state, not a new step: a tracked write here would clear redo.
     const pause = beginSceneHistoryPauseSession(useScene)
     try {
@@ -1612,7 +1648,7 @@ const useScene: UseSceneStore = createSceneStore(
           parentId: building.id,
           level: 0,
           children: [],
-          height: 2.5,
+          height: DEFAULT_LEVEL_HEIGHT,
         })
 
         // Define all nodes flat
@@ -1753,7 +1789,11 @@ const useScene: UseSceneStore = createSceneStore(
     }),
     {
       partialize: (state: SceneState) => sceneHistorySnapshotFromState(state),
-      equality: (pastState, currentState) => areSceneSnapshotsEqual(pastState, currentState),
+      equality: (pastState, currentState) =>
+        areSceneSnapshotsEqual(
+          { ...pastState, nodes: withoutSceneAnnotations(pastState.nodes) },
+          { ...currentState, nodes: withoutSceneAnnotations(currentState.nodes) },
+        ),
       onSave: (pastState, currentState) => {
         notifySceneCommit({
           origin: 'local',
@@ -1834,7 +1874,7 @@ export function acquireSceneReadOnlyLease(): () => void {
 
 export type SceneNodePatch = {
   id: AnyNodeId
-  data: Partial<AnyNode>
+  data: Partial<AnyNode> & { 'source.images'?: NonNullable<GeometryScriptSource['images']> }
   removeFields: string[]
 }
 
@@ -2021,7 +2061,10 @@ function sceneOperationPatchNextState(
       !Number.isSafeInteger(change.position) ||
       change.position < 0 ||
       siblings?.[change.position] !== id ||
-      !areScenePatchValuesEqual(current, change.node)
+      !areScenePatchValuesEqual(
+        withoutSceneNodeAnnotations(current as Record<string, unknown>),
+        withoutSceneNodeAnnotations(change.node as Record<string, unknown>),
+      )
     ) {
       return null
     }
@@ -2094,8 +2137,17 @@ function sceneOperationPatchNextState(
       return null
     }
     updateIds.add(id)
-    const candidate = { ...node, ...data } as Record<string, unknown>
-    for (const field of removeFields) delete candidate[field]
+    let candidate = { ...node } as Record<string, unknown>
+    for (const [field, value] of Object.entries(data)) {
+      const written = writeSceneNodeField(candidate, field, value, true)
+      if (!written) return null
+      candidate = written
+    }
+    for (const field of removeFields) {
+      const written = writeSceneNodeField(candidate, field, undefined, false)
+      if (!written) return null
+      candidate = written
+    }
     const validated = parseSceneOperationPatchNode(candidate)
     if (
       !validated ||
@@ -2218,6 +2270,8 @@ export type ApplySceneOperationPatchOptions = {
    * reaches this tab as a saved scene. Refused (false) mid-interaction; retry once it ends.
    */
   undoable?: boolean
+  /** Local annotation commits use the same durable host journal as authored commits. */
+  annotation?: boolean
 }
 
 export function applySceneOperationPatch(
@@ -2246,6 +2300,29 @@ export function applySceneOperationPatch(
   ) {
     return false
   }
+  if (
+    options.annotation &&
+    (options.undoable ||
+      beforeState.readOnly ||
+      !useScene.temporal.getState().isTracking ||
+      getSceneHistoryPauseDepth() > 0 ||
+      hasSceneHistoryDrafts())
+  )
+    return false
+  if (
+    options.annotation &&
+    (changes.nodeCreates.length ||
+      changes.nodeDeletes.length ||
+      changes.materialChanges.length ||
+      changes.pluginChanges?.length ||
+      changes.collectionChanges?.length ||
+      changes.pluginInstallState ||
+      changes.nodeUpdates.some(
+        ({ data, removeFields }) =>
+          removeFields.length || Object.keys(data).some((field) => field !== 'source.images'),
+      ))
+  )
+    return false
   if (sceneOperationPatchHasLiveConflict(beforeState, changes)) return false
   const next = sceneOperationPatchNextState(beforeState, changes)
   if (!next) return false
@@ -2321,7 +2398,7 @@ export function applySceneOperationPatch(
   for (const { node } of changes.nodeDeletes) currentState.clearDirty(node.id)
 
   notifySceneCommit({
-    origin: 'host',
+    origin: options.annotation ? 'local' : 'host',
     before,
     current,
   })

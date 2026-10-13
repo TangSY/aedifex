@@ -37,6 +37,7 @@ import {
   type ProceduralItemNode,
 } from '@aedifex/core/procedural-items'
 import {
+  applyWalkthroughCameraClipping,
   BVHEcctrl,
   type BVHEcctrlApi,
   CROUCH_CAPSULE,
@@ -755,6 +756,11 @@ export const FirstPersonControls = () => {
     position: [number, number, number]
     yaw: number
   } | null>(null)
+
+  useEffect(() => {
+    if (!(camera as PerspectiveCamera).isPerspectiveCamera) return
+    return applyWalkthroughCameraClipping(camera as PerspectiveCamera)
+  }, [camera])
 
   useEffect(() => {
     const previousCameraMode = useViewer.getState().cameraMode

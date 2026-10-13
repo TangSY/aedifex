@@ -12,6 +12,15 @@ beforeEach(() => {
 })
 
 describe('remote procedural design tools', () => {
+  it('rejects a cancelled session before applying a legacy patch', async () => {
+    const operations = getSceneOperations()
+    const before = operations.exportJSON()
+    const controller = new AbortController()
+    controller.abort()
+    const result = await executeRemoteMcpToolCall({ toolName: 'delete_node', args: { id: operations.getRootNodeIds()[0] }, signal: controller.signal })
+    expect(result.ok).toBe(false)
+    expect(operations.exportJSON()).toEqual(before)
+  })
   it('validates a design without modifying the scene', async () => {
     const operations = getSceneOperations()
     const before = operations.exportJSON()

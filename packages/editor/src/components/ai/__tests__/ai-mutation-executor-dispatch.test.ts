@@ -45,6 +45,7 @@ vi.mock('@aedifex/viewer', () => ({
 }))
 
 vi.mock('../ai-catalog-resolver', () => ({
+  getAllCatalogItems: vi.fn(() => []),
   resolveCatalogSlug: vi.fn((slug: string) => {
     if (slug === 'sofa-modern') {
       return {

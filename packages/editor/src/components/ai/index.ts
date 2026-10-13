@@ -38,11 +38,12 @@ export {
 export { executeRoomPresetToolCalls, isRoomPresetToolCall } from './ai-room-preset-executor'
 export { AIChatPanel } from './ai-chat-panel'
 export { useAIChat } from './ai-chat-store'
-export { resolveCatalogSlug, generateCatalogSummary } from './ai-catalog-resolver'
+export { resolveCatalogSlug, generateCatalogSummary, getAllCatalogItems } from './ai-catalog-resolver'
 export { serializeSceneContext } from './ai-scene-serializer'
 export { validateAllToolCalls, buildToolResult } from './ai-mutation-executor'
 export {
   runAgentLoop,
+  abortActiveLoop,
   confirmOperationsFromUI,
   rejectOperationsFromUI,
   answerPendingQuestion,

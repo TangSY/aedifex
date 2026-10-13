@@ -1,16 +1,18 @@
 'use client'
 
-import type { RefObject } from 'react'
+import type { CSSProperties, RefObject } from 'react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/primitives/tooltip'
 
 export function FloorplanCompassButton({
   northRotationDeg,
   onAlignNorth,
   needleRef,
+  style,
 }: {
   northRotationDeg: number
   onAlignNorth: () => void
   needleRef?: RefObject<SVGSVGElement | null>
+  style?: CSSProperties
 }) {
   return (
     <Tooltip>
@@ -18,6 +20,7 @@ export function FloorplanCompassButton({
         <button
           aria-label="Align view to north"
           className="group absolute top-14 right-4 z-30 flex h-16 w-16 items-center justify-center rounded-full border border-white/15 bg-black/55 shadow-lg backdrop-blur-md transition hover:bg-black/70 hover:shadow-xl"
+          style={style}
           onClick={(event) => {
             event.preventDefault()
             event.stopPropagation()

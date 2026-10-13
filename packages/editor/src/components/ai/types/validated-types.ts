@@ -739,7 +739,7 @@ export type ValidatedOperation =
   | ValidatedAddLineset
   | ValidatedAddLiquidLine
   | ValidatedAlignOpeningToNearest
-import type { AgentOperationOutcome, StructureOperationPlan } from '@aedifex/core/agent-operations'
+import type { AgentOperationOutcome } from '@aedifex/core/agent-operations'
 import type { SharedAgentToolName } from '../contracts/shared-agent-tools'
 import type { CompiledGeometryScript } from '@aedifex/core'
 
@@ -748,8 +748,6 @@ export interface ValidatedSharedAgentOperation {
   toolName: SharedAgentToolName
   status: 'valid' | 'invalid'
   outcome?: AgentOperationOutcome
-  structurePlan?: StructureOperationPlan
-  force?: boolean
   compiled?: CompiledGeometryScript
   errorReason?: string
 }

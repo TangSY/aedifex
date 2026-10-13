@@ -1,3 +1,5 @@
+import { type ChatContent, extractChatMessageText } from './contracts/chat-request'
+
 // ============================================================================
 // Token Estimator
 // Inspired by Claude Code's tokenCountWithEstimation (src/utils/tokens.ts)
@@ -43,13 +45,14 @@ export function estimateTokens(text: string): number {
  * Includes structural overhead per message (role markers ~4 tokens).
  */
 export function estimateMessagesTokens(
-  messages: { role: string; content: string }[],
+  messages: { role: string; content: ChatContent }[],
 ): number {
   const MESSAGE_OVERHEAD = 4 // role/separator overhead per message
   let total = 0
 
   for (const msg of messages) {
-    total += estimateTokens(msg.content) + MESSAGE_OVERHEAD
+    total += estimateTokens(extractChatMessageText(msg.content)) + MESSAGE_OVERHEAD
+    if (Array.isArray(msg.content)) total += msg.content.filter((part) => part.type === 'image_url').length * 1600
   }
 
   return total
@@ -77,7 +80,7 @@ export function getAutoCompactThreshold(_model = 'gpt-4o'): number {
  * Determine whether auto-compaction should be triggered.
  */
 export function shouldAutoCompact(
-  messages: { role: string; content: string }[],
+  messages: { role: string; content: ChatContent }[],
   model = 'gpt-4o',
 ): boolean {
   const tokenCount = estimateMessagesTokens(messages)

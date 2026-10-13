@@ -2,6 +2,7 @@ import type { CatalogProvider } from '../contracts/runtime'
 import {
   resolveCatalogSlug,
   generateCatalogSummary,
+  getAllCatalogItems,
 } from '../ai-catalog-resolver'
 
 /**
@@ -17,6 +18,7 @@ import {
  */
 export function createDefaultCatalogProvider(): CatalogProvider {
   return {
+    listAssets: getAllCatalogItems,
     resolveSlug: (slug) => resolveCatalogSlug(slug),
     generateSummary: () => generateCatalogSummary(),
   }

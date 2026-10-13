@@ -17,14 +17,28 @@ export type AllowedChatRole = (typeof ALLOWED_CHAT_ROLES)[number]
 export const AI_INPUT_LIMITS = {
   MAX_MESSAGES: 100,
   MAX_MESSAGE_CONTENT: 64 * 1024,
+  MAX_IMAGE_CONTENT: 8 * 1024 * 1024,
+  MAX_MESSAGE_PARTS: 8,
   MAX_CATALOG_SUMMARY: 64 * 1024,
   MAX_SCENE_CONTEXT: 16 * 1024,
   MAX_ROOM_PRESET_SUMMARY: 16 * 1024,
 } as const
 
+export type ChatContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string; detail?: 'auto' | 'low' | 'high' } }
+
+export type ChatContent = string | ChatContentPart[]
+
+export function extractChatMessageText(content: ChatContent): string {
+  return typeof content === 'string'
+    ? content
+    : content.map((part) => (part.type === 'text' ? part.text : '[Scene image]')).join('\n')
+}
+
 export interface ChatMessageInput {
   role: AllowedChatRole
-  content: string
+  content: ChatContent
   tool_call_id?: string
 }
 
@@ -80,6 +94,52 @@ export function describeChatRequestError(code: ChatRequestError): string {
   return CHAT_REQUEST_ERROR_MESSAGES[code]
 }
 
+export function validateChatMessageContent({
+  role,
+  content,
+}: {
+  role: string
+  content: unknown
+}): ChatRequestError | null {
+  if (typeof content === 'string') {
+    if (content.length > AI_INPUT_LIMITS.MAX_MESSAGE_CONTENT) return 'MESSAGE_TOO_LONG'
+  } else {
+    if (
+      role !== 'user' ||
+      !Array.isArray(content) ||
+      !content.length ||
+      content.length > AI_INPUT_LIMITS.MAX_MESSAGE_PARTS
+    )
+      return 'INVALID_FORMAT'
+    let textLength = 0
+    let imageLength = 0
+    for (const part of content as ChatContentPart[]) {
+      if (!part || typeof part !== 'object') return 'INVALID_FORMAT'
+      if (part.type === 'text' && typeof part.text === 'string') textLength += part.text.length
+      else if (
+        part.type === 'image_url' &&
+        part.image_url &&
+        typeof part.image_url.url === 'string'
+      ) {
+        const { url, detail } = part.image_url
+        if (url.length > AI_INPUT_LIMITS.MAX_IMAGE_CONTENT) return 'MESSAGE_TOO_LONG'
+        if (
+          !/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(url) ||
+          (detail !== undefined && !['auto', 'low', 'high'].includes(detail))
+        )
+          return 'INVALID_FORMAT'
+        imageLength += url.length
+      } else return 'INVALID_FORMAT'
+    }
+    if (
+      textLength > AI_INPUT_LIMITS.MAX_MESSAGE_CONTENT ||
+      imageLength > AI_INPUT_LIMITS.MAX_IMAGE_CONTENT
+    )
+      return 'MESSAGE_TOO_LONG'
+  }
+  return null
+}
+
 /**
  * Validate the raw JSON body of POST /api/ai/chat.
  *
@@ -90,9 +150,7 @@ export function describeChatRequestError(code: ChatRequestError): string {
  */
 export function validateChatRequest(
   body: unknown,
-):
-  | { ok: true; value: ChatRequestBody }
-  | { ok: false; error: ChatRequestError } {
+): { ok: true; value: ChatRequestBody } | { ok: false; error: ChatRequestError } {
   if (!body || typeof body !== 'object') {
     return { ok: false, error: 'INVALID_FORMAT' }
   }
@@ -106,12 +164,13 @@ export function validateChatRequest(
     return { ok: false, error: 'TOO_MANY_MESSAGES' }
   }
 
+  let requestImageLength = 0
   for (const m of messages) {
     if (!m || typeof m !== 'object') {
       return { ok: false, error: 'INVALID_FORMAT' }
     }
     const msg = m as Partial<ChatMessageInput>
-    if (typeof msg.role !== 'string' || typeof msg.content !== 'string') {
+    if (typeof msg.role !== 'string') {
       return { ok: false, error: 'INVALID_FORMAT' }
     }
     if (!ALLOWED_CHAT_ROLES.includes(msg.role as AllowedChatRole)) {
@@ -120,8 +179,13 @@ export function validateChatRequest(
     if (msg.role === 'tool' && (typeof msg.tool_call_id !== 'string' || !msg.tool_call_id)) {
       return { ok: false, error: 'INVALID_TOOL_MESSAGE' }
     }
-    if (msg.content.length > AI_INPUT_LIMITS.MAX_MESSAGE_CONTENT) {
-      return { ok: false, error: 'MESSAGE_TOO_LONG' }
+    const contentError = validateChatMessageContent({ role: msg.role, content: msg.content })
+    if (contentError) return { ok: false, error: contentError }
+    if (Array.isArray(msg.content)) {
+      for (const part of msg.content)
+        if (part.type === 'image_url') requestImageLength += part.image_url.url.length
+      if (requestImageLength > AI_INPUT_LIMITS.MAX_IMAGE_CONTENT)
+        return { ok: false, error: 'MESSAGE_TOO_LONG' }
     }
   }
 

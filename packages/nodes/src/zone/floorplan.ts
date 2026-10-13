@@ -50,7 +50,18 @@ export function buildZoneFloorplan(node: ZoneNode, ctx: GeometryContext): Floorp
       ? 0.35
       : 1
   const isRoom = node.spaceRole === 'room'
-  const fillOpacity = isRoom ? (isSelected ? 0.12 : 0.04) : isSelected ? 0.28 : 0.16
+  // On the editor canvas a pill labels every zone; the wash and drawn tags
+  // come back only while a unit's membership is being painted.
+  const drawnTags = !floorplanContext.roomLabelOverlay || !!floorplanContext.focusedUnitId
+  const fillOpacity = !drawnTags
+    ? 0
+    : isRoom
+      ? isSelected
+        ? 0.12
+        : 0.04
+      : isSelected
+        ? 0.28
+        : 0.16
 
   const children: FloorplanGeometry[] = [
     {
@@ -124,7 +135,7 @@ export function buildZoneFloorplan(node: ZoneNode, ctx: GeometryContext): Floorp
   // consistent. The anchor stays in the usable room area, outside holes.
   const [cx, cy] = polygonInteriorPoint({ polygon: ring, holes })
   const name = node.name?.trim()
-  if (isRoom) {
+  if (isRoom && drawnTags) {
     children.push(
       ...buildRoomLabels(
         node,
@@ -138,10 +149,11 @@ export function buildZoneFloorplan(node: ZoneNode, ctx: GeometryContext): Floorp
         roomFloorLift(node, ctx),
       ),
     )
-    if (floorplanContext.automaticDimensions) {
-      children.push(...buildRoomClearDimensions(node, ctx))
-    }
-  } else if (name) {
+  }
+  if (isRoom && floorplanContext.automaticDimensions) {
+    children.push(...buildRoomClearDimensions(node, ctx))
+  }
+  if (!isRoom && drawnTags && name) {
     const unitName = unit?.name.trim()
     const lines = unitName
       ? [
@@ -160,7 +172,7 @@ export function buildZoneFloorplan(node: ZoneNode, ctx: GeometryContext): Floorp
         // (0.2 plan metres ≈ readable at typical building zooms).
         fontSize: line.fontSize,
         fill: '#ffffff',
-        stroke: node.color,
+        stroke,
         strokeWidth: line.fontSize * 0.35,
         paintOrder: 'stroke',
         fontFamily: 'system-ui, -apple-system, sans-serif',

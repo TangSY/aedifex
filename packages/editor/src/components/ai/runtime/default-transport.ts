@@ -4,6 +4,7 @@ import type {
   StreamCallbacks,
 } from '../contracts/runtime'
 import type { ChatRequestBody, ChatMessageInput } from '../contracts/chat-request'
+import { extractChatMessageText } from '../contracts/chat-request'
 
 /**
  * Default ChatTransport for OSS deployments.
@@ -91,7 +92,7 @@ export function createDefaultChatTransport(
         const response = await fetch(summarizeEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages }),
+          body: JSON.stringify({ messages: messages.map((message) => ({ ...message, content: extractChatMessageText(message.content) })) }),
           signal,
         })
 

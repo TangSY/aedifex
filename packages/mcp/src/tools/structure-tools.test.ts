@@ -5,6 +5,17 @@ import { DoorNode, ItemNode, WallNode } from '@aedifex/core'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { createAedifexMcpServer } from '../server'
 
+function assertLevelChildren(bridge: SceneBridge, levelId: string): void {
+  const level = bridge.getNode(levelId)
+  if (level?.type !== 'level') throw Error('Expected level')
+  const linked = Object.values(bridge.getNodes())
+    .filter((node) => node.parentId === levelId)
+    .map((node) => node.id)
+    .sort()
+  expect([...level.children].sort()).toEqual(linked)
+  for (const id of level.children) expect(bridge.getNode(id)?.parentId).toBe(levelId)
+}
+
 describe('MCP structure adapters', () => {
   test('cut_floor_opening and remove_floor_opening round-trip room construction', async () => {
     const bridge = new SceneBridge()
@@ -44,14 +55,24 @@ describe('MCP structure adapters', () => {
       ).toBe(true)
       const summary = await call('get_level_summary', { levelId })
       expect(summary.openings).toEqual([expect.objectContaining({ id })])
+      assertLevelChildren(bridge, levelId)
+      const beforeRemoval = bridge.getNode(levelId)
+      bridge.clearHistory()
       const removed = await call('remove_floor_opening', { id })
       expect(removed.openingId).toBe(id)
       expect(bridge.getNode(id)).toBeNull()
+      assertLevelChildren(bridge, levelId)
+      expect(bridge.getNode(levelId)).not.toMatchObject({ children: expect.arrayContaining([id]) })
       expect(
         Object.values(bridge.getNodes())
           .filter((node) => node.type === 'slab')
           .some((node) => node.holeMetadata.some((entry) => entry.openingId === id)),
       ).toBe(false)
+      expect(bridge.getHistory().pastCount).toBe(1)
+      expect(bridge.undo()).toBe(1)
+      expect(bridge.getNode(id)).toMatchObject({ parentId: levelId })
+      expect(bridge.getNode(levelId)).toEqual(beforeRemoval)
+      assertLevelChildren(bridge, levelId)
     } finally {
       await client.close()
       await server.close()
@@ -196,6 +217,8 @@ describe('MCP structure adapters', () => {
       await call('merge_zones', { zoneIds: zones.map((n) => n.id) })
       const survivor = Object.values(bridge.getNodes()).find((n) => n.type === 'zone')!
       bridge.clearHistory()
+      assertLevelChildren(bridge, levelId)
+      const beforeDeletion = bridge.getNode(levelId)
       const deletion = await call('delete_zone', { zoneId: survivor.id, contents: 'keep' })
       expect(deletion.payload).toMatchObject({
         zoneId: survivor.id,
@@ -204,9 +227,12 @@ describe('MCP structure adapters', () => {
         opensZoneIds: [],
       })
       expect(Object.values(bridge.getNodes()).filter((n) => n.type === 'zone')).toHaveLength(0)
+      assertLevelChildren(bridge, levelId)
       expect(bridge.getHistory().pastCount).toBe(1)
       expect(bridge.undo()).toBe(1)
       expect(bridge.getNode(survivor.id)).toBeDefined()
+      expect(bridge.getNode(levelId)).toEqual(beforeDeletion)
+      assertLevelChildren(bridge, levelId)
       const points: [number, number][] = [
         [-2, -2],
         [10, -2],

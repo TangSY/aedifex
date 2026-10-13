@@ -1,5 +1,11 @@
 import { timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
+import {
+  allowsUnauthenticatedLoopback,
+  isLoopbackRequest,
+  resolveAuthMode,
+  sessionPrincipal,
+} from './self-host-auth'
 
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 120
 const WINDOW_MS = 60_000
@@ -62,19 +68,36 @@ function validateOrigin(request: Request): NextResponse | null {
   return sceneApiJson(request, { error: 'origin_not_allowed' }, { status: 403 })
 }
 
+/**
+ * Who may call the scene API: the signed-in admin (session cookie), an agent
+ * holding `AEDIFEX_SCENE_API_TOKEN`, or anyone on a loopback host when no
+ * token is configured. A network host with nothing configured answers 503
+ * so a misconfigured deployment is loud rather than open.
+ */
 function validateAuth(request: Request): NextResponse | null {
+  if (sessionPrincipal(request)) return null
+
   const token = process.env.AEDIFEX_SCENE_API_TOKEN
-  if (!token) {
-    if (allowsUnauthenticatedLoopback() && isLoopbackRequest(request)) return null
-    return sceneApiJson(request, { error: 'scene_api_token_required' }, { status: 503 })
+  if (token) {
+    const supplied = bearerToken(request) ?? request.headers.get('x-pascal-scene-token')
+    if (supplied && safeEqual(supplied, token)) return null
+    return sceneApiJson(request, { error: 'unauthorized' }, { status: 401 })
   }
 
-  const supplied = bearerToken(request) ?? request.headers.get('x-pascal-scene-token')
-  if (supplied && safeEqual(supplied, token)) return null
-  return sceneApiJson(request, { error: 'unauthorized' }, { status: 401 })
+  const mode = resolveAuthMode(request)
+  if (
+    mode === 'open' &&
+    (process.env.AEDIFEX_AUTH === 'proxy' ||
+      (allowsUnauthenticatedLoopback() && isLoopbackRequest(request)))
+  )
+    return null
+  if (mode === 'password') {
+    return sceneApiJson(request, { error: 'unauthorized' }, { status: 401 })
+  }
+  return sceneApiJson(request, { error: 'scene_api_token_required' }, { status: 503 })
 }
 
-function validateRateLimit(request: Request): NextResponse | null {
+export function validateRateLimit(request: Request): NextResponse | null {
   const limit = rateLimitPerMinute()
   if (limit <= 0) return null
 
@@ -123,16 +146,10 @@ function clientIp(request: Request): string {
 }
 
 function isOriginAllowed(request: Request, origin: string): boolean {
-  if (isSameOrigin(request, origin)) return true
   const parsed = parseUrl(origin)
-  if (!parsed) return false
+  if (!parsed || parsed.pathname !== '/' || parsed.search || parsed.hash) return false
+  if (isSameOrigin(request, parsed)) return true
   return configuredOrigins().has(normalizeOrigin(parsed))
-}
-
-function allowsUnauthenticatedLoopback(): boolean {
-  if (process.env.NODE_ENV !== 'production') return true
-  const value = process.env.AEDIFEX_SCENE_API_ALLOW_LOOPBACK_WITHOUT_TOKEN
-  return value === '1' || value?.toLowerCase() === 'true'
 }
 
 function configuredOrigins(): Set<string> {
@@ -147,26 +164,32 @@ function configuredOrigins(): Set<string> {
   )
 }
 
-function isSameOrigin(request: Request, origin: string): boolean {
-  const parsedOrigin = parseUrl(origin)
-  if (!parsedOrigin) return false
-  const requestUrl = new URL(request.url)
-  return normalizeOrigin(parsedOrigin) === normalizeOrigin(requestUrl)
+function isSameOrigin(request: Request, origin: URL): boolean {
+  const target = sceneApiRequestOrigin(request)
+  return target !== null && normalizeOrigin(origin) === normalizeOrigin(target)
 }
 
-function isLoopbackRequest(request: Request): boolean {
-  const host = request.headers.get('host') ?? new URL(request.url).host
-  return isLoopbackHostname(stripPort(host))
-}
-
-function isLoopbackHostname(hostname: string): boolean {
-  const h = hostname.toLowerCase()
-  return h === 'localhost' || h.endsWith('.localhost') || h === '127.0.0.1' || h === '::1'
+/**
+ * NextURL normalizes literal loopback addresses to localhost. The browser's origin is instead
+ * the original HTTP Host. Compare that exact authority (including port), never all loopback
+ * aliases or untrusted forwarding headers. A configured public URL is authoritative for proxies.
+ */
+function sceneApiRequestOrigin(request: Request): URL | null {
+  const configured = process.env.AEDIFEX_PUBLIC_URL?.trim()
+  if (configured) return parseUrl(configured)
+  const requestUrl = parseUrl(request.url)
+  if (!requestUrl) return null
+  const host = request.headers.get('host')
+  if (host === null) return requestUrl
+  if (!/^(?:\[[0-9a-f:.]+\]|[a-z0-9.-]+)(?::[0-9]+)?$/i.test(host)) return null
+  return parseUrl(`${requestUrl.protocol}//${host}`)
 }
 
 function parseUrl(value: string): URL | null {
   try {
-    return new URL(value)
+    const url = new URL(value)
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return null
+    return url
   } catch {
     return null
   }
@@ -174,12 +197,4 @@ function parseUrl(value: string): URL | null {
 
 function normalizeOrigin(url: URL): string {
   return `${url.protocol}//${url.host}`.toLowerCase()
-}
-
-function stripPort(host: string): string {
-  if (host.startsWith('[')) {
-    const end = host.indexOf(']')
-    return end === -1 ? host : host.slice(1, end)
-  }
-  return host.split(':')[0] ?? host
 }

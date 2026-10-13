@@ -1,4 +1,5 @@
-import type { AnyNode, AnyNodeId, Collection } from '@aedifex/core'
+import type { AnyNode, AnyNodeId, Collection, SceneMaterial, SceneMaterialId } from '@aedifex/core'
+import type { ChatContent, ChatContentPart } from '../contracts/chat-request'
 import type { AIToolCall } from './tool-call-types'
 import type { ValidatedOperation } from './validated-types'
 import type { SceneContext } from './scene-types'
@@ -43,6 +44,7 @@ export interface AIOperationLog {
   /** Parent mapping for removed nodes (for undo: re-create with correct parent) */
   removedNodes: { node: AnyNode; parentId: AnyNodeId }[]
   previousCollections?: Record<string, Collection>
+  previousMaterials?: Record<SceneMaterialId, SceneMaterial>
 }
 
 // ============================================================================
@@ -88,6 +90,8 @@ export interface ToolResult {
     /** IDs of nodes removed by this operation (so the LLM doesn't re-issue deletes for already-gone ids) */
     removedNodeIds?: string[]
     results?: Record<string, unknown>[]
+    images?: ChatContentPart[][]
+    sceneChanged?: boolean
   }
 }
 
@@ -100,7 +104,7 @@ export type AgentLoopState = 'idle' | 'running' | 'paused' | 'complete'
 /** Message format for the agentic loop (supports tool_result role) */
 export interface AgentMessage {
   role: 'user' | 'assistant' | 'tool'
-  content: string
+  content: ChatContent
   /** Tool call ID (required for tool role messages) */
   tool_call_id?: string
 }

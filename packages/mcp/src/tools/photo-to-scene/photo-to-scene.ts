@@ -1,15 +1,9 @@
-import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
-import type { AnyNodeId, AnyNode as AnyNodeT } from '@aedifex/core/schema'
-import {
-  AnyNode,
-  BuildingNode,
-  LevelNode,
-  SiteNode,
-  WallNode,
-  ZoneNode,
-} from '@aedifex/core/schema'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
+import { newZone } from '@aedifex/core'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
+import type { AnyNodeId, AnyNode as AnyNodeT } from '@aedifex/core/schema'
+import { AnyNode, BuildingNode, LevelNode, SiteNode, WallNode } from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { SceneOperations } from '../../operations'
 import { DESTRUCTIVE_OPEN_WORLD_TOOL_ANNOTATIONS } from '../annotations'
@@ -311,7 +305,7 @@ function buildSceneGraphFromVision(
   for (let i = 0; i < vision.rooms.length; i++) {
     const r = vision.rooms[i]!
     try {
-      const zone = ZoneNode.parse({
+      const zone = newZone({
         name: r.name,
         polygon: r.polygon,
       })

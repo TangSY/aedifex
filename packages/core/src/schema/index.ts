@@ -30,15 +30,22 @@ export {
 // Cut intents (F5b)
 export { CutIntent, CutShape } from './cut'
 export {
+  GeometryArtifactMetadata,
+  GeometryReuseFields,
+  GeometrySourceMeta,
+} from './geometry-metadata'
+export {
   type CompiledGeometryScript,
   GEOMETRY_MANIFEST_MAX_BYTES,
   GEOMETRY_SCRIPT_MAX_BYTES,
-  GEOMETRY_SCRIPT_MIME_TYPE,
+  GEOMETRY_SCRIPT_MIME_TYPES,
   GeometryArtifactManifest,
+  GeometryScriptLanguage,
   GeometryScriptMount,
   GeometryScriptParamSpec,
   GeometryScriptParamValue,
   GeometryScriptSource,
+  isGeometryScriptMimeType,
 } from './geometry-source'
 export type {
   MaterialMapProperties,
@@ -362,6 +369,7 @@ export { SpawnNode } from './nodes/spawn'
 export type { StairSurfaceMaterialRole, StairSurfaceMaterialSpec } from './nodes/stair'
 export {
   getEffectiveStairSurfaceMaterial,
+  StairDesignTargets,
   StairNode,
   StairRailingMode,
   StairRailingStyle,
@@ -369,6 +377,7 @@ export {
   StairTopLandingMode,
   StairType,
 } from './nodes/stair'
+export { StairConstruction } from './nodes/stair-construction'
 export { AttachmentSide, StairSegmentNode, StairSegmentType } from './nodes/stair-segment'
 export { StructuralGridNode } from './nodes/structural-grid'
 export { SurfaceHoleMetadata } from './nodes/surface-hole-metadata'

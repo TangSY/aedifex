@@ -1,7 +1,13 @@
-import { type AddColumnInput, addColumn, columnScriptParams } from '@aedifex/core/agent-operations'
-import { addColumnTool, isAgentRefusal, refuse } from '@aedifex/core/agent-tools'
-import type { AnyNode } from '@aedifex/core/schema'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { isScriptedNode, scriptedObjectMeta } from '@aedifex/core'
+import {
+  type AddColumnInput,
+  addColumn,
+  columnScriptParams,
+  editedScriptLanguage,
+} from '@aedifex/core/agent-operations'
+import { addColumnTool, isAgentRefusal, refuse } from '@aedifex/core/agent-tools'
+import { type AnyNode, GeometryReuseFields } from '@aedifex/core/schema'
 import type { SceneOperations } from '../operations'
 import {
   assertGeometrySceneCurrent,
@@ -39,7 +45,14 @@ export function registerAddColumn(
           const scene = bridge.getActiveScene()
           if (!scene) refuse('no_active_scene', 'Open or save a scene first.')
           const code = input.code ?? (await readScript(host, scene.id, bridge, input.nodeId!))
-          compiled = await compileAndStore(host, scene.id, code, params, 'column')
+          const language = editedScriptLanguage(previous, input)
+          compiled = await compileAndStore(host, scene.id, { code, language, params }, 'column', {
+            nodeId: input.nodeId,
+            metadata: {
+              ...(isScriptedNode(previous) ? scriptedObjectMeta(previous) : {}),
+              ...GeometryReuseFields.parse(input),
+            },
+          })
           assertGeometrySceneCurrent({ bridge, sceneId: scene.id })
         }
         const outcome = addColumn(nodes, { ...input, compiled }, { activeLevelId: null })

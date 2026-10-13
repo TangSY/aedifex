@@ -20,6 +20,8 @@ https://github.com/user-attachments/assets/6c819726-65f4-45c6-903e-fa5c364a6340
 
 ### Structure & Layout
 
+- **Detailed stairs** — Winder steps, construction details and coordinated railings.
+
 - **Wall System** — Draw walls with automatic mitering, adjustable thickness and height. Walls snap to a 0.5m grid for precision.
 - **Doors & Windows** — Place doors and windows on walls with configurable dimensions, swing direction, and hinge side.
 - **Zones** — Rooms are auto-detected from wall boundaries. Zones display area, shape analysis, and spatial metadata.
@@ -41,6 +43,8 @@ https://github.com/user-attachments/assets/6c819726-65f4-45c6-903e-fa5c364a6340
 - **All Node Types** — Apply materials to walls, slabs, doors, windows, ceilings, and roofs.
 
 ### Viewing & Navigation
+
+- **Views** — Keep 3D, 2D and plugin views in one or two panes, with persistent layouts and sidebar preferences.
 
 - **Street View** — First-person walkthrough mode. WASD to move, mouse to look, Q/E to float. Explore your designs from inside.
 - **Dark / Light Theme** — Toggle between dark and light viewport themes.
@@ -240,3 +244,9 @@ Aedifex is built upon [Pascal Editor](https://github.com/pascalorg/editor) by Pa
 ## License
 
 [MIT](LICENSE)
+
+## Self-hosting and authored geometry
+
+See [SETUP.md](SETUP.md) for password-protected self-hosting and runtime URL configuration. Container builds belong in CI or a dedicated build environment.
+
+Authored geometry supports Three.js and Blender bpy source formats. Python compilation is not enabled by default: a host must explicitly provide a Blender builder. Stored artifacts can render without executing their source.

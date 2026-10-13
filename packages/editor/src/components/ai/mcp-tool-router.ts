@@ -34,6 +34,8 @@ export { SUPPORTED_REMOTE_MCP_TOOL_NAMES } from './contracts/remote-tools'
 export interface RemoteMcpToolCall {
   toolName: string
   args: Record<string, unknown>
+  signal?: AbortSignal
+  assertCurrent?: () => void
 }
 
 export interface RemoteMcpToolResult {
@@ -48,8 +50,10 @@ export async function executeRemoteMcpToolCall(
   call: RemoteMcpToolCall,
 ): Promise<RemoteMcpToolResult> {
   try {
+    if (call.signal?.aborted) throw new DOMException('MCP session ended', 'AbortError')
+    call.assertCurrent?.()
     if (isSharedAgentToolName(call.toolName)) {
-      const { result } = await runSharedAgentTool({ name: call.toolName, input: call.args })
+      const { result } = await runSharedAgentTool({ name: call.toolName, input: call.args, signal: call.signal, assertSessionCurrent: call.assertCurrent })
       return { ok: true, result }
     }
     const ops = getSceneOperations()

@@ -74,6 +74,10 @@ export function WebXRFeatureConsumer({
   return children(useContext(WebXRFeatureContext))
 }
 
+export function useWebXRFeature() {
+  return useContext(WebXRFeatureContext)
+}
+
 export function useWebXRInstalled() {
   return useScene((state) => state.installedPlugins.includes(WEBXR_PLUGIN_ID))
 }

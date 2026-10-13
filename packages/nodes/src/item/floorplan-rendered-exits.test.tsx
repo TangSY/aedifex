@@ -24,7 +24,7 @@ import {
   type Recipe,
   transformPoint,
 } from '@aedifex/core/procedural-items'
-import { useEditor, useInteractionScope } from '@aedifex/editor'
+import { sceneLayout, useEditor, useInteractionScope } from '@aedifex/editor'
 import { NodeRenderer, useViewer, WallSystem } from '@aedifex/viewer'
 import { extend, useFrame } from '@react-three/fiber'
 import { act, create } from '@react-three/test-renderer'
@@ -145,7 +145,7 @@ beforeEach(() => {
   })
   useInteractionScope.getState().end()
   useEditor.setState({
-    viewMode: '2d',
+    viewLayouts: { edit: sceneLayout('2d') },
     mode: 'select',
     tool: 'item',
     movingNodeOrigin: '2d',

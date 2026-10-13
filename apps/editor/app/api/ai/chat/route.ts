@@ -3,6 +3,7 @@ import { buildSystemPrompt, OPENAI_TOOLS } from '@aedifex/editor/ai/prompt'
 import {
   validateChatRequest,
   describeChatRequestError,
+  extractChatMessageText,
 } from '@aedifex/editor/ai/contracts'
 import {
   AI_API_KEY,
@@ -61,14 +62,12 @@ export async function POST(request: NextRequest) {
             if (m.role === 'tool' && m.tool_call_id) {
               return {
                 role: 'tool' as const,
-                content: m.content,
+                content: extractChatMessageText(m.content),
                 tool_call_id: m.tool_call_id,
               }
             }
-            return {
-              role: m.role as 'user' | 'assistant',
-              content: m.content,
-            }
+            if (m.role === 'user') return { role: 'user' as const, content: m.content }
+            return { role: 'assistant' as const, content: extractChatMessageText(m.content) }
           }),
         ],
       },

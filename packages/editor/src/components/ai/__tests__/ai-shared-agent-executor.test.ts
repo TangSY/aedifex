@@ -11,7 +11,7 @@ import { useViewer } from '@aedifex/viewer'
 import { z } from 'zod'
 import { mezzanineFixture } from '../../../../../core/src/lib/__fixtures__/mezzanine'
 import { runSharedAgentTool } from '../ai-shared-agent-executor'
-import { SHARED_OPENAI_TOOLS, SUPPORTED_REMOTE_MCP_TOOL_NAMES } from '../contracts'
+import { getSharedOpenAITools, SHARED_OPENAI_TOOLS, SUPPORTED_REMOTE_MCP_TOOL_NAMES } from '../contracts'
 import { OPENAI_TOOLS } from '../prompt/openai-tools'
 import { executeRemoteMcpToolCall } from '../mcp-tool-router'
 import { getSceneOperations, resetSceneOperationsForTesting } from '../scene-operations-adapter'
@@ -19,6 +19,7 @@ import { getSceneOperations, resetSceneOperationsForTesting } from '../scene-ope
 const compiler = vi.hoisted(() => vi.fn())
 vi.mock('../../../lib/geometry-script/author', () => ({
   compileAndStoreGeometryScript: compiler,
+  getGeometryScriptCapabilities: () => ({ languages: ['three'] }),
   storedScript: vi.fn(async () => 'export default function build() {}'),
 }))
 
@@ -63,8 +64,9 @@ afterEach(() => {
 
 describe('shared agent tool contracts', () => {
   it('publishes every shared contract exactly once, with its input schema and description', () => {
+    const allTools = getSharedOpenAITools({ languages: ['three', 'bpy'], clearScene: true })
     for (const contract of AGENT_TOOL_CONTRACTS) {
-      const tools = OPENAI_TOOLS.filter((tool) => tool.type === 'function' && tool.function.name === contract.name)
+      const tools = allTools.filter((tool) => tool.type === 'function' && tool.function.name === contract.name)
       expect(tools).toHaveLength(1)
       const tool = tools[0]!
       if (tool.type !== 'function') throw Error('Expected function')
@@ -72,11 +74,70 @@ describe('shared agent tool contracts', () => {
       expect(tool.function.parameters).toEqual(z.toJSONSchema(z.object(contract.input), { io: 'input' }))
       expect(SUPPORTED_REMOTE_MCP_TOOL_NAMES).toContain(contract.name)
     }
-    expect(SHARED_OPENAI_TOOLS).toHaveLength(AGENT_TOOL_CONTRACTS.length)
+    expect(SHARED_OPENAI_TOOLS).toHaveLength(AGENT_TOOL_CONTRACTS.length - 1)
+    expect(SHARED_OPENAI_TOOLS.some((tool) => tool.type === 'function' && tool.function.name === 'clear_scene')).toBe(false)
+  })
+
+  it('offers only three execution by default and omits the Blender build instructions', () => {
+    for (const tool of SHARED_OPENAI_TOOLS) {
+      if (tool.type !== 'function') continue
+      expect(tool.function.description).not.toContain('Blender instead')
+      const properties = tool.function.parameters?.properties as Record<string, unknown> | undefined
+      if (properties?.language) expect(properties.language).toMatchObject({ const: 'three' })
+    }
   })
 })
 
 describe('shared agent browser executor', () => {
+  it('refuses explicit Python execution before compiling or changing the scene', async () => {
+    const before = useScene.getState().nodes
+    await expect(runSharedAgentTool({ name: 'add_object', input: { name: 'Carved trim', category: 'trim', reason: 'No matching trim type', code: 'import bpy', language: 'bpy' } })).rejects.toMatchObject({ code: 'scripts_unavailable' })
+    expect(compiler).not.toHaveBeenCalled()
+    expect(useScene.getState().nodes).toBe(before)
+  })
+
+  it('reads saved Python source with its language while refusing params-only execution', async () => {
+    const created = await runSharedAgentTool({ name: 'add_object', input: { name: 'Trim object', category: 'trim', reason: 'No matching trim type', code: 'floor module' } })
+    const id = created.result.nodeId as `item_${string}`
+    const node = useScene.getState().nodes[id]!
+    if (node.type !== 'item' || !node.source) throw new Error('Expected an authored item')
+    useScene.setState({ nodes: { ...useScene.getState().nodes, [id]: { ...node, source: { ...node.source, language: 'bpy' } } } })
+    expect((await runSharedAgentTool({ name: 'get_source', input: { nodeId: id } })).result).toMatchObject({ nodeId: id, language: 'bpy', code: expect.any(String) })
+    compiler.mockClear()
+    const before = useScene.getState().nodes
+    await expect(runSharedAgentTool({ name: 'add_object', input: { name: 'Trim object', category: 'trim', nodeId: id, params: { height: 3 } } })).rejects.toMatchObject({ code: 'scripts_unavailable' })
+    expect(compiler).not.toHaveBeenCalled()
+    expect(useScene.getState().nodes).toBe(before)
+  })
+
+  it('keeps clear_scene unavailable without a host reset-and-save path', async () => {
+    const before = useScene.getState().nodes
+    await expect(runSharedAgentTool({ name: 'clear_scene', input: { reason: 'Start over' } })).rejects.toMatchObject({ code: 'clear_scene_unavailable' })
+    expect(useScene.getState().nodes).toBe(before)
+  })
+
+  it('writes a native paint material with its nodes in one step and restores it on undo', async () => {
+    const created = await runSharedAgentTool({ name: 'add_column', input: { x: 1, z: 2 } })
+    const id = created.result.nodeId as `column_${string}`
+    const before = useScene.getState().nodes[id]
+    getSceneOperations().clearHistory()
+    const painted = await runSharedAgentTool({ name: 'paint', input: { targets: [id], material: { properties: { color: '#aabbcc', roughness: 0.4, metalness: 0.2 } } } })
+    expect(painted.result).toMatchObject({ ok: true, materialId: expect.any(String) })
+    expect(useScene.getState().materials[painted.result.materialId as `sm_${string}`]).toBeDefined()
+    expect(getSceneOperations().getHistory().pastCount).toBe(1)
+    getSceneOperations().undo()
+    expect(useScene.getState().nodes[id]).toEqual(before)
+    expect(useScene.getState().materials[painted.result.materialId as `sm_${string}`]).toBeUndefined()
+  })
+
+  it('returns the reconciled room construction and removes it in one undo', async () => {
+    const before = useScene.getState().nodes
+    const created = await runSharedAgentTool({ name: 'create_room', input: { level: levelId, name: 'Study', polygon: [[0, 0], [4, 0], [4, 3], [0, 3]] } })
+    expect(created.result).toMatchObject({ zoneId: expect.any(String), slabId: expect.any(String), ceilingId: expect.any(String) })
+    expect(getSceneOperations().getHistory().pastCount).toBe(1)
+    getSceneOperations().undo()
+    expect(useScene.getState().nodes).toEqual(before)
+  })
   it('adds a native column using the shared measurement parser and undoes in one step', async () => {
     const { result } = await runSharedAgentTool({ name: 'add_column', input: { x: 1, z: 2, height: '180cm' } })
     const id = result.nodeId as `column_${string}`
@@ -88,12 +149,12 @@ describe('shared agent browser executor', () => {
   })
 
   it('builds an object, then reads its source and rebuilds it while keeping identity and paint', async () => {
-    const created = await runSharedAgentTool({ name: 'add_object', input: { code: 'floor module', position: [2, 0, 3] } })
+    const created = await runSharedAgentTool({ name: 'add_object', input: { name: 'Trim object', category: 'trim', reason: 'No matching trim type', code: 'floor module', position: [2, 0, 3] } })
     const id = created.result.nodeId as `item_${string}`
     useScene.getState().updateNode(id, { slots: { trim: 'library:preset-white' } })
     const source = await runSharedAgentTool({ name: 'get_source', input: { nodeId: id } })
     expect(source.result).toMatchObject({ nodeId: id, type: 'item', code: expect.any(String) })
-    await runSharedAgentTool({ name: 'add_object', input: { nodeId: id, params: { height: 3 } } })
+    await runSharedAgentTool({ name: 'add_object', input: { name: 'Trim object', category: 'trim', nodeId: id, params: { height: 3 } } })
     expect(useScene.getState().nodes[id]).toMatchObject({
       id, position: [2, 0, 3], slots: { trim: 'library:preset-white' },
       source: { params: { height: 3 } },
@@ -101,7 +162,7 @@ describe('shared agent browser executor', () => {
   })
 
   it('queries typed parts without changing the scene', async () => {
-    await runSharedAgentTool({ name: 'add_object', input: { code: 'floor module' } })
+    await runSharedAgentTool({ name: 'add_object', input: { name: 'Trim object', category: 'trim', reason: 'No matching trim type', code: 'floor module' } })
     const before = useScene.getState().nodes
     const found = await runSharedAgentTool({ name: 'find_by_type', input: { type: 'column' } })
     expect(found.result.count).toBe(1)
@@ -148,7 +209,7 @@ describe('shared agent browser executor', () => {
     const before = useScene.getState().nodes
     await expect(runSharedAgentTool({ name: 'create_mezzanine', input: {
       hostZoneId: room.id, polygon: [[-1, 1], [3, 1], [3, 3], [-1, 3]],
-    } })).rejects.toMatchObject({ code: 'structure_conflict' })
+    } })).resolves.toMatchObject({ result: { conflicts: expect.any(Array) } })
     expect(useScene.getState().nodes).toBe(before)
   })
 
@@ -173,7 +234,7 @@ describe('shared agent browser executor', () => {
 
   it('rejects mutations in a read-only scene while allowing reads', async () => {
     useScene.setState({ readOnly: true })
-    await expect(runSharedAgentTool({ name: 'add_object', input: { code: 'floor module' } })).rejects.toMatchObject({ code: 'read_only' })
+    await expect(runSharedAgentTool({ name: 'add_object', input: { name: 'Trim object', category: 'trim', reason: 'No matching trim type', code: 'floor module' } })).rejects.toMatchObject({ code: 'read_only' })
     expect(compiler).not.toHaveBeenCalled()
     await expect(runSharedAgentTool({ name: 'list_levels', input: {} })).resolves.toHaveProperty('result')
   })
@@ -183,7 +244,7 @@ describe('shared agent browser executor', () => {
       useScene.setState({ nodes: {} })
       return compiled()
     })
-    await expect(runSharedAgentTool({ name: 'add_object', input: { code: 'floor module' } })).rejects.toMatchObject({ code: 'scene_changed' })
+    await expect(runSharedAgentTool({ name: 'add_object', input: { name: 'Trim object', category: 'trim', reason: 'No matching trim type', code: 'floor module' } })).rejects.toMatchObject({ code: 'scene_changed' })
     expect(useScene.getState().nodes).toEqual({})
   })
 
@@ -193,12 +254,34 @@ describe('shared agent browser executor', () => {
       configureArtifactStore({ url: () => null, put: async () => {}, text: async () => null })
       return compiled()
     })
-    await expect(runSharedAgentTool({ name: 'add_object', input: { code: 'floor module' } })).rejects.toMatchObject({ code: 'scene_changed' })
+    await expect(runSharedAgentTool({ name: 'add_object', input: { name: 'Trim object', category: 'trim', reason: 'No matching trim type', code: 'floor module' } })).rejects.toMatchObject({ code: 'scene_changed' })
     expect(useScene.getState().nodes).toBe(before)
   })
 
+  it.each(['abort', 'scope'] as const)('refuses a remote compiled result when its MCP session ends by %s', async (end) => {
+    const before = useScene.getState().nodes
+    const controller = new AbortController()
+    let current = true
+    compiler.mockImplementation(async () => {
+      if (end === 'abort') controller.abort()
+      else current = false
+      return compiled()
+    })
+    const result = await executeRemoteMcpToolCall({
+      toolName: 'add_object',
+      args: { name: 'Trim object', category: 'trim', reason: 'No matching trim type', code: 'floor module' },
+      signal: controller.signal,
+      assertCurrent: () => { if (!current) throw new DOMException('MCP session changed', 'AbortError') },
+    })
+    expect(result.ok).toBe(false)
+    expect(result.error).toMatch(/aborted|changed/)
+    expect(compiler).toHaveBeenCalledOnce()
+    expect(useScene.getState().nodes).toBe(before)
+    expect(getSceneOperations().getHistory().pastCount).toBe(0)
+  })
+
   it('allows the compiled rebuild entry while raw patches cannot replace script-owned fields', async () => {
-    const created = await runSharedAgentTool({ name: 'add_object', input: { code: 'floor module' } })
+    const created = await runSharedAgentTool({ name: 'add_object', input: { name: 'Trim object', category: 'trim', reason: 'No matching trim type', code: 'floor module' } })
     const id = created.result.nodeId as `item_${string}`
     const before = useScene.getState().nodes
     const previous = before[id] as { source?: unknown }

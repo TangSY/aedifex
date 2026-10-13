@@ -6,4 +6,6 @@ export {
   createAedifexMcpServer,
 } from './server'
 export type { GeometryScriptHost, ScriptedKind } from './tools/add-object'
+export { type AssetCatalog, builtInCatalog } from './tools/asset-catalog'
+export type { SceneViewCapture, SceneViewHost } from './tools/view-scene'
 export { version } from './version'

@@ -1,3 +1,4 @@
+import type { ChatContent } from './contracts/chat-request'
 import { isSharedAgentToolName } from './contracts/shared-agent-tools'
 import type { AIToolCall } from './types'
 
@@ -38,7 +39,7 @@ const STREAM_RETRY_DELAY_MS = 1000
  */
 export function streamChat(
   request: {
-    messages: { role: string; content: string; tool_call_id?: string }[]
+    messages: { role: string; content: ChatContent; tool_call_id?: string }[]
     catalogSummary: string
     sceneContext: string
   },
@@ -57,7 +58,7 @@ export function streamChat(
 
 async function processStreamWithRetry(
   request: {
-    messages: { role: string; content: string; tool_call_id?: string }[]
+    messages: { role: string; content: ChatContent; tool_call_id?: string }[]
     catalogSummary: string
     sceneContext: string
   },
@@ -85,7 +86,7 @@ async function processStreamWithRetry(
 
 async function processStream(
   request: {
-    messages: { role: string; content: string; tool_call_id?: string }[]
+    messages: { role: string; content: ChatContent; tool_call_id?: string }[]
     catalogSummary: string
     sceneContext: string
   },

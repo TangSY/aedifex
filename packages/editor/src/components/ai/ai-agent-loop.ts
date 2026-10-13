@@ -3,7 +3,7 @@ import { captureScreenshot, useViewer } from '@aedifex/viewer'
 import { generateExecutionPlan, buildPlanningContext } from './ai-planner'
 import { useAIChat } from './ai-chat-store'
 import { buildToolResult, validateAllToolCalls } from './ai-mutation-executor'
-import { executeSharedAgentToolCalls, isSharedAgentToolCall } from './ai-shared-agent-executor'
+import { executeSharedAgentToolCalls, isSharedAgentMutation, isSharedAgentToolCall } from './ai-shared-agent-executor'
 import {
   applyGhostPreview,
   clearGhostPreview,
@@ -22,6 +22,7 @@ import {
   isRoomPresetToolCall,
 } from './ai-room-preset-executor'
 import type { AllowedChatRole, ChatMessageInput } from './contracts/chat-request'
+import { AI_INPUT_LIMITS, extractChatMessageText } from './contracts/chat-request'
 import { estimateMessagesTokens } from './ai-token-estimator'
 import type { AnyNodeId } from '@aedifex/core'
 import type {
@@ -60,6 +61,7 @@ export function abortActiveLoop(): void {
   if (activeLoopController) {
     activeLoopController.abort()
     activeLoopController = null
+    useAIChat.setState({ isAIProcessing: false, isStreaming: false, streamingContent: '', pendingQuestion: null, loopState: 'idle' })
   }
   for (const screenshot of pendingScreenshots) screenshot.cancel()
 }
@@ -438,16 +440,36 @@ export async function runAgentLoop({
 
       const sharedCalls = toolCalls.filter(isSharedAgentToolCall)
       if (sharedCalls.length > 0) {
+        if (sharedCalls.some((call) => isSharedAgentMutation(call.tool))) {
+          if (!beforeScreenshotUrl) beforeScreenshotUrl = await captureScreenshot()
+          if (beforeScreenshotUrl && lastMessageId) useAIChat.getState().setScreenshotBefore(lastMessageId, beforeScreenshotUrl)
+        }
         const result = await executeSharedAgentToolCalls({ calls: sharedCalls, messageId: lastMessageId, signal })
+        if (result.details.sceneChanged && lastMessageId) scheduleAfterScreenshot({ messageId: lastMessageId, signal })
         totalToolCalls += sharedCalls.length
         invalidateSceneCache()
+        const { images, ...details } = result.details
         conversationMessages.push({ role: 'assistant', content: text || '' })
         for (let i = 0; i < toolCalls.length; i++) {
           if (!isSharedAgentToolCall(toolCalls[i]!)) continue
           conversationMessages.push({
             role: 'tool', tool_call_id: toolCallIds?.[i] ?? `call_${i}`,
-            content: JSON.stringify(result),
+            content: JSON.stringify({ ...result, details }),
           })
+        }
+        for (const content of images ?? []) {
+          conversationMessages.push({ role: 'user', content })
+        }
+        // The request shares one image budget; keep the newest views while
+        // older observations remain as text in the reasoning history.
+        let imageBytes = conversationMessages.reduce((total, message) => total + (Array.isArray(message.content)
+          ? message.content.reduce((size, part) => size + (part.type === 'image_url' ? part.image_url.url.length : 0), 0)
+          : 0), 0)
+        for (const message of conversationMessages) {
+          if (imageBytes <= AI_INPUT_LIMITS.MAX_IMAGE_CONTENT) break
+          if (!Array.isArray(message.content)) continue
+          imageBytes -= message.content.reduce((size, part) => size + (part.type === 'image_url' ? part.image_url.url.length : 0), 0)
+          message.content = extractChatMessageText(message.content)
         }
         if (toolCalls.every(isSharedAgentToolCall)) {
           if (result.details.validCount === 0) consecutiveFailures++
@@ -702,6 +724,11 @@ function streamLLMResponse(
     // Route through the AI runtime — OSS default hits fetch('/api/ai/chat'),
     // SaaS overrides with auth-cookie + retry transport.
     const transportSignal = abortSignal ?? new AbortController().signal
+    const onAbort = () => {
+      transportSignal.removeEventListener('abort', onAbort)
+      reject(new DOMException('Agent loop aborted', 'AbortError'))
+    }
+    transportSignal.addEventListener('abort', onAbort, { once: true })
 
     const requestMessages: ChatMessageInput[] = messages.map((m) => ({
       role: m.role as AllowedChatRole,
@@ -729,15 +756,20 @@ function streamLLMResponse(
       },
       {
         onTextChunk: (text) => {
+          if (transportSignal.aborted) return
           useAIChat.getState().appendStreamContent(text)
         },
         onToolCall: () => {
           // Tool calls are accumulated in onComplete
         },
         onComplete: (fullText, toolCalls, toolCallIds, usage) => {
+          transportSignal.removeEventListener('abort', onAbort)
+          if (transportSignal.aborted) return onAbort()
           resolve({ text: fullText, toolCalls, toolCallIds: toolCallIds ?? [], usage })
         },
         onError: (err, metadata) => {
+          transportSignal.removeEventListener('abort', onAbort)
+          if (transportSignal.aborted) return onAbort()
           // Attach the (opaque) metadata onto the rejection so the loop
           // surface can later forward it into useAIChat.setStreamError.
           const error = new Error(err) as Error & {
@@ -747,14 +779,14 @@ function streamLLMResponse(
           reject(error)
         },
         onRetry: () => {
+          if (transportSignal.aborted) return
           useAIChat.getState().startStreaming()
         },
       },
       transportSignal,
     ).catch((err) => {
-      if ((err as { name?: string })?.name !== 'AbortError') {
-        reject(err)
-      }
+      transportSignal.removeEventListener('abort', onAbort)
+      reject(err)
     })
   })
 }
@@ -783,7 +815,7 @@ async function compressConversation(
       body: JSON.stringify({
         messages: toSummarize.map((m) => ({
           role: m.role,
-          content: m.content,
+          content: extractChatMessageText(m.content),
         })),
       }),
     })

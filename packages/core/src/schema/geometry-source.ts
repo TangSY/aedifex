@@ -1,10 +1,23 @@
 import { z } from 'zod'
+import { GeometrySourceMeta } from './geometry-metadata'
 
 /** Source code is stored separately from the scene; bound its upload size. */
 export const GEOMETRY_SCRIPT_MAX_BYTES = 48 * 1024
 /** The manifest rides inline in the node; the compiler keeps it under this. */
 export const GEOMETRY_MANIFEST_MAX_BYTES = 24 * 1024
-export const GEOMETRY_SCRIPT_MIME_TYPE = 'text/javascript'
+
+/** A three.js module (`export default function build`) or a Blender `bpy` module (`def build(params)`). */
+export const GeometryScriptLanguage = z.enum(['three', 'bpy'])
+export type GeometryScriptLanguage = z.infer<typeof GeometryScriptLanguage>
+
+/** The artifact type each language's module text is stored as. */
+export const GEOMETRY_SCRIPT_MIME_TYPES = {
+  three: 'text/javascript',
+  bpy: 'text/x-python',
+} as const satisfies Record<GeometryScriptLanguage, string>
+
+export const isGeometryScriptMimeType = (mimeType: string) =>
+  Object.values(GEOMETRY_SCRIPT_MIME_TYPES).some((type) => type === mimeType)
 
 const finite = z.number().finite()
 const vec3 = z.tuple([finite, finite, finite])
@@ -56,7 +69,19 @@ export const GeometryArtifactManifest = z.object({
       }),
     )
     .default([]),
-  slots: z.array(z.object({ id: z.string(), label: z.string().optional() })).default([]),
+  slots: z
+    .array(
+      z.object({
+        id: z.string(),
+        label: z.string().optional(),
+        color: z.string().optional(),
+        roughness: finite.optional(),
+        metalness: finite.optional(),
+        transparent: z.boolean().optional(),
+        emissive: z.boolean().optional(),
+      }),
+    )
+    .default([]),
   anchors: z
     .array(z.object({ id: z.string(), position: vec3, normal: vec3.optional() }))
     .default([]),
@@ -109,28 +134,41 @@ export type GeometryScriptMount = z.infer<typeof GeometryScriptMount>
 
 /** What a compile hands the scene: the artifact's hash, how it mounts, the resolved params and the manifest. */
 export type CompiledGeometryScript = {
+  /** The destination identity reserved before artifact uploads. */
+  nodeId?: string
   /** sha256 of the GLB. */
   sha256: string
   /** sha256 of the module text that produced it. */
   script: string
+  language: GeometryScriptLanguage
   mount: GeometryScriptMount
   params: Record<string, GeometryScriptParamValue>
   manifest: GeometryArtifactManifest
 }
 
+const sha256 = z.string().regex(/^[0-9a-f]{64}$/)
+
 /**
  * Geometry authored as a plain three.js module (`export const params`,
- * `export default function build({ params, inputs, THREE, lib })`). The
- * compiled artifact is what renders; the code only re-runs on an edit.
+ * `export default function build({ params, inputs, THREE, lib })`) or a Blender
+ * `bpy` module (`PARAMS`, `def build(params)`). The compiled artifact is what
+ * renders; the code only re-runs on an edit.
  */
 export const GeometryScriptSource = z.object({
   kind: z.literal('script'),
-  language: z.literal('three').default('three'),
-  /** sha256 of the module's UTF-8 text, a `text/javascript` artifact: the code never rides in the scene. */
-  script: z.string().regex(/^[0-9a-f]{64}$/),
+  meta: GeometrySourceMeta.optional(),
+  language: GeometryScriptLanguage.default('three'),
+  /** sha256 of the module's UTF-8 text, stored as its language's artifact type: the code never rides in the scene. */
+  script: sha256,
   params: z.record(z.string(), GeometryScriptParamValue).default({}),
   /** sha256 of the GLB the current code + params compiled to. */
-  artifact: z.string().regex(/^[0-9a-f]{64}$/),
+  artifact: sha256,
   manifest: GeometryArtifactManifest,
+  /**
+   * The thumbnail and the top-down floor-plan image an editor took of a GLB,
+   * as image artifacts. They describe the node only while `artifact` is still
+   * the GLB they were taken of.
+   */
+  images: z.object({ artifact: sha256, thumbnail: sha256, floorPlan: sha256 }).optional(),
 })
 export type GeometryScriptSource = z.infer<typeof GeometryScriptSource>

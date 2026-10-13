@@ -125,6 +125,12 @@ type FloorplanContextExtension = {
    * read-only viewer never do, so their plans keep today's look.
    */
   drafting: boolean
+  /**
+   * The editor canvas draws room labels as screen pills over the plan
+   * (`RoomLabels2D`), so zones skip their drawn tags and wash there. Exports,
+   * sheets and the read-only viewer keep the drawn tags.
+   */
+  roomLabelOverlay: boolean
   metricNotation: FloorplanMetricNotation
   wallDimensionReference: FloorplanWallDimensionReference
 }
@@ -181,6 +187,7 @@ export function createFloorplanContextExtensions(
       automaticDimensions: values.automaticDimensions !== false,
       purpose: values.purpose === 'document' ? 'document' : 'edit',
       drafting: values.drafting === true,
+      roomLabelOverlay: values.roomLabelOverlay === true,
       metricNotation: values.metricNotation === 'millimeters' ? 'millimeters' : 'meters',
       wallDimensionReference: normalizeFloorplanWallDimensionReference(
         values.wallDimensionReference,
@@ -199,6 +206,7 @@ export function readFloorplanContext(ctx: GeometryContext): FloorplanContextExte
       automaticDimensions: extension.automaticDimensions !== false,
       purpose: extension.purpose === 'document' ? 'document' : 'edit',
       drafting: extension.drafting === true,
+      roomLabelOverlay: extension.roomLabelOverlay === true,
       metricNotation: extension.metricNotation === 'millimeters' ? 'millimeters' : 'meters',
       wallDimensionReference: normalizeFloorplanWallDimensionReference(
         extension.wallDimensionReference,
@@ -209,6 +217,7 @@ export function readFloorplanContext(ctx: GeometryContext): FloorplanContextExte
     automaticDimensions: true,
     purpose: 'edit',
     drafting: false,
+    roomLabelOverlay: false,
     metricNotation: 'meters',
     wallDimensionReference: DEFAULT_FLOORPLAN_WALL_DIMENSION_REFERENCE,
   }

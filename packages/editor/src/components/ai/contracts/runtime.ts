@@ -96,6 +96,8 @@ export interface CatalogResolveResult {
 }
 
 export interface CatalogProvider {
+  /** The host's currently available assets, used by shared catalog operations. */
+  listAssets?(): readonly AssetInput[]
   /** Resolve a slug/name/tag to a catalog asset. `null` asset = not found. */
   resolveSlug(slug: string): CatalogResolveResult
   /**
@@ -207,4 +209,6 @@ export interface AIRuntime {
    * to the default "not available in this deployment" implementation.
    */
   roomPresets?: RoomPresetProvider
+  /** Reset and persist through the host's explicit scene-wipe path; absent means unavailable. */
+  clearScene?(input: { reason: string; signal?: AbortSignal; assertCurrent: () => void }): Promise<Record<string, unknown>>
 }

@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { type ChatContent, extractChatMessageText, validateChatMessageContent, AI_INPUT_LIMITS } from '@aedifex/editor/ai/contracts'
 import { SUMMARIZE_SYSTEM_PROMPT } from '@aedifex/editor/ai/prompt'
 import {
   AI_API_KEY,
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  let body: { messages: { role: string; content: string }[] }
+  let body: { messages: { role: string; content: ChatContent }[] }
   try {
     body = await request.json()
   } catch {
@@ -29,12 +30,13 @@ export async function POST(request: NextRequest) {
   }
 
   const { messages } = body
-  if (!messages?.length) {
+  if (!Array.isArray(messages) || !messages.length || messages.length > AI_INPUT_LIMITS.MAX_MESSAGES ||
+    messages.some((m) => !m || !['user', 'assistant', 'tool'].includes(m.role) || validateChatMessageContent({ role: m.role, content: m.content }))) {
     return NextResponse.json({ error: 'No messages to summarize.' }, { status: 400 })
   }
 
   const conversationText = messages
-    .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+    .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${extractChatMessageText(m.content)}`)
     .join('\n\n')
 
   // DRY A-D5: Use shared factory function

@@ -1,6 +1,8 @@
 import {
   type AnyNode,
   type CompiledGeometryScript,
+  type GeometryArtifactMetadata,
+  type GeometryScriptLanguage,
   getArtifactStore,
   nodeRegistry,
   useScene,
@@ -13,18 +15,22 @@ import {
   AGENT_OPERATIONS,
   type AgentOperationOutcome,
   authoredObject,
+  editedScriptLanguage,
   columnScriptParams,
   editCollection,
   listCollections,
   readSourceResult,
   rescriptOpening,
-  STRUCTURE_OPERATIONS,
 } from '@aedifex/core/agent-operations'
 import { isAgentRefusal, refusalPayload, refuse } from '@aedifex/core/agent-tools'
 import { planWallOpening } from '@aedifex/core/building'
 import { useViewer } from '@aedifex/viewer'
 import { z } from 'zod'
 import { compileAndStoreGeometryScript, storedScript } from '../../lib/geometry-script/author'
+import { getGeometryScriptCapabilities } from '../../lib/geometry-script/author'
+import { viewAgentScene } from './ai-scene-view'
+import { getAIRuntime } from './runtime'
+import type { ChatContentPart } from './contracts/chat-request'
 import { useAIChat } from './ai-chat-store'
 import { sharedAgentContracts, type SharedAgentToolName } from './contracts/shared-agent-tools'
 import { confirmGhostPreview } from './preview/confirm-operations'
@@ -34,50 +40,64 @@ export function isSharedAgentToolCall(call: AIToolCall): call is SharedAgentTool
   return 'sharedInput' in call
 }
 
+const READ_ONLY_SHARED_TOOLS = new Set<string>(['get_source', 'get_node', 'list_levels', 'get_level_summary', 'get_walls', 'get_zones', 'verify_scene', 'find_by_type', 'list_collections', 'measure_stair', 'search_assets', 'search_materials', 'view_scene'])
+
+export function isSharedAgentMutation(name: SharedAgentToolName): boolean {
+  return !READ_ONLY_SHARED_TOOLS.has(name)
+}
+
 /** Executes the shared contract once; compiling and storage are the browser host's part. */
 export async function runSharedAgentTool({
   name,
   input,
   signal,
+  assertSessionCurrent,
 }: {
   name: SharedAgentToolName
   input: Record<string, unknown>
   signal?: AbortSignal
-}): Promise<{ result: Record<string, unknown>; log?: AIOperationLog }> {
+  assertSessionCurrent?: () => void
+}): Promise<{ result: Record<string, unknown>; log?: AIOperationLog; images?: ChatContentPart[] }> {
   const contract = sharedAgentContracts.get(name)!
   const args = z.object(contract.input).parse(input) as Record<string, unknown>
   const state = useScene.getState()
   const nodes = state.nodes as Record<string, AnyNode>
   const artifacts = getArtifactStore()
-  const context = { activeLevelId: useViewer.getState().selection.levelId }
+  const runtime = getAIRuntime()
+  const context = { activeLevelId: useViewer.getState().selection.levelId, materials: state.materials, catalog: runtime.catalog.listAssets?.() }
   const assertCurrent = () => {
+    assertSessionCurrent?.()
     if (signal?.aborted) throw new DOMException('Agent loop aborted', 'AbortError')
     if (useScene.getState().nodes !== nodes || getArtifactStore() !== artifacts)
       refuse('scene_changed', 'The scene changed while the tool was running; retry on the current scene.')
   }
-  const mutating = !['get_source', 'get_node', 'list_levels', 'get_level_summary', 'get_walls', 'get_zones', 'verify_scene', 'find_by_type', 'list_collections'].includes(name)
+  const mutating = isSharedAgentMutation(name)
   const assertWritable = () => {
     assertCurrent()
     if (mutating && useScene.getState().readOnly)
       refuse('read_only', 'This scene is read-only; no changes were made.')
   }
   assertWritable()
-  if (name in STRUCTURE_OPERATIONS) {
-    const operation = STRUCTURE_OPERATIONS[name as keyof typeof STRUCTURE_OPERATIONS]
-    const plan = operation(nodes, args as never)
-    if (plan.conflicts?.length && !args.force)
-      refuse('structure_conflict', 'This structure edit conflicts with the existing scene.', { conflicts: plan.conflicts })
-    const outcome: AgentOperationOutcome = { result: {} }
-    const log = confirmGhostPreview([{
-      type: 'shared_agent', toolName: name, status: 'valid', outcome,
-      structurePlan: plan, force: args.force === true,
-    }])
-    return { result: outcome.result, log }
+  if (name === 'view_scene') return viewAgentScene({ args, signal, assertCurrent })
+  if (name === 'clear_scene') {
+    if (!runtime.clearScene) refuse('clear_scene_unavailable', 'This host does not provide an explicit reset-and-save path; no changes were made.')
+    return { result: await runtime.clearScene({ reason: args.reason as string, signal, assertCurrent: assertWritable }) }
   }
   let compiledOutput: CompiledGeometryScript | undefined
   const compile = async (params = args.params as AddObjectInput['params']) => {
+    const previous = args.nodeId ? nodes[args.nodeId as string] : undefined
+    const language = editedScriptLanguage(previous, args as { language?: GeometryScriptLanguage })
+    if (!getGeometryScriptCapabilities().languages.includes(language))
+      refuse('scripts_unavailable', `This host cannot execute ${language} scripts; saved source may still be read with get_source.`)
     const compiled = await compileAndStoreGeometryScript({
       code: args.code as string | undefined,
+      language: args.language as GeometryScriptLanguage | undefined,
+      kind: name === 'add_door' ? 'door' : name === 'add_window' ? 'window' : name === 'add_column' ? 'column' : 'item',
+      name: args.name as string | undefined,
+      description: args.description as string | undefined,
+      category: args.category as string | undefined,
+      tags: args.tags as string[] | undefined,
+      provenance: args.provenance as GeometryArtifactMetadata | undefined,
       nodeId: args.nodeId as string | undefined,
       params,
       assertCurrent: assertWritable,
@@ -147,7 +167,7 @@ export async function runSharedAgentTool({
     }
   }
   assertWritable()
-  if (!outcome.changes) return { result: outcome.result }
+  if (!outcome.changes && !outcome.afterReconcile) return { result: outcome.result }
   const log = confirmGhostPreview([{ type: 'shared_agent', toolName: name, status: 'valid', outcome, compiled: compiledOutput }])
   return { result: outcome.result, log }
 }
@@ -164,9 +184,13 @@ export async function executeSharedAgentToolCalls({
   const results: Record<string, unknown>[] = []
   const errors: string[] = []
   const operations: ValidatedSharedAgentOperation[] = []
+  const images: ChatContentPart[][] = []
+  let sceneChanged = false
   for (const call of calls) {
     try {
-      const { result, log } = await runSharedAgentTool({ name: call.tool, input: call.sharedInput, signal })
+      const { result, log, images: rendered } = await runSharedAgentTool({ name: call.tool, input: call.sharedInput, signal })
+      if (rendered) images.push(rendered)
+      if (log || call.tool === 'clear_scene') sceneChanged = true
       results.push({ toolName: call.tool, ...result })
       if (log && messageId) {
         log.messageId = messageId
@@ -187,6 +211,6 @@ export async function executeSharedAgentToolCalls({
     toolName: calls.map((call) => call.tool).join('+'),
     success: errors.length === 0,
     summary: `${calls.length - errors.length} shared tools succeeded; ${errors.length} failed.`,
-    details: { validCount: calls.length - errors.length, adjustedCount: 0, invalidCount: errors.length, adjustments: [], errors, results },
+    details: { validCount: calls.length - errors.length, adjustedCount: 0, invalidCount: errors.length, adjustments: [], errors, results, sceneChanged, ...(images.length ? { images } : {}) },
   }
 }

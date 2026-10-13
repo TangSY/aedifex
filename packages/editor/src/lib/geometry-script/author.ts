@@ -1,46 +1,103 @@
 import {
   type AnyNodeId,
   type CompiledGeometryScript,
-  GEOMETRY_SCRIPT_MIME_TYPE,
+  GEOMETRY_SCRIPT_MIME_TYPES,
+  GeometryArtifactMetadata,
+  GeometryReuseFields,
+  type GeometryScriptLanguage,
   type GeometryScriptParamValue,
+  generateId,
   getArtifactStore,
+  isScriptedNode,
   runAsSingleSceneHistoryStep,
+  scriptedObjectMeta,
   useScene,
 } from '@aedifex/core'
 import {
   addColumn,
   addObject,
   authoredObject,
+  editedScriptLanguage,
   editedScriptParams,
   rescriptOpening,
 } from '@aedifex/core/agent-operations'
 import { compileGeometryScriptInWorker } from './client'
 
 /**
- * The editor's compile step for `add_object`: runs the module in the
- * worker and stores the GLB and the module text, so the core operation can
- * reference both by hash. Without `code`, the node's stored script is rebuilt;
- * either way an edit keeps the node's param values it does not override.
+ * Builds a bpy module and stores its GLB and text, returning their hashes.
+ * Blender runs outside the browser, so execution requires an explicit host builder.
+ * Without one, bpy scripts are refused.
+ */
+export type BlenderScriptBuilder = (input: {
+  code: string
+  params?: Record<string, GeometryScriptParamValue>
+  nodeId: string
+  metadata: GeometryArtifactMetadata
+}) => Promise<CompiledGeometryScript>
+
+let blenderBuilder: BlenderScriptBuilder | null = null
+
+export function configureBlenderScriptBuilder(next: BlenderScriptBuilder | null): void {
+  blenderBuilder = next
+}
+
+export function getGeometryScriptCapabilities(): { languages: readonly GeometryScriptLanguage[] } {
+  return { languages: blenderBuilder ? ['three', 'bpy'] : ['three'] }
+}
+
+/**
+ * The editor's compile step for `add_object`: runs the module (a three.js one
+ * in the worker, a bpy one through the host's Blender builder) and stores the
+ * GLB and the module text, so the core operation can reference both by hash.
+ * Without `code`, the node's stored script is rebuilt; either way an edit keeps
+ * the node's param values it does not override.
  */
 export async function compileAndStoreGeometryScript(input: {
   code?: string
+  language?: GeometryScriptLanguage
   nodeId?: string
   params?: Record<string, GeometryScriptParamValue>
+  kind?: 'item' | 'door' | 'window' | 'column'
+  name?: string
+  description?: string
+  category?: string
+  tags?: string[]
+  provenance?: GeometryArtifactMetadata
   assertCurrent?: () => void
 }): Promise<CompiledGeometryScript> {
   const store = getArtifactStore()
   const code = input.code ?? (await storedScript(input.nodeId))
   input.assertCurrent?.()
   const node = input.nodeId ? useScene.getState().nodes[input.nodeId as AnyNodeId] : undefined
+  const language = editedScriptLanguage(node, input)
   const params = editedScriptParams(node, input.params)
+  const kind =
+    input.kind ??
+    (node?.type === 'door' || node?.type === 'window' || node?.type === 'column'
+      ? node.type
+      : 'item')
+  const nodeId = input.nodeId ?? generateId(kind)
+  const metadata = GeometryArtifactMetadata.parse({
+    ...(isScriptedNode(node) ? scriptedObjectMeta(node) : {}),
+    ...input.provenance,
+    ...GeometryReuseFields.parse(input),
+    kind,
+  })
+  if (language === 'bpy') {
+    if (!blenderBuilder) throw new Error('This editor cannot run Blender (bpy) scripts')
+    const compiled = await blenderBuilder({ code, params, nodeId, metadata })
+    input.assertCurrent?.()
+    return { ...compiled, nodeId }
+  }
   const { glb, ...compiled } = await compileGeometryScriptInWorker({ code, params })
   input.assertCurrent?.()
-  await Promise.all([
-    store.put(compiled.sha256, glb, 'model/gltf-binary'),
-    store.put(compiled.script, new TextEncoder().encode(code), GEOMETRY_SCRIPT_MIME_TYPE),
+  const context = { nodeId, metadata: { ...metadata, mount: compiled.mount } }
+  const [sha256] = await Promise.all([
+    store.put(compiled.sha256, glb, 'model/gltf-binary', context),
+    store.put(compiled.script, new TextEncoder().encode(code), GEOMETRY_SCRIPT_MIME_TYPES.three, context),
   ])
   input.assertCurrent?.()
-  return compiled
+  return { ...compiled, sha256, nodeId }
 }
 
 /** The module text of an authored object, read back from the artifact store. */

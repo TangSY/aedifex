@@ -26,6 +26,7 @@ function memoryHost(): GeometryScriptHost {
     },
     storeArtifact: async ({ sha256, bytes }) => {
       artifacts.set(sha256, bytes)
+      return sha256
     },
     readArtifact: async ({ sha256 }) => artifacts.get(sha256) ?? null,
   }
@@ -78,7 +79,11 @@ describe('compiled geometry mutation boundary', () => {
     const f = await connected()
     try {
       const created = payload(
-        await f.call('add_object', { code: script('floor'), params: { height: 1 } }),
+        await f.call('add_object', {
+          code: script('floor'),
+          reason: 'A custom sculptural exhibit unavailable in the catalog.',
+          params: { height: 1 },
+        }),
       )
       const id = created.nodeId as AnyNodeId
       const old = f.bridge.getNode(id)!
@@ -155,6 +160,7 @@ describe('compiled geometry mutation boundary', () => {
       for (const [fault, expected] of [
         [{ id: 'column_other' }, 'identity_change'],
         [{ width: 4 }, 'scripted_field'],
+        [{ source: { ...good.data.source, meta: { parent: 'f'.repeat(64) } } }, 'scripted_field'],
         [{ position: ['bad', 0, 0] }, 'invalid_update'],
         [{ materialPreset: 'unknown-finish' }, 'invalid_update'],
       ] as const) {
@@ -201,7 +207,10 @@ describe('compiled geometry mutation boundary', () => {
       switchScene = () =>
         f.bridge.setActiveScene({ ...f.bridge.getActiveScene()!, id: 'other-scene' })
       const before = f.bridge.getNodes()
-      const result = await f.call('add_object', { code: script('floor') })
+      const result = await f.call('add_object', {
+        code: script('floor'),
+        reason: 'A custom sculptural exhibit unavailable in the catalog.',
+      })
       expect(result.isError).toBe(true)
       expect(JSON.stringify(result)).toContain('scene_changed_during_compile')
       expect(f.bridge.getNodes()).toEqual(before)
@@ -226,7 +235,10 @@ describe('compiled geometry mutation boundary', () => {
     })
     try {
       const before = f.bridge.getNodes()
-      const result = await f.call('add_object', { code: script('floor') })
+      const result = await f.call('add_object', {
+        code: script('floor'),
+        reason: 'A custom sculptural exhibit unavailable in the catalog.',
+      })
       expect(result.isError).toBe(true)
       expect(compileCalls).toBe(0)
       expect(f.bridge.getNodes()).toEqual(before)

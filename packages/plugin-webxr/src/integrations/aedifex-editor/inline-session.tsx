@@ -1,6 +1,6 @@
 'use client'
 
-import { useEditor } from '@aedifex/editor'
+import { sceneLayout, useEditor } from '@aedifex/editor'
 import { BATCHED_LAYER, OVERLAY_LAYER, useViewer, ZONE_LAYER } from '@aedifex/viewer'
 import { RectangleGoggles, Orbit, PersonStanding, RotateCcw } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
@@ -27,7 +27,7 @@ export function useAedifexWebXR(
     const editor = useEditor.getState()
     const viewer = useViewer.getState()
     const previous = {
-      viewMode: editor.viewMode,
+      viewLayouts: editor.viewLayouts,
       cameraMode: viewer.cameraMode,
       wallMode: viewer.wallMode,
       levelMode: viewer.levelMode,
@@ -35,7 +35,7 @@ export function useAedifexWebXR(
     editor.setFirstPersonMode(false)
     editor.setPreviewMode(false)
     editor.setCaptureMode(false)
-    editor.setViewMode('3d')
+    editor.setViewLayout(sceneLayout('3d'))
     editor.setMode('select')
     editor.setTool(null)
     viewer.setCameraMode('perspective')
@@ -46,7 +46,8 @@ export function useAedifexWebXR(
       const currentViewer = useViewer.getState()
       currentEditor.setMode('select')
       currentEditor.setTool(null)
-      currentEditor.setViewMode(previous.viewMode)
+      // The legacy projection mode cannot represent plugin panes, their split ratio or focus.
+      useEditor.setState({ viewLayouts: previous.viewLayouts })
       currentViewer.setCameraMode(previous.cameraMode)
       currentViewer.setWallMode(previous.wallMode)
       currentViewer.setLevelMode(previous.levelMode)

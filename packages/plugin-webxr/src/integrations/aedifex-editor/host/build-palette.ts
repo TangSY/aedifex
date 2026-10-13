@@ -17,7 +17,7 @@ export type BuildType = {
   iconSrc: string
   kind?: string
   paletteOrder?: number
-  mode?: 'material-paint' | 'terrain-sculpt'
+  mode?: 'terrain-sculpt'
   /**
    * The Build panel group listing the tile; registry-discovered kinds land in
    * Advanced. The wall has none: the Rooms group's variant tiles arm it.
@@ -78,13 +78,6 @@ export const BASE_BUILD_TYPES: BuildType[] = [
   },
   { id: 'kitchen', label: 'Kitchen', iconSrc: '/icons/kitchen.webp', section: 'add' },
   { id: 'mep', label: 'MEP', iconSrc: '/icons/HVAC.webp', section: 'advanced' },
-  {
-    id: 'painting',
-    label: 'Painting',
-    iconSrc: '/icons/paint.webp',
-    mode: 'material-paint',
-    section: 'advanced',
-  },
   {
     id: 'terrain',
     label: 'Terrain',
@@ -163,10 +156,9 @@ export function activateBuildTool(kind: string): void {
     useFloorplanMode.getState().showExpertModeNotice(definition?.presentation?.label ?? kind)
     return
   }
-  if (extension?.preferredView) editor.setViewMode(extension.preferredView)
+  if (extension?.preferredView) editor.showView(extension.preferredView)
   useViewer.getState().setSelection({ selectedIds: [], zoneId: null })
-  editor.setPhase('structure')
-  editor.setStructureLayer('elements')
+  editor.setPhase('building')
   editor.setCatalogCategory(null)
   editor.setToolDefaults(kind, null)
   editor.setMode('build')
@@ -186,8 +178,7 @@ export function activateModularCabinetTool(): void {
   const editor = useEditor.getState()
   useViewer.getState().setSelection({ selectedIds: [], zoneId: null })
   if (MODULAR_CABINET_CATALOG_ITEM) editor.setSelectedItem(MODULAR_CABINET_CATALOG_ITEM)
-  editor.setPhase('structure')
-  editor.setStructureLayer('elements')
+  editor.setPhase('building')
   editor.setCatalogCategory(null)
   editor.setMode('build')
   editor.setTool('cabinet')
@@ -195,9 +186,9 @@ export function activateModularCabinetTool(): void {
 
 export function activatePaintMode(): void {
   const editor = useEditor.getState()
-  editor.setPhase('structure')
-  editor.setStructureLayer('elements')
-  editor.setMode('material-paint')
+  if (editor.mode === 'material-paint') return
+  editor.setPhase('building')
+  editor.armMaterialPaint()
 }
 
 export function activateTerrainSculptMode(): void {
@@ -227,8 +218,7 @@ export function collectRoofFeatures(): RoofFeature[] {
 export function activateRoofFeatureTool(feature: RoofFeature): void {
   const editor = useEditor.getState()
   useViewer.getState().setSelection({ selectedIds: [], zoneId: null })
-  editor.setPhase('structure')
-  editor.setStructureLayer('elements')
+  editor.setPhase('building')
   editor.setCatalogCategory(null)
   editor.setMode('build')
   if (feature.kind) editor.setTool(feature.kind)

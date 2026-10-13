@@ -183,6 +183,7 @@ async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEd
     AEDIFEX_DATA_DIR: options.paths.data,
     AEDIFEX_INSTANCE_ID: instanceId,
     AEDIFEX_RUNTIME_VERSION: runtime.version,
+    AEDIFEX_PUBLIC_URL: process.env.AEDIFEX_PUBLIC_URL || state.url,
     AEDIFEX_SCENE_API_ALLOW_LOOPBACK_WITHOUT_TOKEN: 'true',
   }
   const nodeBinary = process.env.AEDIFEX_NODE_BINARY || 'node'

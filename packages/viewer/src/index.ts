@@ -33,11 +33,10 @@ export {
   buildGlbReplaceNodes,
 } from './components/viewer/glb-reference-nodes'
 export {
-  type GlbHover,
-  type GlbIdentity,
-  type GlbLevel,
+  type GlbPickEvent,
   GlbScene,
   type GlbWalkthrough,
+  resolveGlbPick,
 } from './components/viewer/glb-scene'
 export {
   CROUCH_CAPSULE,
@@ -64,9 +63,11 @@ export {
 } from './components/viewer/scene-atmosphere'
 export { SceneEnvironment } from './components/viewer/scene-environment'
 export {
+  claimSceneGround,
   SceneGroundReplacement,
   useSceneGroundReplacement,
 } from './components/viewer/scene-ground-replacement'
+export { applyWalkthroughCameraClipping } from './components/viewer/viewer-camera'
 export {
   isViewerPresentationTextureBorrowed,
   markViewerPresentationTextureBorrowed,
@@ -159,6 +160,7 @@ export {
   disposeMaterial,
   glassMaterial,
   MONO_PALETTE,
+  materialCastsShadow,
   PRESET_PALETTES,
   type RenderShading,
   registerMaterialCacheCleanup,
@@ -200,6 +202,7 @@ export {
   type HiddenReason,
   hideFromScene,
   showInScene,
+  temporarilyShowPresentation,
   temporarilyShowShadowOnly,
 } from './lib/scene-visibility'
 export { SCRIPTED_MODEL_FLAG } from './lib/scripted-opening'

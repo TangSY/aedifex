@@ -44,7 +44,7 @@ import {
   useScene,
   runAsSingleSceneHistoryStep,
 } from '@aedifex/core'
-import { applyStructureOperation, writeCollections } from '@aedifex/core/agent-operations'
+import { applyAgentOutcome, type SceneChanges, writeCollections } from '@aedifex/core/agent-operations'
 import { useViewer } from '@aedifex/viewer'
 import { nanoid } from 'nanoid'
 import {
@@ -186,6 +186,9 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
   const previousCollections = operations.some((op) => op.type === 'shared_agent' && op.outcome?.changes?.collections)
     ? { ...useScene.getState().collections }
     : undefined
+  const previousMaterials = operations.some((op) => op.type === 'shared_agent' && (op.outcome?.changes?.materials || op.outcome?.afterReconcile))
+    ? { ...useScene.getState().materials }
+    : undefined
   const removedNodesForUndo: { node: AnyNode; parentId: AnyNodeId }[] = []
 
   const cleanSnapshot = (node: AnyNode): AnyNode => {
@@ -272,52 +275,39 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
 
     switch (op.type) {
       case 'shared_agent': {
-        if (op.structurePlan && op.outcome) {
-          const before = useScene.getState().nodes
-          op.outcome.result = applyStructureOperation({
-            plan: op.structurePlan,
-            force: op.force,
-            runtime: {
-              getNodes: () => useScene.getState().nodes,
-              applyChanges: (changes) => ops().applyPatch(changes.map((change) => change.op === 'create'
-                ? { ...change, parentId: change.node.parentId ?? undefined }
-                : change) as Parameters<ReturnType<typeof getSceneOperations>['applyPatch']>[0]),
-              reconcile: () => { ops().deriveStructure() },
-              runAsSingleHistoryStep: (run) => { ops().runAsSingleHistoryStep(run) },
-            },
-          })
-          const after = useScene.getState().nodes
-          for (const id of new Set([...Object.keys(before), ...Object.keys(after)])) {
-            const typedId = id as AnyNodeId
-            if (before[typedId] === after[typedId]) continue
-            affectedNodeIds.push(typedId)
-            const previous = before[typedId]
-            if (!previous && after[typedId]) createdNodeIds.push(typedId)
-            else if (previous && !after[typedId]) removedNodesForUndo.push({ node: cleanSnapshot(previous), parentId: previous.parentId as AnyNodeId })
-            else if (previous) previousSnapshot[typedId] = cleanSnapshot(previous)
-          }
-          break
-        }
         const changes = op.outcome?.changes
-        if (!changes) break
+        if (!op.outcome || (!changes && !op.outcome.afterReconcile)) break
+        const before = useScene.getState().nodes
         runAsSingleSceneHistoryStep(useScene, () => {
+          const applyChanges = (changes: SceneChanges) => {
           const patches = [
-            ...(changes.delete ?? []).map((id) => ({ op: 'delete' as const, id: id as AnyNodeId })),
+            ...(changes.materials ?? []).map((material) => ({ op: 'upsert_material' as const, material })),
             ...(changes.update ?? []).map(({ id, data }) => ({ op: 'update' as const, id: id as AnyNodeId, data })),
             ...(changes.create ?? []).map(({ node, parentId }) => ({ op: 'create' as const, node, parentId: parentId as AnyNodeId | undefined })),
+            ...(changes.delete ?? []).map((id) => ({ op: 'delete' as const, id: id as AnyNodeId })),
           ]
           if (op.compiled) ops().applyCompiledGeometryPatch({ patches, compiled: op.compiled })
           else ops().applyPatch(patches)
           if (changes.collections) useScene.setState({
             collections: writeCollections(useScene.getState().collections, changes.collections),
           })
+          }
+          op.outcome!.result = applyAgentOutcome(op.outcome!, {
+            getNodes: () => useScene.getState().nodes,
+            applyChanges,
+            reconcile: () => { ops().deriveStructure() },
+          })
         })
-        for (const { node } of changes.create ?? []) {
-          createdNodeIds.push(node.id)
-          affectedNodeIds.push(node.id)
+        const after = useScene.getState().nodes
+        for (const id of new Set([...Object.keys(before), ...Object.keys(after)])) {
+          const typedId = id as AnyNodeId
+          if (before[typedId] === after[typedId]) continue
+          affectedNodeIds.push(typedId)
+          const previous = before[typedId]
+          if (!previous && after[typedId]) createdNodeIds.push(typedId)
+          else if (previous && !after[typedId] && !removedNodesForUndo.some((entry) => entry.node.id === typedId)) removedNodesForUndo.push({ node: cleanSnapshot(previous), parentId: previous.parentId as AnyNodeId })
+          else if (previous) previousSnapshot[typedId] = cleanSnapshot(previous)
         }
-        affectedNodeIds.push(...(changes.update ?? []).map(({ id }) => id as AnyNodeId))
-        affectedNodeIds.push(...(changes.delete ?? []).map((id) => id as AnyNodeId))
         break
       }
       case 'add_item': {
@@ -1518,6 +1508,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
     previousSnapshot,
     removedNodes: removedNodesForUndo,
     ...(previousCollections ? { previousCollections } : {}),
+    ...(previousMaterials ? { previousMaterials } : {}),
   }
 }
 
@@ -1532,6 +1523,7 @@ export function confirmGhostPreview(operations: ValidatedOperation[]): AIOperati
 export function undoConfirmedOperation(log: AIOperationLog): void {
   if (log.status !== 'confirmed') return
   if (log.previousCollections) useScene.setState({ collections: log.previousCollections })
+  if (log.previousMaterials) useScene.setState({ materials: log.previousMaterials })
 
   // Step 1: Delete nodes that were created by this operation.
   // cascade=true: when the confirmed op created a parent + children

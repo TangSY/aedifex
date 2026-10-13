@@ -6,11 +6,8 @@ import {
   StairNode,
   StairSegmentNode,
 } from '@aedifex/core'
-import {
-  buildFloorplanStairEntry,
-  createFloorplanContextExtensions,
-  readFloorplanGeometryMetadata,
-} from '@aedifex/editor'
+import { createFloorplanContextExtensions, readFloorplanGeometryMetadata } from '@aedifex/editor'
+import { buildFloorplanStairEntry } from '../index'
 import {
   buildStairDocumentation,
   resolveStairPlanDirection,

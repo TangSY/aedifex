@@ -12,9 +12,10 @@ test('local script compilation defaults to disabled and never spawns without exp
     for (const flag of [undefined, '', '0', 'true']) {
       if (flag === undefined) delete process.env.AEDIFEX_SERVER_SCRIPT_COMPILE
       else process.env.AEDIFEX_SERVER_SCRIPT_COMPILE = flag
-      await expect(host.compile({ code: 'export default function build() {}' })).rejects.toThrow(
-        'requires AEDIFEX_SERVER_SCRIPT_COMPILE=1',
-      )
+      for (const language of ['three', 'bpy'] as const)
+        await expect(
+          host.compile({ language, code: 'export default function build() {}' }),
+        ).rejects.toThrow('requires AEDIFEX_SERVER_SCRIPT_COMPILE=1')
     }
     expect(spawn).not.toHaveBeenCalled()
   } finally {

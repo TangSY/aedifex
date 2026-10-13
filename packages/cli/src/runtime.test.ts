@@ -80,6 +80,24 @@ describe('managed runtime', () => {
     expect(await Bun.file(paths.database).text()).toBe('persistent')
   }, 15_000)
 
+  test('preserves a configured public URL in the editor process', async () => {
+    const root = await temporaryRoot()
+    const source = await fakeRuntime(root, '1.2.3')
+    const paths = resolveAedifexPaths({ AEDIFEX_HOME: path.join(root, 'home') })
+    const previousPublicUrl = process.env.AEDIFEX_PUBLIC_URL
+    process.env.AEDIFEX_PUBLIC_URL = 'https://aedifex.example.com'
+
+    try {
+      const started = await startEditor({ paths, sourceDirectory: source })
+      const response = await fetch(`http://127.0.0.1:${started.state.port}/public-url`)
+      expect(await response.text()).toBe('https://aedifex.example.com')
+    } finally {
+      await stopEditor(paths)
+      if (previousPublicUrl === undefined) delete process.env.AEDIFEX_PUBLIC_URL
+      else process.env.AEDIFEX_PUBLIC_URL = previousPublicUrl
+    }
+  })
+
   test('retires the legacy MCP after its editor has exited before replacing editor state', async () => {
     const root = await temporaryRoot()
     const source = await fakeRuntime(root, '1.2.3')
@@ -375,6 +393,10 @@ const server = http.createServer((request, response) => {
       version: process.env.AEDIFEX_RUNTIME_VERSION,
       instanceId,
     }))
+    return
+  }
+  if (request.url === '/public-url') {
+    response.end(process.env.AEDIFEX_PUBLIC_URL ?? '')
     return
   }
   response.end('{}')

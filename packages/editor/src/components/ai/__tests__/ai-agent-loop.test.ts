@@ -59,6 +59,7 @@ vi.mock('../ai-mutation-executor', () => ({
 
 vi.mock('../ai-shared-agent-executor', () => ({
   isSharedAgentToolCall: (call: AIToolCall) => 'sharedInput' in call,
+  isSharedAgentMutation: (name: string) => name !== 'list_levels',
   executeSharedAgentToolCalls: vi.fn(async () => ({
     toolName: 'list_levels', success: true, summary: 'Levels read',
     details: { validCount: 1, invalidCount: 0, adjustedCount: 0, errors: [], adjustments: [], results: [] },
@@ -403,6 +404,30 @@ describe('abortActiveLoop', () => {
   it('is idempotent — calling twice in a row does not throw', () => {
     abortActiveLoop()
     expect(() => abortActiveLoop()).not.toThrow()
+  })
+
+  it('settles a project cleanup during streaming and ignores callbacks from the previous project', async () => {
+    setBuildingWithLevels(1)
+    let previousCallbacks!: StreamCallbacks
+    const stream = vi.spyOn(fakeTransport, 'streamChat').mockImplementationOnce(async (_request, callbacks, signal) => {
+      previousCallbacks = callbacks
+      await new Promise<void>((_resolve, reject) => signal.addEventListener('abort', () => reject(new DOMException('Project changed', 'AbortError')), { once: true }))
+    })
+    const run = runAgentLoop({ userMessage: 'Build in the first project', catalogSummary: '' })
+    await Promise.resolve()
+    abortActiveLoop()
+    await run
+    expect(useAIChat.getState().isAIProcessing).toBe(false)
+    expect(useAIChat.getState().error).toBeNull()
+    fakeTransport.setReplies([{ text: 'Second project ready', toolCalls: [] }])
+    await runAgentLoop({ userMessage: 'Describe the second project', catalogSummary: '' })
+    const messages = [...useAIChat.getState().messages]
+    previousCallbacks.onTextChunk('stale project text')
+    previousCallbacks.onComplete('stale mutation', [{ tool: 'add_wall', start: [0, 0], end: [2, 0] }], ['stale_id'])
+    await Promise.resolve()
+    expect(useAIChat.getState().messages).toEqual(messages)
+    expect(useAIChat.getState().streamingContent).not.toContain('stale project text')
+    stream.mockRestore()
   })
 })
 

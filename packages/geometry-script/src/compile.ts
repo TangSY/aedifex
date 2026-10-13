@@ -1,6 +1,7 @@
 import type {
   CompiledGeometryScript,
   GeometryArtifactManifest,
+  GeometryScriptLanguage,
   GeometryScriptMount,
   GeometryScriptParamSpec,
   GeometryScriptParamValue,
@@ -56,7 +57,7 @@ const LIB = {
   csg,
 }
 
-const MOUNTS = new Set<GeometryScriptMount>(['floor', 'wall', 'wall-side', 'ceiling'])
+export const MOUNTS = new Set<GeometryScriptMount>(['floor', 'wall', 'wall-side', 'ceiling'])
 
 type RawParam =
   | GeometryScriptParamValue
@@ -71,7 +72,7 @@ type RawParam =
       options?: string[]
     }
 
-function readParamSpecs(raw: unknown): GeometryScriptParamSpec[] {
+export function readParamSpecs(raw: unknown): GeometryScriptParamSpec[] {
   if (raw == null) return []
   if (typeof raw !== 'object' || Array.isArray(raw)) {
     throw new Error('`params` must be an object of { id: default | { default, min, max, step } }')
@@ -102,7 +103,7 @@ function readParamSpecs(raw: unknown): GeometryScriptParamSpec[] {
   })
 }
 
-function resolveParams(
+export function resolveParams(
   specs: GeometryScriptParamSpec[],
   overrides: Record<string, GeometryScriptParamValue>,
 ): Record<string, GeometryScriptParamValue> {
@@ -187,7 +188,7 @@ function readConventions(root: THREE.Object3D) {
   const parts: GeometryArtifactManifest['parts'] = []
   const anchors: GeometryArtifactManifest['anchors'] = []
   const lights: GeometryArtifactManifest['lights'] = []
-  const slots = new Map<string, string | undefined>()
+  const slots = new Map<string, GeometryArtifactManifest['slots'][number]>()
   const materialSlot = new Map<THREE.Material, string>()
   const toRemove: THREE.Object3D[] = []
   let cutout = false
@@ -264,16 +265,36 @@ function readConventions(root: THREE.Object3D) {
     for (const material of materials) {
       if (materialSlot.has(material)) continue
       const authored = material.name ?? ''
-      if (authored.toLowerCase() === 'glass') {
-        materialSlot.set(material, 'glass')
-        continue
-      }
       const slotId =
         slugify(conventionId(authored, 'slot_') ?? authored) || `material_${slots.size + 1}`
       material.name = `slot_${slotId}`
       materialSlot.set(material, slotId)
-      if (!slots.has(slotId))
-        slots.set(slotId, authored.startsWith('slot_') ? undefined : authored || undefined)
+      const surface = material as THREE.MeshStandardMaterial & { transmission?: number }
+      const hints = {
+        color: surface.color?.isColor ? `#${surface.color.getHexString()}` : undefined,
+        roughness: surface.roughness,
+        metalness: surface.metalness,
+        // Faintly translucent shades and alpha-cut leaves are not glass; the viewer's glass cut-off.
+        transparent:
+          (surface.transmission ?? 0) > 0 || (material.transparent && material.opacity < 0.6),
+        emissive:
+          (surface.emissiveIntensity ?? 0) > 0 &&
+          (surface.emissive?.r > 0 || surface.emissive?.g > 0 || surface.emissive?.b > 0),
+      }
+      const previous = slots.get(slotId)
+      if (previous) {
+        // A shared slot with conflicting materials has no single authored tone to match.
+        for (const key of ['color', 'roughness', 'metalness', 'transparent'] as const) {
+          if (previous[key] !== hints[key]) delete previous[key]
+        }
+        previous.emissive ||= hints.emissive
+      } else {
+        slots.set(slotId, {
+          id: slotId,
+          label: (conventionId(authored, 'slot_') ?? authored) || undefined,
+          ...hints,
+        })
+      }
     }
   })
   for (const object of toRemove) object.parent?.remove(object)
@@ -282,7 +303,7 @@ function readConventions(root: THREE.Object3D) {
     parts,
     anchors,
     lights,
-    slots: [...slots].map(([id, label]) => ({ id, label })),
+    slots: [...slots.values()],
     cutout,
     collider,
     triangles,
@@ -744,47 +765,26 @@ async function digest(bytes: BufferSource): Promise<string> {
   return Array.from(new Uint8Array(hash), (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-// A deterrent, not the isolation boundary: hosts run this in a locked-down worker or process.
-const SOURCE_GUARD =
-  /\bimport\s*\(|\beval\s*\(|\bFunction\s*\(|\.constructor\s*\(|\bprocess\b|\brequire\s*\(/
-
-export async function compileGeometryScript(
-  input: GeometryScriptCompileInput,
-): Promise<GeometryScriptCompileOutput> {
-  if (new TextEncoder().encode(input.code).byteLength > GEOMETRY_SCRIPT_MAX_BYTES) {
-    throw new Error(`The script is longer than ${GEOMETRY_SCRIPT_MAX_BYTES / 1024} KiB`)
-  }
-  if (SOURCE_GUARD.test(input.code)) {
-    throw new Error(
-      'Geometry scripts cannot use dynamic import, eval, Function constructors, process or require',
-    )
-  }
-  const body = transformModule(input.code, MODULES)
-  // Evaluating the model's module is the compiler's job; callers run it in a locked-down worker.
-  const factory = new Function('__modules', 'THREE', 'lib', body) as (
-    modules: ModuleTable,
-    three: typeof THREE,
-    lib: typeof LIB,
-  ) => { build?: unknown; params?: unknown; mount?: unknown }
-  const exported = factory(MODULES, THREE, LIB)
-  if (typeof exported.build !== 'function') {
-    throw new Error('The script must `export default function build({ params, THREE, lib })`')
-  }
-  const mount = (exported.mount ?? 'floor') as GeometryScriptMount
-  if (!MOUNTS.has(mount)) throw new Error(`\`mount\` must be one of ${[...MOUNTS].join(', ')}`)
-  const specs = readParamSpecs(exported.params)
-  const params = resolveParams(specs, input.params ?? {})
-
-  const built = await (exported.build as (ctx: unknown) => unknown)({
-    params,
-    inputs: {},
-    THREE,
-    lib: LIB,
-  })
-  if (!(built instanceof THREE.Object3D)) {
-    throw new Error('build() must return a THREE.Object3D (usually a THREE.Group)')
-  }
-
+/**
+ * Everything after a module has built its object, whatever the language:
+ * re-origins it for its mount, reads the conventions into the manifest, samples
+ * its clips and exports the GLB. `built.animations` holds its clips.
+ */
+export async function finishBuild({
+  built,
+  mount,
+  specs,
+  params,
+  code,
+  language,
+}: {
+  built: THREE.Object3D
+  mount: GeometryScriptMount
+  specs: GeometryScriptParamSpec[]
+  params: Record<string, GeometryScriptParamValue>
+  code: string
+  language: GeometryScriptLanguage
+}): Promise<GeometryScriptCompileOutput> {
   const root = new THREE.Group()
   root.name = 'pascal_script_root'
   root.add(built)
@@ -821,7 +821,8 @@ export async function compileGeometryScript(
   return {
     glb,
     sha256: await digest(glb),
-    script: await digest(new TextEncoder().encode(input.code)),
+    script: await digest(new TextEncoder().encode(code)),
+    language,
     mount,
     params,
     manifest: compactManifest({
@@ -843,4 +844,52 @@ export async function compileGeometryScript(
       triangles: conventions.triangles,
     }),
   }
+}
+
+// A deterrent, not the isolation boundary: hosts run this in a locked-down worker or process.
+const SOURCE_GUARD =
+  /\bimport\s*\(|\beval\s*\(|\bFunction\s*\(|\.constructor\s*\(|\bprocess\b|\brequire\s*\(/
+
+export function assertScriptSize(code: string) {
+  if (new TextEncoder().encode(code).byteLength > GEOMETRY_SCRIPT_MAX_BYTES) {
+    throw new Error(`The script is longer than ${GEOMETRY_SCRIPT_MAX_BYTES / 1024} KiB`)
+  }
+}
+
+export async function compileGeometryScript(
+  input: GeometryScriptCompileInput,
+): Promise<GeometryScriptCompileOutput> {
+  assertScriptSize(input.code)
+  if (SOURCE_GUARD.test(input.code)) {
+    throw new Error(
+      'Geometry scripts cannot use dynamic import, eval, Function constructors, process or require',
+    )
+  }
+  const body = transformModule(input.code, MODULES)
+  // Evaluating the model's module is the compiler's job; callers run it in a locked-down worker.
+  const factory = new Function('__modules', 'THREE', 'lib', body) as (
+    modules: ModuleTable,
+    three: typeof THREE,
+    lib: typeof LIB,
+  ) => { build?: unknown; params?: unknown; mount?: unknown }
+  const exported = factory(MODULES, THREE, LIB)
+  if (typeof exported.build !== 'function') {
+    throw new Error('The script must `export default function build({ params, THREE, lib })`')
+  }
+  const mount = (exported.mount ?? 'floor') as GeometryScriptMount
+  if (!MOUNTS.has(mount)) throw new Error(`\`mount\` must be one of ${[...MOUNTS].join(', ')}`)
+  const specs = readParamSpecs(exported.params)
+  const params = resolveParams(specs, input.params ?? {})
+
+  const built = await (exported.build as (ctx: unknown) => unknown)({
+    params,
+    inputs: {},
+    THREE,
+    lib: LIB,
+  })
+  if (!(built instanceof THREE.Object3D)) {
+    throw new Error('build() must return a THREE.Object3D (usually a THREE.Group)')
+  }
+
+  return finishBuild({ built, mount, specs, params, code: input.code, language: 'three' })
 }

@@ -92,8 +92,8 @@ function multiNodeHooks(
         })
       : undefined,
     reconcile: reconcile
-      ? (previous, next) =>
-          reconcile(previous as Record<string, unknown>, next as Record<string, unknown>)
+      ? (previous, next, nodes) =>
+          reconcile(previous as Record<string, unknown>, next as Record<string, unknown>, nodes)
       : undefined,
   }
 }

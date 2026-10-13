@@ -22,6 +22,7 @@ import {
   WallNode,
   WindowNode,
   ZoneNode,
+  zoneColorForSeed,
 } from '@aedifex/core'
 import * as WebIFC from 'web-ifc'
 import { extractBeamGeometry } from './beam-geometry'
@@ -2469,6 +2470,7 @@ export async function convertIfcToAedifex(
           object: 'node',
           id: nodeId,
           type: 'zone',
+          color: zoneColorForSeed(nodeId),
           name: longName || spaceName || `Space ${i + 1}`,
           parentId: parentNodeId,
           visible: true,
