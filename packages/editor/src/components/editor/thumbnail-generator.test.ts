@@ -1,17 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { type AnyNode, sceneRegistry, useScene } from '@pascal-app/core'
-import { BuildingNode, CeilingNode, LevelNode, WallNode } from '@pascal-app/core/schema'
-import { hideFromScene, SCENE_LAYER, useViewer } from '@pascal-app/viewer'
+import { type AnyNode, sceneRegistry, useScene } from '@aedifex/core'
+import { BuildingNode, CeilingNode, LevelNode, WallNode } from '@aedifex/core/schema'
+import { hideFromScene, SCENE_LAYER, useViewer } from '@aedifex/viewer'
 import { Group, Layers, Mesh, OrthographicCamera, PerspectiveCamera, Vector2 } from 'three'
 import { CanvasTarget, ClippingGroup, type WebGPURenderer } from 'three/webgpu'
-import {
-  atCaptureSize,
-  capturesOrthographically,
-  interiorCutaway,
-  presentFinished,
-  pumpFrames,
-  tileGrid,
-} from './thumbnail-generator'
+import { atCaptureSize, capturesOrthographically, interiorCutaway, presentFinished, pumpFrames, tileGrid } from './thumbnail-generator'
 
 type FakeCanvas = { width: number; height: number; style: Record<string, string> }
 

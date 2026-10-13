@@ -9,7 +9,7 @@ import {
   PipeSegmentNode,
   PipeTrapNode,
   resolveConnectivityUpdates,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { builtinPlugin } from '../index'
 
 type Port = { id: string; position: [number, number, number] }

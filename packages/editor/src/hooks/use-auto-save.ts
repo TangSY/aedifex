@@ -1,6 +1,6 @@
 'use client'
 
-import { useScene } from '@pascal-app/core'
+import { useScene } from '@aedifex/core'
 import { useCallback, useEffect, useRef } from 'react'
 import { getSavedSceneDocument, type SceneGraph, saveSceneToLocalStorage } from '../lib/scene'
 

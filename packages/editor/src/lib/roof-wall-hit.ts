@@ -10,7 +10,7 @@ import {
   sceneRegistry,
   segmentPointToRoofWallFace,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 
 const worldPoint = new THREE.Vector3()
@@ -46,8 +46,8 @@ const MAX_NORMAL_Y = 0.4
  * (segment-local frame), so the normal is normalised through world space
  * here instead of trusting the event frame.
  *
- * Lives in `@pascal-app/editor` because both the kind-owned door/window
- * tools (in `@pascal-app/nodes`, which depends on editor) and the item
+ * Lives in `@aedifex/editor` because both the kind-owned door/window
+ * tools (in `@aedifex/nodes`, which depends on editor) and the item
  * placement coordinator (in editor itself) consume it.
  */
 export function resolveRoofWallHit(

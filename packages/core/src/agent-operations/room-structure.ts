@@ -38,16 +38,23 @@ type RoomPlan = HostedZoneTransformPlan & {
   separatorIds?: string[]
 }
 
-/** A plan's ordered changes as one set, landing where applying them one by one does. */
+/**
+ * A command's ordered changes as one set. Parent children arrays are relationship caches:
+ * every host updates them from creates, deletes and parentId moves. The command also returns
+ * those caches for scratch-graph previews, but publishing them as writes would detach children
+ * before their deletes and conflict with the MCP's immutable hierarchy boundary.
+ */
 function sceneChanges(changes: readonly NodeChange[]): SceneChanges {
   return mergeSceneChanges(
-    changes.map((change) =>
-      change.op === 'create'
-        ? { create: [{ node: change.node, parentId: change.node.parentId ?? undefined }] }
-        : change.op === 'update'
-          ? { update: [{ id: change.id, data: change.data }] }
-          : { delete: [change.id] },
-    ),
+    changes.flatMap((change): SceneChanges[] => {
+      if (change.op === 'create')
+        return [{ create: [{ node: change.node, parentId: change.node.parentId ?? undefined }] }]
+      if (change.op === 'delete') return [{ delete: [change.id] }]
+      const { children: _children, ...data } = change.data as Partial<AnyNode> & {
+        children?: unknown
+      }
+      return Object.keys(data).length ? [{ update: [{ id: change.id, data }] }] : []
+    }),
   )
 }
 

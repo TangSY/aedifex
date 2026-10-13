@@ -6,8 +6,8 @@ import {
   type GeometryContext,
   RoofNode,
   RoofSegmentNode,
-} from '@pascal-app/core'
-import { createFloorplanContextExtensions } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { createFloorplanContextExtensions } from '@aedifex/editor'
 import { buildRoofFloorplan } from './floorplan'
 
 function buildContext(

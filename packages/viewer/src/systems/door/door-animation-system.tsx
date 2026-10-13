@@ -1,4 +1,4 @@
-import { type AnyNodeId, type DoorNode, emitter, useInteractive, useScene } from '@pascal-app/core'
+import { type AnyNodeId, type DoorNode, emitter, useInteractive, useScene } from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 
 const easeDoorAnimation = (value: number) => value * value * (3 - 2 * value)

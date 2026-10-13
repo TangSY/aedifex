@@ -1,6 +1,7 @@
 import { mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { resolveDefaultDatabasePath } from '@pascal-app/mcp/storage'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
+import { resolveDefaultDatabasePath } from '@aedifex/mcp/storage'
 import { getSceneOperations } from './scene-store-server'
 
 const SCENE_ID = /^[A-Za-z0-9_-]{1,64}$/
@@ -50,6 +51,41 @@ export async function sharedSceneIds(): Promise<string[]> {
   }
 }
 
+/** Publishing geometry must never publish the authored JS or Python module alongside it. */
+export function sceneHasGeometryArtifact({
+  graph,
+  sha256,
+}: {
+  graph: SceneGraph
+  sha256: string
+}): boolean {
+  if (!/^[0-9a-f]{64}$/.test(sha256)) return false
+  let geometry = false
+  for (const node of Object.values(graph.nodes)) {
+    if (
+      node.type === 'item' ||
+      node.type === 'door' ||
+      node.type === 'window' ||
+      node.type === 'column'
+    ) {
+      if (node.source?.script === sha256) return false
+      if (node.source?.artifact === sha256) geometry = true
+    }
+    if (node.type === 'item' && node.asset.src === `artifact://${sha256}`) geometry = true
+  }
+  return geometry
+}
+
+export function isGlbArtifact(bytes: Uint8Array): boolean {
+  if (bytes.byteLength < 12) return false
+  const header = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  return (
+    header.getUint32(0, true) === 0x46546c67 &&
+    header.getUint32(4, true) === 2 &&
+    header.getUint32(8, true) === bytes.byteLength
+  )
+}
+
 export async function isArtifactShared(sha256: string): Promise<boolean> {
   if (!/^[0-9a-f]{64}$/.test(sha256)) return false
   const ids = await sharedSceneIds()
@@ -57,7 +93,7 @@ export async function isArtifactShared(sha256: string): Promise<boolean> {
   const operations = await getSceneOperations()
   for (const id of ids) {
     const scene = await operations.loadStoredScene(id)
-    if (scene && JSON.stringify(scene.graph).includes(sha256)) return true
+    if (scene && sceneHasGeometryArtifact({ graph: scene.graph, sha256 })) return true
   }
   return false
 }

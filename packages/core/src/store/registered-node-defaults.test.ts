@@ -101,7 +101,7 @@ describe('materializeRegisteredNodeDefaults', () => {
   })
 
   test('the editor loads a legacy scene exactly like the viewer, raised slab body included', () => {
-    // The app registers every built-in kind with its core schema (`@pascal-app/nodes`).
+    // The app registers every built-in kind with its core schema (`@aedifex/nodes`).
     for (const option of AnyNode.options) {
       const kind = nodeKindOf(option)
       if (!nodeRegistry.get(kind)) registerNode({ kind, schema: option, schemaVersion: 1 } as never)

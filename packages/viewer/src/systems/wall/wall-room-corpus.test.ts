@@ -11,7 +11,7 @@ import {
   WallNode,
   WindowNode,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Mesh } from 'three'
 import coordinates from '../../../../core/src/lib/__fixtures__/plate-corpus/scene-15.json'
 import hashes from './wall-room-corpus-golden.json'

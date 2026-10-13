@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import type { AnyNodeDefinition } from '@pascal-app/core'
+import type { AnyNodeDefinition } from '@aedifex/core'
 import { builtinPlugin } from '../../index'
 import {
   columnBatchable,

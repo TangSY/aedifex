@@ -9,8 +9,8 @@ import {
   transformZone,
   useScene,
   type ZoneTransformPlan,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Plane, Vector2, Vector3 } from 'three'
 import { create } from 'zustand'
 import { levelFrame } from '../components/editor/group-transform-shared'

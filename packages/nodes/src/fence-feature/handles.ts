@@ -10,7 +10,7 @@ import {
   type HandleDescriptor,
   projectPointToFence,
   type SceneApi,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { fenceBaseElevation } from '../fence/definition'
 import { getFenceFeatureDimensions } from '../fence/geometry-parts'
 

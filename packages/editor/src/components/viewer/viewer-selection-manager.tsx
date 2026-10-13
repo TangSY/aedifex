@@ -1,7 +1,7 @@
 'use client'
 
-import { type AnyNodeId, emitter, type NodeEvent, sceneRegistry, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, emitter, type NodeEvent, sceneRegistry, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
 import { selectionModifiersFromEvent } from '../../lib/selection-routing'

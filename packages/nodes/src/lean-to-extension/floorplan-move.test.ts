@@ -10,8 +10,8 @@ import {
   SlabNode,
   useLiveNodeOverrides,
   WallNode,
-} from '@pascal-app/core'
-import { useEditor, useInteractionScope } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { useEditor, useInteractionScope } from '@aedifex/editor'
 import { leanToExtensionDefinition } from './definition'
 import { leanToFloorplanMoveTarget } from './floorplan-move'
 import { resolveLeanToSlabEdgePlacement } from './placement'

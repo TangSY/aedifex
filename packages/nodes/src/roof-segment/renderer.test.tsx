@@ -7,8 +7,8 @@ import {
   RoofSegmentNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { RoofSystem } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { RoofSystem } from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import type { Mesh } from 'three'
 import RoofSegmentRenderer from './renderer'

@@ -5,7 +5,7 @@ import {
   LevelNode,
   RoofNode,
   RoofSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { bendLocalPoint } from './arc'
 import { createLeanToAssembly } from './assembly'
 import {

@@ -1,4 +1,4 @@
-import { difference, type Ring, union } from '@pascal-app/core'
+import { difference, type Ring, union } from '@aedifex/core'
 import { BufferAttribute, BufferGeometry, DynamicDrawUsage, ShapeUtils, Vector2 } from 'three'
 import type { TerrainMeshBuffers } from './terrain-geometry'
 

@@ -15,9 +15,9 @@ import {
   useScene,
   WallNode,
   ZoneNode,
-} from '@pascal-app/core'
-import { migrateRoomZones } from '@pascal-app/core/scene-migrations'
-import { resolveGlbPick, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { migrateRoomZones } from '@aedifex/core/scene-migrations'
+import { resolveGlbPick, useViewer } from '@aedifex/viewer'
 import { CameraControlsImpl } from '@react-three/drei'
 import { createElement } from 'react'
 import * as THREE from 'three'

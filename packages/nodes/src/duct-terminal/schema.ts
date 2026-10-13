@@ -1,1 +1,1 @@
-export { DuctTerminalNode } from '@pascal-app/core'
+export { DuctTerminalNode } from '@aedifex/core'

@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import {
   executeHostedServiceTool,
   type HostedServiceRequest,
-} from '@pascal-app/core/agent-operations'
+} from '@aedifex/core/agent-operations'
 
-const scope = { pluginId: 'pascal:architect', projectId: 'project_site_test' }
+const scope = { pluginId: 'aedifex:architect', projectId: 'project_site_test' }
 
 describe('hosted service operations', () => {
   test('preserves the pull identity and caller credit ceiling across retries', async () => {

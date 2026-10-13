@@ -7,7 +7,7 @@ import {
   type GeometryContext,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { constructionDimensionStandard } from '../shared/construction-dimension-standards'
 import {
   buildCurvedWallConstructionDimensions,

@@ -1,5 +1,5 @@
-import { migrateLegacyWallAssemblies } from '@pascal-app/core/scene-migrations'
-import { AnyNode, AssetUrl, BaseNode, nodeKindOf, SceneMaterial } from '@pascal-app/core/schema'
+import { migrateLegacyWallAssemblies } from '@aedifex/core/scene-migrations'
+import { AnyNode, AssetUrl, BaseNode, nodeKindOf, SceneMaterial } from '@aedifex/core/schema'
 import { z } from 'zod'
 
 /**

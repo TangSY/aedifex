@@ -1,6 +1,6 @@
 'use client'
 
-import { ARTIFACT_URL_PREFIX, resolveArtifactUrl } from '@pascal-app/core'
+import { ARTIFACT_URL_PREFIX, resolveArtifactUrl } from '@aedifex/core'
 import Image, { type ImageProps } from 'next/image'
 
 /**

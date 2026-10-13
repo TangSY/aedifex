@@ -26,7 +26,7 @@ import {
   setZoneEdges,
   setZoneIntent,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import useDeleteConfirmation, {
   type DeleteConfirmationRequest,
 } from '../store/use-delete-confirmation'

@@ -20,7 +20,7 @@ import {
   union,
   type WallNode,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export type ConstructionPresence = 'present' | 'partial' | 'absent'
 

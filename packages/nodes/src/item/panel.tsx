@@ -6,7 +6,7 @@ import {
   type ItemNode,
   scriptImages,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   ActionButton,
   ActionGroup,
@@ -17,8 +17,8 @@ import {
   triggerSFX,
   useEditor,
   usePlacementNotice,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Copy, Link, Link2Off, Move, Trash2 } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { AuthoredParams } from './authored-params'

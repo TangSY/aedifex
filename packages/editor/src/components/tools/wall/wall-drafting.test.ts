@@ -21,13 +21,13 @@ import {
   useScene,
   type WallNode,
   WallNode as WallSchema,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   migrateCeilingRoomLinks,
   migrateFloorPlates,
   migrateRoomZones,
-} from '@pascal-app/core/scene-migrations'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core/scene-migrations'
+import { useViewer } from '@aedifex/viewer'
 import useEditor from '../../../store/use-editor'
 import useInteractionScope from '../../../store/use-interaction-scope'
 import {

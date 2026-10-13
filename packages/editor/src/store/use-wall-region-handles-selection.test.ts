@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test'
-import { type AnyNodeId, useScene, WallNode } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, useScene, WallNode } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import useInteractionScope from './use-interaction-scope'
 import {
   handleWallRegionDeleteKey,

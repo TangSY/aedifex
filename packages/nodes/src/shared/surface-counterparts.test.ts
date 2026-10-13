@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { type AnyNode, CeilingNode, LevelNode, SlabNode } from '@pascal-app/core'
+import { type AnyNode, CeilingNode, LevelNode, SlabNode } from '@aedifex/core'
 import { sameOutlineSurfaceCounterparts } from './surface-counterparts'
 
 const level = LevelNode.parse({ children: [] })

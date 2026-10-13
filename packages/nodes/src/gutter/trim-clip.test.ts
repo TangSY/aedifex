@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { GutterNode, RoofSegmentNode } from '@pascal-app/core'
+import type { GutterNode, RoofSegmentNode } from '@aedifex/core'
 import { segmentForGutterTrimClip } from './trim-clip'
 
 describe('gutter segment trim clipping', () => {

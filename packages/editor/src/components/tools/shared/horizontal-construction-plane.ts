@@ -5,8 +5,8 @@ import {
   sceneRegistry,
   terrainSupportLift,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Vector3 } from 'three'
 import { publishPlacementSurface } from '../../../lib/active-placement-surface'
 import type { PointerSupportSurface } from './pointer-support-cap'

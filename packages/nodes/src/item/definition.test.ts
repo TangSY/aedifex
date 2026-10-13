@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { useInteractive } from '@pascal-app/core'
+import { useInteractive } from '@aedifex/core'
 import { itemDefinition } from './definition'
 import type { ItemNode } from './schema'
 

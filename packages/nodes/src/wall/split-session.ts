@@ -4,7 +4,7 @@ import {
   runAsSingleSceneHistoryStep,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   captureElementActionOrigin,
   completeElementAction,
@@ -14,7 +14,7 @@ import {
   triggerSFX,
   useEditor,
   useInteractionScope,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import {
   snapWallSplitDistance,
   WALL_SPLIT_MAX_CUTS,

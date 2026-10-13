@@ -1,4 +1,4 @@
-import { type AssetInput, isObject } from '@pascal-app/core'
+import { type AssetInput, isObject } from '@aedifex/core'
 import { Euler, Matrix3, type Matrix4, Quaternion, Vector3 } from 'three'
 import { resolveSnapFlags } from '../../../lib/snapping-mode'
 import useEditor, { getActiveSnappingMode } from '../../../store/use-editor'

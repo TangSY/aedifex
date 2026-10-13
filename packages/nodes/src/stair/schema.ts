@@ -1,1 +1,1 @@
-export { StairNode } from '@pascal-app/core'
+export { StairNode } from '@aedifex/core'

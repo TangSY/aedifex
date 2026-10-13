@@ -1,4 +1,4 @@
-import { DuctFittingNode } from '@pascal-app/core'
+import { DuctFittingNode } from '@aedifex/core'
 import { Euler, Matrix4, Vector3 } from 'three'
 import { fittingLegLength } from '../duct-fitting/ports'
 import { rectSectionAxes } from '../duct-segment/geometry'

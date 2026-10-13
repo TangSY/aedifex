@@ -1,4 +1,4 @@
-import type { FloorplanGeometry, FloorplanPoint, GeometryContext } from '@pascal-app/core'
+import type { FloorplanGeometry, FloorplanPoint, GeometryContext } from '@aedifex/core'
 import { runHangerFloorplan } from '../shared/run-hangers'
 import { ductContinuationHandlePlan, ductEndpointPort } from './continuation'
 import { INCHES_TO_METERS } from './geometry'

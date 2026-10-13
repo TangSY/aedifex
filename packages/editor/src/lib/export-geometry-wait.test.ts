@@ -6,7 +6,7 @@ import {
   nodeRegistry,
   registerNode,
   sceneRegistry,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 import { nodesAwaitingExportGeometry, waitForExportGeometry } from './glb-export'
 

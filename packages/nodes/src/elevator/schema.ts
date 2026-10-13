@@ -1,1 +1,1 @@
-export { ElevatorNode } from '@pascal-app/core'
+export { ElevatorNode } from '@aedifex/core'

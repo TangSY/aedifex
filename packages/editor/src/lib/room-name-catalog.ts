@@ -1,4 +1,4 @@
-import type { AnyNode } from '@pascal-app/core'
+import type { AnyNode } from '@aedifex/core'
 
 /** A titled group of the room-name combobox. */
 export type RoomNameSection = { id: string; title: string; names: readonly string[] }

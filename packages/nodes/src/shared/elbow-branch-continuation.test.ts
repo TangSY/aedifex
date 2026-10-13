@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { DuctFittingNode, PipeFittingNode } from '@pascal-app/core'
+import { DuctFittingNode, PipeFittingNode } from '@aedifex/core'
 import { getDuctFittingPorts } from '../duct-fitting/ports'
 import { getPipeFittingPorts } from '../pipe-fitting/ports'
 import {

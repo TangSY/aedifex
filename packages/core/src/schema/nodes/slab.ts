@@ -2,6 +2,7 @@ import dedent from 'dedent'
 import { z } from 'zod'
 import { BaseNode, nodeType, objectId } from '../base'
 import { MaterialSchema } from '../material'
+import { SlabFoundation } from './slab-foundation'
 import { SurfaceHoleMetadata } from './surface-hole-metadata'
 
 // Edit-time floor for `thickness` — a thinner slab z-fights the ceiling's
@@ -40,12 +41,7 @@ export const SlabNode = BaseNode.extend({
     .describe(
       'Base plate reference walking surface in level-local meters. Absent follows terrain and support. The resolved top minus this reference is the footprint lift; only an atomic floor-reference rebase may change it.',
     ),
-  foundation: z
-    .object({
-      type: z.enum(['solid', 'none']),
-      material: z.union([z.string(), MaterialSchema]).optional(),
-    })
-    .optional(),
+  foundation: SlabFoundation.optional(),
   thickness: z.number().default(0.05), // Grows downward from the surface
   recessed: z.boolean().default(false),
   recessedRimElevation: z.number().finite().optional(),

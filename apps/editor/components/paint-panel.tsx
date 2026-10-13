@@ -1,6 +1,6 @@
 'use client'
 
-import { MaterialPaintPanel, useEditor } from '@pascal-app/editor'
+import { MaterialPaintPanel, useEditor } from '@aedifex/editor'
 import { useEffect } from 'react'
 import { activatePaintMode } from '@/lib/build-palette'
 

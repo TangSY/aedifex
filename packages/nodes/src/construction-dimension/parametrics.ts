@@ -1,4 +1,4 @@
-import type { ConstructionDimensionNode, ParametricDescriptor } from '@pascal-app/core'
+import type { ConstructionDimensionNode, ParametricDescriptor } from '@aedifex/core'
 
 export const constructionDimensionParametrics: ParametricDescriptor<ConstructionDimensionNode> = {
   groups: [],

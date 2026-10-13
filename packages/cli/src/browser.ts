@@ -5,8 +5,8 @@ export function openBrowser(
   environment: NodeJS.ProcessEnv = process.env,
   spawnProcess: typeof spawn = spawn,
 ): void {
-  if (environment.PASCAL_NO_OPEN === '1') return
-  const { PASCAL_API_KEY: _pascalApiKey, ...browserEnvironment } = environment
+  if (environment.AEDIFEX_NO_OPEN === '1') return
+  const { AEDIFEX_API_KEY: _apiKey, ...browserEnvironment } = environment
   const command =
     process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'cmd' : 'xdg-open'
   const args = process.platform === 'win32' ? ['/c', 'start', '', url] : [url]

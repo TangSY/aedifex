@@ -1,4 +1,4 @@
-import { type ParametricDescriptor, planStairRiseEdit, type StairNode } from '@pascal-app/core'
+import { type ParametricDescriptor, planStairRiseEdit, type StairNode } from '@aedifex/core'
 import { StairConstructionField } from './construction-controls'
 import { StairRailingField } from './railing-controls'
 

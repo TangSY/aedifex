@@ -1,5 +1,5 @@
-import { type AnyNodeId, useLiveNodeOverrides, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, useLiveNodeOverrides, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
 import useEditor, { isBrushMode } from '../store/use-editor'
 import useInteractionScope from '../store/use-interaction-scope'

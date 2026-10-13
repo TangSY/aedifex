@@ -11,7 +11,7 @@ import {
   roomFinishRole,
   type SlabNode,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { create } from 'zustand'
 import { roomFootprint } from './floor-footprints'
 

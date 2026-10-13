@@ -1,25 +1,17 @@
 services:
   editor:
-    image: ghcr.io/pascalorg/pascal-editor:latest
-    # `docker compose build` rebuilds the image from this checkout; a plain
-    # `docker compose up` pulls the published one.
     build: .
     ports:
-      - "${PORT:-3000}:3000"
+      - "127.0.0.1:${PORT:-3000}:3000"
     environment:
-      # The one password that unlocks this editor. Required on any host that is
-      # not loopback; without it the app serves a setup page and nothing else.
-      PASCAL_ADMIN_PASSWORD: ${PASCAL_ADMIN_PASSWORD:?Set PASCAL_ADMIN_PASSWORD}
-      # The address people use to reach it. Read per request, so the same image
-      # serves any domain or port.
-      PASCAL_PUBLIC_URL: ${PASCAL_PUBLIC_URL:-http://localhost:${PORT:-3000}}
-      # Optional bearer token for agents and scripts calling /api/scenes.
-      PASCAL_SCENE_API_TOKEN: ${PASCAL_SCENE_API_TOKEN:-}
+      NODE_ENV: production
+      AEDIFEX_ADMIN_PASSWORD: ${AEDIFEX_ADMIN_PASSWORD:?Set AEDIFEX_ADMIN_PASSWORD}
+      AEDIFEX_PUBLIC_URL: ${AEDIFEX_PUBLIC_URL:-http://localhost:${PORT:-3000}}
+      AEDIFEX_SCENE_API_TOKEN: ${AEDIFEX_SCENE_API_TOKEN:-}
+      AEDIFEX_DATA_DIR: /data
     volumes:
-      # Scene database location. Without the volume, every saved project is
-      # discarded when the container is recreated.
-      - pascal-data:/data
+      - aedifex-data:/data
     restart: unless-stopped
 
 volumes:
-  pascal-data:
+  aedifex-data:

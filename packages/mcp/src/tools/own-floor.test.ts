@@ -2,13 +2,13 @@ import { expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { SceneBridge } from '../bridge/scene-bridge'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 
 test('set_zone_intent exposes own floors, construction edits, and a clear conversion refusal', async () => {
   const bridge = new SceneBridge()
   bridge.setScene({}, [])
   bridge.loadDefault()
-  const server = createPascalMcpServer({ bridge })
+  const server = createAedifexMcpServer({ bridge })
   const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: 'own-floor', version: '1' })
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])

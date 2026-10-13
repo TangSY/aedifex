@@ -1,5 +1,5 @@
-import type { AnyNode, AnyNodeId, DoorNode, WallNode, WindowNode, ZoneNode } from '@pascal-app/core'
-import { deriveZoneQuantityReport } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, DoorNode, WallNode, WindowNode, ZoneNode } from '@aedifex/core'
+import { deriveZoneQuantityReport } from '@aedifex/core'
 import { collectFloorplanSchedules } from './floorplan-export'
 import type { FloorplanSchedule } from './floorplan-extension'
 import { resolveMarkDetail } from './marks'
@@ -9,7 +9,7 @@ import { resolveMarkDetail } from './marks'
  *
  * The PDF export already renders schedules through the node registry
  * (`collectFloorplanSchedules` in `floorplan-export.tsx`, backed by each
- * kind's `def.extensions['pascal:editor/floorplan'].schedule`). That path is
+ * kind's `def.extensions['aedifex:editor/floorplan'].schedule`). That path is
  * untouched and keeps working; `floorplanSchedules()` below re-exports it.
  *
  * What this module adds is a TYPED, renderer-agnostic row model that the

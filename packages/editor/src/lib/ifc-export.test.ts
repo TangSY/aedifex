@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, sceneRegistry } from '@pascal-app/core'
+import { type AnyNode, sceneRegistry } from '@aedifex/core'
 import * as THREE from 'three'
 import { collectIfcMeshes, exportPreparedSceneToIfc, ifcFileName } from './ifc-export'
 
@@ -152,8 +152,8 @@ test('material groups retain their surface owner and semantic subpart', () => {
   )
   mesh.userData = {
     surfaceNodeIds: [child.id, child.id, owner.id, owner.id, owner.id, owner.id],
-    pascalIfcRole: 'railing',
-    pascalIfcParts: [
+    aedifexIfcRole: 'railing',
+    aedifexIfcParts: [
       { start: 0, count: 6, role: 'railing' },
       { start: 6, count: 30, role: 'handrail' },
     ],

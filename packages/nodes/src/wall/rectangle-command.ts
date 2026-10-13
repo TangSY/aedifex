@@ -7,7 +7,7 @@ import {
   type WallConstructionOptions,
   type WallNode,
   type WallPlanPoint,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export function createWallRectangle(
   levelId: AnyNodeId,

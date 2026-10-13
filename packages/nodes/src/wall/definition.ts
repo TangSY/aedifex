@@ -6,7 +6,7 @@ import {
   type NodeDefinition,
   type WallNode as WallNodeType,
   wallSlots,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   DRAFTING_SURFACE_EXTENSION_KEY,
   type DraftingSurfaceExtension,
@@ -16,7 +16,7 @@ import {
   PANEL_MODEL_EXTENSION,
   useEditor,
   type WallDrawVariant,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { buildWallContextualDimensions } from './contextual-dimensions'
 import { hasWallCurveBlockingChildren } from './curve-eligibility'
 import { buildWallFloorplan, computeWallFloorplanLevelData } from './floorplan'
@@ -107,7 +107,7 @@ export const wallDefinition: NodeDefinition<typeof WallNode> = {
         return { face: 'end' }
       },
     } satisfies DraftingSurfaceExtension,
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       tool: () => import('./floorplan-tool'),
       reshapeLayers: { split: () => import('./split-floorplan-layer') },
       contextualDimensions: buildWallContextualDimensions,

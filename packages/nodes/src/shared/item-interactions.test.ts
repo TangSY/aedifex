@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import { type AnyNode, toggleMechanism, useInteractive } from '@pascal-app/core'
+import { type AnyNode, toggleMechanism, useInteractive } from '@aedifex/core'
 import { itemDefinition } from '../item/definition'
 import { proceduralItemDefinition } from '../procedural-item/definition'
 import {

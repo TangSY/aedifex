@@ -55,7 +55,7 @@ export const GutterNode = BaseNode.extend({
   // White preset by default — matches the rest of the roof accessory
   // family (box-vent / ridge-vent) so the paint inspector reads as
   // "White" instead of "no material" on a freshly-placed gutter.
-  materialPreset: z.string().default('preset-white'),
+  materialPreset: z.string().default('library:preset-white'),
 
   roofSegmentId: z.string().optional(),
   // Segment-local. The placement tool snaps to the eave line (Z =

@@ -15,8 +15,8 @@ import {
   type WallEvent,
   type WallNode,
   WallNode as WallNodeSchema,
-} from '@pascal-app/core'
-import { placedDoorFace } from '@pascal-app/core/building'
+} from '@aedifex/core'
+import { placedDoorFace } from '@aedifex/core/building'
 import {
   EDITOR_LAYER,
   getSideFromNormal,
@@ -27,8 +27,8 @@ import {
   useEditor,
   useFacingPose,
   usePlacementPreview,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BoxGeometry, EdgesGeometry, type Group, type LineSegments, Vector3 } from 'three'
 import { LineBasicNodeMaterial } from 'three/webgpu'

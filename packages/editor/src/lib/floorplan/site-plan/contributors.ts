@@ -10,7 +10,7 @@
  * plugin that locates the house's utility services also passes `services`,
  * and the site plan runs them schematically to the street.
  */
-import type { AnyNodeId, FloorplanGeometry, SceneSnapshot } from '@pascal-app/core'
+import type { AnyNodeId, FloorplanGeometry, SceneSnapshot } from '@aedifex/core'
 
 export type SitePlanContributor = (
   scene: SceneSnapshot,

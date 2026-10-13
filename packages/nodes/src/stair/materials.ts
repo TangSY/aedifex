@@ -1,15 +1,15 @@
-import type { StairNode, StairSegmentNode } from '@pascal-app/core'
+import type { StairNode, StairSegmentNode } from '@aedifex/core'
 import {
   STAIR_BODY_SLOT_DEFAULT,
   STAIR_TREADS_SLOT_DEFAULT,
   type StairSlotId,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getStraightStairSegmentBodyMaterials,
   resolveMaterialRef,
   resolveSlotDefaultMaterial,
   type StairBodyMaterials,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import type * as THREE from 'three'
 
 type SceneMaterials = Parameters<typeof resolveMaterialRef>[1]

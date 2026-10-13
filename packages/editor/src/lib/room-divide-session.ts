@@ -12,7 +12,7 @@ import {
   snapZoneBoundary,
   useScene,
   type ZoneDivisionContext,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import useEditor, {
   isAngleSnapActive,
   isGridSnapActive,

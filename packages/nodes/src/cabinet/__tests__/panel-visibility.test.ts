@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { CabinetModuleNode } from '@pascal-app/core'
+import { CabinetModuleNode } from '@aedifex/core'
 import {
   cabinetModuleSupportsPresets,
   cabinetModuleSupportsTopFinish,

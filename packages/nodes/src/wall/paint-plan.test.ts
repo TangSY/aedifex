@@ -11,7 +11,7 @@ import {
   wallRoomFaceRole,
   wallRoomFinishRole,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { BoxGeometry, type Material, Mesh, MeshBasicMaterial } from 'three'
 import { regroupWallFaces, wallPaint } from './paint'
 

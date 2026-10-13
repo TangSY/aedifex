@@ -7,8 +7,8 @@ import {
   type StairNode,
   type StairRailPath,
   useScene,
-} from '@pascal-app/core'
-import { getStairRailingMaterial, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { getStairRailingMaterial, useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
@@ -169,7 +169,7 @@ function buildRails(
     ) - guardCount
   const metal = merge(parts)
   if (metal)
-    metal.userData.pascalIfcParts = [
+    metal.userData.aedifexIfcParts = [
       ...(guardCount ? [{ start: 0, count: guardCount, role: 'railing' }] : []),
       ...(handrailCount ? [{ start: guardCount, count: handrailCount, role: 'handrail' }] : []),
     ]
@@ -231,7 +231,7 @@ export function ContinuousStairRailings({
     [stair, shading, textures, colorPreset, sceneMaterials],
   )
   return (
-    <group name="stair-continuous-railing" userData={{ pascalIfcRole: 'railing' }}>
+    <group name="stair-continuous-railing" userData={{ aedifexIfcRole: 'railing' }}>
       {geometry[0] ? (
         <mesh
           dispose={null}
@@ -242,8 +242,8 @@ export function ContinuousStairRailings({
           receiveShadow
           userData={{
             slotId: 'railing',
-            pascalIfcRole: 'railing',
-            pascalIfcParts: geometry[0].userData.pascalIfcParts,
+            aedifexIfcRole: 'railing',
+            aedifexIfcParts: geometry[0].userData.aedifexIfcParts,
           }}
         />
       ) : null}
@@ -255,7 +255,7 @@ export function ContinuousStairRailings({
           material={glass}
           castShadow
           receiveShadow
-          userData={{ slotId: 'infill', pascalIfcRole: 'railing' }}
+          userData={{ slotId: 'infill', aedifexIfcRole: 'railing' }}
         />
       ) : null}
     </group>

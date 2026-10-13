@@ -18,9 +18,9 @@ import {
   useScene,
   WallNode,
   ZoneNode,
-} from '@pascal-app/core'
-import { migrateCeilingRoomLinks, migrateRoomZones } from '@pascal-app/core/scene-migrations'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { migrateCeilingRoomLinks, migrateRoomZones } from '@aedifex/core/scene-migrations'
+import { useViewer } from '@aedifex/viewer'
 import { _roots, act } from '@react-three/fiber'
 import { createElement } from 'react'
 import { Group, type LineSegments } from 'three'

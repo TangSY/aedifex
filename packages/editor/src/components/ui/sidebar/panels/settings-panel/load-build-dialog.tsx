@@ -1,5 +1,5 @@
-import type { BuildStats, SchemaIssue, ValidateBuildJsonResult } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import type { BuildStats, SchemaIssue, ValidateBuildJsonResult } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import {
   AlertTriangle,
   AppWindow,

@@ -5,8 +5,8 @@ import {
   useLiveNodeOverrides,
   useScene,
   WallNode,
-} from '@pascal-app/core'
-import { WallCutoutCache, type WallCutoutViewerState } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { WallCutoutCache, type WallCutoutViewerState } from '@aedifex/viewer'
 import { Mesh, PerspectiveCamera } from 'three'
 import { getCurtainAwareWallMaterials } from './curtain-wall-materials'
 

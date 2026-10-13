@@ -1,6 +1,6 @@
 'use client'
 
-import { initSpatialGridSync, useScene } from '@pascal-app/core'
+import { initSpatialGridSync, useScene } from '@aedifex/core'
 import {
   applySceneGraphToEditor,
   FirstPersonControls,
@@ -16,8 +16,8 @@ import {
   ViewerStage,
   type ViewerStageMode,
   WalkthroughHud,
-} from '@pascal-app/editor'
-import { InteractiveSystem, SceneEnvironment, useViewer, Viewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { InteractiveSystem, SceneEnvironment, useViewer, Viewer } from '@aedifex/viewer'
 import Image from 'next/image'
 import { Component, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
@@ -132,18 +132,18 @@ export function EmbedViewer({ id, name, graph, chrome = true }: EmbedViewerProps
             'corner-smooth absolute z-20 inline-flex items-center gap-1.5 rounded-2xl border border-border/40 bg-background/95 px-3 py-2 font-medium text-foreground text-xs shadow-elevation-4 backdrop-blur-xl transition-colors hover:bg-background',
             stageMode === '3d' ? 'right-3 bottom-3' : 'right-4 bottom-16',
           )}
-          href="https://editor.pascal.app"
+          href="https://github.com/TangSY/aedifex"
           rel="noopener"
           target="_blank"
         >
           <Image
             alt=""
-            className="h-3.5 w-3.5 invert"
+            className="h-3.5 w-3.5"
             height={14}
-            src="/pascal-logo-shape.svg"
+            src="/logo-200.png"
             width={14}
           />
-          Made with Pascal
+          Made with Aedifex
         </a>
       )}
     </div>
@@ -211,7 +211,7 @@ function EmbedWalkthroughHud() {
  * canvas locks it.
  */
 function requestWalkthroughPointerLock() {
-  const canvas = document.querySelector<HTMLCanvasElement>('[data-pascal-viewer-3d] canvas')
+  const canvas = document.querySelector<HTMLCanvasElement>('[data-aedifex-viewer-3d] canvas')
   if (!canvas) return
   if (!canvas.hasAttribute('tabindex')) canvas.tabIndex = -1
   canvas.focus({ preventScroll: true })

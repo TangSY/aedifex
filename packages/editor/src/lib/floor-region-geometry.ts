@@ -1,4 +1,4 @@
-import { area, containsPoint, intersection, type MultiPolygon } from '@pascal-app/core'
+import { area, containsPoint, intersection, type MultiPolygon } from '@aedifex/core'
 import type { FloorRegionPoint } from './floor-region-snap'
 
 // Pure geometry for "Paint part of the floor": which room a plan point is in,

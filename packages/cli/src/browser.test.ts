@@ -12,12 +12,12 @@ const spawnMock = mock(() => {
 afterEach(() => spawnMock.mockClear())
 
 describe('browser launch', () => {
-  test('removes the Pascal API key from the spawned process environment', () => {
+  test('removes the Aedifex API key from the spawned process environment', () => {
     openBrowser(
-      'https://editor.pascal.app/settings/agents/claim',
+      'http://aedifex.localhost:3000',
       {
-        HOME: '/tmp/pascal-home',
-        PASCAL_API_KEY: 'sk_live_private-agent-key',
+        HOME: '/tmp/aedifex-home',
+        AEDIFEX_API_KEY: 'sk_live_private-agent-key',
         PATH: '/usr/bin',
       },
       spawnMock,
@@ -25,16 +25,16 @@ describe('browser launch', () => {
 
     expect(spawnMock).toHaveBeenCalledTimes(1)
     const options = spawnMock.mock.calls[0]?.[2]
-    expect(options?.env).toEqual({ HOME: '/tmp/pascal-home', PATH: '/usr/bin' })
+    expect(options?.env).toEqual({ HOME: '/tmp/aedifex-home', PATH: '/usr/bin' })
     expect(JSON.stringify(options)).not.toContain('sk_live_private-agent-key')
   })
 
   test('does not spawn when browser opening is disabled', () => {
     openBrowser(
-      'https://editor.pascal.app/settings/agents/claim',
+      'http://aedifex.localhost:3000',
       {
-        PASCAL_API_KEY: 'sk_live_private-agent-key',
-        PASCAL_NO_OPEN: '1',
+        AEDIFEX_API_KEY: 'sk_live_private-agent-key',
+        AEDIFEX_NO_OPEN: '1',
       },
       spawnMock,
     )

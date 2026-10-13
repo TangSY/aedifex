@@ -12,7 +12,7 @@ import {
   parseMaterialRef,
   type SceneMaterialId,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   ActionButton,
   ActionGroup,
@@ -22,8 +22,8 @@ import {
   SliderControl,
   triggerSFX,
   useInteractionScope,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Check, Move, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { resolveSlotPaintMaterialRef } from '../shared/slot-paint'

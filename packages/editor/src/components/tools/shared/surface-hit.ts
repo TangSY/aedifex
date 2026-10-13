@@ -1,4 +1,4 @@
-import { type AnyNode, type NodeEvent, type SurfaceHit, sceneRegistry } from '@pascal-app/core'
+import { type AnyNode, type NodeEvent, type SurfaceHit, sceneRegistry } from '@aedifex/core'
 import { Matrix3, type Matrix4, Vector3 } from 'three'
 
 export function surfaceWorldNormalY(

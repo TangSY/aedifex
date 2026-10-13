@@ -7,7 +7,7 @@ import type {
   LevelNode,
   SurfaceRejectReason,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { Vector3 } from 'three'
 
 // ============================================================================

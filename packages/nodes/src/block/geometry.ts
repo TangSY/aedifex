@@ -7,13 +7,13 @@ import {
   type GeometryContext,
   getBlockFaceFrame,
   getBlockFaceNormal,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type ColorPreset,
   createSurfaceRoleMaterial,
   type RenderShading,
   resolveMaterialRef,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import {
   BufferGeometry,
   Float32BufferAttribute,

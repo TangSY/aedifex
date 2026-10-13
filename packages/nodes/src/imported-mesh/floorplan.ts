@@ -3,7 +3,7 @@ import type {
   FloorplanPoint,
   GeometryContext,
   ImportedMeshNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /** A compact plan proxy for imported geometry, derived from its XZ bounds. */
 export function buildImportedMeshFloorplan(

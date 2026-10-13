@@ -1,1 +1,1 @@
-export { ImportedMeshNode } from '@pascal-app/core'
+export { ImportedMeshNode } from '@aedifex/core'

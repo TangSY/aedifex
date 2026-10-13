@@ -1,4 +1,4 @@
-import { type IconRef, nodeRegistry, type TerrainVerb } from '@pascal-app/core'
+import { type IconRef, nodeRegistry, type TerrainVerb } from '@aedifex/core'
 import type { ContinuationMode } from './continuation'
 import { getWallDrawVariantInfo, wallDrawVariantOf } from './wall-draw-variant'
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useScene } from '@pascal-app/core'
+import { useScene } from '@aedifex/core'
 import { useEffect } from 'react'
 
 function useHangerDependencies(kind: 'duct-segment' | 'pipe-segment') {

@@ -1,12 +1,12 @@
 'use client'
-import { emitter, type FenceEvent, type FenceFeatureNode, type GridEvent } from '@pascal-app/core'
+import { emitter, type FenceEvent, type FenceFeatureNode, type GridEvent } from '@aedifex/core'
 import {
   consumePlacementDragRelease,
   markToolCancelConsumed,
   triggerSFX,
   useEditor,
   useRegistryToolContext,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { useEffect } from 'react'
 import { createFenceFeatureMoveSession } from './move-session'
 

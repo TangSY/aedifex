@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import type { QuickMeasurementReport } from '@pascal-app/core'
+import type { QuickMeasurementReport } from '@aedifex/core'
 import { selectQuickMeasurementHudEntry, useQuickMeasurementHud } from './use-quick-measurement-hud'
 
 const report = (title: string): QuickMeasurementReport => ({

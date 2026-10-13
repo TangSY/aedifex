@@ -1,6 +1,6 @@
 'use client'
 
-import { type MaterialTarget, toLibraryMaterialRef } from '@pascal-app/core'
+import { type MaterialTarget, toLibraryMaterialRef } from '@aedifex/core'
 import { Plus } from 'lucide-react'
 import { useMaterialCatalogModel, type MaterialSourceFilter } from '../../../lib/material-catalog-model'
 import { triggerSFX } from '../../../lib/sfx-bus'
@@ -21,7 +21,6 @@ export type MaterialPickerProps = {
 function getCategoryLabel(category: string) {
   return category.charAt(0).toUpperCase() + category.slice(1)
 }
-
 /**
  * Catalog material picker: a fixed row of category tabs and a source filter row
  * over a scrollable grid of swatches. Scene-material creation lives in the
@@ -35,7 +34,16 @@ export function MaterialPicker({
   onCreateMaterialRequest,
   selectOnCategoryChange = true,
 }: MaterialPickerProps) {
-  const { selectedCategory, setSelectedCategory, sourceFilter, setSourceFilter, visibleSourceFilters, availableCategories, catalogItems, select: handleCatalogSelect } = useMaterialCatalogModel(selectedMaterialPreset, onSelectMaterialPreset, disabled, selectOnCategoryChange)
+  const {
+    selectedCategory,
+    setSelectedCategory,
+    sourceFilter,
+    setSourceFilter,
+    visibleSourceFilters,
+    availableCategories,
+    catalogItems,
+    select: handleCatalogSelect,
+  } = useMaterialCatalogModel(selectedMaterialPreset, onSelectMaterialPreset, disabled, selectOnCategoryChange)
 
   return (
     <div

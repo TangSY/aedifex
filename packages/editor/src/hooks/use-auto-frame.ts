@@ -1,6 +1,6 @@
 'use client'
 
-import { emitter, useScene } from '@pascal-app/core'
+import { emitter, useScene } from '@aedifex/core'
 import { useEffect, useRef } from 'react'
 import { computeSceneBoundsXZ } from '../lib/scene-bounds'
 

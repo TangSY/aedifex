@@ -1,6 +1,6 @@
 import { Settings } from 'lucide-react'
 import Link from 'next/link'
-import { AppHeader, AppShell, ICON_BUTTON, PascalMark } from '@/components/app-shell'
+import { AppHeader, AppShell, ICON_BUTTON, AedifexMark } from '@/components/app-shell'
 import { CreateProjectButton } from '@/components/create-project-button'
 import { SceneCard, type SceneCardData } from '@/components/scene-card'
 import { getSceneOperations } from '@/lib/scene-store-server'
@@ -55,7 +55,7 @@ export default async function HomePage() {
       <main className="mx-auto max-w-6xl px-6 py-10">
         {scenes.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-4 py-32 text-center">
-            <PascalMark className="h-10 w-10" />
+            <AedifexMark className="h-10 w-10" />
             <p className="max-w-xs text-muted-foreground text-sm">
               Your projects live here. Start one to begin designing.
             </p>

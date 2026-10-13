@@ -1,1 +1,1 @@
-export { SiteNode } from '@pascal-app/core'
+export { SiteNode } from '@aedifex/core'

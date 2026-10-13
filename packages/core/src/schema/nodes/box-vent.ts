@@ -17,7 +17,7 @@ export const BoxVentNode = BaseNode.extend({
   // current selection instead of an empty "no material" state, which
   // made it look like the vent had nothing applied even though the
   // renderer was falling back to white internally.
-  materialPreset: z.string().default('preset-white'),
+  materialPreset: z.string().default('library:preset-white'),
 
   roofSegmentId: z.string().optional(),
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),

@@ -13,7 +13,7 @@ import {
   type SlabNode,
   upperFloorHeightControl,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import {

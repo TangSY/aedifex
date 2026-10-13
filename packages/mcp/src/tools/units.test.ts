@@ -8,7 +8,7 @@ import {
   LevelNode,
   UnitNode,
   ZoneNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import { SceneBridge } from '../bridge/scene-bridge'
 import type { SceneOperations } from '../operations'
 import { ADDITIVE_TOOL_ANNOTATIONS, READ_ONLY_TOOL_ANNOTATIONS } from './annotations'

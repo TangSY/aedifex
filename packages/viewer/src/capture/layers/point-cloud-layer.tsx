@@ -1,6 +1,6 @@
 'use client'
 
-import type { CaptureStreamPacket } from '@pascal-app/core/capture'
+import type { CaptureStreamPacket } from '@aedifex/core/capture'
 import { useLoader } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 import { BufferGeometry, Float32BufferAttribute } from 'three'

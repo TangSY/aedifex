@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { AnyNode, AnyNodeId, SceneApi } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, SceneApi } from '@aedifex/core'
 import { applyCabinetModuleInsertion } from '../insertion'
 import { planRunModuleInsertion, type RunWallConstraints } from '../run-layout'
 import { cornerPinnedEndsForRun } from '../run-ops'

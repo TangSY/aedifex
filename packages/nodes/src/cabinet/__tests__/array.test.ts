@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { AnyNode, AnyNodeId, SceneApi } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, SceneApi } from '@aedifex/core'
 import { cabinetRunArrayPlan, duplicateCabinetModuleAlongRun } from '../run-ops'
 import { CabinetModuleNode, CabinetNode } from '../schema'
 

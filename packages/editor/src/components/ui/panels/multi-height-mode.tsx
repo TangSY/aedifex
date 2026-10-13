@@ -12,8 +12,8 @@ import {
   terrainSupportLift,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { formatLinearMeasurement } from '../../../lib/measurements'
@@ -61,7 +61,7 @@ function ceilingCustomHeight(node: CeilingNode, nodes: Record<string, AnyNode>):
 export function applyMultiHeightMode(
   nodeIds: AnyNodeId[],
   next: 'storey' | 'custom',
-  parametrics: ParametricDescriptor<AnyNode>,
+  parametrics: Pick<ParametricDescriptor<AnyNode>, 'derive' | 'reconcile'>,
 ) {
   const nodes = useScene.getState().nodes as Record<string, AnyNode>
   commitMultiNodeFields(

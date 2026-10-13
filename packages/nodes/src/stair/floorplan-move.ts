@@ -8,13 +8,13 @@ import {
   snapScalar,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   applyFloorplanAlignment,
   getSegmentGridStep,
   isGridSnapActive,
   isMagneticSnapActive,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { createFloorplanCursorResolver } from '../shared/floorplan-cursor'
 
 /**

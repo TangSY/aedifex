@@ -13,7 +13,7 @@ import {
   useLiveTransforms,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CEILING_REGION_MESH,
   type CeilingRegionMaterial,
@@ -22,7 +22,7 @@ import {
   resolveSurfaceColor,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { BackSide, type Mesh } from 'three/webgpu'
 import { createPlaceholderGeometry } from '../shared/placeholder-geometry'

@@ -1,7 +1,7 @@
 'use client'
 
-import { type AnyNodeId, sceneRegistry, useInteractive, useScene } from '@pascal-app/core'
-import { evaluateRecipe } from '@pascal-app/core/procedural-items'
+import { type AnyNodeId, sceneRegistry, useInteractive, useScene } from '@aedifex/core'
+import { evaluateRecipe } from '@aedifex/core/procedural-items'
 import {
   computeHeroFraming,
   createSnapshotPipeline,
@@ -15,7 +15,7 @@ import {
   temporarilyHideNodeTypes,
   useSceneAtmosphere,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import {
@@ -397,7 +397,7 @@ export function BakeThumbnail({
         for (const [id, on] of priorLights)
           useInteractive
             .getState()
-            .setProceduralLights(id as import('@pascal-app/core').AnyNodeId, on)
+            .setProceduralLights(id as import('@aedifex/core').AnyNodeId, on)
         restoreNodeVisibility()
       }
     }

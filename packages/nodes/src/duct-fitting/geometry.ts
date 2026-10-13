@@ -1,6 +1,6 @@
-import type { GeometryContext } from '@pascal-app/core'
-import { DUCT_BODY_SLOT_ID } from '@pascal-app/core'
-import type { ColorPreset, RenderShading } from '@pascal-app/viewer'
+import type { GeometryContext } from '@aedifex/core'
+import { DUCT_BODY_SLOT_ID } from '@aedifex/core'
+import type { ColorPreset, RenderShading } from '@aedifex/viewer'
 import {
   BufferGeometry,
   CylinderGeometry,

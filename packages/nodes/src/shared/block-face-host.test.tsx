@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { BlockNode, getBlockFaceFrame } from '@pascal-app/core'
+import { BlockNode, getBlockFaceFrame } from '@aedifex/core'
 import { applyBlockCommand } from '../block/commands'
 import { resolveBlockFaceHostTransform } from './block-face-host'
 

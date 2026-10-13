@@ -1,5 +1,5 @@
-import { GROUND_SUPPORT_ID } from '../../hooks/spatial-grid/support-host-id'
 import { newZone } from '../../lib/new-zone'
+import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import { containsPoint } from '../../lib/polygon-boolean'
 import { polygonInteriorPoint } from '../../lib/polygon-label'
 import type { SlabNode } from '../../schema'

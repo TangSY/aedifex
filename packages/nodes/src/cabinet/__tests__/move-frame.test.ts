@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, type AnyNodeId, DoorNode, LevelNode, WallNode } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, DoorNode, LevelNode, WallNode } from '@aedifex/core'
 import { cabinetModuleParentFrame } from '../move-frame'
 import { CabinetModuleNode, CabinetNode } from '../schema'
 

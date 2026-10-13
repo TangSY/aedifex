@@ -7,9 +7,9 @@ import {
   type RoofSegmentWallFace,
   roofFacePointToSegment,
   sceneRegistry,
-} from '@pascal-app/core'
-import { hasRoofFaceChildOverlap, resolveRoofWallHit } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { hasRoofFaceChildOverlap, resolveRoofWallHit } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Vector3 } from 'three'
 
 /**

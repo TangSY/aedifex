@@ -1,6 +1,6 @@
 'use client'
 
-import { type Cursor, emitter, sceneRegistry } from '@pascal-app/core'
+import { type Cursor, emitter, sceneRegistry } from '@aedifex/core'
 import type { ThreeEvent } from '@react-three/fiber'
 import { type ReactNode, useEffect, useMemo, useRef } from 'react'
 import {

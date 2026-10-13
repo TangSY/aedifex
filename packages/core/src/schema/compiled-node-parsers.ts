@@ -15,6 +15,9 @@ import { AnyNode, type AnyNodeOption, nodeKindOf } from './types'
  *   never touches and retains their generated code for the process lifetime. A
  *   kind is compiled on its first parse and only then.
  *
+ * Historical recursive JSON metadata can make a node schema decline compilation;
+ * its original parser remains authoritative in that case.
+ *
  * Off by default; a host opts in via {@link enableCompiledNodeParsers}. While
  * off — and in any environment without a usable `Function` constructor (a
  * CSP-restricted embedder) or with `z.config({ jitless: true })` set — every

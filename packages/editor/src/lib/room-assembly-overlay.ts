@@ -11,7 +11,7 @@ import {
   resolveWallTop,
   roomDrawnFloor,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { ShapeUtils, Vector2 } from 'three'
 import type { RoomSelectionGeometry, RoomSelectionRecord } from './room-selection'
 

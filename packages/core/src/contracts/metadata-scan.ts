@@ -20,6 +20,8 @@ import ts from 'typescript'
  *   condition, never a call), and spreads of conditional literals; nested
  *   literals yield `a.b` paths.
  * Computed keys resolve through same-file `const NAME = 'key'`.
+ * Values and function returns typed as Next.js Metadata are page SEO, excluded while
+ * scene metadata accesses elsewhere in the same source remain inventoried.
  *
  * Test and tooling only: excluded from the package build.
  */
@@ -34,9 +36,49 @@ export function discoverMetadataKeys(source: string, fileName = 'source.tsx'): s
   const constants = new Map<string, string>()
   const bindings = new Map<string, ts.Expression>()
   const found = new Set<string>()
+  // Next's page SEO Metadata shares a name with scene metadata, but is a different contract.
+  // Resolve the imported type (including aliases), rather than excluding whole app files or keys.
+  const pageMetadataTypes = new Set<string>()
+  for (const statement of file.statements) {
+    if (
+      !ts.isImportDeclaration(statement) ||
+      !ts.isStringLiteral(statement.moduleSpecifier) ||
+      statement.moduleSpecifier.text !== 'next'
+    )
+      continue
+    const imports = statement.importClause?.namedBindings
+    if (!imports || !ts.isNamedImports(imports)) continue
+    for (const entry of imports.elements)
+      if ((entry.propertyName?.text ?? entry.name.text) === 'Metadata')
+        pageMetadataTypes.add(entry.name.text)
+  }
+  const isPageMetadataType = (type: ts.TypeNode | undefined): boolean => {
+    if (!type) return false
+    if (ts.isParenthesizedTypeNode(type)) return isPageMetadataType(type.type)
+    if (!ts.isTypeReferenceNode(type) || !ts.isIdentifier(type.typeName)) return false
+    if (pageMetadataTypes.has(type.typeName.text)) return true
+    return (
+      ['Promise', 'Readonly', 'Awaited'].includes(type.typeName.text) &&
+      (type.typeArguments?.some(isPageMetadataType) ?? false)
+    )
+  }
+  const isPageMetadataValue = (value: ts.Expression): boolean => {
+    if (ts.isParenthesizedExpression(value) || ts.isNonNullExpression(value))
+      return isPageMetadataValue(value.expression)
+    if (
+      ts.isAsExpression(value) ||
+      ts.isSatisfiesExpression(value) ||
+      ts.isTypeAssertionExpression(value)
+    )
+      return isPageMetadataType(value.type) || isPageMetadataValue(value.expression)
+    return false
+  }
+  const pageMetadataBindings = new Set<string>()
 
   const visitDeclarations = (node: ts.Node) => {
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
+      if (isPageMetadataType(node.type) || isPageMetadataValue(node.initializer))
+        pageMetadataBindings.add(node.name.text)
       const init = unwrap(node.initializer)
       if (ts.isStringLiteralLike(init)) constants.set(node.name.text, init.text)
       if (!bindings.has(node.name.text)) bindings.set(node.name.text, node.initializer)
@@ -127,8 +169,17 @@ export function discoverMetadataKeys(source: string, fileName = 'source.tsx'): s
     if (path.length > 0) found.add(path.join('.'))
   }
 
+  const isPageMetadataExpression = (node: ts.Node, seen = new Set<string>()): boolean => {
+    if (!ts.isIdentifier(node)) return false
+    if (pageMetadataBindings.has(node.text)) return true
+    if (seen.has(node.text)) return false
+    seen.add(node.text)
+    const bound = bindings.get(node.text)
+    return bound ? isPageMetadataExpression(unwrap(bound), seen) : false
+  }
+
   const visit = (node: ts.Node) => {
-    if (isMetadataExpression(node)) {
+    if (isMetadataExpression(node, bindings) && !isPageMetadataExpression(node)) {
       collectRead(node as ts.Expression)
       const parent = outermost(node as ts.Expression).parent
       if (
@@ -152,7 +203,8 @@ export function discoverMetadataKeys(source: string, fileName = 'source.tsx'): s
       ts.isVariableDeclaration(node) &&
       ts.isObjectBindingPattern(node.name) &&
       node.initializer &&
-      isMetadataExpression(unwrap(node.initializer))
+      isMetadataExpression(unwrap(node.initializer), bindings) &&
+      !isPageMetadataExpression(unwrap(node.initializer))
     )
       for (const element of node.name.elements) {
         if (element.dotDotDotToken) continue
@@ -170,14 +222,16 @@ export function discoverMetadataKeys(source: string, fileName = 'source.tsx'): s
       ts.isVariableDeclaration(node) &&
       ts.isIdentifier(node.name) &&
       node.name.text === 'metadata' &&
-      node.initializer
+      node.initializer &&
+      !pageMetadataBindings.has(node.name.text)
     )
       for (const literal of literalsOf(node.initializer)) collectLiteral(literal, '', 0)
     if (
       (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)) &&
       node.name &&
       /metadata/i.test(node.name.text) &&
-      node.body
+      node.body &&
+      !isPageMetadataType(node.type)
     )
       for (const statement of node.body.statements)
         if (ts.isReturnStatement(statement) && statement.expression)
@@ -242,25 +296,36 @@ function outermost(expression: ts.Expression): ts.Expression {
   return e
 }
 
-/** `metadata`, `x.metadata`, `x?.metadata`, or a one-argument call wrapping one. */
-function isMetadataExpression(node: ts.Node): boolean {
-  if (ts.isIdentifier(node))
-    return (
-      node.text === 'metadata' &&
-      !(ts.isPropertyAccessExpression(node.parent) && node.parent.name === node) &&
-      !ts.isPropertyAssignment(node.parent) &&
-      !ts.isVariableDeclaration(node.parent) &&
-      !ts.isParameter(node.parent) &&
-      !ts.isBindingElement(node.parent) &&
-      !ts.isShorthandPropertyAssignment(node.parent)
+/** `metadata`, `x.metadata`, a metadata-record helper, or an alias of one. */
+function isMetadataExpression(
+  node: ts.Node,
+  bindings: ReadonlyMap<string, ts.Expression>,
+  seen = new Set<string>(),
+): boolean {
+  if (ts.isIdentifier(node)) {
+    if (
+      (ts.isPropertyAccessExpression(node.parent) && node.parent.name === node) ||
+      ts.isPropertyAssignment(node.parent) ||
+      ts.isVariableDeclaration(node.parent) ||
+      ts.isParameter(node.parent) ||
+      ts.isBindingElement(node.parent) ||
+      ts.isShorthandPropertyAssignment(node.parent)
     )
+      return false
+    if (node.text === 'metadata') return true
+    if (seen.has(node.text)) return false
+    const bound = bindings.get(node.text)
+    if (!bound) return false
+    seen.add(node.text)
+    return isMetadataExpression(unwrap(bound), bindings, seen)
+  }
   if (ts.isPropertyAccessExpression(node)) return node.name.text === 'metadata'
   if (ts.isCallExpression(node) && node.arguments.length === 1) {
     const argument = unwrap(node.arguments[0]!)
     return (
       /meta|record/i.test(node.expression.getText()) &&
       (ts.isIdentifier(argument) || ts.isPropertyAccessExpression(argument)) &&
-      isMetadataExpression(argument)
+      isMetadataExpression(argument, bindings, seen)
     )
   }
   return false

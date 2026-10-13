@@ -4,7 +4,7 @@ import {
   findLevelAncestorId,
   levelBaseElevationAt,
   nodeRegistry,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { createNodeTopSurfaceHeightSampler } from './node-top-surface-height'
 
 /** The highest walkable surface at a level-local point, including rendered shaped tops. */

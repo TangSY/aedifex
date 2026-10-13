@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { DoorNode, WallNode, WindowNode } from '@pascal-app/core'
+import { DoorNode, WallNode, WindowNode } from '@aedifex/core'
 import { buildCurtainWallFloorplan } from './curtain-wall-floorplan'
 import { buildWallFloorplan } from './floorplan'
 

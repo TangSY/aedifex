@@ -6,7 +6,7 @@ import {
   registerNode,
   SlabNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { paintSurface } from '../../../../editor/src/components/ui/controls/finish-swatch'
 import { installImmediateAnimationFrames } from '../../../../editor/src/test-utils/immediate-animation-frames'
 import { slabDefinition } from '../definition'

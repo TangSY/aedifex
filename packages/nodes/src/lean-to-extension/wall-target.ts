@@ -1,4 +1,4 @@
-import type { DoorEvent, WallEvent, WallNode } from '@pascal-app/core'
+import type { DoorEvent, WallEvent, WallNode } from '@aedifex/core'
 import type { Object3D } from 'three'
 import { Vector3 } from 'three'
 

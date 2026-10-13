@@ -8,8 +8,8 @@ import {
   ItemNode,
   useScene,
   WindowNode,
-} from '@pascal-app/core'
-import { resolveCdnUrl, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { resolveCdnUrl, useViewer } from '@aedifex/viewer'
 import { useLoader } from '@react-three/fiber'
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three'
 import { installMountedScene, mount } from '../__tests__/harness'

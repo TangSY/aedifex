@@ -5,7 +5,7 @@ import {
   type NodePort,
   nodeRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { RunSurfaceTarget } from './distribution-run-contract'
 
 /** A port plus the scene node that owns it. */

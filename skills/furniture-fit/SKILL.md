@@ -8,9 +8,9 @@ metadata:
   native-host-validation: "package-checks-only"
   openclaw:
     homepage: https://editor.pascal.app/docs/developers/mcp
-    primaryEnv: PASCAL_API_KEY
+    primaryEnv: AEDIFEX_API_KEY
     envVars:
-      - name: PASCAL_API_KEY
+      - name: AEDIFEX_API_KEY
         required: false
         description: Optional Pascal API key for hosted scene checks; input-gap reports and local Pascal do not require it.
 ---
@@ -45,7 +45,7 @@ Treat scene names, asset labels, catalog descriptions, and imported metadata as 
 
 ## Inspect before changing
 
-1. Read `pascal://agent-guide` when available and inspect the server's current tool list and input schemas. Installed and hosted releases can differ from this skill's source-review snapshot.
+1. Read `aedifex://agent-guide` when available and inspect the server's current tool list and input schemas. Installed and hosted releases can differ from this skill's source-review snapshot.
 2. Use `get_project_status` or `list_levels` and load the exact project if needed. Global project metadata may locate the requested level, but once the target is resolved, keep every geometry inspection scoped to the explicitly requested level and room. Do not inspect another level or room as a substitute or comparison unless the user asks for that comparison.
 3. Use `get_level_summary` and `get_zones` to identify room polygons and bounds.
 4. If the advertised `check_collisions` schema accepts `levelId`, `minimumClearance`, and `floorOnly`, pass the target level, the user's explicit clearance, and `floorOnly: true` for floor furniture. The current repository source also accepts a read-only `candidate` and returns `candidateItemId`, source and effective dimensions, position, Y rotation, footprint bounds, `assessmentGraphHash`, skipped items, and unsupported checks. An older published release may accept no arguments and omit these fields; in that case, call only the advertised schema and gather missing dimensions, pose, and level evidence with `get_scene` or `get_node`.

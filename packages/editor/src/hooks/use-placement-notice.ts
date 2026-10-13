@@ -6,7 +6,7 @@ import {
   type PlacementNotice,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useMemo } from 'react'
 
 /** The notice `nodeId`'s kind gives for where it stands (`placementNotice`), if it declares one. */

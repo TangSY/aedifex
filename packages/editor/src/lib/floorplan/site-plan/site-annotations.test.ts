@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { createTerrainField, type LevelNode, quantize, type SceneSnapshot } from '@pascal-app/core'
+import { createTerrainField, type LevelNode, quantize, type SceneSnapshot } from '@aedifex/core'
 import { buildSitePlanDrawing, setbacksWarning } from './build-site-plan-drawing'
 import { registerSitePlanContributor } from './contributors'
 import { computeSiteCoverage } from './coverage'

@@ -1,4 +1,4 @@
-import type { CabinetModuleNode, CabinetNode, GeometryContext } from '@pascal-app/core'
+import type { CabinetModuleNode, CabinetNode, GeometryContext } from '@aedifex/core'
 import { type SinkBowlSpec, sinkBowls } from './appliance-layout'
 import { getRunSpanEnds, getRunSpanGroups } from './run-layout'
 import { compartmentSinkLayout } from './stack'

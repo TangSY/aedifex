@@ -7,7 +7,7 @@ import { computeBoundsTree } from 'three-mesh-bvh'
  * against their host (chimney trimmed by the roof shell, skylight
  * frame as a ring cut from a box, etc.). Lives in viewer because
  * three-bvh-csg + three-mesh-bvh are viewer-only deps; kinds living
- * in `@pascal-app/nodes` import these through the public surface.
+ * in `@aedifex/nodes` import these through the public surface.
  */
 
 function zeroAttribute(count: number, itemSize: number) {

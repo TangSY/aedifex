@@ -5,7 +5,7 @@ import {
   LevelNode,
   type Point,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { formatLinearMeasurement } from './measurements'
 import {
   DIMENSION_FLOOR_LIFT,

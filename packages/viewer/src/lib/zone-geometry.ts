@@ -1,4 +1,4 @@
-import type { Ring } from '@pascal-app/core'
+import type { Ring } from '@aedifex/core'
 import * as THREE from 'three'
 
 type ZoneFootprint = { polygon: Ring; holes?: Ring[] }

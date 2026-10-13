@@ -1,4 +1,4 @@
-import type { SceneGraph } from '@pascal-app/core/clone-scene-graph'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
 
 /**
  * Slug-safe scene identifier: lowercase alphanumerics and hyphens, ≤ 64 chars.

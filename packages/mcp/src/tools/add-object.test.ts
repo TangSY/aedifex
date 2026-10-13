@@ -5,11 +5,11 @@ import { join } from 'node:path'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { PASCAL_TYPES } from '@pascal-app/core/agent-operations'
-import type { AnyNodeId, CompiledGeometryScript } from '@pascal-app/core/schema'
+import { AEDIFEX_TYPES } from '@aedifex/core/agent-operations'
+import type { AnyNodeId, CompiledGeometryScript } from '@aedifex/core/schema'
 import { ADD_OBJECT_CASES } from '../../../core/src/agent-operations/__fixtures__/add-object-cases'
 import { SceneBridge } from '../bridge/scene-bridge'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 import { SqliteSceneStore } from '../storage/sqlite-scene-store'
 import { type GeometryScriptHost, registerAddObject } from './add-object'
 
@@ -72,7 +72,7 @@ describe('add_object over MCP', () => {
 // A hint that names a tool the server does not offer sends the agent to a call that fails.
 test('every tool an add_object hint names is one the server offers', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'pascal-mcp-hints-'))
-  const server = createPascalMcpServer({
+  const server = createAedifexMcpServer({
     bridge: new SceneBridge(),
     store: new SqliteSceneStore({ databasePath: join(directory, 'pascal.db') }),
   })
@@ -81,7 +81,7 @@ test('every tool an add_object hint names is one the server offers', async () =>
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])
   try {
     const offered = new Set((await client.listTools()).tools.map((tool) => tool.name))
-    const named = PASCAL_TYPES.flatMap(([, hint]) => hint.match(/\b[a-z]+(?:_[a-z]+)+\b/g) ?? [])
+    const named = AEDIFEX_TYPES.flatMap(([, hint]) => hint.match(/\b[a-z]+(?:_[a-z]+)+\b/g) ?? [])
     expect(named.length).toBeGreaterThan(0)
     expect(named.filter((name) => !offered.has(name))).toEqual([])
   } finally {

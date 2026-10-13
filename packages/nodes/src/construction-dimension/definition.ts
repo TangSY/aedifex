@@ -1,5 +1,5 @@
-import { measurementAnchorReferenceNodeIds, type NodeDefinition } from '@pascal-app/core'
-import type { FloorplanNodeExtension } from '@pascal-app/editor'
+import { measurementAnchorReferenceNodeIds, type NodeDefinition } from '@aedifex/core'
+import type { FloorplanNodeExtension } from '@aedifex/editor'
 import { resolveConstructionDimensionForDrawing } from './drawing-coordination'
 import { buildConstructionDimensionFloorplan } from './floorplan'
 import {
@@ -16,7 +16,7 @@ export const constructionDimensionDefinition: NodeDefinition<typeof Construction
   schema: ConstructionDimensionNode,
   category: 'analysis',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       tool: () => import('./floorplan-tool'),
       availableModes: ['expert'],
       resolveForDrawing: resolveConstructionDimensionForDrawing,

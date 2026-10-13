@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { AnyNode, FloorplanGeometry, GeometryContext } from '@pascal-app/core'
+import type { AnyNode, FloorplanGeometry, GeometryContext } from '@aedifex/core'
 import { cabinetDefinition } from '../definition'
 import { buildCabinetFloorplan, buildCabinetModuleFloorplan } from '../floorplan'
 import { cabinetFloorplanSiblingOverrides } from '../floorplan-overrides'

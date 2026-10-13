@@ -8,8 +8,8 @@ import {
   useScene,
   WallNode,
   type ZoneNode,
-} from '@pascal-app/core'
-import { migrateCeilingRoomLinks, migrateRoomZones } from '@pascal-app/core/scene-migrations'
+} from '@aedifex/core'
+import { migrateCeilingRoomLinks, migrateRoomZones } from '@aedifex/core/scene-migrations'
 import { wallFloorplanMoveTarget } from './floorplan-move'
 
 const square = [

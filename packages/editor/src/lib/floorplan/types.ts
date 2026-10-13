@@ -1,4 +1,4 @@
-import type { AnyNode, ItemNode, Point2D } from '@pascal-app/core'
+import type { AnyNode, ItemNode, Point2D } from '@aedifex/core'
 
 export type FloorplanNodeTransform = {
   position: Point2D

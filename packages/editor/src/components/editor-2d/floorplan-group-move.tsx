@@ -15,15 +15,17 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { memo, type PointerEvent as ReactPointerEvent, useEffect, useMemo, useState } from 'react'
 import { create } from 'zustand'
 import { GROUP_MOVE_DRAG_LABEL, GROUP_ROTATE_DRAG_LABEL } from '../../lib/contextual-help'
 import { applyFloorplanAlignment } from '../../lib/floorplan/apply-alignment'
 import { clientToPlan } from '../../lib/floorplan/plan-coords'
 import { isHistoryShortcut } from '../../lib/history'
+import { bindWindowBlurCancel } from '../../lib/interaction/window-blur-cancel'
 import { formatLinearMeasurement } from '../../lib/measurements'
+import { isModalKeyboardTarget } from '../../lib/modal-keyboard'
 import { sfxEmitter } from '../../lib/sfx-bus'
 import useAlignmentGuides from '../../store/use-alignment-guides'
 import useEditor, {
@@ -121,6 +123,7 @@ export function startFloorplanGroupMove(
     lastDelta: Vec2 | null
   }
   let session: Session | null = null
+  let unbindBlurCancel = () => {}
 
   const engage = (): Session | null => {
     const nodes = useScene.getState().nodes
@@ -284,6 +287,7 @@ export function startFloorplanGroupMove(
     window.removeEventListener('pointerup', onUp, true)
     window.removeEventListener('pointercancel', onPointerCancel)
     window.removeEventListener('keydown', onKeyDown, true)
+    unbindBlurCancel()
   }
 
   // History resume is NOT here — it pairs exactly one-to-one with the
@@ -368,6 +372,7 @@ export function startFloorplanGroupMove(
   // Escape arm (registered earlier on window in the bubble phase), which
   // would otherwise clear the multi-selection mid-cancel.
   const onKeyDown = (e: KeyboardEvent) => {
+    if (isModalKeyboardTarget(e.target)) return
     const key = e.key.toLowerCase()
     if ((key === 'r' || key === 't') && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
       // Armed but still under the drag threshold: engage first (exactly what
@@ -409,6 +414,7 @@ export function startFloorplanGroupMove(
   window.addEventListener('pointerup', onUp, true)
   window.addEventListener('pointercancel', onPointerCancel)
   window.addEventListener('keydown', onKeyDown, true)
+  unbindBlurCancel = bindWindowBlurCancel(cancel)
 
   if (opts.immediate) {
     session = engage()
@@ -455,6 +461,7 @@ export function startFloorplanGroupRotate(event: {
   const angleOf = (p: readonly [number, number]) => Math.atan2(p[1] - pivot.z, p[0] - pivot.x)
   const initialAngle = angleOf(startPlan)
   const pointerId = event.pointerId
+  let unbindBlurCancel = () => {}
 
   for (const id of affectedIds) {
     useLiveTransforms.getState().clear(id)
@@ -519,6 +526,7 @@ export function startFloorplanGroupRotate(event: {
     window.removeEventListener('pointerup', onUp, true)
     window.removeEventListener('pointercancel', onPointerCancel)
     window.removeEventListener('keydown', onKeyDown, true)
+    unbindBlurCancel()
   }
 
   // History resume pairs one-to-one with the pause above, on the commit and
@@ -569,6 +577,7 @@ export function startFloorplanGroupRotate(event: {
 
   // Capture phase so Escape wins over the global `use-keyboard` arm.
   const onKeyDown = (e: KeyboardEvent) => {
+    if (isModalKeyboardTarget(e.target)) return
     if (e.key === 'Delete' || e.key === 'Backspace') {
       // Deleting mid-rotate: revert first, then let the global Delete arm run.
       cancel()
@@ -586,6 +595,7 @@ export function startFloorplanGroupRotate(event: {
   window.addEventListener('pointerup', onUp, true)
   window.addEventListener('pointercancel', onPointerCancel)
   window.addEventListener('keydown', onKeyDown, true)
+  unbindBlurCancel = bindWindowBlurCancel(cancel)
   return true
 }
 

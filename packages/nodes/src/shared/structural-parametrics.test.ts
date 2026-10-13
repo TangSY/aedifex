@@ -5,7 +5,7 @@ import {
   RoofSegmentNode,
   StairNode,
   StairSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { elevatorParametrics } from '../elevator/parametrics'
 import { roofParametrics } from '../roof/parametrics'
 import { roofSegmentParametrics } from '../roof-segment/parametrics'

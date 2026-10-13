@@ -1,7 +1,7 @@
 'use client'
 
-import { type BuildingNode, getLevelDisplayName, type LevelNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type BuildingNode, getLevelDisplayName, type LevelNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useShallow } from 'zustand/react/shallow'
 import { cn } from '../../lib/utils'
 import useEditor from '../../store/use-editor'

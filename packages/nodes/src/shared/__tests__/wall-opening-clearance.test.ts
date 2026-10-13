@@ -6,7 +6,7 @@ import {
   LevelNode,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { findWallOpeningConflicts, wallOpeningClearances } from '../wall-opening-clearance'
 
 describe('wall opening clearance', () => {

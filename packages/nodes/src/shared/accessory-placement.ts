@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId, DuctFittingNode, PipeFittingNode } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, DuctFittingNode, PipeFittingNode } from '@aedifex/core'
 import { Euler, Matrix4, Quaternion, Vector3 } from 'three'
 import { adapterShape } from '../duct-fitting/ports'
 import { rectSectionAxes } from '../duct-segment/geometry'

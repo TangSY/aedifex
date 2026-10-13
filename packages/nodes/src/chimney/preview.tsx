@@ -4,7 +4,7 @@ import {
   type ChimneyNode,
   type RoofSegmentNode,
   RoofSegmentNode as RoofSegmentSchema,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { INVALID_GHOST_COLOR } from '../shared/ghost-materials'

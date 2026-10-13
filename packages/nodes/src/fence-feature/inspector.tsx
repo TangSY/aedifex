@@ -9,8 +9,8 @@ import {
   fenceWithFeatures,
   getFenceCenterlineLength,
   useScene,
-} from '@pascal-app/core'
-import { ActionButton, SliderControl, ToggleControl } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { ActionButton, SliderControl, ToggleControl } from '@aedifex/editor'
 import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { getFenceFeatureDimensions } from '../fence/geometry-parts'

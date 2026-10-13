@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { SlabNode } from '@pascal-app/core'
+import { SlabNode } from '@aedifex/core'
 import { resolvePaintScopeTargets } from './paint-scope'
 
 test('hovering one owner-room step previews its role across all plates on the level', () => {

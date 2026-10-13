@@ -8,7 +8,7 @@ import {
   type StairSegmentNode,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useMemo, useSyncExternalStore } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 

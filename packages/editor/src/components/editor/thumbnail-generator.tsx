@@ -1,7 +1,7 @@
 'use client'
 
-import { emitter, sceneRegistry, type ThumbnailGenerateEvent, useScene } from '@pascal-app/core'
-import { sceneViewInterior } from '@pascal-app/core/agent-operations'
+import { emitter, sceneRegistry, type ThumbnailGenerateEvent, useScene } from '@aedifex/core'
+import { sceneViewInterior } from '@aedifex/core/agent-operations'
 import {
   computeHeroFraming,
   createSnapshotPipeline,
@@ -22,7 +22,7 @@ import {
   temporarilyShowShadowOnly,
   useSceneAtmosphere,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import type { CameraControls } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useRef } from 'react'
@@ -107,12 +107,12 @@ function captureLimits(renderer: unknown): CaptureLimits {
     maxPixels: software ? MAX_SOFTWARE_CAPTURE_PIXELS : MAX_CAPTURE_PIXELS,
     software,
   }
-  // dev: `window.__pascalCaptureLimits = { passEdge: 2048 }` forces tiling (or a budget) for a probe
+  // dev: `window.__aedifexCaptureLimits = { passEdge: 2048 }` forces tiling (or a budget) for a probe
   if (process.env.NODE_ENV === 'production') return limits
   return {
     ...limits,
-    ...(window as unknown as { __pascalCaptureLimits?: Partial<CaptureLimits> })
-      .__pascalCaptureLimits,
+    ...(window as unknown as { __aedifexCaptureLimits?: Partial<CaptureLimits> })
+      .__aedifexCaptureLimits,
   }
 }
 
@@ -344,7 +344,7 @@ const INTERIOR_FILL_INTENSITY = 2
 
 /** Why a sheet's capture refuses to run in a background tab — the words reach the Architect. */
 const HIDDEN_TAB =
-  'The Pascal tab is in the background, where the 3D viewer draws no frames — bring it to the front.'
+  'The Aedifex tab is in the background, where the 3D viewer draws no frames — bring it to the front.'
 
 function isTabHidden(): boolean {
   return typeof document !== 'undefined' && document.visibilityState === 'hidden'
@@ -635,12 +635,12 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
       const supersample = event.supersample ?? 1
       const standardW = standardSize?.w ?? THUMBNAIL_WIDTH
       const standardH = standardSize?.h ?? THUMBNAIL_HEIGHT
-      // dev: the capture handshake on `window.__pascalCaptureTrace`, for a probe
+      // dev: the capture handshake on `window.__aedifexCaptureTrace`, for a probe
       const trace = (step: string, data?: unknown) => {
         if (process.env.NODE_ENV === 'production') return
-        const w = window as unknown as { __pascalCaptureTrace?: unknown[] }
-        w.__pascalCaptureTrace ??= []
-        w.__pascalCaptureTrace.push({ t: Math.round(performance.now()), step, data })
+        const w = window as unknown as { __aedifexCaptureTrace?: unknown[] }
+        w.__aedifexCaptureTrace ??= []
+        w.__aedifexCaptureTrace.push({ t: Math.round(performance.now()), step, data })
       }
       trace('generate', {
         captureMode,
@@ -654,7 +654,7 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
         async () => {
           const version = captureVersion.current
           const onCapture = onThumbnailCaptureRef.current
-          if (!onCapture) throw new Error('Snapshot storage is unavailable')
+          if (!onCapture && !event.ephemeral) throw new Error('Snapshot storage is unavailable')
           if (cameraPose && event.projectId !== useViewer.getState().projectId)
             throw new Error('The active project changed before capture')
           const perspectiveCamera = thumbnailCameraRef.current
@@ -669,7 +669,9 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
 
           // a supersampled frame renders at a multiple of the canvas' size into
           // the capture's own targets; the live canvas is never resized
-          const canvasSize: [number, number] = [gl.domElement.width, gl.domElement.height]
+          const canvasSize: [number, number] = event.ephemeral && (ortho || perspective) && standardSize
+            ? [standardSize.w, standardSize.h]
+            : [gl.domElement.width, gl.domElement.height]
           const limits = captureLimits(gl)
           const scale = Math.max(
             1,
@@ -990,7 +992,7 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
               }
               trace('callback', { bytes: blob.size })
               await within(
-                Promise.resolve(deliverSnapshot(event, blob, cameraData, onCapture)),
+                Promise.resolve(deliverSnapshot(event, blob, cameraData, onCapture ?? (() => {}))),
                 CAPTURE_SETTLE_MS,
                 'The snapshot host never took the frame.',
               )
@@ -1127,7 +1129,7 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
             }
             trace('callback', { bytes: blob.size })
             await within(
-              Promise.resolve(deliverSnapshot(event, blob, cameraData, onCapture)),
+              Promise.resolve(deliverSnapshot(event, blob, cameraData, onCapture ?? (() => {}))),
               CAPTURE_SETTLE_MS,
               'The snapshot host never took the frame.',
             )

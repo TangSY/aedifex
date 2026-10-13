@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { type AnyNode, LevelNode, StairNode, StairSegmentNode } from '@pascal-app/core'
+import { type AnyNode, LevelNode, StairNode, StairSegmentNode } from '@aedifex/core'
 import { getStairTypeChange } from './stair-type'
 
 const LEVEL_ID = 'level_5o2tes0jyuiupp2f'

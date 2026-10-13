@@ -5,7 +5,7 @@ import {
   type DeleteZonePayload,
   type StructureNodes,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useEffect, useMemo, useRef } from 'react'
 import { cn } from '../../lib/utils'
 import useDeleteConfirmation, {

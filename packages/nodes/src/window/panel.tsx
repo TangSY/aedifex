@@ -7,7 +7,7 @@ import {
   useInteractive,
   useScene,
   type WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getWindowStyleOverrides,
   SHAPED_WINDOW_TYPES,
@@ -17,7 +17,7 @@ import {
   windowStylesOf,
   windowTakesStyle,
   windowTypeChange,
-} from '@pascal-app/core/building'
+} from '@aedifex/core/building'
 import {
   ActionButton,
   ActionGroup,
@@ -30,8 +30,8 @@ import {
   ToggleControl,
   triggerSFX,
   useEditor,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Copy, FlipHorizontal2, Move, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo } from 'react'
 import { AuthoredParams } from '../item/authored-params'

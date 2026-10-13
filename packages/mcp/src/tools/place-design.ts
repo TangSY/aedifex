@@ -1,9 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { DesignPlacementError, planDesignPlacement } from '@pascal-app/core/procedural-items'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core/schema'
+import { DesignPlacementError } from '@aedifex/core/procedural-items'
 import { z } from 'zod'
-import type { Patch } from '../bridge/scene-bridge'
-import type { SceneOperations } from '../operations'
+import { placeDesign, type SceneOperations } from '../operations'
 import { ADDITIVE_TOOL_ANNOTATIONS } from './annotations'
 import { liveSyncOutput, persistencePayload, publishLiveSceneSnapshot } from './live-sync'
 import { measurement } from './measurement'
@@ -65,11 +63,11 @@ export function registerPlaceDesign(server: McpServer, bridge: SceneOperations):
         content: [{ type: 'text' as const, text: JSON.stringify(refusal) }],
         isError: true as const,
       })
-      let placement: ReturnType<typeof planDesignPlacement>
+      let placement: ReturnType<typeof placeDesign>
       try {
-        placement = planDesignPlacement(bridge.getNodes(), {
-          ...args,
-          position: args.position as [number, number, number],
+        placement = placeDesign({
+          operations: bridge,
+          request: { ...args, position: args.position as [number, number, number] },
         })
       } catch (error) {
         if (!(error instanceof DesignPlacementError)) throw error
@@ -79,25 +77,9 @@ export function registerPlaceDesign(server: McpServer, bridge: SceneOperations):
           ...(error.diagnostics.length > 0 && { diagnostics: error.diagnostics.slice(0, 8) }),
         })
       }
-      const { node, parentId, hostUpdate } = placement
-      const patches: Patch[] = [
-        { op: 'create', node: node as unknown as AnyNode, parentId: parentId as AnyNodeId },
-        ...(hostUpdate
-          ? [
-              {
-                op: 'update' as const,
-                id: hostUpdate.id as AnyNodeId,
-                data: { attachments: hostUpdate.attachments } as Partial<AnyNode>,
-              },
-            ]
-          : []),
-      ]
-      bridge.applyPatch(patches)
       const persistence = await publishLiveSceneSnapshot(bridge, 'place_design')
       const payload = {
-        designId: node.id,
-        parentId,
-        surfaceId: args.surfaceId ?? null,
+        ...placement,
         ...persistencePayload(persistence),
       }
       return {

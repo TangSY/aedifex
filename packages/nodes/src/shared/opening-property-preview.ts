@@ -1,5 +1,6 @@
-import type { AnyNode, AnyNodeId, DoorNode, WindowNode } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, DoorNode, WindowNode } from '@aedifex/core'
 import { constrainCurtainOpening } from './curtain-opening-limits'
+import { metadataRecord } from './node-metadata'
 
 export type OpeningPropertyPreviewDependencies = {
   nodes: () => Readonly<Record<AnyNodeId, AnyNode>>
@@ -82,7 +83,11 @@ export function createOpeningPropertyPreview<T extends DoorNode | WindowNode>(
       pending = { ...pending, ...patch }
       dependencies.setOverride(id, {
         ...patch,
-        metadata: { ...node.metadata, ...effective.metadata, deferParentRebuild: true },
+        metadata: {
+          ...metadataRecord(node.metadata),
+          ...metadataRecord(effective.metadata),
+          deferParentRebuild: true,
+        },
       } as Partial<AnyNode>)
       scheduleDirty()
     },

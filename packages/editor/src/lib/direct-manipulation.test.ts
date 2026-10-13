@@ -5,7 +5,7 @@ import {
   DEFAULT_ANGLE_STEP,
   nodeRegistry,
   registerNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { z } from 'zod'
 import {
   canDirectMoveNode,
@@ -26,7 +26,7 @@ function registerTestDefinition(kind: string, overrides: Partial<AnyNodeDefiniti
     schema: z.object({ type: z.literal(kind) }) as never,
     category: 'structure',
     defaults: () => ({ type: kind }) as never,
-    capabilities: {},
+    capabilities: { deletable: false },
     renderer: { kind: 'parametric', module: async () => ({ default: () => null }) },
     ...overrides,
   } as AnyNodeDefinition)

@@ -17,7 +17,7 @@ import {
   type WallNode,
   type WindowNode,
   type ZoneNode as ZoneNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useShallow } from 'zustand/react/shallow'
 import { collectLevelDescendants } from '../../lib/floorplan'
 

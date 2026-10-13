@@ -1,6 +1,6 @@
 'use client'
 
-import { ZONE_COLOR_PALETTE } from '@pascal-app/core'
+import { ZONE_COLOR_PALETTE } from '@aedifex/core'
 import { useState } from 'react'
 import { cn } from '../../../lib/utils'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'

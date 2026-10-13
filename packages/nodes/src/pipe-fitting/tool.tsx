@@ -7,7 +7,7 @@ import {
   type GridEvent,
   PipeFittingNode,
   PipeSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CursorSphere,
   EDITOR_LAYER,
@@ -17,7 +17,7 @@ import {
   useEditor,
   useInteractionScope,
   useRegistryToolContext,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { Html } from '@react-three/drei'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Euler, type Material, Mesh, MeshStandardMaterial, Quaternion, Vector3 } from 'three'

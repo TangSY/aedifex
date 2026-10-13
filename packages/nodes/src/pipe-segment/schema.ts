@@ -1,1 +1,1 @@
-export { PipeSegmentNode } from '@pascal-app/core'
+export { PipeSegmentNode } from '@aedifex/core'

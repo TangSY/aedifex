@@ -1,4 +1,4 @@
-import { BuildingNode as BuildingNodeSchema, type NodeDefinition } from '@pascal-app/core'
+import { BuildingNode as BuildingNodeSchema, type NodeDefinition } from '@aedifex/core'
 import { buildingParametrics } from './parametrics'
 import { BuildingNode } from './schema'
 

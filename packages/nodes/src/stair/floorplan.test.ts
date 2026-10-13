@@ -12,8 +12,8 @@ import {
   StairSegmentNode,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { readFloorplanGeometryMetadata } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { readFloorplanGeometryMetadata } from '@aedifex/editor'
 import { buildFloorplanStairEntry, stairDefinition } from '../index'
 
 const definition = stairDefinition

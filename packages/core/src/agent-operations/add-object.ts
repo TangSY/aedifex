@@ -1,4 +1,5 @@
 import { refuse } from '../agent-tools/refusal'
+import { metadataRecord } from '../utils/metadata-record'
 import { artifactUrl } from '../lib/artifact-store'
 import {
   isScriptedNode,
@@ -87,7 +88,7 @@ function scriptAsset(
  * Words that name what Pascal already builds, with the tool that builds it. An object named so is
  * built with a hint naming that tool: authored objects are for what has no type.
  */
-export const PASCAL_TYPES: [RegExp, string][] = [
+export const AEDIFEX_TYPES: [RegExp, string][] = [
   [/\bwalls?\b/i, 'walls: add_wall'],
   [
     /\b(slabs?|floor plates?|floors?)\b/i,
@@ -118,7 +119,7 @@ function headWord(label: string) {
  */
 function typeHint(input: AddObjectInput): string | undefined {
   for (const label of [input.name, input.category]) {
-    const named = label && PASCAL_TYPES.find(([word]) => word.test(headWord(label)))
+    const named = label && AEDIFEX_TYPES.find(([word]) => word.test(headWord(label)))
     if (named) return `"${label}" is something Pascal builds: ${named[1]}.`
   }
   return undefined
@@ -243,7 +244,9 @@ export const addObject: AgentOperation<AddObjectInput> = (nodes, input, context)
         previous.source?.manifest,
       ),
       asset: scriptAsset(compiled, input, previous.asset),
-      ...(input.reason ? { metadata: { ...previous.metadata, reason: input.reason } } : {}),
+      ...(input.reason
+        ? { metadata: { ...metadataRecord(previous.metadata), reason: input.reason } }
+        : {}),
     })
     // Children resting on or hanging from the object follow its new geometry.
     const resettled: { id: string; position: Vec3 }[] = []

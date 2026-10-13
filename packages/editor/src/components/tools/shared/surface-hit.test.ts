@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import { type ItemEvent, ItemNode, sceneRegistry } from '@pascal-app/core'
+import { type ItemEvent, ItemNode, sceneRegistry } from '@aedifex/core'
 import { Group, Matrix3, Vector3 } from 'three'
 import { itemEventToSurfaceHit } from './surface-hit'
 

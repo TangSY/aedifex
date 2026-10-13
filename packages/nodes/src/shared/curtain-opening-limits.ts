@@ -5,7 +5,7 @@ import {
   getCurtainWallConfig,
   getWallCurveLength,
   type WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { resolveWallOpeningCeiling } from './wall-opening-ceiling'
 
 type Opening = DoorNode | WindowNode

@@ -2,7 +2,7 @@ import {
   type ParametricDescriptor,
   planStairFlightHeightEdit,
   type StairSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 import { StairSegmentConstructionField } from '../stair/construction-controls'
 

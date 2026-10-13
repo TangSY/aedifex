@@ -1,4 +1,4 @@
-import { type ChimneyNode, getActiveRoofHeight, type RoofSegmentNode } from '@pascal-app/core'
+import { type ChimneyNode, getActiveRoofHeight, type RoofSegmentNode } from '@aedifex/core'
 import {
   Brush,
   csgEvaluator,
@@ -6,7 +6,7 @@ import {
   type getRoofSegmentBrushes,
   prepareBrushForCSG,
   SUBTRACTION,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import * as THREE from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { partitionTopFaceGroups } from './holes'
@@ -22,7 +22,7 @@ export type SegmentTrimBrushes = NonNullable<ReturnType<typeof getRoofSegmentBru
  * the archive shipped. Lives in the chimney folder (not the geometry
  * builder) because three-bvh-csg + three-mesh-bvh are viewer-only
  * deps; the renderer is the natural seam since it already imports
- * from `@pascal-app/viewer`.
+ * from `@aedifex/viewer`.
  *
  * Segment brushes are passed in (built once per segment shape in the
  * renderer and reused across slider drags); the function does NOT

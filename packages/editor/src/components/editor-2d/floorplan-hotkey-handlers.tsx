@@ -1,6 +1,7 @@
 'use client'
 
 import { memo, useEffect } from 'react'
+import { isModalKeyboardTarget } from '../../lib/modal-keyboard'
 import useEditor from '../../store/use-editor'
 
 type FloorplanSiteKeyHandlerProps = {
@@ -16,6 +17,7 @@ export const FloorplanSiteKeyHandler = memo(function FloorplanSiteKeyHandler({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (isModalKeyboardTarget(event.target)) return
       const target = event.target as HTMLElement | null
       const isEditableTarget =
         target instanceof HTMLInputElement ||
@@ -60,6 +62,7 @@ export const FloorplanDuplicateHotkey = memo(function FloorplanDuplicateHotkey({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (isModalKeyboardTarget(event.target)) return
       if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'c') {
         return
       }

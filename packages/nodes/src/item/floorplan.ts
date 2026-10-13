@@ -15,12 +15,12 @@ import {
   roofFacePointToSegment,
   scriptImages,
   useLiveTransforms,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   formatLinearMeasurement,
   readFloorplanContext,
   readFloorplanMetricNotationOverride,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { restingNodePlanFrame } from '../shared/resting-surface-plan'
 import { buildPlanItemSymbol, classifyPlanItem, PLAN_SYMBOL_METADATA_KEY } from './plan-symbols'
 

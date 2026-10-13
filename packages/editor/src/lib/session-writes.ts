@@ -5,7 +5,7 @@ import {
   pauseSceneHistory,
   resumeSceneHistory,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 type NodeMap = Record<string, AnyNode>
 

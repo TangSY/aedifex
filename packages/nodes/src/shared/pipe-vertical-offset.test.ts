@@ -4,7 +4,7 @@ import {
   PipeFittingNode,
   PipeSegmentNode,
   type PortConnection,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { getPipeFittingPorts } from '../pipe-fitting/ports'
 import { planPipeElbowAtPort } from './auto-fitting'
 import { planVerticalOffsets } from './pipe-vertical-offset'

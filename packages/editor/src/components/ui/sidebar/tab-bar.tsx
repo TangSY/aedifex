@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { startTransition, type ReactNode } from 'react'
 import { editorHostPanelRegistry } from '../../../lib/plugin-panels'
 import { triggerSFX } from './../../../lib/sfx-bus'
 import { cn } from './../../../lib/utils'
@@ -53,7 +53,7 @@ export function TabBar({ tabs, activeTab, onTabChange }: TabBarProps) {
             key={tab.id}
             onClick={() => {
               triggerSFX('sfx:menu-click')
-              onTabChange(tab.id)
+              startTransition(() => onTabChange(tab.id))
             }}
             onMouseEnter={() => triggerSFX('sfx:menu-hover')}
             type="button"
@@ -106,7 +106,7 @@ export function IconRail({ tabs, activeTab, collapsed, onIconClick }: IconRailPr
             )}
             onClick={() => {
               triggerSFX('sfx:menu-click')
-              onIconClick(tab.id)
+              startTransition(() => onIconClick(tab.id))
             }}
             onMouseEnter={() => triggerSFX('sfx:menu-hover')}
             type="button"

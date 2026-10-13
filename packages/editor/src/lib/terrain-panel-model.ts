@@ -1,6 +1,6 @@
 'use client'
 
-import { type SiteNode, type TerrainVerb, useScene } from '@pascal-app/core'
+import { type SiteNode, type TerrainVerb, useScene } from '@aedifex/core'
 import useEditor from '../store/use-editor'
 import type { PanelRow } from './panel-rows'
 import { brushRadiusRange, flattenSite, resetSiteTerrain } from './terrain-sculpt'

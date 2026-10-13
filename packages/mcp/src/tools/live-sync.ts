@@ -1,5 +1,5 @@
-import { refuse, writeTarget } from '@pascal-app/core/agent-tools'
-import type { SceneGraph } from '@pascal-app/core/clone-scene-graph'
+import { refuse, writeTarget } from '@aedifex/core/agent-tools'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { SceneVersionConflictError, SceneWipeBlockedError } from '../storage/types'

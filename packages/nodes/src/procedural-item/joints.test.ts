@@ -7,7 +7,7 @@ import {
   ProceduralItemNode,
   parseRecipe,
   type Recipe,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import * as THREE from 'three'
 import cabinetJson from '../../../core/src/procedural-items/__fixtures__/cabinet_two_doors_drawer.json'
 import jointJson from '../../../core/src/procedural-items/__fixtures__/joint_cabinet.json'

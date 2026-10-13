@@ -1,7 +1,7 @@
 'use client'
 
-import type { WindowNode } from '@pascal-app/core'
-import { ActionButton, PanelSection } from '@pascal-app/editor'
+import type { WindowNode } from '@aedifex/core'
+import { ActionButton, PanelSection } from '@aedifex/editor'
 import { Move, Pencil, Plus } from 'lucide-react'
 
 export function DormerWindowsSection({

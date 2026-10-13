@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { type AnyNode, sceneRegistry, useScene, type WallNode, ZoneNode } from '@pascal-app/core'
+import { type AnyNode, sceneRegistry, useScene, type WallNode, ZoneNode } from '@aedifex/core'
 import { BoxGeometry, Mesh, MeshBasicMaterial, Object3D, Ray, Vector3 } from 'three'
 import {
   parseWallPaintRole,

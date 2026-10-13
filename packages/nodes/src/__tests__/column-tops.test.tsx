@@ -22,10 +22,10 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
-import { nodeLevelFrame, ProceduralItemNode } from '@pascal-app/core/procedural-items'
-import { MoveRegistryNodeTool, useEditor, useInteractionScope } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { nodeLevelFrame, ProceduralItemNode } from '@aedifex/core/procedural-items'
+import { MoveRegistryNodeTool, useEditor, useInteractionScope } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { events, type RootStore } from '@react-three/fiber'
 import { act, create } from '@react-three/test-renderer'
 import React from 'react'

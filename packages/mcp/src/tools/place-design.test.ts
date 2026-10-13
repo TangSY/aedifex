@@ -1,13 +1,13 @@
 import { describe, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { DESIGN_EXAMPLE } from '@pascal-app/core/procedural-items'
-import { CeilingNode, WallNode } from '@pascal-app/core/schema'
+import { DESIGN_EXAMPLE } from '@aedifex/core/procedural-items'
+import { CeilingNode, WallNode } from '@aedifex/core/schema'
 import jointCabinetJson from '../../../core/src/procedural-items/__fixtures__/joint_cabinet.json'
 import airHandlerJson from '../../../core/src/procedural-items/__fixtures__/trial-e2-air-handler.json'
 import louverJson from '../../../core/src/procedural-items/__fixtures__/trial-e5-louver.json'
 import { SceneBridge } from '../bridge/scene-bridge'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 
 const vase = {
   ...DESIGN_EXAMPLE,
@@ -46,7 +46,7 @@ async function connect() {
     ],
   })
   bridge.createNode(ceiling, level.id)
-  const server = createPascalMcpServer({ bridge })
+  const server = createAedifexMcpServer({ bridge })
   const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: 'place-design-test', version: '0.0.0' })
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])

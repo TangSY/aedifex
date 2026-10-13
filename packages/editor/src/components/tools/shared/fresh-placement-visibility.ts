@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNode, type AnyNodeId, sceneRegistry, useScene } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, sceneRegistry, useScene } from '@aedifex/core'
 import { useCallback, useRef, useState } from 'react'
 import { isFreshPlacementMetadata } from '../../../lib/placement-metadata'
 import useEditor from '../../../store/use-editor'

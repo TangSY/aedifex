@@ -2,7 +2,7 @@ import {
   clampFencePicketRailProjection,
   isSplineFence,
   type ParametricDescriptor,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   FenceCurveEditor,
   FenceLengthEditor,

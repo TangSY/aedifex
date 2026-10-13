@@ -1,6 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import { createZone, setZoneIntent, structureChangeBatch } from '../commands/structure'
-import type { StructurePlan } from '../commands/structure/types'
+import { createZone, setZoneIntent, structureChangeBatch, type StructurePlan } from '../commands/structure'
 import { type AnyNode, BuildingNode, DoorNode, LevelNode, type WallNode } from '../schema'
 import useScene, { clearSceneHistory } from '../store/use-scene'
 import { initSpaceDetectionSync } from './space-detection'

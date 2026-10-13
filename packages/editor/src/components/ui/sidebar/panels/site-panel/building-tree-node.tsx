@@ -1,5 +1,5 @@
-import { type BuildingNode, DEFAULT_LEVEL_HEIGHT, LevelNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type BuildingNode, DEFAULT_LEVEL_HEIGHT, LevelNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Building2, Plus } from 'lucide-react'
 import { memo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'

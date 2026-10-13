@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { PascalMark, PRIMARY_PILL, SECONDARY_PILL } from './app-shell'
+import { AedifexMark, PRIMARY_PILL, SECONDARY_PILL } from './app-shell'
 
 export interface SceneCardData {
   id: string
@@ -65,7 +65,7 @@ export function SceneCard({ scene }: { scene: SceneCardData }) {
               src={scene.thumbnailUrl}
             />
           ) : (
-            <PascalMark className="h-8 w-8 opacity-15" />
+            <AedifexMark className="h-8 w-8 opacity-15" />
           )}
         </div>
         <div className="px-1.5 pt-2.5 pb-1">

@@ -4,7 +4,7 @@ import {
   runAsSingleSceneHistoryStep,
   useScene,
   type WallJoinResult,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { formatLinearMeasurement, type LinearUnit } from '../measurements'
 
 const JOIN_REFUSALS: Record<Extract<WallJoinResult, { ok: false }>['reason'], string> = {

@@ -5,8 +5,8 @@ import type {
   GeometryContext,
   HandleDescriptor,
   LinearResizeHandle,
-} from '@pascal-app/core'
-import { cabinetSlots } from '@pascal-app/core'
+} from '@aedifex/core'
+import { cabinetSlots } from '@aedifex/core'
 import type { BufferAttribute, Mesh, Object3D } from 'three'
 import { Box3 } from 'three'
 import { bakeCabinetAnimationClip } from '../animation'

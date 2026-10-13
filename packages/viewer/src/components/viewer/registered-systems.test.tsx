@@ -5,7 +5,7 @@ import {
   registerNode,
   SlabNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import { act, create } from '@react-three/test-renderer'
 import { useEffect } from 'react'

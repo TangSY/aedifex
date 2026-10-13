@@ -4,7 +4,7 @@ import {
   hitDerivedSurfaceProvider,
   type SurfaceProvider,
   type SurfaceRegion,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   columnCapitalBlocks,
   columnShaftLayout,

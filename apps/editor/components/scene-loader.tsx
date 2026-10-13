@@ -9,9 +9,10 @@ import {
   ItemsPanel,
   type SceneGraph,
   type SidebarTab,
-} from '@pascal-app/editor'
-import { PascalWebXRButton } from '@webxr/plugin/pascal-editor'
-import { Hammer, Layers, Package, Palette, Settings } from 'lucide-react'
+} from '@aedifex/editor'
+import { abortActiveLoop, AIChatPanel } from '@aedifex/editor/components/ai'
+import { AedifexWebXRButton } from '@aedifex/plugin-webxr/aedifex-editor'
+import { Bot, Hammer, Layers, Package, Palette, Settings } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -77,6 +78,14 @@ const SIDEBAR_TABS: (SidebarTab & { component: React.ComponentType })[] = [
         width={32}
       />
     ),
+  },
+  {
+    id: 'ai',
+    label: 'AI',
+    component: AIChatPanel,
+    mobileDefaultSnap: 0.5,
+    mobileIcon: <Bot className="h-5 w-5" />,
+    icon: <Bot className="h-6 w-6" />,
   },
   {
     id: 'paint',
@@ -155,13 +164,14 @@ function isLightPreviewQuery(searchParams: URLSearchParams): boolean {
 export function SceneLoader(props: SceneLoaderProps) {
   const webXRInstalled = useWebXRInstalled()
   return (
-    <WebXRFeatureRuntime enabled={webXRInstalled}>
-      <SceneEditor {...props} />
+    <WebXRFeatureRuntime enabled={webXRInstalled} key={props.meta.id}>
+      <SceneEditor key={props.meta.id} {...props} />
     </WebXRFeatureRuntime>
   )
 }
 
 function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
+  useEffect(() => () => abortActiveLoop(), [])
   // A rename must reach the autosave body, which sends `meta.name`.
   const [renamedTo, setRenamedTo] = useState<string | null>(null)
   const meta = useMemo(
@@ -369,7 +379,7 @@ function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
         onLoad={handleLoad}
         onSave={handleSave}
         onThumbnailCapture={handleThumb}
-        projectId={meta.projectId ?? 'default'}
+        projectId={meta.id}
         projectName={meta.name}
         sidebarTabs={SIDEBAR_TABS}
         viewerToolbarLeft={<EditorViewerToolbarLeft />}
@@ -377,7 +387,7 @@ function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
           <EditorViewerToolbarRight
             vrButton={
               vr ? (
-                <PascalWebXRButton
+                <AedifexWebXRButton
                   className="flex h-8 w-8 items-center justify-center text-muted-foreground hover:bg-accent disabled:opacity-50"
                   feature={vr}
                 />

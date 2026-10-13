@@ -26,7 +26,7 @@
  * drop-in resolved one (`site.parcel.lotAreaSqFt`), else the drawn lot
  * polygon. Pure: reads a scene snapshot, touches no store.
  */
-import type { SceneSnapshot } from '@pascal-app/core'
+import type { SceneSnapshot } from '@aedifex/core'
 import { METRES_PER_FOOT, type Pt, pointInPolygon, polygonArea, polygonBounds } from './geometry'
 import {
   aboveGradeLevels,

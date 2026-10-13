@@ -1,18 +1,13 @@
 import { expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
+import { type AnyNodeId, GeometryArtifactManifest, LevelNode, WallNode } from '@aedifex/core/schema'
 import {
-  type AnyNodeId,
-  GeometryArtifactManifest,
-  LevelNode,
-  WallNode,
-} from '@pascal-app/core/schema'
-import {
-  createPascalMcpServer,
+  createAedifexMcpServer,
   createSceneOperations,
   type GeometryScriptHost,
   SceneBridge,
-} from '@pascal-app/mcp'
+} from '@aedifex/mcp'
 import { InMemorySceneStore } from './scene-lifecycle/test-utils'
 
 for (const kind of ['object', 'door', 'window', 'column'] as const) {
@@ -52,7 +47,7 @@ for (const kind of ['object', 'door', 'window', 'column'] as const) {
       },
       readArtifact: async () => new TextEncoder().encode('original'),
     }
-    const server = createPascalMcpServer({ bridge, operations, store, geometryScripts: host })
+    const server = createAedifexMcpServer({ bridge, operations, store, geometryScripts: host })
     const client = new Client({ name: 'metadata-test', version: '0.0.0' })
     const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])
@@ -115,6 +110,27 @@ for (const kind of ['object', 'door', 'window', 'column'] as const) {
         parent: 'b'.repeat(64),
         tags: Array(5).fill('oak'),
       })
+      const beforeRawLineage = bridge.getNodes()
+      const rawLineage = await client.callTool({
+        name: 'apply_patch',
+        arguments: {
+          patches: [
+            {
+              op: 'update',
+              id: nodeId,
+              data: {
+                source: {
+                  ...(bridge.getNode(nodeId) as typeof node).source,
+                  meta: { parent: 'e'.repeat(64) },
+                },
+              },
+            },
+          ],
+        },
+      })
+      expect(rawLineage.isError).toBe(true)
+      expect(JSON.stringify(rawLineage)).toContain('scripted_field')
+      expect(bridge.getNodes()).toEqual(beforeRawLineage)
       expect(uploads).toHaveLength(4)
       expect(uploads[2]!.nodeId).toBe(nodeId)
       expect(uploads[2]!.metadata?.name).toBe('Carved oak')

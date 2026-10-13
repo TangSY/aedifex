@@ -9,7 +9,7 @@ import {
   useLiveTransforms,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { type Camera, type Material, Matrix4, type Mesh, type Object3D, Vector3 } from 'three'
 import { getMaterialTextureVersion } from '../../lib/materials'
 import { hasMaterialsForGroups } from '../../lib/pointer-events'

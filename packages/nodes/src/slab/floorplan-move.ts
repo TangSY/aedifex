@@ -1,4 +1,4 @@
-import type { FloorplanMoveTarget, SlabNode } from '@pascal-app/core'
+import type { FloorplanMoveTarget, SlabNode } from '@aedifex/core'
 import { createPolygonCentroidMoveTarget } from '../shared/polygon-centroid-move'
 
 /**

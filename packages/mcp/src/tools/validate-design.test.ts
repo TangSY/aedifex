@@ -1,18 +1,18 @@
 import { describe, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { DESIGN_EXAMPLE, validateDesign } from '@pascal-app/core/procedural-items'
+import { DESIGN_EXAMPLE, validateDesign } from '@aedifex/core/procedural-items'
 import jointCabinetJson from '../../../core/src/procedural-items/__fixtures__/joint_cabinet.json'
 import airHandlerJson from '../../../core/src/procedural-items/__fixtures__/trial-e2-air-handler.json'
 import louverJson from '../../../core/src/procedural-items/__fixtures__/trial-e5-louver.json'
 import { SceneBridge } from '../bridge/scene-bridge'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 
 async function connect() {
   const bridge = new SceneBridge()
   bridge.setScene({}, [])
   bridge.loadDefault()
-  const server = createPascalMcpServer({ bridge })
+  const server = createAedifexMcpServer({ bridge })
   const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: 'validate-design-test', version: '0.0.0' })
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])
@@ -88,12 +88,12 @@ describe('validate_design', () => {
   })
 })
 
-describe('pascal://schema/design', () => {
+describe('aedifex://schema/design', () => {
   test('serves the schema, rules and an example that validate_design accepts', async () => {
     const { client } = await connect()
     const listed = await client.listResources()
-    expect(listed.resources.map((r) => r.uri)).toContain('pascal://schema/design')
-    const read = await client.readResource({ uri: 'pascal://schema/design' })
+    expect(listed.resources.map((r) => r.uri)).toContain('aedifex://schema/design')
+    const read = await client.readResource({ uri: 'aedifex://schema/design' })
     const content = read.contents[0] as { mimeType?: string; text?: string }
     expect(content.mimeType).toBe('application/json')
     const payload = JSON.parse(content.text ?? '{}')

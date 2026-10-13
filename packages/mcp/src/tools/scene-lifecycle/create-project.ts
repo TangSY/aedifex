@@ -41,7 +41,7 @@ export function registerCreateProject(server: McpServer, operations: SceneOperat
     {
       title: 'Create project',
       description:
-        'Create a browser-visible Pascal project for the authenticated user. Use this before save_scene when the user asks for a new project.',
+        'Create a browser-visible Aedifex project for the authenticated user. Use this before save_scene when the user asks for a new project.',
       inputSchema: createProjectInput,
       outputSchema: createProjectOutput,
       annotations: ADDITIVE_TOOL_ANNOTATIONS,
@@ -74,6 +74,11 @@ export function registerCreateProject(server: McpServer, operations: SceneOperat
         // project, so nothing that follows the scene can write the empty scene to the old one.
         if (bound?.projectId && bound.projectId !== status.projectId) {
           operations.loadJSON({ nodes: {}, rootNodeIds: [] })
+          operations.clearHistory()
+        }
+        // A fresh process has no scaffold yet. Save the same default hierarchy as an
+        // editor's new project; unbound authored work remains untouched.
+        if (Object.keys(operations.getNodes()).length === 0) {
           operations.loadDefault()
           operations.clearHistory()
         }

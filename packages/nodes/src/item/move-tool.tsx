@@ -6,16 +6,17 @@ import {
   canHostSurfaceChild,
   type ItemNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type PlacementState,
   triggerSFX,
   useDraftNode,
   useEditor,
   usePlacementCoordinator,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { useMemo } from 'react'
 import { Vector3 } from 'three'
+import { metadataRecord } from '../shared/node-metadata'
 
 /**
  * Phase 5 Stage D — item's registry-driven 3D move affordance.
@@ -37,7 +38,7 @@ import { Vector3 } from 'three'
  * time.
  *
  * Placement primitives (`useDraftNode`, `usePlacementCoordinator`,
- * `PlacementState`) are re-exported from `@pascal-app/editor` — same
+ * `PlacementState`) are re-exported from `@aedifex/editor` — same
  * hooks the legacy code used. When `ItemTool` (item placement, not
  * move) also ports to `def.tool`, the primitives can be inlined here
  * and dropped from editor.
@@ -133,7 +134,7 @@ export function getInitialState(
 export function MoveItemTool({ node: source }: { node: ItemNode }) {
   const node = useMemo(
     () =>
-      source.metadata?.isNew
+      metadataRecord(source.metadata).isNew
         ? ((useScene.getState().nodes[source.id] as ItemNode) ?? source)
         : source,
     [source],

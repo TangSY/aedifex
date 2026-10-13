@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import { useScene, ZoneNode } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { useScene, ZoneNode } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import { createElement } from 'react'
 import useEditor from '../../../store/use-editor'

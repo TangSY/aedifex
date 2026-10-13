@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { GeometryScriptParamValue } from '@pascal-app/core'
+import type { GeometryScriptParamValue } from '@aedifex/core'
 import { type BlenderRun, blenderRun } from './blender'
 
 /** The runner every Blender host executes; it ships beside `dist` and `src`. */
@@ -20,7 +20,7 @@ export async function runBlenderLocally(input: {
   params?: Record<string, GeometryScriptParamValue>
   timeoutMs?: number
 }): Promise<BlenderRun> {
-  const directory = await mkdtemp(join(tmpdir(), 'pascal-bpy-'))
+  const directory = await mkdtemp(join(tmpdir(), 'aedifex-bpy-'))
   try {
     await writeFile(
       join(directory, 'request.json'),

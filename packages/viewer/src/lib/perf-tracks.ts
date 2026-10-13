@@ -2,7 +2,7 @@
 //
 // Two outputs from one call site:
 //  1. Chrome DevTools Performance panel custom tracks — every span becomes a
-//     `performance.measure` with a `detail.devtools` payload, so Pascal systems
+//     `performance.measure` with a `detail.devtools` payload, so Aedifex systems
 //     show up as named lanes in the flame chart while recording.
 //  2. Per-window aggregates — `drainPerfCounters()` hands the overlay one
 //     bucket per track (total/max/count since the last drain), so the panel can
@@ -76,7 +76,7 @@ function emitMeasure(
         devtools: {
           dataType: 'track-entry',
           track,
-          trackGroup: 'Pascal',
+          trackGroup: 'Aedifex',
           color,
           ...(properties ? { properties } : {}),
         },

@@ -6,7 +6,7 @@ import type {
   GeometryContext,
   RoofNode,
   RoofSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Floor-plan builder for an eyebrow vent — seen from above it reads as the

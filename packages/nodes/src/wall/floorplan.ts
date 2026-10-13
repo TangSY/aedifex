@@ -21,13 +21,13 @@ import {
   type WallMiterData,
   type WallNode,
   wallLayerBoundaryOffsets,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   floorplanGeometryMetadata,
   readFloorplanContext,
   WALL_PUSH_AFFORDANCE,
   type WallPushArrowPayload,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { constructionDimensionStandard } from '../shared/construction-dimension-standards'
 import {
   buildCurvedWallConstructionDimensions,

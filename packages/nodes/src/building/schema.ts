@@ -1,1 +1,1 @@
-export { BuildingNode } from '@pascal-app/core'
+export { BuildingNode } from '@aedifex/core'

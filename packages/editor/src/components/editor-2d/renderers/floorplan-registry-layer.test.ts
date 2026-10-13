@@ -6,8 +6,8 @@ import type {
   FloorplanGeometry,
   FloorplanPalette,
   LiveNodeOverrides,
-} from '@pascal-app/core'
-import { type AnyNodeDefinition, emitter, nodeRegistry, registerNode } from '@pascal-app/core'
+} from '@aedifex/core'
+import { type AnyNodeDefinition, emitter, nodeRegistry, registerNode } from '@aedifex/core'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { z } from 'zod'

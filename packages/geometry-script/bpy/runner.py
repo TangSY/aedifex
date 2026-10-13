@@ -7,7 +7,7 @@ Reads `<dir>/request.json` ({"code": str, "params": {id: value}}) and writes
 `<dir>/result.json` plus, on success, `<dir>/model.glb`. The module declares
 `PARAMS` (same shape as a three.js script's `params`), an optional `MOUNT` and
 `build(params)`, which adds objects to the empty scene it is given. Everything in
-the scene is exported; `@pascal-app/geometry-script/blender` reads the GLB into
+the scene is exported; `@aedifex/geometry-script/blender` reads the GLB into
 the same manifest as a three.js build.
 
 This file is the protocol, not the sandbox: the host runs it with no network, no

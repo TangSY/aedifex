@@ -1,6 +1,6 @@
 // The door tool's placement choices: the chips [O] Type and [L] Style.
 
-import type { DoorNode, ToolHint } from '@pascal-app/core'
+import type { DoorNode, ToolHint } from '@aedifex/core'
 import {
   DOOR_STYLE_LABELS,
   DOOR_STYLES,
@@ -8,7 +8,7 @@ import {
   type DoorStyle,
   doorStyleLook,
   doorTypeFields,
-} from '@pascal-app/core/building'
+} from '@aedifex/core/building'
 import { create } from 'zustand'
 
 /** The door panel's Type row and the tool's Type chip (garage types live under the panel's Garage). */

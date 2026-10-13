@@ -1,4 +1,4 @@
-import type { IconRef, LazyComponent } from '@pascal-app/core'
+import type { IconRef, LazyComponent } from '@aedifex/core'
 import useEditor from '../store/use-editor'
 import { VIEW_2D, VIEW_3D } from '../store/view-layout'
 

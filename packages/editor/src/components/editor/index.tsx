@@ -1,6 +1,5 @@
 'use client'
 
-import { Icon } from '@iconify/react'
 import {
   acquireSceneReadOnlyLease,
   getCatalogMaterialById,
@@ -10,7 +9,7 @@ import {
   initSpatialGridSync,
   spatialGridManager,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   type HoverStyles,
   InteractiveSystem,
@@ -21,7 +20,8 @@ import {
   Viewer,
   type ViewerImmersiveSession,
   ViewerPresentations,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
+import { Icon } from '@iconify/react'
 import {
   type CSSProperties,
   memo,
@@ -1188,7 +1188,7 @@ const ViewerCanvas = memo(function ViewerCanvas({
   return (
     <ErrorBoundary fallback={<EditorSceneCrashFallback />}>
       {/* `relative` so the floorplan compass (portaled here to stay visible in
-          every layout) can anchor to this container's bottom-left. */}
+          every layout) can anchor to this container's top-right. */}
       <div className="relative h-full" ref={setViewerAreaNode}>
         <QuickMeasurementHud />
         <DeleteConfirmationDialog />
@@ -1217,7 +1217,7 @@ const ViewerCanvas = memo(function ViewerCanvas({
           {/* 3D viewer — always mounted, hidden via CSS to avoid destroying the WebGL context */}
           <div
             className="relative min-w-0 overflow-hidden"
-            data-pascal-viewer-3d
+            data-aedifex-viewer-3d
             data-view-pane={pane3d ?? undefined}
             onPointerDownCapture={pane3d === null ? undefined : focusPane(pane3d)}
             ref={viewer3dRef}

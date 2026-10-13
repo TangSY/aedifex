@@ -10,7 +10,7 @@ import {
   type SceneMaterial,
   SiteNode,
   WallNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { createSceneOperations } from '../operations'
 import { registerSharedTools } from './shared-tools'

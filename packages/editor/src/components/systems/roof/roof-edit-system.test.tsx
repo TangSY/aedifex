@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import { RoofSegmentNode, sceneRegistry, useLiveNodeOverrides, useScene } from '@pascal-app/core'
-import { hideFromScene, showInScene, useViewer } from '@pascal-app/viewer'
+import { RoofSegmentNode, sceneRegistry, useLiveNodeOverrides, useScene } from '@aedifex/core'
+import { hideFromScene, showInScene, useViewer } from '@aedifex/viewer'
 import { _roots, act, createRoot, extend, type Instance, type ThreeEvent } from '@react-three/fiber'
 import { createElement } from 'react'
 import * as THREE from 'three'

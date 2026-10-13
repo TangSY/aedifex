@@ -1,4 +1,4 @@
-import { type AnyNodeDefinition, registerNode } from '@pascal-app/core'
+import { type AnyNodeDefinition, registerNode } from '@aedifex/core'
 
 export function registerHostingTestNode(definition: AnyNodeDefinition) {
   registerNode({

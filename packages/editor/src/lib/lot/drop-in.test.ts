@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { type AnyNodeId, type SiteNode, useScene } from '@pascal-app/core'
+import { type AnyNodeId, type SiteNode, useScene } from '@aedifex/core'
 import { dropInLot } from './drop-in'
 import type { ParcelResolveData } from './lot-patch'
 import type { ParcelProvider } from './parcel-provider'

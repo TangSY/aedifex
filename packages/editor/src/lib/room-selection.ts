@@ -12,7 +12,7 @@ import {
   type TopologyRoom,
   type WallNode,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { SelectionModifierKeys } from './selection-routing'
 import { polygonMatchesZoneFootprint } from './zone-content'
 

@@ -1,6 +1,6 @@
 # Pascal MCP tool workflows
 
-Source reviewed on 2026-09-08 against repository code whose package version field is `@pascal-app/mcp` 1.0.0-beta.6. This is not a claim that the package was published or natively host-tested. Installed and hosted releases may expose a different schema, so inspect the advertised tools first.
+Source reviewed on 2026-09-08 against repository code whose package version field is `@aedifex/mcp` 1.0.0-beta.6. This is not a claim that the package was published or natively host-tested. Installed and hosted releases may expose a different schema, so inspect the advertised tools first.
 
 Inspect the server's advertised tools because hosted and local releases may differ. Never call a guessed tool.
 

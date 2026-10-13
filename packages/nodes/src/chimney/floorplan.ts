@@ -6,7 +6,7 @@ import type {
   GeometryContext,
   RoofNode,
   RoofSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { flueXPositions } from './geometry'
 
 /**

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { nodeRegistry, registerNode, spatialGridManager, useScene } from '@pascal-app/core'
+import { nodeRegistry, registerNode, spatialGridManager, useScene } from '@aedifex/core'
 import { cabinetDefinition, cabinetModuleDefinition } from '../definition'
 import { CabinetModuleNode, CabinetNode } from '../schema'
 

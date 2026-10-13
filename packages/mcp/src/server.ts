@@ -1,5 +1,5 @@
 import { McpServer, type RegisteredTool } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { HostedServiceExecutor } from '@pascal-app/core/agent-operations'
+import type { HostedServiceExecutor } from '@aedifex/core/agent-operations'
 import type { SceneBridge } from './bridge/scene-bridge'
 import { createSceneOperations, type SceneOperations } from './operations'
 import { registerPrompts } from './prompts'
@@ -14,7 +14,7 @@ import type { SceneViewHost } from './tools/view-scene'
 import { registerVisionTools } from './tools/vision'
 import { version } from './version'
 
-export type PascalMcpToolExecutor = <Result>(input: {
+export type AedifexMcpToolExecutor = <Result>(input: {
   name: string
   /** The call's parsed arguments; undefined for a tool without inputs. */
   arguments: unknown
@@ -22,7 +22,7 @@ export type PascalMcpToolExecutor = <Result>(input: {
   execute: () => Promise<Result>
 }) => Promise<Result>
 
-export type CreatePascalMcpServerOptions = {
+export type CreateAedifexMcpServerOptions = {
   bridge: SceneBridge
   operations?: SceneOperations
   /** Required for persistence tools. Hosted apps and CLIs inject their own store. */
@@ -34,7 +34,7 @@ export type CreatePascalMcpServerOptions = {
    * Tool renames fail closed because the SDK registration lifecycle cannot safely rename twice.
    * Experimental task-based tool registrations are outside this hook.
    */
-  executeTool?: PascalMcpToolExecutor
+  executeTool?: AedifexMcpToolExecutor
   /**
    * The items search_assets, place_items and furnish_room draw from, read once per server. The
    * hosted app passes its published library; without it, a small built-in list.
@@ -50,10 +50,10 @@ export type CreatePascalMcpServerOptions = {
   instructions?: string
 }
 
-export function createPascalMcpServer(opts: CreatePascalMcpServerOptions): McpServer {
+export function createAedifexMcpServer(opts: CreateAedifexMcpServerOptions): McpServer {
   // A client shows these before the agent's first call.
   const server = new McpServer(
-    { name: opts.name ?? 'pascal-mcp-server', version: opts.version ?? version },
+    { name: opts.name ?? 'pascal-mcp', version: opts.version ?? version },
     opts.instructions ? { instructions: opts.instructions } : undefined,
   )
   if (opts.executeTool) installToolExecutor(server, opts.executeTool)
@@ -73,7 +73,7 @@ export function createPascalMcpServer(opts: CreatePascalMcpServerOptions): McpSe
   return server
 }
 
-function installToolExecutor(server: McpServer, executeTool: PascalMcpToolExecutor): void {
+function installToolExecutor(server: McpServer, executeTool: AedifexMcpToolExecutor): void {
   const registerTool = server.registerTool.bind(server)
   const wrappedRegisterTool: McpServer['registerTool'] = (name, config, callback) => {
     const runtimeCallback = callback as unknown as RuntimeToolCallback
@@ -104,7 +104,7 @@ type RuntimeToolCallback = (...args: unknown[]) => unknown
 function wrapToolCallback(
   name: string,
   callback: RuntimeToolCallback,
-  executeTool: PascalMcpToolExecutor,
+  executeTool: AedifexMcpToolExecutor,
 ): RuntimeToolCallback {
   return (...args) =>
     executeTool({
@@ -119,7 +119,7 @@ function wrapRegisteredTool(
   registration: RegisteredTool,
   initialName: string,
   initialCallback: RuntimeToolCallback,
-  executeTool: PascalMcpToolExecutor,
+  executeTool: AedifexMcpToolExecutor,
 ): RegisteredTool {
   let currentCallback = initialCallback
   const update = registration.update.bind(registration) as (

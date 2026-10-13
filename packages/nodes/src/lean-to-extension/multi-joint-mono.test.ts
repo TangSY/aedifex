@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, LevelNode } from '@pascal-app/core'
+import { type AnyNode, LevelNode } from '@aedifex/core'
 import { createLeanToAssembly } from './assembly'
 import { resolveLeanToFreestandingRunPlacement } from './placement'
 

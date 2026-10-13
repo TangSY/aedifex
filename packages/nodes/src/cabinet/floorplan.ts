@@ -5,8 +5,8 @@ import type {
   FloorplanGeometry,
   FloorplanPoint,
   GeometryContext,
-} from '@pascal-app/core'
-import { floorplanGeometryMetadata, readFloorplanContext } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { floorplanGeometryMetadata, readFloorplanContext } from '@aedifex/editor'
 import { GAS_HOB_BURNER_RADIUS, gasHobBurners, inductionZones } from './geometry/cooktop'
 import { FAUCET_SETBACK, sinkBowls } from './geometry/sink'
 import { getRunSpanEnds, getRunSpans } from './run-layout'

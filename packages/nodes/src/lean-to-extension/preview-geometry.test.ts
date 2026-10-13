@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { LeanToExtensionNode, RoofSegmentNode } from '@pascal-app/core'
+import { LeanToExtensionNode, RoofSegmentNode } from '@aedifex/core'
 import { Mesh, MeshBasicMaterial } from 'three'
 import { resolveConicalLeanToPlacement } from './conical-host'
 import { buildLeanToExtensionGeometry } from './geometry'

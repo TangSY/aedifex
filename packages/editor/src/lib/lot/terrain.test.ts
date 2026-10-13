@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { decodeTerrainField, heightAt } from '@pascal-app/core'
+import { decodeTerrainField, heightAt } from '@aedifex/core'
 import type { ParcelProvider } from './parcel-provider'
 import {
   coarseHeightAt,

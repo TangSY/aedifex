@@ -1,4 +1,5 @@
-import type { AnyNode, WallNode } from '@pascal-app/core'
+import { metadataRecord } from '@aedifex/core'
+import type { AnyNode, WallNode } from '@aedifex/core'
 import { isPascalAuthored } from './cleanup'
 import { nextId } from './ids'
 
@@ -372,7 +373,7 @@ function splitWallAt(nodes: SceneNodes, segment: Segment, along: number) {
     start: point,
     end: [...wall.end],
     children: [],
-    metadata: { ...(wall.metadata ?? {}) },
+    metadata: { ...metadataRecord(wall.metadata) },
   }
   wall.end = point
   for (const childId of [...wall.children]) {

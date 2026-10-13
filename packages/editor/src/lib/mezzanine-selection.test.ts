@@ -13,8 +13,8 @@ import {
   type SlabNode,
   useScene,
   type ZoneNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { deleteConfirmationContent } from '../components/editor/delete-confirmation-dialog'
 import { resolveFloorRegionRoom } from '../components/editor/floor-region-controls'
 import { MEZZANINE_GESTURE_HINTS, mezzanineGesture } from '../components/ui/helpers/helper-manager'

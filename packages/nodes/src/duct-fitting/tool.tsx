@@ -1,6 +1,6 @@
 'use client'
 
-import { DuctFittingNode, emitter, type GridEvent, useScene } from '@pascal-app/core'
+import { DuctFittingNode, emitter, type GridEvent, useScene } from '@aedifex/core'
 import {
   CursorSphere,
   EDITOR_LAYER,
@@ -9,8 +9,8 @@ import {
   triggerSFX,
   useEditor,
   useInteractionScope,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Euler, type Material, Mesh, Quaternion, Vector3 } from 'three'

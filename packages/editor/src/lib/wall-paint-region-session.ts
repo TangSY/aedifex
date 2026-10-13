@@ -1,4 +1,4 @@
-import { type AnyNodeId, useScene, type WallFace } from '@pascal-app/core'
+import { type AnyNodeId, useScene, type WallFace } from '@aedifex/core'
 import { create } from 'zustand'
 import useEditor from '../store/use-editor'
 import { beginGesture, type GestureHandle } from './gesture-lifecycle'

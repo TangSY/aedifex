@@ -6,7 +6,7 @@ import {
   sceneRegistry,
   useInteractive,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { WalkthroughInteract } from '../../../store/use-first-person-hud'
 
 /**

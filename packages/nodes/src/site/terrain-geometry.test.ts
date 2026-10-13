@@ -6,7 +6,7 @@ import {
   type HeightPatch,
   heightAt,
   type TerrainField,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   buildTerrainMesh,
   buildTerrainSkirt,

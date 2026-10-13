@@ -6,7 +6,7 @@ import { dirname, relative, resolve } from 'node:path'
 // durable workflow, whose sandbox rejects packages that depend on Node modules (nanoid among
 // them). So the contracts may import zod, the dependency-free unit parser, and their own
 // dependency-free files.
-const ALLOWED_PACKAGES = new Set(['zod', '@pascal-app/lingo'])
+const ALLOWED_PACKAGES = new Set(['zod', '@aedifex/lingo'])
 const ENTRY = resolve(import.meta.dir, 'index.ts')
 
 function runtimeImports(file: string): string[] {

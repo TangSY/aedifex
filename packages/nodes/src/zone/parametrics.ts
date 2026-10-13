@@ -1,4 +1,4 @@
-import type { ParametricDescriptor, ZoneNode } from '@pascal-app/core'
+import type { ParametricDescriptor, ZoneNode } from '@aedifex/core'
 
 export const zoneParametrics: ParametricDescriptor<ZoneNode> = {
   groups: [],

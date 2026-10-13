@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { AGENT_TOOL_CONTRACTS } from '@pascal-app/core/agent-tools'
-import type { SceneGraph } from '@pascal-app/core/clone-scene-graph'
-import { WallNode } from '@pascal-app/core/schema'
+import { AGENT_TOOL_CONTRACTS } from '@aedifex/core/agent-tools'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
+import { WallNode } from '@aedifex/core/schema'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { createSceneOperations } from '../operations'
 import { type SceneMeta, type SceneStore, SceneWipeBlockedError } from '../storage/types'
@@ -156,25 +156,24 @@ describe('clear_scene', () => {
 
   test("keeps the project's installed plugins, in the session and in the saved scene", async () => {
     const { bridge, call, guarded, meta } = await houseSession()
-    bridge.loadJSON({ ...bridge.exportJSON(), installedPlugins: ['pascal:sheets'] })
+    bridge.loadJSON({ ...bridge.exportJSON(), installedPlugins: ['aedifex:sheets'] })
     const cleared = await call('clear_scene', { reason: 'The person asked to start over.' })
     expect(cleared.isError).toBe(false)
-    expect(bridge.exportJSON().installedPlugins).toEqual(['pascal:sheets'])
+    expect(bridge.exportJSON().installedPlugins).toEqual(['aedifex:sheets'])
     const stored = await guarded.store.load(meta.id)
-    expect(stored!.graph.installedPlugins).toEqual(['pascal:sheets'])
+    expect(stored!.graph.installedPlugins).toEqual(['aedifex:sheets'])
     const types = Object.values(stored!.graph.nodes).map((node) => (node as { type: string }).type)
     expect(types.sort()).toEqual(['building', 'level', 'site'])
   })
 
-  test('a write that would empty the project by accident is refused, and nothing changed', async () => {
+  test('a protected root cannot be deleted before the persistence guard runs', async () => {
     const { bridge, call, guarded } = await houseSession()
     const before = Object.keys(bridge.getNodes()).sort()
     const site = bridge.getRootNodeIds()[0]!
     const refused = await call('apply_patch', { patches: [{ op: 'delete', id: site }] })
     expect(refused.isError).toBe(true)
-    expect(refused.body.code).toBe('scene_wipe_blocked')
-    expect(String(refused.body.error)).toContain('nothing changed')
-    expect(String(refused.body.error)).toContain('clear_scene')
+    expect(refused.body.code).toBe('not_deletable')
+    expect(String(refused.body.message)).toContain('deletable: false')
     expect(guarded.saves).toEqual([])
     // The session holds the project as stored, not the refused write.
     expect(Object.keys(bridge.getNodes()).sort()).toEqual(before)

@@ -4,7 +4,7 @@ import {
   TurbineVentNode as TurbineVentNodeSchema,
   type TurbineVentNode as TurbineVentNodeType,
   turbineVentSlots,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildTurbineVentFloorplan } from './floorplan'
 import { turbineVentPaint } from './paint'
 import { turbineVentParametrics } from './parametrics'

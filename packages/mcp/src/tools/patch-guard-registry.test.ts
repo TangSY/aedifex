@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { registerPatchGuard, runPatchGuards } from './patch-guards'
+import { registerPatchGuard, runPatchGuards } from '../bridge/patch-guards'
 
 // Patch guards register from the module that owns what they protect: the honest-update check from
 // its own module, any other from the tools it guards.

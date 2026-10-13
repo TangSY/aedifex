@@ -1,6 +1,6 @@
 'use client'
 
-import { useScene } from '@pascal-app/core'
+import { useScene } from '@aedifex/core'
 import {
   Check,
   ChevronRight,
@@ -33,7 +33,7 @@ import { IconRefGlyph } from '../../ui/icon-ref'
 import { Button } from '../../ui/primitives/button'
 import { PLUGINS_VIEW_ID } from './use-editor-views'
 
-const PLUGIN_AUTHORING_URL = 'https://editor.pascal.app/docs/developers/plugins'
+const PLUGIN_AUTHORING_URL = 'https://editor.aedifex.app/docs/developers/plugins'
 const OTHER_CATEGORY = 'Other'
 /** Below this width the categories fold into a select and the detail floats over the list. */
 const WIDE = 900
@@ -338,7 +338,7 @@ function PluginDetail({
           </ul>
         ) : (
           <p className="rounded-xl border border-border/60 border-dashed px-3.5 py-3 text-muted-foreground text-sm">
-            Runs in the editor. No Pascal services, no outside accounts.
+            Runs in the editor. No Aedifex services, no outside accounts.
           </p>
         )}
       </section>
@@ -559,7 +559,7 @@ export function PluginsView() {
               rel="noreferrer"
               target="_blank"
             >
-              Create a Pascal plugin
+              Create an Aedifex plugin
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>

@@ -4,7 +4,7 @@ import {
   type MeasurementPoint,
   measurementDistance,
   measurementNormal,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { ResolvedMeasurementPayload } from './resolve'
 
 export function measurementResolvedEditPoints(

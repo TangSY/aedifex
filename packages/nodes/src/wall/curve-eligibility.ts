@@ -1,4 +1,4 @@
-import type { AnyNode } from '@pascal-app/core'
+import type { AnyNode } from '@aedifex/core'
 
 export function hasWallCurveBlockingChildren(children: readonly AnyNode[]) {
   return children.some((child) => {

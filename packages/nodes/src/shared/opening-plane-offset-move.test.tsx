@@ -13,9 +13,9 @@ import {
   useScene,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
-import { getPlacementSurface, useEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { getPlacementSurface, useEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import { Group } from 'three'
 import { RegistryToolProvider } from '../../../editor/src/components/tools/registry-tool-context'

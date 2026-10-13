@@ -4,7 +4,7 @@ import {
   gutterSlots,
   type HandleDescriptor,
   type NodeDefinition,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildGutterFloorplan } from './floorplan'
 import { snapLengthToCorner } from './length-snap'
 import { gutterPaint } from './paint'

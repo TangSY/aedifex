@@ -13,13 +13,13 @@ import {
   fenceWithFeatures,
   type GridEvent,
   useLiveNodeOverrides,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   markToolCancelConsumed,
   triggerSFX,
   useEditor,
   useRegistryToolContext,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { useEffect } from 'react'
 import { pickFenceTarget } from '../fence-feature/pick-target'
 

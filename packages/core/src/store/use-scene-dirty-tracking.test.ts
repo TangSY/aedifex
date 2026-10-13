@@ -11,7 +11,7 @@ const untrackedDef = {
   schema: {} as never,
   category: 'furnishing',
   defaults: () => ({}),
-  capabilities: {},
+  capabilities: { deletable: false },
   dirtyTracking: false,
 } as unknown as AnyNodeDefinition
 

@@ -1,4 +1,4 @@
-import type { NodeDefinition } from '@pascal-app/core'
+import type { NodeDefinition } from '@aedifex/core'
 import { perNodeGeometryBatchable } from '../shared/node-batch/batchable'
 import { buildImportedMeshFloorplan } from './floorplan'
 import { buildImportedMeshGeometry } from './geometry'
@@ -32,7 +32,7 @@ export const importedMeshDefinition: NodeDefinition<typeof ImportedMeshNode> = {
   floorplan: buildImportedMeshFloorplan,
   presentation: {
     label: 'Imported Mesh',
-    description: 'Geometry preserved from an imported model when no native Pascal shape exists.',
+    description: 'Geometry preserved from an imported model when no native Aedifex shape exists.',
     icon: { kind: 'url', src: '/icons/item.webp' },
     hidden: true,
   },

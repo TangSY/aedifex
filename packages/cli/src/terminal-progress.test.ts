@@ -13,12 +13,12 @@ describe('terminal progress', () => {
 
     progress.start('Installing the editor runtime')
     progress.update('Checking that the editor is ready')
-    progress.succeed('Pascal Editor is ready')
+    progress.succeed('Aedifex Editor is ready')
 
     expect(chunks.join('')).toBe(
       '• Installing the editor runtime\n' +
         '• Checking that the editor is ready\n' +
-        '✓ Pascal Editor is ready\n',
+        '✓ Aedifex Editor is ready\n',
     )
   })
 })

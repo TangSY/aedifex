@@ -1,7 +1,7 @@
 'use client'
 
-import type { OpenWallEnd } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import type { OpenWallEnd } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { memo, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {

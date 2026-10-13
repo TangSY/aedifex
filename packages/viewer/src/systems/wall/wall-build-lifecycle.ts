@@ -1,4 +1,4 @@
-import { useScene } from '@pascal-app/core'
+import { useScene } from '@aedifex/core'
 import { PERF_OVERLAY_ENABLED } from '../../lib/gpu-perf'
 import { type PerfBatchStats, publishPerfWallDrainStats } from '../../lib/perf-panel-store'
 import { beginSpan, endSpan, type PerfSpanHandle } from '../../lib/perf-tracks'

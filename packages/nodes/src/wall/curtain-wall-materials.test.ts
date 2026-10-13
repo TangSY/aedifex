@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import { CurtainWallConfig, SceneMaterial, WallNode } from '@pascal-app/core'
-import { resolveMaterialRef } from '@pascal-app/viewer'
+import { CurtainWallConfig, SceneMaterial, WallNode } from '@aedifex/core'
+import { resolveMaterialRef } from '@aedifex/viewer'
 import { Texture } from 'three'
 import type { MeshStandardNodeMaterial } from 'three/webgpu'
 import { getCurtainAwareWallMaterials } from './curtain-wall-materials'

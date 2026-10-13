@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import type { ProceduralItemNode } from '@pascal-app/core/procedural-items'
+import type { ProceduralItemNode } from '@aedifex/core/procedural-items'
 import { proceduralControlDescriptors } from './procedural-controls'
 
 test('motion controls and one Lights switch route to independent commands', () => {

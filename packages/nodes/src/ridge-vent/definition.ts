@@ -3,7 +3,7 @@ import {
   type NodeDefinition,
   RidgeVentNode as RidgeVentNodeSchema,
   type RidgeVentNode as RidgeVentNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { surfacePaintCapability } from '../shared/surface-paint'
 import { buildRidgeVentFloorplan } from './floorplan'
 import { ridgeVentParametrics } from './parametrics'

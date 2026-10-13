@@ -8,7 +8,7 @@ import {
   sceneRegistry,
   useScene,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Box3, type BufferGeometry, Matrix4, type Object3D, Vector3 } from 'three'
 
 // Shared plumbing for the group transform gizmos (rotate + move). Both operate

@@ -8,7 +8,7 @@ import {
   projectPointToFence,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export const fenceFeatureAffordance: FloorplanAffordance<FenceFeatureNode> = {
   start({ node, payload, nodes }) {

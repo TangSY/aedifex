@@ -1,4 +1,4 @@
-import type { WallNode } from '@pascal-app/core'
+import type { WallNode } from '@aedifex/core'
 
 const FLOORPLAN_WALL_THICKNESS_SCALE = 1.18
 const FLOORPLAN_MIN_VISIBLE_WALL_THICKNESS = 0.13

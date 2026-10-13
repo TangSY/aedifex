@@ -1,8 +1,8 @@
 'use client'
 
-import { type CameraControlFrameEvent, emitter, sceneRegistry, useScene } from '@pascal-app/core'
-import { frameViewerCamera, useViewerCameraNavigationSync } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+import { type CameraControlFrameEvent, emitter, sceneRegistry, useScene } from '@aedifex/core'
+import { frameViewerCamera, useViewerCameraNavigationSync } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { CameraControls, CameraControlsImpl } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef } from 'react'

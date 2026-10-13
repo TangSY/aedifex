@@ -1,3 +1,4 @@
+import { metadataRecord } from './metadata-record'
 import { floorConstructionLift } from '../lib/floor-construction-lift'
 import { isFloorAnchoredOpening } from '../lib/floor-opening-footprints'
 import {
@@ -78,8 +79,8 @@ export function preserveLegacyWallDatums(
   const migrated = Object.values(after).some(
     (node) =>
       node.type === 'level' &&
-      node.metadata?.floorOwnershipMigrated === true &&
-      (before[node.id] as typeof node | undefined)?.metadata?.floorOwnershipMigrated !== true,
+      metadataRecord(node.metadata).floorOwnershipMigrated === true &&
+      metadataRecord(before[node.id]?.metadata).floorOwnershipMigrated !== true,
   )
   const newBaseLevels = new Set(
     Object.values(after).flatMap((node) =>
@@ -101,7 +102,7 @@ export function preserveLegacyWallDatums(
   const pendingLegacyRoomPlate =
     !migrated &&
     [...newBaseLevels].some(
-      (id) => before[id]?.type === 'level' && before[id].metadata?.legacyRoomMigrationPending,
+      (id) => before[id]?.type === 'level' && metadataRecord(before[id].metadata).legacyRoomMigrationPending,
     )
   if (
     !migrated &&

@@ -4,7 +4,7 @@ import type {
   GeometryContext,
   StairNode,
   StairSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   computeSegmentTransforms,
   measureStairDetail,
@@ -13,7 +13,7 @@ import {
   resolveStairRailPaths,
   resolveStairWalkingPaths,
   rotateXZ,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 // Offset from the stair's footprint edge to the rotation chevron's
 // origin. Same magnitude as `STAIR_ROTATE_CORNER_OFFSET` in
@@ -27,7 +27,7 @@ import {
   buildSvgArrowHeadPoints,
   floorplanGeometryMetadata,
   getArcPlanPoint,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import {
   buildStairDocumentation,
   resolveStairPlanDirection,

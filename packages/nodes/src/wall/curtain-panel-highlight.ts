@@ -4,8 +4,8 @@ import {
   getWallThickness,
   sceneRegistry,
   type WallNode,
-} from '@pascal-app/core'
-import { EDITOR_LAYER } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { EDITOR_LAYER } from '@aedifex/editor'
 import { useEffect } from 'react'
 import {
   BufferGeometry,

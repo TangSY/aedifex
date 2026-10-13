@@ -1,5 +1,5 @@
 // Bundles the sandbox compile worker into one file and publishes it as a
-// string module (`@pascal-app/geometry-script/sandbox`), so a host can hand it
+// string module (`@aedifex/geometry-script/sandbox`), so a host can hand it
 // to an opaque-origin frame that cannot fetch anything itself.
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'

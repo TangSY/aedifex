@@ -1,4 +1,4 @@
-import type { DeleteZonePayload } from '@pascal-app/core'
+import type { DeleteZonePayload } from '@aedifex/core'
 import { create } from 'zustand'
 
 /** Changing one of a room's construction parts, with what it takes along. */

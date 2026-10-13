@@ -5,8 +5,8 @@ import {
   type GeometryContext,
   WallNode,
   ZoneNode,
-} from '@pascal-app/core'
-import { createFloorplanContextExtensions } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { createFloorplanContextExtensions } from '@aedifex/editor'
 import { buildRoomClearDimensions } from './room-clear-dimensions'
 
 function enclosure(points: Array<[number, number]>) {

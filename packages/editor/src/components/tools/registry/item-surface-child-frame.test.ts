@@ -1,5 +1,5 @@
 import { expect, spyOn, test } from 'bun:test'
-import * as core from '@pascal-app/core'
+import * as core from '@aedifex/core'
 import {
   type AnyNode,
   type ItemEvent,
@@ -8,7 +8,7 @@ import {
   registerNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Group } from 'three'
 import { createRegistryItemSurfaceMove } from './item-surface-move'
 

@@ -3,7 +3,7 @@ import type {
   AnyNode,
   AnyNodeId,
   CabinetModuleNode as CabinetModuleNodeType,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { loadPlugin, nodeRegistry } from '../../../../core/src/registry'
 import { createSceneApi } from '../../../../core/src/registry/scene-api'
 import { runAsSingleSceneHistoryStep } from '../../../../core/src/store/history-control'

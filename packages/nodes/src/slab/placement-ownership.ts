@@ -1,4 +1,4 @@
-import type { VisibleScene } from '@pascal-app/editor'
+import type { VisibleScene } from '@aedifex/editor'
 
 export type SlabCompletionTrigger = 'grid' | 'keyboard'
 

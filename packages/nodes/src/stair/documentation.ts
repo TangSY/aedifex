@@ -8,8 +8,8 @@ import {
   resolveStairWinder,
   type StairNode,
   useScene,
-} from '@pascal-app/core'
-import { floorplanGeometryMetadata, readFloorplanContext } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { floorplanGeometryMetadata, readFloorplanContext } from '@aedifex/editor'
 import {
   type ConstructionLengthProfile,
   type ConstructionMetricNotation,

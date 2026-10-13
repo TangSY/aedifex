@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import type { GeometryScriptParamSpec } from '@pascal-app/core'
+import type { GeometryScriptParamSpec } from '@aedifex/core'
 import { isScriptDefault, scriptDefault, scriptDefaultsPatch } from './script-param-defaults'
 
 const specs: GeometryScriptParamSpec[] = [

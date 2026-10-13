@@ -12,7 +12,7 @@ import {
   useScene,
   type WallNode,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { z } from 'zod'
 import {
   availablePaintScopes,

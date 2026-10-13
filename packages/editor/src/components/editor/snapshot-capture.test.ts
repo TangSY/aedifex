@@ -1,11 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  emitter,
-  type SnapshotCapturedEvent,
-  type SnapshotCaptureFailedEvent,
-  type SnapshotCapturePose,
-  type ThumbnailGenerateEvent,
-} from '@pascal-app/core'
+import { emitter, type SnapshotCapturedEvent, type SnapshotCaptureFailedEvent, type SnapshotCapturePose, type ThumbnailGenerateEvent } from '@aedifex/core'
 import { Euler, PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import {
   applySnapshotCapturePose,

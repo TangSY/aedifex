@@ -1,4 +1,4 @@
-import type { AnyNode, AnyNodeId, DuctFittingNode, PipeFittingNode } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, DuctFittingNode, PipeFittingNode } from '@aedifex/core'
 import { getDuctFittingPorts } from '../duct-fitting/ports'
 import { getPipeFittingPorts } from '../pipe-fitting/ports'
 import { planElbowRealign, planPipeElbowRealign, planTeeBranchRealign } from './auto-fitting'

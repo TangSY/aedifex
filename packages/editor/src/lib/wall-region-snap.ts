@@ -1,5 +1,5 @@
-import type { AnyNode, WallFace, WallNode } from '@pascal-app/core'
-import { getWallFaceBaseAt } from '@pascal-app/viewer'
+import type { AnyNode, WallFace, WallNode } from '@aedifex/core'
+import { getWallFaceBaseAt } from '@aedifex/viewer'
 
 // Snapping for the paint tool's wall region gestures, in face coordinates:
 // `u` is metres from the wall start along the reference line (the chord on a

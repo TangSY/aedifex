@@ -9,15 +9,15 @@ import {
   type RoofSegmentNode,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   consumePlacementDragRelease,
   copyCollectionIds,
   markToolCancelConsumed,
   triggerSFX,
   useEditor,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {

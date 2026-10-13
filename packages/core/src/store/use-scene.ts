@@ -1190,6 +1190,9 @@ export type SceneState = {
     options?: DerivedWriteOptions,
   ) => void
 
+  /** Replace a node entirely when restoring a snapshot. */
+  setNode: (id: AnyNodeId, node: AnyNode) => void
+
   deleteNode: (id: AnyNodeId, options?: DerivedWriteOptions) => void
   deleteNodes: (ids: AnyNodeId[], options?: DerivedWriteOptions) => void
 
@@ -1598,8 +1601,12 @@ const useScene: UseSceneStore = createSceneStore(
         const previousInstalledPlugins = get().installedPlugins
         // Guard against the *next* plugin list: the store still holds the old
         // one, and re-marks for newly enabled kinds must pass the guard.
+        let preparingInstall = true
         const dirtyNodes = new GuardedDirtySet(
-          () => ({ nodes: get().nodes, installedPlugins: nextInstalledPlugins }),
+          () =>
+            preparingInstall
+              ? { nodes: get().nodes, installedPlugins: nextInstalledPlugins }
+              : get(),
           get().dirtyNodes,
         )
         for (const node of Object.values(get().nodes)) {
@@ -1610,6 +1617,9 @@ const useScene: UseSceneStore = createSceneStore(
             if (nodeRegistry.get(node.type)?.dirtyTracking !== false) dirtyNodes.add(node.id)
           }
         }
+        // Undo/redo restores installedPlugins without replacing this set.
+        // After preparation its guard must follow the live scene again.
+        preparingInstall = false
         set({
           installedPlugins: nextInstalledPlugins,
           hasExplicitPluginInstallState: options?.explicit ?? get().hasExplicitPluginInstallState,
@@ -1674,6 +1684,7 @@ const useScene: UseSceneStore = createSceneStore(
       updateNodes: (updates, options) => nodeActions.updateNodesAction(set, get, updates, options),
       updateNode: (id, data, options) =>
         nodeActions.updateNodesAction(set, get, [{ id, data }], options),
+      setNode: (id, node) => nodeActions.setNodeAction(set, get, id, node),
 
       detachDerivedNode: (id, data) => nodeActions.detachDerivedNodeAction(set, get, id, data),
 

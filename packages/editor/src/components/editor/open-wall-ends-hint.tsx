@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNodeId, emitter, type OpenWallEnd } from '@pascal-app/core'
+import { type AnyNodeId, emitter, type OpenWallEnd } from '@aedifex/core'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { openWallEndsSummary } from '../../lib/floorplan/open-wall-ends'
@@ -8,7 +8,7 @@ import { MEASUREMENT_DANGLING_COLOR } from '../../lib/measurements'
 
 // The viewer area holds the floor plan and the 3D view side by side, so its
 // top centre clears both views' corner controls in 2D, 3D and split alike.
-const viewerArea = () => document.querySelector('[data-pascal-viewer-3d]')?.parentElement ?? null
+const viewerArea = () => document.querySelector('[data-aedifex-viewer-3d]')?.parentElement ?? null
 
 // The views slide in and out without resizing, so the anchor's box is read
 // per frame while the hint is up, like the Join pill's anchor.

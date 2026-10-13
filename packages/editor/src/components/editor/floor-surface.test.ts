@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import { type AnyNode, sceneRegistry, useScene } from '@pascal-app/core'
+import { type AnyNode, sceneRegistry, useScene } from '@aedifex/core'
 import * as THREE from 'three'
 import { FloorSurface } from './floor-surface'
 

@@ -10,7 +10,7 @@ import {
   SlabNode,
   WallNode,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { type Group, type Material, Mesh } from 'three'
 import { buildSlabGeometry } from '../geometry'
 

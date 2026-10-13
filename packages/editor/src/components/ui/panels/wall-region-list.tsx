@@ -5,8 +5,8 @@ import {
   useLiveNodeOverrides,
   useScene,
   type WallFaceRegion,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
 import { removeWallRegion } from '../../../lib/paint-regions'

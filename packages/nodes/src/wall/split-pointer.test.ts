@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test } from 'bun:test'
-import { LevelNode, useScene, WallNode } from '@pascal-app/core'
-import { useEditor } from '@pascal-app/editor'
+import { LevelNode, useScene, WallNode } from '@aedifex/core'
+import { useEditor } from '@aedifex/editor'
 import { bindWallSplitPointer } from './split-pointer'
 import { closeWallSplit, openWallSplit } from './split-session'
 import { useWallSplit } from './split-store'

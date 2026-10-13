@@ -4,8 +4,8 @@ import type {
   HandleDescriptor,
   LinearResizeHandle,
   WindowNode,
-} from '@pascal-app/core'
-import { rebuildAuthoredObject } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { rebuildAuthoredObject } from '@aedifex/editor'
 
 type Opening = WindowNode | DoorNode
 

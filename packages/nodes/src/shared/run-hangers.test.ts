@@ -9,7 +9,7 @@ import {
   PipeSegmentNode,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Box3 } from 'three'
 import { buildDuctSegmentGeometry } from '../duct-segment/geometry'
 import { buildPipeSegmentGeometry } from '../pipe-segment/geometry'

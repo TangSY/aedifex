@@ -2,20 +2,20 @@ import type { Metadata } from 'next'
 import { AppCard } from '@/components/app-shell'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Set up · Pascal' }
+export const metadata: Metadata = { title: 'Set up · Aedifex' }
 
 const VARIABLES = [
-  ['PASCAL_ADMIN_PASSWORD', 'The password that unlocks this editor. Required on a network host.'],
+  ['AEDIFEX_ADMIN_PASSWORD', 'The password that unlocks this editor. Required on a network host.'],
   [
-    'PASCAL_PUBLIC_URL',
-    'The address people use to reach it, for example https://pascal.example.com.',
+    'AEDIFEX_PUBLIC_URL',
+    'The address people use to reach it, for example https://aedifex.example.com.',
   ],
   [
-    'PASCAL_SCENE_API_TOKEN',
+    'AEDIFEX_SCENE_API_TOKEN',
     'Optional. A bearer token for agents and scripts calling the scene API.',
   ],
   [
-    'PASCAL_AUTH=proxy',
+    'AEDIFEX_AUTH=proxy',
     'Alternative to a password when a reverse proxy already authenticates every request.',
   ],
 ] as const

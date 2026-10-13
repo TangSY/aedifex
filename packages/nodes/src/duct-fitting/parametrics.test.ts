@@ -5,7 +5,7 @@ import {
   DuctFittingNode,
   DuctSegmentNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { readAutoOffsetTag, withAutoOffsetTag } from '../shared/auto-offset-tag'
 import { ductFittingParametrics } from './parametrics'
 import { getDuctFittingPorts } from './ports'

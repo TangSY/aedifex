@@ -1,7 +1,7 @@
 // @ts-expect-error — bun:test is provided by the Bun runtime; viewer does not
 // depend on @types/bun so the import type is unresolved at compile time.
 import { describe, expect, test } from 'bun:test'
-import { DoorNode } from '@pascal-app/core'
+import { DoorNode } from '@aedifex/core'
 import * as THREE from 'three'
 import { buildDoorPreviewMesh } from '../../index'
 
@@ -55,8 +55,8 @@ describe('door floor alignment', () => {
 })
 
 test('a floor-anchored door mesh stands on the higher room while stored coordinates stay unchanged', async () => {
-  const { useScene } = await import('@pascal-app/core')
-  const { reconcileStructureOnLoad } = await import('@pascal-app/core/scene-migrations')
+  const { useScene } = await import('@aedifex/core')
+  const { reconcileStructureOnLoad } = await import('@aedifex/core/scene-migrations')
   const { floorStepFixture } = await import(
     '../../../../core/src/systems/slab/__fixtures__/floor-step'
   )

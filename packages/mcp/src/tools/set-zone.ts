@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { newZone } from '@pascal-app/core'
-import type { AnyNodeId } from '@pascal-app/core/schema'
+import { newZone } from '@aedifex/core'
+import type { AnyNodeId } from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { ADDITIVE_TOOL_ANNOTATIONS } from './annotations'

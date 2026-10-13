@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { DESIGN_EXAMPLE } from '@pascal-app/core/procedural-items'
-import { DoorNode, WallNode, ZoneNode } from '@pascal-app/core/schema'
+import { DESIGN_EXAMPLE } from '@aedifex/core/procedural-items'
+import { DoorNode, WallNode, ZoneNode } from '@aedifex/core/schema'
 import { SceneBridge } from '../bridge/scene-bridge'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 
 /**
  * Every real MCP host (Claude Desktop, Claude Code, Codex, Cursor) calls
@@ -40,7 +40,7 @@ async function connectListedClient() {
     level.id,
   )
 
-  const server = createPascalMcpServer({ bridge })
+  const server = createAedifexMcpServer({ bridge })
   const [srvT, cliT] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: 'output-schema-contract', version: '0.0.0' })
   await Promise.all([server.connect(srvT), client.connect(cliT)])

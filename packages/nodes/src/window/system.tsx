@@ -1,6 +1,6 @@
 'use client'
 
-import { WindowAnimationSystem, WindowSystem } from '@pascal-app/viewer'
+import { WindowAnimationSystem, WindowSystem } from '@aedifex/viewer'
 
 /**
  * Registry-driven window system bundle.

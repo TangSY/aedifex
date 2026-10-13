@@ -1,6 +1,6 @@
-import { nodeRegistry } from '@pascal-app/core'
+import { nodeRegistry } from '@aedifex/core'
 
-export const REGISTERED_DRAFT_SNAP_EXTENSION = 'pascal:editor/draft-snap'
+export const REGISTERED_DRAFT_SNAP_EXTENSION = 'aedifex:editor/draft-snap'
 
 export function snapRegisteredDraftPoint<TArgs, TResult>(
   kind: string,

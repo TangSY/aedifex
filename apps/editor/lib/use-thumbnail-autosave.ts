@@ -1,6 +1,6 @@
 'use client'
 
-import { emitter, useScene } from '@pascal-app/core'
+import { emitter, useScene } from '@aedifex/core'
 import { useEffect } from 'react'
 
 export function useThumbnailAutosave({ sceneId, enabled }: { sceneId: string; enabled: boolean }) {

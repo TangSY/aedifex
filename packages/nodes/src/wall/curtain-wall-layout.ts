@@ -1,4 +1,4 @@
-import type { CurtainGrid, CurtainPanelType, CurtainWallConfig, DoorNode } from '@pascal-app/core'
+import type { CurtainGrid, CurtainPanelType, CurtainWallConfig, DoorNode } from '@aedifex/core'
 
 export function curtainGridPositions(length: number, grid: CurtainGrid): number[] {
   if (!Number.isFinite(length) || length <= 0) return [0]

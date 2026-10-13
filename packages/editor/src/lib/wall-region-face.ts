@@ -10,8 +10,8 @@ import {
   type WallFace,
   type WallNode,
   type WallSlabSupportSegment,
-} from '@pascal-app/core'
-import { getWallFinishData } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { getWallFinishData } from '@aedifex/viewer'
 import type { BufferGeometry } from 'three'
 import { faceBaseAt, type WallFaceBaseRuns } from './wall-region-snap'
 

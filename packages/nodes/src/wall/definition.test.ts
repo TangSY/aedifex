@@ -5,13 +5,13 @@ import {
   RoofNode,
   RoofSegmentNode,
   type SceneApi,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   DRAFTING_SURFACE_EXTENSION_KEY,
   type DraftingSurfaceExtension,
   getFloorplanNodeExtension,
   selectWallDrawVariant,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { createConicalRoofSectorAboveWall } from '../roof/conical-roof'
 import { wallDefinition } from './definition'
 

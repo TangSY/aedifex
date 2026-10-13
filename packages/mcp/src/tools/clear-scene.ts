@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { clearSceneTool } from '@pascal-app/core/agent-tools'
+import { clearSceneTool } from '@aedifex/core/agent-tools'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { DESTRUCTIVE_TOOL_ANNOTATIONS } from './annotations'

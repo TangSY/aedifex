@@ -8,7 +8,7 @@ import { resolvePublicUrl } from '@/lib/public-url'
 import { resolveAuthMode } from '@/lib/self-host-auth'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Settings · Pascal' }
+export const metadata: Metadata = { title: 'Settings · Aedifex' }
 
 /** Server components see headers, not a Request; the auth helpers want the latter. */
 async function currentRequest(): Promise<Request> {
@@ -22,7 +22,7 @@ export default async function SettingsPage() {
   const request = await currentRequest()
   const publicUrl = resolvePublicUrl(request)
   const authMode = resolveAuthMode(request)
-  const agentTokenConfigured = Boolean(process.env.PASCAL_SCENE_API_TOKEN)
+  const agentTokenConfigured = Boolean(process.env.AEDIFEX_SCENE_API_TOKEN)
 
   return (
     <AppShell>
@@ -42,9 +42,9 @@ export default async function SettingsPage() {
             <Row label="Public URL">
               <code className="font-mono">{publicUrl}</code>
             </Row>
-            <Row label="Version">{process.env.PASCAL_RUNTIME_VERSION || 'development'}</Row>
+            <Row label="Version">{process.env.AEDIFEX_RUNTIME_VERSION || 'development'}</Row>
             <Row label="Data directory">
-              <code className="font-mono">{process.env.PASCAL_DATA_DIR || '~/.pascal/data'}</code>
+              <code className="font-mono">{process.env.AEDIFEX_DATA_DIR || '~/.pascal/data'}</code>
             </Row>
           </Section>
 
@@ -55,8 +55,8 @@ export default async function SettingsPage() {
             <Row label="Agent token">{agentTokenConfigured ? 'Configured' : 'Not configured'}</Row>
             <p className="px-4 py-3 text-muted-foreground text-xs">
               {agentTokenConfigured
-                ? 'Agents and scripts send the PASCAL_SCENE_API_TOKEN value in an Authorization: Bearer header.'
-                : 'Set PASCAL_SCENE_API_TOKEN on this instance, then send it in an Authorization: Bearer header from agents and scripts.'}
+                ? 'Agents and scripts send the AEDIFEX_SCENE_API_TOKEN value in an Authorization: Bearer header.'
+                : 'Set AEDIFEX_SCENE_API_TOKEN on this instance, then send it in an Authorization: Bearer header from agents and scripts.'}
             </p>
           </Section>
 
@@ -74,8 +74,8 @@ export default async function SettingsPage() {
           )}
 
           <Section title="About">
-            <ExternalRow href="https://github.com/pascalorg/editor" label="Source code" />
-            <ExternalRow href="https://editor.pascal.app/docs" label="Documentation" />
+            <ExternalRow href="https://github.com/TangSY/aedifex" label="Source code" />
+            <ExternalRow href="https://github.com/TangSY/aedifex/blob/main/SETUP.md" label="Documentation" />
           </Section>
         </div>
       </main>

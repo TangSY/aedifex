@@ -1,4 +1,4 @@
-import { type AnyNode, type EditorApi, useScene } from '@pascal-app/core'
+import { type AnyNode, type EditorApi, useScene } from '@aedifex/core'
 import useEditor from '../store/use-editor'
 import useInteractionScope from '../store/use-interaction-scope'
 import { resolveDirectManipulationNode, resolveMoveActionNode } from './direct-manipulation'

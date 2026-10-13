@@ -10,7 +10,7 @@ import {
   resolveFrozenFloorPlacementPatch,
   resolveSupportSlabPatch,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getFloorStackPreviewPosition,
   isAlignmentGuideActive,
@@ -24,8 +24,8 @@ import {
   useEditor,
   useFacingPose,
   usePlacementPreview,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Group } from 'three'

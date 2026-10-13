@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type MeasurementPoint, WallNode } from '@pascal-app/core'
+import { type MeasurementPoint, WallNode } from '@aedifex/core'
 import {
   buildConstructionDimensionPreviewGeometries,
   buildCurvedWallConstructionDimensionDraft,

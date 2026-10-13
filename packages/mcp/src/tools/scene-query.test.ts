@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { useScene } from '@pascal-app/core'
+import { useScene } from '@aedifex/core'
 import {
   CeilingNode,
   DoorNode,
@@ -15,7 +12,10 @@ import {
   WallNode,
   WindowNode,
   ZoneNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { registerSharedTools } from './shared-tools'
 
@@ -70,6 +70,25 @@ describe('scene query tools', () => {
     expect(parsed.counts.doors).toBe(1)
     expect(parsed.walls[0].openings[0].id).toBe(door.id)
     expect(parsed.zones[0].areaSqMeters).toBe(12)
+  })
+
+  test('get_level_summary subtracts a raised wall base from resolvedHeight', async () => {
+    const level = Object.values(bridge.getNodes()).find((node) => node.type === 'level')!
+    bridge.updateNode(level.id, { height: 3 } as never)
+    const wall = WallNode.parse({
+      start: [0, 0],
+      end: [4, 0],
+      supportOffset: 1,
+    })
+    bridge.createNode(wall, level.id)
+
+    const result = await client.callTool({
+      name: 'get_level_summary',
+      arguments: { levelId: level.id },
+    })
+    expect(result.isError).toBeFalsy()
+    const parsed = JSON.parse((result.content as Array<{ type: string; text: string }>)[0]!.text)
+    expect(parsed.walls[0].resolvedHeight).toBe(2)
   })
 
   test('verify_scene reports practical issues without replacing validate_scene', async () => {

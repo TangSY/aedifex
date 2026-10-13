@@ -1,5 +1,5 @@
-import { type AnyNodeId, type BuildingNode, type LevelNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, type BuildingNode, type LevelNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import useEditor from '../store/use-editor'
 import useSessionGroups from '../store/use-session-groups'
 import { type RoomKey, shouldSelectRoom } from './room-selection'

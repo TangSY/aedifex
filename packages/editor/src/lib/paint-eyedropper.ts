@@ -6,7 +6,7 @@ import {
   type SceneMaterial,
   type SceneMaterialId,
   slotDefaultPaintMaterial,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { Material, Object3D } from 'three'
 import {
   type ActivePaintMaterial,

@@ -767,7 +767,7 @@
     },
     "zone_lbl_d_w_note_2": {
       "id": "zone_lbl_d_w_note_2",
-      "name": "Pascal's view rotates, not mirrors",
+      "name": "Aedifex's view rotates, not mirrors",
       "type": "zone",
       "color": "#f0f0f0",
       "object": "node",

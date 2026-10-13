@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ZoneNode } from '@pascal-app/core/schema'
+import { ZoneNode } from '@aedifex/core/schema'
 import type { RoomSelectionRecord } from '../../lib/room-selection'
 import {
   DeclutterClock,

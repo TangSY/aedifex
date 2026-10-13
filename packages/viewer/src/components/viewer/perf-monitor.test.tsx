@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from 'bun:test'
-import { resetSceneHistoryPauseDepth, useScene } from '@pascal-app/core'
+import { resetSceneHistoryPauseDepth, useScene } from '@aedifex/core'
 import { create } from '@react-three/test-renderer'
 import useViewer from '../../store/use-viewer'
 import { PerfMonitor } from './perf-monitor'
@@ -30,7 +30,7 @@ test('the ?perf probe exposes history and selection while PerfMonitor is mounted
   if (!hadWindow) (globalThis as { window?: unknown }).window = globalThis
   const renderer = await create(<PerfMonitor />)
   try {
-    const probe = (globalThis as { __pascalPerf?: Probe }).__pascalPerf
+    const probe = (globalThis as { __aedifexPerf?: Probe }).__aedifexPerf
     expect(probe).toBeDefined()
     expect(probe!.history()).toMatchObject({ past: 0, future: 0, tracking: true, pauseDepth: 0 })
 
@@ -41,7 +41,7 @@ test('the ?perf probe exposes history and selection while PerfMonitor is mounted
     })
   } finally {
     await renderer.unmount()
-    expect((globalThis as { __pascalPerf?: Probe }).__pascalPerf).toBeUndefined()
+    expect((globalThis as { __aedifexPerf?: Probe }).__aedifexPerf).toBeUndefined()
     if (!hadWindow) delete (globalThis as { window?: unknown }).window
   }
 })

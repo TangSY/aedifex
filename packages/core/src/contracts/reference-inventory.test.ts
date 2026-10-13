@@ -167,6 +167,24 @@ describe('metadata references (R3)', () => {
     ])
   })
 
+  test('Next page Metadata is distinct from scene metadata in the same source', () => {
+    expect(
+      discoverMetadataKeys(`
+      import type { Metadata as PageMetadata } from 'next'
+      export const metadata: PageMetadata = { robots: { index: false }, title: 'Page' }
+      const seo = metadata
+      const index = seo.robots.index
+      export async function generateMetadata(): Promise<PageMetadata> {
+        const sceneTitle = node.metadata.sceneTitle
+        return { robots: { index: false }, title: sceneTitle }
+      }
+      const pageMetadata = { robots: { follow: false } } satisfies PageMetadata
+      const node = { metadata: { ownerKey: 'node_id' } }
+      function buildSceneMetadata() { return { sceneRole: 'room' } }
+    `),
+    ).toEqual(['ownerKey', 'sceneRole', 'sceneTitle'])
+  })
+
   test('the source walk survives files vanishing mid-scan and skips cache dirs', () => {
     // Other suites (history.test.ts) create and delete `.turbo/history-*/probe.ts`
     // while this walk runs: a listed file can be gone by the time it is read.

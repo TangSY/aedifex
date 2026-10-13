@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { PROVENANCE_MAX_REFS, WallNode } from '@pascal-app/core/schema'
+import { PROVENANCE_MAX_REFS, WallNode } from '@aedifex/core/schema'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { registerApplyPatch } from './apply-patch'
 
@@ -16,7 +16,7 @@ import { registerApplyPatch } from './apply-patch'
 const OVER_CAP = {
   refs: Array.from({ length: PROVENANCE_MAX_REFS + 1 }, (_, i) => ({ ns: 'al', id: `s-${i}` })),
 }
-const PATCH_GUARDS = existsSync(new URL('./patch-guards.ts', import.meta.url))
+const PATCH_GUARDS = existsSync(new URL('../bridge/patch-guards.ts', import.meta.url))
 
 describe('apply_patch and typed provenance', () => {
   let client: Client

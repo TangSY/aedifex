@@ -1,4 +1,4 @@
-import { useEditor } from '@pascal-app/editor'
+import { useEditor } from '@aedifex/editor'
 import { findNearestPort3D, findNearestPortXZ, type ScenePort } from './ports'
 
 export function subscribeAccessorySnapping(refresh: () => void): () => void {

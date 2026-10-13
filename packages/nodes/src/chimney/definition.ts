@@ -7,7 +7,7 @@ import {
   type NodeDefinition,
   type RoofSegmentNode as RoofSegmentNodeType,
   type SceneApi,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildChimneyFloorplan } from './floorplan'
 import { chimneyPaint } from './paint'
 import { chimneyParametrics } from './parametrics'

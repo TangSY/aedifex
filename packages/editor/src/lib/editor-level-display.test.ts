@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { BuildingNode, LevelNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { BuildingNode, LevelNode, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import useEditor, { type CaptureMode } from '../store/use-editor'
 import { showsWholeBuilding } from './editor-level-display'
 

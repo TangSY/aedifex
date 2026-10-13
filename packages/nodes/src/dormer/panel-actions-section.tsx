@@ -1,6 +1,6 @@
 'use client'
 
-import { ActionButton, ActionGroup, PanelSection } from '@pascal-app/editor'
+import { ActionButton, ActionGroup, PanelSection } from '@aedifex/editor'
 import { Copy, Move, Trash2 } from 'lucide-react'
 
 /**

@@ -1,4 +1,4 @@
-import { sceneRegistry, useScene } from '@pascal-app/core'
+import { sceneRegistry, useScene } from '@aedifex/core'
 import { Box3, type Object3D, Vector3 } from 'three'
 
 export const DEFAULT_FRAMING_EXCLUDED_TYPES = ['site', 'scan', 'guide', 'spawn'] as const

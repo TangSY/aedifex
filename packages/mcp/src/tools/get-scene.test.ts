@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { SceneBridge } from '@pascal-app/mcp/bridge'
-import { registerGetScene } from '@pascal-app/mcp/tools/get-scene'
+import { SceneBridge } from '@aedifex/mcp/bridge'
+import { registerGetScene } from '@aedifex/mcp/tools/get-scene'
 
 describe('get_scene', () => {
   let client: Client
@@ -50,9 +50,9 @@ describe('get_scene', () => {
   })
 
   test('returns explicit installed plugin IDs so an agent can discover its service context', async () => {
-    bridge.loadJSON({ ...bridge.exportJSON(), installedPlugins: ['pascal:architect'] })
+    bridge.loadJSON({ ...bridge.exportJSON(), installedPlugins: ['aedifex:architect'] })
     const result = await client.callTool({ name: 'get_scene', arguments: {} })
-    expect(result.structuredContent?.installedPlugins).toEqual(['pascal:architect'])
+    expect(result.structuredContent?.installedPlugins).toEqual(['aedifex:architect'])
     const legacy = bridge.exportJSON()
     delete legacy.installedPlugins
     bridge.loadJSON(legacy)

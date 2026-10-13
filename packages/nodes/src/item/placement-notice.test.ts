@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, ItemNode, LevelNode, ZoneNode } from '@pascal-app/core'
+import { type AnyNode, ItemNode, LevelNode, ZoneNode } from '@aedifex/core'
 import { floorItemMisfitNotice, itemPlacementNotice } from './placement-notice'
 
 const bath = { id: 'zone_bath', name: 'Bath', width: 2.2, depth: 1.9 }

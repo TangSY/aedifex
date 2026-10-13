@@ -4,7 +4,7 @@ import {
   eyebrowVentSlots,
   type HandleDescriptor,
   type NodeDefinition,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildEyebrowVentFloorplan } from './floorplan'
 import { eyebrowVentPaint } from './paint'
 import { eyebrowVentParametrics } from './parametrics'

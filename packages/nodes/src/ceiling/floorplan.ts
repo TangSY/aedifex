@@ -5,7 +5,7 @@ import {
   type FloorplanPoint,
   type GeometryContext,
   hostedCutterHoles,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Stage C floor-plan builder for ceiling. Dashed boundary (ceilings sit

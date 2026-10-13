@@ -6,7 +6,7 @@ import type {
   RoofNode,
   RoofSegmentNode,
   SolarPanelNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Floor-plan builder for a solar-panel array — a grid of photovoltaic

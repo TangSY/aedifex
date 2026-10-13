@@ -8,7 +8,7 @@ import {
   planWallDivision,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   snapWallSplitDistance,
   wallSplitAnchors,

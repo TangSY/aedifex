@@ -4,9 +4,9 @@ import { join } from 'node:path'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { nodeRegistry, registerNode } from '@pascal-app/core'
-import { shelfRecipe } from '@pascal-app/core/procedural-items'
-import * as schema from '@pascal-app/core/schema'
+import { nodeRegistry, registerNode } from '@aedifex/core'
+import { shelfRecipe } from '@aedifex/core/procedural-items'
+import * as schema from '@aedifex/core/schema'
 import {
   AnyNode,
   type AnyNodeId,
@@ -27,7 +27,7 @@ import {
   WallNode,
   WindowNode,
   ZoneNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { registerMeasure } from './measure'
 import { HEADLESS_UNRESOLVED_FLOOR_LIFT_KINDS, resolveNodeWorldPoint } from './node-world-point'
@@ -486,7 +486,7 @@ describe('measure in world space', () => {
 
   test('the floor-lift flag list matches the built-in definitions that declare floorPlaced', () => {
     // Source scan, like core's metadata-reference inventory: MCP cannot load
-    // @pascal-app/nodes (React, three), so keep this list in step with it.
+    // @aedifex/nodes (React, three), so keep this list in step with it.
     const nodesSrc = join(import.meta.dir, '../../../nodes/src')
     const declared: string[] = []
     for (const dir of readdirSync(nodesSrc)) {

@@ -12,7 +12,7 @@ import {
   measurementAnchorFallback,
   nodeRegistry,
   remapMeasurementReferences,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export type ResolvedMeasurementPayload =
   | { kind: 'distance'; points: [MeasurementPoint, MeasurementPoint] }

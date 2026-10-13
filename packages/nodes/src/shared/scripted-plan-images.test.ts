@@ -8,8 +8,8 @@ import {
   ItemNode,
   LevelNode,
   WallNode,
-} from '@pascal-app/core'
-import { createFloorplanContextExtensions } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { createFloorplanContextExtensions } from '@aedifex/editor'
 import { buildColumnFloorplan } from '../column/floorplan'
 import { buildDoorFloorplan } from '../door/floorplan'
 import { buildItemFloorplan } from '../item/floorplan'

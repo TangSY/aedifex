@@ -1,3 +1,4 @@
+import { metadataRecord } from './metadata-record'
 import {
   area,
   containsPoint,
@@ -155,7 +156,7 @@ function planLevel(children: AnyNode[]): { pieces: SlabNode[]; voids: Ring[] } |
   const pieces: SlabNode[] = []
   for (const slab of floor) {
     if (slab.autoFromWalls || slab.boundary === 'auto') continue
-    if (slab.metadata?.plateMigration !== undefined || decks.has(slab.id)) return
+    if (metadataRecord(slab.metadata).plateMigration !== undefined || decks.has(slab.id)) return
     const surface = rendered.get(slab.id)!
     // A finish laid on a wall-generated slab: the finish migration owns it.
     if (autos.length && tryArea(() => difference(surface, autoArea)) <= 1e-4) continue
@@ -216,7 +217,7 @@ export function planFloorPieceAdoption(
     if (
       level.type !== 'level' ||
       skipLevels.has(level.id) ||
-      level.metadata?.floorOwnershipMigrated === true
+      metadataRecord(level.metadata).floorOwnershipMigrated === true
     )
       continue
     const children = byParent.get(level.id) ?? []

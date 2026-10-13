@@ -2,12 +2,12 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import {
   executeHostedServiceTool,
   type HostedServiceExecutor,
-} from '@pascal-app/core/agent-operations'
+} from '@aedifex/core/agent-operations'
 import {
   HOSTED_SERVICE_TOOL_CONTRACTS,
   isAgentRefusal,
   refusalPayload,
-} from '@pascal-app/core/agent-tools'
+} from '@aedifex/core/agent-tools'
 import { z } from 'zod'
 
 export function registerHostedServiceTools(

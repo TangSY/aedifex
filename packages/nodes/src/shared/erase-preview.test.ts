@@ -10,7 +10,7 @@ import {
   useScene,
   WallNode,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Mesh, MeshBasicMaterial } from 'three'
 import { ceilingDefinition } from '../ceiling/definition'
 import { ceilingPaint } from '../ceiling/paint'

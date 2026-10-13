@@ -1,4 +1,4 @@
-import type { DuctFittingNode, PipeFittingNode } from '@pascal-app/core'
+import type { DuctFittingNode, PipeFittingNode } from '@aedifex/core'
 import { Mesh, Vector3 } from 'three'
 import { buildDuctFittingGeometry } from '../duct-fitting/geometry'
 import { buildPipeFittingGeometry } from '../pipe-fitting/geometry'

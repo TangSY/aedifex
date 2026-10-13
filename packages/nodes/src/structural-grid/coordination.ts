@@ -1,4 +1,4 @@
-import type { AnyNode, StructuralGridNode } from '@pascal-app/core'
+import type { AnyNode, StructuralGridNode } from '@aedifex/core'
 
 export type StructuralGridPoint = readonly [x: number, z: number]
 

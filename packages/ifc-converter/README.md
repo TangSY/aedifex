@@ -1,8 +1,8 @@
-# @pascal-app/ifc-converter
+# @aedifex/ifc-converter
 
-Pure conversion logic for IFC → Pascal scene graphs. Takes a `Uint8Array` of
+Pure conversion logic for IFC → Aedifex scene graphs. Takes a `Uint8Array` of
 IFC bytes, returns `{ nodes, rootNodeIds, stats }` shaped against
-`@pascal-app/core` schemas.
+`@aedifex/core` schemas.
 
 No DOM, no React. The UI lives in `apps/ifc-converter`.
 
@@ -83,7 +83,7 @@ reference files and runs that load chain.
 - **Site.** The site polygon is the `IfcSite` footprint when it holds the
   model, else the imported extent plus 5 m.
 - **Pascal round trip.** Elements carrying a `Pascal` property set (written by
-  `@pascal-app/ifc-converter/export`) keep their node id (imported meshes
+  `@aedifex/ifc-converter/export`) keep their node id (imported meshes
   included) and skip wall cleanup
   (merging, joins, duplicate-opening removal); storeys read the `GrossHeight`
   quantity for the top storey's height.

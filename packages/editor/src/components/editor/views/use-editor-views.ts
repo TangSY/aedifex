@@ -1,6 +1,6 @@
 'use client'
 
-import { useScene } from '@pascal-app/core'
+import { useScene } from '@aedifex/core'
 import { useSyncExternalStore } from 'react'
 import {
   availableViews,

@@ -1,13 +1,13 @@
 'use client'
 
-import { type AnyNode, type DuctFittingNode, DuctSegmentNode } from '@pascal-app/core'
+import { type AnyNode, type DuctFittingNode, DuctSegmentNode } from '@aedifex/core'
 import {
   EDITOR_LAYER,
   triggerSFX,
   useEditor,
   usePathDraftPreview,
   useRegistryToolContext,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Euler, type Group, Vector3 } from 'three'
 import { getDuctFittingPorts } from '../duct-fitting/ports'

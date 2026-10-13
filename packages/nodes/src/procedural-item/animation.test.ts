@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { evaluateRecipe, ProceduralItemNode, parseRecipe } from '@pascal-app/core/procedural-items'
+import { evaluateRecipe, ProceduralItemNode, parseRecipe } from '@aedifex/core/procedural-items'
 import * as THREE from 'three'
 import fanJson from '../../../core/src/procedural-items/__fixtures__/ceiling_fan.json'
 import { bakeProceduralAnimationClips } from './animation'

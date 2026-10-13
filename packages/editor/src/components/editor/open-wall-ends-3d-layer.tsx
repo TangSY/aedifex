@@ -1,7 +1,7 @@
 'use client'
 
-import { type OpenWallEnd, sceneRegistry } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type OpenWallEnd, sceneRegistry } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { memo, useEffect, useMemo, useRef } from 'react'

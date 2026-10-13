@@ -1,7 +1,7 @@
 'use client'
 
-import { useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { nodeDisplayLabel } from '../../lib/node-display-label'
 import { type ViewerNodes, zoneLabel } from '../../lib/viewer-selection'
 

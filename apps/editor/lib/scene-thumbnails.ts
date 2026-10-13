@@ -1,6 +1,6 @@
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { resolveDefaultDatabasePath } from '@pascal-app/mcp/storage'
+import { resolveDefaultDatabasePath } from '@aedifex/mcp/storage'
 
 export function thumbnailFile(id: string): string {
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) throw new Error('Invalid scene id')

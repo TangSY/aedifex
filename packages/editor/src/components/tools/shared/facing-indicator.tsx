@@ -34,7 +34,7 @@ export function FacingIndicator({
   const dir = reversed ? -1 : 1
   // Per-instance geometry/material (not module singletons) so this works no
   // matter which package mounts it (the tools live in `nodes`, imported via
-  // `@pascal-app/editor`). Disposed on unmount.
+  // `@aedifex/editor`). Disposed on unmount.
   const geometry = useMemo(() => {
     const g = new BufferGeometry()
     g.setAttribute(

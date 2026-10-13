@@ -5,8 +5,8 @@ import {
   isCurvedWall,
   type WallNode,
   type WindowNode,
-} from '@pascal-app/core'
-import { buildOpeningCutoutShape, ensureRenderableGeometryAttributes } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { buildOpeningCutoutShape, ensureRenderableGeometryAttributes } from '@aedifex/viewer'
 import { type BufferGeometry, ExtrudeGeometry, Path, Shape, Vector2 } from 'three'
 
 export function mapCurtainOpeningGeometryToWall(geometry: BufferGeometry, wall: WallNode) {

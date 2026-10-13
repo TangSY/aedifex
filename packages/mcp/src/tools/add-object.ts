@@ -1,5 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { isScriptedNode, scriptedObjectMeta } from '@pascal-app/core'
+import { isScriptedNode, scriptedObjectMeta } from '@aedifex/core'
 import {
   type AddObjectInput,
   achievedChanges,
@@ -10,8 +9,8 @@ import {
   readSourceResult,
   requireAddObjectReason,
   type SceneNodes,
-} from '@pascal-app/core/agent-operations'
-import { addObjectTool, getSourceTool, isAgentRefusal, refuse } from '@pascal-app/core/agent-tools'
+} from '@aedifex/core/agent-operations'
+import { addObjectTool, getSourceTool, isAgentRefusal, refuse } from '@aedifex/core/agent-tools'
 import {
   type AnyNode,
   type CompiledGeometryScript,
@@ -21,7 +20,8 @@ import {
   type GeometryScriptLanguage,
   type GeometryScriptParamValue,
   generateId,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { SceneOperations } from '../operations'
 import { DESTRUCTIVE_TOOL_ANNOTATIONS, READ_ONLY_TOOL_ANNOTATIONS } from './annotations'
 import { refusalResult, toolError } from './errors'
@@ -66,6 +66,15 @@ export type GeometryScriptHost = {
 }
 
 export type ScriptedKind = 'object' | 'window' | 'door' | 'column'
+
+/** Compilation awaits a host; it must never land in a different editor scene. */
+export function assertGeometrySceneCurrent(input: {
+  bridge: SceneOperations
+  sceneId: string
+}): void {
+  if (input.bridge.getActiveScene()?.id !== input.sceneId)
+    throw Error('scene_changed_during_compile')
+}
 
 /** Compiles a module on the host and stores its GLB and text for the scene: the step every scripted tool shares. */
 export async function compileAndStore(
@@ -144,7 +153,7 @@ export function registerAddObject(
     },
     async (input: Record<string, unknown>) => {
       if (!host) {
-        return toolError('This Pascal server cannot run geometry scripts.', {
+        return toolError('This Aedifex server cannot run geometry scripts.', {
           code: 'scripts_unavailable',
         })
       }
@@ -185,12 +194,13 @@ export function registerAddObject(
       const before = { ...(bridge.getNodes() as Record<string, AnyNode>) }
       let outcome: ReturnType<typeof addObject>
       try {
+        assertGeometrySceneCurrent({ bridge, sceneId: scene.id })
         outcome = addObject(before, { ...args, compiled }, { activeLevelId: null })
       } catch (error) {
         return refusalResult(error)
       }
       const patches = outcome.changes ? toPatches(outcome.changes) : []
-      if (patches.length) bridge.applyPatch(patches)
+      if (patches.length) bridge.applyCompiledGeometryPatch({ patches, compiled })
       const payload = {
         ...outcome.result,
         // What the scene holds now, as every write answers.
@@ -228,7 +238,7 @@ export function registerGetSource(
     },
     async ({ nodeId }: { nodeId: string }) => {
       if (!host) {
-        return toolError('This Pascal server cannot read geometry scripts.', {
+        return toolError('This Aedifex server cannot read geometry scripts.', {
           code: 'scripts_unavailable',
         })
       }

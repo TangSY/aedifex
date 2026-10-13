@@ -13,13 +13,13 @@ import type {
   LinearResizeHandle,
   NodeDefinition,
   SceneApi,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   CABINET_METRIC_DEFAULTS,
   cabinetSlots,
   findLevelAncestorId,
   selectionProxyIdFromMetadata,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { findWallOpeningConflicts } from '../shared/wall-opening-clearance'
 import { bakeCabinetAnimationClip } from './animation'
 import { buildCabinetFloorplan, buildCabinetModuleFloorplan } from './floorplan'

@@ -1,6 +1,6 @@
 'use client'
 
-import { getSceneTheme, useViewer } from '@pascal-app/viewer'
+import { getSceneTheme, useViewer } from '@aedifex/viewer'
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useShownSidebarPanel } from '../../lib/sidebar-panel'
 import useEditor from '../../store/use-editor'

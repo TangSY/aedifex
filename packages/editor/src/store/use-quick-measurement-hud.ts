@@ -1,4 +1,4 @@
-import type { QuickMeasurementReport } from '@pascal-app/core'
+import type { QuickMeasurementReport } from '@aedifex/core'
 import { create } from 'zustand'
 import type { VisibleScene } from './view-layout'
 

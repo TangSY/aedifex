@@ -1,4 +1,5 @@
 import { levelBuildingId } from '../building/level-duplication'
+import { metadataRecord } from '../utils/metadata-record'
 import { getLevelDisplayName } from '../lib/level-name'
 import { detectOpenWallEnds, type OpenWallEnd } from '../lib/room-graph'
 import { type AnyNode, type AnyNodeId, AnyNode as AnyNodeSchema } from '../schema'
@@ -504,7 +505,10 @@ function authoredObjects(nodes: SceneNodes) {
               id: node.id,
               name: node.name ?? node.asset.name,
               category: node.asset.category,
-              reason: typeof node.metadata?.reason === 'string' ? node.metadata.reason : null,
+              reason:
+                typeof metadataRecord(node.metadata).reason === 'string'
+                  ? metadataRecord(node.metadata).reason
+                  : null,
             },
           ]
         : [],

@@ -6,7 +6,7 @@ import {
   type BlockTopology,
   getBlockFaceFrame,
   type ItemNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { planBlockTopologyEdit } from './hosted-edit'
 
 const block = BlockNode.parse({ id: 'block_h', parentId: 'level_a', children: ['item_w'] })

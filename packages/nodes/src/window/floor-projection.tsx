@@ -1,6 +1,6 @@
 'use client'
 
-import { EDITOR_LAYER } from '@pascal-app/editor'
+import { EDITOR_LAYER } from '@aedifex/editor'
 import { useEffect, useMemo } from 'react'
 import { BufferGeometry, Float32BufferAttribute, LineSegments } from 'three'
 import { LineBasicNodeMaterial } from 'three/webgpu'

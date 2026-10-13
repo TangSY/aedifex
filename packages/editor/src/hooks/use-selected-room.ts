@@ -1,7 +1,7 @@
 'use client'
 
-import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNode, type AnyNodeId, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useSyncExternalStore } from 'react'
 import { selectionEnabled } from '../lib/interaction/scope'
 import {

@@ -1,5 +1,5 @@
-import { useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { _roots, act, createRoot, extend } from '@react-three/fiber'
 import type { ReactNode } from 'react'
 import * as THREE from 'three'

@@ -14,8 +14,8 @@ import {
   sceneRegistry,
   type UnitNode,
   type ZoneNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import type { CameraControlsImpl } from '@react-three/drei'
 import { useEffect } from 'react'
 import {
@@ -103,7 +103,7 @@ export function viewerRooms(levelId: string, nodes: ViewerNodes): RoomSelectionR
 
 export function levelOfNode(nodeId: string, nodes: ViewerNodes): string | null {
   const seen = new Set<string>()
-  let current = nodes[nodeId]
+  let current: AnyNode | undefined = nodes[nodeId]
   while (current && !seen.has(current.id)) {
     if (current.type === 'level') return current.id
     seen.add(current.id)

@@ -388,11 +388,11 @@
   "collections": {},
   "rootNodeIds": ["site_3okrb5v3ycapnwve"],
   "installedPlugins": [
-    "pascal:trees",
+    "aedifex:trees",
     "mint:assets",
-    "pascal:articraft",
-    "pascal:streetscape",
-    "pascal:environment",
-    "pascal:pool"
+    "aedifex:articraft",
+    "aedifex:streetscape",
+    "aedifex:environment",
+    "aedifex:pool"
   ]
 }

@@ -1,4 +1,4 @@
-import type { AnyNode } from '@pascal-app/core'
+import type { AnyNode } from '@aedifex/core'
 
 export function snapCabinetFootprintCenter(value: number, extent: number, step: number): number {
   if (step <= 0) return value

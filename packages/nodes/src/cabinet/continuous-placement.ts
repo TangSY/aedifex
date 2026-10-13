@@ -1,4 +1,4 @@
-import type { AnyNodeId } from '@pascal-app/core'
+import type { AnyNodeId } from '@aedifex/core'
 import type { FloorPlacementClickTriggerEvent } from '../shared/floor-placement'
 import { planToRunLocal, runLocalToPlan } from './run-layout'
 import { CABINET_BASE_WIDTH } from './run-ops'

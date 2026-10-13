@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { ZoneIntentPatch } from '../../agent-tools/structure-patches'
 import { floorIntentConflicts } from '../../lib/floor-intent-changes'
 import { ownFloorIntentChanges } from '../../lib/own-floor-intent'
 import { drawnFloorElevationConflict } from '../../lib/room-drawn-floor'
@@ -7,34 +7,7 @@ import { ZoneNode } from '../../schema'
 import { mezzanineElevationConflict } from './mezzanine-content'
 import { requireZone, type StructureNodes, type StructurePlan } from './shared'
 
-const floor = ZoneNode.shape.floor.unwrap()
-const ceiling = ZoneNode.shape.ceiling.unwrap()
-export const ZoneIntentPatch = z.strictObject({
-  name: z.string().nullable().optional(),
-  floor: z
-    .strictObject({
-      footprint: floor.shape.footprint.unwrap().nullable().optional(),
-      thickness: floor.shape.thickness.unwrap().nullable().optional(),
-      elevation: floor.shape.elevation.unwrap().nullable().optional(),
-      finish: floor.shape.finish.unwrap().nullable().optional(),
-      regions: floor.shape.regions.unwrap().nullable().optional(),
-    })
-    .nullable()
-    .optional(),
-  ceiling: z
-    .strictObject({
-      regions: ceiling.shape.regions.unwrap().nullable().optional(),
-    })
-    .nullable()
-    .optional(),
-  floorStepFinish: z.string().nullable().optional(),
-  floorStepOverrides: ZoneNode.shape.floorStepOverrides.unwrap().nullable().optional(),
-  floorEdgeFinish: z.string().nullable().optional(),
-  wallMaterial: z.string().nullable().optional(),
-  hasFloor: z.boolean().nullable().optional(),
-  hasCeiling: z.boolean().nullable().optional(),
-})
-export type ZoneIntentPatch = z.infer<typeof ZoneIntentPatch>
+export { ZoneIntentPatch } from '../../agent-tools/structure-patches'
 
 export function setZoneIntent(
   nodes: StructureNodes,

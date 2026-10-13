@@ -1,7 +1,7 @@
 'use client'
 
-import { type AnyNode, findOpenWallEnds, type OpenWallEnd, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNode, findOpenWallEnds, type OpenWallEnd, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import {

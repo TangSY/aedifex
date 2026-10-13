@@ -5,7 +5,7 @@ import {
   cupolaSlots,
   type HandleDescriptor,
   type NodeDefinition,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildCupolaFloorplan } from './floorplan'
 import { cupolaPaint } from './paint'
 import { cupolaParametrics } from './parametrics'

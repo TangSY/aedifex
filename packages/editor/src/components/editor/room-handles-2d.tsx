@@ -1,7 +1,7 @@
 'use client'
 
-import { type FloorplanGeometry, type Point, roomDrawnFloor, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type FloorplanGeometry, type Point, roomDrawnFloor, useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Minus, Plus } from 'lucide-react'
 import { type PointerEvent as ReactPointerEvent, useMemo, useState } from 'react'
 import { useSelectedRoom } from '../../hooks/use-selected-room'

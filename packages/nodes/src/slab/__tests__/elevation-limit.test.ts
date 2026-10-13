@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { MIN_SLAB_THICKNESS, SlabNode } from '@pascal-app/core'
+import { MIN_SLAB_THICKNESS, SlabNode } from '@aedifex/core'
 import {
   applySlabAnchorElevationChange,
   applySlabBaseElevationChange,

@@ -1,5 +1,5 @@
 import { expect, spyOn, test } from 'bun:test'
-import * as Core from '@pascal-app/core'
+import * as Core from '@aedifex/core'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -23,10 +23,10 @@ import {
   useScene,
   WallNode,
   ZoneNode,
-} from '@pascal-app/core'
-import { nodeLevelFrame, ProceduralItemNode } from '@pascal-app/core/procedural-items'
-import { MoveRegistryNodeTool, useEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { nodeLevelFrame, ProceduralItemNode } from '@aedifex/core/procedural-items'
+import { MoveRegistryNodeTool, useEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import { Component, type ReactNode, StrictMode } from 'react'
 import { Euler, Mesh, Vector3 } from 'three'

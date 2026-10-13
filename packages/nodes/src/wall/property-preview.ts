@@ -1,4 +1,4 @@
-import { type AnyNodeId, useLiveNodeOverrides, useScene, type WallNode } from '@pascal-app/core'
+import { type AnyNodeId, useLiveNodeOverrides, useScene, type WallNode } from '@aedifex/core'
 
 export function createWallPropertyPreview(id: AnyNodeId) {
   let pending: Partial<WallNode> | undefined

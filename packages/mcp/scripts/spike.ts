@@ -1,5 +1,5 @@
 /**
- * Phase 0.5 bridge spike — prove that @pascal-app/core's useScene works in Node
+ * Phase 0.5 bridge spike — prove that @aedifex/core's useScene works in Node
  * after a RAF polyfill. Run with: bun run packages/mcp/scripts/spike.ts
  */
 
@@ -13,8 +13,8 @@ if (typeof (globalThis as any).requestAnimationFrame === 'undefined') {
   }
 }
 
-import { WallNode } from '@pascal-app/core/schema'
-import useScene from '@pascal-app/core/store'
+import { WallNode } from '@aedifex/core/schema'
+import useScene from '@aedifex/core/store'
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(`ASSERT FAILED: ${msg}`)

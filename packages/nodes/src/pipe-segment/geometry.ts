@@ -1,4 +1,4 @@
-import type { GeometryContext } from '@pascal-app/core'
+import type { GeometryContext } from '@aedifex/core'
 import { Group, Mesh, MeshStandardMaterial, SphereGeometry, Vector3 } from 'three'
 import { buildSection, INCHES_TO_METERS } from '../duct-segment/geometry'
 import { buildRunHangers } from '../shared/run-hangers'

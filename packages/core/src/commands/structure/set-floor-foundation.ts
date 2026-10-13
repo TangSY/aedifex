@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { FloorFoundationPatch } from '../../agent-tools/structure-patches'
 import {
   floorPlateHoldsUnderside,
   groundFloorConstruction,
@@ -7,45 +7,11 @@ import {
 } from '../../lib/floor-foundation-datum'
 import { expandFloorIntentChanges, floorIntentConflicts } from '../../lib/floor-intent-changes'
 import { roundFloorElevation } from '../../lib/room-floor-feasibility'
-import { SlabNode } from '../../schema'
+import type { SlabNode } from '../../schema'
 import { MIN_GROUND_FLOOR_THICKNESS, MIN_SLAB_THICKNESS } from '../../schema/nodes/slab'
 import type { StructureNodes, StructurePlan } from './shared'
 
-export const FloorFoundationPatch = z.strictObject({
-  thickness: z
-    .number()
-    .finite()
-    .min(0)
-    .optional()
-    .describe(
-      'Slab thickness in meters. On the ground it sits on the foundation (or the ground) and grows upward: a thicker slab raises the floor top and everything on it. Never below 0.01 m (smaller values are clamped). Upstairs the underside stays on the walls below.',
-    ),
-  foundationHeight: z
-    .number()
-    .finite()
-    .min(0)
-    .optional()
-    .describe(
-      'Ground-bearing floors only: height of the foundation under the slab, in meters. 0 = on the ground (no foundation); > 0 = raised on a solid foundation. The floor top is derived: grade + foundationHeight + thickness.',
-    ),
-  floorHeight: z
-    .number()
-    .finite()
-    .nullable()
-    .optional()
-    .describe(
-      'Legacy: a target floor top in level-local meters. On the ground it is mapped to foundationHeight = top - grade - thickness (never below 0); null = on the ground. Prefer thickness and foundationHeight.',
-    ),
-  foundation: SlabNode.shape.foundation,
-  slots: z
-    .strictObject({
-      edge: z.string().optional(),
-      riser: z.string().optional(),
-      underside: z.string().optional(),
-    })
-    .optional(),
-})
-export type FloorFoundationPatch = z.infer<typeof FloorFoundationPatch>
+export { FloorFoundationPatch } from '../../agent-tools/structure-patches'
 
 /** A new solid foundation's finish: mid grey, apart from the white edge band and the walls. */
 export const DEFAULT_FOUNDATION_MATERIAL = 'library:preset-midgrey'

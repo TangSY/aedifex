@@ -1,11 +1,11 @@
 'use client'
-import { type AnyNodeId, useLiveNodeOverrides, useScene } from '@pascal-app/core'
+import { type AnyNodeId, useLiveNodeOverrides, useScene } from '@aedifex/core'
 import {
   ProceduralItemNode,
   snapParameters,
   validateProceduralRelations,
-} from '@pascal-app/core/procedural-items'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core/procedural-items'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useState } from 'react'
 import { useHandleGroup } from '../../store/use-handle-group'
 import { PanelSection } from '../ui/controls/panel-section'

@@ -6,7 +6,7 @@ import {
   type GeometryContext,
   getMaterialPresetByRef,
   type MaterialSchema,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   applyMaterialPresetToMaterials,
   applyWorldScaleBoxUVs,
@@ -18,7 +18,7 @@ import {
   type RenderShading,
   resolveMaterialRef,
   resolveSlotDefaultMaterial,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import {
   BoxGeometry,
   CylinderGeometry,
@@ -428,7 +428,7 @@ for (const material of [
   ovenHeatElementMaterial,
   ...ovenStatusLightMaterials,
 ]) {
-  material.userData.__pascalCachedMaterial = true
+  material.userData.__aedifexCachedMaterial = true
 }
 
 export function addApplianceHandle(

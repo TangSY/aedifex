@@ -1,6 +1,6 @@
 'use client'
 
-import type { AnyNodeId, LevelNode, SceneApi } from '@pascal-app/core'
+import type { AnyNodeId, LevelNode, SceneApi } from '@aedifex/core'
 import { createContext, type ReactNode, useContext } from 'react'
 
 export type RegistryToolContextValue = {

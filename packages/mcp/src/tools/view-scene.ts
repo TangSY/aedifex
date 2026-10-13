@@ -5,9 +5,9 @@ import {
   type SceneViewPose,
   sceneViewNote,
   sceneViewPlan,
-} from '@pascal-app/core/agent-operations'
-import { refuse, viewSceneTool } from '@pascal-app/core/agent-tools'
-import type { AnyNode } from '@pascal-app/core/schema'
+} from '@aedifex/core/agent-operations'
+import { refuse, viewSceneTool } from '@aedifex/core/agent-tools'
+import type { AnyNode } from '@aedifex/core/schema'
 import type { SceneOperations } from '../operations'
 import { READ_ONLY_TOOL_ANNOTATIONS } from './annotations'
 import { refusalResult } from './errors'

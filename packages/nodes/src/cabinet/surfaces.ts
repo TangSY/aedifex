@@ -8,7 +8,7 @@ import {
   pointInPolygon2D,
   type SurfaceContext,
   type SurfaceProvider,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { cooktopFootprint, sinkFaucetFootprint, sinkOpening } from './appliance-layout'
 import { type CabinetSlab, getCabinetCountertopLayout } from './countertop-layout'
 import { isCooktopCompartmentType } from './stack'

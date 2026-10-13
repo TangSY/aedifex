@@ -1,4 +1,4 @@
-import type { CabinetModuleNode } from '@pascal-app/core'
+import type { CabinetModuleNode } from '@aedifex/core'
 import type { SinkLayout } from './stack'
 
 export const BASIN_WALL = 0.012

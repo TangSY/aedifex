@@ -1,4 +1,4 @@
-import { DUCT_BODY_SLOT_ID } from '@pascal-app/core'
+import { DUCT_BODY_SLOT_ID } from '@aedifex/core'
 import { createSlotPaintCapability, previewGeometrySlot } from './slot-paint'
 
 export const ductBodyPaint = createSlotPaintCapability({

@@ -6,8 +6,8 @@ import {
   type StairNode,
   type StairSegmentNode,
   useScene,
-} from '@pascal-app/core'
-import { MetricControl, SelectControl, ToggleControl } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { MetricControl, SelectControl, ToggleControl } from '@aedifex/editor'
 
 const OPTIONS = [
   { label: 'Original', value: 'original' },

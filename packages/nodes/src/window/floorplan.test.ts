@@ -4,7 +4,7 @@ import {
   type GeometryContext,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildWindowFloorplan } from './floorplan'
 
 const wall = WallNode.parse({ id: 'wall_window-plan', start: [0, 0], end: [4, 0], thickness: 0.2 })

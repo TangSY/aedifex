@@ -1,4 +1,4 @@
-import type { SceneGraph } from '@pascal-app/editor'
+import type { SceneGraph } from '@aedifex/editor'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: PageProps<'/embed/[id]'>): Pr
   const { id } = await params
   const scene = await loadSharedScene(id)
   return {
-    title: scene ? `${scene.name} · Pascal` : 'Pascal',
+    title: scene ? `${scene.name} · Aedifex` : 'Aedifex',
     robots: { index: false },
   }
 }

@@ -1,8 +1,8 @@
 import type {
   CabinetModuleNode as CabinetModuleNodeType,
   CabinetNode as CabinetNodeType,
-} from '@pascal-app/core'
-import { CABINET_METRIC_DEFAULTS } from '@pascal-app/core'
+} from '@aedifex/core'
+import { CABINET_METRIC_DEFAULTS } from '@aedifex/core'
 import { resolveCabinetType } from './run-ops'
 import {
   type CabinetCompartment,

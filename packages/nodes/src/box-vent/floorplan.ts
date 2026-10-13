@@ -6,7 +6,7 @@ import type {
   GeometryContext,
   RoofNode,
   RoofSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Floor-plan builder for a box vent — a small attic-exhaust vent on a roof

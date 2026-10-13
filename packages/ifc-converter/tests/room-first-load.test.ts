@@ -14,8 +14,8 @@ import {
   type WallNode,
   type WindowNode,
   type ZoneNode,
-} from '@pascal-app/core'
-import { convertIfcToPascal, type PascalSceneGraph } from '../src'
+} from '@aedifex/core'
+import { convertIfcToAedifex, type AedifexSceneGraph } from '../src'
 import { loadScene } from './load-scene'
 
 // Converts the reference IFC files and loads them the way the editor and the
@@ -35,7 +35,7 @@ async function convert(name: string, transform?: (source: string) => string) {
   const data = transform
     ? new TextEncoder().encode(transform(new TextDecoder().decode(source)))
     : source
-  return convertIfcToPascal(data, undefined, { wasmPath })
+  return convertIfcToAedifex(data, undefined, { wasmPath })
 }
 
 const meta = (node: AnyNode) => (node.metadata ?? {}) as Record<string, unknown>
@@ -139,7 +139,7 @@ function openingWorldPoint(opening: DoorNode | WindowNode, nodes: Nodes): [numbe
   ]
 }
 
-const scenes = new Map<string, { raw: PascalSceneGraph; loaded: Nodes }>()
+const scenes = new Map<string, { raw: AedifexSceneGraph; loaded: Nodes }>()
 const FILES = [
   '01-duplex.ifc',
   '04-ifc-open-house.ifc',
@@ -308,7 +308,7 @@ describe('IFC import loads as room-first structure', () => {
       expect(opening.wallId).toBe(opening.parentId!)
     }
     // Joining corners moves wall starts; openings keep their plan position.
-    const unjoined = await convertIfcToPascal(
+    const unjoined = await convertIfcToAedifex(
       await readFile(`${fixtures}01-duplex.ifc`),
       undefined,
       {
@@ -352,7 +352,7 @@ describe('IFC wall reference lines', () => {
     const faced = await convert('10-sample-house.ifc', (source) =>
       source.replaceAll('.AXIS2.,.NEGATIVE.,47.5,', '.AXIS2.,.NEGATIVE.,0.,'),
     )
-    const partitions = (graph: PascalSceneGraph) =>
+    const partitions = (graph: AedifexSceneGraph) =>
       ofType<WallNode>(graph.nodes, 'wall').filter((wall) => (wall.thickness ?? 0) < 0.1)
     expect(partitions(centred).every((wall) => wall.justification === undefined)).toBe(true)
     const justified = partitions(faced)

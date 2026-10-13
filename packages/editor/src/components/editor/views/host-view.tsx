@@ -1,6 +1,6 @@
 'use client'
 
-import type { LazyComponent } from '@pascal-app/core'
+import type { LazyComponent } from '@aedifex/core'
 import { type ComponentType, lazy, Suspense } from 'react'
 import type { EditorViewDescriptor } from '../../../lib/editor-views'
 import { ErrorBoundary } from '../../ui/primitives/error-boundary'

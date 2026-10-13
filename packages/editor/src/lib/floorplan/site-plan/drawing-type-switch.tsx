@@ -1,6 +1,6 @@
 'use client'
 
-import { type SiteNode, useScene } from '@pascal-app/core'
+import { type SiteNode, useScene } from '@aedifex/core'
 import { useEffect, useSyncExternalStore } from 'react'
 import useDrawingView, { EDITOR_DRAWING_TYPE_OPTIONS } from '../../../store/use-drawing-view'
 import { cn } from '../../utils'

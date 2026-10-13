@@ -1,7 +1,7 @@
-# Floor-plan photo to Pascal scene
+# Floor-plan photo to Aedifex scene
 
 The `photo_to_scene` orchestrator takes a single floor-plan photo and
-returns a saved, navigable Pascal scene. It chains vision (via MCP
+returns a saved, navigable Aedifex scene. It chains vision (via MCP
 sampling) → scene build → save in one call, so an agent doesn't have to
 stitch three tools together manually.
 
@@ -14,7 +14,7 @@ stitch three tools together manually.
 
 A user drops a photo of a hand-drawn floor plan into the chat and types:
 
-> **User:** here's a floor plan photo, turn it into a Pascal scene.
+> **User:** here's a floor plan photo, turn it into a Aedifex scene.
 
 ## The tool call
 
@@ -96,7 +96,7 @@ If any wall or room failed schema validation, the response includes a
 The user follows `url` in their browser:
 
 ```
-https://your-pascal-host/scene/scene_01hx8a...
+https://your-aedifex-host/scene/scene_01hx8a...
 ```
 
 ...and lands in the editor with the new scene loaded, camera auto-framed

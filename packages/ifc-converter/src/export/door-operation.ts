@@ -1,4 +1,4 @@
-import type { DoorNode } from '@pascal-app/core'
+import type { DoorNode } from '@aedifex/core'
 
 /**
  * Pascal door family → IfcDoorTypeOperationEnum. The inverse of

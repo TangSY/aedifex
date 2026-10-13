@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { measurementFeatureLength } from '@pascal-app/core'
+import { measurementFeatureLength } from '@aedifex/core'
 import { closestMeasurementFeature, measurementFeaturePoint } from '../measurement/resolve'
 import { polygonMeasurementFeatures } from './polygon-measurement'
 

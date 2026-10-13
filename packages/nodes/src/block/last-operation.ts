@@ -1,5 +1,5 @@
-import type { AnyNodeId, BlockNode, BlockTopology, SceneApi } from '@pascal-app/core'
-import type { SelectionAffordanceHistoryApi } from '@pascal-app/editor'
+import type { AnyNodeId, BlockNode, BlockTopology, SceneApi } from '@aedifex/core'
+import type { SelectionAffordanceHistoryApi } from '@aedifex/editor'
 import {
   applyBlockCommand,
   type BlockCommand,

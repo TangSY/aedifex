@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from 'bun:test'
-import { sceneRegistry, useScene, WallNode } from '@pascal-app/core'
-import { getVisibleWallMaterials } from '@pascal-app/viewer'
+import { sceneRegistry, useScene, WallNode } from '@aedifex/core'
+import { getVisibleWallMaterials } from '@aedifex/viewer'
 import { BoxGeometry, Mesh, Ray, Vector3 } from 'three'
 import { resolveWallRole, wallPaint } from './paint'
 

@@ -26,10 +26,10 @@ Set `def.renderer` on the kind's definition. That is the only way: never a `case
 
 A custom renderer:
 
-- registers its root with `useRegistry(node.id, kind, ref)` and spreads `useNodeEvents(node, kind)` on it (both public exports of `@pascal-app/core` / `@pascal-app/viewer`);
+- registers its root with `useRegistry(node.id, kind, ref)` and spreads `useNodeEvents(node, kind)` on it (both public exports of `@aedifex/core` / `@aedifex/viewer`);
 - renders hosted children with `<NodeRenderer nodeId={childId} />`, or declares `rendersChildren: false`;
 - memoises geometry that depends on node fields and leaves dirty-driven rebuilds and cross-node work to a `def.system`;
-- imports nothing from `@pascal-app/editor` (DECISIONS.md E-001).
+- imports nothing from `@aedifex/editor` (DECISIONS.md E-001).
 
 ## `node.visible` is the renderer's job
 

@@ -9,7 +9,7 @@ import {
   resolveCeilingHeight,
   union,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { create } from 'zustand'
 import useEditor, { isGridSnapActive, isMagneticSnapActive } from '../store/use-editor'
 import {

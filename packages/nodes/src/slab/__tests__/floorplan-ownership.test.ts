@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { type FloorplanGeometry, type GeometryContext, SlabNode } from '@pascal-app/core'
+import { type FloorplanGeometry, type GeometryContext, SlabNode } from '@aedifex/core'
 import { buildSlabFloorplan, slabOutlineEditable } from '../floorplan'
 
 // UX round point 4: a floor plate's outline and room-cut holes follow the rooms,

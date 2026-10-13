@@ -8,8 +8,8 @@ import {
   type SceneApi,
   ShelfNode,
   type SurfaceProvider,
-} from '@pascal-app/core'
-import { ProceduralItemNode, shelfRecipe } from '@pascal-app/core/procedural-items'
+} from '@aedifex/core'
+import { ProceduralItemNode, shelfRecipe } from '@aedifex/core/procedural-items'
 import { Box3, type Mesh } from 'three'
 import { cabinetDefinition } from '../../cabinet/definition'
 import { CabinetModuleNode, CabinetNode } from '../../cabinet/schema'

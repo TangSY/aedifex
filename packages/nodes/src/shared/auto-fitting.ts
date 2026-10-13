@@ -3,7 +3,7 @@ import {
   DuctSegmentNode,
   PipeFittingNode,
   PipeSegmentNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Euler, Matrix4, Quaternion, Vector3 } from 'three'
 import { fittingLegLength } from '../duct-fitting/ports'
 import {

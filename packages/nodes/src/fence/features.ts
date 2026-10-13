@@ -1,6 +1,6 @@
-import { emitter } from '@pascal-app/core'
-import { useEditor } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+import { emitter } from '@aedifex/core'
+import { useEditor } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 
 export function beginFenceFeaturePlacement(kind: 'gate' | 'opening') {
   emitter.emit('tool:cancel')

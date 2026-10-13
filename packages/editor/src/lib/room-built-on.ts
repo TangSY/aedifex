@@ -4,7 +4,7 @@ import {
   roomDrawnFloor,
   type SlabNode,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { levelFootprints } from './floor-footprints'
 
 // "Built on": which floor a room stands on. By default a room is part of its

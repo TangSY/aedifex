@@ -1,6 +1,6 @@
 // The window tool's placement choices: the chips [O] Type and [L] Style.
 
-import type { ToolHint, WindowNode } from '@pascal-app/core'
+import type { ToolHint, WindowNode } from '@aedifex/core'
 import {
   getWindowStyleOverrides,
   SILLLESS_WINDOW_TYPES,
@@ -9,7 +9,7 @@ import {
   type WindowStyle,
   windowTakesStyle,
   windowTypeFields,
-} from '@pascal-app/core/building'
+} from '@aedifex/core/building'
 import { create } from 'zustand'
 
 /** The window panel's Window Type row and the tool's Type chip. */

@@ -9,7 +9,7 @@ import {
   type SceneMaterialId,
   type StairSegmentNode,
   type StairSlotId,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { Mesh, Object3D } from 'three'
 import {
   buildSlotPreviewMaterial,

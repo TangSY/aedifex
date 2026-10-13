@@ -1,6 +1,5 @@
 'use client'
 
-import { Icon } from '@iconify/react'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -57,9 +56,10 @@ import {
   WindowNode as WindowNodeSchema,
   wallClosesRoom,
   wallRectangleCorners,
-} from '@pascal-app/core'
-import { useSegmentDraftChain, useWallSnapIndicator } from '@pascal-app/editor'
-import { getSceneTheme, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useSegmentDraftChain, useWallSnapIndicator } from '@aedifex/editor'
+import { getSceneTheme, useViewer } from '@aedifex/viewer'
+import { Icon } from '@iconify/react'
 import { Command, Ruler } from 'lucide-react'
 import {
   type ComponentProps,
@@ -232,7 +232,7 @@ import {
   WALL_JOIN_SNAP_RADIUS,
   type WallPlanPoint,
 } from '../tools/wall/wall-drafting'
-import { FloorplanCompassButton } from '../viewer/floorplan-compass-button'
+import { FloorplanCompassButton } from './floorplan-compass-button'
 import { resolveFloorplanBackgroundSelection } from './floorplan-background-selection'
 import {
   subscribeFloorplanCameraNavigation,
@@ -4915,19 +4915,13 @@ export function FloorplanPanel({
   // the user closes and re-opens the 2D editor instead of restoring the
   // stale viewport from before they closed it.
   const isFloorplanOpen = useEditor((state) => isViewVisible(state, VIEW_2D))
-  // The compass sits at the scene's bottom-left corner, the drawing switch
-  // beside it. With the plan in the right pane both move to its bottom-right
-  // corner (compass outermost), clear of the dock centred over the scene.
   const planOnRight = useEditor((state) => {
     const layout = activeViewLayout(state)
     return layout.split && layout.panes[1] === VIEW_2D
   })
   // `null` while no scene view is on screen: the compass has nothing to orient.
-  const sceneLeft = useEditor((state) => sceneSpan(activeViewLayout(state))?.left ?? null)
-  // Mirrored, the pair stays left of the helper toggle in the stage's corner.
-  const compassStyle: CSSProperties = planOnRight
-    ? { right: 56 }
-    : { left: `calc(${(sceneLeft ?? 0) * 100}% + 12px)` }
+  const sceneRight = useEditor((state) => sceneSpan(activeViewLayout(state))?.right ?? null)
+  const compassStyle: CSSProperties = { right: `calc(${(1 - (sceneRight ?? 1)) * 100}% + 16px)` }
   const shownScene = useEditor(visibleScene)
   // Mirror for callbacks that fire outside React's render (the per-frame
   // navigation-pose subscriber): when the 2D panel is hidden (`display:none` in
@@ -6948,7 +6942,7 @@ export function FloorplanPanel({
   )
   const wallSelectionHatchId = useMemo(() => `floorplan-wall-selection-hatch-${isDark}`, [isDark])
   // Subset of the legacy palette surfaced to registry-driven kinds via
-  // <FloorplanRenderProvider>. Mirrors `FloorplanPalette` in `@pascal-app/
+  // <FloorplanRenderProvider>. Mirrors `FloorplanPalette` in `@aedifex/
   // core` — keep slot names + meanings in sync.
   const floorplanRegistryPalette = useMemo<FloorplanRenderContextValue['palette']>(
     () => ({
@@ -11219,7 +11213,7 @@ export function FloorplanPanel({
         <FloorplanDrawingTypeSwitch className={planOnRight ? 'right-24 left-auto' : undefined} />
 
         {!isStudioWorkspace &&
-          sceneLeft !== null &&
+          sceneRight !== null &&
           (levelNode?.type === 'level' || hasAmbientBuildingLevel) &&
           (compassHost ? (
             createPortal(
@@ -11373,7 +11367,7 @@ export function FloorplanPanel({
           // panel, so pan/zoom is preserved across the toggle.
           <svg
             className="h-full w-full touch-none"
-            data-pascal-floorplan-2d
+            data-aedifex-floorplan-2d
             onClick={isMarqueeSelectionToolActive ? undefined : handleSvgClick}
             onContextMenu={(event) => event.preventDefault()}
             onDoubleClick={isMarqueeSelectionToolActive ? undefined : handleBackgroundDoubleClick}

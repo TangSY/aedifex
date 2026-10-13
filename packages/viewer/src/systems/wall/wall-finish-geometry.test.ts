@@ -15,7 +15,7 @@ import {
   WindowNode,
   wallFinishMaterialIndex,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 import { getWallFinishRefs } from './wall-finish-data'
 import plainGolden from './wall-finish-plain-golden.json'

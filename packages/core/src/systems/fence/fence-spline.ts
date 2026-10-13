@@ -14,7 +14,7 @@ import type { Point2D } from '../wall/wall-mitering'
  * bends to taste. Each span is then a cubic Bézier between consecutive points
  * using their handles.
  *
- * Lives in `@pascal-app/core` and imports NO Three.js — the same `CurveFrame`
+ * Lives in `@aedifex/core` and imports NO Three.js — the same `CurveFrame`
  * shape that `wall-curve.ts` returns (point / tangent / normal) is produced
  * here so the spline branch is a drop-in for the arc branch in every consumer.
  */

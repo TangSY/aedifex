@@ -1,4 +1,4 @@
-import type { SceneGraph } from '@pascal-app/editor'
+import type { SceneGraph } from '@aedifex/editor'
 import Link from 'next/link'
 import { AppCard, PRIMARY_PILL } from '@/components/app-shell'
 import { SceneLoader, type SceneMeta } from '@/components/scene-loader'

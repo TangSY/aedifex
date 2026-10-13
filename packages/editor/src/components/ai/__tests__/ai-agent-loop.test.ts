@@ -1,0 +1,559 @@
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import type {
+  AIRuntime,
+  ChatTransport,
+  CatalogProvider,
+  ChatPersistence,
+  AITelemetry,
+  StreamCallbacks,
+  LoopExitReason,
+} from '../contracts/runtime'
+import type { AIToolCall } from '../types'
+import type { ChatRequestBody } from '../contracts/chat-request'
+
+// ============================================================================
+// Module-level mocks (must be declared BEFORE importing the module under test)
+//
+// IMPORTANT: We intentionally do NOT mock '../ai-scene-serializer'. The real
+// serializer reads from useScene/useViewer, which we DO mock — that's
+// sufficient to drive scene state without leaking a stub of formatSceneContext
+// into sibling test files (bun:test's vi.mock registry is process-global).
+// ============================================================================
+
+const mockNodes: Record<string, unknown> = {}
+const mockSelection = { levelId: 'level_1', zoneId: null as string | null, selectedIds: [] as string[] }
+
+vi.mock('@aedifex/viewer', () => ({
+  captureScreenshot: vi.fn(async () => 'data:image/png;base64,fake'),
+  useViewer: {
+    getState: () => ({
+      selection: mockSelection,
+      setWalkthroughMode: vi.fn(),
+    }),
+  },
+}))
+
+vi.mock('@aedifex/core', () => ({
+  useScene: {
+    getState: () => ({ nodes: mockNodes }),
+  },
+}))
+
+vi.mock('../ai-preview-manager', () => ({
+  applyGhostPreview: vi.fn(),
+  clearGhostPreview: vi.fn(),
+  confirmGhostPreview: vi.fn(() => ({
+    messageId: '',
+    createdNodeIds: [],
+    removedNodes: [],
+    affectedNodeIds: [],
+  })),
+  isGhostPreviewActive: vi.fn(() => false),
+  undoConfirmedOperation: vi.fn(),
+}))
+
+vi.mock('../ai-mutation-executor', () => ({
+  validateAllToolCalls: vi.fn(() => [] as unknown[]),
+  buildToolResult: vi.fn(() => ({ ok: true })),
+}))
+
+vi.mock('../ai-shared-agent-executor', () => ({
+  isSharedAgentToolCall: (call: AIToolCall) => 'sharedInput' in call,
+  isSharedAgentMutation: (name: string) => name !== 'list_levels',
+  executeSharedAgentToolCalls: vi.fn(async () => ({
+    toolName: 'list_levels', success: true, summary: 'Levels read',
+    details: { validCount: 1, invalidCount: 0, adjustedCount: 0, errors: [], adjustments: [], results: [] },
+  })),
+}))
+
+// ============================================================================
+// Imports — done after vi.mock declarations
+// ============================================================================
+
+import { runAgentLoop, abortActiveLoop } from '../ai-agent-loop'
+import { captureScreenshot } from '@aedifex/viewer'
+import { isGhostPreviewActive } from '../ai-preview-manager'
+import { validateAllToolCalls } from '../ai-mutation-executor'
+import { executeSharedAgentToolCalls } from '../ai-shared-agent-executor'
+import { setAIRuntime, resetAIRuntimeForTesting } from '../runtime'
+import { useAIChat } from '../ai-chat-store'
+import { invalidateSceneCache } from '../ai-scene-serializer'
+
+// ============================================================================
+// Test runtime — replaceable transport + telemetry
+// ============================================================================
+
+interface FakeStreamReply {
+  text: string
+  toolCalls: AIToolCall[]
+  toolCallIds?: string[]
+  usage?: { promptTokens: number; completionTokens: number; totalTokens: number }
+  /** If set, the transport calls onError instead of onComplete. */
+  error?: { message: string; metadata?: Record<string, unknown> }
+}
+
+class FakeChatTransport implements ChatTransport {
+  private replies: FakeStreamReply[] = []
+  callCount = 0
+
+  setReplies(replies: FakeStreamReply[]) {
+    this.replies = replies
+    this.callCount = 0
+  }
+
+  async streamChat(
+    _request: ChatRequestBody,
+    callbacks: StreamCallbacks,
+    signal: AbortSignal,
+  ): Promise<void> {
+    if (signal.aborted) {
+      throw new DOMException('aborted', 'AbortError')
+    }
+    const reply = this.replies[this.callCount] ?? {
+      text: '',
+      toolCalls: [],
+      toolCallIds: [],
+    }
+    this.callCount++
+
+    if (reply.error) {
+      callbacks.onError(reply.error.message, reply.error.metadata)
+      return
+    }
+
+    callbacks.onTextChunk(reply.text)
+    callbacks.onComplete(
+      reply.text,
+      reply.toolCalls,
+      reply.toolCallIds ?? reply.toolCalls.map((_, i) => `call_${i}`),
+      reply.usage,
+    )
+  }
+
+  async summarize(): Promise<{ summary: string } | null> {
+    return { summary: 'compressed' }
+  }
+}
+
+const fakeTelemetry: AITelemetry & {
+  loopFinishedCalls: Array<{ iterations: number; reason: LoopExitReason; toolCalls: number }>
+  errorCalls: Array<{ phase: string; message: string }>
+} = {
+  loopFinishedCalls: [],
+  errorCalls: [],
+  loopStarted: vi.fn(),
+  loopFinished: vi.fn((ctx) => {
+    fakeTelemetry.loopFinishedCalls.push({
+      iterations: ctx.iterations,
+      reason: ctx.reason,
+      toolCalls: ctx.toolCalls,
+    })
+  }),
+  toolValidated: vi.fn(),
+  error: vi.fn((err) => {
+    fakeTelemetry.errorCalls.push({ phase: err.phase, message: err.message })
+  }),
+}
+
+const fakeTransport = new FakeChatTransport()
+
+const fakeCatalog: CatalogProvider = {
+  resolveSlug: () => ({ asset: null, matchType: 'none', suggestions: [] }),
+  generateSummary: () => '',
+}
+
+const fakePersistence: ChatPersistence = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+}
+
+const fakeRuntime: AIRuntime = {
+  transport: fakeTransport,
+  catalog: fakeCatalog,
+  persistence: fakePersistence,
+  telemetry: fakeTelemetry,
+}
+
+// ============================================================================
+// Test helpers — drive scene state by populating mockNodes directly so the
+// real serializeSceneContext returns what we need.
+// ============================================================================
+
+function resetScene() {
+  for (const k of Object.keys(mockNodes)) delete mockNodes[k]
+  mockSelection.levelId = 'level_1'
+  mockSelection.zoneId = null
+  mockSelection.selectedIds = []
+  invalidateSceneCache()
+}
+
+function setBuildingWithLevels(levelCount: number, opts?: { stairs?: number; elevators?: number }) {
+  resetScene()
+  const levelIds = Array.from({ length: levelCount }, (_, i) => `level_${i + 1}`)
+  const stairIds = Array.from({ length: opts?.stairs ?? 0 }, (_, i) => `stair_${i}`)
+  const elevIds = Array.from({ length: opts?.elevators ?? 0 }, (_, i) => `elev_${i}`)
+
+  mockNodes.building_1 = {
+    id: 'building_1',
+    type: 'building',
+    object: 'node',
+    parentId: null,
+    visible: true,
+    metadata: {},
+    name: 'Building A',
+    position: [0, 0, 0],
+    rotation: [0, 0, 0],
+    children: [...levelIds, ...elevIds],
+  }
+
+  for (let i = 0; i < levelCount; i++) {
+    const id = levelIds[i]!
+    mockNodes[id] = {
+      id,
+      type: 'level',
+      object: 'node',
+      parentId: 'building_1',
+      visible: true,
+      metadata: {},
+      level: i,
+      children: i === 0 ? stairIds : [],
+    }
+  }
+
+  for (const stairId of stairIds) {
+    mockNodes[stairId] = {
+      id: stairId,
+      type: 'stair',
+      object: 'node',
+      parentId: 'level_1',
+      visible: true,
+      metadata: {},
+      position: [0, 0, 0],
+      rotation: 0,
+      children: [],
+    }
+  }
+
+  for (const elevId of elevIds) {
+    mockNodes[elevId] = {
+      id: elevId,
+      type: 'elevator',
+      object: 'node',
+      parentId: 'building_1',
+      visible: true,
+      metadata: {},
+      position: [0, 0, 0],
+      rotation: 0,
+      width: 1.6,
+      depth: 1.6,
+      cabHeight: 2.35,
+      fromLevelId: 'level_1',
+      toLevelId: 'level_2',
+      shaftStyle: 'enclosed',
+      doorStyle: 'sliding',
+      doorPanelStyle: 'center-opening',
+      children: [],
+    }
+  }
+}
+
+beforeEach(() => {
+  setAIRuntime(fakeRuntime)
+  fakeTelemetry.loopFinishedCalls.length = 0
+  fakeTelemetry.errorCalls.length = 0
+  // Reset all telemetry vi.fn call counters
+  ;(fakeTelemetry.loopStarted as ReturnType<typeof vi.fn>).mockClear()
+  ;(fakeTelemetry.loopFinished as ReturnType<typeof vi.fn>).mockClear()
+  ;(fakeTelemetry.toolValidated as ReturnType<typeof vi.fn>).mockClear()
+  ;(fakeTelemetry.error as ReturnType<typeof vi.fn>).mockClear()
+  fakeTransport.setReplies([])
+  vi.mocked(captureScreenshot).mockReset().mockResolvedValue('data:image/png;base64,fake')
+  vi.mocked(isGhostPreviewActive).mockReset().mockReturnValue(false)
+  vi.mocked(validateAllToolCalls).mockReset().mockReturnValue([])
+  resetScene()
+  useAIChat.setState({
+    messages: [],
+    isStreaming: false,
+    streamingContent: '',
+    isAIProcessing: false,
+    operationLog: [],
+    proposals: [],
+    activeProposalId: null,
+    error: null,
+    errorMetadata: null,
+    conversationSummary: null,
+    isSummarizing: false,
+    summarizeFailureCount: 0,
+    recentErrors: new Map(),
+    pendingQuestion: null,
+    loopState: 'idle',
+    iterationCount: 0,
+    tokensUsed: 0,
+  } as Partial<ReturnType<typeof useAIChat.getState>> as ReturnType<typeof useAIChat.getState>)
+})
+
+afterEach(() => {
+  abortActiveLoop()
+  vi.restoreAllMocks()
+  vi.useRealTimers()
+  resetAIRuntimeForTesting()
+})
+
+// ============================================================================
+// Multi-level vertical-connection reminder
+// ============================================================================
+
+describe('runAgentLoop — multi-level vertical-connection reminder', () => {
+  it('injects reminder ONCE when ≥2 levels + 0 stairs + 0 elevators + 0 toolCalls, then accepts next exit', async () => {
+    setBuildingWithLevels(2, { stairs: 0, elevators: 0 })
+
+    fakeTransport.setReplies([
+      { text: 'Done.', toolCalls: [], usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 } },
+      { text: 'OK, user wants disconnected levels.', toolCalls: [], usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 } },
+    ])
+
+    await runAgentLoop({ userMessage: 'build something', catalogSummary: '' })
+
+    // Both replies must have been consumed → reminder triggered second iteration
+    expect(fakeTransport.callCount).toBe(2)
+    expect(fakeTelemetry.loopFinishedCalls[0]?.iterations).toBe(2)
+    expect(fakeTelemetry.loopFinishedCalls[0]?.reason).toBe('success')
+  })
+
+  it('does NOT re-inject reminder after it was already triggered (latched per turn)', async () => {
+    setBuildingWithLevels(2, { stairs: 0, elevators: 0 })
+    fakeTransport.setReplies([
+      { text: 'Done.', toolCalls: [] },
+      { text: 'Done again.', toolCalls: [] },
+      { text: 'Never.', toolCalls: [] },
+    ])
+    await runAgentLoop({ userMessage: 'build', catalogSummary: '' })
+    // Exits after reply 2 (reminder latched)
+    expect(fakeTransport.callCount).toBe(2)
+  })
+
+  it('does NOT inject reminder when stairs.length > 0', async () => {
+    setBuildingWithLevels(2, { stairs: 1, elevators: 0 })
+    fakeTransport.setReplies([{ text: 'Done.', toolCalls: [] }])
+    await runAgentLoop({ userMessage: 'build', catalogSummary: '' })
+    expect(fakeTransport.callCount).toBe(1)
+  })
+
+  it('does NOT inject reminder when elevators.length > 0', async () => {
+    setBuildingWithLevels(2, { stairs: 0, elevators: 1 })
+    fakeTransport.setReplies([{ text: 'Done.', toolCalls: [] }])
+    await runAgentLoop({ userMessage: 'build', catalogSummary: '' })
+    expect(fakeTransport.callCount).toBe(1)
+  })
+
+  it('does NOT inject reminder when fewer than 2 levels exist', async () => {
+    setBuildingWithLevels(1, { stairs: 0, elevators: 0 })
+    fakeTransport.setReplies([{ text: 'Done.', toolCalls: [] }])
+    await runAgentLoop({ userMessage: 'build', catalogSummary: '' })
+    expect(fakeTransport.callCount).toBe(1)
+  })
+})
+
+// ============================================================================
+// Loop exit reasons + telemetry
+// ============================================================================
+
+describe('runAgentLoop — exit reasons + telemetry', () => {
+  it('telemetry.loopStarted fires once at the start', async () => {
+    setBuildingWithLevels(1)
+    fakeTransport.setReplies([{ text: 'Done.', toolCalls: [] }])
+    await runAgentLoop({ userMessage: 'go', catalogSummary: '' })
+    expect(fakeTelemetry.loopStarted).toHaveBeenCalledTimes(1)
+  })
+
+  it('telemetry.loopFinished fires once at the end with reason=success', async () => {
+    setBuildingWithLevels(1)
+    fakeTransport.setReplies([{ text: 'Done.', toolCalls: [] }])
+    await runAgentLoop({ userMessage: 'go', catalogSummary: '' })
+    expect(fakeTelemetry.loopFinished).toHaveBeenCalledTimes(1)
+    expect(fakeTelemetry.loopFinishedCalls[0]?.reason).toBe('success')
+  })
+
+  it('forwards transport errors with metadata into the store', async () => {
+    setBuildingWithLevels(1)
+    fakeTransport.setReplies([
+      {
+        text: '',
+        toolCalls: [],
+        error: { message: 'quota exceeded', metadata: { code: 'QUOTA', upgradeUrl: '/billing' } },
+      },
+    ])
+    await runAgentLoop({ userMessage: 'go', catalogSummary: '' })
+    const state = useAIChat.getState()
+    expect(state.error).toBe('quota exceeded')
+    expect(state.errorMetadata).toEqual({ code: 'QUOTA', upgradeUrl: '/billing' })
+    expect(fakeTelemetry.loopFinishedCalls[0]?.reason).toBe('failed')
+  })
+})
+
+// ============================================================================
+// abortActiveLoop
+// ============================================================================
+
+describe('abortActiveLoop', () => {
+  it('is callable when no loop is active (no throw)', () => {
+    expect(() => abortActiveLoop()).not.toThrow()
+  })
+
+  it('is idempotent — calling twice in a row does not throw', () => {
+    abortActiveLoop()
+    expect(() => abortActiveLoop()).not.toThrow()
+  })
+
+  it('settles a project cleanup during streaming and ignores callbacks from the previous project', async () => {
+    setBuildingWithLevels(1)
+    let previousCallbacks!: StreamCallbacks
+    const stream = vi.spyOn(fakeTransport, 'streamChat').mockImplementationOnce(async (_request, callbacks, signal) => {
+      previousCallbacks = callbacks
+      await new Promise<void>((_resolve, reject) => signal.addEventListener('abort', () => reject(new DOMException('Project changed', 'AbortError')), { once: true }))
+    })
+    const run = runAgentLoop({ userMessage: 'Build in the first project', catalogSummary: '' })
+    await Promise.resolve()
+    abortActiveLoop()
+    await run
+    expect(useAIChat.getState().isAIProcessing).toBe(false)
+    expect(useAIChat.getState().error).toBeNull()
+    fakeTransport.setReplies([{ text: 'Second project ready', toolCalls: [] }])
+    await runAgentLoop({ userMessage: 'Describe the second project', catalogSummary: '' })
+    const messages = [...useAIChat.getState().messages]
+    previousCallbacks.onTextChunk('stale project text')
+    previousCallbacks.onComplete('stale mutation', [{ tool: 'add_wall', start: [0, 0], end: [2, 0] }], ['stale_id'])
+    await Promise.resolve()
+    expect(useAIChat.getState().messages).toEqual(messages)
+    expect(useAIChat.getState().streamingContent).not.toContain('stale project text')
+    stream.mockRestore()
+  })
+})
+
+// ============================================================================
+// Empty-response fallback
+// ============================================================================
+
+describe('runAgentLoop — empty-response fallback', () => {
+  it('commits a fallback assistant message visible to the user when LLM returns nothing', async () => {
+    // The fallback must appear in the COMMITTED messages[] — not stuck in the
+    // streaming buffer of a never-flushed next session. Previously the loop
+    // called finishStreaming() before appendStreamContent(fallback) so the
+    // fallback landed in a buffer that was never flushed. Fix: append first,
+    // then finishStreaming. This test pins the fixed behavior.
+    setBuildingWithLevels(1)
+    fakeTransport.setReplies([{ text: '', toolCalls: [] }])
+    await runAgentLoop({ userMessage: 'go', catalogSummary: '' })
+    const state = useAIChat.getState()
+    const lastAssistant = [...state.messages].reverse().find((m) => m.role === 'assistant')
+    expect(lastAssistant?.content).toMatch(/unable to process/i)
+  })
+})
+
+describe('runAgentLoop — shared and legacy tools', () => {
+  it('executes legacy mutations from a response that also contains a shared query', async () => {
+    setBuildingWithLevels(1)
+    vi.mocked(validateAllToolCalls).mockClear()
+    vi.mocked(executeSharedAgentToolCalls).mockClear()
+    const wall: AIToolCall = { tool: 'add_wall', start: [0, 0], end: [2, 0] }
+    fakeTransport.setReplies([
+      { text: 'Read and build', toolCalls: [{ tool: 'list_levels', sharedInput: {} }, wall], toolCallIds: ['query_id', 'wall_id'] },
+      { text: 'Finished', toolCalls: [] },
+    ])
+    await runAgentLoop({ userMessage: 'add a wall', catalogSummary: '' })
+    expect(executeSharedAgentToolCalls).toHaveBeenCalledOnce()
+    expect(validateAllToolCalls).toHaveBeenCalledWith([wall])
+    expect(fakeTransport.callCount).toBe(2)
+  })
+})
+
+describe('runAgentLoop — final operation screenshots', () => {
+  function startMutation() {
+    vi.mocked(isGhostPreviewActive).mockReturnValueOnce(false).mockReturnValue(true)
+    vi.mocked(validateAllToolCalls).mockReturnValue([
+      { type: 'add_wall', status: 'valid', start: [0, 0], end: [2, 0], thickness: 0.2 },
+    ])
+    fakeTransport.setReplies([
+      { text: 'Adding a wall', toolCalls: [{ tool: 'add_wall', start: [0, 0], end: [2, 0] }] },
+      { text: 'Done', toolCalls: [] },
+    ])
+    useAIChat.getState().addUserMessage('Add a wall')
+    return runAgentLoop({ userMessage: 'Add a wall', catalogSummary: '' })
+  }
+
+  it('waits for the actual capture result before completing the turn', async () => {
+    vi.useFakeTimers()
+    let finishCapture!: (url: string) => void
+    vi.mocked(captureScreenshot).mockResolvedValueOnce('data:image/png;base64,before')
+      .mockImplementationOnce(() => new Promise(resolve => { finishCapture = resolve }))
+    const run = startMutation()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(captureScreenshot).toHaveBeenCalledTimes(2)
+    expect(useAIChat.getState().loopState).toBe('running')
+    finishCapture('data:image/png;base64,after')
+    await run
+    expect(useAIChat.getState().messages.some(message => message.screenshotAfter === 'data:image/png;base64,after')).toBe(true)
+    expect(useAIChat.getState().loopState).toBe('complete')
+  })
+
+  it('settles an aborted capture without allowing its result into the next conversation', async () => {
+    vi.useFakeTimers()
+    let finishCapture!: (url: string) => void
+    vi.mocked(captureScreenshot).mockResolvedValueOnce('data:image/png;base64,before')
+      .mockImplementationOnce(() => new Promise(resolve => { finishCapture = resolve }))
+    const run = startMutation()
+    await vi.advanceTimersByTimeAsync(200)
+    const write = vi.spyOn(useAIChat.getState(), 'setScreenshotAfter')
+    useAIChat.getState().clearChat()
+    await run
+    vi.mocked(isGhostPreviewActive).mockReturnValue(false)
+    fakeTransport.setReplies([{ text: 'New reply', toolCalls: [] }])
+    useAIChat.getState().addUserMessage('New request')
+    await runAgentLoop({ userMessage: 'New request', catalogSummary: '' })
+    finishCapture('data:image/png;base64,stale')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(write).not.toHaveBeenCalled()
+    expect(useAIChat.getState().messages).toHaveLength(2)
+    expect(useAIChat.getState().loopState).toBe('complete')
+    write.mockRestore()
+  })
+
+  it('settles cancelled screenshot timers before capture starts', async () => {
+    vi.useFakeTimers()
+    const run = startMutation()
+    await vi.advanceTimersByTimeAsync(0)
+    useAIChat.getState().clearChat()
+    await run
+    await vi.advanceTimersByTimeAsync(200)
+    expect(captureScreenshot).toHaveBeenCalledTimes(1)
+    expect(useAIChat.getState().loopState).toBe('idle')
+  })
+
+  it('keeps screenshot failures optional and completes the turn', async () => {
+    vi.useFakeTimers()
+    vi.mocked(captureScreenshot).mockResolvedValueOnce('data:image/png;base64,before')
+      .mockRejectedValueOnce(new Error('capture unavailable'))
+    const run = startMutation()
+    await vi.advanceTimersByTimeAsync(200)
+    await run
+    expect(useAIChat.getState().loopState).toBe('complete')
+    expect(useAIChat.getState().error).toBeNull()
+  })
+
+  it('also waits for the delayed screenshot from confirm_preview', async () => {
+    vi.useFakeTimers()
+    useAIChat.setState({ messages: [{ id: 'pending', role: 'assistant', content: 'Preview', timestamp: 0,
+      operationStatus: 'pending', operations: [{ type: 'add_wall', status: 'valid', start: [0, 0], end: [2, 0], thickness: 0.2 }] }] })
+    let finishCapture!: (url: string) => void
+    vi.mocked(captureScreenshot).mockImplementationOnce(() => new Promise(resolve => { finishCapture = resolve }))
+    fakeTransport.setReplies([{ text: 'Confirmed', toolCalls: [{ tool: 'confirm_preview' }] }])
+    const run = runAgentLoop({ userMessage: 'Confirm', catalogSummary: '' })
+    await vi.advanceTimersByTimeAsync(200)
+    expect(useAIChat.getState().loopState).toBe('running')
+    finishCapture('data:image/png;base64,confirmed')
+    await run
+    expect(useAIChat.getState().messages.find(message => message.id === 'pending')?.screenshotAfter).toBe('data:image/png;base64,confirmed')
+    expect(useAIChat.getState().loopState).toBe('complete')
+  })
+})

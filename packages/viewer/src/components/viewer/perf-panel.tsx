@@ -10,7 +10,7 @@ import { usePerfStats } from '../../lib/perf-panel-store'
 // and made the old overlay drift with the camera). Portal to <body> so no
 // ancestor transform/overflow can capture it.
 
-const STORAGE_KEY = 'pascal-perf-panel'
+const STORAGE_KEY = 'aedifex-perf-panel'
 const PANEL_WIDTH = 248
 
 type PanelPlacement = { x: number; y: number; docked: 'left' | 'right' | null }
@@ -156,7 +156,7 @@ export const PerfPanel = () => {
     const side = placement.docked
     return createPortal(
       <button
-        data-pascal-perf-panel="docked"
+        data-aedifex-perf-panel="docked"
         onClick={() => setPlacement((p) => ({ ...p, docked: null }))}
         style={{
           position: 'fixed',
@@ -186,7 +186,7 @@ export const PerfPanel = () => {
 
   return createPortal(
     <div
-      data-pascal-perf-panel="open"
+      data-aedifex-perf-panel="open"
       ref={panelRef}
       style={{
         position: 'fixed',

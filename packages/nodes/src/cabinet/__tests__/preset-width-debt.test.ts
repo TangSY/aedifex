@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, describe, expect, test } from 'bun:test'
-import { type AnyNode, type AnyNodeId, createSceneApi, LevelNode, useScene } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, createSceneApi, LevelNode, useScene } from '@aedifex/core'
 import { cabinetModuleDefinition } from '../definition'
 import { addCornerRun } from '../run-ops'
 import { CabinetModuleNode, CabinetNode } from '../schema'

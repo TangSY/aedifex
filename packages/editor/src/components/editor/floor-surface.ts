@@ -1,5 +1,5 @@
-import { type AnyNode, type AnyNodeId, sceneRegistry, useScene } from '@pascal-app/core'
-import { BATCHED_LAYER, SCENE_LAYER } from '@pascal-app/viewer'
+import { type AnyNode, type AnyNodeId, sceneRegistry, useScene } from '@aedifex/core'
+import { BATCHED_LAYER, SCENE_LAYER } from '@aedifex/viewer'
 import { type Intersection, type Mesh, type Object3D, Raycaster, Vector3 } from 'three'
 
 // Drawn by the scene pass or by a merged batch that stands in for the mesh.

@@ -1,12 +1,16 @@
-import type { AnyNodeId, ZoneNode } from '@pascal-app/core/schema'
+import type { AnyNodeId, ZoneNode } from '@aedifex/core/schema'
 import type { SceneOperations } from '../operations'
 import { ErrorCode, throwMcpError } from './errors'
 
-export function validateUnitMembers(
-  bridge: SceneOperations,
-  buildingId: string,
-  memberZoneIds: string[],
-): ZoneNode['id'][] {
+export function validateUnitMembers({
+  bridge,
+  buildingId,
+  memberZoneIds,
+}: {
+  bridge: SceneOperations
+  buildingId: string
+  memberZoneIds: string[]
+}): ZoneNode['id'][] {
   const building = bridge.getNode(buildingId as AnyNodeId)
   if (!building) {
     throwMcpError(ErrorCode.InvalidParams, `Building not found: ${buildingId}`)

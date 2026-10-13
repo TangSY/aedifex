@@ -6,8 +6,8 @@ import {
   type Point,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { getSceneTheme, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { getSceneTheme, useViewer } from '@aedifex/viewer'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import {

@@ -20,26 +20,26 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
   )
 }
 
-export function PascalLogo({ className }: { className?: string }) {
+export function AedifexLogo({ className }: { className?: string }) {
   return (
     <Image
-      alt="Pascal"
-      className={cn('h-5 w-auto invert', className)}
+      alt="Aedifex"
+      className={cn('h-5 w-auto', className)}
       height={20}
       priority
-      src="/pascal-logo-full.svg"
+      src="/logo-200.png"
       width={100}
     />
   )
 }
 
-export function PascalMark({ className }: { className?: string }) {
+export function AedifexMark({ className }: { className?: string }) {
   return (
     <Image
       alt=""
-      className={cn('h-5 w-5 invert', className)}
+      className={cn('h-5 w-5', className)}
       height={20}
-      src="/pascal-logo-shape.svg"
+      src="/logo-200.png"
       width={20}
     />
   )
@@ -50,11 +50,11 @@ export function AppHeader({ children }: { children?: ReactNode }) {
     <header className="sticky top-0 z-20 border-border/50 border-b bg-sidebar">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-6">
         <Link
-          aria-label="Pascal home"
+          aria-label="Aedifex home"
           className="-mx-2 flex items-center rounded-lg px-2 py-1.5 transition-colors hover:bg-accent"
           href="/"
         >
-          <PascalLogo />
+          <AedifexLogo />
         </Link>
         <div className="flex items-center gap-2">{children}</div>
       </div>
@@ -72,7 +72,7 @@ export function AppCard({ children, className }: { children: ReactNode; classNam
           className,
         )}
       >
-        <PascalLogo className="h-4" />
+        <AedifexLogo className="h-4" />
         {children}
       </div>
     </AppShell>

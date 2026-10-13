@@ -13,7 +13,7 @@ import {
   StairNode,
   StairSegmentNode,
   spatialGridManager,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { stairDefinition } from '../index'
 
 const LEVEL_ID = 'level_test'

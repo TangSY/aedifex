@@ -1,6 +1,6 @@
 # Plugin authoring
 
-*Public contract for external node packs that extend the Pascal editor.*
+*Public contract for external node packs that extend the Aedifex editor.*
 
 Applies to: anything that ships a `Plugin` for the editor to load.
 
@@ -11,11 +11,11 @@ This page documents the **contract**, not a loader implementation. The host call
 A plugin is a JS object exporting one symbol — the manifest:
 
 ```ts
-import type { Plugin } from '@pascal-app/core'
+import type { Plugin } from '@aedifex/core'
 
 export const myPlugin: Plugin = {
   id: 'acme:furniture-pack',
-  apiVersion: 1,
+  apiVersion: 2,
   nodes: [
     couchDefinition,
     armchairDefinition,
@@ -27,16 +27,16 @@ export const myPlugin: Plugin = {
 | Field | Required | Notes |
 |---|---|---|
 | `id` | yes | Globally unique. Use `vendor:pack-name` to avoid collisions. The host treats it as opaque. |
-| `apiVersion` | yes | Currently `1`. The host throws on mismatch — bumping breaks plugins, intentionally. |
+| `apiVersion` | yes | Currently `2`. The host throws on mismatch — bumping breaks plugins, intentionally. |
 | `nodes` | optional | Array of `AnyNodeDefinition`. |
 
-The standalone [`pascalorg/plugin-trees`](https://github.com/pascalorg/plugin-trees) repository is the worked example. Clone it as a starting point.
+The in-repo [`@aedifex/plugin-trees`](../../packages/plugin-trees) package is the worked example. Copy it as a starting point.
 
-The same shape powers the built-in `pascal:core` plugin in `@pascal-app/nodes` — there's no "internal" plugin format. Whatever works for built-ins works for third parties.
+The same shape powers the built-in `aedifex:core` plugin in `@aedifex/nodes` — there's no "internal" plugin format. Whatever works for built-ins works for third parties.
 
 ## What a `NodeDefinition` can contribute
 
-The core `Plugin` manifest owns semantic node definitions (and registry-backed inspector extensions); host UI and viewer-wide presentation remain separate exports. Each `nodes` entry is a `NodeDefinition<S extends ZodObject>` that the registry stamps with `kind`, `schemaVersion`, `schema`, and any combination of:
+The v2 core `Plugin` manifest owns semantic node definitions and registry-backed inspector extensions; host UI and viewer-wide presentation remain separate exports. Each `nodes` entry is a `NodeDefinition<S extends ZodObject>` that the registry stamps with `kind`, `schemaVersion`, `schema`, and any combination of:
 
 - `defaults` — initial field values for new instances.
 - `capabilities` — `selectable` / `duplicable` / `deletable` / `surfaces` / `relations` flags consumed by the framework.
@@ -100,7 +100,7 @@ that sample different points on a slope will visibly disagree. Background:
 
 ## Importing host packages
 
-A plugin imports from the published `@pascal-app/*` packages — same surface the built-ins use, peer-dependency-style:
+A plugin imports from the published `@aedifex/*` packages — same surface the built-ins use, peer-dependency-style:
 
 ```ts
 // Schemas, types, registry types
@@ -109,16 +109,16 @@ import {
   type NodeDefinition,
   type Plugin,
   z, // re-exported from zod for schema authoring
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 // Viewer-side primitives (lazy: only inside renderers / systems)
-import { useNodeEvents, NodeRenderer } from '@pascal-app/viewer'
+import { useNodeEvents, NodeRenderer } from '@aedifex/viewer'
 
 // Editor-side primitives (lazy: only inside `tool` / `affordanceTools`)
-import { useDragAction, EDITOR_LAYER } from '@pascal-app/editor'
+import { useDragAction, EDITOR_LAYER } from '@aedifex/editor'
 ```
 
-The packages are **peer dependencies**, not normal dependencies — the host app owns the version. A plugin that pins its own copy of `@pascal-app/core` would create two registries and silently fail. (npm peer-dep resolution catches this at install time.)
+The packages are **peer dependencies**, not normal dependencies — the host app owns the version. A plugin that pins its own copy of `@aedifex/core` would create two registries and silently fail. (npm peer-dep resolution catches this at install time.)
 
 ## Following viewer appearance and performance preferences
 
@@ -159,7 +159,7 @@ graph TD
   LoadEach --> Ready["Registry frozen for the session"]
 ```
 
-`loadPlugin` is **add-only** for v1. Hot-removing a kind would require tearing down every mounted instance in the scene — out of scope. Plugins are loaded once at boot.
+`loadPlugin` is **add-only** for v2. Hot-removing a kind would require tearing down every mounted instance in the scene — out of scope. Plugins are loaded once at boot.
 
 `registerNode` throws on duplicate `kind`, so two plugins shipping a `kind: 'couch'` is a startup-time error, not a silent overwrite.
 
@@ -168,8 +168,8 @@ graph TD
 The host calls `discoverPlugins()` after the built-in plugin loads. The default implementation returns `[]`. Apps that ship external plugins replace it before the bootstrap module evaluates:
 
 ```ts
-// In app boot, BEFORE `import './pascal-bootstrap'`
-import { setPluginDiscovery } from '@pascal-app/core'
+// In app boot, BEFORE `import './aedifex-bootstrap'`
+import { setPluginDiscovery } from '@aedifex/core'
 import { myPlugin } from '@acme/furniture-pack'
 
 setPluginDiscovery(async () => {
@@ -189,7 +189,7 @@ setPluginDiscovery(async () => {
 The core `Plugin` manifest remains renderer-agnostic. A plugin that also ships editor UI exports an `EditorHostPanel` separately:
 
 ```ts
-import type { EditorHostPanel } from '@pascal-app/editor'
+import type { EditorHostPanel } from '@aedifex/editor'
 
 export const myHostPanel: EditorHostPanel = {
   id: 'acme:furniture-pack:catalog',
@@ -200,7 +200,7 @@ export const myHostPanel: EditorHostPanel = {
     name: 'Acme',
     url: 'https://acme.example',
   },
-  pluginUrl: 'https://github.com/acme/pascal-furniture-pack',
+  pluginUrl: 'https://github.com/acme/aedifex-furniture-pack',
   icon: { kind: 'iconify', name: 'lucide:armchair' },
   component: () => import('./catalog-panel'),
 }
@@ -227,7 +227,7 @@ The rail remembers the panel last open in each workspace (Edit, Studio, …) wit
 The stage is one or two panes, and each pane shows a *view*: the 3D scene, the 2D plan, or a view a host or plugin registered. A view is the place for a surface that wants the room of the canvas — a schedule, a directory, a gallery — rather than the width of the rail. A plugin can ship panels, views or both, and as many of each as it needs; each view carries the plugin's `pluginId`:
 
 ```ts
-import type { EditorHostView } from '@pascal-app/editor'
+import type { EditorHostView } from '@aedifex/editor'
 
 export const scheduleView: EditorHostView = {
   id: 'acme:schedules:rooms',
@@ -256,7 +256,7 @@ core manifest. Use this for scene-wide derived visuals such as atmosphere,
 weather, or surroundings that are not authored nodes:
 
 ```tsx
-import type { ViewerPresentationContribution } from '@pascal-app/viewer'
+import type { ViewerPresentationContribution } from '@aedifex/viewer'
 
 export const myPresentation: ViewerPresentationContribution = {
   id: 'acme:landscape:presentation',
@@ -269,12 +269,12 @@ The application registers it during the same bootstrap pass as the plugin and
 host panel:
 
 ```ts
-import { registerViewerPresentation } from '@pascal-app/viewer'
+import { registerViewerPresentation } from '@aedifex/viewer'
 
 registerViewerPresentation(myPresentation)
 ```
 
-`@pascal-app/editor` mounts the public `<ViewerPresentations />` contribution
+`@aedifex/editor` mounts the public `<ViewerPresentations />` contribution
 host once in both its edit and preview viewers. A host composing raw
 `<Viewer>` mounts `<ViewerPresentations />` explicitly. Do not also put the
 same contribution in `viewerSceneSlot`; that double-mounts it.
@@ -298,13 +298,13 @@ A plugin can give agents its own tools, in a host's chat and on the MCP server, 
 
 | Export | Holds | Imported by | Rule |
 |---|---|---|---|
-| `./agent-tools` | one `PluginAgentTools` (`@pascal-app/core/agent-tools`): contracts, skills, instructions | wherever a host declares agent tools, a sandboxed durable workflow included | zod and the plugin's own dependency-free files only, the rule `core/agent-tools` follows (`contracts-purity.test.ts`); run the same check on your entry |
-| `./agent-operations` | one `AgentOperations` (`@pascal-app/core/agent-operations`): an operation per `runsIn: 'operation'` tool | a server (the MCP) and the editor tab | pure: core and the plugin's own pure files; no browser, no stores |
-| main entry | one `PluginChatExtension` (`@pascal-app/editor`) | the browser | runs the `runsIn: 'editor'` tools, renders cards |
+| `./agent-tools` | one `PluginAgentTools` (`@aedifex/core/agent-tools`): contracts, skills, instructions | wherever a host declares agent tools, a sandboxed durable workflow included | zod and the plugin's own dependency-free files only, the rule `core/agent-tools` follows (`contracts-purity.test.ts`); run the same check on your entry |
+| `./agent-operations` | one `AgentOperations` (`@aedifex/core/agent-operations`): an operation per `runsIn: 'operation'` tool | a server (the MCP) and the editor tab | pure: core and the plugin's own pure files; no browser, no stores |
+| main entry | one `PluginChatExtension` (`@aedifex/editor`) | the browser | runs the `runsIn: 'editor'` tools, renders cards |
 
 ```ts
 // src/agent-tools.ts → "./agent-tools"
-import type { PluginAgentTools } from '@pascal-app/core/agent-tools'
+import type { PluginAgentTools } from '@aedifex/core/agent-tools'
 import { z } from 'zod'
 
 export const signageAgentTools: PluginAgentTools = {
@@ -334,8 +334,8 @@ export const signageAgentTools: PluginAgentTools = {
 
 ```ts
 // src/agent-operations.ts → "./agent-operations"
-import type { AgentOperations } from '@pascal-app/core/agent-operations'
-import { refuse } from '@pascal-app/core/agent-tools'
+import type { AgentOperations } from '@aedifex/core/agent-operations'
+import { refuse } from '@aedifex/core/agent-tools'
 
 export const signageAgentOperations = {
   signage_place_exit_signs: (nodes, input: { levelId: string; text?: string }) => {
@@ -350,7 +350,7 @@ export const signageAgentOperations = {
 
 ```ts
 // src/chat.ts → the main entry
-import type { PluginChatExtension } from '@pascal-app/editor'
+import type { PluginChatExtension } from '@aedifex/editor'
 
 export const signageChat: PluginChatExtension = {
   pluginId: 'acme:signage',
@@ -361,7 +361,7 @@ export const signageChat: PluginChatExtension = {
 }
 ```
 
-- **Where a tool runs.** `'operation'`: a pure function over the scene's nodes that returns `{ result, changes }` or refuses with `refuse(code, message)`, like core's operations; every surface runs it. The MCP registers it with `registerOperationTool(server, operations, { contract, operation, annotations })` from `@pascal-app/mcp/tools/shared-tools`, the runner of the shared tools; a chat applies it to the live store in one undo step. `'editor'`: it needs the live editor (a renderer, the plugin's stores), so it runs in an editor tab through `execute`; a surface without a tab refuses it or hands it to one. Prefer `'operation'` whenever a tool only reads and writes nodes.
+- **Where a tool runs.** `'operation'`: a pure function over the scene's nodes that returns `{ result, changes }` or refuses with `refuse(code, message)`, like core's operations; every surface runs it. The MCP registers it with `registerOperationTool(server, operations, { contract, operation, annotations })` from `@aedifex/mcp/tools/shared-tools`, the runner of the shared tools; a chat applies it to the live store in one undo step. `'editor'`: it needs the live editor (a renderer, the plugin's stores), so it runs in an editor tab through `execute`; a surface without a tab refuses it or hands it to one. Prefer `'operation'` whenever a tool only reads and writes nodes.
 - **Names.** A tool name is unique across the host's tools and every plugin's: prefix it with the plugin (`signage_…`). A host refuses a collision rather than picking a winner.
 - **Versions.** `apiVersion` is the shape of `PluginAgentTools`; `version` is the revision of your contracts. Bump it whenever a tool's name, input or meaning changes: a host may pin the revision a long run was offered and refuse an executor that no longer matches it.
 - **Annotations are hints.** A contract's `annotations` (`readOnlyHint`, `destructiveHint`, …) say what the plugin believes. A host classifies each tool from its own review and passes its own annotations to `registerOperationTool`; nothing a plugin declares grants a permission or a write scope.
@@ -373,15 +373,15 @@ The rules both surfaces follow for these tools are in [agent surfaces](agent-sur
 
 ## Versioning
 
-`apiVersion: 1` covers the surface above. The host bumps the major when it removes or changes the shape of an existing field. New optional fields don't bump. The plan is to keep additions backwards-compatible as long as possible — the bump is the escape hatch, not the default.
+`apiVersion: 2` covers the surface above. Version 1 manifests may still contain the removed core-level `panels` field, so the host rejects them instead of silently dropping editor metadata. The host bumps the major when it removes or changes the shape of an existing field. New optional fields don't bump. The plan is to keep additions backwards-compatible as long as possible — the bump is the escape hatch, not the default.
 
-`packages/core/src/registry/plugin-v1-conformance.test.ts` pins v1 with synthetic plugins at the registry and scene-store level: capabilities, ports and surfaces, relations, editing and reload, clone, and projects that have not installed the plugin. `packages/viewer/src/components/viewer/plugin-dispatch.test.tsx` proves the same kinds render, build, run their systems and restore in the baked viewer only while installed; `packages/editor/src/lib/glb-export.test.ts` covers export. A change that fails them breaks shipped plugins. `test.failing` cases are known v1 gaps.
+`packages/core/src/registry/plugin-v1-conformance.test.ts` now runs its synthetic node-pack fixtures against v2 at the registry and scene-store level: capabilities, ports and surfaces, relations, editing and reload, clone, and projects that have not installed the plugin. `packages/viewer/src/components/viewer/plugin-dispatch.test.tsx` proves the same kinds render, build, run their systems and restore in the baked viewer only while installed; `packages/editor/src/lib/glb-export.test.ts` covers export. Its `test.failing` cases still record unsupported plugin-owned reference remapping.
 
 A plugin's own data versioning is `schemaVersion` on each `NodeDefinition`. The host doesn't migrate; the plugin's `migrate(node, fromVersion)` (future) handles its own legacy persisted nodes.
 
 ## What's *not* a plugin contribution (yet)
 
-- **Materials** — there's no `plugin.materials` slot. Use `createMaterial` from `@pascal-app/viewer` inside your `def.renderer` / `def.system`.
+- **Materials** — there's no `plugin.materials` slot. Use `createMaterial` from `@aedifex/viewer` inside your `def.renderer` / `def.system`.
 - **Floor-plan primitives** — the `FloorplanGeometry` union is host-owned. To draw something the union can't express, fall back to `def.renderer` and render through a different 2D mount (or open an issue).
 - **Panels, views, agent tools and other UI in the core manifest** — host-specific. Export an `EditorHostPanel` / `EditorHostView` / `PluginChatExtension`, and the `./agent-tools` and `./agent-operations` entries, separately.
 - **Clone remapping for plugin-owned references** — project clone (`cloneSceneGraph`) and subtree duplicate (`cloneNodesInto`) remap `id`, `parentId` and `children` only. A plugin field that stores other node ids (an ordered camera list, a target list) is copied verbatim and keeps pointing at the source scene. Keep hosted ids in `children` where you can.
@@ -392,10 +392,10 @@ The boundary stays narrow on purpose so the contract is shippable. Each "not yet
 
 ## Testing your plugin
 
-`@pascal-app/nodes` is the built-in reference implementation, and [`pascalorg/plugin-trees`](https://github.com/pascalorg/plugin-trees) is the standalone example. To test locally:
+`@aedifex/nodes` is the built-in reference implementation, and [`@aedifex/plugin-trees`](../../packages/plugin-trees) is the in-repo example. To test locally:
 
-1. Build your plugin as a normal npm package with `@pascal-app/*` as peerDependencies.
+1. Build your plugin as a normal npm package with `@aedifex/*` as peerDependencies.
 2. In a host app that consumes your built-ins (`apps/editor` is the easiest target), wire `setPluginDiscovery` to return your plugin.
-3. The dev-mode `[pascal:registry]` console log shows the loaded plugin id + node count — that's the verification anchor.
+3. The dev-mode `[aedifex:registry]` console log shows the loaded plugin id + node count — that's the verification anchor.
 
 The host's own parity test (`packages/nodes/src/index.test.ts`) asserts every `AnyNode` discriminator has a registered kind. Plugin-contributed kinds don't participate in that test (they're not in `AnyNode`); add an equivalent test on your own side if you maintain a hand-typed union elsewhere.

@@ -1,7 +1,7 @@
 'use client'
-import { type AnyNodeId, nodeMechanism, useInteractive, useScene } from '@pascal-app/core'
-import { ActionMenuButton } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, nodeMechanism, useInteractive, useScene } from '@aedifex/core'
+import { ActionMenuButton } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Lightbulb, LightbulbOff } from 'lucide-react'
 import { itemHasLights, itemLightsOn, toggleItemLights } from './item-interactions'
 

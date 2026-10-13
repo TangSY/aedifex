@@ -1,6 +1,11 @@
 import { timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
-import { isLoopbackHostname, resolveAuthMode, sessionPrincipal } from './self-host-auth'
+import {
+  allowsUnauthenticatedLoopback,
+  isLoopbackRequest,
+  resolveAuthMode,
+  sessionPrincipal,
+} from './self-host-auth'
 
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 120
 const WINDOW_MS = 60_000
@@ -65,14 +70,14 @@ function validateOrigin(request: Request): NextResponse | null {
 
 /**
  * Who may call the scene API: the signed-in admin (session cookie), an agent
- * holding `PASCAL_SCENE_API_TOKEN`, or anyone on a loopback host when no
+ * holding `AEDIFEX_SCENE_API_TOKEN`, or anyone on a loopback host when no
  * token is configured. A network host with nothing configured answers 503
  * so a misconfigured deployment is loud rather than open.
  */
 function validateAuth(request: Request): NextResponse | null {
   if (sessionPrincipal(request)) return null
 
-  const token = process.env.PASCAL_SCENE_API_TOKEN
+  const token = process.env.AEDIFEX_SCENE_API_TOKEN
   if (token) {
     const supplied = bearerToken(request) ?? request.headers.get('x-pascal-scene-token')
     if (supplied && safeEqual(supplied, token)) return null
@@ -80,7 +85,12 @@ function validateAuth(request: Request): NextResponse | null {
   }
 
   const mode = resolveAuthMode(request)
-  if (mode === 'open') return null
+  if (
+    mode === 'open' &&
+    (process.env.AEDIFEX_AUTH === 'proxy' ||
+      (allowsUnauthenticatedLoopback() && isLoopbackRequest(request)))
+  )
+    return null
   if (mode === 'password') {
     return sceneApiJson(request, { error: 'unauthorized' }, { status: 401 })
   }
@@ -123,7 +133,7 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 function rateLimitPerMinute(): number {
-  const raw = process.env.PASCAL_SCENE_API_RATE_LIMIT
+  const raw = process.env.AEDIFEX_SCENE_API_RATE_LIMIT
   if (!raw) return DEFAULT_RATE_LIMIT_PER_MINUTE
   const n = Number.parseInt(raw, 10)
   return Number.isFinite(n) ? n : DEFAULT_RATE_LIMIT_PER_MINUTE
@@ -136,15 +146,14 @@ function clientIp(request: Request): string {
 }
 
 function isOriginAllowed(request: Request, origin: string): boolean {
-  if (isSameOrigin(request, origin)) return true
   const parsed = parseUrl(origin)
-  if (!parsed) return false
-  if (isLoopbackHostname(parsed.hostname)) return true
+  if (!parsed || parsed.pathname !== '/' || parsed.search || parsed.hash) return false
+  if (isSameOrigin(request, parsed)) return true
   return configuredOrigins().has(normalizeOrigin(parsed))
 }
 
 function configuredOrigins(): Set<string> {
-  const raw = process.env.PASCAL_SCENE_API_ORIGINS
+  const raw = process.env.AEDIFEX_SCENE_API_ORIGINS
   if (!raw) return new Set()
   return new Set(
     raw
@@ -155,16 +164,32 @@ function configuredOrigins(): Set<string> {
   )
 }
 
-function isSameOrigin(request: Request, origin: string): boolean {
-  const parsedOrigin = parseUrl(origin)
-  if (!parsedOrigin) return false
-  const requestUrl = new URL(request.url)
-  return normalizeOrigin(parsedOrigin) === normalizeOrigin(requestUrl)
+function isSameOrigin(request: Request, origin: URL): boolean {
+  const target = sceneApiRequestOrigin(request)
+  return target !== null && normalizeOrigin(origin) === normalizeOrigin(target)
+}
+
+/**
+ * NextURL normalizes literal loopback addresses to localhost. The browser's origin is instead
+ * the original HTTP Host. Compare that exact authority (including port), never all loopback
+ * aliases or untrusted forwarding headers. A configured public URL is authoritative for proxies.
+ */
+function sceneApiRequestOrigin(request: Request): URL | null {
+  const configured = process.env.AEDIFEX_PUBLIC_URL?.trim()
+  if (configured) return parseUrl(configured)
+  const requestUrl = parseUrl(request.url)
+  if (!requestUrl) return null
+  const host = request.headers.get('host')
+  if (host === null) return requestUrl
+  if (!/^(?:\[[0-9a-f:.]+\]|[a-z0-9.-]+)(?::[0-9]+)?$/i.test(host)) return null
+  return parseUrl(`${requestUrl.protocol}//${host}`)
 }
 
 function parseUrl(value: string): URL | null {
   try {
-    return new URL(value)
+    const url = new URL(value)
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return null
+    return url
   } catch {
     return null
   }

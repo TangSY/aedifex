@@ -12,7 +12,7 @@ import {
   WALL_FACE_REGION_LIMIT,
   type WallFace,
   type WallFaceRegion,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 // Data writes for the paint tool's region sub-modes: a wall face region
 // (`wall.faceRegions`), a room floor region (`zone.floor.regions`) or a ceiling

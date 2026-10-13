@@ -4,7 +4,7 @@
 
 Applies to: `packages/mcp/**`, `skills/**`, and the scene operations and tool contracts in `packages/core/src/**` that agents call.
 
-Pascal has two agent surfaces: the MCP server in this repo, used by external agents (Claude Code, Codex, …), and the AI chat of the hosted editor, whose loop lives in the hosted product. Both drive the same scene. What agents know about building in Pascal travels with them as the `pascal-3d` skill (`skills/pascal-3d/`) and the `pascal://agent-guide` resource. Treat these as **three presentations of the same capabilities** — the same default expectation as [2D ↔ 3D behavioral parity](tools.md).
+Pascal has two agent surfaces: the MCP server in this repo, used by external agents (Claude Code, Codex, …), and the AI chat of the hosted editor, whose loop lives in the hosted product. Both drive the same scene. What agents know about building in Pascal travels with them as the `pascal-3d` skill (`skills/pascal-3d/`) and the `aedifex://agent-guide` resource. Treat these as **three presentations of the same capabilities** — the same default expectation as [2D ↔ 3D behavioral parity](tools.md).
 
 ## The rule
 
@@ -19,7 +19,7 @@ Pascal has two agent surfaces: the MCP server in this repo, used by external age
 
 A tool has three layers, and only the last one may differ between surfaces:
 
-1. **Contract** — name, description, input schema — one definition in `@pascal-app/core/agent-tools` (a plugin's tool: in the plugin, see [Plugin tools](#plugin-tools)), registered by the MCP and defined by the chat from the same object. Kept zod-only: the chat declares tools inside a sandbox that rejects Node-dependent packages (`contracts-purity.test.ts`).
+1. **Contract** — name, description, input schema — one definition in `@aedifex/core/agent-tools` (a plugin's tool: in the plugin, see [Plugin tools](#plugin-tools)), registered by the MCP and defined by the chat from the same object. Kept zod-only: the chat declares tools inside a sandbox that rejects Node-dependent packages (`contracts-purity.test.ts`).
 2. **Operation** — validation, defaults, clamping, refusals, the nodes to create — one pure function in core (`planWallOpening`, `verifyScene`, `duplicateLevel`…).
 3. **Executor** — applying to a store (the chat's live store, the MCP's bridge) and the result envelope (live sync, persistence). Surface context resolves here too: "the active floor" is what the person is viewing in the chat. An edit that reads construction the host derives (re-derived rooms, auto ceilings, floor plates — the room and floor tools) returns `afterReconcile`; both hosts run it through `applyAgentOutcome` with their own reconciler, in one undo step.
 
@@ -39,7 +39,7 @@ A tool is written once and registered twice; never build the same tool separatel
 4. **MCP**: an entry in `SHARED_TOOLS` (`packages/mcp/src/tools/shared-tools.ts`) with its annotations and output schema; the annotation policy (`scripts/openai-tool-annotation-policy.ts`) and `plugin-evals/tool-annotation-justifications.json` list it.
 5. **Hosted chat**: the hosted repo defines its chat tool from the same contract and runs the same operation through its shared-tool executor; its `agent-surface-parity.test.ts` checks that the two surfaces' name, description and input schema match.
 6. **By hand**, where possible: offer the editor's alternative, in the same change or as a follow-up. It never holds the tool back (agent first).
-7. **Knowledge**: the `pascal-3d` skill, the agent guide (`pascal://agent-guide`) and the MCP README's tool table.
+7. **Knowledge**: the `pascal-3d` skill, the agent guide (`aedifex://agent-guide`) and the MCP README's tool table.
 
 A tool that needs something only a host has keeps the same contract and operation; the host passes the missing piece to `createPascalMcpServer`. Without a renderer (`sceneViews`) or a script runtime (`geometryScripts`) the tool still exists and answers with a code (`view_unavailable`, `scripts_unavailable`); without a `catalog` the item tools draw from a small built-in list; hosted service tools are registered only with a `services` executor.
 
@@ -47,7 +47,7 @@ A tool that needs something only a host has keeps the same contract and operatio
 
 A plugin's tools keep the three layers; the plugin owns the first two instead of core (E-016). The contract is in its `./agent-tools` export, a `PluginAgentTools` of `PluginAgentTool`s (an `AgentToolContract` plus where it runs), zod only under the same purity rule. The operation of each `runsIn: 'operation'` tool is in its `./agent-operations` export, an `AgentOperations`. The executor is the host's. Both surfaces register from those same objects:
 
-- **MCP**: `registerOperationTool(server, operations, { contract, operation, annotations })` from `@pascal-app/mcp/tools/shared-tools`, the runner of the shared tools: parse, plan, apply in one history step, `achieved`, the persistence envelope, refusals as `{ error, code }`. A `runsIn: 'editor'` tool needs an editor tab: the host routes it to one, as `view_scene` does, or refuses with a code.
+- **MCP**: `registerOperationTool(server, operations, { contract, operation, annotations })` from `@aedifex/mcp/tools/shared-tools`, the runner of the shared tools: parse, plan, apply in one history step, `achieved`, the persistence envelope, refusals as `{ error, code }`. A `runsIn: 'editor'` tool needs an editor tab: the host routes it to one, as `view_scene` does, or refuses with a code.
 - **Hosted chat**: the same contract defines the chat tool; `'operation'` tools run on the live store through its shared-tool executor, `'editor'` tools through the plugin's `PluginChatExtension.execute`.
 
 Beyond the rules above:
@@ -76,7 +76,7 @@ Hosted service tools have public contracts in `core/agent-tools` and a shared re
 
 ## Enforcement
 
-- `@pascal-app/core/agent-tools` holds the shared contracts; the hosted repo's `agent-surface-parity.test.ts` fails when a shared tool's name, description or input schema differs between the MCP and the chat. Tools still defined twice are tracked in its tool-surface alignment plan.
+- `@aedifex/core/agent-tools` holds the shared contracts; the hosted repo's `agent-surface-parity.test.ts` fails when a shared tool's name, description or input schema differs between the MCP and the chat. Tools still defined twice are tracked in its tool-surface alignment plan.
 - `review-architecture` loads this page for changes under `packages/mcp/**` and `skills/**`.
 
 ## Stair capability parity
@@ -87,7 +87,7 @@ Hosted service tools have public contracts in `core/agent-tools` and a shared re
 | `measure_stair` | `measureStairTool` in `core/agent-tools` | `AGENT_OPERATIONS.measure_stair` | Shared-tool adapter; read-only measurements and layout alternatives | Same contract and operation, read-only |
 | `fit_stair` | `fitStairTool` in `core/agent-tools` | `AGENT_OPERATIONS.fit_stair` | Shared-tool adapter; applies the planned changes atomically | Same contract and operation, one undo step |
 
-Both surfaces use the zod-only `@pascal-app/core/agent-tools` contracts and the plans in `@pascal-app/core/agent-operations`. The published `pascal-3d` skill and MCP agent guide describe the same sizing, winder and measurement semantics. Design targets are preferences, not code certification; measurement reports only the modeled obstacles it supports.
+Both surfaces use the zod-only `@aedifex/core/agent-tools` contracts and the plans in `@aedifex/core/agent-operations`. The published `pascal-3d` skill and MCP agent guide describe the same sizing, winder and measurement semantics. Design targets are preferences, not code certification; measurement reports only the modeled obstacles it supports.
 
 ## Looking at the scene: `view_scene`
 

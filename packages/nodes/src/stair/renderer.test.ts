@@ -16,9 +16,9 @@ import {
   spatialGridManager,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { StairEditSystem, ToolManager, useAlignmentGuides, useEditor } from '@pascal-app/editor'
-import { OVERLAY_LAYER, StairSystem, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { StairEditSystem, ToolManager, useAlignmentGuides, useEditor } from '@aedifex/editor'
+import { OVERLAY_LAYER, StairSystem, useViewer } from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import { createElement } from 'react'
 import {
@@ -60,7 +60,7 @@ const railingMeshes = (root: Object3D) =>
 function walkingLine(root: Object3D) {
   let line: import('three').Line | undefined
   root.traverse((object) => {
-    if ((object as import('three').Line).isLine && object.userData.pascalExport === 'strip')
+    if ((object as import('three').Line).isLine && object.userData.aedifexExport === 'strip')
       line = object as import('three').Line
   })
   return line
@@ -374,7 +374,7 @@ test('selected walking lines share geometry with the core path and stay out of p
     }
     expect(line.layers.isEnabled(OVERLAY_LAYER)).toBe(true)
     expect(line.layers.isEnabled(0)).toBe(false)
-    expect(line.userData.pascalExport).toBe('strip')
+    expect(line.userData.aedifexExport).toBe('strip')
     let disposals = 0
     line.geometry.addEventListener('dispose', () => disposals++)
     await act(async () =>
@@ -515,7 +515,7 @@ test('arc construction renders finite finished bodies and continuous metre UVs f
           }
         })
         expect(meshes).toBeGreaterThan(0)
-        expect(root.userData.pascalExportRefusal).toBeNull()
+        expect(root.userData.aedifexExportRefusal).toBeNull()
         await renderer.unmount()
         renderer = undefined
       }
@@ -581,7 +581,7 @@ test('continuous guard styles batch painted geometry and independently mount han
           expect(Array.from(mesh.geometry.getAttribute('uv').array).every(Number.isFinite)).toBe(
             true,
           )
-          expect(mesh.userData.pascalIfcRole).toBe('railing')
+          expect(mesh.userData.aedifexIfcRole).toBe('railing')
         }
         if (railingStyle === 'glass') {
           const glass = meshes.find((mesh) => mesh.userData.slotId === 'infill')!

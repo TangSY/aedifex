@@ -1,6 +1,6 @@
 import { expect, spyOn, test } from 'bun:test'
-import { containsPoint, sceneRegistry, ZoneNode } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { containsPoint, sceneRegistry, ZoneNode } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { act, create } from '@react-three/test-renderer'
 import type { ReactNode } from 'react'

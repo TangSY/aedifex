@@ -1,5 +1,5 @@
 import { Console } from 'node:console'
-import { compileGeometryScript } from '@pascal-app/geometry-script/compile'
+import { compileGeometryScript } from '@aedifex/geometry-script/compile'
 
 const stdout = process.stdout
 // stdout carries only the result; a script's own logging goes to stderr.

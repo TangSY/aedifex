@@ -1,6 +1,6 @@
 'use client'
 
-import { nodeRegistry, type ToolHint, useRegistryVersion } from '@pascal-app/core'
+import { nodeRegistry, type ToolHint, useRegistryVersion } from '@aedifex/core'
 import { useMemo, useSyncExternalStore } from 'react'
 import useEditor from '../store/use-editor'
 

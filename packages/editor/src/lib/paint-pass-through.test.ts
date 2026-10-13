@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
-import type { AnyNode } from '@pascal-app/core'
-import { setSurfaceRaycastLayers } from '@pascal-app/viewer'
+import type { AnyNode } from '@aedifex/core'
+import { setSurfaceRaycastLayers } from '@aedifex/viewer'
 import {
   BoxGeometry,
   ExtrudeGeometry,

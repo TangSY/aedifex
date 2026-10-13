@@ -7,7 +7,7 @@ import {
   SlabNode,
   useScene,
   ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Group, Mesh, MeshBasicMaterial } from 'three'
 import { slabPaint } from '../paint'
 

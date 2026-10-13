@@ -8,7 +8,7 @@ import {
   RoofSegmentNode,
   SlabNode,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { readLeanToCornerJointMetadata } from './corner-joint'
 import { resolveLeanToLayout, resolveLeanToWallPlacement } from './layout'
 import {

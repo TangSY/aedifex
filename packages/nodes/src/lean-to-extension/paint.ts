@@ -1,4 +1,4 @@
-import type { LeanToSlotId } from '@pascal-app/core'
+import type { LeanToSlotId } from '@aedifex/core'
 import { createSlotPaintCapability, previewGeometrySlot } from '../shared/slot-paint'
 
 const SLOT_IDS = new Set<LeanToSlotId>([

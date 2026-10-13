@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { DuctFittingNode, PipeFittingNode } from '@pascal-app/core'
+import { DuctFittingNode, PipeFittingNode } from '@aedifex/core'
 import { Box3, Euler, Mesh, Quaternion, Vector3 } from 'three'
 import { buildDuctFittingGeometry } from '../duct-fitting/geometry'
 import { resolvePlacement as placeDuct } from '../duct-fitting/tool'

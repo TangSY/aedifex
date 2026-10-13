@@ -1,1 +1,1 @@
-export { StructuralGridNode } from '@pascal-app/core'
+export { StructuralGridNode } from '@aedifex/core'

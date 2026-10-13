@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { type AnyNodeId, WallNode } from '@pascal-app/core'
+import { type AnyNodeId, WallNode } from '@aedifex/core'
 import type { SceneOperations } from '../../operations'
 import { registerCreateProject } from './create-project'
 import { registerGetProjectStatus } from './get-project-status'
@@ -21,6 +21,7 @@ describe('project lifecycle tools', () => {
   beforeEach(async () => {
     store = new InMemorySceneStore()
     ;({ operations } = createTestSceneOperations({ store }))
+    operations.setScene({}, [])
     const server = new McpServer({ name: 'test', version: '0.0.0' })
     registerCreateProject(server, operations)
     registerGetProjectStatus(server, operations)
@@ -54,7 +55,12 @@ describe('project lifecycle tools', () => {
     const scene = await elsewhere.loadStoredScene(parsed.projectId as string)
     expect(scene).not.toBeNull()
     expect(Object.keys(scene!.graph.nodes).length).toBe(parsed.nodeCount as number)
-    expect(parsed.nodeCount).toBeGreaterThan(0)
+    expect(parsed.nodeCount).toBe(3)
+    expect(
+      Object.values(scene!.graph.nodes)
+        .map((node) => (node as { type: string }).type)
+        .sort(),
+    ).toEqual(['building', 'level', 'site'])
   })
 
   test('reports status for an existing project', async () => {

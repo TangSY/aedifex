@@ -5,7 +5,7 @@ import {
   type HandleDescriptor,
   useScene,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { doorDefinition } from '../door/definition'
 import { windowDefinition } from '../window/definition'
 

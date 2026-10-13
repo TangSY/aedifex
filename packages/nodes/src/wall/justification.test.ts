@@ -10,8 +10,8 @@ import {
   useScene,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
-import { createFloorplanContextExtensions } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { createFloorplanContextExtensions } from '@aedifex/editor'
 import { Html } from '@react-three/drei'
 import { act, create } from '@react-three/test-renderer'
 import { createElement, type ReactNode } from 'react'

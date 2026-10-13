@@ -6,8 +6,8 @@ import {
   SlabNode,
   useScene,
   WallNode,
-} from '@pascal-app/core'
-import { useNodeEvents, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useNodeEvents, useViewer } from '@aedifex/viewer'
 import { _roots, act, events } from '@react-three/fiber'
 import type { OrthographicCamera } from 'three'
 import { z } from 'zod'

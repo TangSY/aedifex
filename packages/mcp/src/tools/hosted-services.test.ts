@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { HostedServiceExecutor } from '@pascal-app/core/agent-operations'
-import { AgentRefusal } from '@pascal-app/core/agent-tools'
-import { registerHostedServiceTools } from '@pascal-app/mcp/tools/hosted-services'
+import type { HostedServiceExecutor } from '@aedifex/core/agent-operations'
+import { AgentRefusal } from '@aedifex/core/agent-tools'
+import { registerHostedServiceTools } from '@aedifex/mcp/tools/hosted-services'
 
 async function withClient(execute: HostedServiceExecutor, run: (client: Client) => Promise<void>) {
   const server = new McpServer({ name: 'hosted-services-test', version: '1.0.0' })
@@ -58,7 +58,7 @@ describe('hosted service MCP contracts', () => {
       async (request) => {
         expect(request).toMatchObject({
           action: 'studio.generate',
-          pluginId: 'pascal:architect',
+          pluginId: 'aedifex:architect',
           projectId: 'project_media_test',
           maxCredits: 20,
           input: { modelId: 'available-model', prompt: 'Show the street-facing elevation' },
@@ -70,7 +70,7 @@ describe('hosted service MCP contracts', () => {
         const result = await client.callTool({
           name: 'generate_studio_media',
           arguments: {
-            pluginId: 'pascal:architect',
+            pluginId: 'aedifex:architect',
             projectId: 'project_media_test',
             maxCredits: 20,
             modelId: 'available-model',
@@ -111,7 +111,7 @@ describe('hosted service MCP contracts', () => {
         async (client) => {
           const result = await client.callTool({
             name: 'list_pascal_services',
-            arguments: { pluginId: 'pascal:architect' },
+            arguments: { pluginId: 'aedifex:architect' },
           })
           expect(result.isError).toBe(true)
           const content = result.content as Array<{ type: 'text'; text: string }>

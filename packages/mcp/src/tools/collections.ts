@@ -6,9 +6,9 @@ import {
   editCollection,
   listCollections,
   writeCollections,
-} from '@pascal-app/core/agent-operations'
-import { editCollectionTool, listCollectionsTool } from '@pascal-app/core/agent-tools'
-import type { AnyNodeId } from '@pascal-app/core/schema'
+} from '@aedifex/core/agent-operations'
+import { editCollectionTool, listCollectionsTool } from '@aedifex/core/agent-tools'
+import type { AnyNodeId } from '@aedifex/core/schema'
 import type { SceneOperations } from '../operations'
 import { DESTRUCTIVE_TOOL_ANNOTATIONS, READ_ONLY_TOOL_ANNOTATIONS } from './annotations'
 import { refusalResult } from './errors'

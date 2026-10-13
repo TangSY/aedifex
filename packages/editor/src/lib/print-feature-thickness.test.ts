@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, RoofSegmentNode, SlabNode, WallNode } from '@pascal-app/core'
+import { type AnyNode, RoofSegmentNode, SlabNode, WallNode } from '@aedifex/core'
 import type { PrintExportReport } from './print-export'
 import {
   applySemanticPrintFeatureThickness,

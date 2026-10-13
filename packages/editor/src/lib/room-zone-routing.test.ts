@@ -12,8 +12,8 @@ import {
   useScene,
   type ZoneNode,
   ZoneNode as ZoneNodeSchema,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { deleteSelection } from '../components/editor/group-actions'
 import { getRoomSelectionIndex } from '../hooks/use-selected-room'
 import useEditor from '../store/use-editor'

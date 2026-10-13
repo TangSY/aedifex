@@ -21,10 +21,10 @@ describe('disposeObject3DResources', () => {
     expect(materialDisposals).toBe(1)
   })
 
-  test('preserves Pascal material-cache ownership', () => {
+  test('preserves Aedifex material-cache ownership', () => {
     const root = new Group()
     const material = new MeshBasicMaterial()
-    material.userData.__pascalCachedMaterial = true
+    material.userData.__aedifexCachedMaterial = true
     let materialDisposals = 0
     material.addEventListener('dispose', () => materialDisposals++)
     root.add(new Mesh(new BoxGeometry(), material))

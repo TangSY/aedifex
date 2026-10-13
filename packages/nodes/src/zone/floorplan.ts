@@ -6,8 +6,8 @@ import {
   polygonInteriorPoint,
   type SlabNode,
   type ZoneNode,
-} from '@pascal-app/core'
-import { floorplanGeometryMetadata, readFloorplanContext } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { floorplanGeometryMetadata, readFloorplanContext } from '@aedifex/editor'
 import {
   type ConstructionLengthProfile,
   formatConstructionLength,
@@ -46,11 +46,13 @@ export function buildZoneFloorplan(node: ZoneNode, ctx: GeometryContext): Floorp
   const tintColor = unit?.color ?? node.color
   const stroke = node.color
   const focusOpacity =
-    view?.focusedUnitId && !view.focusedUnitMemberIds?.includes(node.id) ? 0.35 : 1
+    floorplanContext.focusedUnitId && !floorplanContext.focusedUnitMemberIds?.includes(node.id)
+      ? 0.35
+      : 1
   const isRoom = node.spaceRole === 'room'
   // On the editor canvas a pill labels every zone; the wash and drawn tags
   // come back only while a unit's membership is being painted.
-  const drawnTags = !floorplanContext.roomLabelOverlay || !!view?.focusedUnitId
+  const drawnTags = !floorplanContext.roomLabelOverlay || !!floorplanContext.focusedUnitId
   const fillOpacity = !drawnTags
     ? 0
     : isRoom

@@ -1,3 +1,4 @@
+import { metadataRecord } from '../utils/metadata-record'
 import { refuseParamsWithoutScript } from '../agent-operations/add-object'
 import { refuse } from '../agent-tools/refusal'
 import { matchScriptSlotsToLibrary, scriptedSize, scriptSource } from '../lib/geometry-script-node'
@@ -115,7 +116,7 @@ export function findWallChildOverlap(
   for (const childId of Array.isArray(wallNode.children) ? wallNode.children : []) {
     if (childId === ignoreId) continue
     const child = nodes[childId]
-    if (!child || child.metadata.isTransient) continue
+    if (!child || metadataRecord(child.metadata).isTransient) continue
 
     let childLeft: number
     let childRight: number

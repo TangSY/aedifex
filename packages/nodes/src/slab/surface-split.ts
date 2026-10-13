@@ -9,7 +9,7 @@ import {
   type Ring,
   type SlabNode,
   union,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { BufferGeometry, Float32BufferAttribute, ShapeUtils, Vector2 } from 'three'
 
 /**

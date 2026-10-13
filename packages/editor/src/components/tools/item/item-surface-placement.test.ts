@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { type ItemEvent, ItemNode, nodeRegistry, sceneRegistry, useScene } from '@pascal-app/core'
+import { type ItemEvent, ItemNode, nodeRegistry, sceneRegistry, useScene } from '@aedifex/core'
 import { Group, Vector3 } from 'three'
 import useEditor from '../../../store/use-editor'
 import useInteractionScope from '../../../store/use-interaction-scope'

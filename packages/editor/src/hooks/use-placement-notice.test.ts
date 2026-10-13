@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, registerNode } from '@pascal-app/core'
+import { type AnyNode, registerNode } from '@aedifex/core'
 import { placementNoticeOf, transientDraftId } from './use-placement-notice'
 
 // The editor asks a node's definition for its placement notice; it names no kind.

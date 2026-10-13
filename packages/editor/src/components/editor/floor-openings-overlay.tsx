@@ -7,8 +7,8 @@ import {
   resolveCeilingHeight,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { type ThreeEvent, useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import {

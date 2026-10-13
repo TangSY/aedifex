@@ -5,8 +5,8 @@ import {
   type BuildingNode,
   resolveBuildingForLevel,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Building2, Copy, Group, Trash2, Ungroup } from 'lucide-react'
 import { useMemo } from 'react'
 import { deleteSelection, duplicateSelectionAndPickUp } from '../../editor/group-actions'

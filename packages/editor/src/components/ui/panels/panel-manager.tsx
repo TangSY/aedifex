@@ -20,8 +20,8 @@ import {
   useScene,
   type WallNode,
   type WindowNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSelectedRoom, useZoneRoom } from '../../../hooks/use-selected-room'
 import { FloorOpeningPanel } from './floor-opening-panel'

@@ -6,7 +6,7 @@ import {
   isMovable,
   nodeRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { copyCreateOps } from './fresh-planar-placement'
 
 export function registryMoveDisabled(node: AnyNode): boolean {

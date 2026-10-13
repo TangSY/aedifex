@@ -7,7 +7,7 @@ import {
   applyAgentOutcome,
   type SceneChanges,
   writeCollections,
-} from '@pascal-app/core/agent-operations'
+} from '@aedifex/core/agent-operations'
 import {
   type AgentToolAnnotations,
   type AgentToolContract,
@@ -32,13 +32,13 @@ import {
   searchAssetsTool,
   searchMaterialsTool,
   verifySceneTool,
-} from '@pascal-app/core/agent-tools'
+} from '@aedifex/core/agent-tools'
 import {
   type AnyNode,
   type AnyNodeId,
   MaterialSchema,
   SceneMaterial,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { Patch } from '../bridge/scene-bridge'
 import type { SceneOperations } from '../operations'

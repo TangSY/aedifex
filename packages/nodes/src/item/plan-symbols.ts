@@ -1,5 +1,5 @@
-import type { FloorplanGeometry, FloorplanPoint } from '@pascal-app/core'
-import { floorplanGeometryMetadata } from '@pascal-app/editor'
+import type { FloorplanGeometry, FloorplanPoint } from '@aedifex/core'
+import { floorplanGeometryMetadata } from '@aedifex/editor'
 
 /**
  * PERMIT-SET PLAN SYMBOLS for items — what a sheet draws instead of the
@@ -22,7 +22,7 @@ import { floorplanGeometryMetadata } from '@pascal-app/editor'
  * `furniture`, `car`) — how a sheet tells a WC it must keep text off from a
  * bed it may overlap, without re-classifying the asset itself.
  */
-export const PLAN_SYMBOL_METADATA_KEY = 'pascal:sheet/plan-symbol'
+export const PLAN_SYMBOL_METADATA_KEY = 'aedifex:sheet/plan-symbol'
 
 export type PlanFixtureKind =
   | 'wc'

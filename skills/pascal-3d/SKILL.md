@@ -8,9 +8,9 @@ metadata:
   native-host-validation: "source-hash-recorded-separately"
   openclaw:
     homepage: https://editor.pascal.app/docs/developers/mcp
-    primaryEnv: PASCAL_API_KEY
+    primaryEnv: AEDIFEX_API_KEY
     envVars:
-      - name: PASCAL_API_KEY
+      - name: AEDIFEX_API_KEY
         required: false
         description: Optional Pascal API key for the hosted MCP endpoint; local Pascal does not require it.
 ---
@@ -21,7 +21,7 @@ Use Pascal as the scene authority. Prefer its semantic tools and validation resu
 
 ## Start here
 
-1. Check whether a Pascal MCP server is already connected. If it is, read `pascal://agent-guide` and inspect the available tools and their input schemas before changing anything. Installed and hosted releases can differ from this skill's source-review snapshot. When both the `pascal` and `pascal-hosted` servers are connected, use `pascal-hosted` for projects that live in the person's Pascal account, including Capture scans, and `pascal` for local work; never call both for the same task.
+1. Check whether a Pascal MCP server is already connected. If it is, read `aedifex://agent-guide` and inspect the available tools and their input schemas before changing anything. Installed and hosted releases can differ from this skill's source-review snapshot. When both the `pascal` and `pascal-hosted` servers are connected, use `pascal-hosted` for projects that live in the person's Pascal account, including Capture scans, and `pascal` for local work; never call both for the same task.
 2. If Pascal is not connected, select the data boundary that matches the request:
    - **Local:** use the Pascal CLI for projects that should remain on this machine.
    - **Hosted existing account:** use an API key created by the same Pascal user or organization that owns the target project.

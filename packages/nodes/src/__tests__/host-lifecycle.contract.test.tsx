@@ -20,14 +20,14 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
-import { ProceduralItemNode } from '@pascal-app/core/procedural-items'
+} from '@aedifex/core'
+import { ProceduralItemNode } from '@aedifex/core/procedural-items'
 import {
   applySceneGraphToEditor,
   getMovingNode,
   useEditor,
   usePlacementPreview,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { act } from '@react-three/test-renderer'
 import { Vector3 } from 'three'
 import {

@@ -10,7 +10,7 @@ import {
   sceneRegistry,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   ActionButton,
   ActionGroup,
@@ -19,8 +19,8 @@ import {
   SegmentedControl,
   SliderControl,
   triggerSFX,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { Trash2 } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { Vector3 } from 'three'

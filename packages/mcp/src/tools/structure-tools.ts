@@ -1,4 +1,4 @@
-import type { ROOM_OPERATIONS } from '@pascal-app/core/agent-operations'
+import type { ROOM_OPERATIONS } from '@aedifex/core/agent-operations'
 import { z } from 'zod'
 import { ADDITIVE_TOOL_ANNOTATIONS, DESTRUCTIVE_TOOL_ANNOTATIONS } from './annotations'
 import { liveSyncOutput } from './live-sync'

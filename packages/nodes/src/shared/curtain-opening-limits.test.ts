@@ -8,7 +8,7 @@ import {
   useScene,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   clampToWall as clampDoorToWall,
   wallLocalToWorld as doorWallLocalToWorld,

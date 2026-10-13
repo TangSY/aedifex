@@ -1,4 +1,4 @@
-import { type AnyNode, scriptImages } from '@pascal-app/core'
+import { type AnyNode, scriptImages } from '@aedifex/core'
 
 export type NodeDisplay = {
   icon: string

@@ -1,4 +1,4 @@
-import type { DoorNode, WindowNode } from '@pascal-app/core'
+import type { DoorNode, WindowNode } from '@aedifex/core'
 
 type PlanarOpening = Pick<DoorNode | WindowNode, 'position' | 'wallId' | 'parentId'>
 

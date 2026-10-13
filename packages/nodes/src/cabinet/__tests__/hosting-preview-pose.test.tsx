@@ -13,10 +13,10 @@ import {
   sceneRegistry,
   spatialGridManager,
   useScene,
-} from '@pascal-app/core'
-import { nodeLevelFrame, ProceduralItemNode, type Recipe } from '@pascal-app/core/procedural-items'
-import { MoveRegistryNodeTool, useEditor, useInteractionScope } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { nodeLevelFrame, ProceduralItemNode, type Recipe } from '@aedifex/core/procedural-items'
+import { MoveRegistryNodeTool, useEditor, useInteractionScope } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import { Matrix4, Vector3 } from 'three'
 import {

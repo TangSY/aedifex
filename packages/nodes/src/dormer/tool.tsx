@@ -6,9 +6,9 @@ import {
   DormerNode,
   getDormerDefaultWindowFace,
   useScene,
-} from '@pascal-app/core'
-import { usePlacementPreview } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { usePlacementPreview } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo } from 'react'
 import { RoofAttachmentFallbackPreview } from '../shared/roof-attachment-fallback-preview'
 import { dormerDefinition } from './definition'

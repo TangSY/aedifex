@@ -9,7 +9,7 @@ import {
   StairSegmentNode,
   WallNode,
   WindowNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { registerApplyPatch } from './apply-patch'
 

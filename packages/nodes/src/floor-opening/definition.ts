@@ -1,4 +1,4 @@
-import { FloorOpeningNode, type NodeDefinition } from '@pascal-app/core'
+import { FloorOpeningNode, type NodeDefinition } from '@aedifex/core'
 import {
   buildFloorOpeningFloorplan,
   floorOpeningAddVertexAffordance,

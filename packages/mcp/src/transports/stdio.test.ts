@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { SceneBridge } from '../bridge/scene-bridge'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 import { connectStdio } from './stdio'
 
 let bridge: SceneBridge
@@ -25,10 +25,10 @@ test('connectStdio is an async function', () => {
 test('server+client over linked in-memory pair can list tools', async () => {
   // Functional equivalence check: we can't attach the real stdio transport in
   // a test (it hijacks process stdin/stdout), but we can still verify that
-  // `createPascalMcpServer` produces a server that exposes tools over any
+  // `createAedifexMcpServer` produces a server that exposes tools over any
   // MCP transport. This catches regressions where tool registration fails
   // silently during server construction.
-  const server = createPascalMcpServer({ bridge })
+  const server = createAedifexMcpServer({ bridge })
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
 
   const client = new Client({ name: 'stdio-test-client', version: '0.0.0' })

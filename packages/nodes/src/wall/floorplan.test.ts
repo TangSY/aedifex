@@ -6,12 +6,12 @@ import {
   type GeometryContext,
   WallNode,
   wallAssemblyFromLegacy,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   createFloorplanContextExtensions,
   readFloorplanGeometryMetadata,
   WALL_PUSH_AFFORDANCE,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { buildWallFloorplan } from './floorplan'
 
 const palette: FloorplanPalette = {

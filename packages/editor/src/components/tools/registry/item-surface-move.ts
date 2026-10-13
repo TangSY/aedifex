@@ -12,8 +12,8 @@ import {
   useLiveTransforms,
   useScene,
   wouldCreateHostingCycle,
-} from '@pascal-app/core'
-import { boxCorners } from '@pascal-app/core/procedural-items'
+} from '@aedifex/core'
+import { boxCorners } from '@aedifex/core/procedural-items'
 import { type Camera, Euler, Quaternion, Vector3 } from 'three'
 import { isFreshPlacementMetadata } from '../../../lib/placement-metadata'
 import {

@@ -10,7 +10,7 @@ import {
   shapeTriangles,
   shelfRecipe,
   validateDesign,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import { Vector3 } from 'three'
 import cabinetJson from '../../../core/src/procedural-items/__fixtures__/cabinet_two_doors_drawer.json'
 import ceilingFanJson from '../../../core/src/procedural-items/__fixtures__/ceiling_fan.json'

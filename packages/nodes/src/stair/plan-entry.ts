@@ -1,4 +1,4 @@
-import type { Point2D, StairNode, StairSegmentNode } from '@pascal-app/core'
+import type { Point2D, StairNode, StairSegmentNode } from '@aedifex/core'
 import {
   computeSegmentTransforms,
   measureStairDetail,
@@ -8,7 +8,7 @@ import {
   resolveStairWinder,
   resolveStairWinderFootprint,
   stairSegmentDetailError,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   clampPlanValue,
   getPlanPointDistance,
@@ -16,7 +16,7 @@ import {
   interpolatePlanPoint,
   movePlanPointTowards,
   rotatePlanVector,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 
 type FloorplanLineSegment = { start: Point2D; end: Point2D }
 export type FloorplanStairSegmentEntry = {

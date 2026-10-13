@@ -3,7 +3,7 @@ import { AppCard } from '@/components/app-shell'
 import { LoginForm } from './login-form'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Sign in · Pascal' }
+export const metadata: Metadata = { title: 'Sign in · Aedifex' }
 
 export default async function LoginPage({
   searchParams,

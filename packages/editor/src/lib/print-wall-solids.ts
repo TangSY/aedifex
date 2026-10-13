@@ -4,7 +4,7 @@ import {
   getWallThickness,
   type WallNode,
   type WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 

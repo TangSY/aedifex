@@ -1,7 +1,7 @@
 'use client'
 
-import { type BuildingNode, useRegistry } from '@pascal-app/core'
-import { NodeRenderer, useNodeEvents } from '@pascal-app/viewer'
+import { type BuildingNode, useRegistry } from '@aedifex/core'
+import { NodeRenderer, useNodeEvents } from '@aedifex/viewer'
 import { useRef } from 'react'
 import type { Group } from 'three'
 

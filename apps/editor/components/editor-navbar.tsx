@@ -1,10 +1,10 @@
 'use client'
 
-import { useEditor } from '@pascal-app/editor'
+import { useEditor } from '@aedifex/editor'
 import { Eye, Pencil, Share2 } from 'lucide-react'
 import Link from 'next/link'
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react'
-import { PascalMark } from './app-shell'
+import { AedifexMark } from './app-shell'
 import { SharePanel } from './share-panel'
 
 interface EditorNavbarProps {
@@ -65,7 +65,7 @@ export function EditorNavbar({ sceneId, name, onRename }: EditorNavbarProps) {
           href="/"
           title="All projects"
         >
-          <PascalMark />
+          <AedifexMark />
         </Link>
 
         <div className="h-5 w-px shrink-0 bg-border/50" />

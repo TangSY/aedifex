@@ -9,6 +9,7 @@ import {
   HIDDEN_SITE_NOTE,
   type NodeDeletionPlan,
   type NodeDeletionScene,
+  nodeRegistry,
   pauseSceneHistory,
   pauseSpaceDetection,
   planNodeDeletion,
@@ -19,20 +20,26 @@ import {
   runAsSingleSceneHistoryStep,
   stairDeckLevelId,
   structureChangeBatch,
-} from '@pascal-app/core'
-import type { SceneGraph } from '@pascal-app/core/clone-scene-graph'
-import type { AnyNode, Collection, CollectionId, SceneMaterialId } from '@pascal-app/core/schema'
+} from '@aedifex/core'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
+import type {
+  AnyNode,
+  Collection,
+  CollectionId,
+  CompiledGeometryScript,
+  SceneMaterialId,
+} from '@aedifex/core/schema'
 import {
   type AnyNodeId,
   AnyNode as AnyNodeSchema,
   type AnyNodeType,
   generateId,
-  parseNode,
   SceneMaterial,
-} from '@pascal-app/core/schema'
-// Per PLAN §0.6: `useScene` is the DEFAULT export from `@pascal-app/core/store`.
-import useScene from '@pascal-app/core/store'
+} from '@aedifex/core/schema'
+// Per PLAN §0.6: `useScene` is the DEFAULT export from `@aedifex/core/store`.
+import useScene from '@aedifex/core/store'
 import type { SceneMeta } from '../storage/types'
+import { assertPatchKeepsIdentity, isNodeDeletionBlocked } from './patch-guards'
 
 export type ValidationError = { nodeId: string; path: string; message: string }
 export type ValidationResult = {
@@ -57,7 +64,7 @@ export type ActiveSceneMeta = Pick<
 type SetSceneExtra = Parameters<ReturnType<typeof useScene.getState>['setScene']>[2]
 
 /**
- * Headless bridge to the `@pascal-app/core` Zustand store.
+ * Headless bridge to the `@aedifex/core` Zustand store.
  *
  * All mutation flows through the real core store so undo/redo works via Zundo.
  * No renderer is attached; `dirtyNodes` accumulates and can be drained via
@@ -368,6 +375,12 @@ export class SceneBridge {
     }
 
     const descendants = this._collectDescendants(id)
+    for (const descendantId of descendants) {
+      const descendant = state.nodes[descendantId as AnyNodeId]
+      if (descendant && isNodeDeletionBlocked(descendant)) {
+        throw new Error(`node "${descendantId}" has deletable: false and cannot be removed`)
+      }
+    }
     if (!cascade && descendants.length > 1) {
       throw new Error(
         `node has ${descendants.length - 1} descendant(s); pass cascade: true to delete recursively`,
@@ -406,67 +419,67 @@ export class SceneBridge {
     deletedIds: AnyNodeId[]
     createdIds: AnyNodeId[]
   } {
+    return this.applyPatchChecked({ patches })
+  }
+
+  /** Internal compiled-tool path. Raw apply_patch never accepts a compile result. */
+  applyCompiledGeometryPatch(input: { patches: Patch[]; compiled: CompiledGeometryScript }): {
+    appliedOps: number
+    deletedIds: AnyNodeId[]
+    createdIds: AnyNodeId[]
+  } {
+    if (useScene.getState().readOnly) throw Error('scene_read_only')
+    return this.applyPatchChecked(input)
+  }
+
+  private applyPatchChecked({
+    patches,
+    compiled,
+  }: {
+    patches: Patch[]
+    compiled?: CompiledGeometryScript
+  }): {
+    appliedOps: number
+    deletedIds: AnyNodeId[]
+    createdIds: AnyNodeId[]
+  } {
     const state = useScene.getState()
     const nodes = state.nodes
 
-    // Track synthesized state as we dry-run so later ops can reference
-    // earlier-created ids and reflect earlier-deleted ids.
-    const simAvailable = new Set<string>(Object.keys(nodes))
-    const simDeleted = new Set<string>()
-    // Parsed create nodes keyed by patch index — so the apply phase can use the
-    // Zod-normalised copy (which has a generated id if the caller omitted one)
-    // instead of the unparsed input.
-    const parsedCreateNodes = new Map<number, AnyNode>()
+    // The tool and direct bridge callers use the same scene-aware guard: it
+    // previews cascades, wall merges, reparenting and schema issue deltas.
+    const parsedCreateNodes = assertPatchKeepsIdentity(
+      patches,
+      nodes,
+      state.rootNodeIds,
+      this.planDeletion.bind(this),
+      compiled,
+    )
     const materialUpserts = new Map<string, SceneMaterial>()
 
+    // Parse creates before the first mutation, retaining schema defaults for
+    // the apply phase. The shared guard checks identity and graph semantics.
     for (let i = 0; i < patches.length; i++) {
-      const p = patches[i]
-      if (!p) throw new Error(`invalid patch: patches[${i}] is undefined`)
-      if (p.op === 'upsert_material') {
-        const parsed = SceneMaterial.safeParse(p.material)
+      const patch = patches[i]
+      if (!patch) throw new Error(`invalid patch: patches[${i}] is undefined`)
+      if (patch.op === 'upsert_material') {
+        const parsed = SceneMaterial.safeParse(patch.material)
         if (!parsed.success)
           throw new Error(
             `invalid patch: patches[${i}] material failed schema: ${parsed.error.message}`,
           )
         materialUpserts.set(parsed.data.id, parsed.data)
-      } else if (p.op === 'create') {
-        const res = parseNode(p.node)
-        if (!res.success) {
-          throw new Error(
-            `invalid patch: patches[${i}] create node failed schema: ${res.error.message}`,
-          )
-        }
-        if (p.parentId !== undefined && !simAvailable.has(p.parentId)) {
-          throw new Error(`invalid patch: patches[${i}] create parentId "${p.parentId}" not found`)
-        }
-        parsedCreateNodes.set(i, p.parentId ? { ...res.data, parentId: p.parentId } : res.data)
-        simAvailable.add(res.data.id)
-      } else if (p.op === 'update') {
-        if (!simAvailable.has(p.id) || simDeleted.has(p.id)) {
-          throw new Error(`invalid patch: patches[${i}] update id "${p.id}" not found`)
-        }
-        if (!p.data || typeof p.data !== 'object') {
+      } else if (patch.op === 'create') {
+        if (!parsedCreateNodes.has(i))
+          throw new Error(`invalid patch: patches[${i}] create node failed schema`)
+        const parsed = parsedCreateNodes.get(i)!
+        if (patch.parentId !== undefined)
+          parsedCreateNodes.set(i, { ...parsed, parentId: patch.parentId })
+      } else if (patch.op === 'update') {
+        if (!patch.data || typeof patch.data !== 'object' || Array.isArray(patch.data)) {
           throw new Error(`invalid patch: patches[${i}] update data is not an object`)
         }
-      } else if (p.op === 'delete') {
-        if (!simAvailable.has(p.id) || simDeleted.has(p.id)) {
-          throw new Error(`invalid patch: patches[${i}] delete id "${p.id}" not found`)
-        }
-        if (p.cascade === false) {
-          // Only inspect the current store state — we don't simulate
-          // descendant additions during dry-run, because that would require
-          // building a full shadow tree. This matches the semantics of the
-          // single-op deleteNode guard.
-          const desc = this._collectDescendants(p.id)
-          if (desc.length > 1) {
-            throw new Error(
-              `invalid patch: patches[${i}] delete "${p.id}" has descendants; pass cascade: true`,
-            )
-          }
-        }
-        simAvailable.delete(p.id)
-        simDeleted.add(p.id)
-      } else {
+      } else if (patch.op !== 'delete') {
         throw new Error(`invalid patch: patches[${i}] unknown op`)
       }
     }
@@ -623,7 +636,8 @@ export class SceneBridge {
       if (node.type === 'site' && node.visible === false) {
         warnings.push({ nodeId: id, path: 'visible', message: HIDDEN_SITE_NOTE })
       }
-      const res = AnyNodeSchema.safeParse(node)
+      const registered = nodeRegistry.get(node.type)?.schema
+      const res = registered ? registered.safeParse(node) : AnyNodeSchema.safeParse(node)
       if (res.success) continue
       for (const issue of res.error.issues) {
         errors.push({

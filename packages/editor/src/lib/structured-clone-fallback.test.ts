@@ -37,7 +37,7 @@ describe('structuredClone fallback', () => {
 
     // The actual regression: lingo clones its kind table at module-eval time,
     // so this import throws on a browser lacking structuredClone.
-    const { parseQuantity } = await import('@pascal-app/lingo')
+    const { parseQuantity } = await import('@aedifex/lingo')
     const result = parseQuantity('180cm', { kind: 'length', unit: 'm' })
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.quantity.to('m').value).toBeCloseTo(1.8, 6)

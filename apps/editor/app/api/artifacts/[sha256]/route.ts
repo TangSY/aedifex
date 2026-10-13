@@ -1,11 +1,11 @@
-import { DiskArtifactStore, resolveDefaultDatabasePath } from '@pascal-app/mcp/storage'
+import { DiskArtifactStore, resolveDefaultDatabasePath } from '@aedifex/mcp/storage'
 import {
   guardSceneApiRequest,
   sceneApiJson,
   sceneApiPreflight,
   withSceneApiHeaders,
 } from '@/lib/scene-api-security'
-import { isArtifactShared } from '@/lib/scene-sharing'
+import { isArtifactShared, isGlbArtifact } from '@/lib/scene-sharing'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,7 +22,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ sha2
     return sceneApiJson(request, { error: 'invalid_hash' }, { status: 400 })
   const bytes = await new DiskArtifactStore(resolveDefaultDatabasePath()).read(sha256)
   if (!bytes) return sceneApiJson(request, { error: 'not_found' }, { status: 404 })
-  const glb = new TextDecoder().decode(bytes.subarray(0, 4)) === 'glTF'
+  const glb = isGlbArtifact(bytes)
+  if (guard && !glb) return guard
   return withSceneApiHeaders(
     request,
     new Response(bytes as BodyInit, {

@@ -1,6 +1,6 @@
 'use client'
 
-import { CeilingSystem } from '@pascal-app/viewer'
+import { CeilingSystem } from '@aedifex/viewer'
 
 /**
  * Registry-driven ceiling system bundle. Wraps `CeilingSystem` so it

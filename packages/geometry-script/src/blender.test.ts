@@ -75,11 +75,13 @@ describe('a Blender build', () => {
   })
 })
 
-const BLENDER = process.env.PASCAL_BLENDER ?? '/Applications/Blender.app/Contents/MacOS/Blender'
+const BLENDER = process.env.AEDIFEX_BLENDER
+const LOCAL_BLENDER_ENABLED =
+  process.env.AEDIFEX_SERVER_SCRIPT_COMPILE === '1' && !!BLENDER && existsSync(BLENDER)
 
-describe.skipIf(!existsSync(BLENDER))('a local Blender', () => {
+describe.skipIf(!LOCAL_BLENDER_ENABLED)('a local Blender', () => {
   test('runs the module and clamps params as Pascal does', async () => {
-    const run = await runBlenderLocally({ blender: BLENDER, code, params: { width: 9 } })
+    const run = await runBlenderLocally({ blender: BLENDER!, code, params: { width: 9 } })
     expect(run.resolved).toEqual({ width: 2.4 })
     const compiled = await compileBlenderBuild({ code, params: { width: 9 }, run })
     expect(compiled.params).toEqual({ width: 2.4 })
@@ -88,7 +90,7 @@ describe.skipIf(!existsSync(BLENDER))('a local Blender', () => {
   test('a failing module throws its error', async () => {
     await expect(
       runBlenderLocally({
-        blender: BLENDER,
+        blender: BLENDER!,
         code: 'def build(params):\n    raise ValueError("no")\n',
       }),
     ).rejects.toThrow('ValueError: no (line 2)')

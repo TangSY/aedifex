@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from 'bun:test'
-import { WindowNode } from '@pascal-app/core'
-import { windowTakesStyle } from '@pascal-app/core/building'
+import { WindowNode } from '@aedifex/core'
+import { windowTakesStyle } from '@aedifex/core/building'
 import { placedWindowFields, useWindowPlacement, WINDOW_PLACEMENT_HINTS } from './placement'
 
 const initial = useWindowPlacement.getState()

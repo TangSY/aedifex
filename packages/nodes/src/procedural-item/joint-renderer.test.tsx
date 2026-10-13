@@ -8,9 +8,9 @@ import {
   sceneRegistry,
   useInteractive,
   useScene,
-} from '@pascal-app/core'
-import { ProceduralItemNode, parseRecipe, type Recipe } from '@pascal-app/core/procedural-items'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { ProceduralItemNode, parseRecipe, type Recipe } from '@aedifex/core/procedural-items'
+import { useViewer } from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import { Mesh, type Object3D, Raycaster, Vector3 } from 'three'
 import jointJson from '../../../core/src/procedural-items/__fixtures__/joint_cabinet.json'

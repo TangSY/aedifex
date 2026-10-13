@@ -1,4 +1,4 @@
-import type { CameraPose } from '@pascal-app/core'
+import type { CameraPose } from '@aedifex/core'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { createStore } from 'zustand/vanilla'
 

@@ -8,7 +8,7 @@ import {
   LevelNode,
   useScene,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { createSessionWrites } from './session-writes'
 
 // A live session (a floor-plan drag, a height scrub) takes back only what it

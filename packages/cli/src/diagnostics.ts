@@ -1,9 +1,9 @@
 import { constants } from 'node:fs'
 import { access, readdir, stat } from 'node:fs/promises'
-import { ensurePascalDirectories, getEditorStatus, pinnedRuntimeVersion } from './editor-process.js'
+import { ensureAedifexDirectories, getEditorStatus } from './editor-process.js'
 import { readJsonFile } from './json-files.js'
 import { getMcpServiceStatus } from './mcp-service.js'
-import type { PascalPaths } from './paths.js'
+import type { AedifexPaths } from './paths.js'
 
 export interface DiagnosticCheck {
   id: string
@@ -11,10 +11,7 @@ export interface DiagnosticCheck {
   message: string
 }
 
-export async function runDoctor(
-  paths: PascalPaths,
-  options: { runtimeSourceFile?: string } = {},
-): Promise<DiagnosticCheck[]> {
+export async function runDoctor(paths: AedifexPaths): Promise<DiagnosticCheck[]> {
   const checks: DiagnosticCheck[] = []
   const [major = 0, minor = 0] = process.versions.node
     .split('.')
@@ -27,7 +24,7 @@ export async function runDoctor(
     message: nodeSupported ? `Node ${process.versions.node}` : 'Node 22.13 or newer is required.',
   })
   try {
-    await ensurePascalDirectories(paths)
+    await ensureAedifexDirectories(paths)
     await access(paths.root, constants.R_OK | constants.W_OK)
     checks.push({ id: 'storage', status: 'pass', message: `Writable: ${paths.root}` })
     const exposed = []
@@ -46,24 +43,17 @@ export async function runDoctor(
     checks.push({
       id: 'storage',
       status: 'fail',
-      message: error instanceof Error ? error.message : 'Pascal storage is not writable.',
+      message: error instanceof Error ? error.message : 'Aedifex storage is not writable.',
     })
   }
   try {
-    const [status, mcp, pinned] = await Promise.all([
-      getEditorStatus(paths),
-      getMcpServiceStatus(paths),
-      pinnedRuntimeVersion(options),
-    ])
-    const outdated = Boolean(status.runtime && pinned && status.runtime.version !== pinned)
+    const [status, mcp] = await Promise.all([getEditorStatus(paths), getMcpServiceStatus(paths)])
     checks.push({
       id: 'runtime',
-      status: status.installed && !outdated ? 'pass' : 'warn',
+      status: status.installed ? 'pass' : 'warn',
       message: status.runtime
-        ? outdated
-          ? `Installed web runtime ${status.runtime.version}; this CLI ships ${pinned}. It switches the next time the editor starts ("pascal restart" if it is running, or "pascal update").`
-          : `Installed web runtime ${status.runtime.version}`
-        : 'No web runtime installed yet. It downloads when the editor first starts.',
+        ? `Installed web runtime ${status.runtime.version}`
+        : 'No local runtime installed yet. Build and stage packages/cli before starting the editor.',
     })
     checks.push({
       id: 'editor',
@@ -81,7 +71,7 @@ export async function runDoctor(
         ? `MCP is healthy on loopback port ${mcp.state?.port}.`
         : mcp.running
           ? 'The managed MCP process is running but unhealthy.'
-          : 'MCP is stopped. "pascal mcp connect" starts it on demand.',
+          : 'MCP is stopped. "aedifex mcp connect" starts it on demand.',
     })
     const runtimeVersions = (await readdir(paths.runtime, { withFileTypes: true }))
       .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
@@ -124,8 +114,8 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-export async function collectInfo(paths: PascalPaths) {
-  await ensurePascalDirectories(paths)
+export async function collectInfo(paths: AedifexPaths) {
+  await ensureAedifexDirectories(paths)
   const [status, mcp, runtimeVersions, pluginLock] = await Promise.all([
     getEditorStatus(paths),
     getMcpServiceStatus(paths),

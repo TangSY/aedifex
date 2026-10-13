@@ -16,8 +16,8 @@ import {
   setRoomFloorConstruction,
   upperFloorHeightControl,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import useEditor from '../store/use-editor'
 import { applyRoomPlan } from './room-structure-commands'
 import { createSessionWrites } from './session-writes'

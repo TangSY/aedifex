@@ -1,4 +1,4 @@
-import { type AnyNodeId, useLiveNodeOverrides, useScene } from '@pascal-app/core'
+import { type AnyNodeId, useLiveNodeOverrides, useScene } from '@aedifex/core'
 
 type GateAnimation = { frame: number; target: number }
 const animations = new Map<AnyNodeId, GateAnimation>()

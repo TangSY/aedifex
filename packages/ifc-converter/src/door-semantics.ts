@@ -1,4 +1,4 @@
-import type { DoorNode } from '@pascal-app/core'
+import type { DoorNode } from '@aedifex/core'
 
 type DoorStyle = Partial<DoorNode>
 

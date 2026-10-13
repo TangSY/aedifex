@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { CurtainGrid, CurtainWallConfig, WallNode } from '@pascal-app/core'
+import { CurtainGrid, CurtainWallConfig, WallNode } from '@aedifex/core'
 import {
   buildCurtainWallLayout,
   curtainGridPositions,

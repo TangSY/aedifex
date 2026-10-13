@@ -1,6 +1,6 @@
 'use client'
 
-import { useEditor } from '@pascal-app/editor'
+import { useEditor } from '@aedifex/editor'
 import SmartMeasurementTool from './smart-tool'
 import MeasurementTool from './tool'
 

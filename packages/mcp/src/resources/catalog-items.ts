@@ -3,7 +3,7 @@ import type { SceneOperations } from '../operations'
 import { type AssetCatalog, builtInCatalog } from '../tools/asset-catalog'
 
 /**
- * `pascal://catalog/items` — the items place_items draws from: the host's library when it passes
+ * `aedifex://catalog/items` — the items place_items draws from: the host's library when it passes
  * one, else a dependency-free built-in subset, so headless agents can still place furniture.
  */
 export function registerCatalogItems(
@@ -13,7 +13,7 @@ export function registerCatalogItems(
 ): void {
   server.registerResource(
     'catalog-items',
-    'pascal://catalog/items',
+    'aedifex://catalog/items',
     {
       title: 'Item catalog',
       description: "Placeable items: the host's library when it has one, else a built-in subset.",

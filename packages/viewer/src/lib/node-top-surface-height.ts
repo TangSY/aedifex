@@ -1,4 +1,4 @@
-import { type AnyNodeId, sceneRegistry } from '@pascal-app/core'
+import { type AnyNodeId, sceneRegistry } from '@aedifex/core'
 import { Box3, Matrix3, type Object3D, Raycaster, Vector3 } from 'three'
 import useViewer from '../store/use-viewer'
 import { setSurfaceRaycastLayers } from './layers'

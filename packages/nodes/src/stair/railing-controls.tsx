@@ -1,6 +1,6 @@
 'use client'
-import { type AnyNodeId, type StairNode, useScene } from '@pascal-app/core'
-import { MetricControl, SegmentedControl, ToggleControl } from '@pascal-app/editor'
+import { type AnyNodeId, type StairNode, useScene } from '@aedifex/core'
+import { MetricControl, SegmentedControl, ToggleControl } from '@aedifex/editor'
 
 const MODES = [
   { label: 'None', value: 'none' },

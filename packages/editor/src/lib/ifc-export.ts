@@ -1,6 +1,6 @@
-import { type AnyNode, bakePolicyOf, type Collection, sceneRegistry } from '@pascal-app/core'
-import { buildIfcExport, type IfcMeshPart } from '@pascal-app/ifc-converter/export'
-import { SCENE_LAYER } from '@pascal-app/viewer'
+import { type AnyNode, bakePolicyOf, type Collection, sceneRegistry } from '@aedifex/core'
+import { buildIfcExport, type IfcMeshPart } from '@aedifex/ifc-converter/export'
+import { SCENE_LAYER } from '@aedifex/viewer'
 import * as THREE from 'three'
 import { isIfcRolePart } from './ifc-parts'
 
@@ -67,8 +67,8 @@ export function collectIfcMeshes(
         ? geometry.groups
         : [{ start: drawStart, count: drawEnd - drawStart, materialIndex: 0 }]
 
-    const roleParts = Array.isArray(mesh.userData.pascalIfcParts)
-      ? mesh.userData.pascalIfcParts.filter(isIfcRolePart)
+    const roleParts = Array.isArray(mesh.userData.aedifexIfcParts)
+      ? mesh.userData.aedifexIfcParts.filter(isIfcRolePart)
       : []
     const semanticGroups = groups.flatMap((group) => {
       const end = group.start + group.count
@@ -99,8 +99,8 @@ export function collectIfcMeshes(
       const owner = typeof surfaceId === 'string' && nodes[surfaceId] ? nodes[surfaceId]! : node
       let role: string | undefined = group.role
       for (let current: THREE.Object3D | null = mesh; current; current = current.parent) {
-        if (role === undefined && typeof current.userData.pascalIfcRole === 'string') {
-          role = current.userData.pascalIfcRole
+        if (role === undefined && typeof current.userData.aedifexIfcRole === 'string') {
+          role = current.userData.aedifexIfcRole
           break
         }
       }

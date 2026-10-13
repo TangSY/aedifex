@@ -7,8 +7,8 @@ import {
   getLevelDisplayName,
   useScene,
   type ZoneNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Check, ChevronDown, Plus } from 'lucide-react'
 import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { startCeilingEdit } from '../../../lib/ceiling-edit-session'

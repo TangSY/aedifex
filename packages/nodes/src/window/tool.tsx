@@ -21,8 +21,8 @@ import {
   WallNode as WallNodeSchema,
   type WindowEvent,
   WindowNode,
-} from '@pascal-app/core'
-import { windowTakesStyle } from '@pascal-app/core/building'
+} from '@aedifex/core'
+import { windowTakesStyle } from '@aedifex/core/building'
 import {
   calculateItemRotation,
   clearPlacementSurface,
@@ -38,7 +38,7 @@ import {
   useFacingPose,
   usePlacementPreview,
   useRegistryToolContext,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BoxGeometry, EdgesGeometry, type Group, type LineSegments, Vector3 } from 'three'
 import { LineBasicNodeMaterial } from 'three/webgpu'

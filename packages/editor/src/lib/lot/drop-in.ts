@@ -28,7 +28,7 @@ import {
   generateId,
   SiteNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   buildingRecentreOffset,
   buildSitePlanDrawing,

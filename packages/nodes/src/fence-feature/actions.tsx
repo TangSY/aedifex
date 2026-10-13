@@ -1,7 +1,7 @@
 'use client'
-import { type AnyNodeId, useScene } from '@pascal-app/core'
-import { ActionMenuButton } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, useScene } from '@aedifex/core'
+import { ActionMenuButton } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { DoorClosed, DoorOpen } from 'lucide-react'
 import { toggleFenceGate } from './interaction'
 

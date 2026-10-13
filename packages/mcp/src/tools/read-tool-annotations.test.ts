@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { SceneBridge } from '../bridge/scene-bridge'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 import { SqliteSceneStore } from '../storage/sqlite-scene-store'
 
 const TOOL_POLICIES = [
@@ -139,10 +139,7 @@ const TOOL_POLICIES = [
 
 const EXPECTED_TOOL_NAMES = TOOL_POLICIES.flatMap(({ tools }) => tools).toSorted()
 const annotationPacket = JSON.parse(
-  readFileSync(
-    resolve(import.meta.dir, '../../../../plugin-evals/tool-annotation-justifications.json'),
-    'utf8',
-  ),
+  readFileSync(resolve(import.meta.dir, './fixtures/tool-annotation-justifications.json'), 'utf8'),
 ) as {
   required_hints: Array<'readOnlyHint' | 'destructiveHint' | 'openWorldHint'>
   tools: Array<{
@@ -157,9 +154,9 @@ describe('MCP tool annotations', () => {
     const bridge = new SceneBridge()
     bridge.setScene({}, [])
     bridge.loadDefault()
-    const directory = mkdtempSync(join(tmpdir(), 'pascal-mcp-annotations-'))
-    const store = new SqliteSceneStore({ databasePath: join(directory, 'pascal.db') })
-    const server = createPascalMcpServer({ bridge, store })
+    const directory = mkdtempSync(join(tmpdir(), 'aedifex-mcp-annotations-'))
+    const store = new SqliteSceneStore({ databasePath: join(directory, 'aedifex.db') })
+    const server = createAedifexMcpServer({ bridge, store })
     const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
     const client = new Client({ name: 'annotation-test-client', version: '0.0.0' })
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])
@@ -202,7 +199,7 @@ describe('MCP tool input schemas', () => {
     bridge.loadDefault()
     const directory = mkdtempSync(join(tmpdir(), 'pascal-mcp-schemas-'))
     const store = new SqliteSceneStore({ databasePath: join(directory, 'pascal.db') })
-    const server = createPascalMcpServer({ bridge, store })
+    const server = createAedifexMcpServer({ bridge, store })
     const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
     const client = new Client({ name: 'schema-test-client', version: '0.0.0' })
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])

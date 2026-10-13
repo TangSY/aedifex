@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { isScriptedNode, scriptedObjectMeta } from '@pascal-app/core'
+import { isScriptedNode, scriptedObjectMeta } from '@aedifex/core'
 import {
   achievedChanges,
   addWallOpening,
@@ -8,23 +8,28 @@ import {
   rebuiltOpeningResult,
   rescriptOpening,
   type SceneNodes,
-} from '@pascal-app/core/agent-operations'
+} from '@aedifex/core/agent-operations'
 import {
   addDoorOutput as addDoorResult,
   addDoorTool,
   addWindowOutput as addWindowResult,
   addWindowTool,
   isAgentRefusal,
-} from '@pascal-app/core/agent-tools'
+} from '@aedifex/core/agent-tools'
 import type {
   AnyNode,
   CompiledGeometryScript,
   GeometryScriptLanguage,
   GeometryScriptParamValue,
-} from '@pascal-app/core/schema'
-import { GeometryReuseFields } from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
+import { GeometryReuseFields } from '@aedifex/core/schema'
 import type { SceneOperations } from '../operations'
-import { compileAndStore, type GeometryScriptHost, readScript } from './add-object'
+import {
+  assertGeometrySceneCurrent,
+  compileAndStore,
+  type GeometryScriptHost,
+  readScript,
+} from './add-object'
 import { ADDITIVE_TOOL_ANNOTATIONS } from './annotations'
 import { refusalResult, toolError } from './errors'
 import { liveSyncOutput, persistencePayload, publishLiveSceneSnapshot } from './live-sync'
@@ -61,26 +66,28 @@ async function rebuildOpening(
   },
 ) {
   if (!host)
-    return toolError('This Pascal server cannot run geometry scripts.', {
+    return toolError('This Aedifex server cannot run geometry scripts.', {
       code: 'scripts_unavailable',
     })
   const scene = bridge.getActiveScene()
   if (!scene) return toolError('Open or save a scene first.', { code: 'no_active_scene' })
-  const nodes = bridge.getNodes() as Record<string, AnyNode>
+  const nodes = { ...bridge.getNodes() } as Record<string, AnyNode>
   let outcome: ReturnType<typeof rescriptOpening>
+  let compiled: CompiledGeometryScript
   try {
     const code = input.code ?? (await readScript(host, scene.id, bridge, input.nodeId))
     const previous = nodes[input.nodeId]
     const language = editedScriptLanguage(previous, input)
     const params = editedScriptParams(previous, input.params)
-    const compiled = await compileAndStore(host, scene.id, { code, language, params }, kind, {
+    compiled = await compileAndStore(host, scene.id, { code, language, params }, kind, {
       nodeId: input.nodeId,
       metadata: {
         ...(isScriptedNode(previous) ? scriptedObjectMeta(previous) : {}),
         ...GeometryReuseFields.parse(input),
       },
     })
-    outcome = rescriptOpening(nodes, { ...input, compiled }, { activeLevelId: null })
+    assertGeometrySceneCurrent({ bridge, sceneId: scene.id })
+    outcome = rescriptOpening(bridge.getNodes(), { ...input, compiled }, { activeLevelId: null })
   } catch (error) {
     if (isAgentRefusal(error)) return refusalResult(error)
     return toolError(error instanceof Error ? error.message : String(error), {
@@ -90,7 +97,8 @@ async function rebuildOpening(
   const achieved = outcome.changes
     ? achievedChanges(nodes as SceneNodes, outcome.changes)
     : achievedChanges(nodes as SceneNodes, {})
-  if (outcome.changes) bridge.applyPatch(toPatches(outcome.changes))
+  if (outcome.changes)
+    bridge.applyCompiledGeometryPatch({ patches: toPatches(outcome.changes), compiled })
   const persistence = await publishLiveSceneSnapshot(bridge, `add_${kind}`)
   return textResult({
     ...rebuiltOpeningResult(
@@ -121,7 +129,7 @@ async function compileOpeningScript(
   if (!input.code) return {}
   if (!host)
     return {
-      error: toolError('This Pascal server cannot run geometry scripts; use the fields.', {
+      error: toolError('This Aedifex server cannot run geometry scripts; use the fields.', {
         code: 'scripts_unavailable',
       }),
     }
@@ -129,15 +137,15 @@ async function compileOpeningScript(
   if (!scene)
     return { error: toolError('Open or save a scene first.', { code: 'no_active_scene' }) }
   try {
-    return {
-      script: await compileAndStore(
-        host,
-        scene.id,
-        { code: input.code, language: input.language ?? 'three', params: input.params },
-        kind,
-        { metadata: input },
-      ),
-    }
+    const script = await compileAndStore(
+      host,
+      scene.id,
+      { code: input.code, language: input.language ?? 'three', params: input.params },
+      kind,
+      { metadata: input },
+    )
+    assertGeometrySceneCurrent({ bridge, sceneId: scene.id })
+    return { script }
   } catch (error) {
     if (isAgentRefusal(error)) return { error: refusalResult(error) }
     return {

@@ -3,7 +3,7 @@ import {
   type LeanToExtensionNode,
   normalizeRoofSegmentTrim,
   type RoofSegmentTrim,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { LeanToCornerSide } from './corner-joint'
 import { resolveLeanToLayout } from './layout'
 

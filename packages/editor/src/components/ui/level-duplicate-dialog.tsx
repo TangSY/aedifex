@@ -1,9 +1,9 @@
 'use client'
 
-import type { LevelNode } from '@pascal-app/core'
+import type { LevelNode } from '@aedifex/core'
 import { useEffect, useState } from 'react'
-import type { LevelDuplicatePreset } from '@pascal-app/core/building'
-import { getLevelDisplayName } from '@pascal-app/core'
+import type { LevelDuplicatePreset } from '@aedifex/core/building'
+import { getLevelDisplayName } from '@aedifex/core'
 import { cn } from '../../lib/utils'
 import {
   Dialog,

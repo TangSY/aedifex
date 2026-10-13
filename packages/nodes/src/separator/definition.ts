@@ -1,4 +1,4 @@
-import { type NodeDefinition, SeparatorNode } from '@pascal-app/core'
+import { type NodeDefinition, SeparatorNode } from '@aedifex/core'
 
 export const separatorDefinition: NodeDefinition<typeof SeparatorNode> = {
   kind: 'separator',

@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import { type AnyNode, LevelNode, useScene, WallNode } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNode, LevelNode, useScene, WallNode } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { act } from '@react-three/fiber'
 import useEditor from '../../store/use-editor'
 import useInteractionScope from '../../store/use-interaction-scope'

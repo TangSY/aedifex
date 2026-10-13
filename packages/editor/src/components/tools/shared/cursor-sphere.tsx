@@ -62,7 +62,7 @@ export const CursorSphere = forwardRef<Group, CursorSphereProps>(function Cursor
   const wallMode = useEditor((s) => s.continuationByContext.wall)
 
   // Find the icon for the current tool — the wall shows its Rooms variant.
-  let activeToolConfig: { label: string; iconSrc: string } | null | undefined = null
+  let activeToolConfig: { label?: string; iconSrc?: string } | null | undefined = null
   if (mode === 'build' && tool) {
     if (tool === 'wall') {
       activeToolConfig = wallCursorIcon(wallMode)

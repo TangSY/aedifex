@@ -1,10 +1,10 @@
 /**
  * The origin this editor is reached at, resolved per request so one build
- * serves any domain. `PASCAL_PUBLIC_URL` wins; otherwise the proxy's forwarded
+ * serves any domain. `AEDIFEX_PUBLIC_URL` wins; otherwise the proxy's forwarded
  * headers, then the request's own host.
  */
 export function resolvePublicUrl(request: Request): string {
-  const configured = process.env.PASCAL_PUBLIC_URL?.trim()
+  const configured = process.env.AEDIFEX_PUBLIC_URL?.trim()
   if (configured) return configured.replace(/\/+$/, '')
   const forwardedHost = request.headers.get('x-forwarded-host')
   const host = forwardedHost ?? request.headers.get('host') ?? new URL(request.url).host

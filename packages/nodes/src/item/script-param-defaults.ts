@@ -1,4 +1,4 @@
-import type { GeometryScriptParamSpec, GeometryScriptParamValue } from '@pascal-app/core'
+import type { GeometryScriptParamSpec, GeometryScriptParamValue } from '@aedifex/core'
 
 /**
  * The value a param takes when the object is built without one: the script's

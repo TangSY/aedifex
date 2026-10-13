@@ -11,7 +11,7 @@ import {
   type GeometryContext,
   LevelNode,
   SlabNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Box3, Mesh } from 'three'
 import { fenceDefinition } from '../definition'
 import { resolveFenceLiftElevation, resolveFenceLiftElevationForNodes } from '../lift'

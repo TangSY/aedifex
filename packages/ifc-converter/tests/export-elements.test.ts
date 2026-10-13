@@ -11,9 +11,9 @@ import {
   StairSegmentNode,
   type WallNode,
   WallNode as WallSchema,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as WebIFC from 'web-ifc'
-import { convertIfcToPascal } from '../src'
+import { convertIfcToAedifex } from '../src'
 import { buildIfcExport, ifcGuidFromSeed, isIfcGuid } from '../src/export'
 import { groupedElementsScene } from './export-scenes'
 import { expectWellFormedStep } from './export-step-check'
@@ -146,7 +146,7 @@ describe('Tessellated and grouped elements', () => {
   })
 
   test('re-imports in the same world position through the rotated building', async () => {
-    const scene = await convertIfcToPascal(new TextEncoder().encode(ifc), undefined, {
+    const scene = await convertIfcToAedifex(new TextEncoder().encode(ifc), undefined, {
       simplify: false,
       wasmPath,
     })
@@ -354,4 +354,20 @@ test('winder export carries actual walking-line going and winding classification
     expect(props.TreadLength).toBeCloseTo(layout.going)
     expect(props.TreadLengthAtInnerSide).toBeCloseTo(layout.narrowEndGoing)
   })
+})
+
+test('stair guard parts accept legacy scalar metadata and keep distinct GlobalIds', () => {
+  const level = LevelNode.parse({ id: 'level_legacy_metadata', height: 3 })
+  const stair = StairNode.parse({ id: 'stair_legacy_metadata', parentId: level.id, metadata: 'legacy', totalRise: 3 })
+  const triangle = { positions: [0, 0, 0, 1, 0, 0, 0, 1, 0], indices: [0, 1, 2] }
+  const result = buildIfcExport({
+    nodes: { [level.id]: level, [stair.id]: stair },
+    meshes: new Map([[stair.id, [{ ...triangle, role: 'railing' }, { ...triangle, role: 'handrail' }]]]),
+    timestamp: EPOCH,
+  })
+  expectWellFormedStep(result.ifc)
+  expect(result.summary.elements.IFCRAILING).toBe(2)
+  const guids = [...result.ifc.matchAll(/IFCRAILING\('([^']+)'/g)].map((match) => match[1])
+  expect(new Set(guids).size).toBe(2)
+  expect(stair.metadata).toBe('legacy')
 })

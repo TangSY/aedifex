@@ -8,8 +8,8 @@ import {
   type StairSegmentNode,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { isAngleSnapActive } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { isAngleSnapActive } from '@aedifex/editor'
 import { rotateAffordanceDelta } from '../shared/rotate-affordance'
 
 const MIN_SEGMENT_WIDTH = 0.001

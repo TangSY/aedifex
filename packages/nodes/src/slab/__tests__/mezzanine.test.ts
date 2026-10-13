@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import type { AnyNode, GeometryContext } from '@pascal-app/core'
+import type { AnyNode, GeometryContext } from '@aedifex/core'
 import { type Mesh, Raycaster, Vector3 } from 'three'
 import { mezzanineFixture } from '../../../../core/src/lib/__fixtures__/mezzanine'
 import { buildSlabGeometry } from '../geometry'

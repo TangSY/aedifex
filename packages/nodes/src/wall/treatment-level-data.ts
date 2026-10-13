@@ -5,7 +5,7 @@ import {
   type WallMiterData,
   type WallNode,
   type WallSlabSupport,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { create } from 'zustand'
 import { shallow } from 'zustand/vanilla/shallow'
 

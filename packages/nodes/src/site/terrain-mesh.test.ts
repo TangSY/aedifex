@@ -5,7 +5,7 @@ import {
   flattenPatch,
   type HeightPatch,
   type TerrainField,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { BufferAttribute, BufferGeometry } from 'three'
 import { buildTerrainMesh, buildTerrainSkirt } from './terrain-geometry'
 import {

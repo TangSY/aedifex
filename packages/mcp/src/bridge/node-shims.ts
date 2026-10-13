@@ -1,5 +1,5 @@
 /**
- * Node-compatibility shims for `@pascal-app/core`.
+ * Node-compatibility shims for `@aedifex/core`.
  *
  * The core store uses `requestAnimationFrame` inside `updateNodesAction` (to batch
  * dirty-marking) and inside the temporal undo/redo subscribe callback. Both are
@@ -7,7 +7,7 @@
  *
  * This file installs a no-op-if-already-defined polyfill that works both in
  * Node and in the browser. It MUST be imported FIRST from any module that
- * transitively loads `@pascal-app/core/store`, otherwise the core module will
+ * transitively loads `@aedifex/core/store`, otherwise the core module will
  * throw at import time.
  *
  * Side-effectful on import: there is no exported API — just import this file.

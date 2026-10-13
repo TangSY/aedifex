@@ -8,7 +8,7 @@ import {
   subscribeSceneCommits,
   useScene,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   collapseMutualOpenWallEnds,
   formatOpenWallEndDistance,

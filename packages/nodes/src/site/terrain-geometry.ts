@@ -4,7 +4,7 @@ import {
   heightAtSample,
   normalAt,
   type TerrainField,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Builds the terrain mesh buffers from a `TerrainField`.

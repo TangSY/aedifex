@@ -1,7 +1,7 @@
 'use client'
 
-import { type CameraPose, emitter } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type CameraPose, emitter } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import type { CameraControlsImpl } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { type RefObject, useCallback, useEffect, useRef } from 'react'

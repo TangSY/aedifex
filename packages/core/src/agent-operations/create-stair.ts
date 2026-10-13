@@ -1,4 +1,5 @@
 import { refuse } from '../agent-tools/refusal'
+import { metadataRecord } from '../utils/metadata-record'
 import { levelBuildingId } from '../building/level-duplication'
 import { cutFloorOpening } from '../commands/structure/floor-opening'
 import { adjacentLevelId } from '../lib/floor-opening-intent'
@@ -267,7 +268,7 @@ export const createStair: AgentOperation<CreateStairInput> = (nodes, input, cont
           ? {
               ...patch.node,
               metadata: {
-                ...patch.node.metadata,
+                ...metadataRecord(patch.node.metadata),
                 ownerPose: {
                   position: stair.position,
                   rotation: stair.rotation,

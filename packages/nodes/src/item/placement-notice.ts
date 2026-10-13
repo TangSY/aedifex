@@ -4,8 +4,8 @@ import {
   type ItemNode,
   type LiveTransformLike,
   type PlacementNotice,
-} from '@pascal-app/core'
-import { type FloorItemMisfit, floorItemFit } from '@pascal-app/core/building'
+} from '@aedifex/core'
+import { type FloorItemMisfit, floorItemFit } from '@aedifex/core/building'
 
 const round = (value: number) => Math.round(value * 100) / 100
 

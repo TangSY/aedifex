@@ -1,4 +1,4 @@
-import type { DuctFittingNode } from '@pascal-app/core'
+import type { DuctFittingNode } from '@aedifex/core'
 import { Group, type Material } from 'three'
 import { addBox, addProfile, hardwareMaterial } from '../shared/accessory-geometry'
 

@@ -5,7 +5,7 @@ import {
   type WallFace,
   type WallFaceRegion,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { Matrix4, Quaternion, Vector3 } from 'three'
 import type { WallRegionBounds } from './paint-regions'
 

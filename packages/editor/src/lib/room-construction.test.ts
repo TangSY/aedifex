@@ -20,7 +20,7 @@ import {
   useScene,
   type WallNode,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { deleteConfirmationContent } from '../components/editor/delete-confirmation-dialog'
 import { constructionActions, wallsSwitch } from '../components/ui/panels/room-construction-rows'
 import useDeleteConfirmation from '../store/use-delete-confirmation'

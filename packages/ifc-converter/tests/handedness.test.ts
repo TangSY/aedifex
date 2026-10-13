@@ -2,8 +2,8 @@ import { beforeAll, describe, expect, test } from 'bun:test'
 import { readFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { AnyNode, DoorNode, ImportedMeshNode, SlabNode, WallNode } from '@pascal-app/core'
-import { convertIfcToPascal, type PascalSceneGraph } from '../src'
+import type { AnyNode, DoorNode, ImportedMeshNode, SlabNode, WallNode } from '@aedifex/core'
+import { convertIfcToAedifex, type AedifexSceneGraph } from '../src'
 
 // Pascal is Y-up and right-handed; IFC is Z-up and right-handed. Seen from
 // above, IFC north (+Y) is Pascal -Z, so an IFC plan point (X, Y) is the
@@ -13,7 +13,7 @@ const plan = (ifcX: number, ifcY: number): [number, number] => [ifcX, -ifcY]
 const fixture = fileURLToPath(new URL('./fixtures/handedness.ifc', import.meta.url))
 const wasmPath = `${dirname(fileURLToPath(import.meta.resolve('web-ifc')))}/`
 
-let scene: PascalSceneGraph
+let scene: AedifexSceneGraph
 
 function named<T extends AnyNode>(type: T['type'], name: string): T {
   const node = Object.values(scene.nodes).find(
@@ -32,7 +32,7 @@ function expectPoint(actual: readonly number[], expected: readonly number[]) {
 
 describe('IFC plan handedness', () => {
   beforeAll(async () => {
-    scene = await convertIfcToPascal(await readFile(fixture), undefined, {
+    scene = await convertIfcToAedifex(await readFile(fixture), undefined, {
       simplify: false,
       wasmPath,
     })

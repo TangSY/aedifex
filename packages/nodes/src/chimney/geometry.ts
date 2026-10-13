@@ -1,4 +1,4 @@
-import { type ChimneyNode, getActiveRoofHeight, type RoofSegmentNode } from '@pascal-app/core'
+import { type ChimneyNode, getActiveRoofHeight, type RoofSegmentNode } from '@aedifex/core'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 

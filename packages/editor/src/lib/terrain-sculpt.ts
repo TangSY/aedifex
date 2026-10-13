@@ -24,7 +24,7 @@ import {
   type TerrainVerb,
   useLiveTerrain,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * Field sizes we allow, all `2ⁿ+1` so a future LOD halving lands on existing

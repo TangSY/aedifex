@@ -5,8 +5,8 @@ import {
   generateSceneMaterialId,
   toSceneMaterialRef,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
 import useEditor from '../store/use-editor'
 import { buildResetSurfaceMaterialUpdates, resolvePaintTargetFromSelection } from './material-paint'

@@ -16,7 +16,7 @@ import {
   useLiveNodeOverrides,
   useRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getStairBodyMaterials,
   getStairRailingMaterial,
@@ -25,7 +25,7 @@ import {
   type StairBodyMaterials,
   useNodeEvents,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { createPlaceholderGeometry } from '../shared/placeholder-geometry'
@@ -179,7 +179,7 @@ export const StairRenderer = ({ node: rawNode }: { node: StairNode }) => {
       ref={ref}
       rotation-y={node.rotation}
       visible={node.visible}
-      userData={{ pascalExportRefusal: detail.error }}
+      userData={{ aedifexExportRefusal: detail.error }}
       {...handlers}
     >
       {isSegmentBasedStair ? (
@@ -247,7 +247,7 @@ function StairWalkingLine({
       )
       line.name = 'stair-walking-line'
       line.layers.set(OVERLAY_LAYER)
-      line.userData.pascalExport = 'strip'
+      line.userData.aedifexExport = 'strip'
       line.raycast = () => {}
       return line
     })
@@ -314,7 +314,7 @@ function StairRailings({
     const arcPaths = resolveStairRailPaths(resolvedStair, nodes, stair.railingMode ?? 'none')
     if (arcPaths.length === 0) return null
     return (
-      <group name="stair-railing" userData={{ pascalIfcRole: 'railing' }}>
+      <group name="stair-railing" userData={{ aedifexIfcRole: 'railing' }}>
         {arcPaths.map((path, index) => (
           <GuardMesh
             key={`${stair.id}-arc-railing-${path.side}-${index}`}
@@ -397,7 +397,7 @@ function StairRailings({
   })
 
   return (
-    <group name="stair-railing" userData={{ pascalIfcRole: 'railing' }}>
+    <group name="stair-railing" userData={{ aedifexIfcRole: 'railing' }}>
       {railPaths.map((segmentPath) => (
         <group
           key={`${segmentPath.layout.segment.id}-railing`}
@@ -731,7 +731,7 @@ function CurvedStepMesh({
       material={material}
       position-y={positionY}
       receiveShadow
-      userData={{ ...STAIR_BODY_SLOT_USER_DATA, ...(ifcRole ? { pascalIfcRole: ifcRole } : {}) }}
+      userData={{ ...STAIR_BODY_SLOT_USER_DATA, ...(ifcRole ? { aedifexIfcRole: ifcRole } : {}) }}
     />
   )
 }

@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test'
-import type { AnyNodeId } from '@pascal-app/core'
+import type { AnyNodeId } from '@aedifex/core'
 import { replacePreviewOverrideIds } from './preview-overrides'
 
 const FIRST_ID = 'cabinet_first' as AnyNodeId

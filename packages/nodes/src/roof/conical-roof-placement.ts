@@ -5,7 +5,7 @@ import {
   type RoofNode,
   type RoofSegmentNode,
   type RoofSupport,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 export type ConicalRoofLevelPlacement = {
   valid: true

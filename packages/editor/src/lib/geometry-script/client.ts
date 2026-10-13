@@ -1,5 +1,5 @@
-import type { GeometryScriptParamValue } from '@pascal-app/core'
-import type { GeometryScriptCompileOutput } from '@pascal-app/geometry-script'
+import type { GeometryScriptParamValue } from '@aedifex/core'
+import type { GeometryScriptCompileOutput } from '@aedifex/geometry-script'
 import type { GeometryScriptWorkerRequest, GeometryScriptWorkerResponse } from './protocol'
 
 const COMPILE_TIMEOUT_MS = 20_000
@@ -97,7 +97,7 @@ function startSandbox(): Promise<Window> {
   if (started) return started
   started = (async () => {
     if (typeof document === 'undefined') throw new Error('Geometry scripts compile in a browser')
-    const { sandboxWorkerSource } = await import('@pascal-app/geometry-script/sandbox')
+    const { sandboxWorkerSource } = await import('@aedifex/geometry-script/sandbox')
     const iframe = document.createElement('iframe')
     iframe.sandbox.add('allow-scripts')
     iframe.setAttribute('aria-hidden', 'true')

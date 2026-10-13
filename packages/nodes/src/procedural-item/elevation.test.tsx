@@ -16,7 +16,7 @@ import {
   useLiveTransforms,
   useScene,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   ProceduralItemNode,
   proceduralLocalPose,
@@ -24,7 +24,7 @@ import {
   shelfRecipe,
   snapParameters,
   validateProceduralRelations,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import { act, create } from '@react-three/test-renderer'
 import { Box3 } from 'three'
 import { linearResizeFactor } from '../../../editor/src/components/editor/handles/linear-resize-drag'

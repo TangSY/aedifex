@@ -12,7 +12,7 @@ import {
   isSplineFence,
   resolveFenceFeatures,
   sampleFenceCenterline,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildFenceFeatureSymbol } from '../fence-feature/floorplan'
 import type { FenceNode } from './schema'
 

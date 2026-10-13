@@ -4,8 +4,8 @@ import {
   type GeometryContext,
   polygonInteriorPoint,
   type ZoneNode,
-} from '@pascal-app/core'
-import { formatAreaLabel } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { formatAreaLabel } from '@aedifex/editor'
 
 export function buildZoneContextualDimensions(
   node: ZoneNode,

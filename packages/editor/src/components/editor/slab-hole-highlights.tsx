@@ -11,8 +11,8 @@ import {
   sceneRegistry,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { createPortal, type ThreeEvent } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {

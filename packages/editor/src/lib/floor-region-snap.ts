@@ -1,4 +1,4 @@
-import type { MultiPolygon } from '@pascal-app/core'
+import type { MultiPolygon } from '@aedifex/core'
 
 // Snapping for a floor region's points ("Paint part of the floor"): the
 // polygon snap context's three modes. `grid` rounds to the grid step, `lines`

@@ -12,7 +12,7 @@ import {
   runAsSingleSceneHistoryStep,
   scriptedObjectMeta,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   addColumn,
   addObject,
@@ -20,13 +20,13 @@ import {
   editedScriptLanguage,
   editedScriptParams,
   rescriptOpening,
-} from '@pascal-app/core/agent-operations'
+} from '@aedifex/core/agent-operations'
 import { compileGeometryScriptInWorker } from './client'
 
 /**
  * Builds a bpy module and stores its GLB and text, returning their hashes.
- * Blender runs outside the browser, so the host provides this (the hosted app
- * calls its Blender service); without one, bpy scripts are refused.
+ * Blender runs outside the browser, so execution requires an explicit host builder.
+ * Without one, bpy scripts are refused.
  */
 export type BlenderScriptBuilder = (input: {
   code: string
@@ -39,6 +39,10 @@ let blenderBuilder: BlenderScriptBuilder | null = null
 
 export function configureBlenderScriptBuilder(next: BlenderScriptBuilder | null): void {
   blenderBuilder = next
+}
+
+export function getGeometryScriptCapabilities(): { languages: readonly GeometryScriptLanguage[] } {
+  return { languages: blenderBuilder ? ['three', 'bpy'] : ['three'] }
 }
 
 /**
@@ -59,8 +63,11 @@ export async function compileAndStoreGeometryScript(input: {
   category?: string
   tags?: string[]
   provenance?: GeometryArtifactMetadata
+  assertCurrent?: () => void
 }): Promise<CompiledGeometryScript> {
+  const store = getArtifactStore()
   const code = input.code ?? (await storedScript(input.nodeId))
+  input.assertCurrent?.()
   const node = input.nodeId ? useScene.getState().nodes[input.nodeId as AnyNodeId] : undefined
   const language = editedScriptLanguage(node, input)
   const params = editedScriptParams(node, input.params)
@@ -78,20 +85,18 @@ export async function compileAndStoreGeometryScript(input: {
   })
   if (language === 'bpy') {
     if (!blenderBuilder) throw new Error('This editor cannot run Blender (bpy) scripts')
-    return { ...(await blenderBuilder({ code, params, nodeId, metadata })), nodeId }
+    const compiled = await blenderBuilder({ code, params, nodeId, metadata })
+    input.assertCurrent?.()
+    return { ...compiled, nodeId }
   }
   const { glb, ...compiled } = await compileGeometryScriptInWorker({ code, params })
+  input.assertCurrent?.()
   const context = { nodeId, metadata: { ...metadata, mount: compiled.mount } }
-  const store = getArtifactStore()
   const [sha256] = await Promise.all([
     store.put(compiled.sha256, glb, 'model/gltf-binary', context),
-    store.put(
-      compiled.script,
-      new TextEncoder().encode(code),
-      GEOMETRY_SCRIPT_MIME_TYPES.three,
-      context,
-    ),
+    store.put(compiled.script, new TextEncoder().encode(code), GEOMETRY_SCRIPT_MIME_TYPES.three, context),
   ])
+  input.assertCurrent?.()
   return { ...compiled, sha256, nodeId }
 }
 

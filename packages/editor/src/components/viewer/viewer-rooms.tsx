@@ -6,8 +6,8 @@ import {
   sceneRegistry,
   useScene,
   type ZoneNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { resolveRoomAssemblyHeights } from '../../lib/room-assembly-overlay'

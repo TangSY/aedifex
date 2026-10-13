@@ -1,5 +1,5 @@
-import type { GeometryScriptParamValue } from '@pascal-app/core'
-import type { GeometryScriptCompileOutput } from '@pascal-app/geometry-script'
+import type { GeometryScriptParamValue } from '@aedifex/core'
+import type { GeometryScriptCompileOutput } from '@aedifex/geometry-script'
 
 export type GeometryScriptWorkerRequest = {
   id: number

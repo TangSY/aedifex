@@ -1,4 +1,4 @@
-import { type AnyNodeId, useScene } from '@pascal-app/core'
+import { type AnyNodeId, useScene } from '@aedifex/core'
 import { Pencil } from 'lucide-react'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from './../../../../../lib/utils'

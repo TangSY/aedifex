@@ -10,8 +10,8 @@ import {
   useScene,
   type WallNode,
   type ZoneNode,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { type ComponentType, lazy, Suspense, useMemo } from 'react'
 import { useRegisteredToolEnabled } from '../../hooks/use-registered-tool-enabled'
 import { useCeilingEditCeilingId } from '../../lib/ceiling-edit-session'

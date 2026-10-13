@@ -1,5 +1,5 @@
-import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
-import { evaluateRecipe, isProceduralItem } from '@pascal-app/core/procedural-items'
+import { type AnyNode, type AnyNodeId, useScene } from '@aedifex/core'
+import { evaluateRecipe, isProceduralItem } from '@aedifex/core/procedural-items'
 import { Euler, Quaternion, Vector3 } from 'three'
 
 type Pose = { position: [number, number, number]; rotation: [number, number, number] }

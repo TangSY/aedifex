@@ -6,7 +6,7 @@ import {
   type SlabNode,
   type SlabPolygonContext,
   subtractPolygonsFromPolygon,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as THREE from 'three'
 import { mergeSurfaceHolePolygons } from '../surface-hole-geometry'
 

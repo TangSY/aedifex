@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { type AnyNode, type RoofSegmentNode, useScene } from '@pascal-app/core'
+import { type AnyNode, type RoofSegmentNode, useScene } from '@aedifex/core'
 import { getRoofSurfaceFaceBoundsAt } from './roof-surface'
 import {
   roofFaceKey,

@@ -6,7 +6,7 @@ import {
   resolveCeilingHeight,
   type SceneApi,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   clearStructuralElevationGuide,
   DRAFTING_SURFACE_EXTENSION_KEY,
@@ -14,7 +14,7 @@ import {
   type FloorplanNodeExtension,
   publishStructuralElevationGuide,
   resolveStructuralElevationSnap,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { surfaceBatchable } from '../shared/node-batch/batchable'
 import { polygonMeasurementFeatures } from '../shared/polygon-measurement'
 import { sameOutlineSurfaceCounterparts } from '../shared/surface-counterparts'
@@ -136,7 +136,7 @@ export const ceilingDefinition: NodeDefinition<typeof CeilingNode> = {
       kind: 'ceiling',
       raycast: 'underside',
     } satisfies DraftingSurfaceExtension,
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       selectionCounterparts: sameOutlineSurfaceCounterparts,
     } satisfies FloorplanNodeExtension,
   },

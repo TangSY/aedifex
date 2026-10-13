@@ -221,6 +221,7 @@ describe('roof accessory: a skylight cuts its facet, in slope metres', () => {
 describe('publishers declare capabilities.cuts', () => {
   test('a plugin kind cuts its wall host from the scene it is given', () => {
     const capabilities: Capabilities = {
+      deletable: true,
       cuts: (node, { nodes }) => {
         const host = node.parentId ? nodes[node.parentId as AnyNodeId] : undefined
         if (host?.type !== 'wall') return []
@@ -247,7 +248,7 @@ describe('publishers declare capabilities.cuts', () => {
 
   test('the deprecated cuttable alias still type-checks (plugin API v1) and nothing reads it', () => {
     const config: CuttableConfig = { hostKinds: ['wall'] }
-    const legacy: Capabilities = { cuttable: config }
+    const legacy: Capabilities = { deletable: false, cuttable: config }
     expect(legacy.cuttable?.hostKinds).toEqual(['wall'])
 
     const packages = path.resolve(import.meta.dir, '../../..')

@@ -8,7 +8,7 @@ import {
   type GridEvent,
   type SceneApi,
   useLiveNodeOverrides,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { pickFenceTarget } from './pick-target'
 
 export function createFenceFeatureMoveSession(

@@ -22,16 +22,16 @@ import {
   sceneRegistry,
   spatialGridManager,
   useScene,
-} from '@pascal-app/core'
-import { ProceduralItemNode } from '@pascal-app/core/procedural-items'
+} from '@aedifex/core'
+import { ProceduralItemNode } from '@aedifex/core/procedural-items'
 import {
   MoveRegistryNodeTool,
   sceneLayout,
   useEditor,
   type VisibleScene,
   visibleScene,
-} from '@pascal-app/editor'
-import { useViewer, WallSystem } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer, WallSystem } from '@aedifex/viewer'
 import { events, type RootStore, useThree } from '@react-three/fiber'
 import { act, type create } from '@react-three/test-renderer'
 import { Children, isValidElement, type ReactNode } from 'react'

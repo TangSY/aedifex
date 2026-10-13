@@ -4,7 +4,7 @@ import {
   DuctFittingNode,
   DuctSegmentNode,
   type PortConnection,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { getDuctFittingPorts } from '../duct-fitting/ports'
 import { type DuctProfile, planElbowAtPort, profileDiameterIn } from './auto-fitting'
 import type { ScenePort } from './ports'

@@ -1,6 +1,6 @@
-import type { AnyNodeId, BuildingNode, LevelNode } from '@pascal-app/core'
-import { useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import type { AnyNodeId, BuildingNode, LevelNode } from '@aedifex/core'
+import { useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 
 function getAdjacentLevelIdForDeletion(levelId: AnyNodeId): LevelNode['id'] | null {
   const { nodes } = useScene.getState()

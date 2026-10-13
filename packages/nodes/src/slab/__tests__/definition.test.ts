@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, type AnyNodeId, pointInPolygon2D, SlabNode } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, pointInPolygon2D, SlabNode } from '@aedifex/core'
 import { slabDefinition } from '../definition'
 
 function getThicknessHandle(slab: SlabNode) {

@@ -9,7 +9,7 @@ import {
   registerNode,
   spatialGridManager,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { blockDefinition } from './definition'
 
 describe('block placement bounds', () => {

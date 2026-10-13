@@ -3,34 +3,34 @@ import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 /**
  * Single-admin authentication for a self-hosted editor.
  *
- * One workspace behind one password: `PASCAL_ADMIN_PASSWORD` unlocks the whole
+ * One workspace behind one password: `AEDIFEX_ADMIN_PASSWORD` unlocks the whole
  * instance, the session principal is always `admin`. Sessions are HMAC tokens
  * keyed by a digest of the password, so there is no second secret to configure
  * and changing the password signs everyone out.
  */
-export const SESSION_COOKIE = 'pascal_session'
+export const SESSION_COOKIE = 'aedifex_session'
 export const ADMIN_PRINCIPAL = 'admin'
 export const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60
 const LOGIN_ATTEMPTS_PER_MINUTE = 10
 const LOGIN_WINDOW_MS = 60_000
 
 /**
- * - `password`: `PASCAL_ADMIN_PASSWORD` is set; every page and API needs a session or a bearer.
- * - `open`: no password, but the host is loopback (dev server, the CLI's managed editor) or
- *   `PASCAL_AUTH=proxy` says an upstream proxy authenticates.
+ * - `password`: `AEDIFEX_ADMIN_PASSWORD` is set; every page and API needs a session or a bearer.
+ * - `open`: no password, and a loopback request is development-only or explicitly enabled
+ *   by the runtime; `AEDIFEX_AUTH=proxy` may instead delegate authentication to a proxy.
  * - `unconfigured`: reachable from the network with nothing set; the app refuses to serve.
  */
 export type AuthMode = 'password' | 'open' | 'unconfigured'
 
 export function resolveAuthMode(request: Request, env: NodeJS.ProcessEnv = process.env): AuthMode {
-  if (env.PASCAL_ADMIN_PASSWORD) return 'password'
-  if (env.PASCAL_AUTH === 'proxy') return 'open'
-  if (isLoopbackRequest(request)) return 'open'
+  if (env.AEDIFEX_ADMIN_PASSWORD) return 'password'
+  if (env.AEDIFEX_AUTH === 'proxy') return 'open'
+  if (allowsUnauthenticatedLoopback(env) && isLoopbackRequest(request)) return 'open'
   return 'unconfigured'
 }
 
 export function verifyPassword(supplied: string, env: NodeJS.ProcessEnv = process.env): boolean {
-  const configured = env.PASCAL_ADMIN_PASSWORD
+  const configured = env.AEDIFEX_ADMIN_PASSWORD
   if (!configured) return false
   return safeEqual(supplied, configured)
 }
@@ -45,7 +45,7 @@ export function verifySession(
   env: NodeJS.ProcessEnv = process.env,
   now = Date.now(),
 ): boolean {
-  if (!value || !env.PASCAL_ADMIN_PASSWORD) return false
+  if (!value || !env.AEDIFEX_ADMIN_PASSWORD) return false
   const [version, issuedAtRaw, signature] = value.split('.')
   if (version !== '1' || !issuedAtRaw || !signature) return false
   const issuedAt = Number.parseInt(issuedAtRaw, 10)
@@ -93,9 +93,18 @@ export function allowLoginAttempt(request: Request, now = Date.now()): boolean {
   return bucket.count <= LOGIN_ATTEMPTS_PER_MINUTE
 }
 
+/** Production runtimes must opt in only when their listener is restricted to loopback. */
+export function allowsUnauthenticatedLoopback(env: NodeJS.ProcessEnv = process.env): boolean {
+  if (env.NODE_ENV !== 'production') return true
+  const value = env.AEDIFEX_SCENE_API_ALLOW_LOOPBACK_WITHOUT_TOKEN
+  return value === '1' || value?.toLowerCase() === 'true'
+}
+
 export function isLoopbackRequest(request: Request): boolean {
-  const host = request.headers.get('host') ?? new URL(request.url).host
-  return isLoopbackHostname(stripPort(host))
+  const url = new URL(request.url)
+  const host = request.headers.get('host') ?? url.host
+  // Both names must be local; these request names cannot establish the socket's origin.
+  return isLoopbackHostname(stripPort(url.host)) && isLoopbackHostname(stripPort(host))
 }
 
 export function isLoopbackHostname(hostname: string): boolean {
@@ -111,7 +120,7 @@ function isSecureRequest(request: Request): boolean {
 
 function sign(issuedAt: number, env: NodeJS.ProcessEnv): string {
   const key = createHash('sha256')
-    .update(env.PASCAL_ADMIN_PASSWORD ?? '')
+    .update(env.AEDIFEX_ADMIN_PASSWORD ?? '')
     .digest()
   return createHmac('sha256', key).update(`${ADMIN_PRINCIPAL}:${issuedAt}`).digest('base64url')
 }

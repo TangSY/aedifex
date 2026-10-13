@@ -1,4 +1,4 @@
-import { type AnyNode, hidesDescendants } from '@pascal-app/core'
+import { type AnyNode, hidesDescendants } from '@aedifex/core'
 
 /**
  * A node draws in the plan unless it, or an ancestor whose flag reaches its

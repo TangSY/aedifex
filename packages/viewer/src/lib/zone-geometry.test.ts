@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { containsPoint, polygonInteriorPoint, type Ring } from '@pascal-app/core'
+import { containsPoint, polygonInteriorPoint, type Ring } from '@aedifex/core'
 import { DoubleSide, Mesh, MeshBasicMaterial, Raycaster, ShapeGeometry, Vector3 } from 'three'
 import { createZoneShape, createZoneWallGeometry } from './zone-geometry'
 

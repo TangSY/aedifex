@@ -1,8 +1,8 @@
-import { honestNodePatch } from '@pascal-app/core/agent-operations'
-import { isAgentRefusal } from '@pascal-app/core/agent-tools'
-import type { AnyNode } from '@pascal-app/core/schema'
+import { honestNodePatch } from '@aedifex/core/agent-operations'
+import { isAgentRefusal } from '@aedifex/core/agent-tools'
+import type { AnyNode } from '@aedifex/core/schema'
 import type { Patch } from '../bridge/scene-bridge'
-import { type PatchRefusalCode, PatchRefusedError, registerPatchGuard } from './patch-guards'
+import { type PatchRefusalCode, PatchRefusedError, registerPatchGuard } from '../bridge/patch-guards'
 
 /**
  * Each update checked to do what it says, in the batch's order (a node an earlier op created is

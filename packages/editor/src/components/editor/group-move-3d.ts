@@ -11,11 +11,13 @@ import {
   useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { type Camera, Plane, type Raycaster, Vector2, Vector3 } from 'three'
 import { GROUP_MOVE_DRAG_LABEL } from '../../lib/contextual-help'
 import { isHistoryShortcut } from '../../lib/history'
+import { bindWindowBlurCancel } from '../../lib/interaction/window-blur-cancel'
+import { isModalKeyboardTarget } from '../../lib/modal-keyboard'
 import { sfxEmitter } from '../../lib/sfx-bus'
 import useAlignmentGuides from '../../store/use-alignment-guides'
 import useEditor, {
@@ -100,6 +102,7 @@ export function armGroupMove3d(args: {
     lastDelta: Vec2 | null
   }
   let session: Session | null = null
+  let unbindBlurCancel = () => {}
 
   const engage = (): Session | null => {
     const nodes = useScene.getState().nodes
@@ -289,6 +292,7 @@ export function armGroupMove3d(args: {
     window.removeEventListener('pointerup', onUp, true)
     window.removeEventListener('pointercancel', onPointerCancel)
     window.removeEventListener('keydown', onKeyDown, true)
+    unbindBlurCancel()
   }
 
   // History resume is NOT here — it pairs one-to-one with the
@@ -380,6 +384,7 @@ export function armGroupMove3d(args: {
   // `use-keyboard` arms, which would otherwise act on stale store state
   // (or clear the multi-selection) mid-session.
   const onKeyDown = (e: KeyboardEvent) => {
+    if (isModalKeyboardTarget(e.target)) return
     const key = e.key.toLowerCase()
     if ((key === 'r' || key === 't') && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
       // Armed but still under the drag threshold: engage first (exactly what
@@ -421,5 +426,6 @@ export function armGroupMove3d(args: {
   window.addEventListener('pointerup', onUp, true)
   window.addEventListener('pointercancel', onPointerCancel)
   window.addEventListener('keydown', onKeyDown, true)
+  unbindBlurCancel = bindWindowBlurCancel(cancel)
   return true
 }

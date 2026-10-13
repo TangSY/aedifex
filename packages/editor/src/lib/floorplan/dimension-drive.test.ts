@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId } from '@aedifex/core'
 import { parseDimensionInput, planDimensionDrive, resolveDimensionDrive } from './dimension-drive'
 
 const FOOT = 0.3048

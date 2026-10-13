@@ -14,15 +14,15 @@ import {
   useScene,
   WallNode,
   WindowNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getSavedSceneDocument,
   preloadRegistryToolModules,
   ToolManager,
   useEditor,
   useOpeningGuides,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import { createElement } from 'react'
 import { Group } from 'three'

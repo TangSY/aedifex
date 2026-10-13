@@ -1,7 +1,7 @@
 'use client'
 
-import { type AnyNodeId, sceneRegistry } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { type AnyNodeId, sceneRegistry } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useFrame } from '@react-three/fiber'
 import { type ReactNode, useRef } from 'react'
 import type { Group } from 'three'

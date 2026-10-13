@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { useScene } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import useEditor from '../store/use-editor'
 import { syncEditorSelectionFromCurrentScene } from './scene'
 

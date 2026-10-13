@@ -4,7 +4,7 @@ import type {
   GeometryScriptParamSpec,
   GeometryScriptParamValue,
   ScriptedNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   PanelSection,
   rebuildAuthoredObject,
@@ -14,7 +14,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@pascal-app/editor'
+} from '@aedifex/editor'
 import { RotateCcw } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { isScriptDefault, scriptDefault, scriptDefaultsPatch } from './script-param-defaults'

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { BuildingNode, type GridEvent, LevelNode, WallNode } from '@pascal-app/core'
+import { BuildingNode, type GridEvent, LevelNode, WallNode } from '@aedifex/core'
 import { BoxGeometry, Group, Matrix3, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
 import { wallEventFromGrid } from './wall-event-from-grid'
 

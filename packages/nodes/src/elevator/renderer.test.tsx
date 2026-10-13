@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import { ElevatorNode } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { ElevatorNode } from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { Mesh } from 'three'
 import { installMountedScene, mount } from '../__tests__/harness'
 import { ElevatorRenderer } from './renderer'

@@ -6,14 +6,14 @@ import {
   resolveFenceSupportSlabPatch,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   getSegmentGridStep,
   isGridSnapActive,
   isSegmentLongEnough,
   snapPointToGrid,
-} from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 
 type PlanPoint = [number, number]
 

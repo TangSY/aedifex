@@ -6,7 +6,7 @@ import {
   useLiveTerrain,
   useScene,
   type WallTrimConfig,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { DoubleSide, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
 import { raisedRoomFixture } from '../../../core/src/systems/slab/__fixtures__/raised-room'
 import { resetWallTreatmentLevels, updateWallTreatmentLevels } from './system'

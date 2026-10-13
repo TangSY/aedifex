@@ -12,7 +12,7 @@ import {
   slabPolygonContextChanges,
   slabPolygonContextForLevel,
   type ZoneNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 type LevelContext = { slabs: SlabNode[] }
 type CachedLevel = {

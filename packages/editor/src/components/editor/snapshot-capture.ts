@@ -1,10 +1,4 @@
-import {
-  emitter,
-  type SnapshotCaptureFailedEvent,
-  type SnapshotCapturePose,
-  type SnapshotSavedEvent,
-  type ThumbnailGenerateEvent,
-} from '@pascal-app/core'
+import { emitter, type SnapshotCaptureFailedEvent, type SnapshotCapturePose, type SnapshotSavedEvent, type ThumbnailGenerateEvent } from '@aedifex/core'
 import { MathUtils, type PerspectiveCamera } from 'three'
 
 export function isOverlaySnapshotSave(event: SnapshotSavedEvent | undefined, projectId: string) {

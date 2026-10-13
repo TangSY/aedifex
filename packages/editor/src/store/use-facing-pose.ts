@@ -3,7 +3,7 @@
 // subscribes and renders the triangle; every placement/move path publishes its
 // ghost pose here instead of drawing its own triangle. This is deliberately the
 // one renderer for the facing indicator: rendering it from inside a tool's own
-// cursor ghost (especially tools living in `@pascal-app/nodes`) left it
+// cursor ghost (especially tools living in `@aedifex/nodes`) left it
 // invisible, while the editor-side overlay renders reliably. Producers clear on
 // commit, cancel, and unmount.
 //

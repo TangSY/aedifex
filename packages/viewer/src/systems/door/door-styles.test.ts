@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { DoorNode, useScene, WallNode } from '@pascal-app/core'
-import { DOOR_STYLES, doorStyleLook } from '@pascal-app/core/building'
+import { DoorNode, useScene, WallNode } from '@aedifex/core'
+import { DOOR_STYLES, doorStyleLook } from '@aedifex/core/building'
 import * as THREE from 'three'
 import { buildDoorPreviewMesh } from './door-system'
 

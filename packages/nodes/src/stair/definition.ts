@@ -12,8 +12,8 @@ import {
   stairFootprintAABB,
   stairSlots,
   useScene,
-} from '@pascal-app/core'
-import type { FloorplanNodeExtension } from '@pascal-app/editor'
+} from '@aedifex/core'
+import type { FloorplanNodeExtension } from '@aedifex/editor'
 
 const MIN_CURVED_RISE = 0.001
 const MIN_CURVED_WIDTH = 0.001
@@ -384,7 +384,7 @@ function stairHandles(node: StairNodeType): HandleDescriptor<StairNodeType>[] {
 import {
   computeStairSegmentFloorStackTransforms,
   getStairFloorPlacedFootprints,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { buildStairFloorplan } from './floorplan'
 import {
   curvedStairInnerRadiusAffordance,
@@ -410,7 +410,7 @@ export const stairDefinition: NodeDefinition<typeof StairNode> = {
   schema: StairNode,
   category: 'structure',
   extensions: {
-    'pascal:editor/floorplan': {
+    'aedifex:editor/floorplan': {
       linkedLevelIds: (node) =>
         node.toLevelId && node.toLevelId !== node.parentId ? [node.toLevelId as AnyNodeId] : [],
     } satisfies FloorplanNodeExtension<StairNodeType>,

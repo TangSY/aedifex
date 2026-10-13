@@ -9,7 +9,7 @@ import {
   resolveAutomaticDownspoutLength,
   type SceneApi,
   usesAutomaticDownspoutLength,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useEffect } from 'react'
 
 const BROAD_AUTOMATIC_LENGTH_DEPENDENCY_TYPES = new Set<AnyNode['type']>([

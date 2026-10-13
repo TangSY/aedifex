@@ -1,5 +1,5 @@
-import type { NodeDeletionPlan, NodeDeletionScene } from '@pascal-app/core'
-import type { SceneGraph } from '@pascal-app/core/clone-scene-graph'
+import type { NodeDeletionPlan, NodeDeletionScene } from '@aedifex/core'
+import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
 import type {
   AnyNode,
   AnyNodeId,
@@ -8,7 +8,8 @@ import type {
   CollectionId,
   SceneMaterial,
   SceneMaterialId,
-} from '@pascal-app/core/schema'
+  CompiledGeometryScript,
+} from '@aedifex/core/schema'
 import type { ActiveSceneMeta, Patch, SceneBridge, ValidationResult } from '../bridge/scene-bridge'
 import type {
   ProjectCreateOptions,
@@ -72,6 +73,12 @@ export interface SceneOperations {
   updateNode(id: AnyNodeId, data: Partial<AnyNode>): void
   deleteNode(id: AnyNodeId, cascade?: boolean): string[]
   applyPatch(patches: Patch[]): {
+    appliedOps: number
+    deletedIds: AnyNodeId[]
+    createdIds: AnyNodeId[]
+  }
+  /** Only compiled internal tools call this; raw patches cannot opt out of script ownership. */
+  applyCompiledGeometryPatch(input: { patches: Patch[]; compiled: CompiledGeometryScript }): {
     appliedOps: number
     deletedIds: AnyNodeId[]
     createdIds: AnyNodeId[]
@@ -261,6 +268,14 @@ class SceneOperationsFacade implements SceneOperations {
     createdIds: AnyNodeId[]
   } {
     return this.requireBridge().applyPatch(patches)
+  }
+
+  applyCompiledGeometryPatch(input: { patches: Patch[]; compiled: CompiledGeometryScript }): {
+    appliedOps: number
+    deletedIds: AnyNodeId[]
+    createdIds: AnyNodeId[]
+  } {
+    return this.requireBridge().applyCompiledGeometryPatch(input)
   }
 
   /**

@@ -1,6 +1,6 @@
 'use client'
 
-import { useScene } from '@pascal-app/core'
+import { useScene } from '@aedifex/core'
 import { useEffect } from 'react'
 import { createSlabDependencyTracker } from './dependency-tracker'
 

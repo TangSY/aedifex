@@ -9,16 +9,16 @@ import {
   computeOpeningGuides,
   detectVerticalAlignment,
   getOpeningFloorDatum,
-  getWallCurveFrameAt,
   getWallCurveLength,
   type OpeningSpan,
   sceneRegistry,
   useScene,
   type WallNode,
   wallSupportForNodes,
-} from '@pascal-app/core'
-import { type OpeningGuide3D, useOpeningGuides } from '@pascal-app/editor'
+} from '@aedifex/core'
+import { type OpeningGuide3D, useOpeningGuides } from '@aedifex/editor'
 import { resolveWallOpeningCeiling } from './wall-opening-ceiling'
+import { wallLocalToWorld } from './wall-local-frame'
 
 // Parity with `snapLocalXToNeighbors`' along-wall threshold.
 const SILL_SNAP_THRESHOLD_M = 0.08
@@ -198,11 +198,7 @@ export function clearOpeningGuides3D(): void {
  *  publisher (which already has them) and the resize publisher (which derives
  *  them from the scene). Same frame as `wallLocalToWorld`. */
 function makeWallToWorld(wall: WallNode, levelYOffset: number, slabElevation: number): ToWorld {
-  const length = getWallCurveLength(wall)
-  return (s, y) => {
-    const { point } = getWallCurveFrameAt(wall, s / length)
-    return [point.x, slabElevation + y + levelYOffset, point.y]
-  }
+  return (s, y) => wallLocalToWorld(wall, s, y, levelYOffset, slabElevation)
 }
 
 /** Like {@link makeWallToWorld} but derives the level Y + slab elevation from the
@@ -210,7 +206,8 @@ function makeWallToWorld(wall: WallNode, levelYOffset: number, slabElevation: nu
 export function wallToWorld(wall: WallNode): ToWorld {
   const levelId = wall.parentId as AnyNodeId | undefined
   const levelYOffset = levelId ? (sceneRegistry.nodes.get(levelId)?.position.y ?? 0) : 0
-  const slabElevation = wallSupportForNodes(wall, useScene.getState().nodes).elevation
+  const slabElevation =
+    wallSupportForNodes(wall, useScene.getState().nodes).elevation - (wall.supportOffset ?? 0)
   return makeWallToWorld(wall, levelYOffset, slabElevation)
 }
 

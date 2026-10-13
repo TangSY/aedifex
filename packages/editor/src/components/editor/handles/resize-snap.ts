@@ -1,4 +1,4 @@
-import { snapScalar } from '@pascal-app/core'
+import { snapScalar } from '@aedifex/core'
 
 export function resolveResizeSnapValue({
   rawValue,

@@ -6,7 +6,7 @@ import {
   type CollectionId,
   type CollectionTemplateId,
   generateCollectionId,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as WebIFC from 'web-ifc'
 
 export function importCollections(

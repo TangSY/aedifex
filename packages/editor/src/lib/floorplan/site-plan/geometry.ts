@@ -1,4 +1,4 @@
-import { arcRuns, insetPolygon, type KeepOut, sightTriangle, streetCorners } from '@pascal-app/core'
+import { arcRuns, insetPolygon, type KeepOut, sightTriangle, streetCorners } from '@aedifex/core'
 /**
  * Site-plan geometry — pure functions, no store, no React.
  *

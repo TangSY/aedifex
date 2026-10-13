@@ -10,8 +10,8 @@ import {
   runAsSingleSceneHistoryStep,
   useLiveNodeOverrides,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { type ThreeEvent, useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import {
@@ -25,6 +25,7 @@ import {
 } from 'three'
 import { beginGesture, scopeMatcher } from '../../../lib/gesture-lifecycle'
 import { isHistoryShortcut } from '../../../lib/history'
+import { isModalKeyboardTarget } from '../../../lib/modal-keyboard'
 import { sfxEmitter } from '../../../lib/sfx-bus'
 import { intersectSpatialDragPlane } from '../../../lib/spatial-drag-plane'
 import { getSpatialPointerId, spatialPointerInput } from '../../../lib/spatial-pointer-input'
@@ -369,6 +370,7 @@ export function startHandleDrag(
   // Escape / ⌘Z abort the drag — capture phase so they win over the global
   // use-keyboard arms (⌘Z must never history-jump under a live pointer).
   const onKeyDown = (e: KeyboardEvent) => {
+    if (isModalKeyboardTarget(e.target)) return
     if (e.key === 'Alt') {
       altKey = true
       return

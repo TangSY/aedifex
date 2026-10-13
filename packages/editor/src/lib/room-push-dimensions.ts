@@ -5,7 +5,7 @@ import {
   isCurvedWall,
   type Point,
   type WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 
 /**
  * A live room dimension shown while a wall (or mezzanine edge) is pushed: from

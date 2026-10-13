@@ -1,13 +1,14 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { createZone, generateId } from '@pascal-app/core'
-import { unknownMaterialPresetRefusal } from '@pascal-app/core/agent-operations'
-import type { AnyNode, AnyNodeId } from '@pascal-app/core/schema'
-import { getActiveRoofHeight, LevelNode, RoofNode, RoofSegmentNode } from '@pascal-app/core/schema'
+import { createZone, generateId } from '@aedifex/core'
+import { unknownMaterialPresetRefusal } from '@aedifex/core/agent-operations'
+import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
+import { getActiveRoofHeight, LevelNode, RoofNode, RoofSegmentNode } from '@aedifex/core/schema'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { ADDITIVE_TOOL_ANNOTATIONS } from './annotations'
 import { liveSyncOutput, persistencePayload, publishLiveSceneSnapshot } from './live-sync'
 import { measurement } from './measurement'
+import { metadataRecord } from './metadata-record'
 import { NodeIdSchema, Vec2Schema, Vec3Schema } from './schemas'
 
 const ROOF_TYPES = [

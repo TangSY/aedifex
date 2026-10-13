@@ -1,3 +1,4 @@
+import { metadataRecord } from '../utils/metadata-record'
 import { canonicalOpeningRing } from '../lib/canonical-opening-ring'
 import type { NodePatch } from '../lib/structure-kernel'
 import type { AnyNode, AnyNodeId, FloorOpeningNode, SurfaceHoleMetadata } from '../schema'
@@ -154,7 +155,7 @@ export function planOwnedFloorOpenings(
     if (
       options.skipExistingSurfaces &&
       level?.type === 'level' &&
-      level.metadata?.legacyAutoOpeningsMigrated === true &&
+      metadataRecord(level.metadata).legacyAutoOpeningsMigrated === true &&
       !existing.some(
         (opening) => opening.ownerId === cut.ownerId && opening.source === cut.source,
       ) &&
@@ -229,7 +230,8 @@ export function planOwnedFloorOpenings(
       continue
     }
     if (owner.type !== 'stair') continue
-    const oldPose = ownerPose(opening.metadata.ownerPose)
+    const openingMetadata = metadataRecord(opening.metadata)
+    const oldPose = ownerPose(openingMetadata.ownerPose)
     const segment = owner.children
       .map((id) => nodes[id])
       .find((node) => node?.type === 'stair-segment')
@@ -241,7 +243,7 @@ export function planOwnedFloorOpenings(
       runLength,
     }
     const target =
-      opening.metadata.ownerOpeningTarget === 'source' || opening.drawnOn === 'ceiling'
+      openingMetadata.ownerOpeningTarget === 'source' || opening.drawnOn === 'ceiling'
         ? owner.fromLevelId
         : owner.toLevelId
     const parentId = target && nodes[target]?.type === 'level' ? target : opening.parentId
@@ -264,7 +266,7 @@ export function planOwnedFloorOpenings(
           }),
         )
       : opening.polygon
-    const metadata = { ...opening.metadata, ownerPose: pose }
+    const metadata = { ...openingMetadata, ownerPose: pose }
     const data: Partial<FloorOpeningNode> = {}
     if (JSON.stringify(polygon) !== JSON.stringify(opening.polygon)) data.polygon = polygon
     if (parentId !== opening.parentId) {

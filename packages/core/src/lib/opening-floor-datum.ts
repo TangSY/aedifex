@@ -1,3 +1,4 @@
+import { metadataRecord } from '../utils/metadata-record'
 import type { AnyNode, DoorNode, SlabNode, WallNode, WindowNode } from '../schema'
 import { getWallPlaneTop } from '../services/storey'
 import {
@@ -201,11 +202,11 @@ export function getOpeningWallCut(
 export function getOpeningWallPlacement(
   wall: WallNode,
   opening: Pick<DoorNode | WindowNode, 'position' | 'width' | 'height' | 'rotation'> & {
-    metadata?: Record<string, unknown>
+    metadata?: AnyNode['metadata']
   },
   nodes: Readonly<Record<string, AnyNode>>,
 ) {
-  if (opening.metadata?.curvedWindowMaster || getWallCurveLength(wall) < 1e-6)
+  if ((metadataRecord(opening.metadata).curvedWindowMaster) || getWallCurveLength(wall) < 1e-6)
     return { position: opening.position, rotation: opening.rotation }
   const frame = getWallCurveFrameAt(wall, opening.position[0] / getWallCurveLength(wall))
   const angle = Math.atan2(wall.end[1] - wall.start[1], wall.end[0] - wall.start[0]),

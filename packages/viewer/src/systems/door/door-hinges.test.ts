@@ -1,6 +1,6 @@
 // @ts-expect-error — bun:test is provided by the Bun runtime.
 import { expect, test } from 'bun:test'
-import { DoorNode } from '@pascal-app/core'
+import { DoorNode } from '@aedifex/core'
 import { Mesh } from 'three'
 import { buildDoorPreviewMesh } from './door-system'
 

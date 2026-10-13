@@ -19,7 +19,7 @@ import {
   quantize,
   type TerrainData,
   type TerrainField,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { getParcelProvider, NO_PARCEL_SERVICE, type ParcelProvider } from './parcel-provider'
 
 export type Pt = readonly [number, number]

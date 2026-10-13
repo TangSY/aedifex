@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type AnyNode, DoorNode, type OpenWallEnd, WallNode } from '@pascal-app/core'
+import { type AnyNode, DoorNode, type OpenWallEnd, WallNode } from '@aedifex/core'
 import { analyseOpenWallEnds } from './use-open-wall-ends'
 
 const wall = (id: string, start: [number, number], end: [number, number]) =>

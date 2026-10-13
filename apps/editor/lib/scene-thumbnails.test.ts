@@ -13,14 +13,14 @@ import {
 test('persists thumbnails beside the database and derives their URLs until deleted', async () => {
   const tempDir = await mkdtemp(join(tmpdir(), 'scene-thumbnails-'))
   const savedEnv = {
-    PASCAL_DATA_DIR: process.env.PASCAL_DATA_DIR,
-    PASCAL_DB_PATH: process.env.PASCAL_DB_PATH,
+    AEDIFEX_DATA_DIR: process.env.AEDIFEX_DATA_DIR,
+    AEDIFEX_DB_PATH: process.env.AEDIFEX_DB_PATH,
   }
   try {
-    process.env.PASCAL_DATA_DIR = tempDir
-    delete process.env.PASCAL_DB_PATH
+    process.env.AEDIFEX_DATA_DIR = tempDir
+    delete process.env.AEDIFEX_DB_PATH
     expect(thumbnailFile('scene_1')).toBe(join(tempDir, 'thumbnails', 'scene_1.webp'))
-    process.env.PASCAL_DB_PATH = join(tempDir, 'custom', 'scene.db')
+    process.env.AEDIFEX_DB_PATH = join(tempDir, 'custom', 'scene.db')
     expect(thumbnailFile('scene_1')).toBe(join(tempDir, 'custom', 'thumbnails', 'scene_1.webp'))
     expect(() => thumbnailFile('../escape')).toThrow()
     expect(await sceneThumbnailUrl('scene_1')).toBeNull()

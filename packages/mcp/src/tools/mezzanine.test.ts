@@ -2,13 +2,13 @@ import { expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { SceneBridge } from '../bridge/scene-bridge'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 
 test('create_mezzanine validates, derives, edits and deletes through intent with one undo per call', async () => {
   const bridge = new SceneBridge()
   bridge.setScene({}, [])
   bridge.loadDefault()
-  const server = createPascalMcpServer({ bridge })
+  const server = createAedifexMcpServer({ bridge })
   const client = new Client({ name: 'mezzanine-contract', version: '1' })
   const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])
@@ -105,7 +105,7 @@ test('mezzanine MCP enforces immutable support and structured bounds, preserves 
   const bridge = new SceneBridge()
   bridge.setScene({}, [])
   bridge.loadDefault()
-  const server = createPascalMcpServer({ bridge })
+  const server = createAedifexMcpServer({ bridge })
   const client = new Client({ name: 'mezzanine-audit', version: '1' })
   const [a, b] = InMemoryTransport.createLinkedPair()
   await Promise.all([server.connect(a), client.connect(b)])
@@ -216,7 +216,7 @@ test('mezzanine MCP enforces immutable support and structured bounds, preserves 
 
 test('M10 headless bridge updates mezzanine railing on stair and segment writes and deletion', async () => {
   const { mezzanineFixture } = await import('../../../core/src/lib/__fixtures__/mezzanine')
-  const { StairNode, StairSegmentNode } = await import('@pascal-app/core/schema')
+  const { StairNode, StairSegmentNode } = await import('@aedifex/core/schema')
   const f = mezzanineFixture()
   const bridge = new SceneBridge()
   bridge.setScene(f.nodes, [f.level.id])
@@ -268,7 +268,7 @@ test('existing move, rotate and duplicate tools carry mezzanines inside their ho
   const f = mezzanineFixture()
   const bridge = new SceneBridge()
   bridge.setScene(f.nodes, [f.level.id])
-  const server = createPascalMcpServer({ bridge })
+  const server = createAedifexMcpServer({ bridge })
   const client = new Client({ name: 'mezzanine-transform', version: '1' })
   const [a, b] = InMemoryTransport.createLinkedPair()
   await Promise.all([server.connect(a), client.connect(b)])

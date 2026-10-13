@@ -15,8 +15,8 @@ import {
   MIN_SLAB_THICKNESS,
   type SlabNode,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useRef, useState } from 'react'
 import {
   applyFloorFoundation,

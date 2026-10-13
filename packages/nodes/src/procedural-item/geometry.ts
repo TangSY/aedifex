@@ -5,7 +5,7 @@ import {
   revolveIsClosed,
   sectionRings,
   usesPartTree,
-} from '@pascal-app/core/procedural-items'
+} from '@aedifex/core/procedural-items'
 import {
   BoxGeometry,
   BufferGeometry,

@@ -1,19 +1,14 @@
 import { expect, test } from 'bun:test'
-import { type ScriptedNode, scriptedObjectMeta } from '@pascal-app/core'
+import { type ScriptedNode, scriptedObjectMeta } from '@aedifex/core'
 import {
   addColumn,
   addObject,
   applySceneChanges,
   editedScriptLanguage,
   rescriptOpening,
-} from '@pascal-app/core/agent-operations'
-import {
-  addColumnTool,
-  addDoorTool,
-  addObjectTool,
-  addWindowTool,
-} from '@pascal-app/core/agent-tools'
-import { planWallOpening } from '@pascal-app/core/building'
+} from '@aedifex/core/agent-operations'
+import { addColumnTool, addDoorTool, addObjectTool, addWindowTool } from '@aedifex/core/agent-tools'
+import { planWallOpening } from '@aedifex/core/building'
 import {
   type AnyNode,
   type CompiledGeometryScript,
@@ -21,7 +16,7 @@ import {
   GeometryScriptSource,
   LevelNode,
   WallNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
 import { z } from 'zod'
 
 const compiled: CompiledGeometryScript = {
@@ -224,3 +219,22 @@ test('a build keeps its language: params rebuild the stored script, new code def
   const { language: _, ...old } = node.source
   expect(GeometryScriptSource.parse(old).language).toBe('three')
 })
+
+for (const metadata of [null, false, 7, 'legacy', ['legacy']]) {
+  test(`rebuilding an authored object keeps JSON metadata ${JSON.stringify(metadata)} unless its reason changes`, () => {
+    const created = addObject(nodes, { ...meta, reason: 'no catalog cabinet', compiled }, context)
+    const before = applySceneChanges(nodes, created.changes)
+    const nodeId = created.result.nodeId as string
+    before[nodeId] = { ...before[nodeId]!, metadata }
+    const rebuilt = addObject(before, { nodeId, compiled }, context)
+    expect(applySceneChanges(before, rebuilt.changes)[nodeId]!.metadata).toEqual(metadata)
+    const explained = addObject(
+      before,
+      { nodeId, compiled, reason: 'custom carved panels' },
+      context,
+    )
+    expect(applySceneChanges(before, explained.changes)[nodeId]!.metadata).toEqual({
+      reason: 'custom carved panels',
+    })
+  })
+}
