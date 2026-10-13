@@ -486,7 +486,7 @@ export {
   unregisterLibraryMaterials,
 } from './material-library'
 export * from './node-slots'
-export { matchPascalMaterial, type PascalMaterialHints } from './procedural-items/library-colors'
+export { matchLibraryMaterial, type LibraryMaterialHints } from './procedural-items/library-colors'
 export type {
   FloorPlacedFootprint,
   FloorPlacedFootprintContext,

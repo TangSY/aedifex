@@ -85,7 +85,7 @@ function scriptAsset(
 }
 
 /**
- * Words that name what Pascal already builds, with the tool that builds it. An object named so is
+ * Words that name what Aedifex already builds, with the tool that builds it. An object named so is
  * built with a hint naming that tool: authored objects are for what has no type.
  */
 export const AEDIFEX_TYPES: [RegExp, string][] = [
@@ -113,14 +113,14 @@ function headWord(label: string) {
 }
 
 /**
- * The tool for an object named after something Pascal builds: an invitation, not a gate. A word
+ * The tool for an object named after something Aedifex builds: an invitation, not a gate. A word
  * gate taught evasion: refused "entry door pull handle (brass)", the agent relabelled it "brass
  * pull bars", and the label stopped naming the gap.
  */
 function typeHint(input: AddObjectInput): string | undefined {
   for (const label of [input.name, input.category]) {
     const named = label && AEDIFEX_TYPES.find(([word]) => word.test(headWord(label)))
-    if (named) return `"${label}" is something Pascal builds: ${named[1]}.`
+    if (named) return `"${label}" is something Aedifex builds: ${named[1]}.`
   }
   return undefined
 }
@@ -135,7 +135,7 @@ function wallSized(compiled: CompiledGeometryScript) {
 const PLAIN_BOX = 12
 
 /**
- * A floor object that is a plain box with a wall's size, or a floor plate, is refused: Pascal builds
+ * A floor object that is a plain box with a wall's size, or a floor plate, is refused: Aedifex builds
  * those, and rooms, openings and facades only work with its own. Production saw whole houses of
  * plain custom solids, nothing editable as walls, rooms or doors.
  */
@@ -207,7 +207,7 @@ export function requireAddObjectReason(input: { nodeId?: string; reason?: string
   if (!input.nodeId && !input.reason?.trim())
     refuse(
       'reason_required',
-      'Say what this object stands in for (reason): why no Pascal tool or catalog item builds it. The scene check lists every authored object with its reason.',
+      'Say what this object stands in for (reason): why no Aedifex tool or catalog item builds it. The scene check lists every authored object with its reason.',
     )
 }
 

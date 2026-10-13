@@ -63,7 +63,7 @@ test('an edit keeps the current param values the new code still accepts', async 
   })
 })
 
-test('building and adding a scripted item assigns Pascal finishes and rebuilding keeps paint', async () => {
+test('building and adding a scripted item assigns Aedifex finishes and rebuilding keeps paint', async () => {
   const compiled = await compileGeometryScript({
     code: `export default function build({ THREE }) {
       const group = new THREE.Group();

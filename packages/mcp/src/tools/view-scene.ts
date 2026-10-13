@@ -59,7 +59,7 @@ export function registerViewScene(
         if (!views)
           refuse(
             'view_unavailable',
-            'This Pascal server has no editor to render with: take sizes and counts from the tools.',
+            'This Aedifex server has no editor to render with: take sizes and counts from the tools.',
           )
         const projectId = operations.getActiveScene()?.projectId
         if (!projectId)
@@ -71,7 +71,7 @@ export function registerViewScene(
         if (crop && !views!.crop)
           refuse(
             'photo_crop_unavailable',
-            'This Pascal server cannot crop a photo: crop the region yourself and lay it beside the view.',
+            'This Aedifex server cannot crop a photo: crop the region yourself and lay it beside the view.',
           )
         const [shot, cropped] = await Promise.all([
           views!.capture({ projectId: projectId!, pose, size, ...(interior ? { interior } : {}) }),

@@ -12,10 +12,10 @@ import {
 import type { AgentSurface, SceneGraph } from './cases'
 
 /**
- * `add_object`, the one way to author an object Pascal has no type for. Each new object says what
- * it stands in for (its reason, listed by verify_scene), so every one names a gap in Pascal; one
+ * `add_object`, the one way to author an object Aedifex has no type for. Each new object says what
+ * it stands in for (its reason, listed by verify_scene), so every one names a gap in Aedifex; one
  * on a floor shaped like a wall or a floor plate is refused with the tool to use; one named
- * after something Pascal builds gets a hint, not a refusal (a word gate once refused "entry door
+ * after something Aedifex builds gets a hint, not a refusal (a word gate once refused "entry door
  * pull handle (brass)", and the agent relabelled it until the label named nothing).
  *
  * The surfaces compile `code` before the operation runs; a case carries what that compile
@@ -132,7 +132,7 @@ const create = (
 ): AddObjectCase => ({
   name,
   scene: floorScene,
-  input: { code: CODE, reason: 'Pascal has no type for it.', ...input },
+  input: { code: CODE, reason: 'Aedifex has no type for it.', ...input },
   compiled: compiledSolid(size, mount, triangles),
   expect,
 })
@@ -143,7 +143,7 @@ export const ADD_OBJECT_CASES: AddObjectCase[] = [
     {
       name: 'Cornice',
       category: 'trim',
-      reason: 'Pascal has no cornice type.',
+      reason: 'Aedifex has no cornice type.',
       position: [3, 2.4, 1],
     },
     [6, 0.3, 0.4],
@@ -153,7 +153,7 @@ export const ADD_OBJECT_CASES: AddObjectCase[] = [
         name: 'Cornice',
         parentId: 'level_0',
         asset: { category: 'trim' },
-        metadata: { reason: 'Pascal has no cornice type.' },
+        metadata: { reason: 'Aedifex has no cornice type.' },
       },
     },
   ),
@@ -216,10 +216,10 @@ export const ADD_OBJECT_CASES: AddObjectCase[] = [
     'wall-side',
   ),
   create(
-    'a name naming a Pascal type is built, with a hint naming the tool for it',
+    'a name naming an Aedifex type is built, with a hint naming the tool for it',
     { name: 'Spiral staircase', category: 'stair' },
     [1.6, 2.8, 1.6],
-    { result: { mount: 'floor' }, mentions: ['is something Pascal builds: create_stair'] },
+    { result: { mount: 'floor' }, mentions: ['is something Aedifex builds: create_stair'] },
   ),
   create(
     'a type word that only qualifies the name is built',

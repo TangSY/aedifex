@@ -98,7 +98,7 @@ export function nearestLibraryColorRef(
   )
 }
 
-export type PascalMaterialHints = {
+export type LibraryMaterialHints = {
   name?: string
   color?: string
   roughness?: number
@@ -110,7 +110,7 @@ export type PascalMaterialHints = {
 }
 
 /** Deterministic finish/tone matching; uncertain colours keep their authored material. */
-export function matchPascalMaterial(slot: PascalMaterialHints): `library:${string}` | null {
+export function matchLibraryMaterial(slot: LibraryMaterialHints): `library:${string}` | null {
   if (slot.emissive) return null
   const name = (slot.name ?? '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_-]/g, ' ')
   const finish =
@@ -156,7 +156,7 @@ export function snapProceduralSlotsToLibrary(
   const slots = { ...node.slots }
   for (const slot of node.recipe.slots) {
     if (options.keepOverrides && Object.hasOwn(node.slots, slot.id)) continue
-    const ref = matchPascalMaterial({ finish: slot.finish ?? 'color', color: slot.color })
+    const ref = matchLibraryMaterial({ finish: slot.finish ?? 'color', color: slot.color })
     if (ref) slots[slot.id] = ref
   }
   return slots

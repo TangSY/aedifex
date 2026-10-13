@@ -94,7 +94,7 @@ export async function compileBlenderBuild(input: {
   const specs = readParamSpecs(input.run.params)
   const params = resolveParams(specs, input.params ?? {})
   if (!sameValues(params, input.run.resolved)) {
-    throw new Error('Blender ran the module with different param values than Pascal resolved')
+    throw new Error('Blender ran the module with different param values than Aedifex resolved')
   }
   const bytes = input.run.glb
   const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)

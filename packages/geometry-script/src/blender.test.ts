@@ -46,7 +46,7 @@ describe('a Blender build', () => {
     expect(manifest.bounds.min[1]).toBeCloseTo(0, 3)
   })
 
-  test("both doors swing in the one clip, which survives Pascal's export", async () => {
+  test("both doors swing in the one clip, which survives Aedifex's export", async () => {
     const compiled = await compileBlenderBuild({
       code,
       params: { width: 1.5 },
@@ -80,7 +80,7 @@ const LOCAL_BLENDER_ENABLED =
   process.env.AEDIFEX_SERVER_SCRIPT_COMPILE === '1' && !!BLENDER && existsSync(BLENDER)
 
 describe.skipIf(!LOCAL_BLENDER_ENABLED)('a local Blender', () => {
-  test('runs the module and clamps params as Pascal does', async () => {
+  test('runs the module and clamps params as Aedifex does', async () => {
     const run = await runBlenderLocally({ blender: BLENDER!, code, params: { width: 9 } })
     expect(run.resolved).toEqual({ width: 2.4 })
     const compiled = await compileBlenderBuild({ code, params: { width: 9 }, run })

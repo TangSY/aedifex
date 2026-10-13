@@ -548,7 +548,7 @@ export const VERIFY_SCENE_CASES: AgentToolCase[] = [
     // Only core: a live store and a bridge would not hold a node that fails its schema.
     { surfaces: ['core'] },
   ),
-  // Each authored object stands in for something Pascal has no type for: the list names the gaps.
+  // Each authored object stands in for something Aedifex has no type for: the list names the gaps.
   verify(
     'authored objects are listed with what they stand in for',
     () =>
@@ -564,7 +564,7 @@ export const VERIFY_SCENE_CASES: AgentToolCase[] = [
         authoredItem('item_cornice', 'level_0', {
           name: 'Cornice',
           category: 'trim',
-          reason: 'Pascal has no cornice type.',
+          reason: 'Aedifex has no cornice type.',
           size: [4, 0.3, 0.4],
         }),
         ItemNode.parse({
@@ -581,7 +581,7 @@ export const VERIFY_SCENE_CASES: AgentToolCase[] = [
             id: 'item_cornice',
             name: 'Cornice',
             category: 'trim',
-            reason: 'Pascal has no cornice type.',
+            reason: 'Aedifex has no cornice type.',
           },
           { id: 'item_lantern', name: 'Porch lantern', category: 'light', reason: null },
         ],

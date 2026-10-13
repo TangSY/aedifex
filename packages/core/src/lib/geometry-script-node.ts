@@ -1,4 +1,4 @@
-import { matchPascalMaterial } from '../procedural-items/library-colors'
+import { matchLibraryMaterial } from '../procedural-items/library-colors'
 import type { CompiledGeometryScript } from '../schema'
 import { GeometrySourceMeta } from '../schema/geometry-metadata'
 import type { ColumnNode } from '../schema/nodes/column'
@@ -94,7 +94,7 @@ export function scriptImages(
 type Manifest = CompiledGeometryScript['manifest']
 
 const matchSlot = (slot: Manifest['slots'][number]) =>
-  matchPascalMaterial({ ...slot, name: `${slot.id} ${slot.label ?? ''}` })
+  matchLibraryMaterial({ ...slot, name: `${slot.id} ${slot.label ?? ''}` })
 
 /**
  * Paint and automatic matching write the same overrides. A rebuild keeps every

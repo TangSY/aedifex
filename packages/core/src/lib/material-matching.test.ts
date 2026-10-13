@@ -1,13 +1,13 @@
 import { expect, test } from 'bun:test'
 import {
   MATERIAL_CATALOG,
-  matchPascalMaterial,
+  matchLibraryMaterial,
   matchScriptSlotsToLibrary,
-  type PascalMaterialHints,
+  type LibraryMaterialHints,
 } from '../index'
 import { GeometryArtifactManifest } from '../schema'
 
-const matches: [PascalMaterialHints, string][] = [
+const matches: [LibraryMaterialHints, string][] = [
   [{ name: 'glass_pane', color: '#ff0000' }, 'preset-glass'],
   [{ name: 'Glazed panel' }, 'preset-glass'],
   [{ color: '#ffffff', transparent: true }, 'preset-glass'],
@@ -23,9 +23,9 @@ const matches: [PascalMaterialHints, string][] = [
 for (const [hints, id] of matches) {
   test(`matches ${JSON.stringify(hints)} to ${id}`, () => {
     const before = structuredClone(hints)
-    expect(matchPascalMaterial(hints)).toBe(`library:${id}`)
+    expect(matchLibraryMaterial(hints)).toBe(`library:${id}`)
     expect(MATERIAL_CATALOG.some((entry) => entry.id === id)).toBe(true)
-    expect(matchPascalMaterial(hints)).toBe(matchPascalMaterial(hints))
+    expect(matchLibraryMaterial(hints)).toBe(matchLibraryMaterial(hints))
     expect(hints).toEqual(before)
   })
 }
@@ -42,7 +42,7 @@ test('uncertain slots retain their authored material', () => {
     { name: 'body', color: '#88654c', metalness: 0.3 },
     { name: 'bulb', color: '#ffffff', emissive: true },
   ])
-    expect(matchPascalMaterial(hints)).toBeNull()
+    expect(matchLibraryMaterial(hints)).toBeNull()
 })
 
 test('matching preserves every explicit override and fills only confident unpainted slots', () => {

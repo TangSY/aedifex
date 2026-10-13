@@ -495,7 +495,7 @@ export const verifyScene: AgentOperation<VerifySceneInput | undefined> = (
   }
 }
 
-/** Objects built by add_object, with what each stands in for: each is a gap in what Pascal builds. */
+/** Objects built by add_object, with what each stands in for: each is a gap in what Aedifex builds. */
 function authoredObjects(nodes: SceneNodes) {
   const objects = Object.values(nodes)
     .flatMap((node) =>
