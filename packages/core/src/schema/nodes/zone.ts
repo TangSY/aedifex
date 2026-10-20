@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { BaseNode, nodeType, objectId } from '../base'
 import { ZoneCeilingIntent, ZoneFloorIntent, ZoneFloorStepOverrides } from './zone-intent'
 
+export { ZoneFloorScript } from './zone-intent'
+
 export const ZoneNode = BaseNode.extend({
   id: objectId('zone'),
   type: nodeType('zone'),
@@ -62,6 +64,7 @@ export const ZoneNode = BaseNode.extend({
   - spaceRole: generic site/analysis zone or architectural room
   - roomNumber/finishes/ceilingHeight/occupancy: construction-document room metadata
   - floor.regions / ceiling.regions: painted parts of the room's floor and ceiling ([x, z] polygons, later wins)
+  - floor.script: a three.js module that builds the room's floor finish (boards, tiles) for its floor polygon, drawn over the floor; it owns its colours
   - floorStepFinish: finish of the room's steps; floorStepOverrides: per-doorway step finishes keyed by door id (or the lower room id), optional step index
   - enclosureStatus: auto-detected, explicitly enclosed, or open
   - clearDimensionPolicy: optional room clear-dimension datum preference

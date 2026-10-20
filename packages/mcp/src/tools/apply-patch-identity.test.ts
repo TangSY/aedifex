@@ -428,7 +428,7 @@ describe('apply_patch identity and validation guards', () => {
     expect((await apply([{ op: 'delete', id: b.id }])).isError).toBe(false)
   })
 
-  test('a host whose default children a delete regenerates cannot be updated in the same patch', async () => {
+  test('a refreshed roof host accepts only finish writes without restoring stale children', async () => {
     const roof = RoofNode.parse({})
     const segment = (x: number) =>
       RoofSegmentNode.parse({
@@ -458,6 +458,14 @@ describe('apply_patch identity and validation guards', () => {
     ])
     expect(renamed).toMatchObject({ code: 'regenerated_default', patchIndex: 1, id: a.id })
     expect(bridge.getNode(b.id as AnyNodeId)).not.toBeNull()
+    const painted = await apply([
+      { op: 'delete', id: b.id },
+      { op: 'update', id: a.id, data: { slots: { shingle: 'library:roof-classicshingles' } } },
+    ])
+    expect(painted.isError, painted.text).toBe(false)
+    expect(bridge.getNode(a.id as AnyNodeId)).toMatchObject({ slots: { shingle: 'library:roof-classicshingles' } })
+    const freshChildren = (bridge.getNode(a.id as AnyNodeId) as { children: string[] }).children
+    expect(freshChildren.every((id) => bridge.getNode(id as AnyNodeId)?.parentId === a.id)).toBe(true)
   })
 
   test('without a bridge deletion planner, a create of an id present at the start is refused', async () => {

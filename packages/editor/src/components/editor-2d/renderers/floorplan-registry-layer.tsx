@@ -29,7 +29,7 @@ import {
   useLiveTransforms,
   useScene,
 } from '@aedifex/core'
-import { beginPerfAction, cancelPerfAction, commitPerfAction, useViewer } from '@aedifex/viewer'
+import { beginPerfAction, cancelPerfAction, commitPerfAction, useRevealPlanActive, useRevealWaiting, useViewer } from '@aedifex/viewer'
 import {
   type ComponentProps,
   memo,
@@ -151,6 +151,7 @@ import {
   resolveFloorplanLabelAngle,
   updateSvgFloorplanLabelOrientations,
 } from './floorplan-label-angle'
+import { useFloorplanReveal } from './floorplan-reveal'
 
 /**
  * Registry-driven floor-plan layer.
@@ -2027,6 +2028,10 @@ const FloorplanRegistryEntry = memo(function FloorplanRegistryEntry({
   wallDimensionReference,
   visibilityRootId,
 }: FloorplanRegistryEntryProps): React.ReactElement | null {
+  // A node an agent just built is drawn on its construction-reveal turn, as in 3D.
+  const revealWaiting = useRevealWaiting(nodeId)
+  const revealActive = useRevealPlanActive(nodeId)
+  const entryRef = useRef<SVGGElement>(null)
   const selected = useViewer((state) => state.selection.selectedIds.includes(nodeId))
   const highlighted = useViewer((state) => state.previewSelectedIds.includes(nodeId))
   const multiSelected = useViewer(
@@ -2046,7 +2051,14 @@ const FloorplanRegistryEntry = memo(function FloorplanRegistryEntry({
   const phase = useEditor((state) => state.phase)
   const hoverTargetId =
     phase === 'site' ? (resolveCanvasBuildingId(node, nodes) ?? selectionProxyId) : selectionProxyId
-  const hovered = useViewer((state) => state.hoveredId === hoverTargetId)
+  // What a chat chip points at (`pointedIds`) lights as a hover does, as it does in 3D: the node
+  // itself, or what a hover on it would light.
+  const hovered = useViewer(
+    (state) =>
+      state.hoveredId === hoverTargetId ||
+      state.pointedIds.includes(nodeId) ||
+      state.pointedIds.includes(hoverTargetId),
+  )
   const setHoveredId = useViewer((state) => state.setHoveredId)
   const referencedAnnotationRole = useViewer((state) =>
     floorplanEntryReferencedAnnotationRole(node, nodes, new Set(state.selection.selectedIds)),
@@ -2215,7 +2227,8 @@ const FloorplanRegistryEntry = memo(function FloorplanRegistryEntry({
     visibleGeometry && suppressHandles && pass !== 'base'
       ? stripHandleChrome(visibleGeometry)
       : visibleGeometry
-  if (!geometry) return null
+  useFloorplanReveal(nodeId, entryRef, cacheEntry, revealWaiting, revealActive)
+  if (revealWaiting || !geometry) return null
 
   const entryClick = isMarqueeSelectionActive ? undefined : onClickStop
   const entryPointerDown = isMarqueeSelectionActive ? undefined : handlePointerDown
@@ -2224,6 +2237,7 @@ const FloorplanRegistryEntry = memo(function FloorplanRegistryEntry({
     <g
       className="floorplan-registry-entry"
       data-node-id={nodeId}
+      ref={entryRef}
       onClick={entryClick}
       onPointerDown={entryPointerDown}
       onPointerEnter={handlePointerEnter}
@@ -2669,6 +2683,7 @@ export const InteractiveGeometry = memo(function InteractiveGeometry({
       }
       case 'endpoint-handle': {
         if (!palette) return <></>
+        const endpointUnitsPerPixel = g.screenSized ? unitsPerPixel : handleUnitsPerPixel
         const handleId = makeHandleId(nodeId, g.payload)
         const doubleClickAffordance = floorplanHandleDoubleClickAffordance(g)
         const isHovered = hoveredHandleId === handleId
@@ -2694,10 +2709,10 @@ export const InteractiveGeometry = memo(function InteractiveGeometry({
             : palette.endpointHandleFill
         const outerRadius =
           (isActive ? ENDPOINT_HANDLE_ACTIVE_RADIUS_PX : ENDPOINT_HANDLE_SELECTED_RADIUS_PX) *
-          handleUnitsPerPixel
+          endpointUnitsPerPixel
         const dotRadius =
           (isActive ? ENDPOINT_HANDLE_ACTIVE_DOT_RADIUS_PX : ENDPOINT_HANDLE_DOT_RADIUS_PX) *
-          handleUnitsPerPixel
+          endpointUnitsPerPixel
         return (
           <g
             key={keyHint}
@@ -2713,7 +2728,7 @@ export const InteractiveGeometry = memo(function InteractiveGeometry({
               r={outerRadius}
               stroke={hoverStroke}
               strokeOpacity={isActive ? 0.24 : 0.16}
-              strokeWidth={ENDPOINT_HOVER_GLOW_STROKE_WIDTH_PX * handleUnitsPerPixel}
+              strokeWidth={ENDPOINT_HOVER_GLOW_STROKE_WIDTH_PX * endpointUnitsPerPixel}
               style={{ opacity: isHovered || isActive ? 1 : 0, transition: HOVER_TRANSITION }}
               vectorEffect="non-scaling-stroke"
             />
@@ -2725,7 +2740,7 @@ export const InteractiveGeometry = memo(function InteractiveGeometry({
               r={outerRadius}
               stroke={hoverStroke}
               strokeOpacity={isActive ? 0.72 : 0.52}
-              strokeWidth={ENDPOINT_HOVER_RING_STROKE_WIDTH_PX * handleUnitsPerPixel}
+              strokeWidth={ENDPOINT_HOVER_RING_STROKE_WIDTH_PX * endpointUnitsPerPixel}
               style={{ opacity: isHovered || isActive ? 1 : 0, transition: HOVER_TRANSITION }}
               vectorEffect="non-scaling-stroke"
             />

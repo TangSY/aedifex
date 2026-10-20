@@ -24,6 +24,18 @@ describe('roof paint slots', () => {
     expect(roofSegmentDefinition.capabilities.slots?.(RoofSegmentNode.parse({}))).toEqual(expected)
   })
 
+  test('declares glazing slots for glazed segments without changing solid roof slots', () => {
+    const glazed = RoofSegmentNode.parse({ roofSystem: 'glazed' })
+    expect(roofSegmentDefinition.capabilities.slots?.(glazed).map((slot) => slot.slotId)).toEqual([
+      'glazing-frame',
+      'glazing-glass',
+      'glazing-solid',
+    ])
+    expect(roofSegmentDefinition.capabilities.slots?.(RoofSegmentNode.parse({}))).toEqual(
+      roofSlots(),
+    )
+  })
+
   test('treats a slot-only segment as a material override', () => {
     const segment = RoofSegmentNode.parse({
       slots: { soffit: 'library:preset-softwhite' },

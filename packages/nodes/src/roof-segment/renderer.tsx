@@ -2,12 +2,16 @@
 
 import {
   type AnyNodeId,
+  getEffectiveNode,
   getEffectiveRoofSurfaceMaterial,
   getEffectiveSegmentSurfaceMaterial,
+  getSegmentFasciaMaterial,
+  isGlazedRoofSegment,
   type RoofNode,
   type RoofSegmentNode,
   type RoofSegmentSurfaceMaterialRole,
   type RoofSlotId,
+  useLiveNodeOverrides,
   useRegistry,
   useScene,
 } from '@aedifex/core'
@@ -16,11 +20,14 @@ import {
   getRoofMaterialArray,
   levelWallCladdingRef,
   resolveMaterialRef,
+  SHADOW_ONLY_LAYER,
   useNodeEvents,
   useViewer,
 } from '@aedifex/viewer'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { syncGlazedRoofShadow } from '../roof/glazed-geometry'
+import { createGlazedRoofMaterials } from '../roof/glazed-materials'
 import { getRoofDebugMaterials, getRoofMaterials } from '../roof/roof-materials'
 import { createPlaceholderGeometry } from '../shared/placeholder-geometry'
 
@@ -33,7 +40,10 @@ const ROOF_LEGACY_ROLE_BY_SLOT: Record<RoofSlotId, RoofSegmentSurfaceMaterialRol
   shingle: 'top',
 }
 
-export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
+export const RoofSegmentRenderer = ({ node: storedNode }: { node: RoofSegmentNode }) => {
+  useLiveNodeOverrides((state) => state.overrides.get(storedNode.id))
+  const node = getEffectiveNode(storedNode)
+  const glazed = isGlazedRoofSegment(node)
   const ref = useRef<THREE.Mesh>(null!)
   const parentNode = useScene((state) =>
     node.parentId ? (state.nodes[node.parentId as AnyNodeId] as RoofNode | undefined) : undefined,
@@ -46,6 +56,7 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
         node.topMaterialPreset,
         node.edgeMaterialPreset,
         node.wallMaterialPreset,
+        node.fasciaMaterialPreset,
         parentNode?.materialPreset,
         parentNode?.topMaterialPreset,
         parentNode?.edgeMaterialPreset,
@@ -70,6 +81,7 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
   const sceneTheme = useViewer((s) => s.sceneTheme)
   // 4 groups map 1:1 to the roof's 4-material array (see getRoofMaterialArray).
   const placeholderGeometry = useMemo(() => createPlaceholderGeometry(4), [])
+  const shadowPlaceholder = useMemo(() => createPlaceholderGeometry(1), [])
 
   // Segment material precedence, per declared slot:
   //   1. Segment slot reference.
@@ -89,6 +101,7 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
   )
   // biome-ignore lint/correctness/useExhaustiveDependencies: deps deliberately list the build inputs; depending on the whole object would rebuild on unrelated field changes.
   const customMaterial = useMemo(() => {
+    if (glazed) return null
     const resolveSlot = (slotId: RoofSlotId): THREE.Material | null => {
       const segmentRef = node.slots?.[slotId]
       if (segmentRef) {
@@ -138,6 +151,13 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
       : null
 
     const resolved = ROOF_SLOT_ORDER.map((slotId) => resolveSlot(slotId))
+    const fasciaSpec = getSegmentFasciaMaterial(node)
+    if (!node.slots?.soffit && fasciaSpec) {
+      const fascia =
+        resolveMaterialRef(fasciaSpec.materialPreset, sceneMaterials, shading) ??
+        (fasciaSpec.material !== undefined ? createMaterial(fasciaSpec.material, shading) : null)
+      if (fascia) resolved[2] = fascia
+    }
 
     if (!resolved.some((entry) => entry !== null)) {
       return themedArray
@@ -151,6 +171,7 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
       themedArray?.[index] ?? new THREE.MeshStandardMaterial()
     return resolved.map((entry, index) => entry ?? fallbackAt(index)) as THREE.Material[]
   }, [
+    glazed,
     node.material,
     node.materialPreset,
     node.topMaterial,
@@ -161,6 +182,8 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
     node.wallMaterial,
     node.wallMaterialPreset,
     node.slots,
+    node.fasciaMaterial,
+    node.fasciaMaterialPreset,
     parentNode,
     sceneMaterials,
     shading,
@@ -169,18 +192,57 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
     sceneTheme,
   ])
 
-  const material = debugColors
-    ? getRoofDebugMaterials(shading)
-    : customMaterial || getRoofMaterials(shading, textures, colorPreset)
+  const { glazing, slots } = node
+  const glazingMaterials = useMemo(
+    () =>
+      glazed
+        ? createGlazedRoofMaterials({ glazing, slots }, shading, sceneMaterials, {
+            textures,
+            colorPreset,
+            sceneTheme,
+            debugColors,
+          })
+        : null,
+    [
+      glazed,
+      glazing,
+      slots,
+      shading,
+      sceneMaterials,
+      textures,
+      colorPreset,
+      sceneTheme,
+      debugColors,
+    ],
+  )
+  useEffect(
+    () => () => {
+      for (const material of glazingMaterials?.owned ?? []) material.dispose()
+    },
+    [glazingMaterials],
+  )
+
+  const material =
+    glazingMaterials?.visible ??
+    (debugColors
+      ? getRoofDebugMaterials(shading)
+      : customMaterial || getRoofMaterials(shading, textures, colorPreset))
+
+  useLayoutEffect(() => {
+    if (glazed && ref.current) syncGlazedRoofShadow(ref.current, material)
+  }, [glazed, material])
 
   useEffect(() => {
     return () => {
       placeholderGeometry.dispose()
+      shadowPlaceholder.dispose()
     }
-  }, [placeholderGeometry])
+  }, [placeholderGeometry, shadowPlaceholder])
 
   return (
     <mesh
+      castShadow={!glazed}
+      receiveShadow
       geometry={placeholderGeometry}
       material={material}
       position={node.position}
@@ -188,7 +250,19 @@ export const RoofSegmentRenderer = ({ node }: { node: RoofSegmentNode }) => {
       rotation-y={node.rotation}
       visible={node.visible}
       {...handlers}
-    />
+    >
+      <mesh
+        name="glazed-roof-shadow"
+        userData={{ aedifexExport: 'strip' }}
+        geometry={shadowPlaceholder}
+        layers={SHADOW_ONLY_LAYER}
+        castShadow
+        visible={glazed}
+        raycast={() => {}}
+      >
+        <meshBasicMaterial />
+      </mesh>
+    </mesh>
   )
 }
 

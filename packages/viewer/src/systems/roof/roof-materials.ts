@@ -1,12 +1,16 @@
 import {
   type AnyNode,
+  type AnyNodeId,
+  findLevelBelowId,
   getEffectiveRoofSurfaceMaterial,
+  getLevelElevations,
   parseMaterialRef,
   ROOF_SLOT_DEFAULTS,
   type RoofNode,
   type RoofSegmentNode,
   type SceneMaterial,
   type SceneMaterialId,
+  type WallNode,
   wallAssemblyFinishRef,
   type RoofSlotId,
 } from '@aedifex/core'
@@ -101,8 +105,10 @@ function createResolvedMaterial(
  * The cladding the walls under a roof declare through their ASSEMBLIES
  * (`wall.assembly.exterior.finish` → catalog ref), so the roof's gable band —
  * the triangle of wall above the plate that the roof kind builds — is skinned
- * like the walls it sits on instead of the bare drywall default. The most
- * common ref among the level's walls wins; null when none declares one.
+ * like the walls it sits on instead of the bare drywall default. The walls are
+ * the roof's level's, or for a roof on a level of its own (a building's roof
+ * level), the storey's directly below. The most common ref among them wins;
+ * null when none declares one.
  */
 export function levelWallCladdingRef(
   nodes: Readonly<Record<string, AnyNode | undefined>>,
@@ -110,10 +116,17 @@ export function levelWallCladdingRef(
 ): string | null {
   const levelId = roof.parentId
   if (!levelId) return null
+  const wallsOn = (id: string | null) =>
+    Object.values(nodes).filter(
+      (node): node is WallNode => node?.type === 'wall' && node.parentId === id,
+    )
+  const own = wallsOn(levelId)
+  const walls = own.length
+    ? own
+    : wallsOn(findLevelBelowId(levelId, getLevelElevations(nodes as Record<AnyNodeId, AnyNode>)))
   const counts = new Map<string, number>()
-  for (const node of Object.values(nodes)) {
-    if (node?.type !== 'wall' || node.parentId !== levelId) continue
-    const ref = wallAssemblyFinishRef(node)
+  for (const wall of walls) {
+    const ref = wallAssemblyFinishRef(wall)
     if (ref) counts.set(ref, (counts.get(ref) ?? 0) + 1)
   }
   let best: string | null = null
@@ -192,16 +205,7 @@ export function getRoofMaterialArray(
     return roleArray
   }
 
-  // Textures-on default appearance: catalog finishes per slot (terracotta
-  // shingle, soft-white deck/soffit, wall-coloured trim). Used both when the
-  // roof is unpainted and to fill any individual unpainted slot below.
-  const defaultArray: RoofMaterialArray = [
-    resolveSlotDefaultMaterial(ROOF_DEFAULT_REFS[0], shading),
-    resolveSlotDefaultMaterial(wallCladdingRef ?? ROOF_DEFAULT_REFS[1], shading),
-    resolveSlotDefaultMaterial(ROOF_DEFAULT_REFS[2], shading),
-    resolveSlotDefaultMaterial(ROOF_DEFAULT_REFS[3], shading),
-  ]
-
+  // Resolve defaults only for unpainted slots so captures do not wait for unused textures.
   const resolvedArray = slotSpecs.map(({ ref, legacySpec }, index) => {
     if (ref) {
       const slotMaterial = resolveMaterialRef(ref, sceneMaterials, shading)
@@ -214,17 +218,15 @@ export function getRoofMaterialArray(
       sceneMaterials,
       shading,
     )
-    return legacyMaterial ?? (defaultArray[index] as THREE.Material)
+    return (
+      legacyMaterial ??
+      resolveSlotDefaultMaterial(
+        index === 1 && wallCladdingRef ? wallCladdingRef : ROOF_DEFAULT_REFS[index]!,
+        shading,
+      )
+    )
   }) as RoofMaterialArray
 
-  const anyOverride = slotSpecs.some(
-    ({ ref, legacySpec }) =>
-      ref !== undefined ||
-      legacySpec.material !== undefined ||
-      legacySpec.materialPreset !== undefined,
-  )
-  const finalArray = anyOverride ? resolvedArray : defaultArray
-
-  setCachedRoofMaterialArray(cacheKey, finalArray)
-  return finalArray
+  setCachedRoofMaterialArray(cacheKey, resolvedArray)
+  return resolvedArray
 }

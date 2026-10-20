@@ -1,3 +1,4 @@
+import { metadataRecord } from '../utils/metadata-record'
 import type { AnyNode, SeparatorNode, WallNode } from '../schema'
 import { getWallArcData, getWallCurveFrameAt, isCurvedWall } from '../systems/wall/wall-curve'
 import { getWallBodyCenterOffset, getWallFaceOffsets } from '../systems/wall/wall-frame'
@@ -988,6 +989,7 @@ export function extractRooms(
   boundaries: BoundaryNode[],
   options: { includeHoles?: boolean } = {},
 ): ExtractedRoom[] {
+  boundaries = boundaries.filter((boundary) => metadataRecord(boundary.metadata).roomBoundary !== false)
   const joined = extractRoomGraph(boundaries, options, true)
   if (!joined.bodyJoints) return joined.rooms
   const plain = extractRoomGraph(boundaries, options, false).rooms

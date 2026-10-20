@@ -18,10 +18,15 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { countGraphNodes, isEmptyGraphOverwrite } from '@/lib/empty-graph-guard'
 import { useLocalArtifactStore } from '@/lib/local-artifact-store'
-import { type PersistedSceneGraph, sceneGraphSignature } from '@/lib/scene-signature'
+import {
+  isPendingSceneGraphEcho,
+  type PersistedSceneGraph,
+  sceneGraphSignature,
+} from '@/lib/scene-signature'
 import { useThumbnailAutosave } from '@/lib/use-thumbnail-autosave'
 import { BuildTab } from './build-tab'
 import { EditorNavbar } from './editor-navbar'
+import { KitchenCommands } from './kitchen-browser'
 import { PaintPanel } from './paint-panel'
 import { EditorViewerToolbarLeft, EditorViewerToolbarRight } from './viewer-toolbar'
 import { useWebXRFeature, useWebXRInstalled, WebXRFeatureRuntime } from './webxr-feature-gate'
@@ -163,6 +168,13 @@ function isLightPreviewQuery(searchParams: URLSearchParams): boolean {
 
 export function SceneLoader(props: SceneLoaderProps) {
   const webXRInstalled = useWebXRInstalled()
+  // The editor follows its host's `.dark` class, and this app keeps the editor
+  // dark: the page root carries it from the first paint, and <body> for the
+  // menus and dialogs the editor portals there.
+  useEffect(() => {
+    document.body.classList.add('dark')
+    return () => document.body.classList.remove('dark')
+  }, [])
   return (
     <WebXRFeatureRuntime enabled={webXRInstalled} key={props.meta.id}>
       <SceneEditor key={props.meta.id} {...props} />
@@ -189,6 +201,7 @@ function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
   // store must never overwrite a populated server copy.
   const serverNodeCountRef = useRef(meta.nodeCount)
   const lastRemoteGraphJsonRef = useRef<string | null>(null)
+  const pendingGraphSignaturesRef = useRef(new Set<string>())
   const suppressRemoteSaveUntilRef = useRef(0)
   const [conflict, setConflict] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -251,6 +264,7 @@ function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
         return
       }
 
+      pendingGraphSignaturesRef.current.add(graphJson)
       try {
         const response = await fetch(`/api/scenes/${meta.id}`, {
           method: 'PUT',
@@ -287,11 +301,15 @@ function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
         }
 
         const next = (await response.json()) as SceneMeta
-        versionRef.current = next.version
-        serverNodeCountRef.current = next.nodeCount
+        if (next.version >= versionRef.current) {
+          versionRef.current = next.version
+          serverNodeCountRef.current = next.nodeCount
+        }
         setSaveError(null)
       } catch (error) {
         setSaveError(error instanceof Error ? error.message : 'Save failed')
+      } finally {
+        pendingGraphSignaturesRef.current.delete(graphJson)
       }
     },
     [meta.id, meta.name],
@@ -312,7 +330,11 @@ function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
 
       versionRef.current = payload.version
       serverNodeCountRef.current = countGraphNodes(payload.graph)
-      lastRemoteGraphJsonRef.current = sceneGraphSignature(payload.graph)
+      const signature = sceneGraphSignature(payload.graph)
+      // SSE can deliver our save before its HTTP response. Reapplying that
+      // graph would reset tools and selection while the user keeps editing.
+      if (isPendingSceneGraphEcho(payload.graph, pendingGraphSignaturesRef.current)) return
+      lastRemoteGraphJsonRef.current = signature
       suppressRemoteSaveUntilRef.current = Date.now() + 2500
       applySceneGraphToEditor(payload.graph)
       setConflict(false)
@@ -341,7 +363,7 @@ function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
   )
 
   return (
-    <div className="relative h-screen w-screen">
+    <div className="dark relative h-screen w-screen">
       {conflict && (
         <div className="dark pointer-events-auto absolute top-14 left-1/2 z-50 w-full max-w-md -translate-x-1/2 rounded-lg border border-border bg-background p-4 text-foreground shadow-xl">
           <h2 className="font-semibold text-sm">Another session saved first — refresh?</h2>
@@ -371,6 +393,7 @@ function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
           <p className="font-medium text-destructive text-xs">{saveError}</p>
         </div>
       )}
+      <KitchenCommands />
       <Editor
         disablePostFx={lightPreview}
         immersive={vr?.session ? vr.immersive : undefined}

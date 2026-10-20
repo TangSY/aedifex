@@ -17,6 +17,7 @@ import {
 } from '../schema/nodes/dormer'
 import { ElevatorNode as ElevatorNodeSchema } from '../schema/nodes/elevator'
 import { LevelNode, normalizeLevelBaseElevation } from '../schema/nodes/level'
+import { RoofGlazing } from '../schema/nodes/roof-glazing'
 import {
   getPitchFromActiveRoofHeight,
   type RoofSegmentNode,
@@ -64,6 +65,7 @@ import {
   resumeSceneHistory,
   runAsRemoteSceneChange,
   runAsSceneHistoryRestore,
+  runSceneWriteGuards,
   runWithSceneCommitNodeIds,
   type SceneCommitOrigin,
   type SceneSnapshot,
@@ -698,10 +700,16 @@ function migrateNodes(nodes: Record<string, any>): {
     // The migration result is cast, not zod-parsed, so the schema default never
     // applies on its own — this branch is the only place it lands.
     if (node.type === 'roof-segment') {
+      if (node.glazing !== undefined) {
+        const glazing = RoofGlazing.safeParse(node.glazing)
+        if (glazing.success) patchedNodes[id] = { ...patchedNodes[id], glazing: glazing.data }
+      }
       const currentPitch = (node as { pitch?: unknown }).pitch
       const hasValidPitch = typeof currentPitch === 'number' && currentPitch > 0
       if (!hasValidPitch) {
-        const { roofHeight, ...rest } = node as RoofSegmentNode & { roofHeight?: unknown }
+        const { roofHeight, ...rest } = patchedNodes[id] as RoofSegmentNode & {
+          roofHeight?: unknown
+        }
         const width = typeof node.width === 'number' ? node.width : 8
         const depth = typeof node.depth === 'number' ? node.depth : 6
         const roofType = (typeof node.roofType === 'string' ? node.roofType : 'gable') as RoofType
@@ -1497,6 +1505,7 @@ const useScene: UseSceneStore = createSceneStore(
       setReadOnly: (readOnly: boolean) => set({ readOnly }),
 
       unloadScene: () => {
+        runSceneWriteGuards()
         invalidatePendingHydration()
         set({
           hydrationToken: null,
@@ -1520,6 +1529,7 @@ const useScene: UseSceneStore = createSceneStore(
       },
 
       setScene: (nodes, rootNodeIds, extra) => {
+        runSceneWriteGuards()
         // Apply backward compatibility migrations
         const { nodes: patchedNodes, mintedMaterials } = migrateNodes(nodes)
         // Scene materials minted by the legacy→slots migrations join the
@@ -1805,14 +1815,18 @@ const useScene: UseSceneStore = createSceneStore(
         const state = config(set, get, store)
         return {
           ...state,
-          undo: (steps = 1) =>
-            runTemporalJump(get().pastStates.slice().splice(-steps, steps)[0], () =>
+          undo: (steps = 1) => {
+            runSceneWriteGuards()
+            return runTemporalJump(get().pastStates.slice().splice(-steps, steps)[0], () =>
               state.undo(steps),
-            ),
-          redo: (steps = 1) =>
-            runTemporalJump(get().futureStates.slice().splice(-steps, steps)[0], () =>
+            )
+          },
+          redo: (steps = 1) => {
+            runSceneWriteGuards()
+            return runTemporalJump(get().futureStates.slice().splice(-steps, steps)[0], () =>
               state.redo(steps),
-            ),
+            )
+          },
         }
       },
       limit: 50, // Limit to last 50 actions
@@ -2278,6 +2292,7 @@ export function applySceneOperationPatch(
   changes: SceneOperationPatch,
   options: ApplySceneOperationPatchOptions = {},
 ): boolean {
+  runSceneWriteGuards()
   const beforeState = useScene.getState()
   if (
     changes.nodeUpdates.length === 0 &&
@@ -2423,6 +2438,7 @@ export function applySceneSnapshot(
   snapshot: SceneSnapshot,
   options: ApplySceneSnapshotOptions,
 ): boolean {
+  runSceneWriteGuards()
   const before = sceneHistorySnapshotFromState(useScene.getState())
   const temporalState = useScene.temporal.getState()
   if (!temporalState.isTracking || getSceneHistoryPauseDepth() > 0 || hasSceneHistoryDrafts()) {

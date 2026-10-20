@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import ts from 'typescript'
 import { isModalKeyboardTarget } from './modal-keyboard'
+import { isTypingTarget } from './typing-target'
 
 function sourceHandlers({ file, name }: { file: string; name: string }) {
   const source = ts.createSourceFile(
@@ -45,7 +46,9 @@ function harness({
     HTMLElement: class {},
     isHistoryShortcut: (event: KeyboardEvent) =>
       (event.metaKey || event.ctrlKey) && event.key === 'z',
-    isTypingTarget: () => false,
+    isTypingTarget,
+    // These gesture tests run with the scene pane focused.
+    hasSceneKeyboardFocus: () => true,
     applyMovementKey: () => {
       act()
       return true

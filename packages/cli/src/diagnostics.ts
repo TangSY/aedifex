@@ -17,11 +17,11 @@ export async function runDoctor(paths: AedifexPaths): Promise<DiagnosticCheck[]>
     .split('.')
     .slice(0, 2)
     .map((part) => Number.parseInt(part, 10))
-  const nodeSupported = major > 22 || (major === 22 && minor >= 13)
+  const nodeSupported = major > 22 || (major === 22 && minor >= 18)
   checks.push({
     id: 'node',
     status: nodeSupported ? 'pass' : 'fail',
-    message: nodeSupported ? `Node ${process.versions.node}` : 'Node 22.13 or newer is required.',
+    message: nodeSupported ? `Node ${process.versions.node}` : 'Node 22.18 or newer is required.',
   })
   try {
     await ensureAedifexDirectories(paths)

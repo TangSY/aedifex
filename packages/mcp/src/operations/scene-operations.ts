@@ -10,6 +10,8 @@ import type {
   SceneMaterialId,
   CompiledGeometryScript,
 } from '@aedifex/core/schema'
+import type { ZodType } from 'zod'
+import type { AgentSession } from '../bridge/agent-session'
 import type { ActiveSceneMeta, Patch, SceneBridge, ValidationResult } from '../bridge/scene-bridge'
 import type {
   ProjectCreateOptions,
@@ -29,9 +31,16 @@ import type {
 export type CreateSceneOperationsOptions = {
   bridge?: SceneBridge
   store?: SceneStore
+  /**
+   * The floor the host's person is viewing, which an operation that names no level defaults to,
+   * as the chat's does. A host with no view (the remote MCP) leaves it out: the lowest storey.
+   */
+  activeLevelId?: () => string | null
 }
 
 export interface SceneOperations {
+  /** A host with an evidence-led design workflow owns its brief policy. */
+  designBriefRequired?: boolean
   readonly hasBridge: boolean
   readonly hasStore: boolean
   readonly hasSceneEvents: boolean
@@ -40,11 +49,15 @@ export interface SceneOperations {
   readonly canCreateProject: boolean
   readonly canGetProjectStatus: boolean
   readonly storeBackend: SceneStore['backend'] | null
+  /** What the agent's session has kept (named moments, what it made); absent on a host with none. */
+  readonly agentSession?: AgentSession
   /**
    * Whether `applyPatch` takes `upsert_material` patches with the nodes that use them, in one
    * history step. A host that does lends `getMaterials`, and paint keeps native materials there.
    */
   readonly supportsMaterialUpserts?: boolean
+  /** The floor the host's person is viewing, when the host has a view. */
+  readonly activeLevelId?: () => string | null
 
   setActiveScene(meta: ActiveSceneMeta): void
   getActiveScene(): ActiveSceneMeta | null
@@ -78,7 +91,7 @@ export interface SceneOperations {
     createdIds: AnyNodeId[]
   }
   /** Only compiled internal tools call this; raw patches cannot opt out of script ownership. */
-  applyCompiledGeometryPatch(input: { patches: Patch[]; compiled: CompiledGeometryScript }): {
+  applyCompiledGeometryPatch(input: { patches: Patch[]; compiled: CompiledGeometryScript | readonly CompiledGeometryScript[] }): {
     appliedOps: number
     deletedIds: AnyNodeId[]
     createdIds: AnyNodeId[]
@@ -88,6 +101,11 @@ export interface SceneOperations {
    * that cannot preview their own deletes; the apply_patch guard is then stricter.
    */
   readonly planDeletion?: (scene: NodeDeletionScene, ids: AnyNodeId[]) => NodeDeletionPlan
+  /**
+   * The schema the active bridge checks a stored node of a kind by, for each kind it checks: a host
+   * that validates its plugins' nodes at its own write boundary lends it (verify_scene reads it).
+   */
+  readonly nodeSchema?: (kind: string) => ZodType | undefined
   deriveStructure(levelIds?: AnyNodeId[]): { createdIds: AnyNodeId[]; deletedIds: AnyNodeId[] }
   undo(steps?: number): number
   redo(steps?: number): number
@@ -117,16 +135,24 @@ class SceneOperationsFacade implements SceneOperations {
   readonly #store?: SceneStore
 
   readonly planDeletion?: (scene: NodeDeletionScene, ids: AnyNodeId[]) => NodeDeletionPlan
+  readonly nodeSchema?: (kind: string) => ZodType | undefined
+  readonly activeLevelId?: () => string | null
 
   constructor(options: CreateSceneOperationsOptions) {
     this.#bridge = options.bridge
     this.#store = options.store
+    if (options.activeLevelId) this.activeLevelId = options.activeLevelId
     const bridge = options.bridge as
-      | { planDeletion?: (scene: NodeDeletionScene, ids: AnyNodeId[]) => NodeDeletionPlan }
+      | {
+          planDeletion?: (scene: NodeDeletionScene, ids: AnyNodeId[]) => NodeDeletionPlan
+          nodeSchema?: (kind: string) => ZodType | undefined
+        }
       | undefined
     if (typeof bridge?.planDeletion === 'function') {
       this.planDeletion = (scene, ids) => bridge.planDeletion!(scene, ids)
     }
+    if (typeof bridge?.nodeSchema === 'function')
+      this.nodeSchema = (kind) => bridge.nodeSchema!(kind)
   }
 
   get hasBridge(): boolean {
@@ -135,6 +161,10 @@ class SceneOperationsFacade implements SceneOperations {
 
   get supportsMaterialUpserts(): boolean {
     return this.#bridge?.supportsMaterialUpserts === true
+  }
+
+  get agentSession(): AgentSession | undefined {
+    return (this.#bridge as { agentSession?: AgentSession } | undefined)?.agentSession
   }
 
   get hasStore(): boolean {
@@ -267,10 +297,12 @@ class SceneOperationsFacade implements SceneOperations {
     deletedIds: AnyNodeId[]
     createdIds: AnyNodeId[]
   } {
+    if (patches.some((patch) => patch.op === 'upsert_material') && !this.supportsMaterialUpserts)
+      throw new Error('materials_unavailable')
     return this.requireBridge().applyPatch(patches)
   }
 
-  applyCompiledGeometryPatch(input: { patches: Patch[]; compiled: CompiledGeometryScript }): {
+  applyCompiledGeometryPatch(input: { patches: Patch[]; compiled: CompiledGeometryScript | readonly CompiledGeometryScript[] }): {
     appliedOps: number
     deletedIds: AnyNodeId[]
     createdIds: AnyNodeId[]

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { edgeLength } from '../floorplan/site-plan/geometry'
+import { edgeLength } from '@aedifex/core'
 import {
   DEFAULT_SETBACKS_M,
   DEFAULT_SETBACKS_SOURCE,

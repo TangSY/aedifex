@@ -6,6 +6,9 @@ import {
   getGeometryScriptCapabilities,
 } from '../../../lib/geometry-script/author'
 
+import { compileAndStoreFinishScript } from '../../../lib/geometry-script/finish-scripts'
+import { useViewer } from '@aedifex/viewer'
+
 const compile = vi.hoisted(() => vi.fn())
 vi.mock('../../../lib/geometry-script/client', () => ({ compileGeometryScriptInWorker: compile }))
 
@@ -102,4 +105,43 @@ describe('script host capabilities and project scope', () => {
       }),
     ).rejects.toThrow('Project changed')
   })
+})
+
+describe('finish script project scope', () => {
+  it.each(['store', 'project'] as const)(
+    'refuses a %s switch before storing a finish',
+    async (change) => {
+      const previousProject = useViewer.getState().projectId
+      const put = vi.fn()
+      const otherPut = vi.fn()
+      configureArtifactStore({ put, text: async () => null, url: () => null })
+      compile.mockImplementation(async () => {
+        if (change === 'store')
+          configureArtifactStore({ put: otherPut, text: async () => null, url: () => null })
+        else useViewer.setState({ projectId: 'other-project' })
+        return { ...compiled(), glb: new ArrayBuffer(4) }
+      })
+      try {
+        await expect(
+          compileAndStoreFinishScript({
+            code: 'finish',
+            nodeId: 'zone_test',
+            inputs: {
+              polygon: [
+                [0, 0],
+                [2, 0],
+                [2, 2],
+              ],
+              holes: [],
+              elevation: 0,
+            },
+          }),
+        ).rejects.toThrow('project changed')
+        expect(put).not.toHaveBeenCalled()
+        expect(otherPut).not.toHaveBeenCalled()
+      } finally {
+        useViewer.setState({ projectId: previousProject })
+      }
+    },
+  )
 })

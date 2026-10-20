@@ -150,14 +150,22 @@ export { boxVentDefinition } from './box-vent'
 export { buildingDefinition } from './building'
 export {
   bakeCabinetAnimationClip,
+  beginKitchenPlacement,
   CABINET_PLANNING_TOLERANCE,
   type CabinetPlacementType,
   type CabinetPlanningIssue,
   type CabinetPlanningIssueCode,
   type CabinetPlanningOptions,
   type CabinetPlanningReport,
+  type CabinetPresetId,
   cabinetDefinition,
   cabinetModuleDefinition,
+  cabinetPresetById,
+  findKitchenItems,
+  KITCHEN_ITEMS,
+  KitchenCollection,
+  kitchenItemMatches,
+  kitchenPresetForModule,
   MIN_PRACTICAL_TOP_CABINET_HEIGHT,
   poseCabinetMovingParts,
   useCabinetPlacementStatus,
@@ -185,6 +193,10 @@ export { gutterDefinition } from './gutter'
 export { hvacEquipmentDefinition } from './hvac-equipment'
 export { importedMeshDefinition } from './imported-mesh'
 export { getPendingItemModelLoadCount, itemDefinition } from './item'
+export {
+  registerWallObjectSceneCheck,
+  wallObjectRenderedObservations,
+} from './item/wall-object-observations'
 export { leanToExtensionDefinition } from './lean-to-extension'
 export { levelDefinition } from './level'
 export { linesetDefinition } from './lineset'
@@ -201,6 +213,9 @@ export {
   roofSlots,
   SLOT_DEFAULTS as ROOF_SLOT_DEFAULTS,
 } from './roof/slots'
+export { glazedRoofGeometryAdapter } from './roof/glazed-geometry'
+export { createGlazedRoofMaterials } from './roof/glazed-materials'
+export { createRoofGlazingPreview } from './roof/glazing-preview'
 export { roofSegmentDefinition } from './roof-segment'
 export {
   type RoofSegmentSlotId,

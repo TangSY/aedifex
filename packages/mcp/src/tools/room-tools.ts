@@ -87,7 +87,7 @@ async function rebuildOpening(
       },
     })
     assertGeometrySceneCurrent({ bridge, sceneId: scene.id })
-    outcome = rescriptOpening(bridge.getNodes(), { ...input, compiled }, { activeLevelId: null })
+    outcome = rescriptOpening(bridge.getNodes(), { ...input, compiled }, { activeLevelId: bridge.activeLevelId?.() ?? null })
   } catch (error) {
     if (isAgentRefusal(error)) return refusalResult(error)
     return toolError(error instanceof Error ? error.message : String(error), {

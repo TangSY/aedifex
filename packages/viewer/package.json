@@ -35,25 +35,25 @@
   "peerDependencies": {
     "@aedifex/core": "^0.10.0",
     "@react-three/drei": "^10",
-    "@react-three/fiber": "9.6.1",
+    "@react-three/fiber": "^9",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",
     "three": "^0.186"
   },
   "dependencies": {
     "three-bvh-csg": "^0.0.18",
-    "three-mesh-bvh": "0.9.10",
+    "three-mesh-bvh": "~0.9.16",
     "zustand": "^5"
   },
   "devDependencies": {
     "@aedifex/core": "^0.10.0",
     "@repo/typescript-config": "*",
-    "@react-three/test-renderer": "^9.1.0",
-    "@types/node": "^22",
+    "@react-three/test-renderer": "^9.1.1",
+    "@types/node": "^26",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@types/three": "^0.184.0",
-    "typescript": "6.0.3"
+    "@types/three": "^0.186.0",
+    "typescript": "7.0.2"
   },
   "keywords": [
     "3d",

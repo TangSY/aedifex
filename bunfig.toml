@@ -1,4 +1,7 @@
 preload = ["./scripts/bun-preload-three.ts"]
 
+[install]
+linker = "hoisted"
+
 [test]
 preload = ["./scripts/bun-preload-three.ts"]

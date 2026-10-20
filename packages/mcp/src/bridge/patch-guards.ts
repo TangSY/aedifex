@@ -20,6 +20,12 @@ import {
 } from '@aedifex/core/schema'
 import type { Patch } from './scene-bridge'
 
+const ROOF_FINISH_FIELDS = new Set([
+  'material', 'materialPreset', 'slots',
+  'topMaterial', 'topMaterialPreset', 'edgeMaterial', 'edgeMaterialPreset',
+  'wallMaterial', 'wallMaterialPreset', 'fasciaMaterial', 'fasciaMaterialPreset',
+])
+
 export type PatchRefusalCode =
   | 'node_exists'
   | 'identity_change'
@@ -34,18 +40,23 @@ export type PatchRefusalCode =
   | 'unknown_material'
   | 'field_required'
   | 'shadowed_field'
+  // The roof-level rule (seatWrittenRoofs).
+  | 'roof_level'
+  | 'roof_level_holds_storey'
+  | 'roof_level_on_top'
 
 /**
  * A check apply_patch runs over the whole patch before applying it, registered by the module that
  * owns what it protects, so a feature brings its own check (the honest-update check is the
  * first). It may rewrite an update's data (the cleaned data is what is written) and
  * refuses by throwing: a PatchRefusedError comes back as `{ code, patchIndex, id, message }`, an
- * McpError as it is. Lower `order` runs first.
+ * McpError as it is. What it changed in the patch it says in notes, which the answer carries.
+ * Lower `order` runs first.
  */
 export type PatchGuard = {
   name: string
   order: number
-  run(patches: Patch[], nodes: Readonly<Record<string, AnyNode>>): void
+  run(patches: Patch[], nodes: Readonly<Record<string, AnyNode>>): string[] | void
 }
 
 const guards: PatchGuard[] = []
@@ -58,8 +69,15 @@ export function registerPatchGuard(guard: PatchGuard) {
   guards.sort((a, b) => a.order - b.order)
 }
 
-export function runPatchGuards(patches: Patch[], nodes: Readonly<Record<string, AnyNode>>) {
-  for (const guard of guards) guard.run(patches, nodes)
+/** Runs every guard in order; the notes are what the guards changed in the patch. */
+export function runPatchGuards(
+  patches: Patch[],
+  nodes: Readonly<Record<string, AnyNode>>,
+): string[] {
+  return guards.flatMap((guard) => {
+    const notes = guard.run(patches, nodes)
+    return Array.isArray(notes) ? notes : []
+  })
 }
 
 /**
@@ -199,7 +217,7 @@ function withoutChild(parent: AnyNode, childId: string): AnyNode {
  *   built (`scripted_field`): only a rebuild keeps them and the geometry in step;
  * - any op on a node an earlier delete in the patch removed, or on a default
  *   gutter or downspout that delete regenerates, and any update of the roof
- *   segment holding them (`regenerated_default`).
+ *   segment holding them, except finish-only writes (`regenerated_default`).
  *
  * Deletes run through the bridge's own deletion preview (`planDeletion`; the
  * local bridge uses core's store planner), one call per run of consecutive
@@ -215,8 +233,11 @@ export function assertPatchKeepsIdentity(
   nodes: Readonly<Record<string, AnyNode>>,
   rootNodeIds: readonly AnyNodeId[],
   planDeletion?: (scene: NodeDeletionScene, ids: AnyNodeId[]) => NodeDeletionPlan,
-  compiled?: CompiledGeometryScript,
+  compiled?: CompiledGeometryScript | readonly CompiledGeometryScript[],
 ): Map<number, AnyNode> {
+  const builds: readonly CompiledGeometryScript[] = !compiled
+    ? []
+    : Array.isArray(compiled) ? compiled : [compiled as CompiledGeometryScript]
   const initialIds = new Set(Object.keys(nodes))
   const parsedCreates = new Map<number, AnyNode>()
   let scene: NodeDeletionScene = {
@@ -318,7 +339,12 @@ export function assertPatchKeepsIdentity(
     if (patch.op === 'update') {
       refuseRegenerated(index, patch.id)
       const hostDeleteIndex = regeneratedHosts.get(patch.id)
-      if (hostDeleteIndex !== undefined) {
+      // Finish-only writes address the stable segment itself, never its regenerated
+      // children. Roof paint intentionally updates the roof and its segment overrides
+      // together; geometry, identity and child-list writes still require a fresh read.
+      const finishOnly = patch.data && typeof patch.data === 'object' &&
+        Object.keys(patch.data).every((field) => ROOF_FINISH_FIELDS.has(field))
+      if (hostDeleteIndex !== undefined && !finishOnly) {
         throw new PatchRefusedError(
           'regenerated_default',
           index,
@@ -344,7 +370,7 @@ export function assertPatchKeepsIdentity(
         }
       }
       const scripted = scriptedFieldRefusal(current, data)
-      if (scripted && !matchesCompiledUpdate({ node: current, data, compiled }))
+      if (scripted && !builds.some((build) => (!build.nodeId || build.nodeId === current.id) && matchesCompiledUpdate({ node: current, data: { ...current, ...data }, compiled: build })))
         throw new PatchRefusedError('scripted_field', index, patch.id, scripted)
       const preset = unknownMaterialPresetRefusal(data, current as Record<string, unknown>)
       if (preset) throw new PatchRefusedError('invalid_update', index, patch.id, preset)

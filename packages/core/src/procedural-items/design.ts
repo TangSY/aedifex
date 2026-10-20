@@ -293,7 +293,7 @@ export function describeDesignSchema(): DesignSchemaDescription {
         'A number, a parameter id, "index" (the 0-based repeat inside part.count) or {op, args}.',
     })
     jsonSchema = {
-      title: 'Pascal design',
+      title: 'Aedifex design',
       description:
         'A procedural design: parameters, material slots and parts made of box, roundedBox, cylinder and ellipsoid shapes, and in version 2 extrude and revolve shapes, part trees and joints. Validation enforces rules this schema cannot express and is the authority.',
       ...(z.toJSONSchema(RecipeSchema, { io: 'input', metadata: registry }) as Record<

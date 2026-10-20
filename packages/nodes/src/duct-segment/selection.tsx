@@ -25,6 +25,7 @@ import {
   triggerSFX,
   useEditor,
 } from '@aedifex/editor'
+import { collectScenePorts, findNearestPortXZ } from '@aedifex/editor/distribution'
 import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { createPortal, type ThreeEvent, useFrame, useThree } from '@react-three/fiber'
@@ -56,7 +57,7 @@ import {
   planFittingEndpointReaim,
 } from '../shared/fitting-endpoint-reaim'
 import { DuctSegmentGhost, FittingGhost } from '../shared/mep-ghost'
-import { collectScenePorts, DUCT_PORT_SYSTEMS, findNearestPortXZ } from '../shared/ports'
+import { DUCT_PORT_SYSTEMS } from '../shared/port-systems'
 import { planRunTranslationOffsets } from '../shared/run-translation-offset'
 import { ContinuePlusHandle, HandleCube, MoveChevron, RotateArc } from '../shared/selection-handles'
 import { planVerticalOffsets, type VerticalOffsetResult } from '../shared/vertical-offset'

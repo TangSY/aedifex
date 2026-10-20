@@ -32,7 +32,7 @@ export function registerHostedServiceTools(
             ? refusalPayload(error)
             : {
                 error:
-                  'Pascal could not complete this service request. Check its retained result before repeating paid work.',
+                  'Aedifex could not complete this service request. Check its retained result before repeating paid work.',
                 code: 'service_error',
               }
           return {

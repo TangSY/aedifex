@@ -6,6 +6,7 @@
 @source "../../../packages/plugin-webxr/src/integrations/aedifex-editor/host";
 @source "../../../node_modules/@aedifex/plugin-trees/src";
 
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {
@@ -167,6 +168,27 @@
 .no-scrollbar {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: gray transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track-piece,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: gray;
 }
 
 /* Subtle dark scrollbar for dark-themed panels */
