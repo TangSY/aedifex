@@ -9,7 +9,7 @@ import { isViewVisible, VIEW_3D } from '../../../store/view-layout'
 import { ActionButton } from './action-button'
 
 /**
- * Point and ask (key C): the toolbar's way into the mode where hovering names what Pascal would
+ * Point and ask (key C): the toolbar's way into the mode where hovering names what Aedifex would
  * be told about and a click opens a bubble to ask. Offered only where a host answers asks. In
  * the 2D plan and the walkthrough it is disabled and says so (v1 works in the 3D view).
  */

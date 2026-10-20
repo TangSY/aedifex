@@ -14,7 +14,7 @@ import { asksWait, type BubbleTarget, usePointAsk } from '../../store/use-point-
 import { setPointAskBehindQueue, setPointAskBusy } from './host-api'
 import { endCompare, sendBubble, startCompare, startPointAskSession } from './session'
 
-// The whole ask path with the real stores (hold to see before; an ask while Pascal is working): the session listening to the chat's
+// The whole ask path with the real stores (hold to see before; an ask while Aedifex is working): the session listening to the chat's
 // statuses, a turn writing the scene through the store's own actions (each a history step), the pin
 // reaching "done", and the hold. Only the chat's words (statuses) and the DOM are stood in for.
 
@@ -230,7 +230,7 @@ function openBubbleOnWall(draft = '') {
   })
 }
 
-describe('an ask while Pascal is working', () => {
+describe('an ask while Aedifex is working', () => {
   test('is handed to the chat, which queues it as its own turn: the pin says queued', async () => {
     const handed: string[] = []
     unregisterHandler()
@@ -282,13 +282,13 @@ describe('an ask while Pascal is working', () => {
     unregisterHandler = registerPointAskHandler(async () => ({
       ok: false,
       code: 'busy',
-      message: 'Pascal is working. Ask again when it is done.',
+      message: 'Aedifex is working. Ask again when it is done.',
     }))
     openBubbleOnWall()
     await sendBubble('make this wall taller', { x: 0, y: 0, width: 10, height: 10 })
     const state = usePointAsk.getState()
     expect(state.pinOrder).toHaveLength(0)
-    expect(state.bubble?.error).toBe('Pascal is working. Ask again when it is done.')
+    expect(state.bubble?.error).toBe('Aedifex is working. Ask again when it is done.')
   })
 })
 

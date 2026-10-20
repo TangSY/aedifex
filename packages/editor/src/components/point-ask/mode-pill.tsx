@@ -59,7 +59,7 @@ export function ModePill() {
   if (!shown) return null
   return (
     <div className="pa-pill" ref={el} role="status">
-      <b>Point at anything to ask Pascal</b> · Esc to leave
+      <b>Point at anything to ask Aedifex</b> · Esc to leave
     </div>
   )
 }

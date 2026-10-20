@@ -42,7 +42,7 @@ import { finishOptionalAnimations, pointMotionCalm, usePointMotionCalm } from '.
 const COMPARE_REFUSAL_WORDS = {
   'history-held': 'Another change is in progress. Try again in a moment.',
   'no-before': 'The scene has changed too much since to show how it was.',
-  'turn-working': "Pascal is still working. Try again when it's done.",
+  'turn-working': "Aedifex is still working. Try again when it's done.",
 } as const
 
 const SETTLED = new Set(['done', 'answered', 'no-change', 'undone'])
@@ -328,13 +328,13 @@ function PinView({ askId }: { askId: string }) {
   const changes = model.changedTargetIds.length
   const overHere =
     model.state === 'needs-input'
-      ? 'Pascal needs you over here'
+      ? 'Aedifex needs you over here'
       : model.state === 'error'
         ? 'Something failed over here'
         : changes > 0
           ? `${changes} change${changes === 1 ? '' : 's'} over here`
           : model.state === 'working'
-            ? 'Pascal is working over here'
+            ? 'Aedifex is working over here'
             : 'Over here'
   return (
     <>
@@ -417,7 +417,7 @@ function PinView({ askId }: { askId: string }) {
           el.current = node
           arcs.current = node?.querySelector<SVGGElement>('.pa-parcs') ?? null
         }}
-        title={model.state === 'working' && model.sentence ? model.sentence : 'Sent to Pascal'}
+        title={model.state === 'working' && model.sentence ? model.sentence : 'Sent to Aedifex'}
       >
         {PIN_SVG}
       </div>
@@ -440,7 +440,7 @@ const cardHeld = (askId: string) =>
 /** The pin the pointer is on, so a card's close timer does not shut what the pin just opened. */
 const pinHover: { askId: string | null } = { askId: null }
 
-/** The pin's card: what Pascal did, and Keep or Undo; it rises from the pin. */
+/** The pin's card: what Aedifex did, and Keep or Undo; it rises from the pin. */
 function PinCard() {
   const askId = usePointAsk((s) => s.cardFor)
   const pin = usePointAsk((s) => (askId ? s.pins[askId] : undefined))
@@ -528,14 +528,14 @@ function PinCard() {
       : model.state === 'answered'
         ? (model.answer ?? '').split('\n').slice(0, 2).join(' ')
         : model.state === 'no-change'
-          ? `Pascal didn't change ${pin.label}.`
+          ? `Aedifex didn't change ${pin.label}.`
           : model.state === 'error'
-            ? (model.error ?? 'Pascal could not do this.')
+            ? (model.error ?? 'Aedifex could not do this.')
             : model.state === 'needs-input'
-              ? (model.question ?? 'Pascal needs a word from you.')
+              ? (model.question ?? 'Aedifex needs a word from you.')
               : model.state === 'undone'
                 ? 'Undone'
-                : model.sentence || 'Pascal is on it'
+                : model.sentence || 'Aedifex is on it'
   const also = alsoChangedLine(model)
   const edits = handEditsSince(askId)
   const keepOpen = () => {

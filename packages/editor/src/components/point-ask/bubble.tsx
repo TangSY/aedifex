@@ -382,7 +382,7 @@ function BubbleView({
 
   return (
     <div className="pa-bwrap" ref={wrap}>
-      <div aria-label="Ask Pascal" className="pa-bub" ref={bub} role="dialog">
+      <div aria-label="Ask Aedifex" className="pa-bub" ref={bub} role="dialog">
         <span className="pa-tail" ref={tail} />
         <div
           className="pa-ctx"
@@ -456,7 +456,7 @@ function BubbleView({
           ))}
           {bubble.crop.state === 'ready' && bubble.crop.dataUrl ? (
             // biome-ignore lint/performance/noImgElement: a data URL the capture just made
-            <img alt="What Pascal will see" className="pa-thumb" src={bubble.crop.dataUrl} />
+            <img alt="What Aedifex will see" className="pa-thumb" src={bubble.crop.dataUrl} />
           ) : bubble.crop.state === 'failed' ? (
             <span className="pa-nopic">No picture</span>
           ) : null}
@@ -469,7 +469,7 @@ function BubbleView({
           }}
         >
           <textarea
-            aria-label="Ask Pascal"
+            aria-label="Ask Aedifex"
             onChange={(event) => patch({ draft: event.target.value, error: null })}
             onKeyDown={(event) => {
               if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {

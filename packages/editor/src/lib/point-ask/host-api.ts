@@ -8,7 +8,7 @@ export function setPointAskPlayful(playful: boolean) {
   usePointAsk.getState().setPlayful(playful)
 }
 
-/** Pascal is on a turn: the bubble's Send says Queue, and a new ask waits its turn. */
+/** Aedifex is on a turn: the bubble's Send says Queue, and a new ask waits its turn. */
 export function setPointAskBusy(busy: boolean) {
   usePointAsk.getState().setBusy(busy)
   if (!busy) chatWentIdle()
@@ -16,7 +16,7 @@ export function setPointAskBusy(busy: boolean) {
 
 /**
  * Messages already wait in the chat's queue (or are held there after an error): a new ask goes
- * behind them, and the bubble says Queue, though Pascal is on no turn.
+ * behind them, and the bubble says Queue, though Aedifex is on no turn.
  */
 export function setPointAskBehindQueue(behindQueue: boolean) {
   usePointAsk.getState().setBehindQueue(behindQueue)

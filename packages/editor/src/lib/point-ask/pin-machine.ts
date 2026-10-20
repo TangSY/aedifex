@@ -47,7 +47,7 @@ export type PinModel = {
   state: PinState
   /** The live step words while it works. */
   sentence?: string
-  /** What Pascal is waiting to be told, while the turn is paused on a question. */
+  /** What Aedifex is waiting to be told, while the turn is paused on a question. */
   question?: string
   turnId?: string
   /** The card's title for a done pin, built by the caller from the step sentences. */
@@ -182,8 +182,8 @@ export function cardTitle(pin: PinModel, fallback = 'Done'): string {
   if (pin.state === 'done' && pin.committed) {
     const count = new Set([...pin.changedTargetIds, ...pin.alsoChangedIds]).size
     return count
-      ? `Pascal changed ${count} element${count === 1 ? '' : 's'}`
-      : 'Pascal updated the scene'
+      ? `Aedifex changed ${count} element${count === 1 ? '' : 's'}`
+      : 'Aedifex updated the scene'
   }
   return fallback
 }

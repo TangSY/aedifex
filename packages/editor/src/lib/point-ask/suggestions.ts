@@ -20,7 +20,7 @@ const CHIPS: Record<Exclude<PointKind, 'room' | 'wall'>, [string, string, string
 
 /**
  * Three chips chosen locally from the kind and the element's state, with no model call, so they
- * are there on the first frame and teach what Pascal can do here (spec 2.4).
+ * are there on the first frame and teach what Aedifex can do here (spec 2.4).
  */
 export function suggestionsFor(kind: PointKind, state: SuggestionState = {}): string[] {
   if (kind === 'room')

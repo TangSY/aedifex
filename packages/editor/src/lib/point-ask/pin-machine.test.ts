@@ -55,7 +55,7 @@ describe('a new pin', () => {
 })
 
 describe('queued and working', () => {
-  test('queued while Pascal is on another turn', () => {
+  test('queued while Aedifex is on another turn', () => {
     const pin = play(fresh(), status({ status: 'queued', turnId: 't1' }))
 
     expect(pin.state).toBe('queued')
@@ -259,7 +259,7 @@ describe('the turn ends', () => {
     expect(pin.state).toBe('done')
     expect(pin.landed).toBe(0)
     expect(pin.alsoChangedIds).toEqual(['wall_9'])
-    expect(cardTitle(pin)).toBe('Pascal changed 1 element')
+    expect(cardTitle(pin)).toBe('Aedifex changed 1 element')
     expect(play(pin, { type: 'undo' }).state).toBe('undone')
     expect(play(pin, { type: 'undo' }, { type: 'redo' }).state).toBe('done')
   })
@@ -271,7 +271,7 @@ describe('the turn ends', () => {
     expect(pin.landed).toBe(0)
     expect(pin.changedTargetIds).toEqual([])
     expect(pin.alsoChangedIds).toEqual([])
-    expect(cardTitle(pin)).toBe('Pascal updated the scene')
+    expect(cardTitle(pin)).toBe('Aedifex updated the scene')
     expect(play(pin, { type: 'undo' }).state).toBe('undone')
   })
 
@@ -406,8 +406,8 @@ describe('what the card says', () => {
 
     expect(cardTitle(titled, 'Done')).toBe('Widened to 1.20 m')
     expect(cardTitle(fresh())).toBe('Done')
-    expect(cardTitle(fresh(), 'Pascal didn’t change this window.')).toBe(
-      'Pascal didn’t change this window.',
+    expect(cardTitle(fresh(), 'Aedifex didn’t change this window.')).toBe(
+      'Aedifex didn’t change this window.',
     )
   })
 

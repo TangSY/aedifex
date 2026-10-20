@@ -75,7 +75,7 @@ export function HoverChip() {
       <div className="pa-hlabel" ref={label}>
         {hover ? (
           busy ? (
-            'Pascal is working on this'
+            'Aedifex is working on this'
           ) : (
             <>
               {plus}
