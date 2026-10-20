@@ -114,7 +114,10 @@ export async function startEditor(options: StartEditorOptions): Promise<StartEdi
   return withEditorLifecycleLock(options.paths, () => startEditorUnlocked(options))
 }
 
-async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEditorResult> {
+async function startEditorUnlocked(
+  options: StartEditorOptions,
+  selectedRuntime?: ActiveRuntime,
+): Promise<StartEditorResult> {
   await ensureAedifexDirectories(options.paths)
   options.onProgress?.({ step: 'storage-ready', dataDirectory: options.paths.data })
   let currentStatus: EditorStatus
@@ -146,9 +149,9 @@ async function startEditorUnlocked(options: StartEditorOptions): Promise<StartEd
   }
   await rm(options.paths.state, { force: true })
 
-  let runtime = await readActiveRuntime(options.paths)
+  let runtime = selectedRuntime ?? (await readActiveRuntime(options.paths))
   let installedRuntime = false
-  if (!runtime || options.sourceDirectory) {
+  if (!runtime || (!selectedRuntime && options.sourceDirectory)) {
     runtime = await installBundledRuntime(options.paths, options.sourceDirectory)
     installedRuntime = true
   }
@@ -317,7 +320,7 @@ export async function activateEditorRuntime(
 
     try {
       await activateRuntime(paths, candidate.version, candidate.directory)
-      await startEditorUnlocked({ paths, port: previousPort })
+      await startEditorUnlocked({ paths, port: previousPort }, candidate)
       if (!wasRunning) {
         await stopEditorUnlocked(paths)
         await stopMcpService(paths)
@@ -341,7 +344,7 @@ export async function activateEditorRuntime(
       }
       if (!rollbackError && wasRunning && previousRuntime) {
         try {
-          await startEditorUnlocked({ paths, port: previousPort })
+          await startEditorUnlocked({ paths, port: previousPort }, previousRuntime)
         } catch (restartError) {
           rollbackError = restartError
         }

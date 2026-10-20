@@ -1,5 +1,9 @@
 import { z } from 'zod'
+import { GeometryScriptSource } from '../geometry-source'
 import { SurfacePaintRegion } from './surface-paint-region'
+
+export const ZoneFloorScript = GeometryScriptSource.extend({ inputs: z.string() })
+export type ZoneFloorScript = z.infer<typeof ZoneFloorScript>
 
 export const ZoneFloorIntent = z.object({
   elevation: z.number().optional(),
@@ -9,6 +13,7 @@ export const ZoneFloorIntent = z.object({
   sourceSlabId: z.templateLiteral(['slab_', z.string()]).optional(),
   finish: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
   regions: z.array(SurfacePaintRegion).optional(),
+  script: ZoneFloorScript.optional(),
 })
 
 export const ZoneCeilingIntent = z.object({

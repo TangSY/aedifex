@@ -6,11 +6,20 @@ import {
   authoredObject,
   editedScriptLanguage,
   editedScriptParams,
+  furnishingRefusal,
+  readableScript,
   readSourceResult,
   requireAddObjectReason,
   type SceneNodes,
+  type ScriptReadable,
 } from '@aedifex/core/agent-operations'
-import { addObjectTool, getSourceTool, isAgentRefusal, refuse } from '@aedifex/core/agent-tools'
+import {
+  addObjectTool,
+  CATALOG_SOURCE,
+  getSourceTool,
+  isAgentRefusal,
+  refuse,
+} from '@aedifex/core/agent-tools'
 import {
   type AnyNode,
   type CompiledGeometryScript,
@@ -26,7 +35,7 @@ import type { SceneOperations } from '../operations'
 import { DESTRUCTIVE_TOOL_ANNOTATIONS, READ_ONLY_TOOL_ANNOTATIONS } from './annotations'
 import { refusalResult, toolError } from './errors'
 import { persistencePayload, publishLiveSceneSnapshot } from './live-sync'
-import { toPatches } from './shared-tools'
+import { briefInForce, toPatches } from './shared-tools'
 
 /**
  * How a host runs `add_object`'s module and keeps the result. Running
@@ -34,10 +43,15 @@ import { toPatches } from './shared-tools'
  * artifacts live for the active scene.
  */
 export type GeometryScriptHost = {
+  readonly signal?: AbortSignal
+  /** Recheck the host's active authorization after a long compile and before scene mutation. */
+  assertActive?(): Promise<void>
   compile(input: {
     code: string
     language: GeometryScriptLanguage
     params?: Record<string, GeometryScriptParamValue>
+    /** What the host builds it for (a room's floor, a wall's face: `floorScriptInputs`, `wallFaceScriptInputs`), kept in the host's frame. */
+    inputs?: Record<string, unknown>
   }): Promise<CompiledGeometryScript & { glb: Uint8Array }>
   storeArtifact(input: {
     sceneId: string
@@ -58,6 +72,7 @@ export type GeometryScriptHost = {
     code: string
     language: GeometryScriptLanguage
     params?: Record<string, GeometryScriptParamValue>
+    inputs?: Record<string, unknown>
     /** What the script builds, for the host to name it to the user. */
     kind: ScriptedKind
     nodeId: string
@@ -65,7 +80,17 @@ export type GeometryScriptHost = {
   }): Promise<CompiledGeometryScript>
 }
 
-export type ScriptedKind = 'object' | 'window' | 'door' | 'column'
+export type ScriptedKind = 'object' | 'window' | 'door' | 'column' | 'floor' | 'wall-face'
+
+/** The kind an artifact records; a room's floor finish and a wall face's are none of the node kinds. */
+const ARTIFACT_KIND: Record<ScriptedKind, GeometryArtifactMetadata['kind']> = {
+  object: 'item',
+  window: 'window',
+  door: 'door',
+  column: 'column',
+  floor: undefined,
+  'wall-face': undefined,
+}
 
 /** Compilation awaits a host; it must never land in a different editor scene. */
 export function assertGeometrySceneCurrent(input: {
@@ -84,25 +109,32 @@ export async function compileAndStore(
     code,
     language,
     params,
+    inputs,
   }: {
     code: string
     language: GeometryScriptLanguage
     params: Record<string, GeometryScriptParamValue> | undefined
+    inputs?: Record<string, unknown>
   },
   kind: ScriptedKind,
   context: { nodeId?: string; metadata?: GeometryArtifactMetadata } = {},
 ): Promise<CompiledGeometryScript> {
-  const nodeId = context.nodeId ?? generateId(kind === 'object' ? 'item' : kind)
+  const nodeId = context.nodeId ?? generateId(ARTIFACT_KIND[kind] ?? 'item')
   const metadata = GeometryArtifactMetadata.parse({
     ...context.metadata,
-    kind: kind === 'object' ? 'item' : kind,
+    kind: ARTIFACT_KIND[kind],
   })
-  if (host.build)
-    return {
-      ...(await host.build({ sceneId, code, language, params, kind, nodeId, metadata })),
-      nodeId,
-    }
-  const { glb, ...compiled } = await host.compile({ code, language, params })
+  if (host.build) {
+    const compiled = await host.build({ sceneId, code, language, params, inputs, kind, nodeId, metadata })
+    host.signal?.throwIfAborted()
+    await host.assertActive?.()
+    host.signal?.throwIfAborted()
+    return { ...compiled, nodeId }
+  }
+  const { glb, ...compiled } = await host.compile({ code, language, params, inputs })
+  host.signal?.throwIfAborted()
+  await host.assertActive?.()
+  host.signal?.throwIfAborted()
   metadata.mount = compiled.mount
   const [sha256] = await Promise.all([
     host.storeArtifact({
@@ -122,19 +154,93 @@ export async function compileAndStore(
       mimeType: GEOMETRY_SCRIPT_MIME_TYPES[language],
     }),
   ])
+  host.signal?.throwIfAborted()
+  await host.assertActive?.()
+  host.signal?.throwIfAborted()
   return { ...compiled, sha256, nodeId }
 }
 
-export async function readScript(
+async function scriptText(
+  host: GeometryScriptHost,
+  sceneId: string,
+  node: ScriptReadable,
+): Promise<string> {
+  const bytes = await host.readArtifact({ sceneId, sha256: node.source.script })
+  if (!bytes) throw new Error(`The script of ${node.id} could not be read`)
+  return new TextDecoder().decode(bytes)
+}
+
+export function readScript(
   host: GeometryScriptHost,
   sceneId: string,
   bridge: SceneOperations,
   nodeId: string,
 ): Promise<string> {
-  const node = authoredObject(bridge.getNodes() as Record<string, AnyNode>, nodeId)
-  const bytes = await host.readArtifact({ sceneId, sha256: node.source.script })
-  if (!bytes) throw new Error(`The script of ${nodeId} could not be read`)
-  return new TextDecoder().decode(bytes)
+  return scriptText(
+    host,
+    sceneId,
+    authoredObject(bridge.getNodes() as Record<string, AnyNode>, nodeId),
+  )
+}
+
+/**
+ * One object's module compiled and stored by the host: a new one from its code, an edit from its
+ * code or its stored script, with the params it keeps. The step a lone add_object and each
+ * add_object of a run_batch share.
+ */
+export async function compileObject(
+  host: GeometryScriptHost,
+  sceneId: string,
+  bridge: SceneOperations,
+  args: Omit<AddObjectInput, 'compiled'>,
+): Promise<CompiledGeometryScript> {
+  const code =
+    args.code ??
+    (args.nodeId ? await readScript(host, sceneId, bridge, args.nodeId) : refuseMissingCode())
+  const nodes = bridge.getNodes() as Record<string, AnyNode>
+  const previous = args.nodeId ? nodes[args.nodeId] : undefined
+  const language = editedScriptLanguage(previous, args)
+  const params = editedScriptParams(previous, args.params)
+  return compileAndStore(host, sceneId, { code, language, params }, 'object', {
+    nodeId: args.nodeId,
+    metadata: {
+      ...(isScriptedNode(previous) ? scriptedObjectMeta(previous) : {}),
+      ...GeometryReuseFields.parse(args),
+    },
+  })
+}
+
+/** What a batch's add_object builds with: the host's compile, on the scene open now. */
+export async function compileObjectOnHost({ host, bridge, args, assertCurrent }: {
+  host: GeometryScriptHost | undefined
+  bridge: SceneOperations
+  args: Omit<AddObjectInput, 'compiled'>
+  assertCurrent?: () => void
+}): Promise<CompiledGeometryScript> {
+  if (!host) refuse('scripts_unavailable', 'This Aedifex server cannot run geometry scripts.')
+  const scene = bridge.getActiveScene()
+  if (!scene)
+    refuse(
+      'no_active_scene',
+      'Open or save a scene first: authored objects are stored with a scene.',
+    )
+  const scopedHost: GeometryScriptHost = {
+    ...host,
+    assertActive: async () => {
+      host.signal?.throwIfAborted()
+      await host.assertActive?.()
+      host.signal?.throwIfAborted()
+      assertGeometrySceneCurrent({ bridge, sceneId: scene.id })
+      assertCurrent?.()
+    },
+  }
+  await scopedHost.assertActive!()
+  const compiled = await compileObject(scopedHost, scene.id, bridge, args)
+  host.signal?.throwIfAborted()
+  await host.assertActive?.()
+  host.signal?.throwIfAborted()
+  assertGeometrySceneCurrent({ bridge, sceneId: scene.id })
+  return compiled
 }
 
 /** `add_object` on the MCP: the shared contract and operation, with the host's compile in front. */
@@ -152,6 +258,11 @@ export function registerAddObject(
       annotations: DESTRUCTIVE_TOOL_ANNOTATIONS,
     },
     async (input: Record<string, unknown>) => {
+      const brief = briefInForce(bridge)
+      if (brief !== undefined) {
+        const refusal = furnishingRefusal(addObjectTool.name, input, brief)
+        if (refusal) return refusalResult(refusal)
+      }
       if (!host) {
         return toolError('This Aedifex server cannot run geometry scripts.', {
           code: 'scripts_unavailable',
@@ -167,27 +278,13 @@ export function registerAddObject(
       let compiled: CompiledGeometryScript
       try {
         requireAddObjectReason(args)
-        const code =
-          args.code ??
-          (args.nodeId
-            ? await readScript(host, scene.id, bridge, args.nodeId)
-            : refuseMissingCode())
-        const nodes = bridge.getNodes() as Record<string, AnyNode>
-        const previous = args.nodeId ? nodes[args.nodeId] : undefined
-        const language = editedScriptLanguage(previous, args)
-        const params = editedScriptParams(previous, args.params)
-        compiled = await compileAndStore(host, scene.id, { code, language, params }, 'object', {
-          nodeId: args.nodeId,
-          metadata: {
-            ...(isScriptedNode(previous) ? scriptedObjectMeta(previous) : {}),
-            ...GeometryReuseFields.parse(args),
-          },
-        })
+        compiled = await compileObject(host, scene.id, bridge, args)
       } catch (error) {
         if (isAgentRefusal(error)) return refusalResult(error)
-        return toolError(error instanceof Error ? error.message : String(error), {
-          code: 'script_failed',
-        })
+        return toolError(
+          `${error instanceof Error ? error.message : String(error)} ${CATALOG_SOURCE}`,
+          { code: 'script_failed' },
+        )
       }
       // A copy: the hosted bridge writes its map in place, and a "before" that grows with the call
       // reads every creation as unchanged.
@@ -195,7 +292,11 @@ export function registerAddObject(
       let outcome: ReturnType<typeof addObject>
       try {
         assertGeometrySceneCurrent({ bridge, sceneId: scene.id })
-        outcome = addObject(before, { ...args, compiled }, { activeLevelId: null })
+        outcome = addObject(
+          before,
+          { ...args, compiled },
+          { activeLevelId: bridge.activeLevelId?.() ?? null },
+        )
       } catch (error) {
         return refusalResult(error)
       }
@@ -236,7 +337,7 @@ export function registerGetSource(
       inputSchema: getSourceTool.input,
       annotations: READ_ONLY_TOOL_ANNOTATIONS,
     },
-    async ({ nodeId }: { nodeId: string }) => {
+    async ({ nodeId, face }: { nodeId: string; face?: 'a' | 'b' }) => {
       if (!host) {
         return toolError('This Aedifex server cannot read geometry scripts.', {
           code: 'scripts_unavailable',
@@ -245,8 +346,8 @@ export function registerGetSource(
       const scene = bridge.getActiveScene()
       if (!scene) return toolError('Open a scene first.', { code: 'no_active_scene' })
       try {
-        const node = authoredObject(bridge.getNodes() as Record<string, AnyNode>, nodeId)
-        const payload = readSourceResult(node, await readScript(host, scene.id, bridge, nodeId))
+        const node = readableScript(bridge.getNodes() as Record<string, AnyNode>, nodeId, face)
+        const payload = readSourceResult(node, await scriptText(host, scene.id, node))
         return {
           content: [{ type: 'text' as const, text: JSON.stringify(payload) }],
           structuredContent: payload,

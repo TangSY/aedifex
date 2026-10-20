@@ -5,10 +5,10 @@ import {
   PipeSegmentNode,
   type PortConnection,
 } from '@aedifex/core'
+import type { ScenePort } from '@aedifex/editor/distribution'
 import { getPipeFittingPorts } from '../pipe-fitting/ports'
 import { planPipeElbowAtPort } from './auto-fitting'
 import { planPipeRunTranslationOffsets } from './pipe-run-translation-offset'
-import type { ScenePort } from './ports'
 
 type Point = [number, number, number]
 

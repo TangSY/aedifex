@@ -139,12 +139,14 @@ export {
   CurtainGrid,
   CurtainPanelType,
   CurtainWallConfig,
+  curtainGridPositions,
   DEFAULT_CURTAIN_WALL,
   getCurtainWallConfig,
 } from './nodes/curtain-wall'
 export {
   DoorNode,
   DoorSegment,
+  FRENCH_DOOR_SEGMENTS,
   OpeningConstructionType,
   OpeningDimensionReference,
 } from './nodes/door'
@@ -284,6 +286,31 @@ export {
   ROOF_SOFFIT_SLOT_DEFAULT,
   RoofNode,
 } from './nodes/roof'
+export {
+  clipGlazedRoofPolygon,
+  DEFAULT_ROOF_GLAZING,
+  type GlazedRoofFace,
+  type GlazedRoofLayout,
+  type GlazedRoofPiece,
+  type GlazedRoofPoint,
+  getBarrelRoofFaces,
+  getBarrelRoofSolidPieces,
+  getGlazedRoofFaces,
+  getGlazedRoofLayout,
+  getGlazedRoofPanelType,
+  getGlazedRoofPieceFaces,
+  getGlazedRoofPieces,
+  getGlazedRoofPlanLines,
+  getRoofGlazing,
+  glazedRoofFacePoint,
+  glazedRoofSupportsPoint,
+  insetGlazedRoofPolygon,
+  isGlazedRoofSegment,
+  isIndependentRoofSegment,
+  RoofGlazing,
+  RoofSystemType,
+  supportsRoofGlazing,
+} from './nodes/roof-glazing'
 export type {
   DutchRoofMetrics,
   RoofSegmentSurfaceMaterialRole,
@@ -297,8 +324,11 @@ export {
   getDutchRoofMetrics,
   getEffectiveSegmentSurfaceMaterial,
   getPitchFromActiveRoofHeight,
+  getRoofSegmentDeckReach,
+  getRoofSegmentEndReach,
   getRoofSegmentSurfaceY,
   getRoofSegmentVisibleTopBounds,
+  getSegmentFasciaMaterial,
   getSegmentSlopeFrame,
   hasSegmentMaterialOverride,
   isBandedShedSegment,
@@ -308,7 +338,9 @@ export {
   RoofSegmentNode,
   RoofSegmentTrim,
   RoofType,
+  roofTypeHasRakes,
 } from './nodes/roof-segment'
+export { getRoofSegmentResizePatch } from './nodes/roof-segment-resize'
 export type {
   DutchRoofShapeMetrics,
   RoofShapeEaveSide,
@@ -320,6 +352,7 @@ export {
   getDutchEndSlopeFaces,
   getDutchRoofShapeMetrics,
   getRoofModuleFaces,
+  getRoofShapeEaveOverhang,
   getRoofShapeEaveSides,
   getRoofShapeInsets,
   getRoofShapeRatios,
@@ -342,14 +375,14 @@ export {
 } from './nodes/scan'
 export { SeparatorNode } from './nodes/separator'
 export { ShelfNode } from './nodes/shelf'
+export { SiteDossier, SiteNode } from './nodes/site'
 export {
   migrateSiteMetadata,
   SiteAddress,
-  SiteDossier,
-  SiteNode,
+  type SiteMetadataPatch,
   SiteParcel,
   SiteSetbacks,
-} from './nodes/site'
+} from './nodes/site-facts'
 export {
   SKYLIGHT_TYPE_ORDER,
   SKYLIGHT_TYPE_PRESETS,
@@ -415,6 +448,7 @@ export {
   WallAssemblyInteriorFinish,
   WallAssemblySheathingMaterial,
   WallFaceRegion,
+  WallFaceScript,
   WallNode,
   WallTreatmentSide,
   WallTrimProfile,
@@ -425,7 +459,7 @@ export {
   WindowNode,
   WindowType,
 } from './nodes/window'
-export { ZoneNode } from './nodes/zone'
+export { ZoneFloorScript, ZoneNode } from './nodes/zone'
 // Typed source identity (D5)
 export {
   PROVENANCE_MAX_ID_BYTES,

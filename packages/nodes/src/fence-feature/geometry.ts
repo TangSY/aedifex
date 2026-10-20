@@ -75,7 +75,7 @@ export function buildFenceFeatureGeometry(
       (span.a.y + span.b.y) / 2,
     )
     pick.rotation.y = -Math.atan2(span.b.y - span.a.y, span.b.x - span.a.x)
-    pick.userData.pascalExport = 'strip'
+    pick.userData.aedifexExport = 'strip'
     group.children[0]?.add(pick)
   }
   return group

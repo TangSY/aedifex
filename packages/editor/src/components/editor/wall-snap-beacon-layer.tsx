@@ -6,11 +6,10 @@ import {
   getWallBaseElevationForNodes,
   getWallCurveFrameAt,
   getWallCurveLength,
-  getWallPlaneTop,
   getWallThickness,
+  getWallTop,
   isCurvedWall,
   resolveLevelId,
-  resolveWallTop,
   sceneRegistry,
   useScene,
   type WallNode,
@@ -149,8 +148,7 @@ type WallTopHighlightSegment = {
 function getWallTopY(wall: WallNode, nodes: Readonly<Record<string, AnyNode>>) {
   const levelId = resolveLevelId(wall, nodes as Record<string, AnyNode>)
   const wallBase = getWallBaseElevationForNodes(wall, nodes as Record<string, AnyNode>)
-  const planeTop = getWallPlaneTop(wall, levelId, nodes as Record<string, AnyNode>)
-  return resolveWallTop(wall, planeTop, wallBase) + WALL_TOP_HIGHLIGHT_LIFT
+  return getWallTop(wall, levelId, nodes as Record<string, AnyNode>, wallBase) + WALL_TOP_HIGHLIGHT_LIFT
 }
 
 function buildHighlightSegment(start: [number, number], end: [number, number]) {

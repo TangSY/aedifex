@@ -90,7 +90,7 @@ describe('hosted service MCP contracts', () => {
       [
         new AgentRefusal(
           'service_consent_required',
-          'Reconnect and approve Pascal service access.',
+          'Reconnect and approve Aedifex service access.',
         ),
         { code: 'service_consent_required' },
       ],

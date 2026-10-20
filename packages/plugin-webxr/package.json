@@ -37,6 +37,10 @@
     "./host/build-tab": {
       "types": "./src/integrations/aedifex-editor/host/build-tab.tsx",
       "default": "./src/integrations/aedifex-editor/host/build-tab.tsx"
+    },
+    "./host/kitchen-browser": {
+      "types": "./src/integrations/aedifex-editor/host/kitchen-browser.tsx",
+      "default": "./src/integrations/aedifex-editor/host/kitchen-browser.tsx"
     }
   },
   "files": [

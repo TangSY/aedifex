@@ -17,7 +17,7 @@ export const ImportedMeshPrimitive = z.object({
 
 export type ImportedMeshPrimitive = z.infer<typeof ImportedMeshPrimitive>
 
-/** Triangle geometry retained when an import has no native Pascal shape. */
+/** Triangle geometry retained when an import has no native Aedifex shape. */
 export const ImportedMeshNode = BaseNode.extend({
   id: objectId('imesh'),
   type: nodeType('imported-mesh'),

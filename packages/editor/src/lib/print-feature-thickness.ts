@@ -1,4 +1,4 @@
-import { type AnyNode, getWallThickness } from '@aedifex/core'
+import { type AnyNode, getRoofGlazing, getWallThickness, isGlazedRoofSegment } from '@aedifex/core'
 import {
   mergePrintExportDiagnostics,
   type PrintExportDiagnostic,
@@ -30,6 +30,10 @@ function semanticThicknessMeters(node: AnyNode): number | null {
     case 'slab':
       return node.thickness
     case 'roof-segment': {
+      if (isGlazedRoofSegment(node)) {
+        const glazing = getRoofGlazing(node)
+        return Math.min(glazing.frameWidth, glazing.frameDepth, glazing.glassThickness)
+      }
       const structuralThicknesses = [node.wallThickness, node.deckThickness + node.shingleThickness]
       if (node.roofType === 'dutch') structuralThicknesses.push(node.dutchTopRakeThickness)
       return Math.min(...structuralThicknesses)

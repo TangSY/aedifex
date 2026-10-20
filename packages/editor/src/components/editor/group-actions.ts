@@ -19,7 +19,6 @@ import { Plane, Vector2, Vector3 } from 'three'
 import { GROUP_MOVE_DRAG_LABEL } from '../../lib/contextual-help'
 import { clientToPlan } from '../../lib/floorplan/plan-coords'
 import { bindWindowBlurCancel } from '../../lib/interaction/window-blur-cancel'
-import { isModalKeyboardTarget } from '../../lib/modal-keyboard'
 import { deleteSelectedSeparator, requestRoomDeletion } from '../../lib/room-structure-commands'
 import { captureElementActionOrigin, completeElementAction } from '../../lib/room-zone-routing'
 import {
@@ -30,6 +29,7 @@ import {
   pasteSystemEditorClipboardToLevel,
 } from '../../lib/scene-clipboard'
 import { emitDeleteSFX, sfxEmitter } from '../../lib/sfx-bus'
+import { isTypingTarget } from '../../lib/typing-target'
 import useAlignmentGuides from '../../store/use-alignment-guides'
 import useDeleteConfirmation from '../../store/use-delete-confirmation'
 import useEditor, {
@@ -374,7 +374,7 @@ export function startGroupPickUp(
   }
 
   const onKeyDown = (e: KeyboardEvent) => {
-    if (isModalKeyboardTarget(e.target)) return
+    if (isTypingTarget(e.target)) return
     const key = e.key.toLowerCase()
     if ((e.metaKey || e.ctrlKey) && (key === 'c' || key === 'v' || key === 'x')) {
       // A clipboard chord replaces the current carry. Let the global keyboard

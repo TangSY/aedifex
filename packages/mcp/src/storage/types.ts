@@ -89,7 +89,7 @@ export interface SceneMutateOptions {
 }
 
 /**
- * What `delete` did. A local store removes the scene; hosted Pascal never deletes a project this
+ * What `delete` did. A local store removes the scene; hosted Aedifex never deletes a project this
  * way and only hides it, with a `message` saying so.
  */
 export type SceneDeleteResult = {

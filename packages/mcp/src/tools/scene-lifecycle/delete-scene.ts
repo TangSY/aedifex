@@ -22,7 +22,7 @@ export function registerDeleteScene(server: McpServer, operations: SceneOperatio
     {
       title: 'Delete scene',
       description:
-        "Remove a stored scene by id. In Pascal this never deletes the project: it hides it from Pascal's public listings until it is next saved with content, and answers `deleted: false, hidden: true` with a message; its owner can delete it from the projects page. Only someone who can manage the project may hide it. A local scene store deletes the scene. Optionally pass `expectedVersion` for optimistic concurrency.",
+        "Remove a stored scene by id. In Aedifex this never deletes the project: it hides it from Aedifex's public listings until it is next saved with content, and answers `deleted: false, hidden: true` with a message; its owner can delete it from the projects page. Only someone who can manage the project may hide it. A local scene store deletes the scene. Optionally pass `expectedVersion` for optimistic concurrency.",
       inputSchema: deleteSceneInput,
       outputSchema: deleteSceneOutput,
       annotations: DESTRUCTIVE_TOOL_ANNOTATIONS,

@@ -4,7 +4,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { SceneBridge } from './bridge/scene-bridge'
 import { createAedifexMcpServer } from './server'
 
-describe('Pascal MCP tool execution', () => {
+describe('Aedifex MCP tool execution', () => {
   test('runs registered tools through the configured executor', async () => {
     const bridge = new SceneBridge()
     bridge.loadDefault()
@@ -209,8 +209,9 @@ async function toolText(client: Client, name: string): Promise<string | undefine
   return content?.type === 'text' ? content.text : undefined
 }
 
-// What the agent does when a tool needs the editor tab is the host's to say, at connect.
 describe('what a client reads at connect', () => {
+  // L64 (the user, 18:07): whether the agent may open the editor is the person's setting, which
+  // the host says at connect.
   test('a host adds its own lines', async () => {
     const bridge = new SceneBridge()
     bridge.loadDefault()
@@ -220,7 +221,7 @@ describe('what a client reads at connect', () => {
     const client = new Client({ name: 'instructions-test', version: '0.0.0' })
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])
     try {
-      expect(client.getInstructions()).toBe(line)
+      expect(client.getInstructions()).toEndWith(`\n${line}`)
     } finally {
       await client.close()
       await server.close()

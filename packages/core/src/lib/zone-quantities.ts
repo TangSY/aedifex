@@ -1,7 +1,7 @@
 import type { AnyNode, CeilingNode, SlabNode, WallNode, ZoneNode } from '../schema'
 import type { AnyNodeId } from '../schema/types'
 import { DEFAULT_LEVEL_HEIGHT, resolveCeilingHeight } from '../services/level-height'
-import { getWallPlaneTop } from '../services/storey'
+import { getWallTop } from '../services/storey'
 import { sampleWallCenterline } from '../systems/wall/wall-curve'
 import { getWallLocalFaceZ } from '../systems/wall/wall-frame'
 import { resolveWallBaseElevation } from '../systems/wall/wall-base'
@@ -330,8 +330,9 @@ export function deriveZoneQuantityReport(
         )
       : 0
     const wallBase = resolveWallBaseElevation({ wall, slabs, walls, levelBase, nodes: sceneNodes })
-    const planeTop = levelId ? getWallPlaneTop(wall, levelId, sceneNodes) : DEFAULT_LEVEL_HEIGHT
-    return resolveWallEffectiveHeight(wall, planeTop, wallBase)
+    return levelId
+      ? getWallTop(wall, levelId, sceneNodes, wallBase) - wallBase
+      : resolveWallEffectiveHeight(wall, DEFAULT_LEVEL_HEIGHT, wallBase)
   }
   const edgeLengths = [zone.polygon, ...(zone.holes ?? [])].flatMap((ring) =>
     ring.map((start, index) => {

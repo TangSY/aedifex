@@ -158,7 +158,7 @@ export function discoverMetadataKeys(source: string, fileName = 'source.tsx'): s
       let key: string | undefined
       if (ts.isPropertyAccessExpression(parent) && parent.expression === current) {
         key = parent.name.text
-        if (ARRAY_METHODS.has(key) && ts.isCallExpression(parent.parent)) break
+        if (key !== undefined && ARRAY_METHODS.has(key) && ts.isCallExpression(parent.parent)) break
       } else if (ts.isElementAccessExpression(parent) && parent.expression === current) {
         key = constantKey(parent.argumentExpression)
       }

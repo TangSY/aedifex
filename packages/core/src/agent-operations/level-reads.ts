@@ -2,9 +2,10 @@ import { area } from '../lib/polygon-boolean'
 import { roomFloorChoices } from '../lib/room-floor-choices'
 import type { AnyNode, AnyNodeId, ItemNode, LevelNode, WallNode, ZoneNode } from '../schema'
 import { DEFAULT_LEVEL_HEIGHT } from '../services/level-height'
-import { getWallPlaneTop } from '../services/storey'
+import { getWallTop } from '../services/storey'
 import { resolveWallBaseElevation } from '../systems/wall/wall-base'
 import { levelBaseElevationAt } from '../lib/terrain-support-query'
+import { resolveWallFaceChain } from '../systems/wall/wall-finish'
 import { resolveWallEffectiveHeight } from '../systems/wall/wall-top'
 import { type LevelTargetInput, targetLevel } from './level-target'
 import { contentCounts, levelIdOf, levelRole, nodesOnLevel } from './scene-queries'
@@ -31,8 +32,7 @@ export function wallResolvedHeight(nodes: SceneNodes, wall: WallNode): number {
     levelBase: levelBaseElevationAt(nodes, levelId, wall.start[0], wall.start[1]),
     nodes,
   })
-  const planeTop = getWallPlaneTop(wall, levelId, nodes as Record<AnyNodeId, AnyNode>)
-  return resolveWallEffectiveHeight(wall, planeTop, wallBase)
+  return getWallTop(wall, levelId, nodes as Record<AnyNodeId, AnyNode>, wallBase) - wallBase
 }
 
 export function wallSummary(nodes: SceneNodes, wall: WallNode) {
@@ -46,6 +46,10 @@ export function wallSummary(nodes: SceneNodes, wall: WallNode) {
     resolvedHeight: wallResolvedHeight(nodes, wall),
     heightIsExplicit: wall.height !== undefined,
     thickness: wall.thickness,
+    wallFaceChains: {
+      a: resolveWallFaceChain(wall, 'a'),
+      b: resolveWallFaceChain(wall, 'b'),
+    },
     openings: wall.children.flatMap((id) => {
       const child = nodes[id]
       if (child?.type !== 'door' && child?.type !== 'window') return []
@@ -73,6 +77,8 @@ const zoneSummary = (nodes: SceneNodes, zone: ZoneNode) => ({
   color: zone.color,
   polygon: zone.polygon,
   holes: zone.holes ?? [],
+  wallMaterial: zone.wallMaterial ?? null,
+  wallOverrides: zone.wallOverrides ?? [],
   ...zoneSize(zone),
   floor_choices: roomFloorChoices(nodes, zone.id),
 })

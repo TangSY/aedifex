@@ -31,14 +31,14 @@
   },
   "devDependencies": {
     "@repo/typescript-config": "*",
-    "@types/node": "^22.19.20",
-    "typescript": "6.0.3"
+    "@types/node": "^26.6.5",
+    "typescript": "7.0.2"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0"
+    "@modelcontextprotocol/sdk": "^1.32.1"
   },
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.18.0"
   },
   "keywords": [
     "aedifex",

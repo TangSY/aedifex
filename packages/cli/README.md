@@ -25,7 +25,7 @@ the runtime, so rebuilding the CLI does not replace your work.
 
 ## Requirements
 
-- Node.js 22.13 or newer
+- Node.js 22.18 or newer
 - Bun 1.3+
 - A browser, unless you pass `--no-open`
 - A locally built and staged runtime for the web editor; MCP-only use needs the staged MCP service.

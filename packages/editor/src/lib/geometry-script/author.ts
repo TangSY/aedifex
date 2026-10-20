@@ -58,6 +58,7 @@ export async function compileAndStoreGeometryScript(input: {
   nodeId?: string
   params?: Record<string, GeometryScriptParamValue>
   kind?: 'item' | 'door' | 'window' | 'column'
+  inputs?: Record<string, unknown>
   name?: string
   description?: string
   category?: string
@@ -89,7 +90,11 @@ export async function compileAndStoreGeometryScript(input: {
     input.assertCurrent?.()
     return { ...compiled, nodeId }
   }
-  const { glb, ...compiled } = await compileGeometryScriptInWorker({ code, params })
+  const { glb, ...compiled } = await compileGeometryScriptInWorker({
+    code,
+    params,
+    inputs: input.inputs,
+  })
   input.assertCurrent?.()
   const context = { nodeId, metadata: { ...metadata, mount: compiled.mount } }
   const [sha256] = await Promise.all([

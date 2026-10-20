@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { Euler, PerspectiveCamera, Vector3 } from 'three'
 import ts from 'typescript'
 import { isModalKeyboardTarget } from '../../lib/modal-keyboard'
+import { isTypingTarget } from '../../lib/typing-target'
 
 // Run the production input handlers and frame callback without mounting a GPU
 // canvas. AST selection keeps this a behaviour test, not a source-text assertion.
@@ -60,6 +61,7 @@ function createHarness() {
   document.pointerLockElement = canvas
   const bindings = {
     isModalKeyboardTarget,
+    isTypingTarget,
     camera,
     suspendRef,
     document,

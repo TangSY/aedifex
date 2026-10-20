@@ -1,3 +1,4 @@
+import { metadataRecord } from '../utils/metadata-record'
 import { floorPlateAtGroundContact, supportDerivedFloorHeight } from '../lib/floor-foundation-datum'
 import { expandFloorIntentChanges } from '../lib/floor-intent-changes'
 import { footprintIoU } from '../lib/floor-plates'
@@ -12,6 +13,8 @@ import {
   UnitNode,
 } from '../schema'
 import { DEFAULT_SLAB_ELEVATION } from '../schema/nodes/slab'
+import { isRoofLevel, isStoreyContent } from '../services/roof-level'
+import { seatRoofs } from '../services/roof-move'
 import { isDerivedNode } from '../store/derived-node-guard'
 import { cloneLevelSubtree, remapNodeReferences } from '../utils/clone-scene-graph'
 
@@ -214,6 +217,16 @@ export function buildLevelDuplicateCreateOps({
 
   const copy = cleanedNodes.find((node) => node.id === newLevelId) as LevelNode
   copy.level = nextLevelNumber
+  // A walled level someone declared the roof level is a storey once copied: the copy is one.
+  if (
+    isRoofLevel(copy) &&
+    cleanedNodes.some(
+      (node) => node.parentId === newLevelId && isStoreyContent(node.type, node.metadata),
+    )
+  ) {
+    const { role: _role, ...metadata } = metadataRecord(copy.metadata)
+    copy.metadata = metadata
+  }
   // Unnamed like a level from the add buttons, so it reads by its place in the building.
   delete copy.name
   copy.baseElevation = 0
@@ -362,17 +375,23 @@ export function buildLevelDuplicateCreateOps({
     const rebase = constructionChanges.find((change) => change.id === node.id)
     return [{ id: node.id, data: { ...data, ...rebase?.data } as Partial<AnyNode> }]
   })
-  return {
-    createOps: created.map((node) => ({
+  // The copy's roofs on its walls go to the level above it, as every roof writer seats them.
+  const seated = seatRoofs(nodes, {
+    create: created.map((node) => ({
       node,
       parentId:
         node.id === newLevelId
-          ? parentBuildingId
+          ? (parentBuildingId ?? undefined)
           : ((node.parentId as AnyNodeId | null) ?? undefined),
     })),
+    update: updateOps,
+  })
+  return {
+    createOps: seated.changes.create,
     newLevelId,
     shiftedLevels,
-    updateOps,
+    updateOps: seated.changes.update,
     skippedNodes: clonedNodes.filter((node) => !keptIds.has(node.id as AnyNodeId)),
+    notes: seated.notes,
   }
 }

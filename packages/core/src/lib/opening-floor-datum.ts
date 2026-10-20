@@ -1,6 +1,6 @@
 import { metadataRecord } from '../utils/metadata-record'
 import type { AnyNode, DoorNode, SlabNode, WallNode, WindowNode } from '../schema'
-import { getWallPlaneTop } from '../services/storey'
+import { getWallTop } from '../services/storey'
 import {
   computeWallSlabSupport,
   type WallSlabSupport,
@@ -9,7 +9,6 @@ import {
 import { getWallCurveFrameAt, getWallCurveLength } from '../systems/wall/wall-curve'
 import { calculateLevelMiters, getWallPlanFootprint } from '../systems/wall/wall-footprint'
 import { getWallBodyCenterOffset } from '../systems/wall/wall-frame'
-import { resolveWallTop } from '../systems/wall/wall-top'
 import {
   isFloorAnchoredOpening,
   openingAperture,
@@ -109,7 +108,7 @@ export function openingFitsAtDatum(
   nodes: Readonly<Record<string, AnyNode>>,
   support = wallSupportForNodes(wall, nodes),
 ): boolean {
-  const top = resolveWallTop(wall, getWallPlaneTop(wall, wall.parentId!, nodes), support.elevation)
+  const top = getWallTop(wall, wall.parentId!, nodes, support.elevation)
   return datum + opening.position[1] + opening.height / 2 <= top + 1e-9
 }
 

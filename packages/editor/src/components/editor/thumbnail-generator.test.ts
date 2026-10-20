@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { type AnyNode, sceneRegistry, useScene } from '@aedifex/core'
+import { type AnyNode, emitter, sceneRegistry, useScene } from '@aedifex/core'
 import { BuildingNode, CeilingNode, LevelNode, WallNode } from '@aedifex/core/schema'
 import { hideFromScene, SCENE_LAYER, useViewer } from '@aedifex/viewer'
 import { Group, Layers, Mesh, OrthographicCamera, PerspectiveCamera, Vector2 } from 'three'
 import { CanvasTarget, ClippingGroup, type WebGPURenderer } from 'three/webgpu'
-import { atCaptureSize, capturesOrthographically, interiorCutaway, presentFinished, pumpFrames, tileGrid } from './thumbnail-generator'
+import { atCaptureSize, captureDimensions, capturesOrthographically, interiorCutaway, presentFinished, presentWhileCapturing, pumpFrames, tileGrid } from './thumbnail-generator'
 
 type FakeCanvas = { width: number; height: number; style: Record<string, string> }
 
@@ -40,6 +40,34 @@ function fakeRenderer(canvas: FakeCanvas, pixelRatio: number) {
 }
 
 describe('supersampled capture', () => {
+  test('an explicit camera renders at the requested resolution and aspect without resizing the pane', () => {
+    const live: FakeCanvas = { width: 800, height: 1000, style: {} }
+    const renderer = fakeRenderer(live, 1)
+    const position: [number, number, number] = [2, 1, 3]
+    const target: [number, number, number] = [0, 0, 0]
+    for (const pose of [
+      { perspective: { position, target, fov: 35 } },
+      { ortho: { position, target, viewWidth: 4 } },
+    ]) {
+      const size = captureDimensions(
+        [800, 1000],
+        { ...pose, standardSize: { w: 1920, h: 1280 } },
+        24_000_000,
+      )
+      expect(size).toEqual([1920, 1280])
+      const buffer = atCaptureSize(renderer, ...size, () =>
+        renderer.getDrawingBufferSize(new Vector2()).toArray(),
+      )
+      expect(buffer).toEqual([1920, 1280])
+      expect([live.width, live.height]).toEqual([800, 1000])
+    }
+    expect(
+      captureDimensions([800, 1000], { standardSize: { w: 1920, h: 1280 } }, 24_000_000),
+    ).toEqual([800, 1000])
+    expect(captureDimensions([800, 1000], { supersample: 2 }, 24_000_000)).toEqual([1600, 2000])
+    expect(captureDimensions([6000, 4000], { supersample: 2 }, 6_000_000)).toEqual([3000, 2000])
+  })
+
   test('renders at its own size while the live canvas keeps its size', () => {
     // a 1.5 dpr screen: the old capture resized the live canvas with drawing
     // buffer pixels where CSS pixels were due — 3× during the capture, 1.5×
@@ -169,6 +197,46 @@ describe('a sheet capture session', () => {
     presentFinished()()
     unsubscribe()
     expect(writes).toBe(0)
+  })
+
+  // A sheet's pictures and an agent's view can overlap: the user's view is the one before the
+  // first, never a run's finished presentation.
+  test('runs that overlap present once and put the view back after the last', () => {
+    const session = (owner: string, active: boolean) =>
+      emitter.emit('camera-controls:capture-session', { owner, active })
+    const steps: string[] = []
+    const stop = presentWhileCapturing(() => {
+      steps.push('present')
+      return () => steps.push('restore')
+    })
+    session('sheets-a', true)
+    session('view-b', true)
+    session('sheets-a', false)
+    expect(steps).toEqual(['present'])
+    session('nobody', false)
+    session('view-b', false)
+    expect(steps).toEqual(['present', 'restore'])
+    session('view-c', true)
+    stop()
+    expect(steps).toEqual(['present', 'restore', 'present', 'restore'])
+    session('view-c', false)
+    expect(steps).toHaveLength(4)
+  })
+
+  // The generator mounted while a sheet captures (a remount, the editor opened mid-run): the run's
+  // finished presentation from the first frame, the user's view back at its end.
+  test('a run already on when the generator mounts is presented at once', () => {
+    emitter.emit('camera-controls:capture-session', { owner: 'sheets-early', active: true })
+    const steps: string[] = []
+    const stop = presentWhileCapturing(() => {
+      steps.push('present')
+      return () => steps.push('restore')
+    })
+    expect(steps).toEqual(['present'])
+    emitter.emit('camera-controls:capture-session', { owner: 'sheets-early', active: false })
+    expect(steps).toEqual(['present', 'restore'])
+    stop()
+    expect(steps).toEqual(['present', 'restore'])
   })
 })
 

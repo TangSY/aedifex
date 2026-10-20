@@ -25,8 +25,8 @@ import { clientToPlan } from '../../lib/floorplan/plan-coords'
 import { isHistoryShortcut } from '../../lib/history'
 import { bindWindowBlurCancel } from '../../lib/interaction/window-blur-cancel'
 import { formatLinearMeasurement } from '../../lib/measurements'
-import { isModalKeyboardTarget } from '../../lib/modal-keyboard'
 import { sfxEmitter } from '../../lib/sfx-bus'
+import { isTypingTarget } from '../../lib/typing-target'
 import useAlignmentGuides from '../../store/use-alignment-guides'
 import useEditor, {
   isAlignmentGuideActive,
@@ -372,7 +372,7 @@ export function startFloorplanGroupMove(
   // Escape arm (registered earlier on window in the bubble phase), which
   // would otherwise clear the multi-selection mid-cancel.
   const onKeyDown = (e: KeyboardEvent) => {
-    if (isModalKeyboardTarget(e.target)) return
+    if (isTypingTarget(e.target)) return
     const key = e.key.toLowerCase()
     if ((key === 'r' || key === 't') && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
       // Armed but still under the drag threshold: engage first (exactly what
@@ -577,7 +577,7 @@ export function startFloorplanGroupRotate(event: {
 
   // Capture phase so Escape wins over the global `use-keyboard` arm.
   const onKeyDown = (e: KeyboardEvent) => {
-    if (isModalKeyboardTarget(e.target)) return
+    if (isTypingTarget(e.target)) return
     if (e.key === 'Delete' || e.key === 'Backspace') {
       // Deleting mid-rotate: revert first, then let the global Delete arm run.
       cancel()

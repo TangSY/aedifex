@@ -16,7 +16,7 @@
  */
 
 import { validateDesign } from '@aedifex/core/procedural-items'
-import { isAgentRefusal } from '@aedifex/core/agent-tools'
+import { isAgentRefusal, RETIRED_MCP_TOOLS, retiredToolRefusal } from '@aedifex/core/agent-tools'
 import { placeDesign } from '@aedifex/mcp/operations'
 import { placeDesignInput } from '@aedifex/mcp/tools/place-design'
 import { validateDesignInput } from '@aedifex/mcp/tools/validate-design'
@@ -52,6 +52,8 @@ export async function executeRemoteMcpToolCall(
   try {
     if (call.signal?.aborted) throw new DOMException('MCP session ended', 'AbortError')
     call.assertCurrent?.()
+    const retired = RETIRED_MCP_TOOLS[call.toolName]
+    if (retired) return { ok: false, ...retiredToolRefusal(call.toolName, retired) }
     if (isSharedAgentToolName(call.toolName)) {
       const { result } = await runSharedAgentTool({ name: call.toolName, input: call.args, signal: call.signal, assertSessionCurrent: call.assertCurrent })
       return { ok: true, result }

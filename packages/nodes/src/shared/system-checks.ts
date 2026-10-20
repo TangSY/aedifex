@@ -11,8 +11,8 @@ import {
   nodeRegistry,
   validateDwv,
 } from '@aedifex/core'
+import { connectionCompatibility } from '@aedifex/editor/distribution'
 import { Box3, Ray, Vector3 } from 'three'
-import { connectionCompatibility } from './connection-compatibility'
 import { planRunHangerSlots } from './run-hangers'
 
 export type SystemFinding = {

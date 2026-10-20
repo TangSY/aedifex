@@ -35,7 +35,7 @@ const context = {
     .string()
     .regex(/^[a-z0-9-]+:[a-z0-9-]+$/)
     .describe(
-      "The installed Pascal plugin whose service grant this request uses. Read get_scene.installedPlugins or the host's plugin list; an ID is not permission.",
+      "The installed Aedifex plugin whose service grant this request uses. Read get_scene.installedPlugins or the host's plugin list; an ID is not permission.",
     ),
   projectId: z
     .string()
@@ -52,7 +52,7 @@ const maxCredits = z
   .nonnegative()
   .max(Number.MAX_SAFE_INTEGER)
   .describe(
-    'The maximum Pascal credits approved for this operation. Read list_pascal_services for the price; the gateway refuses a higher charge.',
+    'The maximum Aedifex credits approved for this operation. Read list_pascal_services for the price; the gateway refuses a higher charge.',
   )
 
 const readAnnotations = {
@@ -71,7 +71,7 @@ const resultAnnotations = {
 export const listPascalServicesTool = {
   name: 'list_pascal_services',
   action: 'catalog',
-  title: 'List Pascal services',
+  title: 'List Aedifex services',
   description:
     'List the hosted services an installed plugin may use in this project, current prices and available media models. This lookup is free. Discoverability does not grant permission or spend credits.',
   input: context,
@@ -83,7 +83,7 @@ export const pullSiteDataTool = {
   action: 'site.pull',
   title: 'Pull site context',
   description:
-    'Retrieve sourced parcel, terrain/elevation, flood, wetlands and other selected site context for a hosted project. Uses the fixed Pascal credit price from list_pascal_services, bounded by maxCredits. Keep pullKey for retries. Returns a retained operation; use get_site_pull while running or to reopen it free. Partial coverage and unknowns remain explicit. Does not edit the scene.',
+    'Retrieve sourced parcel, terrain/elevation, flood, wetlands and other selected site context for a hosted project. Uses the fixed Aedifex credit price from list_pascal_services, bounded by maxCredits. Keep pullKey for retries. Returns a retained operation; use get_site_pull while running or to reopen it free. Partial coverage and unknowns remain explicit. Does not edit the scene.',
   input: {
     ...context,
     ...siteContextInput,
@@ -118,7 +118,7 @@ export const generateStudioMediaTool = {
   action: 'studio.generate',
   title: 'Generate project media',
   description:
-    "Generate an image, material or video using an available model from list_pascal_services. Charges this project's Pascal wallet up to maxCredits; returns a job ID to read with get_studio_generation. Uses authorized project snapshot/render references. Does not edit the scene. After a lost response, inspect the project's Studio history before submitting again; a new submission may charge again.",
+    "Generate an image, material or video using an available model from list_pascal_services. Charges this project's Aedifex wallet up to maxCredits; returns a job ID to read with get_studio_generation. Uses authorized project snapshot/render references. Does not edit the scene. After a lost response, inspect the project's Studio history before submitting again; a new submission may charge again.",
   input: {
     ...context,
     modelId: z.string().min(1).max(100),

@@ -296,7 +296,7 @@ describe('layer provenance is content (R3, R9)', () => {
 
 /**
  * Synthetic wall build-ups expressed as layer boundaries in metres from the
- * exterior face. In both walls the interior side is the Pascal front (+n) face.
+ * exterior face. In both walls the interior side is the Aedifex front (+n) face.
  */
 describe('wall layer boundary fixtures', () => {
   type Measured = { id: string; role: AssemblyLayer['role']; from: number; to: number }

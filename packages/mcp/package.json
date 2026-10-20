@@ -70,15 +70,15 @@
     "@aedifex/geometry-script": "^1.0.3"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "@aedifex/lingo": "npm:@pascal-app/lingo@^0.2.0",
-    "zod": ">=4.5.4 <4.6"
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@aedifex/lingo": "npm:@pascal-app/lingo@^0.5.0",
+    "zod": ">=4.6.7 <4.7"
   },
   "devDependencies": {
     "@aedifex/core": "^0.10.0",
     "@repo/typescript-config": "*",
-    "@types/node": "^22.19.20",
-    "typescript": "6.0.3",
+    "@types/node": "^26.6.5",
+    "typescript": "7.0.2",
     "@aedifex/geometry-script": "workspace:*"
   },
   "keywords": [

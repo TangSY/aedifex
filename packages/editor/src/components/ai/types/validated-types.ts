@@ -748,6 +748,6 @@ export interface ValidatedSharedAgentOperation {
   toolName: SharedAgentToolName
   status: 'valid' | 'invalid'
   outcome?: AgentOperationOutcome
-  compiled?: CompiledGeometryScript
+  compiled?: CompiledGeometryScript | readonly CompiledGeometryScript[]
   errorReason?: string
 }

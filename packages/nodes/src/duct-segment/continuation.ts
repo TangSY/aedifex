@@ -6,6 +6,7 @@ import {
   useScene,
 } from '@aedifex/core'
 import { useEditor } from '@aedifex/editor'
+import type { RunBodyHit, ScenePort } from '@aedifex/editor/distribution'
 import { useViewer } from '@aedifex/viewer'
 import {
   findMatedScenePorts,
@@ -14,7 +15,6 @@ import {
   type RunContinuationHandlePlan,
   resolveDuctContinuationHandle,
 } from '../shared/elbow-branch-continuation'
-import type { RunBodyHit, ScenePort } from '../shared/ports'
 import { ductPortDiameterIn } from './geometry'
 import type { DuctSegmentNode } from './schema'
 

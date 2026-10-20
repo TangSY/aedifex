@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { mkdir, mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
 import http from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -101,6 +101,7 @@ async function checkEditorFromLocalRuntime(executable: string, runtimeDirectory:
   if (!rootResponse.ok) throw new Error(`editor root returned ${rootResponse.status}`)
   const scenesResponse = await fetch(`${started.url}/scenes`)
   if (!scenesResponse.ok) throw new Error(`editor scenes returned ${scenesResponse.status}`)
+  await checkOfflineCatalogMedia(`http://127.0.0.1:${started.port}`)
   const repeatedStart = JSON.parse(
     (
       await run(
@@ -175,6 +176,44 @@ async function checkEditorFromLocalRuntime(executable: string, runtimeDirectory:
   )
   await run(process.execPath, [executable, 'doctor', '--json'], undefined, smokeEnvironment)
   await run(process.execPath, [executable, 'stop', '--json'], undefined, smokeEnvironment)
+}
+
+async function checkOfflineCatalogMedia(origin: string): Promise<void> {
+  const app = path.join(packageDirectory, 'dist/runtime/apps/editor')
+  const files: { file: string; url: string }[] = []
+  const collect = async ({ directory, url }: { directory: string; url: string }): Promise<void> => {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const file = path.join(directory, entry.name)
+      const assetUrl = `${url}/${encodeURIComponent(entry.name)}`
+      if (entry.isDirectory()) await collect({ directory: file, url: assetUrl })
+      else if (entry.isFile() && /\.(webp|png|jpe?g|glb)$/.test(entry.name)) {
+        files.push({ file, url: assetUrl })
+      }
+    }
+  }
+  await collect({ directory: path.join(app, 'public/items'), url: '/items' })
+  await collect({ directory: path.join(app, '.next/static/media'), url: '/_next/static/media' })
+  if (
+    !files.some(({ file }) => /\.(webp|png|jpe?g)$/.test(file)) ||
+    !files.some(({ file }) => file.endsWith('.glb'))
+  ) {
+    throw new Error('the staged runtime is missing offline catalog images or models')
+  }
+  for (let start = 0; start < files.length; start += 8) {
+    await Promise.all(
+      files.slice(start, start + 8).map(async ({ file, url }) => {
+        const response = await fetch(`${origin}${url}`, {
+          signal: AbortSignal.timeout(10_000),
+        })
+        if (!response.ok) throw new Error(`offline catalog asset ${url}: HTTP ${response.status}`)
+        const [served, staged] = await Promise.all([response.arrayBuffer(), readFile(file)])
+        if (!Buffer.from(served).equals(staged)) {
+          throw new Error(`the installed runtime changed offline catalog asset ${url}`)
+        }
+      }),
+    )
+  }
+  console.log(`Verified ${files.length} offline catalog images and models from the installed runtime.`)
 }
 
 async function listen(server: http.Server): Promise<void> {

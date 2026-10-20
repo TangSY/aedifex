@@ -1,5 +1,5 @@
 import type { AnyNode, GridEvent } from '@aedifex/core'
-import type { RunWallAttachment } from './distribution-run-contract'
+import type { RunWallAttachment } from '@aedifex/editor/distribution'
 
 type Point = [number, number, number]
 

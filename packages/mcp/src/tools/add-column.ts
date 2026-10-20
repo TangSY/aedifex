@@ -55,7 +55,7 @@ export function registerAddColumn(
           })
           assertGeometrySceneCurrent({ bridge, sceneId: scene.id })
         }
-        const outcome = addColumn(nodes, { ...input, compiled }, { activeLevelId: null })
+        const outcome = addColumn(bridge.getNodes(), { ...input, compiled }, { activeLevelId: bridge.activeLevelId?.() ?? null })
         if (outcome.changes) {
           const patches = toPatches(outcome.changes)
           if (compiled) bridge.applyCompiledGeometryPatch({ patches, compiled })
