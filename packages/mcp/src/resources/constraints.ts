@@ -1,7 +1,7 @@
 import type { AnyNode, SlabNode, WallNode } from '@aedifex/core/schema'
 import { getWallPlanFootprint } from '@aedifex/core/wall'
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { McpServer } from '@modelcontextprotocol/server'
+import { ResourceTemplate } from '@modelcontextprotocol/server'
 import type { SceneOperations } from '../operations'
 
 type WallFootprint = {

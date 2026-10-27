@@ -6,9 +6,9 @@ import type {
   AnyNodeType,
   Collection,
   CollectionId,
+  CompiledGeometryScript,
   SceneMaterial,
   SceneMaterialId,
-  CompiledGeometryScript,
 } from '@aedifex/core/schema'
 import type { ZodType } from 'zod'
 import type { AgentSession } from '../bridge/agent-session'
@@ -91,7 +91,10 @@ export interface SceneOperations {
     createdIds: AnyNodeId[]
   }
   /** Only compiled internal tools call this; raw patches cannot opt out of script ownership. */
-  applyCompiledGeometryPatch(input: { patches: Patch[]; compiled: CompiledGeometryScript | readonly CompiledGeometryScript[] }): {
+  applyCompiledGeometryPatch(input: {
+    patches: Patch[]
+    compiled: CompiledGeometryScript | readonly CompiledGeometryScript[]
+  }): {
     appliedOps: number
     deletedIds: AnyNodeId[]
     createdIds: AnyNodeId[]
@@ -114,6 +117,13 @@ export interface SceneOperations {
   getHistory(): { pastCount: number; futureCount: number }
   clearHistory(): void
   runAsSingleHistoryStep<T>(run: () => T): T
+  /**
+   * Runs `run` synchronously in the scene's scope: its ids, history environment and disposal guard
+   * (`SceneBridge` over a runtime). Optional: an implementation without it runs `run` as is, which
+   * is right for a scene with random ids. One that computes on a detached scene must provide it,
+   * or the ids its tools mint are not the scene's.
+   */
+  runInScene?<T>(run: () => T): T
 
   createProject(options: ProjectCreateOptions): Promise<ProjectStatus>
   getProjectStatus(id: string): Promise<ProjectStatus | null>
@@ -302,7 +312,10 @@ class SceneOperationsFacade implements SceneOperations {
     return this.requireBridge().applyPatch(patches)
   }
 
-  applyCompiledGeometryPatch(input: { patches: Patch[]; compiled: CompiledGeometryScript | readonly CompiledGeometryScript[] }): {
+  applyCompiledGeometryPatch(input: {
+    patches: Patch[]
+    compiled: CompiledGeometryScript | readonly CompiledGeometryScript[]
+  }): {
     appliedOps: number
     deletedIds: AnyNodeId[]
     createdIds: AnyNodeId[]
@@ -345,6 +358,11 @@ class SceneOperationsFacade implements SceneOperations {
 
   runAsSingleHistoryStep<T>(run: () => T): T {
     return this.requireBridge().runAsSingleHistoryStep(run)
+  }
+
+  runInScene<T>(run: () => T): T {
+    // Store-only operations have no scene to scope: their tools (list_scenes) run as they are.
+    return this.#bridge ? this.#bridge.runInScene(run) : run()
   }
 
   async createProject(options: ProjectCreateOptions): Promise<ProjectStatus> {

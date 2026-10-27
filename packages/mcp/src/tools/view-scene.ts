@@ -1,4 +1,3 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import {
   confirmSceneViewPresentation,
   type SceneViewCrop,
@@ -11,6 +10,8 @@ import {
 } from '@aedifex/core/agent-operations'
 import { refuse, viewSceneTool } from '@aedifex/core/agent-tools'
 import type { AnyNode } from '@aedifex/core/schema'
+import type { McpServer } from '@modelcontextprotocol/server'
+import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { READ_ONLY_TOOL_ANNOTATIONS } from './annotations'
 import { refusalResult } from './errors'
@@ -25,6 +26,8 @@ export type SceneViewCapture = {
   tab: string
   capturedAt: string
   presentation?: SceneViewPresentation
+  /** The host's id of the picture it kept, these exact pixels: a later call can name the frame. */
+  viewId?: string
 }
 
 /**
@@ -58,7 +61,7 @@ export function registerViewScene(
     {
       title: viewSceneTool.title,
       description: viewSceneTool.description,
-      inputSchema: viewSceneTool.input,
+      inputSchema: z.object(viewSceneTool.input),
       annotations: READ_ONLY_TOOL_ANNOTATIONS,
     },
     async (input) => {
@@ -99,6 +102,7 @@ export function registerViewScene(
           size: { width: shot.width, height: shot.height },
           tab: shot.tab,
           capturedAt: shot.capturedAt,
+          ...(shot.viewId ? { viewId: shot.viewId } : {}),
           ...(shot.presentation ? { presentation: shot.presentation } : {}),
           note: sceneViewNote(operations.getNodes() as Record<string, AnyNode>, interior, pose),
           ...(crop && cropped

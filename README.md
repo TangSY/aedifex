@@ -72,7 +72,7 @@ https://github.com/user-attachments/assets/6c819726-65f4-45c6-903e-fa5c364a6340
 
 ### Requirements
 
-- **Node.js** 20+
+- **Node.js** 22.23.4+ (22.x), 24.22.1+ (24.x), or 26.12.1+
 - **pnpm** 9+ (`npm install -g pnpm`)
 - A **WebGPU-capable browser**: Chrome 113+, Edge 113+, or Firefox Nightly
 

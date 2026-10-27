@@ -1,8 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { DESIGN_EXAMPLE } from '@aedifex/core/procedural-items'
 import { DoorNode, WallNode, ZoneNode } from '@aedifex/core/schema'
+import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { createAedifexMcpServer } from '../server'
 

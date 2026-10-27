@@ -1,6 +1,6 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { AnyNodeId } from '@aedifex/core/schema'
 import { UnitNode } from '@aedifex/core/schema'
+import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { ADDITIVE_TOOL_ANNOTATIONS } from './annotations'
@@ -28,12 +28,16 @@ export function registerCreateUnit(server: McpServer, bridge: SceneOperations): 
       title: 'Create unit',
       description:
         'Create a named unit in a building, optionally referencing zones across its levels.',
-      inputSchema: createUnitInput,
-      outputSchema: createUnitOutput,
+      inputSchema: z.object(createUnitInput),
+      outputSchema: z.object(createUnitOutput),
       annotations: ADDITIVE_TOOL_ANNOTATIONS,
     },
     async ({ buildingId, name, kind, color, memberZoneIds }) => {
-      const members = validateUnitMembers({ bridge, buildingId, memberZoneIds: memberZoneIds ?? [] })
+      const members = validateUnitMembers({
+        bridge,
+        buildingId,
+        memberZoneIds: memberZoneIds ?? [],
+      })
       const unit = UnitNode.parse({ name, kind, color, members })
       const id = bridge.createNode(unit, buildingId as AnyNodeId)
       const persistence = await publishLiveSceneSnapshot(bridge, 'create_unit')

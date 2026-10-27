@@ -14,11 +14,13 @@ export function placeDesign({
   const patches: Patch[] = [
     { op: 'create', node: node as AnyNode, parentId: parentId as AnyNodeId },
     ...(hostUpdate
-      ? [{
-          op: 'update' as const,
-          id: hostUpdate.id as AnyNodeId,
-          data: { attachments: hostUpdate.attachments } as Partial<AnyNode>,
-        }]
+      ? [
+          {
+            op: 'update' as const,
+            id: hostUpdate.id as AnyNodeId,
+            data: { attachments: hostUpdate.attachments } as Partial<AnyNode>,
+          },
+        ]
       : []),
   ]
   operations.applyPatch(patches)

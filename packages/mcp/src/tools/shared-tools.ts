@@ -1,4 +1,3 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import {
   type AddObjectInput,
   AGENT_OPERATIONS,
@@ -57,11 +56,13 @@ import {
   searchAssetsTool,
   searchMaterialsTool,
   setCheckpointTool,
+  setGroundLevelTool,
   validateDesignTool,
   verifySceneTool,
   viewAssetsTool,
 } from '@aedifex/core/agent-tools'
 import { DesignValidationSchema } from '@aedifex/core/procedural-items'
+import { untracked } from '@aedifex/core/runtime'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -69,6 +70,7 @@ import {
   MaterialSchema,
   SceneMaterial,
 } from '@aedifex/core/schema'
+import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 import type { Patch } from '../bridge/scene-bridge'
 import type { SceneOperations } from '../operations'
@@ -81,6 +83,7 @@ import { type AssetCatalog, builtInCatalog } from './asset-catalog'
 import { registerCollectionTools } from './collections'
 import { refusalResult } from './errors'
 import { liveSyncOutput, persistencePayload, publishLiveSceneSnapshot } from './live-sync'
+import { inScene } from './scene-scope'
 import { ROOM_TOOL_ANNOTATIONS, type RoomToolName, structureOutput } from './structure-tools'
 
 // Tools the MCP and the hosted chat share whole: one contract, one core operation. The MCP only
@@ -108,7 +111,10 @@ export type PlanReadingHosts = {
   /** Reads catalog pictures and surfaces before view_assets and paint. */
   assetViews?: AssetViewLoader
   /** Compiles one add_object module for a batch before the synchronous operations run. */
-  buildObject?: (input: Omit<AddObjectInput, 'compiled'>, assertCurrent: () => void) => Promise<CompiledGeometryScript>
+  buildObject?: (
+    input: Omit<AddObjectInput, 'compiled'>,
+    assertCurrent: () => void,
+  ) => Promise<CompiledGeometryScript>
 }
 
 const defaultAssetViews = createAssetViewLoader(createFetchAssetViewIO())
@@ -254,6 +260,24 @@ const SHARED_TOOLS: SharedTool[] = [
       newNodeIds: z.array(z.string()),
       // A floor copy is hundreds of ids: the result lists 40 and counts the rest.
       newNodeIdsOmitted: z.number().optional(),
+      ...achievedOutput,
+      ...liveSyncOutput,
+    },
+  },
+  {
+    contract: setGroundLevelTool,
+    operation: AGENT_OPERATIONS.set_ground_level,
+    annotations: DESTRUCTIVE_TOOL_ANNOTATIONS,
+    outputSchema: {
+      ok: z.boolean(),
+      levelId: z.string(),
+      buildingId: z.string(),
+      floorElevation: z.number(),
+      gradeElevation: z.number().optional(),
+      movedBuildingBy: z.number().optional(),
+      renumbered: z.boolean().optional(),
+      unchanged: z.boolean().optional(),
+      message: z.string(),
       ...achievedOutput,
       ...liveSyncOutput,
     },
@@ -532,7 +556,10 @@ export function toPatches(changes: SceneChanges): Patch[] {
 }
 
 /** How an outcome reaches this bridge: its patches, its derived construction, its session record. */
-export function agentRuntime(bridge: SceneOperations, compiled: readonly CompiledGeometryScript[] = []): AgentHostRuntime {
+export function agentRuntime(
+  bridge: SceneOperations,
+  compiled: readonly CompiledGeometryScript[] = [],
+): AgentHostRuntime {
   return {
     getNodes: () => bridge.getNodes(),
     applyChanges: (changes) => {
@@ -550,7 +577,10 @@ export function agentRuntime(bridge: SceneOperations, compiled: readonly Compile
         else bridge.applyPatch(next)
       }
       if (changes.collections && Object.keys(changes.collections).length)
-        bridge.setCollections(writeCollections(bridge.getCollections(), changes.collections))
+        // Copying the others is not a read: the operation recorded what it read of them.
+        bridge.setCollections(
+          writeCollections(untracked(bridge.getCollections()), changes.collections),
+        )
     },
     reconcile: () => {
       bridge.deriveStructure()
@@ -599,7 +629,7 @@ export function registerOperationTool(
     {
       title: tool.contract.title,
       description: tool.contract.description,
-      inputSchema: tool.contract.input,
+      inputSchema: z.object(tool.contract.input),
       // Loose: a client that listed the tools rejects any field the schema leaves out, and the
       // operations in core grow fields (verify_scene's guesses) that this list would miss.
       ...(tool.outputSchema ? { outputSchema: z.looseObject(tool.outputSchema) } : {}),
@@ -607,9 +637,11 @@ export function registerOperationTool(
     },
     async (input: Record<string, unknown>) => {
       let outcome: ReturnType<AgentOperation>
+      const nodes = bridge.getNodes() as Record<string, AnyNode>
       // A copy of the map: a host may write its own in place (the hosted bridge does), and a
-      // "before" that grows with the call reads every creation as unchanged.
-      const before = { ...(bridge.getNodes() as Record<string, AnyNode>) }
+      // "before" that grows with the call reads every creation as unchanged. Copying is not a
+      // read: on a detached scene, the operation records what it selects.
+      const before = { ...untracked(nodes) }
       const sceneId = bridge.getActiveScene()?.id
       const beforeJson = JSON.stringify(before)
       // The agent's session begins with its first call, before anything is written.
@@ -659,7 +691,8 @@ export function registerOperationTool(
             (args) => {
               const assertCurrent = () => {
                 hosts.signal?.throwIfAborted()
-                if (bridge.getActiveScene()?.id !== sceneId) throw Error('scene_changed_during_compile')
+                if (bridge.getActiveScene()?.id !== sceneId)
+                  throw Error('scene_changed_during_compile')
               }
               assertCurrent()
               return hosts.buildObject ? hosts.buildObject(args, assertCurrent) : refuseScripts()
@@ -672,16 +705,25 @@ export function registerOperationTool(
         context.assetViews = await (hosts.assetViews ?? defaultAssetViews)(needs.subjects, {
           pictures: needs.pictures,
         })
-      const compiled = Object.values(context.batchObjects ?? {}).flatMap((built) => 'compiled' in built ? [built.compiled] : [])
+      const compiled = Object.values(context.batchObjects ?? {}).flatMap((built) =>
+        'compiled' in built ? [built.compiled] : [],
+      )
       try {
         if (batchesObjects) {
           hosts.signal?.throwIfAborted()
           await hosts.assertActive?.()
           hosts.signal?.throwIfAborted()
         }
-        if (batchesObjects && (bridge.getActiveScene()?.id !== sceneId || JSON.stringify(bridge.getNodes()) !== beforeJson))
-          refuse('scene_changed', 'The scene changed while the batch was compiling. Read it and retry; nothing was changed.')
-        outcome = tool.operation(before, input as never, context)
+        if (
+          batchesObjects &&
+          (bridge.getActiveScene()?.id !== sceneId ||
+            JSON.stringify(untracked(bridge.getNodes())) !== beforeJson)
+        )
+          refuse(
+            'scene_changed',
+            'The scene changed while the batch was compiling. Read it and retry; nothing was changed.',
+          )
+        outcome = inScene(bridge, () => tool.operation(nodes, input as never, context))
       } catch (error) {
         return refusalResult(error)
       }

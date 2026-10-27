@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { SlabNode, WallNode, ZoneNode } from '@aedifex/core/schema'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { Client } from '@modelcontextprotocol/client'
+import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { registerMeasure } from './measure'
 

@@ -68,5 +68,9 @@ export const ZoneIntentPatch = z.strictObject({
   wallMaterial: z.string().nullable().optional(),
   hasFloor: z.boolean().nullable().optional(),
   hasCeiling: z.boolean().nullable().optional(),
+  daylight: z
+    .strictObject({ artificialLight: z.boolean(), mechanicalVentilation: z.boolean() })
+    .nullable()
+    .optional(),
 })
 export type ZoneIntentPatch = z.infer<typeof ZoneIntentPatch>

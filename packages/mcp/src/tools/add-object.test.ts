@@ -2,9 +2,6 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { AEDIFEX_TYPES } from '@aedifex/core/agent-operations'
 import {
   type AnyNodeId,
@@ -13,6 +10,8 @@ import {
   WallFaceScript,
   WallNode,
 } from '@aedifex/core/schema'
+import { Client } from '@modelcontextprotocol/client'
+import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
 import { ADD_OBJECT_CASES } from '../../../core/src/agent-operations/__fixtures__/add-object-cases'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { createSceneOperations } from '../operations'

@@ -1,8 +1,12 @@
 import { type NodeWrite, seatWrittenRoofs } from '@aedifex/core/agent-operations'
 import { isAgentRefusal } from '@aedifex/core/agent-tools'
 import type { AnyNode } from '@aedifex/core/schema'
+import {
+  type PatchRefusalCode,
+  PatchRefusedError,
+  registerPatchGuard,
+} from '../bridge/patch-guards'
 import type { Patch } from '../bridge/scene-bridge'
-import { type PatchRefusalCode, PatchRefusedError, registerPatchGuard } from '../bridge/patch-guards'
 
 /**
  * The roof-level rule: a roof the patch puts on its walls' storey is seated on the level above by

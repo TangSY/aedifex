@@ -1,7 +1,7 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { createZone, generateId } from '@aedifex/core'
 import { roofLevelRefusal, unknownMaterialPresetRefusal } from '@aedifex/core/agent-operations'
 import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
+import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { ADDITIVE_TOOL_ANNOTATIONS } from './annotations'
@@ -108,8 +108,8 @@ export function registerConstructionTools(server: McpServer, bridge: SceneOperat
       title: 'Create story shell',
       description:
         'Create one level-owned building shell from a footprint: the perimeter walls. The floor plate and the ceiling are DERIVED from the rooms the walls enclose — never author a slab or a ceiling here, and never pass boundary/autoFromWalls; createSlab / createCeiling / slabElevation are recorded as room intent instead. Use once per story; do not make first-floor walls span multiple stories.',
-      inputSchema: createStoryShellInput,
-      outputSchema: createStoryShellOutput,
+      inputSchema: z.object(createStoryShellInput),
+      outputSchema: z.object(createStoryShellOutput),
       annotations: ADDITIVE_TOOL_ANNOTATIONS,
     },
     async ({

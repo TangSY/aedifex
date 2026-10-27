@@ -1,9 +1,8 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { SceneBridge } from '@aedifex/mcp/bridge'
 import { registerGetScene } from '@aedifex/mcp/tools/get-scene'
+import { Client } from '@modelcontextprotocol/client'
+import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
 
 describe('get_scene', () => {
   let client: Client

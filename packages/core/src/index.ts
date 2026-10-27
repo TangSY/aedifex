@@ -113,6 +113,7 @@ export {
   type WallConstructionResolution,
 } from './hooks/spatial-grid/support-host-patch'
 export { useSpatialQuery } from './hooks/spatial-grid/use-spatial-query'
+export * from './i18n'
 export { createAngleAccumulator } from './lib/angle-accumulator'
 export {
   ARTIFACT_URL_PREFIX,
@@ -131,6 +132,14 @@ export {
   resolveAssemblyStack,
 } from './lib/assembly-stack'
 export { loadAssetUrl, saveAsset } from './lib/asset-storage'
+export {
+  belowGradeFloorY,
+  belowGradeFootprints,
+  coveredBelowGradeFootprints,
+  GROUND_PIT_FLOOR_DROP,
+  GROUND_PIT_PLATE_CLEARANCE,
+  groundPitFloorY,
+} from './lib/below-grade-footprints'
 export {
   footprintOutline,
   levelFootprintLoops,
@@ -158,6 +167,7 @@ export {
 } from './lib/corner-snap'
 export { criticallyDamped } from './lib/critically-damped'
 export { isCutterName, resolveCutterHost } from './lib/cutter-host'
+export { deepestDrawnY, lowestGroundY } from './lib/deepest-drawn'
 export {
   clampDoorOperationState,
   getDoorRenderOpenAmount,
@@ -222,6 +232,17 @@ export {
   withoutFloorStepOverrideKeys,
 } from './lib/floor-step-finish'
 export {
+  FOUNDATION_CONSTRUCTIONS,
+  type FoundationConstruction,
+  type FoundationConstructionId,
+  type FoundationReading,
+  type FoundationRegionId,
+  foundationReadingOf,
+  foundationRegionOf,
+} from './lib/foundation-construction'
+export { FOUNDATION_STANDARD } from './lib/foundation-standard'
+export { type FoundationMember, genericFoundation } from './lib/generic-foundation'
+export {
   ceilingSeatY,
   isScriptedNode,
   matchScriptSlotsToLibrary,
@@ -242,6 +263,22 @@ export {
   nearestPointIn,
   resettledPosition,
 } from './lib/geometry-surfaces'
+export { type LevelGradeStanding, levelGradeStanding } from './lib/grade-standing'
+export { type GroundLevel, groundLevelOf, levelUnderNamedGround } from './lib/ground-level'
+export {
+  GROUND_FLOOR_ABOVE_GRADE,
+  GROUND_SEAT_TOLERANCE,
+  type GroundSeat,
+  gradeUnderLevel,
+  groundSeat,
+} from './lib/ground-seat'
+export {
+  buildingGroundBox,
+  type GroundBox,
+  levelGroundBox,
+  levelStackGroundBox,
+  terrainBetweenEyeAndBox,
+} from './lib/ground-window'
 export {
   type ExposedInterval,
   exposedIntervals,
@@ -397,6 +434,7 @@ export {
   type YardDimension,
   type YardSide,
 } from './lib/setback-envelope'
+export { FLAT_GROUND_Y, groundHeightAt } from './lib/site-ground-height'
 export {
   type BuildableArea,
   type BuildingPlacement,
@@ -897,6 +935,7 @@ export {
   BRICK_VENEER,
   CMU_8_ACTUAL,
   calculateLevelLayerMiters,
+  type ExposedStructure,
   FIBER_CEMENT,
   FURRING_1X,
   GYPSUM_FIVE_EIGHTHS,
@@ -921,6 +960,7 @@ export {
   type WallLayerMiterData,
   type WallLayerPolyline,
   WSP_SHEATHING,
+  wallAssemblyExposedStructure,
   wallAssemblyExteriorFinish,
   wallAssemblyFinishRef,
   wallAssemblyFraming,

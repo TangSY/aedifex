@@ -1,10 +1,5 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js'
-import {
-  RETIRED_MCP_TOOLS,
-  type RetiredTool,
-  retiredToolRefusal,
-} from '@aedifex/core/agent-tools'
+import { RETIRED_MCP_TOOLS, type RetiredTool, retiredToolRefusal } from '@aedifex/core/agent-tools'
+import type { McpServer } from '@modelcontextprotocol/server'
 import { toolError } from './errors'
 
 type RequestHandler = (request: unknown, extra: unknown) => Promise<unknown>
@@ -24,9 +19,9 @@ export function answerRetiredTools(
   if (!original) return
 
   server.server.removeRequestHandler('tools/call')
-  server.server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+  server.server.setRequestHandler('tools/call', async (request, ctx) => {
     const { name } = request.params
-    if (!Object.hasOwn(retired, name)) return (await original(request, extra)) as never
+    if (!Object.hasOwn(retired, name)) return (await original(request, ctx)) as never
     const { error, ...answer } = retiredToolRefusal(name, retired[name]!)
     return toolError(error, answer)
   })

@@ -1,6 +1,4 @@
 import { expect, test } from 'bun:test'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { type AnyNodeId, GeometryArtifactManifest, LevelNode, WallNode } from '@aedifex/core/schema'
 import {
   createAedifexMcpServer,
@@ -8,6 +6,7 @@ import {
   type GeometryScriptHost,
   SceneBridge,
 } from '@aedifex/mcp'
+import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
 import { InMemorySceneStore } from './scene-lifecycle/test-utils'
 
 for (const kind of ['object', 'door', 'window', 'column'] as const) {

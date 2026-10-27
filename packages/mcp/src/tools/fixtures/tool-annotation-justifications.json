@@ -1,10 +1,6 @@
 {
   "schema_version": 1,
-  "required_hints": [
-    "readOnlyHint",
-    "destructiveHint",
-    "openWorldHint"
-  ],
+  "required_hints": ["readOnlyHint", "destructiveHint", "openWorldHint"],
   "tools": [
     {
       "name": "add_column",
@@ -992,6 +988,19 @@
         "readOnlyHint": "Updates base plate construction intent and translates its room floor elevations.",
         "destructiveHint": "Preserves authored rooms, boundaries and contents while changing floor and foundation settings.",
         "openWorldHint": "Operates only on the connected scene."
+      }
+    },
+    {
+      "name": "set_ground_level",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "openWorldHint": false
+      },
+      "justifications": {
+        "readOnlyHint": "It is not read-only because it names the building's ground level and changes the building's height and the floor indexes of its levels in the connected Pascal scene.",
+        "destructiveHint": "It moves the building in height and renumbers the floor indexes of its levels, replacing their prior values.",
+        "openWorldHint": "It operates on the connected Pascal scene without accessing the public internet."
       }
     },
     {

@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { McpServer } from '@modelcontextprotocol/server'
 import type { SceneOperations } from '../operations'
 import { registerAddColumn } from './add-column'
 import {
@@ -56,7 +56,8 @@ export function registerTools(
     assetViews,
     signal: geometryScripts?.signal,
     assertActive: geometryScripts?.assertActive?.bind(geometryScripts),
-    buildObject: (args, assertCurrent) => compileObjectOnHost({ host: geometryScripts, bridge: operations, args, assertCurrent }),
+    buildObject: (args, assertCurrent) =>
+      compileObjectOnHost({ host: geometryScripts, bridge: operations, args, assertCurrent }),
   })
   registerAddColumn(server, operations, geometryScripts)
   registerAddObject(server, operations, geometryScripts)

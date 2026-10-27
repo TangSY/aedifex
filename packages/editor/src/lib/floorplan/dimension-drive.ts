@@ -1,5 +1,5 @@
 import type { AnyNode, AnyNodeId, DoorNode, WallNode, WindowNode } from '@aedifex/core'
-import { getLinkedWallUpdates } from '@aedifex/core'
+import { getLinkedWallUpdates, normalizeDecimalInput } from '@aedifex/core'
 
 /**
  * Driving dimensions — WS3.
@@ -34,8 +34,9 @@ const INCHES_PER_METER = 1 / 0.0254
 export function parseDimensionInput(
   raw: string,
   unit: 'metric' | 'imperial' = 'metric',
+  locale = 'en',
 ): number | null {
-  const text = raw.trim().toLowerCase().replace(/\s+/g, ' ')
+  const text = normalizeDecimalInput(raw, locale).trim().toLowerCase().replace(/\s+/g, ' ')
   if (!text) return null
 
   // Explicit metric suffix.

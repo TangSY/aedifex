@@ -1,14 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import {
-  type AnyNodeId,
-  BuildingNode,
-  LevelNode,
-  UnitNode,
-  ZoneNode,
-} from '@aedifex/core/schema'
+import { type AnyNodeId, BuildingNode, LevelNode, UnitNode, ZoneNode } from '@aedifex/core/schema'
+import { Client } from '@modelcontextprotocol/client'
+import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
 import { SceneBridge } from '../bridge/scene-bridge'
 import type { SceneOperations } from '../operations'
 import { ADDITIVE_TOOL_ANNOTATIONS, READ_ONLY_TOOL_ANNOTATIONS } from './annotations'

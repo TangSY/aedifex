@@ -12,6 +12,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./i18n": {
+      "types": "./dist/i18n/index.d.ts",
+      "import": "./dist/i18n/index.js",
+      "default": "./dist/i18n/index.js"
+    },
     "./clone-scene-graph": {
       "types": "./dist/utils/clone-scene-graph.d.ts",
       "import": "./dist/utils/clone-scene-graph.js",
@@ -87,6 +92,16 @@
       "import": "./dist/systems/stair/stair-opening-sync.js",
       "default": "./dist/systems/stair/stair-opening-sync.js"
     },
+    "./grade-standing": {
+      "types": "./dist/lib/grade-standing.d.ts",
+      "import": "./dist/lib/grade-standing.js",
+      "default": "./dist/lib/grade-standing.js"
+    },
+    "./ground-level": {
+      "types": "./dist/lib/ground-level.d.ts",
+      "import": "./dist/lib/ground-level.js",
+      "default": "./dist/lib/ground-level.js"
+    },
     "./procedural-items": {
       "types": "./dist/procedural-items/index.d.ts",
       "import": "./dist/procedural-items/index.js",
@@ -121,6 +136,11 @@
       "types": "./dist/systems/stair/stair-rise-query.d.ts",
       "import": "./dist/systems/stair/stair-rise-query.js",
       "default": "./dist/systems/stair/stair-rise-query.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime/index.d.ts",
+      "import": "./dist/runtime/index.js",
+      "default": "./dist/runtime/index.js"
     }
   },
   "files": [
@@ -144,6 +164,8 @@
   },
   "dependencies": {
     "@aedifex/lingo": "npm:@pascal-app/lingo@^0.5.0",
+    "@lingui/core": "6.10.1",
+    "@lingui/message-utils": "6.10.1",
     "dedent": "^1.7.2",
     "idb-keyval": "^6.3.0",
     "mitt": "^3.0.1",
@@ -155,7 +177,7 @@
   },
   "devDependencies": {
     "@repo/typescript-config": "*",
-    "@types/bun": "^1.4.3",
+    "@types/bun": "^1.4.4",
     "@types/react": "19.3.0",
     "@types/three": "^0.186.0",
     "fake-indexeddb": "^6.2.6",

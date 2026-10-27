@@ -1,15 +1,14 @@
 import { expect, test } from 'bun:test'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { Client } from '@modelcontextprotocol/client'
+import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
 import { nodeRegistry, registerNode } from '@aedifex/core'
 import { CabinetModuleNode, CabinetNode, LevelNode, WallNode } from '@aedifex/core/schema'
 import { SceneBridge } from '@aedifex/mcp/bridge'
 import { createSceneOperations } from '@aedifex/mcp/operations'
 import { registerOperationTool } from '@aedifex/mcp/tools/shared-tools'
 import { cabinetDefinition, cabinetModuleDefinition } from '@aedifex/nodes'
-import { builtinAgentTools } from '@aedifex/nodes/agent-tools'
 import { builtinAgentOperations } from './index'
+import { builtinAgentTools } from '@aedifex/nodes/agent-tools'
 
 // The kitchen tools as a host registers them: the plugin's contracts and operations, the host's
 // annotations, through the shared-tool runner and a real client.

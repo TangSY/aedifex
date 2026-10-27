@@ -1,5 +1,5 @@
-import { DEFAULT_LEVEL_HEIGHT } from '@aedifex/core/level-constants'
 import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
+import { DEFAULT_LEVEL_HEIGHT } from '@aedifex/core/level-constants'
 import type { AnyNode, AnyNodeId } from '@aedifex/core/schema'
 
 /**

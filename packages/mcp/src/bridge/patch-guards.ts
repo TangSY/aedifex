@@ -21,9 +21,17 @@ import {
 import type { Patch } from './scene-bridge'
 
 const ROOF_FINISH_FIELDS = new Set([
-  'material', 'materialPreset', 'slots',
-  'topMaterial', 'topMaterialPreset', 'edgeMaterial', 'edgeMaterialPreset',
-  'wallMaterial', 'wallMaterialPreset', 'fasciaMaterial', 'fasciaMaterialPreset',
+  'material',
+  'materialPreset',
+  'slots',
+  'topMaterial',
+  'topMaterialPreset',
+  'edgeMaterial',
+  'edgeMaterialPreset',
+  'wallMaterial',
+  'wallMaterialPreset',
+  'fasciaMaterial',
+  'fasciaMaterialPreset',
 ])
 
 export type PatchRefusalCode =
@@ -50,7 +58,7 @@ export type PatchRefusalCode =
  * owns what it protects, so a feature brings its own check (the honest-update check is the
  * first). It may rewrite an update's data (the cleaned data is what is written) and
  * refuses by throwing: a PatchRefusedError comes back as `{ code, patchIndex, id, message }`, an
- * McpError as it is. What it changed in the patch it says in notes, which the answer carries.
+ * ProtocolError as it is. What it changed in the patch it says in notes, which the answer carries.
  * Lower `order` runs first.
  */
 export type PatchGuard = {
@@ -237,17 +245,27 @@ export function assertPatchKeepsIdentity(
 ): Map<number, AnyNode> {
   const builds: readonly CompiledGeometryScript[] = !compiled
     ? []
-    : Array.isArray(compiled) ? compiled : [compiled as CompiledGeometryScript]
-  const initialIds = new Set(Object.keys(nodes))
+    : Array.isArray(compiled)
+      ? compiled
+      : [compiled as CompiledGeometryScript]
   const parsedCreates = new Map<number, AnyNode>()
-  let scene: NodeDeletionScene = {
-    nodes: { ...nodes } as NodeDeletionScene['nodes'],
-    rootNodeIds: [...rootNodeIds],
-    collections: {},
+  // What the patch writes, over the scene; the whole scene is copied only for a preview that reads
+  // all of it (deletes, gutter refreshes, a reparent), so an edit reads only the ids it names.
+  const written = new Map<string, AnyNode>()
+  let whole: NodeDeletionScene | null = null
+  const scene = (): NodeDeletionScene => {
+    if (!whole) {
+      const all = { ...nodes } as NodeDeletionScene['nodes']
+      for (const [id, node] of written) all[id as AnyNodeId] = node
+      whole = { nodes: all, rootNodeIds: [...rootNodeIds], collections: {} }
+    }
+    return whole
   }
-  const at = (id: string) => scene.nodes[id as AnyNodeId]
+  const at = (id: string) =>
+    whole ? whole.nodes[id as AnyNodeId] : (written.get(id) ?? nodes[id as AnyNodeId])
   const put = (node: AnyNode) => {
-    scene.nodes[node.id as AnyNodeId] = node
+    if (whole) whole.nodes[node.id as AnyNodeId] = node
+    else written.set(node.id, node)
   }
 
   // Default gutters and downspouts a delete run refreshes: the store may keep,
@@ -273,17 +291,17 @@ export function assertPatchKeepsIdentity(
     const roofId =
       node.type === 'roof' ? node.id : node.type === 'roof-segment' ? node.parentId : null
     if (!roofId) return
-    const preview = previewDefaultGutterRefresh(scene.nodes, [roofId as AnyNodeId])
+    const preview = previewDefaultGutterRefresh(scene().nodes, [roofId as AnyNodeId])
     for (const id of preview.unsettledIds) regenerated.set(id, index)
     for (const id of preview.regeneratedHostIds) regeneratedHosts.set(id, index)
   }
   let pendingDeletes: AnyNodeId[] = []
   const flushDeletes = (index: number) => {
     const plan = planDeletion
-      ? planDeletion(scene, pendingDeletes)
-      : planNodeDeletion(scene, pendingDeletes, { mintDefaults: false })
+      ? planDeletion(scene(), pendingDeletes)
+      : planNodeDeletion(scene(), pendingDeletes, { mintDefaults: false })
     for (const id of plan.deletedIds) {
-      const node = scene.nodes[id]
+      const node = scene().nodes[id]
       if (node && isNodeDeletionBlocked(node)) {
         throw new PatchRefusedError(
           'not_deletable',
@@ -295,7 +313,7 @@ export function assertPatchKeepsIdentity(
     }
     for (const id of plan.unsettledIds) regenerated.set(id, index)
     for (const id of plan.regeneratedHostIds) regeneratedHosts.set(id, index)
-    scene = { nodes: plan.nodes, rootNodeIds: plan.rootNodeIds, collections: plan.collections }
+    whole = { nodes: plan.nodes, rootNodeIds: plan.rootNodeIds, collections: plan.collections }
     pendingDeletes = []
   }
 
@@ -314,7 +332,7 @@ export function assertPatchKeepsIdentity(
       refuseRegenerated(index, node.id)
       const effectiveParentId = patch.parentId ?? (node.parentId as string | null | undefined)
       if (effectiveParentId) refuseRegenerated(index, effectiveParentId)
-      if (at(node.id) || (!planDeletion && initialIds.has(node.id))) {
+      if (at(node.id) || (!planDeletion && nodes[node.id] !== undefined)) {
         throw new PatchRefusedError(
           'node_exists',
           index,
@@ -342,7 +360,9 @@ export function assertPatchKeepsIdentity(
       // Finish-only writes address the stable segment itself, never its regenerated
       // children. Roof paint intentionally updates the roof and its segment overrides
       // together; geometry, identity and child-list writes still require a fresh read.
-      const finishOnly = patch.data && typeof patch.data === 'object' &&
+      const finishOnly =
+        patch.data &&
+        typeof patch.data === 'object' &&
         Object.keys(patch.data).every((field) => ROOF_FINISH_FIELDS.has(field))
       if (hostDeleteIndex !== undefined && !finishOnly) {
         throw new PatchRefusedError(
@@ -370,7 +390,18 @@ export function assertPatchKeepsIdentity(
         }
       }
       const scripted = scriptedFieldRefusal(current, data)
-      if (scripted && !builds.some((build) => (!build.nodeId || build.nodeId === current.id) && matchesCompiledUpdate({ node: current, data: { ...current, ...data }, compiled: build })))
+      if (
+        scripted &&
+        !builds.some(
+          (build) =>
+            (!build.nodeId || build.nodeId === current.id) &&
+            matchesCompiledUpdate({
+              node: current,
+              data: { ...current, ...data },
+              compiled: build,
+            }),
+        )
+      )
         throw new PatchRefusedError('scripted_field', index, patch.id, scripted)
       const preset = unknownMaterialPresetRefusal(data, current as Record<string, unknown>)
       if (preset) throw new PatchRefusedError('invalid_update', index, patch.id, preset)
@@ -398,14 +429,14 @@ export function assertPatchKeepsIdentity(
             `update cannot move "${patch.id}" under ${JSON.stringify(data.parentId)}: ${newParent ? `a ${newParent.type} holds no children` : 'no such node'}.`,
           )
         }
-        const before = { ...scene.nodes }
+        const before = { ...scene().nodes }
         const oldParent = current.parentId ? at(current.parentId) : undefined
         if (oldParent) put(withoutChild(oldParent, patch.id))
         put(withChild(newParent, patch.id))
         put(merged)
         unsettleRoofRefresh(merged, index)
         try {
-          validateNodeRelations(before, scene.nodes, [patch.id as AnyNodeId])
+          validateNodeRelations(before, scene().nodes, [patch.id as AnyNodeId])
         } catch (err) {
           throw new PatchRefusedError(
             'invalid_parent',
@@ -427,7 +458,7 @@ export function assertPatchKeepsIdentity(
         throw new Error(`invalid patch: patches[${index}] delete id "${patch.id}" not found`)
       }
       if (patch.cascade === false) {
-        const children = Object.values(scene.nodes).filter((node) => node.parentId === patch.id)
+        const children = Object.values(scene().nodes).filter((node) => node.parentId === patch.id)
         const listed = (at(patch.id) as { children?: unknown }).children
         if (children.length > 0 || (Array.isArray(listed) && listed.length > 0)) {
           throw new Error(

@@ -1,12 +1,6 @@
 import { expect, test } from 'bun:test'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import {
-  floorFootprintSupportClass,
-  getLevelElevations,
-  LevelNode,
-  SlabNode,
-} from '@aedifex/core'
+import { floorFootprintSupportClass, getLevelElevations, LevelNode, SlabNode } from '@aedifex/core'
+import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { createAedifexMcpServer } from '../server'
 
