@@ -1,4 +1,5 @@
 import { floorConstructionLift } from '../../lib/floor-construction-lift'
+import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import { levelBaseElevationAt } from '../../lib/terrain-support'
 import { nodeRegistry } from '../../registry'
 import type {
@@ -7,11 +8,10 @@ import type {
   FloorPlacedFootprintsResolver,
 } from '../../registry/types'
 import type { AnyNode, AnyNodeId, SlabNode } from '../../schema'
-import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import { getFloorPlacedFootprints } from './floor-placed-footprints'
+import { activeSpatialGrid } from './spatial-grid-manager'
 
 export { getFloorPlacedFootprints } from './floor-placed-footprints'
-import { spatialGridManager } from './spatial-grid-manager'
 
 export { GROUND_SUPPORT_ID } from '../../lib/support-host'
 
@@ -116,7 +116,7 @@ export function getFloorPlacedElevation({
     const host = nodes[supportSlabId]
     for (const footprint of footprints) {
       if (host?.type === 'slab' && host.plateRole === 'base') {
-        const coverings = spatialGridManager
+        const coverings = activeSpatialGrid()
           .getSupportCandidatesForFootprint(
             resolvedLevelId,
             footprint.position ?? position,
@@ -132,7 +132,7 @@ export function getFloorPlacedElevation({
         const covering = coverings[0]
         if (covering) return finiteSlabElevation(covering.elevation)
       }
-      const hosted = spatialGridManager.getHostSlabElevationForFootprint(
+      const hosted = activeSpatialGrid().getHostSlabElevationForFootprint(
         resolvedLevelId,
         supportSlabId,
         footprint.position ?? position,
@@ -155,7 +155,7 @@ export function getFloorPlacedElevation({
   // sinking into the recess.
   let elected = Number.NEGATIVE_INFINITY
   for (const footprint of footprints) {
-    const support = spatialGridManager.getSlabSupportForItem(
+    const support = activeSpatialGrid().getSlabSupportForItem(
       resolvedLevelId,
       footprint.position ?? position,
       footprint.dimensions,

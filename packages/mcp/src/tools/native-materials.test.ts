@@ -1,12 +1,11 @@
 import '../bridge/node-shims'
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { SceneMaterial } from '@aedifex/core/schema'
 import { SceneBridge } from '@aedifex/mcp/bridge'
 import { createSceneOperations } from '@aedifex/mcp/operations'
 import { registerSharedTools } from '@aedifex/mcp/tools/shared-tools'
+import { Client } from '@modelcontextprotocol/client'
+import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
 import {
   EXPECTED_MOUNTAIN_MATERIAL,
   expectPreserved,

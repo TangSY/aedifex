@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { compileGeometryScript } from '@aedifex/geometry-script'
+import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { createSceneOperations } from '../operations'
 import { createAedifexMcpServer } from '../server'
@@ -249,7 +248,8 @@ describe('author_scene (MCP)', () => {
   const host: GeometryScriptHost = {
     assertActive: async () => {
       if (!commitAllowed) throw new Error('Invocation stopped before commit')
-      if (switchIdentity) bridge.setActiveScene({ ...bridge.getActiveScene()!, id: 'different_scene' })
+      if (switchIdentity)
+        bridge.setActiveScene({ ...bridge.getActiveScene()!, id: 'different_scene' })
     },
     compile: async ({ code, inputs }) => {
       const { glb, ...compiled } = await compileGeometryScript({ code, inputs })
@@ -304,13 +304,19 @@ describe('author_scene (MCP)', () => {
     expect(first.isError, JSON.stringify(first)).toBeFalsy()
     const id = (first.structuredContent as { ids: Record<string, string> }).ids.bed!
     const old = bridge.getNodes()[id as never]!
-    const design = { ...payload, levels: payload.levels.map((level) => ({
-      ...level,
-      items: level.items.map((item) => item.id === 'bed'
-        ? { ...item, code: BOX(1.6, 0.65, 2, '#8a6a4a') }
-        : item),
-    })) }
-    const rebuilt = await client.callTool({ name: 'author_scene', arguments: { payload: design, replace: true } })
+    const design = {
+      ...payload,
+      levels: payload.levels.map((level) => ({
+        ...level,
+        items: level.items.map((item) =>
+          item.id === 'bed' ? { ...item, code: BOX(1.6, 0.65, 2, '#8a6a4a') } : item,
+        ),
+      })),
+    }
+    const rebuilt = await client.callTool({
+      name: 'author_scene',
+      arguments: { payload: design, replace: true },
+    })
     expect(rebuilt.isError, JSON.stringify(rebuilt)).toBeFalsy()
     const node = bridge.getNodes()[id as never]!
     expect(node.type === 'item' && node.asset.dimensions![1]).toBeCloseTo(0.65)

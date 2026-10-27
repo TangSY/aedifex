@@ -5,6 +5,7 @@ import { ownFloorIntentChanges } from '../../lib/own-floor-intent'
 import { drawnFloorElevationConflict } from '../../lib/room-drawn-floor'
 import { roundFloorElevation } from '../../lib/room-floor-feasibility'
 import { ZoneNode } from '../../schema'
+import { metadataRecord } from '../../utils/metadata-record'
 import { mezzanineElevationConflict } from './mezzanine-content'
 import { requireZone, type StructureNodes, type StructurePlan } from './shared'
 
@@ -56,6 +57,10 @@ export function setZoneIntent(
   if (patch.wallMaterial !== undefined) data.wallMaterial = patch.wallMaterial ?? undefined
   for (const key of ['hasFloor', 'hasCeiling'] as const)
     if (patch[key] !== undefined) data[key] = patch[key] === false ? false : undefined
+  if (patch.daylight !== undefined) {
+    const { daylight: _declared, ...metadata } = metadataRecord(zone.metadata)
+    data.metadata = patch.daylight === null ? metadata : { ...metadata, daylight: patch.daylight }
+  }
   if (patch.floor !== undefined) {
     data.floor = patch.floor === null ? undefined : { ...zone.floor }
     if (patch.floor)

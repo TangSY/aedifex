@@ -1,7 +1,4 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { measureStair } from '@aedifex/core'
 import { pointInPolygon, type Vec2 } from '@aedifex/core/agent-operations'
 import {
@@ -11,6 +8,8 @@ import {
   RoofSegmentNode,
   SlabNode,
 } from '@aedifex/core/schema'
+import { Client } from '@modelcontextprotocol/client'
+import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { registerConstructionTools } from './construction-tools'
 import { registerSharedTools } from './shared-tools'

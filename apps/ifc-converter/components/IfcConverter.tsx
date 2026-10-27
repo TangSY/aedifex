@@ -1,6 +1,10 @@
 'use client'
 
-import { type AedifexSceneGraph, convertIfcToAedifex } from '@aedifex/ifc-converter'
+import {
+  convertIfcToAedifexWithReport,
+  type IfcConversionReport,
+  type AedifexSceneGraph,
+} from '@aedifex/ifc-converter'
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { availableTestFiles, exampleFileUrl, testFiles } from '@/lib/test-files'
@@ -47,6 +51,7 @@ export default function IfcConverter() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [conversionProgress, setConversionProgress] = useState<number>(0)
   const [conversionMessage, setConversionMessage] = useState<string>('')
+  const [conversionWarnings, setConversionWarnings] = useState<string[]>([])
 
   const levels = useMemo(() => {
     if (!aedifexData) return []
@@ -134,13 +139,18 @@ export default function IfcConverter() {
     setSelectedNodeId(null)
     setConversionProgress(0)
     setConversionMessage('Starting conversion...')
+    setConversionWarnings([])
 
     try {
-      const result = await convertIfcToAedifex(data, (message, percent) => {
-        setConversionMessage(message)
-        setConversionProgress(percent)
-      })
+      const { scene: result, report } = await convertIfcToAedifexWithReport(
+        data,
+        (message, percent) => {
+          setConversionMessage(message)
+          setConversionProgress(percent)
+        },
+      )
       setAedifexData(result)
+      setConversionWarnings(conversionWarningsFor(report))
       setStatus('ready')
       setConversionProgress(100)
       setConversionMessage('Conversion complete!')
@@ -518,6 +528,12 @@ export default function IfcConverter() {
             </>
           )}
 
+          {status === 'ready' && conversionWarnings.length > 0 && (
+            <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900 text-sm">
+              {conversionWarnings.join(' ')}
+            </p>
+          )}
+
           {/* Aedifex 3D Viewer */}
           <div className="flex gap-4">
             <div className="flex-1 min-w-0 relative">
@@ -741,4 +757,20 @@ export default function IfcConverter() {
       )}
     </div>
   )
+}
+
+function conversionWarningsFor(report: IfcConversionReport): string[] {
+  const { skippedGeometry, replaced } = report
+  const skipped =
+    skippedGeometry.transforms +
+    skippedGeometry.vertices +
+    skippedGeometry.triangles +
+    skippedGeometry.primitives +
+    skippedGeometry.elements
+  return [
+    skipped > 0 &&
+      "Some geometry couldn't be read: parts of this file had invalid coordinates and were left out.",
+    (replaced.unitFactor || replaced.originOffset || replaced.levelElevations > 0) &&
+      'Some invalid placement values were reset to defaults, so positions or storey heights may be off.',
+  ].filter((warning): warning is string => Boolean(warning))
 }

@@ -1,5 +1,5 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { describeDesignSchema } from '@aedifex/core/procedural-items'
+import type { McpServer } from '@modelcontextprotocol/server'
 import type { SceneOperations } from '../operations'
 
 /**

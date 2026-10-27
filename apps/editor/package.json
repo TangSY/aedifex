@@ -12,7 +12,7 @@
     "test": "bun test lib"
   },
   "dependencies": {
-    "@iconify/react": "^6.0.2",
+    "@iconify/react": "^6.0.3",
     "@number-flow/react": "^0.6.2",
     "@aedifex/core": "*",
     "@aedifex/editor": "*",
@@ -27,9 +27,9 @@
     "@tailwindcss/postcss": "^4.3.3",
     "@aedifex/plugin-webxr": "*",
     "clsx": "^2.1.1",
-    "geist": "^1.8.1",
-    "lucide-react": "^1.59.0",
-    "next": "16.4.2",
+    "geist": "^1.8.2",
+    "lucide-react": "^1.61.0",
+    "next": "16.4.3",
     "openai": "^4.104.0",
     "postcss": "^8.5.31",
     "react": "19.3.1",

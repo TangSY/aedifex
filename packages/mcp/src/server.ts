@@ -1,11 +1,17 @@
-import { McpServer, type RegisteredTool } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
 import {
   type HostedServiceExecutor,
   type ProjectFileToolExecutor,
   recordMade,
   type SceneNodes,
 } from '@aedifex/core/agent-operations'
+import { untracked } from '@aedifex/core/runtime'
+import {
+  McpServer,
+  ProtocolError,
+  ProtocolErrorCode,
+  type RegisteredTool,
+  type ServerContext,
+} from '@modelcontextprotocol/server'
 import type { SceneBridge } from './bridge/scene-bridge'
 import { createSceneOperations, type SceneOperations } from './operations'
 import { registerPrompts } from './prompts'
@@ -76,6 +82,7 @@ export function createAedifexMcpServer(opts: CreateAedifexMcpServerOptions): Mcp
     opts.operations ?? createSceneOperations({ bridge: opts.bridge, store: opts.store })
   const executeTool = recordingWhatToolsMake(operations, opts.executeTool)
   if (executeTool) installToolExecutor(server, executeTool)
+  installSceneScope(server, operations)
   const catalog = opts.catalog ? cachedCatalog(opts.catalog) : undefined
   registerTools(server, operations, {
     catalog,
@@ -109,10 +116,11 @@ function answerInvalidInputWithCode(server: McpServer): void {
     try {
       return await validate(tool, args, name)
     } catch (error) {
-      if (!(error instanceof McpError && error.code === ErrorCode.InvalidParams)) throw error
+      if (!(error instanceof ProtocolError && error.code === ProtocolErrorCode.InvalidParams))
+        throw error
       throw new Error(
         JSON.stringify({
-          error: error.message.replace(/^MCP error -?\d+: /, ''),
+          error: error.message,
           code: 'invalid_input',
         }),
       )
@@ -134,7 +142,8 @@ function recordingWhatToolsMake(
   const recording: AedifexMcpToolExecutor = (input) =>
     recordMade(
       {
-        getNodes: () => operations.getNodes() as SceneNodes,
+        // What the tool made is bookkeeping, not what it read: the scene as stored.
+        getNodes: () => untracked(operations.getNodes()) as SceneNodes,
         readSession: () => session.read(),
         keep: (keep) => session.keep(keep),
       },
@@ -143,30 +152,50 @@ function recordingWhatToolsMake(
   return outer ? (input) => outer({ ...input, execute: () => recording(input) }) : recording
 }
 
-function installToolExecutor(server: McpServer, executeTool: AedifexMcpToolExecutor): void {
-  const registerTool = server.registerTool.bind(server)
-  const wrappedRegisterTool: McpServer['registerTool'] = (name, config, callback) => {
-    const runtimeCallback = callback as unknown as RuntimeToolCallback
-    const registration = registerTool(
-      name,
-      config,
-      wrapToolCallback(name, runtimeCallback, executeTool) as typeof callback,
-    )
-    return wrapRegisteredTool(registration, name, runtimeCallback, executeTool)
-  }
-  server.registerTool = wrappedRegisterTool
+/**
+ * Every handler starts in the scene's scope (`SceneOperations.runInScene`): ids it mints and
+ * schema defaults it fills before its first await come from the scene's allocator, so a detached
+ * scene recomputed from the same snapshot and effect mints the same ones. Work after an await
+ * re-enters the scope itself (add_object, add_column).
+ */
+function installSceneScope(server: McpServer, operations: SceneOperations): void {
+  const runInScene = operations.runInScene?.bind(operations)
+  if (!runInScene) return
+  const registerTool = server.registerTool.bind(server) as (
+    name: string,
+    config: unknown,
+    callback: RuntimeToolCallback,
+  ) => RegisteredTool
+  const scoped =
+    (callback: RuntimeToolCallback): RuntimeToolCallback =>
+    (...args) =>
+      runInScene(() => Reflect.apply(callback, undefined, args))
+  server.registerTool = ((name: string, config: unknown, callback: RuntimeToolCallback) => {
+    const registration = registerTool(name, config, scoped(callback))
+    const update = registration.update.bind(registration) as (
+      updates: Record<string, unknown>,
+    ) => void
+    registration.update = ((updates: Record<string, unknown>) =>
+      update({
+        ...updates,
+        ...(typeof updates.callback === 'function'
+          ? { callback: scoped(updates.callback as RuntimeToolCallback) }
+          : {}),
+      })) as RegisteredTool['update']
+    return registration
+  }) as McpServer['registerTool']
+}
 
-  const tool = server.tool.bind(server)
-  server.tool = ((name: string, ...args: unknown[]) => {
-    const callback = args.at(-1)
-    if (typeof callback !== 'function') {
-      return Reflect.apply(tool, undefined, [name, ...args])
-    }
-    const runtimeCallback = callback as RuntimeToolCallback
-    args[args.length - 1] = wrapToolCallback(name, runtimeCallback, executeTool)
-    const registration = Reflect.apply(tool, undefined, [name, ...args]) as RegisteredTool
-    return wrapRegisteredTool(registration, name, runtimeCallback, executeTool)
-  }) as McpServer['tool']
+function installToolExecutor(server: McpServer, executeTool: AedifexMcpToolExecutor): void {
+  const registerTool = server.registerTool.bind(server) as (
+    name: string,
+    config: unknown,
+    callback: RuntimeToolCallback,
+  ) => RegisteredTool
+  server.registerTool = ((name: string, config: unknown, callback: RuntimeToolCallback) => {
+    const registration = registerTool(name, config, wrapToolCallback(name, callback, executeTool))
+    return wrapRegisteredTool(registration, name, callback, executeTool)
+  }) as McpServer['registerTool']
 }
 
 type RuntimeToolCallback = (...args: unknown[]) => unknown
@@ -214,5 +243,5 @@ function wrapRegisteredTool(
 }
 
 function toolRequestSignal(args: readonly unknown[]): AbortSignal {
-  return (args.at(-1) as { signal: AbortSignal }).signal
+  return (args.at(-1) as ServerContext).mcpReq.signal
 }

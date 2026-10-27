@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { nodeRegistry, registerNode } from '@aedifex/core'
 import { shelfRecipe } from '@aedifex/core/procedural-items'
 import * as schema from '@aedifex/core/schema'
@@ -28,6 +25,8 @@ import {
   WindowNode,
   ZoneNode,
 } from '@aedifex/core/schema'
+import { Client } from '@modelcontextprotocol/client'
+import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { registerMeasure } from './measure'
 import { HEADLESS_UNRESOLVED_FLOOR_LIFT_KINDS, resolveNodeWorldPoint } from './node-world-point'

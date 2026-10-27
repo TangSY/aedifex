@@ -1,18 +1,15 @@
 import { metadataRecord } from '@aedifex/core'
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import {
   type AgentContext,
   achievedChanges,
   type SceneNodes,
   verifyScene,
 } from '@aedifex/core/agent-operations'
-import {
-  type AuthorScenePayload,
-  authorSceneTool,
-  isAgentRefusal,
-} from '@aedifex/core/agent-tools'
+import { type AuthorScenePayload, authorSceneTool, isAgentRefusal } from '@aedifex/core/agent-tools'
 import { type CompiledGeometryScript, GEOMETRY_SCRIPT_MIME_TYPES } from '@aedifex/core/schema'
 import { compileAuthorScene } from '@aedifex/geometry-script/author-scene'
+import type { McpServer } from '@modelcontextprotocol/server'
+import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { compileAndStore, type GeometryScriptHost } from './add-object'
 import { DESTRUCTIVE_TOOL_ANNOTATIONS } from './annotations'
@@ -44,7 +41,7 @@ export function registerAuthorScene(
     {
       title: authorSceneTool.title,
       description: authorSceneTool.description,
-      inputSchema: authorSceneTool.input,
+      inputSchema: z.object(authorSceneTool.input),
       annotations: DESTRUCTIVE_TOOL_ANNOTATIONS,
     },
     async (input: Record<string, unknown>) => {
@@ -118,7 +115,10 @@ export function registerAuthorScene(
 
       host.signal?.throwIfAborted()
       await host.assertActive?.()
-      if (bridge.getActiveScene()?.id !== scene.id || JSON.stringify(bridge.getNodes()) !== beforeJson) {
+      if (
+        bridge.getActiveScene()?.id !== scene.id ||
+        JSON.stringify(bridge.getNodes()) !== beforeJson
+      ) {
         return toolError(
           'The scene changed while its candidate was compiling. Read the current scene and retry the conversion.',
           { code: 'scene_changed', mutationApplied: false },

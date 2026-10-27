@@ -1,7 +1,4 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { nodeRegistry, registerNode } from '@aedifex/core'
 import {
   type AnyNode,
@@ -14,10 +11,12 @@ import {
   WindowNode,
   ZoneNode,
 } from '@aedifex/core/schema'
+import { Client } from '@modelcontextprotocol/client'
+import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
+import { z } from 'zod'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { createSceneOperations } from '../operations'
 import { registerApplyPatch } from './apply-patch'
-import { z } from 'zod'
 
 type Patch = Record<string, unknown>
 
@@ -463,9 +462,13 @@ describe('apply_patch identity and validation guards', () => {
       { op: 'update', id: a.id, data: { slots: { shingle: 'library:roof-classicshingles' } } },
     ])
     expect(painted.isError, painted.text).toBe(false)
-    expect(bridge.getNode(a.id as AnyNodeId)).toMatchObject({ slots: { shingle: 'library:roof-classicshingles' } })
+    expect(bridge.getNode(a.id as AnyNodeId)).toMatchObject({
+      slots: { shingle: 'library:roof-classicshingles' },
+    })
     const freshChildren = (bridge.getNode(a.id as AnyNodeId) as { children: string[] }).children
-    expect(freshChildren.every((id) => bridge.getNode(id as AnyNodeId)?.parentId === a.id)).toBe(true)
+    expect(freshChildren.every((id) => bridge.getNode(id as AnyNodeId)?.parentId === a.id)).toBe(
+      true,
+    )
   })
 
   test('without a bridge deletion planner, a create of an id present at the start is refused', async () => {

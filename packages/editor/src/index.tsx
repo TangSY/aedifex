@@ -2,11 +2,23 @@
 // own shells on top of `@aedifex/editor` (community-app, embedders)
 // don't have to learn three separate package imports. The canonical
 // definitions still live in `@aedifex/core` / `@aedifex/viewer`.
+import { registerCompiledMessages as registerEditorMessages } from '@aedifex/core'
+import { messages as editorEnglishMessages } from './i18n/locales/en/messages'
+
+// Published-package consumers need compiled English too: Lingui cannot
+// interpolate a raw fallback literal in production. Other bundled locales
+// remain explicitly host-registered through `@aedifex/editor/locales`.
+registerEditorMessages('en', '', editorEnglishMessages)
+
 export {
+  type AedifexI18n,
+  AedifexI18nProvider,
   type ApplySceneSnapshotOptions,
   acquireSceneReadOnlyLease,
   applyScenePatch,
   applySceneSnapshot,
+  type CompiledTranslationMessages,
+  createI18n,
   DEFAULT_CURVED_STAIR_INNER_RADIUS,
   DEFAULT_CURVED_STAIR_SWEEP_ANGLE,
   DEFAULT_SPIRAL_SHOW_CENTER_COLUMN,
@@ -22,6 +34,14 @@ export {
   DEFAULT_STAIR_THICKNESS,
   DEFAULT_STAIR_TYPE,
   DEFAULT_STAIR_WIDTH,
+  defaultI18n,
+  formatLength,
+  formatNumber,
+  getLocale,
+  normalizeDecimalInput,
+  parseLocalizedNumber,
+  registerCompiledMessages,
+  registerMessages,
   type SceneCommit,
   type SceneCommitListener,
   type SceneCommitOrigin,
@@ -29,7 +49,15 @@ export {
   type SceneNodePatch,
   type ScenePatch,
   type SceneSnapshot,
+  setLocale,
+  subscribe,
   subscribeSceneCommits,
+  type TranslationMessage,
+  type TranslationMessages,
+  type TranslationParams,
+  translate,
+  useAedifexI18n,
+  useLocale,
   useScene,
 } from '@aedifex/core'
 export { useViewer } from '@aedifex/viewer'
@@ -294,7 +322,12 @@ export {
 } from './components/ui/primitives/shortcut-token'
 export { useSidebarStore } from './components/ui/primitives/sidebar'
 export { Slider } from './components/ui/primitives/slider'
-export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/primitives/tooltip'
+export {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from './components/ui/primitives/tooltip'
 export { SceneLoader } from './components/ui/scene-loader'
 export type { ExtraPanel } from './components/ui/sidebar/icon-rail'
 export { ItemsPanel } from './components/ui/sidebar/panels/items-panel'
@@ -698,6 +731,7 @@ export {
   measurementFloorplanPresentationColor,
   measurementPresentationColor,
   metersToLinearUnit,
+  parseLinearMeasurementInput,
   squareMetersToAreaUnit,
 } from './lib/measurements'
 export type {
@@ -870,10 +904,10 @@ export {
   type ViewerSource,
 } from './lib/viewer-selection'
 export {
-  WALL_DRAW_VARIANTS,
   getWallDrawVariant,
   selectWallDrawVariant,
   useWallDrawVariant,
+  WALL_DRAW_VARIANTS,
   type WallDrawVariant,
 } from './lib/wall-draw-variant'
 export {

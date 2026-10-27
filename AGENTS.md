@@ -56,3 +56,6 @@ Invoke the `review-architecture` skill (`.agents/skills/review-architecture/SKIL
 - `packages/geometry-script` compiles authored geometry into artifacts; see `wiki/architecture/authored-objects.md` for source, persistence, and host isolation contracts.
 - Shared AI/MCP contracts live in core `agent-tools` and `agent-operations`; read `wiki/architecture/agent-surfaces.md` when changing agent capabilities.
 - `DECISIONS.md` records upstream architecture and testing rationale. Repository-specific package, plugin v2 and release policies still apply.
+
+- Localization catalogs and isolated locale scopes: `i18n/README.md`.
+- Detached scene execution and dependency-aware patches: `wiki/architecture/scene-runtime.md`.

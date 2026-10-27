@@ -1,6 +1,6 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { buildUnitReport } from '@aedifex/core'
 import { UnitNode } from '@aedifex/core/schema'
+import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
 import { READ_ONLY_TOOL_ANNOTATIONS } from './annotations'
@@ -46,8 +46,8 @@ export function registerListUnits(server: McpServer, bridge: SceneOperations): v
       title: 'List units',
       description:
         'List units with their member zones and current area reports, optionally filtered by building.',
-      inputSchema: listUnitsInput,
-      outputSchema: listUnitsOutput,
+      inputSchema: z.object(listUnitsInput),
+      outputSchema: z.object(listUnitsOutput),
       annotations: READ_ONLY_TOOL_ANNOTATIONS,
     },
     async ({ buildingId }) => {
