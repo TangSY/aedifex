@@ -1,4 +1,4 @@
-import type { TerrainField } from '@pascal-app/core'
+import type { TerrainField } from '@aedifex/core'
 import {
   anyGroundVeiled,
   groundWindowEnabledNode,
@@ -7,7 +7,7 @@ import {
   UNDERGROUND_RING,
   undergroundAmbianceNode,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { type BufferGeometry, DoubleSide, type Material } from 'three'
 import {
   color,
@@ -149,7 +149,7 @@ export function GroundVeil({
       position={position}
       raycast={noopRaycast}
       rotation={rotation}
-      userData={{ [SITE_GROUND]: 'veil', pascalExport: 'strip' }}
+      userData={{ [SITE_GROUND]: 'veil', aedifexExport: 'strip' }}
       visible={veiled}
     />
   )

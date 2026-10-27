@@ -2,7 +2,7 @@
  * The bookkeeping a scene store's history keeps outside the store: pause depths and leases, the
  * commit bus and its pending commit, gesture drafts, the hydration boundary, the space-detection
  * pause. Each scene store owns one environment; the editor's store owns the live one. A detached
- * scene (`@pascal-app/core/runtime`) owns its own, so its commits, pauses and drafts never reach
+ * scene (`@aedifex/core/runtime`) owns its own, so its commits, pauses and drafts never reach
  * the live editor's subscribers.
  *
  * The modules that keep this state read it through `currentSceneEnvironment()`: the environment

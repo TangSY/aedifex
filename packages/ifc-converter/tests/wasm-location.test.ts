@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test'
 import { readFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { convertIfcToPascal } from '../src'
+import { convertIfcToAedifex } from '../src'
 
 const fixture = fileURLToPath(
   new URL(
@@ -14,7 +14,7 @@ const webIfcDirectory = `${dirname(fileURLToPath(import.meta.resolve('web-ifc'))
 
 test('locateWasmFile picks the wasm URL, over wasmPath', async () => {
   const asked: string[] = []
-  const scene = await convertIfcToPascal(await readFile(fixture), undefined, {
+  const scene = await convertIfcToAedifex(await readFile(fixture), undefined, {
     simplify: false,
     wasmPath: '/nowhere/',
     locateWasmFile: (fileName) => {

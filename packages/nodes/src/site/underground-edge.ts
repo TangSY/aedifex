@@ -1,4 +1,4 @@
-import type { UndergroundEdge } from '@pascal-app/viewer'
+import type { UndergroundEdge } from '@aedifex/viewer'
 
 /**
  * The hole's edge looks (`UndergroundEdge`), as numbers: the ground's mask and its rim read them

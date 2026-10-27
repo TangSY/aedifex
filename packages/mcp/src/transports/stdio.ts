@@ -6,7 +6,7 @@ import {
 } from '@modelcontextprotocol/server/stdio'
 
 /**
- * Serve Pascal over stdio from a server factory.
+ * Serve Aedifex over stdio from a server factory.
  *
  * The SDK negotiates the protocol era per connection: a client that opens with
  * the 2025 `initialize` handshake and one that opens with the 2026-07-28
@@ -26,7 +26,7 @@ export function connectStdio(
   options: Pick<ServeStdioOptions, 'transport' | 'onerror'> = {},
 ): StdioServerHandle {
   return serveStdio(createServer, {
-    onerror: (error) => console.error('[pascal-mcp] stdio transport error', error),
+    onerror: (error) => console.error('[aedifex-mcp] stdio transport error', error),
     ...options,
   })
 }

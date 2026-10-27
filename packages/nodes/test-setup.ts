@@ -1,7 +1,7 @@
 import { afterEach, beforeEach } from 'bun:test'
-import { nodeRegistry, useLiveNodeOverrides, useLiveTransforms, useScene } from '@pascal-app/core'
-import { useAlignmentGuides, useEditor, usePlacementPreview } from '@pascal-app/editor'
-import { useViewer } from '@pascal-app/viewer'
+import { nodeRegistry, useLiveNodeOverrides, useLiveTransforms, useScene } from '@aedifex/core'
+import { useAlignmentGuides, useEditor, usePlacementPreview } from '@aedifex/editor'
+import { useViewer } from '@aedifex/viewer'
 
 // bun runs every test file of this package in one process, in filesystem
 // order, which differs between machines and shifts whenever a file is added.

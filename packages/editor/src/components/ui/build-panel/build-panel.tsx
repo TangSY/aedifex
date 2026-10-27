@@ -1,6 +1,6 @@
 'use client'
 
-import { type PascalI18n, usePascalI18n } from '@pascal-app/core'
+import { type AedifexI18n, useAedifexI18n } from '@aedifex/core'
 import { ChevronRight } from 'lucide-react'
 import { type ComponentPropsWithoutRef, type ReactNode, useEffect, useState } from 'react'
 import { cn } from '../../../lib/utils'
@@ -70,7 +70,7 @@ export function BuildPanelAdvancedSection({
   description?: string
   hint?: string
 }) {
-  const i18n = usePascalI18n()
+  const i18n = useAedifexI18n()
   const [open, setOpen] = useState(false)
   useEffect(() => setOpen(readAdvancedOpen()), [])
   useEffect(() => {
@@ -191,7 +191,7 @@ export function BuildToolTile({
   )
 }
 
-const CAPTION_LEAD_MARKER = '__PASCAL_CAPTION_LEAD__'
+const CAPTION_LEAD_MARKER = '__AEDIFEX_CAPTION_LEAD__'
 
 /** The line under the Rooms tiles: what the armed shape does, lead in bold. */
 export function BuildPanelCaption({ caption, lead }: { caption: string; lead?: string }) {
@@ -228,7 +228,7 @@ export function BuildPanelRoomsSection({
   /** Extra attributes per tile (e.g. a host's guide-target hook). */
   tileProps?: (variant: WallDrawVariant) => Record<string, string | undefined>
 }) {
-  const i18n = usePascalI18n()
+  const i18n = useAedifexI18n()
   const active = WALL_DRAW_VARIANTS.find((variant) => variant.id === activeVariant)
   const activeMessages = active ? roomVariantMessages(active.id, i18n) : null
   return (
@@ -274,7 +274,7 @@ export function BuildPanelRoomsSection({
   )
 }
 
-function roomVariantMessages(variant: WallDrawVariant, i18n: PascalI18n) {
+function roomVariantMessages(variant: WallDrawVariant, i18n: AedifexI18n) {
   if (variant === 'rectangle') {
     return {
       label: i18n._({

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import type { FoundationMember } from '@pascal-app/core'
+import type { FoundationMember } from '@aedifex/core'
 import { buildFoundationMesh } from './generic-foundation-geometry'
 
 const run = (over: Partial<FoundationMember> = {}): FoundationMember => ({

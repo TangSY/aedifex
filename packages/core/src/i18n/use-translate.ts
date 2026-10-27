@@ -8,23 +8,23 @@ import {
   useEffect,
   useSyncExternalStore,
 } from 'react'
-import { defaultI18n, type PascalI18n } from './registry'
+import { defaultI18n, type AedifexI18n } from './registry'
 
-const PascalI18nContext = createContext(defaultI18n)
+const AedifexI18nContext = createContext(defaultI18n)
 
 /**
  * Bind a request- or editor-local Pascal scope to React and Lingui.
  *
  * @experimental Unreleased API; signatures may change before the first i18n release.
  */
-export function PascalI18nProvider({ children, i18n }: { children: ReactNode; i18n: PascalI18n }) {
+export function AedifexI18nProvider({ children, i18n }: { children: ReactNode; i18n: AedifexI18n }) {
   useEffect(() => i18n.retain(), [i18n])
-  return createElement(PascalI18nContext.Provider, { value: i18n }, children)
+  return createElement(AedifexI18nContext.Provider, { value: i18n }, children)
 }
 
 /** @experimental Unreleased API; signatures may change before the first i18n release. */
-export function usePascalI18n(): PascalI18n {
-  const i18n = useContext(PascalI18nContext)
+export function useAedifexI18n(): AedifexI18n {
+  const i18n = useContext(AedifexI18nContext)
   useSyncExternalStore(
     i18n.subscribe.bind(i18n),
     i18n.getVersion.bind(i18n),
@@ -35,5 +35,5 @@ export function usePascalI18n(): PascalI18n {
 
 /** @experimental Unreleased API; signatures may change before the first i18n release. */
 export function useLocale(): string {
-  return usePascalI18n().getLocale()
+  return useAedifexI18n().getLocale()
 }

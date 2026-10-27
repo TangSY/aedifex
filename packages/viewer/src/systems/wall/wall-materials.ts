@@ -152,7 +152,7 @@ function exposedStructureMaterial(structure: ExposedStructure, shading: RenderSh
   let material = structureMaterials.get(structure)
   if (!material) {
     material = structure === 'cmu' ? masonryMaterial(BLOCK_MASONRY, uv().x) : concreteMaterial()
-    material.userData.__pascalCachedMaterial = true
+    material.userData.__aedifexCachedMaterial = true
     structureMaterials.set(structure, material)
   }
   return material

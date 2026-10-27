@@ -3,8 +3,8 @@
 > The localization API is experimental and unreleased. Its signatures may
 > change before the first i18n-capable package release.
 
-Pascal uses Lingui 6 for ICU MessageFormat, React updates, extraction, and
-catalog compilation. A thin Pascal registry keeps the ownership contract that
+Aedifex uses Lingui 6 for ICU MessageFormat, React updates, extraction, and
+catalog compilation. A thin Aedifex registry keeps the ownership contract that
 an embeddable editor needs: namespaced host and plugin packs, ordered
 overrides, locale fallback, isolated request/editor scopes, and locale-aware
 number formatting.
@@ -12,7 +12,7 @@ number formatting.
 Published packages use Lingui’s plain runtime call form, not macros:
 
 ```tsx
-const i18n = usePascalI18n()
+const i18n = useAedifexI18n()
 
 i18n._({
   id: 'viewer.camera.topView',
@@ -62,8 +62,8 @@ Keep namespaces with their owner: `core.*`, `viewer.*`, `editor.*`,
 strings and are compiled atomically through the lazy authoring path:
 
 ```ts
-import { registerMessages, setLocale } from '@pascal-app/core/i18n'
-import { registerBundledLocales } from '@pascal-app/editor/locales'
+import { registerMessages, setLocale } from '@aedifex/core/i18n'
+import { registerBundledLocales } from '@aedifex/editor/locales'
 
 registerBundledLocales()
 
@@ -92,7 +92,7 @@ scope on the client:
 ```tsx
 const i18n = createI18n({ locale: requestedLocale })
 
-return <PascalI18nProvider i18n={i18n}>{children}</PascalI18nProvider>
+return <AedifexI18nProvider i18n={i18n}>{children}</AedifexI18nProvider>
 ```
 
 The standalone app resolves `?lang=` in its request proxy, so localized text

@@ -1,6 +1,6 @@
 'use client'
 
-import { type GroundBox, terrainBetweenEyeAndBox, useScene } from '@pascal-app/core'
+import { type GroundBox, terrainBetweenEyeAndBox, useScene } from '@aedifex/core'
 import {
   groundVeiled,
   groundWindowBoxNow,
@@ -8,7 +8,7 @@ import {
   setGroundWindow,
   siteGround,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import type { Intersection, Mesh, Raycaster } from 'three'

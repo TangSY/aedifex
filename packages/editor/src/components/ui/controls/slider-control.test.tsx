@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createI18n, getLocale, PascalI18nProvider, setLocale } from '@pascal-app/core'
+import { createI18n, getLocale, AedifexI18nProvider, setLocale } from '@aedifex/core'
 import { renderToString } from 'react-dom/server'
 import { parseSliderBareValue, SliderControl } from './slider-control'
 
@@ -8,9 +8,9 @@ test('slider numbers use the scoped locale for display and parsing while the glo
   const i18n = createI18n({ locale: 'fr' })
   try {
     const html = renderToString(
-      <PascalI18nProvider i18n={i18n}>
+      <AedifexI18nProvider i18n={i18n}>
         <SliderControl label="Length" onChange={() => {}} precision={2} value={2.75} />
-      </PascalI18nProvider>,
+      </AedifexI18nProvider>,
     )
 
     expect(getLocale()).toBe('en')

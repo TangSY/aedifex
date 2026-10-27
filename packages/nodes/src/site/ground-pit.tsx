@@ -1,6 +1,6 @@
 'use client'
 
-import { groundHoleOpenNode, useViewer } from '@pascal-app/viewer'
+import { groundHoleOpenNode, useViewer } from '@aedifex/viewer'
 import { useEffect, useMemo } from 'react'
 import { BufferAttribute, BufferGeometry, FrontSide } from 'three'
 import {
@@ -259,7 +259,7 @@ export function GroundPit({
           geometry={wallGeometry}
           material={wall}
           raycast={noopRaycast}
-          userData={{ groundPit: 'walls', pascalExport: 'strip' }}
+          userData={{ groundPit: 'walls', aedifexExport: 'strip' }}
           visible={eyeAbove}
         />
       )}
@@ -269,7 +269,7 @@ export function GroundPit({
           geometry={floorGeometry}
           material={floor}
           raycast={noopRaycast}
-          userData={{ groundPit: 'floor', pascalExport: 'strip' }}
+          userData={{ groundPit: 'floor', aedifexExport: 'strip' }}
           visible={eyeAbove}
         />
       )}

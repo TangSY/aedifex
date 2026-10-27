@@ -1,4 +1,4 @@
-import { parseMeasurement } from '@pascal-app/editor'
+import { parseMeasurement } from '@aedifex/editor'
 
 export function parseCabinetDimensionInput(
   input: string,

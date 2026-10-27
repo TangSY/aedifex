@@ -13,7 +13,7 @@ import {
   SlabNode,
   useScene,
   WallNode,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   groundHoleOpenNode,
   groundWindowBoxNow,
@@ -21,7 +21,7 @@ import {
   SITE_GROUND,
   setSurfaceRaycastLayers,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import { Box3, type Line, type Mesh, type Object3D, Raycaster, Vector3 } from 'three'
 import type { MeshBasicNodeMaterial } from 'three/webgpu'

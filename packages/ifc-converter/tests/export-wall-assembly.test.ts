@@ -7,7 +7,7 @@ import {
   resolveWallExteriorSide,
   type WallNode,
   wallAssemblyPatch,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import * as WebIFC from 'web-ifc'
 import { buildIfcExport } from '../src/export'
 import { roomWithOpenings, wallsOn } from './export-scenes'

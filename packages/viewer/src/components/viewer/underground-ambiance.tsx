@@ -9,7 +9,7 @@ import {
   levelStackGroundBox,
   sceneRegistry,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
 import { Vector3 } from 'three'

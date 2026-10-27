@@ -1,7 +1,7 @@
 // @ts-expect-error — bun:test is provided by the Bun runtime; viewer does not
 // depend on @types/bun so the import type is unresolved at compile time.
 import { afterEach, expect, test } from 'bun:test'
-import { sceneRegistry } from '@pascal-app/core'
+import { sceneRegistry } from '@aedifex/core'
 import { Group, Mesh } from 'three'
 import { SCENE_LAYER } from './layers'
 import { hideFromScene } from './scene-visibility'

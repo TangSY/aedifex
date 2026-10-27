@@ -9,14 +9,14 @@ import {
   ItemNode,
   LevelNode,
   scriptSource,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   captureRegistryVersions,
   effectIds,
   openDetachedScene,
   SceneEnvironmentDisposedError,
   type SceneSnapshot,
-} from '@pascal-app/core/runtime'
+} from '@aedifex/core/runtime'
 import { compileAndStoreGeometryScript } from './author'
 
 // A compile of an object for a detached scene reads the scene and mints the object's id before

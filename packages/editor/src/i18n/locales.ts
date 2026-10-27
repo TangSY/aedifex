@@ -1,4 +1,4 @@
-import { type CompiledTranslationMessages, registerCompiledMessages } from '@pascal-app/core'
+import { type CompiledTranslationMessages, registerCompiledMessages } from '@aedifex/core'
 import { messages as en } from './locales/en/messages'
 import { messages as es } from './locales/es/messages'
 import { messages as fr } from './locales/fr/messages'

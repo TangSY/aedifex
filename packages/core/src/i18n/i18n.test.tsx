@@ -9,7 +9,7 @@ import {
   getLocale,
   LevelNode,
   levelDisplayNumber,
-  PascalI18nProvider,
+  AedifexI18nProvider,
   parseLocalizedNumber,
   registerCompiledMessages,
   registerMessages,
@@ -18,7 +18,7 @@ import {
   subscribe,
   translate,
   useLocale,
-  usePascalI18n,
+  useAedifexI18n,
 } from '../index'
 
 afterEach(() => {
@@ -184,9 +184,9 @@ describe('message registry', () => {
       serverRefreshes += 1
     })
     renderToString(
-      <PascalI18nProvider i18n={serverScope}>
+      <AedifexI18nProvider i18n={serverScope}>
         <span>server</span>
-      </PascalI18nProvider>,
+      </AedifexI18nProvider>,
     )
 
     await registerMessages('fr', 'viewer', { 'test.after-server-render': 'Après' })
@@ -269,7 +269,7 @@ test('server rendering uses the selected locale for text and numbers', async () 
   const scope = createI18n({ locale: 'fr' })
 
   function Greeting() {
-    const i18n = usePascalI18n()
+    const i18n = useAedifexI18n()
     const locale = useLocale()
     return (
       <span>
@@ -280,9 +280,9 @@ test('server rendering uses the selected locale for text and numbers', async () 
   }
 
   const serverHtml = renderToString(
-    <PascalI18nProvider i18n={scope}>
+    <AedifexI18nProvider i18n={scope}>
       <Greeting />
-    </PascalI18nProvider>,
+    </AedifexI18nProvider>,
   )
 
   expect(getLocale()).toBe('en')

@@ -17,7 +17,7 @@ export type TranslationMessages = Record<string, TranslationMessage>
 export type CompiledTranslationMessages = Messages
 
 const catalogs = new Map<string, Messages>()
-const scopes = new Set<PascalI18n>()
+const scopes = new Set<AedifexI18n>()
 const warnedMissingKeys = new Set<string>()
 
 function emptyMessages(): Messages {
@@ -101,7 +101,7 @@ function warnMissing(key: string, requestedLocale: string): void {
  *
  * @experimental Unreleased API; signatures may change before the first i18n release.
  */
-export class PascalI18n {
+export class AedifexI18n {
   readonly i18n: LinguiI18n
   private readonly englishI18n: LinguiI18n
   private readonly listeners = new Set<() => void>()
@@ -207,8 +207,8 @@ export class PascalI18n {
  *
  * @experimental Unreleased API; signatures may change before the first i18n release.
  */
-export function createI18n(options: { locale?: string } = {}): PascalI18n {
-  return new PascalI18n(options.locale)
+export function createI18n(options: { locale?: string } = {}): AedifexI18n {
+  return new AedifexI18n(options.locale)
 }
 
 /** @experimental Unreleased API; signatures may change before the first i18n release. */

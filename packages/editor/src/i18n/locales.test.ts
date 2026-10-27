@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import { createI18n, setLocale, translate } from '@pascal-app/core'
+import { createI18n, setLocale, translate } from '@aedifex/core'
 import { localizedLevelName } from './level-name'
 import { registerBundledLocales } from './locales'
 

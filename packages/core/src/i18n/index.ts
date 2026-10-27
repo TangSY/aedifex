@@ -12,7 +12,7 @@ export {
   createI18n,
   defaultI18n,
   getLocale,
-  type PascalI18n,
+  type AedifexI18n,
   registerCompiledMessages,
   registerMessages,
   setLocale,
@@ -22,4 +22,4 @@ export {
   type TranslationParams,
   translate,
 } from './registry'
-export { PascalI18nProvider, useLocale, usePascalI18n } from './use-translate'
+export { AedifexI18nProvider, useLocale, useAedifexI18n } from './use-translate'

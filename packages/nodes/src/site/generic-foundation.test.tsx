@@ -15,8 +15,8 @@ import {
   SlabNode,
   useScene,
   WallNode,
-} from '@pascal-app/core'
-import { SITE_FOUNDATION, siteFoundation, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { SITE_FOUNDATION, siteFoundation, useViewer } from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import type { Mesh, Object3D } from 'three'
 import type { MeshLambertNodeMaterial } from 'three/webgpu'
@@ -122,7 +122,7 @@ test('a house stands on a footing and a block wall, marked, found by captures an
     const scene = renderer.scene.instance as Object3D
     const found = parts(scene)
     expect(names(scene)).toEqual(['footing', 'stem'])
-    expect(found.every((part) => part.userData.pascalExport === 'strip')).toBe(true)
+    expect(found.every((part) => part.userData.aedifexExport === 'strip')).toBe(true)
     // The capture finds them by their mark, through the site the renderer registered.
     expect(siteFoundation()).toEqual(found)
     await act(async () => useViewer.setState({ walkthroughMode: true }))

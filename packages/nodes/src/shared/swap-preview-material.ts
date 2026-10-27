@@ -1,4 +1,4 @@
-import { hasMaterialsForGroups } from '@pascal-app/viewer'
+import { hasMaterialsForGroups } from '@aedifex/viewer'
 import type { BufferGeometry, Material, Mesh } from 'three'
 
 /**

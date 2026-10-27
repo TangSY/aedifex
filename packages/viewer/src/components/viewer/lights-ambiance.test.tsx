@@ -10,7 +10,7 @@ import {
   SiteNode,
   SlabNode,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { useThree } from '@react-three/fiber'
 import { act, create } from '@react-three/test-renderer'
 import type {

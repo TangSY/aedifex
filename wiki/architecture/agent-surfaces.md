@@ -63,7 +63,7 @@ Beyond the rules above:
 
 ## Computing off the live scene
 
-A host may run any shared operation, or a whole MCP bridge, on a **detached scene** instead of the live store (`@pascal-app/core/runtime`, [scene runtime](scene-runtime.md)): the same contract and operation, computed on a copy opened from a canonical snapshot, with deterministic ids (`effectIds`) and a record of what it read. The result is a complete field-level patch, applied to the live scene with `applyPatchWithDependencies` only if nothing it read has changed, or refused with what changed. Both surfaces keep one implementation:
+A host may run any shared operation, or a whole MCP bridge, on a **detached scene** instead of the live store (`@aedifex/core/runtime`, [scene runtime](scene-runtime.md)): the same contract and operation, computed on a copy opened from a canonical snapshot, with deterministic ids (`effectIds`) and a record of what it read. The result is a complete field-level patch, applied to the live scene with `applyPatchWithDependencies` only if nothing it read has changed, or refused with what changed. Both surfaces keep one implementation:
 
 - **Hosted chat**: `scene.execute(operation, input, context)`, or `applyAgentOutcome(op(scene.reader().nodes, …), scene.host())`.
 - **MCP**: `new SceneBridge({ runtime: scene })`; every registered tool then reads and writes the detached scene. The shared-tool runner plans each operation inside the scene's scope (`runInScene`), so its ids are the scene's.

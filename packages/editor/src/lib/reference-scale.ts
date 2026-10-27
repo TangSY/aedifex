@@ -1,4 +1,4 @@
-import { formatNumber, type GuideScaleReference } from '@pascal-app/core'
+import { formatNumber, type GuideScaleReference } from '@aedifex/core'
 
 export type ReferenceScaleUnit = 'meters' | 'centimeters' | 'feet' | 'inches'
 

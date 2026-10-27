@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { GuideScaleReference } from '@pascal-app/core'
+import { GuideScaleReference } from '@aedifex/core'
 import { z } from 'zod'
 import { createGuideScaleReference, formatReferenceScaleLabel } from '../../lib/reference-scale'
 import { formatFloorplanNumber, parseReferenceScaleLength } from './floorplan-panel'

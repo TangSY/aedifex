@@ -6,14 +6,14 @@ import {
   isCaptureSessionOn,
   subscribeCaptureSessions,
   useScene,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import {
   BLOCK_MASONRY,
   concreteMaterial,
   masonryMaterial,
   SITE_FOUNDATION,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import { BufferAttribute, BufferGeometry } from 'three'
 import type { MeshLambertNodeMaterial } from 'three/webgpu'
@@ -112,7 +112,7 @@ function FoundationPart({
       geometry={geometry}
       material={material}
       raycast={noopRaycast}
-      userData={{ [SITE_FOUNDATION]: true, genericFoundation: part, pascalExport: 'strip' }}
+      userData={{ [SITE_FOUNDATION]: true, genericFoundation: part, aedifexExport: 'strip' }}
       visible={visible}
     />
   )

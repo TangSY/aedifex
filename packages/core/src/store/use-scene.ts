@@ -1516,7 +1516,7 @@ function inEnvironment<T extends object>(environment: SceneEnvironment, state: T
 
 /**
  * A scene store bound to `environment`: its writes, actions, history and commits run in that
- * environment, so a second store (a detached scene, `@pascal-app/core/runtime`) never pauses,
+ * environment, so a second store (a detached scene, `@aedifex/core/runtime`) never pauses,
  * commits to or drafts in the editor's. Once the environment is disposed, every read and write
  * of the store throws.
  */

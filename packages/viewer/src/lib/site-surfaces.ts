@@ -1,4 +1,4 @@
-import { sceneRegistry } from '@pascal-app/core'
+import { sceneRegistry } from '@aedifex/core'
 import type { Object3D } from 'three'
 import { temporarilySetGroundAside } from './scene-visibility'
 

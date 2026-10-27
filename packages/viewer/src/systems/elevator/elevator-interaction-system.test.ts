@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { sceneRegistry, useScene } from '@pascal-app/core'
+import { sceneRegistry, useScene } from '@aedifex/core'
 import { _roots, createRoot, type Instance } from '@react-three/fiber'
 import {
   BoxGeometry,
@@ -12,7 +12,7 @@ import {
   Scene,
   Vector3,
 } from 'three'
-import { createPascalPointerEvents, type ViewerBreadcrumb } from '../../lib/pointer-events'
+import { createAedifexPointerEvents, type ViewerBreadcrumb } from '../../lib/pointer-events'
 import { collectElevatorButtons } from './elevator-interaction-system'
 
 const cleanups: (() => void)[] = []
@@ -57,7 +57,7 @@ async function pointerRoot(roots: Object3D[], onBreadcrumb: (b: ViewerBreadcrumb
   await root.configure({
     gl: { render: noop, setSize: noop, setPixelRatio: noop } as never,
     camera,
-    events: (store) => createPascalPointerEvents(store, onBreadcrumb),
+    events: (store) => createAedifexPointerEvents(store, onBreadcrumb),
     frameloop: 'never',
     dpr: 1,
     size: { width: 100, height: 100, top: 0, left: 0 },

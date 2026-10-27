@@ -6,7 +6,7 @@ import {
   groundWindowMaskNode,
   type UndergroundEdge,
   useViewer,
-} from '@pascal-app/viewer'
+} from '@aedifex/viewer'
 import { useEffect, useState } from 'react'
 import {
   ClampToEdgeWrapping,

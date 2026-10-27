@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import { groundHoleOpenNode } from '@pascal-app/viewer'
+import { groundHoleOpenNode } from '@aedifex/viewer'
 import {
   groundHoleColorNode,
   groundHoleContains,

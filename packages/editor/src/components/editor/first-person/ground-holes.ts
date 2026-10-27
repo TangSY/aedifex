@@ -12,7 +12,7 @@
  * surface is exactly the one the uncut triangle was.
  */
 
-import { difference, type Ring, union } from '@pascal-app/core'
+import { difference, type Ring, union } from '@aedifex/core'
 import { BufferAttribute, BufferGeometry, ShapeUtils, Vector2 } from 'three'
 
 /** Triangles flatter than this in plan (m²) are vertical faces: they hold nothing up. */

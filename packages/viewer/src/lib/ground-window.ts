@@ -5,7 +5,7 @@ import {
   type GroundBox,
   levelGroundBox,
   terrainBetweenEyeAndBox,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import type { Camera } from 'three'
 import { Box3, Ray, Vector3 } from 'three'
 import { cameraPosition, max, min, positionWorld, uniform, vec3 } from 'three/tsl'

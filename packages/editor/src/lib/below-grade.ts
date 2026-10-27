@@ -7,8 +7,8 @@ import {
   levelGradeStanding,
   levelGroundBox,
   useScene,
-} from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { useEffect } from 'react'
 
 type LevelDisplay = {

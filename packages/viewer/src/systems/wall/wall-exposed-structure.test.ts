@@ -4,7 +4,7 @@ import {
   FOUNDATION_CONSTRUCTIONS,
   WallNode,
   wallAssemblyFromLegacy,
-} from '@pascal-app/core'
+} from '@aedifex/core'
 import { getMaterialsForWall, getWallMaterialHash } from './wall-materials'
 
 // A wall with no cladding over a bare masonry or concrete core shows that structure on its

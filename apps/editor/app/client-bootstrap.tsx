@@ -9,8 +9,8 @@
 // `loaded` guard inside `../lib/bootstrap` keeps the side effect
 // idempotent under HMR.
 import '../lib/bootstrap'
-import { createI18n, defaultI18n, PascalI18nProvider } from '@pascal-app/core'
-import { registerBundledLocales } from '@pascal-app/editor/locales'
+import { createI18n, defaultI18n, AedifexI18nProvider } from '@aedifex/core'
+import { registerBundledLocales } from '@aedifex/editor/locales'
 import { type ReactNode, useEffect, useMemo } from 'react'
 
 registerBundledLocales()
@@ -43,5 +43,5 @@ export function ClientBootstrap({
     return defaultI18n.subscribeLocale((nextLocale) => i18n.setLocale(nextLocale))
   }, [i18n])
 
-  return <PascalI18nProvider i18n={i18n}>{children}</PascalI18nProvider>
+  return <AedifexI18nProvider i18n={i18n}>{children}</AedifexI18nProvider>
 }

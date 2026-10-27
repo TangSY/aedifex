@@ -4,7 +4,7 @@
 
 Applies to: `packages/core/src/runtime/**`, `packages/core/src/store/**` (environments, history control), `packages/core/src/systems/document-reconcile.ts`, the shared operations in `packages/core/src/agent-operations/**`, and `packages/mcp/src/bridge/**`.
 
-A host that runs a long agent tool (a scene program, a compile, a batch of operations) does not want to hold the person's editor while it computes, nor let the computation touch the live store before it is known to fit. `@pascal-app/core/runtime` gives it a scene of its own: compute there, get a patch and the list of what was read, then apply the patch to the live scene only if nothing that was read has changed meanwhile. The runtime is library code; when and where a host applies is the host's (DECISIONS.md E-018).
+A host that runs a long agent tool (a scene program, a compile, a batch of operations) does not want to hold the person's editor while it computes, nor let the computation touch the live store before it is known to fit. `@aedifex/core/runtime` gives it a scene of its own: compute there, get a patch and the list of what was read, then apply the patch to the live scene only if nothing that was read has changed meanwhile. The runtime is library code; when and where a host applies is the host's (DECISIONS.md E-018).
 
 ## One store, one environment
 
@@ -90,4 +90,4 @@ The result's `patch` is rebased onto `current`: what an editor applies (`applySc
 
 ## MCP
 
-`new SceneBridge({ runtime })` binds the bridge to a runtime; the default is the editor's store. The bridge reads through the runtime's reader and runs every write in its scope. Core does not import the MCP: the host opens the detached scene and constructs the bridge. `createPascalMcpServer` starts every tool handler in the scene's scope (`SceneOperations.runInScene`), and tools that await (add_object, add_column) mint their ids before the first await and re-enter the scope to plan; a custom `SceneOperations` without `runInScene` keeps unscoped, random ids.
+`new SceneBridge({ runtime })` binds the bridge to a runtime; the default is the editor's store. The bridge reads through the runtime's reader and runs every write in its scope. Core does not import the MCP: the host opens the detached scene and constructs the bridge. `createAedifexMcpServer` starts every tool handler in the scene's scope (`SceneOperations.runInScene`), and tools that await (add_object, add_column) mint their ids before the first await and re-enter the scope to plan; a custom `SceneOperations` without `runInScene` keeps unscoped, random ids.

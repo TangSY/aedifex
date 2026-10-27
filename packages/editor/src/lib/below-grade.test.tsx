@@ -7,9 +7,9 @@ import {
   LevelNode as LevelSchema,
   SlabNode,
   useScene,
-} from '@pascal-app/core'
-import { buildGroundLevelChanges } from '@pascal-app/core/building'
-import { useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { buildGroundLevelChanges } from '@aedifex/core/building'
+import { useViewer } from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import useEditor from '../store/use-editor'
 import villaAurelia from './__fixtures__/owner-villa-aurelia-basement.json'

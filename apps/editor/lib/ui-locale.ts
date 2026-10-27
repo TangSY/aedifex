@@ -1,4 +1,4 @@
-export const PASCAL_LOCALE_HEADER = 'x-pascal-locale'
+export const AEDIFEX_LOCALE_HEADER = 'x-aedifex-locale'
 
 export function resolveUiLocale(value: string | null | undefined): string {
   const requested = value?.trim()

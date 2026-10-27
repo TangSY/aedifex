@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import type { GroundBox } from '@pascal-app/core'
+import type { GroundBox } from '@aedifex/core'
 import { PerspectiveCamera, Vector3 } from 'three'
 import {
   groundWindowBoxNow,

@@ -1,6 +1,6 @@
 'use client'
 
-import { usePascalI18n } from '@pascal-app/core'
+import { useAedifexI18n } from '@aedifex/core'
 import type React from 'react'
 import { cn } from '../../lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/primitives/tooltip'
@@ -19,7 +19,7 @@ export function FloorplanCompassButton({
   needleRef,
   style,
 }: FloorplanCompassButtonProps) {
-  const i18n = usePascalI18n()
+  const i18n = useAedifexI18n()
   const label = i18n._({
     id: 'viewer.floorplan.alignNorth',
     message: 'Align view to north',

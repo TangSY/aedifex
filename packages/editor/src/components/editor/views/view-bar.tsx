@@ -1,6 +1,6 @@
 'use client'
 
-import { type GroundMode, useViewer } from '@pascal-app/viewer'
+import { type GroundMode, useViewer } from '@aedifex/viewer'
 import { ArrowLeftRight, Check, Columns2, MoreHorizontal, Pin, PinOff, X } from 'lucide-react'
 import { type ReactNode, useEffect, useRef } from 'react'
 import { useIsMobile } from '../../../hooks/use-mobile'

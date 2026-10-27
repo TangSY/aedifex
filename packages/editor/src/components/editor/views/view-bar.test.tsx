@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer } from '@aedifex/viewer'
 import { renderCurrentMarkup } from '../../../test-utils/render-current-markup'
 import { GroundModeToggle } from './view-bar'
 

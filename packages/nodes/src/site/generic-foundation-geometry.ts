@@ -1,4 +1,4 @@
-import type { FoundationMember } from '@pascal-app/core'
+import type { FoundationMember } from '@aedifex/core'
 
 /** The foundation members of one kind as one indexed mesh, in world coordinates. */
 export type FoundationMesh = {

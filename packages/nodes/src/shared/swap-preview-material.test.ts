@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { hasMaterialsForGroups } from '@pascal-app/viewer'
+import { hasMaterialsForGroups } from '@aedifex/viewer'
 import { BufferGeometry, Mesh, MeshBasicMaterial } from 'three'
 import { swapPreviewMaterial } from './swap-preview-material'
 

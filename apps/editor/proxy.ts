@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { resolveAuthMode, sessionPrincipal } from '@/lib/self-host-auth'
-import { PASCAL_LOCALE_HEADER, resolveUiLocale } from '@/lib/ui-locale'
+import { AEDIFEX_LOCALE_HEADER, resolveUiLocale } from '@/lib/ui-locale'
 
 /**
  * Self-host gate. Pages redirect to `/login` (or `/setup` when nothing is
@@ -22,7 +22,7 @@ export function proxy(request: NextRequest) {
   if (gated) return gated
 
   const headers = new Headers(request.headers)
-  headers.set(PASCAL_LOCALE_HEADER, resolveUiLocale(request.nextUrl.searchParams.get('lang')))
+  headers.set(AEDIFEX_LOCALE_HEADER, resolveUiLocale(request.nextUrl.searchParams.get('lang')))
   return NextResponse.next({ request: { headers } })
 }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { usePascalI18n } from '@pascal-app/core'
+import { useAedifexI18n } from '@aedifex/core'
 import { Box, Columns2, Map as MapIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn } from '../../lib/utils'
@@ -23,7 +23,7 @@ export function ViewerStageSwitcher({
   modes,
   onChange,
 }: ViewerStageSwitcherProps) {
-  const i18n = usePascalI18n()
+  const i18n = useAedifexI18n()
   const enabledModes = normalizeViewerStageModes(modes)
 
   return (

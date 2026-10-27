@@ -9,8 +9,8 @@ import {
   SiteNode,
   SlabNode,
   useScene,
-} from '@pascal-app/core'
-import { groundHoleOpenNode, SCENE_LAYER, SITE_GROUND, useViewer } from '@pascal-app/viewer'
+} from '@aedifex/core'
+import { groundHoleOpenNode, SCENE_LAYER, SITE_GROUND, useViewer } from '@aedifex/viewer'
 import { act, create } from '@react-three/test-renderer'
 import { type BufferGeometry, type Mesh, type Object3D, Raycaster, Vector3 } from 'three'
 import { SiteRenderer } from './renderer'
