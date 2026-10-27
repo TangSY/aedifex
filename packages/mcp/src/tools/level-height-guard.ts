@@ -1,7 +1,7 @@
 import { fillLevelHeights, type NodeWrite } from '@aedifex/core/agent-operations'
 import type { AnyNode } from '@aedifex/core/schema'
-import type { Patch } from '../bridge/scene-bridge'
 import { registerPatchGuard } from '../bridge/patch-guards'
+import type { Patch } from '../bridge/scene-bridge'
 
 /**
  * A level is written with a height: a create without one, or an update clearing it, gets the height

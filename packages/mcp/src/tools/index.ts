@@ -56,7 +56,8 @@ export function registerTools(
     assetViews,
     signal: geometryScripts?.signal,
     assertActive: geometryScripts?.assertActive?.bind(geometryScripts),
-    buildObject: (args, assertCurrent) => compileObjectOnHost({ host: geometryScripts, bridge: operations, args, assertCurrent }),
+    buildObject: (args, assertCurrent) =>
+      compileObjectOnHost({ host: geometryScripts, bridge: operations, args, assertCurrent }),
   })
   registerAddColumn(server, operations, geometryScripts)
   registerAddObject(server, operations, geometryScripts)

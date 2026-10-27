@@ -1,6 +1,4 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { Client } from '@modelcontextprotocol/client'
-import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
 import {
   type AnyNode,
   LevelNode,
@@ -12,6 +10,8 @@ import {
   WallNode,
   WindowNode,
 } from '@aedifex/core/schema'
+import { Client } from '@modelcontextprotocol/client'
+import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { registerApplyPatch } from './apply-patch'
 

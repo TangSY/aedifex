@@ -17,7 +17,7 @@
     "i18n:compile": "bun scripts/i18n.ts compile",
     "i18n:extract": "bun scripts/i18n.ts extract",
     "i18n:translate": "bun scripts/i18n.ts translate",
-    "test": "turbo run test && bun test scripts/i18n.test.ts apps/editor/proxy.test.ts",
+    "test": "turbo run test && bun test ./scripts/i18n.test.ts ./apps/editor/proxy.test.ts",
     "ci": "bun run check && bun run i18n:check && bun run check-types && bun run test && bun run build",
     "kill": "lsof -ti:3002 | xargs kill -9 2>/dev/null || echo 'No processes found on port 3002'",
     "clean:cache": "rm -rf apps/*/.next apps/*/.swc apps/*/.turbo packages/*/.turbo tooling/*/.turbo .turbo node_modules/.cache",

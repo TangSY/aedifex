@@ -272,8 +272,8 @@ export function declareActionDependencies(
   before: SceneNodes,
   changes: SceneChanges,
 ): void {
-  const declare = runtime.declare?.bind(runtime)
-  if (!declare) return
+  const recordDependency = runtime.declare?.bind(runtime)
+  if (!recordDependency) return
   const plain = plainChanges(changes)
   const intended = applySceneChanges(before, plain)
   const after = runtime.store.getState().nodes as SceneNodes
@@ -304,7 +304,7 @@ export function declareActionDependencies(
   for (const id of touched)
     for (const nodes of [before, after, intended]) if (nodes[id]) levels.add(levelOf(nodes, id))
   for (const level of levels)
-    declare(level ? { kind: 'scope', level } : { kind: 'scope', whole: true })
+    recordDependency(level ? { kind: 'scope', level } : { kind: 'scope', whole: true })
 }
 
 /**

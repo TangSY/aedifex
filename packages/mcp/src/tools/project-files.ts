@@ -1,4 +1,3 @@
-import type { McpServer } from '@modelcontextprotocol/server'
 import {
   executeProjectFileTool,
   type ProjectFileToolExecutor,
@@ -8,6 +7,7 @@ import {
   PROJECT_FILE_TOOL_CONTRACTS,
   refusalPayload,
 } from '@aedifex/core/agent-tools'
+import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 
 export function registerProjectFileTools(server: McpServer, execute: ProjectFileToolExecutor) {

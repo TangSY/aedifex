@@ -8,8 +8,8 @@ import {
   type GeometryContext,
   isNodeKindEnabled,
   nodeRegistry,
+  useAedifexI18n,
   useLocale,
-  usePascalI18n,
   useScene,
 } from '@aedifex/core'
 import { AnyNode as AnyNodeSchema } from '@aedifex/core/schema'
@@ -304,7 +304,7 @@ export function FloorplanPreview({
   showLevelSelector = true,
   synchronizeNavigation = false,
 }: FloorplanPreviewProps) {
-  const i18n = usePascalI18n()
+  const i18n = useAedifexI18n()
   const locale = useLocale()
   const storeNodes = useScene((state) => (scene ? EMPTY_PREVIEW_NODES : state.nodes))
   const storeInstalledPlugins = useScene((state) =>

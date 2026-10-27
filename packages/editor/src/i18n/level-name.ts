@@ -1,11 +1,11 @@
-import { getDefaultLevelName, levelDisplayNumber, type PascalI18n } from '@pascal-app/core'
+import { type AedifexI18n, getDefaultLevelName, levelDisplayNumber } from '@aedifex/core'
 
 type DisplayLevel = {
   level?: number
   name?: string
 }
 
-export function localizedLevelName(level: DisplayLevel, i18n: PascalI18n, locale: string): string {
+export function localizedLevelName(level: DisplayLevel, i18n: AedifexI18n, locale: string): string {
   const levelNumber = level.level ?? 0
   const authoredName = level.name?.trim()
   if (

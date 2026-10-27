@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import ts from '@typescript/typescript6'
+import ts from 'typescript'
 
 // Bun runs a package's test files in one process, in an order that differs by platform: a file
 // that leaves a definition behind (a stub `wall` with a loose schema) changes what a later file

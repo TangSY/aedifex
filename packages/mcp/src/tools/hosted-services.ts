@@ -1,4 +1,3 @@
-import type { McpServer } from '@modelcontextprotocol/server'
 import {
   executeHostedServiceTool,
   type HostedServiceExecutor,
@@ -8,6 +7,7 @@ import {
   isAgentRefusal,
   refusalPayload,
 } from '@aedifex/core/agent-tools'
+import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 
 export function registerHostedServiceTools(

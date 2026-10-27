@@ -6,9 +6,9 @@ import type {
   AnyNodeType,
   Collection,
   CollectionId,
+  CompiledGeometryScript,
   SceneMaterial,
   SceneMaterialId,
-  CompiledGeometryScript,
 } from '@aedifex/core/schema'
 import type { ZodType } from 'zod'
 import type { AgentSession } from '../bridge/agent-session'
@@ -91,7 +91,10 @@ export interface SceneOperations {
     createdIds: AnyNodeId[]
   }
   /** Only compiled internal tools call this; raw patches cannot opt out of script ownership. */
-  applyCompiledGeometryPatch(input: { patches: Patch[]; compiled: CompiledGeometryScript | readonly CompiledGeometryScript[] }): {
+  applyCompiledGeometryPatch(input: {
+    patches: Patch[]
+    compiled: CompiledGeometryScript | readonly CompiledGeometryScript[]
+  }): {
     appliedOps: number
     deletedIds: AnyNodeId[]
     createdIds: AnyNodeId[]
@@ -309,7 +312,10 @@ class SceneOperationsFacade implements SceneOperations {
     return this.requireBridge().applyPatch(patches)
   }
 
-  applyCompiledGeometryPatch(input: { patches: Patch[]; compiled: CompiledGeometryScript | readonly CompiledGeometryScript[] }): {
+  applyCompiledGeometryPatch(input: {
+    patches: Patch[]
+    compiled: CompiledGeometryScript | readonly CompiledGeometryScript[]
+  }): {
     appliedOps: number
     deletedIds: AnyNodeId[]
     createdIds: AnyNodeId[]

@@ -1,6 +1,4 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { Client } from '@modelcontextprotocol/client'
-import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -10,6 +8,8 @@ import {
   SiteNode,
   WallNode,
 } from '@aedifex/core/schema'
+import { Client } from '@modelcontextprotocol/client'
+import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { createSceneOperations } from '../operations'
 import { registerSharedTools } from './shared-tools'

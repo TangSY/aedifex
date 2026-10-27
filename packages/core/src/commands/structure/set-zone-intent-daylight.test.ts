@@ -49,6 +49,17 @@ test('a patch without daylight leaves the declaration where it is', () => {
   })
 })
 
+test('historical JSON metadata survives unrelated edits and accepts a daylight declaration', () => {
+  for (const metadata of [null, 'legacy', 7, ['legacy']]) {
+    const { nodes, zoneId } = fixture()
+    nodes[zoneId] = { ...nodes[zoneId]!, metadata } as AnyNode
+    expect(zoneOf(apply(nodes, zoneId, { name: 'Den' }), zoneId).metadata).toEqual(metadata)
+    expect(zoneOf(apply(nodes, zoneId, { daylight: lit }), zoneId).metadata).toEqual({
+      daylight: lit,
+    })
+  }
+})
+
 test('the declaration is both facts or a refusal: booleans, nothing else', () => {
   for (const daylight of [
     { artificialLight: true },

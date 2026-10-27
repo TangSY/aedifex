@@ -1,13 +1,18 @@
+import {
+  configureArtifactStore,
+  GeometryArtifactManifest,
+  ItemNode,
+  scriptSource,
+  useScene,
+} from '@aedifex/core'
+import { useViewer } from '@aedifex/viewer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { configureArtifactStore, GeometryArtifactManifest, useScene } from '@aedifex/core'
 import {
   compileAndStoreGeometryScript,
   configureBlenderScriptBuilder,
   getGeometryScriptCapabilities,
 } from '../../../lib/geometry-script/author'
-
 import { compileAndStoreFinishScript } from '../../../lib/geometry-script/finish-scripts'
-import { useViewer } from '@aedifex/viewer'
 
 const compile = vi.hoisted(() => vi.fn())
 vi.mock('../../../lib/geometry-script/client', () => ({ compileGeometryScriptInWorker: compile }))
@@ -85,6 +90,56 @@ describe('script host capabilities and project scope', () => {
         },
       }),
     ).rejects.toThrow('Project changed')
+    expect(put).not.toHaveBeenCalled()
+  })
+
+  it('uses a supplied scene artifact store while preserving project checks', async () => {
+    const livePut = vi.fn()
+    const scenePut = vi.fn(async (hash: string) => hash)
+    const assertCurrent = vi.fn()
+    configureArtifactStore({ put: livePut, text: async () => null, url: () => null })
+    const built = await compileAndStoreGeometryScript(
+      { code: 'module', assertCurrent },
+      { nodes: {}, artifacts: { put: scenePut, text: async () => null, url: () => null } },
+    )
+    expect(built.sha256).toBe(compiled().sha256)
+    expect(scenePut).toHaveBeenCalledTimes(2)
+    expect(livePut).not.toHaveBeenCalled()
+    expect(assertCurrent).toHaveBeenCalled()
+  })
+
+  it('rejects a project switch while reading a supplied scene script before compiling', async () => {
+    let current = true
+    const node = ItemNode.parse({
+      id: 'item_script',
+      source: scriptSource(compiled()),
+      asset: {
+        id: 'script',
+        category: 'object',
+        name: 'Script',
+        thumbnail: '',
+        src: '/object.glb',
+        dimensions: [1, 1, 1],
+      },
+    })
+    const put = vi.fn()
+    const text = vi.fn(async () => {
+      current = false
+      return 'module'
+    })
+    await expect(
+      compileAndStoreGeometryScript(
+        {
+          nodeId: node.id,
+          assertCurrent: () => {
+            if (!current) throw new Error('Project changed')
+          },
+        },
+        { nodes: { [node.id]: node }, artifacts: { put, text, url: () => null } },
+      ),
+    ).rejects.toThrow('Project changed')
+    expect(text).toHaveBeenCalledWith(compiled().script)
+    expect(compile).not.toHaveBeenCalled()
     expect(put).not.toHaveBeenCalled()
   })
 

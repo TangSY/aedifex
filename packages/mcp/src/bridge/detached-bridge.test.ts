@@ -2,9 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Client } from '@modelcontextprotocol/client'
-import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
-import { type SceneCommit, subscribeSceneCommits } from '@pascal-app/core'
+import { type SceneCommit, subscribeSceneCommits } from '@aedifex/core'
 import {
   applyPatchWithDependencies,
   captureRegistryVersions,
@@ -12,7 +10,7 @@ import {
   openDetachedScene,
   SceneEnvironmentDisposedError,
   type SceneSnapshot,
-} from '@pascal-app/core/runtime'
+} from '@aedifex/core/runtime'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -22,9 +20,11 @@ import {
   LevelNode,
   RoofNode,
   WallNode,
-} from '@pascal-app/core/schema'
+} from '@aedifex/core/schema'
+import { Client } from '@modelcontextprotocol/client'
+import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
 import { createSceneOperations, type SceneOperations } from '../operations'
-import { createPascalMcpServer } from '../server'
+import { createAedifexMcpServer } from '../server'
 import { SqliteSceneStore } from '../storage/sqlite-scene-store'
 import type { GeometryScriptHost } from '../tools/add-object'
 import { registerSharedTools } from '../tools/shared-tools'
@@ -59,7 +59,7 @@ function detached(effectId: string, from: SceneSnapshot = snapshot()) {
   })
 }
 
-async function connect(server: ReturnType<typeof createPascalMcpServer>) {
+async function connect(server: ReturnType<typeof createAedifexMcpServer>) {
   const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: 'test-client', version: '0.0.0' })
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)])
@@ -122,6 +122,43 @@ describe('SceneBridge over a detached scene', () => {
 })
 
 describe('every MCP tool on a detached scene', () => {
+  test('updated callbacks keep both host authorization and the deterministic scene scope', async () => {
+    async function updatedId() {
+      const scene = detached('effect_updated_callback')
+      const bridge = new SceneBridge({ runtime: scene })
+      const executed: string[] = []
+      const server = createAedifexMcpServer({
+        bridge,
+        executeTool: async ({ name, execute }) => {
+          executed.push(name)
+          await Promise.resolve()
+          return execute()
+        },
+      })
+      const registration = server.registerTool('scope_probe', {}, async () => ({
+        content: [{ type: 'text', text: 'initial' }],
+      }))
+      registration.update({
+        callback: async () => ({
+          content: [{ type: 'text', text: LevelNode.parse({}).id }],
+        }),
+      })
+      const client = await connect(server)
+      try {
+        const result = await client.callTool({ name: 'scope_probe', arguments: {} })
+        expect(result.isError).toBeFalsy()
+        expect(executed).toEqual(['scope_probe'])
+        const content = result.content[0]
+        return content?.type === 'text' ? content.text : undefined
+      } finally {
+        await client.close()
+        await server.close()
+        scene.dispose()
+      }
+    }
+    expect(await updatedId()).toBe(await updatedId())
+  })
+
   const compiledBox = {
     sha256: 'a'.repeat(64),
     script: 'b'.repeat(64),
@@ -163,7 +200,7 @@ describe('every MCP tool on a detached scene', () => {
         beyond: 'none: the test places what the request names.',
       },
     })
-    const client = await connect(createPascalMcpServer({ bridge, geometryScripts: host }))
+    const client = await connect(createAedifexMcpServer({ bridge, geometryScripts: host }))
     const calls = [
       ['create_unit', { buildingId: 'building_b', name: 'Flat' }],
       ['create_roof', { levelId: 'level_g', width: 6, depth: 4 }],
@@ -269,7 +306,7 @@ describe('SceneOperations without runInScene', () => {
     }) as SceneOperations
     const bridge = new SceneBridge()
     bridge.setScene(snapshot().nodes as never, snapshot().rootNodeIds as never)
-    const client = await connect(createPascalMcpServer({ bridge, operations: custom }))
+    const client = await connect(createAedifexMcpServer({ bridge, operations: custom }))
     const result = await client.callTool({
       name: 'add_wall',
       arguments: { levelId: 'level_g', start: [0, 0], end: [3, 0] },
@@ -374,7 +411,7 @@ describe('SceneBridge writes on a detached scene', () => {
 
   test('so does an MCP tool call: recording what it made reads no more of the scene', async () => {
     await readsOf(async (bridge) => {
-      const client = await connect(createPascalMcpServer({ bridge }))
+      const client = await connect(createAedifexMcpServer({ bridge }))
       const result = await client.callTool({
         name: 'apply_patch',
         arguments: { patches: [{ op: 'update', id: 'item_a', data: { name: 'North' } }] },
@@ -389,7 +426,7 @@ describe('SceneBridge export', () => {
     const base = {
       ...snapshot(),
       materials: { mat_red: { id: 'mat_red', name: 'Red', material: { color: '#ff0000' } } },
-      installedPlugins: ['pascal:test'],
+      installedPlugins: ['aedifex:test'],
     } as unknown as SceneSnapshot
     const scene = detached('effect_export', base)
     const exported = new SceneBridge({ runtime: scene }).exportJSON() as Record<string, unknown>
@@ -403,11 +440,11 @@ describe('SceneBridge export', () => {
 
 describe('store-only operations', () => {
   test('serve their tools: the scene scope needs no bridge', async () => {
-    const directory = mkdtempSync(join(tmpdir(), 'pascal-store-only-'))
+    const directory = mkdtempSync(join(tmpdir(), 'aedifex-store-only-'))
     const operations = createSceneOperations({
       store: new SqliteSceneStore({ databasePath: join(directory, 'pascal.db') }),
     })
-    const client = await connect(createPascalMcpServer({ bridge: new SceneBridge(), operations }))
+    const client = await connect(createAedifexMcpServer({ bridge: new SceneBridge(), operations }))
     const result = await client.callTool({ name: 'list_scenes', arguments: {} })
     expect(result.isError, JSON.stringify(result.content)).toBeFalsy()
   })

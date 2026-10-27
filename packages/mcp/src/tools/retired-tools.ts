@@ -1,9 +1,5 @@
+import { RETIRED_MCP_TOOLS, type RetiredTool, retiredToolRefusal } from '@aedifex/core/agent-tools'
 import type { McpServer } from '@modelcontextprotocol/server'
-import {
-  RETIRED_MCP_TOOLS,
-  type RetiredTool,
-  retiredToolRefusal,
-} from '@aedifex/core/agent-tools'
 import { toolError } from './errors'
 
 type RequestHandler = (request: unknown, extra: unknown) => Promise<unknown>

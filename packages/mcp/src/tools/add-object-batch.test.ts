@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
 import {
   type AnyNode,
   BuildingNode,
@@ -11,6 +10,7 @@ import {
   ItemNode,
   LevelNode,
 } from '@aedifex/core/schema'
+import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { createAedifexMcpServer } from '../server'
 import { SqliteSceneStore } from '../storage/sqlite-scene-store'

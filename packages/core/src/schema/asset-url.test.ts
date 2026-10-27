@@ -146,12 +146,12 @@ describe('AssetUrl', () => {
     test('entries with a trailing slash, uppercase or :443 still admit scene assets on that CDN', () => {
       if (!g.process?.env) return
       for (const entry of [
-        'https://cdn.pascal.app/',
-        'HTTPS://CDN.PASCAL.APP',
-        'https://cdn.pascal.app:443',
+        'https://cdn.aedifex.com/',
+        'HTTPS://CDN.AEDIFEX.COM',
+        'https://cdn.aedifex.com:443',
       ]) {
         g.process.env[ALLOWED_ORIGINS_ENV] = entry
-        const guide = GuideNode.safeParse({ url: 'https://cdn.pascal.app/plans/ground.png' })
+        const guide = GuideNode.safeParse({ url: 'https://cdn.aedifex.com/plans/ground.png' })
         expect([entry, guide.success]).toEqual([entry, true])
         expect([entry, isValid('https://cdn.other.com/a.glb')]).toEqual([entry, false])
       }
@@ -163,7 +163,7 @@ describe('AssetUrl', () => {
       try {
         for (const value of ['   ', ' , ', 'cdn.pascal.app']) {
           g.process.env[ALLOWED_ORIGINS_ENV] = value
-          expect([value, isValid('https://cdn.pascal.app/a.glb')]).toEqual([value, false])
+          expect([value, isValid('https://cdn.aedifex.com/a.glb')]).toEqual([value, false])
           expect([value, isValid('asset://x')]).toEqual([value, true])
         }
       } finally {
@@ -260,8 +260,8 @@ describe('allowedOriginsFrom', () => {
       expect([...(allowedOriginsFrom(raw) ?? [])]).toEqual(['https://cdn.example.com'])
       const lines = warn.mock.calls.map((args) => String(args[0]))
       expect(lines).toEqual([
-        '[pascal] asset_allowlist_entry_credentials_dropped {"index":0}',
-        '[pascal] asset_allowlist_entry_ignored {"index":1,"reason":"wildcard_not_supported"}',
+        '[aedifex] asset_allowlist_entry_credentials_dropped {"index":0}',
+        '[aedifex] asset_allowlist_entry_ignored {"index":1,"reason":"wildcard_not_supported"}',
       ])
       for (const line of lines) expect(line).not.toContain('hunter2')
     } finally {
@@ -277,8 +277,8 @@ describe('allowedOriginsFrom', () => {
       allowedOriginsFrom(raw)
       const lines = warn.mock.calls.map((args) => String(args[0]))
       expect(lines).toEqual([
-        '[pascal] asset_allowlist_entry_ignored {"index":1,"reason":"scheme_not_allowed"}',
-        '[pascal] asset_allowlist_entry_ignored {"index":2,"reason":"scheme_not_allowed"}',
+        '[aedifex] asset_allowlist_entry_ignored {"index":1,"reason":"scheme_not_allowed"}',
+        '[aedifex] asset_allowlist_entry_ignored {"index":2,"reason":"scheme_not_allowed"}',
       ])
       for (const line of lines) expect(line).not.toContain('secret')
 
@@ -297,7 +297,7 @@ describe('allowedOriginsFrom', () => {
       expect(allowedOriginsFrom('')).toBeUndefined()
       expect(allowedOriginsFrom('   ')?.size).toBe(0)
       expect(warn.mock.calls.map((args) => String(args[0]))).toEqual([
-        '[pascal] asset_allowlist_has_no_valid_entries: no origin is permitted',
+        '[aedifex] asset_allowlist_has_no_valid_entries: no origin is permitted',
       ])
     } finally {
       warn.mockRestore()
@@ -310,16 +310,16 @@ describe('allowedOriginsFrom', () => {
     const original = g.process.env[ALLOWED_ORIGINS_ENV]
     const warn = spyOn(console, 'warn').mockImplementation(() => {})
     try {
-      g.process.env[ALLOWED_ORIGINS_ENV] = 'http://cdn.pascal.app, http://assets.pascal.app'
-      expect(isValid('https://cdn.pascal.app/a.glb')).toBe(false)
-      expect(isValid('https://assets.pascal.app/b.glb')).toBe(false)
+      g.process.env[ALLOWED_ORIGINS_ENV] = 'http://cdn.aedifex.com, http://assets.aedifex.com'
+      expect(isValid('https://cdn.aedifex.com/a.glb')).toBe(false)
+      expect(isValid('https://assets.aedifex.com/b.glb')).toBe(false)
       expect(warn.mock.calls.map((args) => String(args[0]))).toEqual([
-        '[pascal] asset_allowlist_has_no_https_entries: scene asset URLs accept only https: origins, so every one is rejected (safeFetch still fetches the listed http: origins)',
+        '[aedifex] asset_allowlist_has_no_https_entries: scene asset URLs accept only https: origins, so every one is rejected (safeFetch still fetches the listed http: origins)',
       ])
 
       warn.mockClear()
-      g.process.env[ALLOWED_ORIGINS_ENV] = 'http://cdn.pascal.app, https://assets.pascal.app'
-      expect(isValid('https://assets.pascal.app/b.glb')).toBe(true)
+      g.process.env[ALLOWED_ORIGINS_ENV] = 'http://cdn.aedifex.com, https://assets.aedifex.com'
+      expect(isValid('https://assets.aedifex.com/b.glb')).toBe(true)
       expect(warn).not.toHaveBeenCalled()
     } finally {
       warn.mockRestore()

@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  AedifexI18nProvider,
   acquireSceneReadOnlyLease,
   createI18n,
   getCatalogMaterialById,
@@ -8,7 +9,6 @@ import {
   getSceneMaterialIdFromRef,
   initSpaceDetectionSync,
   initSpatialGridSync,
-  PascalI18nProvider,
   spatialGridManager,
   useScene,
 } from '@aedifex/core'
@@ -1977,9 +1977,9 @@ function LocalizedEditor(props: EditorProps & { locale: string }) {
   const i18n = useMemo(() => createI18n({ locale: props.locale }), [props.locale])
 
   return (
-    <PascalI18nProvider i18n={i18n}>
+    <AedifexI18nProvider i18n={i18n}>
       <EditorFrame {...props} />
-    </PascalI18nProvider>
+    </AedifexI18nProvider>
   )
 }
 

@@ -1,13 +1,9 @@
-import type { McpServer } from '@modelcontextprotocol/server'
-import {
-  applySceneWrites,
-  type NodeWrite,
-  seatWrittenRoofs,
-} from '@aedifex/core/agent-operations'
+import { applySceneWrites, type NodeWrite, seatWrittenRoofs } from '@aedifex/core/agent-operations'
 import { isAgentRefusal } from '@aedifex/core/agent-tools'
 import type { SceneGraph } from '@aedifex/core/clone-scene-graph'
 import { migrateLegacyWallAssemblies } from '@aedifex/core/scene-migrations'
 import { AnyNode } from '@aedifex/core/schema'
+import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 import type { SceneOperations } from '../../operations'
 import { SceneVersionConflictError } from '../../storage/types'

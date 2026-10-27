@@ -1,10 +1,6 @@
 {
   "schema_version": 1,
-  "required_hints": [
-    "readOnlyHint",
-    "destructiveHint",
-    "openWorldHint"
-  ],
+  "required_hints": ["readOnlyHint", "destructiveHint", "openWorldHint"],
   "tools": [
     {
       "name": "add_column",

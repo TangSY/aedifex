@@ -201,6 +201,27 @@ describe('SceneBridge', () => {
   })
 
   describe('applyPatch', () => {
+    test('can update a node recreated under the same id in one atomic history step', () => {
+      const level = bridge.findNodes({ type: 'level' })[0]!
+      const wall = WallNode.parse({ start: [0, 0], end: [2, 0] })
+      bridge.createNode(wall, level.id)
+      bridge.clearHistory()
+      const before = bridge.getNode(wall.id)
+      const replacement = WallNode.parse({ id: wall.id, start: [0, 0], end: [4, 0] })
+
+      const result = bridge.applyPatch([
+        { op: 'delete', id: wall.id },
+        { op: 'create', node: replacement, parentId: level.id },
+        { op: 'update', id: wall.id, data: { thickness: 0.35 } },
+      ])
+
+      expect(result.appliedOps).toBe(3)
+      expect(bridge.getNode(wall.id)).toMatchObject({ end: [4, 0], thickness: 0.35 })
+      expect(bridge.getHistory().pastCount).toBe(1)
+      bridge.undo()
+      expect(bridge.getNode(wall.id)).toEqual(before)
+    })
+
     test('applies mixed create/update/delete atomically', async () => {
       const level = bridge.findNodes({ type: 'level' })[0]!
       const wallA = WallNode.parse({ start: [0, 0], end: [2, 0] })

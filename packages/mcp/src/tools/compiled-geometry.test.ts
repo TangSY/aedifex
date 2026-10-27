@@ -3,8 +3,7 @@ import { addColumn } from '@aedifex/core/agent-operations'
 import { type AnyNodeId, type CompiledGeometryScript, WallNode } from '@aedifex/core/schema'
 import useScene from '@aedifex/core/store'
 import { compileGeometryScript } from '@aedifex/geometry-script/compile'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
+import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
 import { CATALOG_BRIEF } from '../../../core/src/agent-operations/__fixtures__/design-brief-cases'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { createAedifexMcpServer } from '../server'
@@ -110,15 +109,24 @@ describe('compiled geometry mutation boundary', () => {
     try {
       const ids: AnyNodeId[] = []
       for (const name of ['First exhibit', 'Second exhibit']) {
-        const made = payload(await f.call('add_object', {
-          code: script('floor'), name, reason: 'A sculptural exhibit.',
-        }))
+        const made = payload(
+          await f.call('add_object', {
+            code: script('floor'),
+            name,
+            reason: 'A sculptural exhibit.',
+          }),
+        )
         ids.push(made.nodeId as AnyNodeId)
       }
       const before = f.bridge.getNodes()
-      payload(await f.call('run_batch', { calls: ids.map((nodeId, index) => ({
-        tool: 'add_object', input: { nodeId, params: { height: index + 2 } },
-      })) }))
+      payload(
+        await f.call('run_batch', {
+          calls: ids.map((nodeId, index) => ({
+            tool: 'add_object',
+            input: { nodeId, params: { height: index + 2 } },
+          })),
+        }),
+      )
       ids.forEach((id, index) => {
         const node = f.bridge.getNode(id)!
         expect(node.type === 'item' && node.asset.dimensions![1]).toBe(index + 2)
@@ -146,20 +154,27 @@ describe('compiled geometry mutation boundary', () => {
       const wall = WallNode.parse({ start: [0, 0], end: [8, 0] })
       f.bridge.createNode(wall, level.id)
       const before = f.bridge.getNodes()
-      const result = await f.call('run_batch', { calls: [
-        { tool: 'add_object', input: { code: script('floor'), reason: 'A sculptural exhibit.' } },
-        { tool: 'delete_node', input: { id: wall.id } },
-      ] })
+      const result = await f.call('run_batch', {
+        calls: [
+          { tool: 'add_object', input: { code: script('floor'), reason: 'A sculptural exhibit.' } },
+          { tool: 'delete_node', input: { id: wall.id } },
+        ],
+      })
       expect(result.isError).toBe(true)
       expect(f.bridge.getNodes()).toEqual(before)
-    } finally { await f.close() }
+    } finally {
+      await f.close()
+    }
   })
 
   test('queued batch jobs cannot store artifacts in a newly active scene', async () => {
     const host = memoryHost()
     const writes: string[] = []
     const store = host.storeArtifact
-    host.storeArtifact = async (input) => { writes.push(input.sceneId); return store(input) }
+    host.storeArtifact = async (input) => {
+      writes.push(input.sceneId)
+      return store(input)
+    }
     const compile = host.compile
     let changeScene: () => void
     host.compile = async (input) => {
@@ -169,15 +184,21 @@ describe('compiled geometry mutation boundary', () => {
     }
     const f = await connected({ host })
     try {
-      changeScene = () => f.bridge.setActiveScene({ ...f.bridge.getActiveScene()!, id: 'other-scene' })
+      changeScene = () =>
+        f.bridge.setActiveScene({ ...f.bridge.getActiveScene()!, id: 'other-scene' })
       const before = f.bridge.getNodes()
-      const result = await f.call('run_batch', { calls: Array.from({ length: 5 }, (_, i) => ({
-        tool: 'add_object', input: { code: script('floor'), name: `Exhibit ${i}`, reason: 'A sculptural exhibit.' },
-      })) })
+      const result = await f.call('run_batch', {
+        calls: Array.from({ length: 5 }, (_, i) => ({
+          tool: 'add_object',
+          input: { code: script('floor'), name: `Exhibit ${i}`, reason: 'A sculptural exhibit.' },
+        })),
+      })
       expect(result.isError).toBe(true)
       expect(writes).toEqual([])
       expect(f.bridge.getNodes()).toEqual(before)
-    } finally { await f.close() }
+    } finally {
+      await f.close()
+    }
   })
 
   test('scripted windows, doors and columns rebuild to the compiled dimensions', async () => {

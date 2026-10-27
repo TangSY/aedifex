@@ -12,7 +12,7 @@ const config: LinguiConfig = {
         'packages/nodes/src',
         'apps/editor',
       ],
-      exclude: ['**/*.test.{ts,tsx}', '**/__fixtures__/**'],
+      exclude: ['**/*.test.{ts,tsx}', '**/__fixtures__/**', '**/node_modules/**', '**/.next/**', '**/dist/**'],
     },
   ],
   compileNamespace: 'es',

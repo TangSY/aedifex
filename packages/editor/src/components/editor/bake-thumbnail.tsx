@@ -385,9 +385,7 @@ export function BakeThumbnail({
         }
         scene.updateMatrixWorld(true)
         for (const [id, on] of priorLights)
-          useInteractive
-            .getState()
-            .setProceduralLights(id as import('@aedifex/core').AnyNodeId, on)
+          useInteractive.getState().setProceduralLights(id as import('@aedifex/core').AnyNodeId, on)
         restoreNodeVisibility()
         restoreAmbiance()
       }

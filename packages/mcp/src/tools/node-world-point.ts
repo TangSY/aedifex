@@ -17,12 +17,7 @@ import {
   nodeLevelFrame,
   transformPoint,
 } from '@aedifex/core/procedural-items'
-import {
-  AnyNode,
-  type AnyNodeId,
-  getRoofSegmentSurfaceY,
-  nodeKindOf,
-} from '@aedifex/core/schema'
+import { AnyNode, type AnyNodeId, getRoofSegmentSurfaceY, nodeKindOf } from '@aedifex/core/schema'
 
 type Nodes = Readonly<Record<string, AnyNode>>
 

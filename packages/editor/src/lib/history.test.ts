@@ -1,7 +1,7 @@
-import { DRAFTING_EXTENSION_KEY } from './interaction/registered-drafting'
 import { describe, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { DRAFTING_EXTENSION_KEY } from './interaction/registered-drafting'
 
 function runSourceHistoryTest(body: string) {
   const cache = join(import.meta.dir, '.turbo')

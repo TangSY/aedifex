@@ -58,7 +58,10 @@ beforeEach(async () => {
         schema: ItemNode,
         category: 'furnish',
         defaults: () => ({}),
-        capabilities: { deletable: true, reveal: { phase: 'furnishing', style: 'drop', height: 0.3 } },
+        capabilities: {
+          deletable: true,
+          reveal: { phase: 'furnishing', style: 'drop', height: 0.3 },
+        },
         geometry: () => null,
       } as unknown as AnyNodeDefinition,
       {
@@ -81,7 +84,11 @@ beforeEach(async () => {
         schema: RoofNode,
         category: 'structure',
         defaults: () => ({}),
-        capabilities: { deletable: true, reveal: { phase: 'roof', style: 'assemble', height: 4 }, exterior: true },
+        capabilities: {
+          deletable: true,
+          reveal: { phase: 'roof', style: 'assemble', height: 4 },
+          exterior: true,
+        },
         geometry: () => null,
       } as unknown as AnyNodeDefinition,
       {
@@ -798,7 +805,7 @@ test('an exterior edit that has played does not take the next build outdoors', a
   expect(useViewer.getState().wallMode).toBe('cutaway')
 })
 
-// The owner, 20 October, on the underground PR: with Follow Pascal on, the basement's opening
+// The owner, 20 October, on the underground PR: with Follow Aedifex on, the basement's opening
 // animation ran again and again while the agent worked. A level below grade is shown with the
 // floors above it hidden and the ground open over it; every pull-back to the finished house
 // showed the floors above and closed the ground, and the next piece on the basement opened it again.
@@ -864,7 +871,7 @@ async function followBasement(pieces: Array<{ at: number; on: 'basement' | 'grou
   renderer = await create(
     <>
       <group name="scene-renderer" />
-      <FollowPascal />
+      <FollowAedifex />
     </>,
   )
   driver = startConstructionReveal({ reveals: (commit) => commit.author === 'agent' })

@@ -4,8 +4,8 @@ import { createServer, request as httpRequest, type IncomingMessage } from 'node
 import type { AddressInfo } from 'node:net'
 import { Readable } from 'node:stream'
 import { finished } from 'node:stream/promises'
+import { __resetAllowedOriginsCacheForTests } from '@aedifex/core/schema'
 import { ProtocolError } from '@modelcontextprotocol/server'
-import { __resetAllowedOriginsCacheForTests } from '@pascal-app/core/schema'
 import {
   isBlockedAddress,
   type PinnedRequestInit,
@@ -323,7 +323,7 @@ describe('safeFetch — SSRF protection', () => {
     await expectBlocked(safeFetch('gopher://a.example/'), 'url_scheme_not_allowed')
     const lines = errorLog.mock.calls.map((args) => String(args[0]))
     expect(lines).toHaveLength(2)
-    expect(lines[0]).toStartWith('[pascal-mcp] safe_fetch_blocked ')
+    expect(lines[0]).toStartWith('[aedifex-mcp] safe_fetch_blocked ')
     expect(JSON.parse(lines[0]!.slice(lines[0]!.indexOf('{')))).toMatchObject({
       reason: 'url_host_blocked',
       hostname: 'a.example',
@@ -403,14 +403,14 @@ describe('safeFetch — SSRF protection', () => {
       expect((await safeFetch(url!, {}, deps)).buffer.toString()).toBe(body!)
     }
 
-    const prev = process.env.PASCAL_ALLOWED_ASSET_ORIGINS
-    process.env.PASCAL_ALLOWED_ASSET_ORIGINS = 'https://cdn.example:8443'
+    const prev = process.env.AEDIFEX_ALLOWED_ASSET_ORIGINS
+    process.env.AEDIFEX_ALLOWED_ASSET_ORIGINS = 'https://cdn.example:8443'
     try {
       const result = await safeFetch('https://cdn.example:8443/x', {}, deps)
       expect(result.buffer.toString()).toBe('allowlisted')
     } finally {
-      if (prev === undefined) delete process.env.PASCAL_ALLOWED_ASSET_ORIGINS
-      else process.env.PASCAL_ALLOWED_ASSET_ORIGINS = prev
+      if (prev === undefined) delete process.env.AEDIFEX_ALLOWED_ASSET_ORIGINS
+      else process.env.AEDIFEX_ALLOWED_ASSET_ORIGINS = prev
     }
   })
 
@@ -482,13 +482,13 @@ describe('safeFetch — SSRF protection', () => {
 })
 
 async function withAllowlist<T>(value: string, run: () => Promise<T>): Promise<T> {
-  const prev = process.env.PASCAL_ALLOWED_ASSET_ORIGINS
-  process.env.PASCAL_ALLOWED_ASSET_ORIGINS = value
+  const prev = process.env.AEDIFEX_ALLOWED_ASSET_ORIGINS
+  process.env.AEDIFEX_ALLOWED_ASSET_ORIGINS = value
   try {
     return await run()
   } finally {
-    if (prev === undefined) delete process.env.PASCAL_ALLOWED_ASSET_ORIGINS
-    else process.env.PASCAL_ALLOWED_ASSET_ORIGINS = prev
+    if (prev === undefined) delete process.env.AEDIFEX_ALLOWED_ASSET_ORIGINS
+    else process.env.AEDIFEX_ALLOWED_ASSET_ORIGINS = prev
   }
 }
 
@@ -533,10 +533,10 @@ describe('safeFetch — origin allowlist', () => {
       })
       const lines = warn.mock.calls.map((args) => String(args[0]))
       expect(lines).toEqual([
-        '[pascal] asset_allowlist_entry_ignored {"index":0,"reason":"not_a_url"}',
-        '[pascal] asset_allowlist_entry_ignored {"index":1,"reason":"not_a_url"}',
-        '[pascal] asset_allowlist_entry_ignored {"index":3,"reason":"scheme_not_allowed"}',
-        '[pascal] asset_allowlist_entry_ignored {"index":4,"reason":"scheme_not_allowed"}',
+        '[aedifex] asset_allowlist_entry_ignored {"index":0,"reason":"not_a_url"}',
+        '[aedifex] asset_allowlist_entry_ignored {"index":1,"reason":"not_a_url"}',
+        '[aedifex] asset_allowlist_entry_ignored {"index":3,"reason":"scheme_not_allowed"}',
+        '[aedifex] asset_allowlist_entry_ignored {"index":4,"reason":"scheme_not_allowed"}',
       ])
       for (const line of [...lines, ...errorLog.mock.calls.map((args) => String(args[0]))]) {
         expect(line).not.toContain('hunter2')

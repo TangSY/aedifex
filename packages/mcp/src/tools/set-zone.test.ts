@@ -1,13 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import { type AnyNodeId, LevelNode, RoofNode, WallNode, type ZoneNode } from '@aedifex/core/schema'
 import { Client } from '@modelcontextprotocol/client'
 import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
-import {
-  type AnyNodeId,
-  LevelNode,
-  RoofNode,
-  WallNode,
-  type ZoneNode,
-} from '@aedifex/core/schema'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { registerSetZone } from './set-zone'
 

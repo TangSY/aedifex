@@ -1,8 +1,12 @@
 import { honestNodePatch } from '@aedifex/core/agent-operations'
 import { isAgentRefusal } from '@aedifex/core/agent-tools'
 import type { AnyNode } from '@aedifex/core/schema'
+import {
+  type PatchRefusalCode,
+  PatchRefusedError,
+  registerPatchGuard,
+} from '../bridge/patch-guards'
 import type { Patch } from '../bridge/scene-bridge'
-import { type PatchRefusalCode, PatchRefusedError, registerPatchGuard } from '../bridge/patch-guards'
 
 /**
  * Each update checked to do what it says, in the batch's order (a node an earlier op created is

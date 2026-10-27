@@ -246,12 +246,12 @@ import {
   WALL_JOIN_SNAP_RADIUS,
   type WallPlanPoint,
 } from '../tools/wall/wall-drafting'
-import { FloorplanCompassButton } from './floorplan-compass-button'
 import { resolveFloorplanBackgroundSelection } from './floorplan-background-selection'
 import {
   subscribeFloorplanCameraNavigation,
   useFloorplanCameraSyncBridge,
 } from './floorplan-camera-sync'
+import { FloorplanCompassButton } from './floorplan-compass-button'
 import {
   canApplyFloorplanNavigationSync,
   canZoomFloorplanDuringNavigation,
