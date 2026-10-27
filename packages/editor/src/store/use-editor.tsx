@@ -89,7 +89,7 @@ import {
   withView,
 } from './view-layout'
 
-const DEFAULT_ACTIVE_SIDEBAR_PANEL = 'build'
+const DEFAULT_ACTIVE_SIDEBAR_PANEL = 'ai'
 
 export type WorkspaceMode = 'edit' | 'studio' | 'sheets'
 /** @deprecated The stage is views now: read `visibleScene(state)` (`VisibleScene`). */

@@ -174,9 +174,9 @@ describe('reopening the editor', () => {
     await useEditor.persist.rehydrate()
 
     expect(useEditor.persist.hasHydrated()).toBe(true)
-    expect(useEditor.getState().activeSidebarPanel).toBe('build')
-    useEditor.getState().setActiveSidebarPanel('ai')
-    expect(storage.read(STORAGE_KEY).state.sidebarPanels).toEqual({ edit: 'ai' })
+    expect(useEditor.getState().activeSidebarPanel).toBe('ai')
+    useEditor.getState().setActiveSidebarPanel('build')
+    expect(storage.read(STORAGE_KEY).state.sidebarPanels).toEqual({ edit: 'build' })
   })
 
   test("a tab whose preferences did not change leaves another tab's panel stored", async () => {
