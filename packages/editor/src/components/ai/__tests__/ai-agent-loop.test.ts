@@ -9,7 +9,7 @@ import type {
   LoopExitReason,
 } from '../contracts/runtime'
 import type { AIToolCall } from '../types'
-import type { ChatRequestBody } from '../contracts/chat-request'
+import type { ChatMessageInput, ChatRequestBody } from '../contracts/chat-request'
 
 // ============================================================================
 // Module-level mocks (must be declared BEFORE importing the module under test)
@@ -70,7 +70,7 @@ vi.mock('../ai-shared-agent-executor', () => ({
 // Imports — done after vi.mock declarations
 // ============================================================================
 
-import { runAgentLoop, abortActiveLoop } from '../ai-agent-loop'
+import { runAgentLoop, abortActiveLoop, canRetryLastAgentRun, retryLastAgentRun } from '../ai-agent-loop'
 import { captureScreenshot } from '@aedifex/viewer'
 import { isGhostPreviewActive } from '../ai-preview-manager'
 import { validateAllToolCalls } from '../ai-mutation-executor'
@@ -130,7 +130,7 @@ class FakeChatTransport implements ChatTransport {
     )
   }
 
-  async summarize(): Promise<{ summary: string } | null> {
+  async summarize(_messages: Pick<ChatMessageInput, 'role' | 'content'>[], _signal: AbortSignal): Promise<{ summary: string } | null> {
     return { summary: 'compressed' }
   }
 }
@@ -294,10 +294,82 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  delete fakeRuntime.agentLimits
   abortActiveLoop()
   vi.restoreAllMocks()
   vi.useRealTimers()
   resetAIRuntimeForTesting()
+})
+
+it('stops at the host iteration limit and tells the user how to continue', async () => {
+  fakeRuntime.agentLimits = { maxIterations: 1 }
+  setBuildingWithLevels(2)
+  fakeTransport.setReplies([{ text: 'Done.', toolCalls: [] }])
+  await runAgentLoop({ userMessage: 'build', catalogSummary: '' })
+  expect(fakeTransport.callCount).toBe(1)
+  expect(fakeTelemetry.loopFinishedCalls[0]?.reason).toBe('iteration-cap')
+  expect(useAIChat.getState().error).toContain('execution limit')
+})
+
+it('counts estimated prompt tokens when the provider does not report usage', async () => {
+  fakeRuntime.agentLimits = { maxTokens: 100 }
+  setBuildingWithLevels(2)
+  fakeTransport.setReplies([{ text: 'Done.', toolCalls: [] }])
+  await runAgentLoop({ userMessage: 'x'.repeat(500), catalogSummary: '' })
+  expect(fakeTransport.callCount).toBe(1)
+  expect(fakeTelemetry.loopFinishedCalls[0]?.reason).toBe('budget')
+})
+
+it.each(['iteration-cap', 'budget'] as const)(
+  'prevents restarting a full turn after a tool call reaches the %s',
+  async reason => {
+    fakeRuntime.agentLimits = reason === 'budget' ? { maxTokens: 1 } : { maxIterations: 1 }
+    setBuildingWithLevels(1)
+    vi.mocked(executeSharedAgentToolCalls).mockClear()
+    fakeTransport.setReplies([{ text: '', toolCalls: [{ tool: 'list_levels', sharedInput: {} }] }])
+    await runAgentLoop({ userMessage: 'inspect the scene', catalogSummary: '' })
+    expect(executeSharedAgentToolCalls).toHaveBeenCalledOnce()
+    expect(fakeTelemetry.loopFinishedCalls[0]?.reason).toBe(reason)
+    expect(useAIChat.getState().error).toContain('execution limit')
+    expect(canRetryLastAgentRun()).toBe(false)
+    expect(retryLastAgentRun()).toBe(false)
+    expect(fakeTransport.callCount).toBe(1)
+  },
+)
+
+it('uses the installed transport for long-context compression without replacing stored conversation summary', async () => {
+  for (let i = 0; i < 8; i++) useAIChat.getState().addUserMessage('房'.repeat(30_000))
+  const summarize = vi.spyOn(fakeTransport, 'summarize')
+  const stream = vi.spyOn(fakeTransport, 'streamChat')
+  fakeTransport.setReplies([{ text: 'Done.', toolCalls: [] }])
+  await runAgentLoop({ userMessage: 'continue', catalogSummary: '' })
+  expect(summarize).toHaveBeenCalled()
+  expect(summarize.mock.calls[0]?.[1]).toBeInstanceOf(AbortSignal)
+  expect(stream.mock.calls[0]?.[0].messages[0]?.content).toContain('compressed')
+  expect(useAIChat.getState().conversationSummary).toBeNull()
+})
+
+it('compacts by message count in bounded batches before sending chat', async () => {
+  const first = useAIChat.getState().addUserMessage('summarized')
+  for (let i = 0; i < 205; i++) useAIChat.getState().addUserMessage(`message ${i}`)
+  useAIChat.setState({ conversationSummary: 'earlier', summaryThroughMessageId: first })
+  const summarize = vi.spyOn(fakeTransport, 'summarize')
+  const stream = vi.spyOn(fakeTransport, 'streamChat')
+  fakeTransport.setReplies([{ text: 'Done.', toolCalls: [] }])
+  await runAgentLoop({ userMessage: 'continue', catalogSummary: '' })
+  expect(summarize.mock.calls.length).toBeGreaterThan(1)
+  for (const [messages] of summarize.mock.calls) expect(messages.length).toBeLessThanOrEqual(100)
+  expect(stream.mock.calls[0]?.[0].messages.length).toBeLessThanOrEqual(100)
+})
+
+it('stops with an error instead of silently discarding context when compression fails', async () => {
+  const first = useAIChat.getState().addUserMessage('summarized')
+  for (let i = 0; i < 105; i++) useAIChat.getState().addUserMessage(`message ${i}`)
+  useAIChat.setState({ conversationSummary: 'earlier', summaryThroughMessageId: first })
+  vi.spyOn(fakeTransport, 'summarize').mockResolvedValue(null)
+  await runAgentLoop({ userMessage: 'continue', catalogSummary: '' })
+  expect(fakeTransport.callCount).toBe(0)
+  expect(useAIChat.getState().error).toContain('summarize earlier conversation')
 })
 
 // ============================================================================
@@ -360,6 +432,35 @@ describe('runAgentLoop — multi-level vertical-connection reminder', () => {
 // ============================================================================
 
 describe('runAgentLoop — exit reasons + telemetry', () => {
+  it('makes retry available only after a safe failure, not after success or clearing', async () => {
+    setBuildingWithLevels(1)
+    fakeTransport.setReplies([{ text: 'Done.', toolCalls: [] }])
+    await runAgentLoop({ userMessage: 'go', catalogSummary: '' })
+    expect(canRetryLastAgentRun()).toBe(false)
+
+    fakeTransport.setReplies([{ text: '', toolCalls: [], error: { message: 'Rejected before generation' } }])
+    await runAgentLoop({ userMessage: 'go', catalogSummary: '' })
+    expect(canRetryLastAgentRun()).toBe(true)
+    abortActiveLoop()
+    expect(canRetryLastAgentRun()).toBe(false)
+  })
+
+  it('disables full-turn retry when the transport reports an uncertain result', async () => {
+    setBuildingWithLevels(1)
+    fakeTransport.setReplies([{ text: '', toolCalls: [], error: { message: 'Unknown result', metadata: { retryUnsafe: true } } }])
+    await runAgentLoop({ userMessage: 'go', catalogSummary: '' })
+    expect(canRetryLastAgentRun()).toBe(false)
+  })
+
+  it('disables full-turn retry after any tool call has run', async () => {
+    setBuildingWithLevels(1)
+    fakeTransport.setReplies([
+      { text: '', toolCalls: [{ tool: 'list_levels', sharedInput: {} }] },
+      { text: '', toolCalls: [], error: { message: 'Network failed' } },
+    ])
+    await runAgentLoop({ userMessage: 'go', catalogSummary: '' })
+    expect(canRetryLastAgentRun()).toBe(false)
+  })
   it('telemetry.loopStarted fires once at the start', async () => {
     setBuildingWithLevels(1)
     fakeTransport.setReplies([{ text: 'Done.', toolCalls: [] }])

@@ -13,6 +13,7 @@ import {
 import { cn } from '../../lib/utils'
 import {
   answerPendingQuestion,
+  canRetryLastAgentRun,
   confirmOperationsFromUI,
   rejectOperationsFromUI,
   retryLastAgentRun,
@@ -215,7 +216,7 @@ export function AIChatPanel() {
             <div className="flex items-center justify-between gap-2">
               <p className="font-barlow text-destructive text-xs">{error}</p>
               <div className="flex shrink-0 items-center gap-1.5">
-                <button
+                {canRetryLastAgentRun() && <button
                   className="flex items-center gap-1 rounded border border-destructive/30 px-1.5 py-0.5 font-barlow text-[11px] text-destructive/80 hover:bg-destructive/10 hover:text-destructive"
                   onClick={() => {
                     clearError()
@@ -225,7 +226,7 @@ export function AIChatPanel() {
                 >
                   <RotateCcw className="h-3 w-3" />
                   Retry
-                </button>
+                </button>}
                 <button
                   className="text-destructive/60 hover:text-destructive"
                   onClick={clearError}
@@ -326,7 +327,7 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick: (text: string) =
       <p className="mt-1 text-center font-barlow text-muted-foreground text-xs leading-relaxed">
         Describe your design changes in natural language,
         <br />
-        AI will preview and execute them in the scene.
+        AI will automatically apply valid changes to the scene.
       </p>
       <div className="mt-4 grid w-full grid-cols-1 gap-1.5">
         {SUGGESTION_CHIPS.map((text) => (

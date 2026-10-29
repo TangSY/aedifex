@@ -23,7 +23,8 @@ import {
 } from './ai-room-preset-executor'
 import type { AllowedChatRole, ChatMessageInput } from './contracts/chat-request'
 import { AI_INPUT_LIMITS, extractChatMessageText } from './contracts/chat-request'
-import { estimateMessagesTokens } from './ai-token-estimator'
+import { estimateMessagesTokens, estimateTokens } from './ai-token-estimator'
+import { summarizeConversation } from './ai-conversation-summary'
 import type { AnyNodeId } from '@aedifex/core'
 import type {
   AIToolCall,
@@ -58,6 +59,7 @@ let activeLoopController: AbortController | null = null
  * of each new runAgentLoop invocation.
  */
 export function abortActiveLoop(): void {
+  lastRunArgs = null
   if (activeLoopController) {
     activeLoopController.abort()
     activeLoopController = null
@@ -125,6 +127,10 @@ const DETERMINISTIC_TOOLS = new Set(['confirm_preview', 'reject_preview'])
 // Last run's arguments — lets the error-banner Retry button re-issue the
 // request after a transport failure without the user retyping the message.
 let lastRunArgs: { userMessage: string; catalogSummary: string } | null = null
+
+export function canRetryLastAgentRun(): boolean {
+  return lastRunArgs !== null
+}
 
 /**
  * Re-run the agent loop with the same message as the last run (after a
@@ -252,15 +258,25 @@ export async function runAgentLoop({
   // Telemetry: best-effort, fully optional. The OSS default runtime
   // ships a frozen no-op object so the indirection is essentially free.
   const telemetry = getAIRuntime().telemetry
+  const limits = getAIRuntime().agentLimits
+  const maxIterations = Number.isSafeInteger(limits?.maxIterations) && limits!.maxIterations! > 0 ? limits!.maxIterations! : MAX_ITERATIONS
+  const maxTokens = Number.isSafeInteger(limits?.maxTokens) && limits!.maxTokens! > 0 ? limits!.maxTokens! : TOKEN_BUDGET
   const loopMessageId = nanoid()
   let totalToolCalls = 0
+  let sawToolCalls = false
   let loopExitReason: 'success' | 'aborted' | 'failed' | 'budget' | 'iteration-cap' = 'success'
   telemetry?.loopStarted?.({ messageId: loopMessageId, userMessage })
 
   try {
-    while (iteration < MAX_ITERATIONS && totalTokensUsed < TOKEN_BUDGET) {
+    while (true) {
       // Check if this loop has been superseded by a new one (clearChat or new message)
       if (signal.aborted) break
+      if (iteration >= maxIterations || totalTokensUsed >= maxTokens) {
+        loopExitReason = totalTokensUsed >= maxTokens ? 'budget' : 'iteration-cap'
+        lastRunArgs = null
+        useAIChat.getState().setStreamError('This task reached its AI execution limit. You can continue with a new message.', null)
+        break
+      }
 
       iteration++
       onIterationStart?.(iteration)
@@ -271,8 +287,8 @@ export async function runAgentLoop({
       const contextTokens = estimateMessagesTokens(
         conversationMessages.map((m) => ({ role: m.role, content: m.content })),
       )
-      if (contextTokens >= CONTEXT_COMPRESS_THRESHOLD) {
-        conversationMessages = await compressConversation(conversationMessages)
+      if (contextTokens >= CONTEXT_COMPRESS_THRESHOLD || conversationMessages.length > AI_INPUT_LIMITS.MAX_MESSAGES) {
+        conversationMessages = await compressConversation({ messages: conversationMessages, signal })
       }
 
       // Get fresh scene context each iteration (scene may have changed)
@@ -293,6 +309,7 @@ export async function runAgentLoop({
         scenePrompt,
         signal,
       )
+      if (toolCalls.length) sawToolCalls = true
 
       // Track token usage (use API-reported values, fallback to estimate)
       if (usage) {
@@ -301,8 +318,9 @@ export async function runAgentLoop({
       } else {
         // Fallback: estimate based on conversation + response length
         const estimatedTokens = estimateMessagesTokens([
+          ...conversationMessages,
           { role: 'assistant', content: text || '' },
-        ])
+        ]) + estimateTokens(catalogSummary) + estimateTokens(scenePrompt)
         totalTokensUsed += estimatedTokens
         useAIChat.getState().addTokensUsed(estimatedTokens)
       }
@@ -667,6 +685,7 @@ export async function runAgentLoop({
     // Forward opaque metadata attached by the transport (e.g. SaaS-only
     // { code, upgradeUrl }) so decorator components can render upgrade UI.
     const metadata = (err as { metadata?: Record<string, unknown> })?.metadata ?? null
+    if (sawToolCalls || metadata?.retryUnsafe === true) lastRunArgs = null
     useAIChat.getState().setStreamError(errorMessage, metadata)
     loopExitReason = 'failed'
     telemetry?.error?.({ phase: 'stream', message: errorMessage, messageId: loopMessageId })
@@ -674,12 +693,6 @@ export async function runAgentLoop({
     // Completion observers archive once; include captures still rendering for this turn.
     await Promise.all([...pendingScreenshots].filter(screenshot => screenshot.signal === signal).map(screenshot => screenshot.done))
     if (signal.aborted) loopExitReason = 'aborted'
-    // Determine the technical reason for loop exit (success/budget/iteration-cap)
-    // if no explicit override was set in catch.
-    if (loopExitReason === 'success') {
-      if (totalTokensUsed >= TOKEN_BUDGET) loopExitReason = 'budget'
-      else if (iteration >= MAX_ITERATIONS) loopExitReason = 'iteration-cap'
-    }
     telemetry?.loopFinished?.({
       messageId: loopMessageId,
       iterations: iteration,
@@ -690,6 +703,7 @@ export async function runAgentLoop({
     // Only clean up state if THIS loop is still the active one.
     // If a new loop superseded us, it owns the state now.
     if (!signal.aborted) {
+      if (loopExitReason !== 'failed') lastRunArgs = null
       useAIChat.getState().setAIProcessing(false)
       useAIChat.getState().setLoopState('complete')
       useAIChat.getState().summarizeIfNeeded()
@@ -797,48 +811,30 @@ function streamLLMResponse(
 
 /**
  * Compress conversation messages when context exceeds threshold.
- * Calls /api/ai/summarize to condense older messages, keeping recent ones intact.
- * Falls back to simple truncation if summarize API fails.
+ * Condenses older messages while retaining the most recent exchange.
  */
-async function compressConversation(
-  messages: AgentMessage[],
-): Promise<AgentMessage[]> {
-  const toKeep = messages.slice(-COMPRESS_KEEP_RECENT)
-  const toSummarize = messages.slice(0, -COMPRESS_KEEP_RECENT)
+async function compressConversation({ messages, signal }: {
+  messages: AgentMessage[]
+  signal: AbortSignal
+}): Promise<AgentMessage[]> {
+  const keepCount = Math.min(COMPRESS_KEEP_RECENT, Math.max(0, messages.length - 2))
+  const toKeep = messages.slice(-keepCount)
+  const toSummarize = messages.slice(0, -keepCount)
 
   if (toSummarize.length < 2) return messages // Nothing worth compressing
 
   try {
-    const response = await fetch('/api/ai/summarize', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: toSummarize.map((m) => ({
-          role: m.role,
-          content: extractChatMessageText(m.content),
-        })),
-      }),
-    })
-
-    if (response.ok) {
-      const { summary } = await response.json()
-      if (summary) {
-        // Also update the store's conversation summary
-        useAIChat.getState().setConversationSummary(summary)
-
-        return [
-          { role: 'user' as const, content: `[Previous conversation summary: ${summary}]` },
-          { role: 'assistant' as const, content: 'Understood. I have the context from our previous conversation and will continue executing the plan.' },
-          ...toKeep,
-        ]
-      }
-    }
+    const summary = await summarizeConversation({ messages: toSummarize, signal })
+    if (!summary) throw new Error('Conversation summary unavailable')
+    return [
+      { role: 'user' as const, content: `[Previous conversation summary: ${summary}]` },
+      { role: 'assistant' as const, content: 'Understood. I have the context from our previous conversation and will continue executing the plan.' },
+      ...toKeep,
+    ]
   } catch {
-    console.warn('[AI Agent] Context compression failed, using simple truncation')
+    if (signal.aborted) throw new DOMException('Agent loop aborted', 'AbortError')
+    throw new Error('Unable to summarize earlier conversation. Please try again or start a new conversation.')
   }
-
-  // Fallback: simple truncation without summary
-  return toKeep
 }
 
 // ============================================================================

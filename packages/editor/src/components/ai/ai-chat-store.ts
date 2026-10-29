@@ -5,6 +5,7 @@ import { abortActiveLoop } from './ai-agent-loop'
 import { undoConfirmedOperation } from './ai-preview-manager'
 import { shouldAutoCompact } from './ai-token-estimator'
 import { getAIRuntime } from './runtime'
+import { summarizeConversation } from './ai-conversation-summary'
 import type {
   AIOperationLog,
   AIToolCall,
@@ -14,6 +15,8 @@ import type {
   Proposal,
   ValidatedOperation,
 } from './types'
+
+let activeSummaryController: AbortController | null = null
 
 // ============================================================================
 // AI Chat Store
@@ -51,6 +54,7 @@ export interface AIChatState {
 
   // Conversation summarization
   conversationSummary: string | null
+  summaryThroughMessageId: string | null
   isSummarizing: boolean
   /** Consecutive summarization failure count (circuit breaker) */
   summarizeFailureCount: number
@@ -147,6 +151,7 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
   error: null,
   errorMetadata: null,
   conversationSummary: null,
+  summaryThroughMessageId: null,
   isSummarizing: false,
   summarizeFailureCount: 0,
   recentErrors: new Map(),
@@ -340,7 +345,7 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
 
   // Summarization
   setConversationSummary: (summary) => {
-    set({ conversationSummary: summary })
+    set({ conversationSummary: summary, summaryThroughMessageId: null })
   },
 
   // Summarization (token-aware + circuit breaker)
@@ -384,6 +389,8 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
       }
     }
 
+    const controller = new AbortController()
+    activeSummaryController = controller
     try {
       const messagesToSummarize = messages.slice(0, -10)
 
@@ -394,18 +401,12 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
 
       // Route summarize through the AI runtime so SaaS can inject auth
       // headers + retry logic; OSS default hits POST /api/ai/summarize.
-      const result = await getAIRuntime().transport.summarize(
-        messagesToSummarize.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
-        new AbortController().signal,
-      )
+      const summary = await summarizeConversation({ messages: messagesToSummarize, signal: controller.signal })
 
-      if (result?.summary) {
-        const { summary } = result
+      if (controller.signal.aborted || get().messages !== messages) return
+      if (summary) {
         // Success: reset failure count
-        set({ conversationSummary: summary, summarizeFailureCount: 0 })
+        set({ conversationSummary: summary, summaryThroughMessageId: messagesToSummarize.at(-1)?.id ?? null, summarizeFailureCount: 0 })
         // Release screenshots from summarized messages to free memory.
         // summarizeIfNeeded keeps the last 10 messages (slice(0, -10) was
         // summarized), so null out screenshots on all but the most recent 10.
@@ -434,6 +435,7 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
         set({ summarizeFailureCount: newCount })
       }
     } catch {
+      if (controller.signal.aborted || get().messages !== messages) return
       // Network error: increment failure count
       const newCount = get().summarizeFailureCount + 1
       if (newCount >= MAX_SUMMARIZE_FAILURES) {
@@ -441,7 +443,10 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
       }
       set({ summarizeFailureCount: newCount })
     } finally {
-      set({ isSummarizing: false })
+      if (activeSummaryController === controller) {
+        activeSummaryController = null
+        set({ isSummarizing: false })
+      }
     }
   },
 
@@ -479,6 +484,8 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
   clearChat: () => {
     // Abort any in-flight agent loop / HTTP stream to prevent stale callbacks
     abortActiveLoop()
+    activeSummaryController?.abort()
+    activeSummaryController = null
     // Revoke all screenshot Object URLs to free blob memory
     for (const msg of get().messages) {
       if (msg.screenshotBefore) URL.revokeObjectURL(msg.screenshotBefore)
@@ -495,6 +502,7 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
       error: null,
       errorMetadata: null,
       conversationSummary: null,
+      summaryThroughMessageId: null,
       isSummarizing: false,
       summarizeFailureCount: 0,
       recentErrors: new Map(),
@@ -520,11 +528,12 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
 
   // Conversation history (for API calls, with summarization support)
   getConversationHistory: () => {
-    const { messages, conversationSummary } = get()
+    const { messages, conversationSummary, summaryThroughMessageId } = get()
 
     // If we have a summary, prepend it and only include messages after the summary point
     if (conversationSummary) {
-      const recentMessages = messages.slice(-10)
+      const summaryIndex = summaryThroughMessageId ? messages.findIndex(message => message.id === summaryThroughMessageId) : -1
+      const recentMessages = summaryIndex >= 0 ? messages.slice(summaryIndex + 1) : messages.slice(-10)
       return [
         { role: 'user' as const, content: `[Previous conversation summary: ${conversationSummary}]` },
         { role: 'assistant' as const, content: 'Understood. I have the context from our previous conversation.' },
@@ -559,6 +568,7 @@ export const useAIChat = create<AIChatState & AIChatActions>()(
         screenshotAfter: undefined,
       })),
       conversationSummary: state.conversationSummary,
+      summaryThroughMessageId: state.summaryThroughMessageId,
       operationLog: state.operationLog,
       // Persist the project id so refreshing the same project keeps history,
       // while navigating to a different project triggers a clearChat.

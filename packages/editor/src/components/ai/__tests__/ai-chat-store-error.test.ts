@@ -51,6 +51,7 @@ beforeEach(() => {
     error: null,
     errorMetadata: null,
     conversationSummary: null,
+    summaryThroughMessageId: null,
     isSummarizing: false,
     summarizeFailureCount: 0,
     recentErrors: new Map(),
@@ -139,4 +140,25 @@ describe('useAIChat.startStreaming — clears prior error state', () => {
     expect(state.errorMetadata).toBeNull()
     expect(state.isStreaming).toBe(true)
   })
+})
+
+it('does not apply an old summary after the conversation changes', async () => {
+  for (let i = 0; i < 30; i++) useAIChat.getState().addUserMessage(`message ${i}`)
+  let resolve!: (value: { summary: string }) => void
+  mockSummarize.mockImplementationOnce(() => new Promise(done => { resolve = done }))
+  const pending = useAIChat.getState().summarizeIfNeeded()
+  useAIChat.getState().clearChat()
+  useAIChat.getState().addUserMessage('new project')
+  resolve({ summary: 'old conversation' })
+  await pending
+  expect(useAIChat.getState().conversationSummary).toBeNull()
+  expect(useAIChat.getState().getConversationHistory().map(m => m.content)).toEqual(['new project'])
+})
+
+it('keeps every message after the summary boundary when more messages arrive', async () => {
+  for (let i = 0; i < 30; i++) useAIChat.getState().addUserMessage(`message ${i}`)
+  await useAIChat.getState().summarizeIfNeeded()
+  for (let i = 30; i < 35; i++) useAIChat.getState().addUserMessage(`message ${i}`)
+  const history = useAIChat.getState().getConversationHistory()
+  expect(history.slice(2).map(message => message.content)).toEqual(Array.from({ length: 15 }, (_, i) => `message ${i + 20}`))
 })

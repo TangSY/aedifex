@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { streamChat } from '../ai-stream-client'
+import { parseSseChatStream, streamChat } from '../ai-stream-client'
 import type { StreamCallbacks } from '../ai-stream-client'
 
 // ============================================================================
@@ -85,6 +85,14 @@ function makeCallbacks(overrides?: Partial<StreamCallbacks>): StreamCallbacks & 
     ...overrides,
   }
 }
+
+it('does not execute partial tool calls when a strict stream has no terminal frame', async () => {
+  const callbacks = makeCallbacks()
+  const response = new Response(makeStream([makeToolCallChunk(0, 'call_partial', 'add_item', '{"catalogSlug":"sofa","position":[0,0,0],"rotationY":0}')]))
+  await expect(parseSseChatStream(response, callbacks, { requireFinishReason: true })).rejects.toThrow('before completion')
+  expect(callbacks.onToolCall).not.toHaveBeenCalled()
+  expect(callbacks.onComplete).not.toHaveBeenCalled()
+})
 
 // ============================================================================
 // Mock global fetch

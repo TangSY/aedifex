@@ -129,6 +129,7 @@ async function processStream(
 export async function parseSseChatStream(
   response: Response,
   callbacks: StreamCallbacks,
+  options: { requireFinishReason?: boolean } = {},
 ): Promise<void> {
   const reader = response.body?.getReader()
   if (!reader) {
@@ -264,6 +265,7 @@ export async function parseSseChatStream(
 
     // Stream ended without finish_reason — flush pending tools (only if not already completed)
     if (!completed) {
+      if (options.requireFinishReason) throw new Error('AI stream ended before completion')
       const toolCallIds: string[] = []
       for (const [, pending] of pendingTools) {
         if (!pending.name) continue

@@ -117,6 +117,26 @@ describe('shared agent tool contracts', () => {
 })
 
 describe('shared agent browser executor', () => {
+  it('applies a wall to the level visible in the editor scene and supports undo', async () => {
+    const editorNodes = useScene.getState().nodes
+    const level = editorNodes[levelId as `level_${string}`]
+    expect(level?.type).toBe('level')
+    // The bridge and the editor must share a store: reads and writes must see
+    // the same parent, even when the bridge is freshly initialized.
+    resetSceneOperationsForTesting()
+    expect(getSceneOperations().getNodes()[levelId]?.id).toBe(levelId)
+    const result = await runSharedAgentTool({
+      name: 'add_wall',
+      input: { levelId, start: [0, 0], end: [4, 0] },
+    })
+    const wallId = result.result.wallId as `wall_${string}`
+    expect(useScene.getState().nodes[wallId]).toMatchObject({
+      type: 'wall', parentId: levelId, start: [0, 0], end: [4, 0],
+    })
+    getSceneOperations().undo()
+    expect(useScene.getState().nodes[wallId]).toBeUndefined()
+  })
+
   it('refuses explicit Python execution before compiling or changing the scene', async () => {
     const before = useScene.getState().nodes
     await expect(

@@ -209,6 +209,8 @@ export interface AIRuntime {
    * to the default "not available in this deployment" implementation.
    */
   roomPresets?: RoomPresetProvider
+  /** Per-turn safeguards supplied by the host; omitted values use editor defaults. */
+  agentLimits?: { maxIterations?: number; maxTokens?: number }
   /** Reset and persist through the host's explicit scene-wipe path; absent means unavailable. */
   clearScene?(input: { reason: string; signal?: AbortSignal; assertCurrent: () => void }): Promise<Record<string, unknown>>
 }
