@@ -2,6 +2,7 @@
 
 # Dependencies
 node_modules
+.cache/
 package-lock.json
 .pnp
 .pnp.js
