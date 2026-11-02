@@ -1063,6 +1063,7 @@ export const METADATA_NON_REFERENCES: readonly { path: string; reason: string }[
     'flatMap',
   ]),
   ...described('Print-export artifact metadata, not scene-node metadata.', ['status']),
+  ...described('AI transport error flag, not scene-node metadata.', ['retryUnsafe']),
   ...described('Script build provenance metadata, not scene-node metadata.', ['mount']),
   ...described('Derived floorplan drawing metadata, not scene-node metadata.', [
     'at',
