@@ -1,3 +1,4 @@
+import { resolveStaticMaterialPath } from './material-static-paths'
 import type { MaterialCategory, MaterialSurface } from './material-kinds'
 import {
   type MaterialPresetPayload,
@@ -71,7 +72,7 @@ const ROOF_TARGETS: MaterialTarget[] = [
 
 const CEILING_TARGETS: MaterialTarget[] = [MaterialTargetSchema.enum.ceiling]
 
-export const MATERIAL_CATALOG: MaterialCatalogItem[] = [
+const RAW_MATERIAL_CATALOG: MaterialCatalogItem[] = [
   {
     id: 'wood-finewood27',
     label: 'Finewood 27',
@@ -4741,6 +4742,22 @@ export const MATERIAL_CATALOG: MaterialCatalogItem[] = [
     },
   },
 ]
+
+export const MATERIAL_CATALOG: MaterialCatalogItem[] = RAW_MATERIAL_CATALOG.map((item) => ({
+  ...item,
+  previewThumbnailUrl: item.previewThumbnailUrl
+    ? resolveStaticMaterialPath(item.previewThumbnailUrl)
+    : undefined,
+  preset: {
+    ...item.preset,
+    maps: Object.fromEntries(
+      Object.entries(item.preset.maps).map(([key, value]) => [
+        key,
+        value ? resolveStaticMaterialPath(value) : value,
+      ]),
+    ),
+  },
+}))
 
 const STATIC_CATALOG_IDS = new Set(MATERIAL_CATALOG.map((item) => item.id))
 

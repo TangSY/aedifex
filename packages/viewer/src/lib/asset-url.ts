@@ -1,6 +1,18 @@
-import { loadAssetUrl, resolveArtifactUrl } from '@aedifex/core'
+import { loadAssetUrl, resolveArtifactUrl, resolveStaticMaterialPath } from '@aedifex/core'
 
 export const ASSETS_CDN_URL = process.env.NEXT_PUBLIC_ASSETS_CDN_URL || 'https://editor.aedifex.com'
+
+function resolveHostedMaterialUrl(url: string): string {
+  try {
+    const parsed = new URL(url)
+    if (parsed.origin !== new URL(ASSETS_CDN_URL).origin) return url
+    const path = decodeURIComponent(parsed.pathname)
+    const mapped = resolveStaticMaterialPath(path)
+    return mapped === path ? url : `${parsed.origin}${mapped}${parsed.search}${parsed.hash}`
+  } catch {
+    return url
+  }
+}
 
 /**
  * Resolves an asset URL to the appropriate format:
@@ -16,7 +28,7 @@ export async function resolveAssetUrl(url: string | undefined | null): Promise<s
 
   // External URL - use as-is
   if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url
+    return resolveHostedMaterialUrl(url)
   }
 
   // IndexedDB asset - resolve from storage
@@ -25,7 +37,7 @@ export async function resolveAssetUrl(url: string | undefined | null): Promise<s
   }
 
   // Absolute or relative path - prepend CDN URL
-  const normalizedPath = url.startsWith('/') ? url : `/${url}`
+  const normalizedPath = resolveStaticMaterialPath(url.startsWith('/') ? url : `/${url}`)
   return `${ASSETS_CDN_URL}${normalizedPath}`
 }
 
@@ -41,7 +53,7 @@ export function resolveCdnUrl(url: string | undefined | null): string | null {
 
   // External URL - use as-is
   if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url
+    return resolveHostedMaterialUrl(url)
   }
 
   // Don't use this for asset:// URLs - use resolveAssetUrl instead
@@ -51,6 +63,6 @@ export function resolveCdnUrl(url: string | undefined | null): string | null {
   }
 
   // Absolute or relative path - prepend CDN URL
-  const normalizedPath = url.startsWith('/') ? url : `/${url}`
+  const normalizedPath = resolveStaticMaterialPath(url.startsWith('/') ? url : `/${url}`)
   return `${ASSETS_CDN_URL}${normalizedPath}`
 }

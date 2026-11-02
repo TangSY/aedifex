@@ -1110,3 +1110,5 @@ export {
   type ValidationSeverity,
   validateBuildJson,
 } from './validation/validate-build-json'
+
+export { resolveStaticMaterialPath } from './material-static-paths'
