@@ -218,7 +218,7 @@ export const mergeZonesTool = {
   name: 'merge_zones',
   title: 'Merge rooms',
   description:
-    "Merge two rooms by removing the separators they share (the editor's Separator: a room boundary with no wall). Walls are preserved; wall-only boundaries return a conflict.",
+    "Merge two rooms by removing the separators they share (the editor's Separator: a room boundary with no wall). Walls are preserved; wall-only boundaries return a conflict. When room settings differ, the merged room keeps the more authored settings and stores both original rooms under metadata keys beginning aedifex:merged-room-intents; read it with get_node and ask which conflicting settings to use.",
   input: { zoneIds: z.array(NodeId).length(2) },
 }
 

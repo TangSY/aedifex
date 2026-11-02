@@ -19,6 +19,7 @@ import { floorPlateId } from './floor-plate-id'
 import { buildFloorPlates, warnPlateFailure } from './floor-plates'
 import { floorRoomFaces } from './floor-room-faces'
 import { type FloorStepOverride, remapFloorStepOverrideKeys } from './floor-step-finish'
+import { mergedRoomIntent } from './merged-room-intent'
 import { newZone } from './new-zone'
 import { replacementPlateFor } from './plate-reference'
 import {
@@ -358,6 +359,7 @@ function planLevelStructure({
           )
     const updated: ZoneNode = {
       ...zone,
+      ...mergedRoomIntent(zone, contenders),
       spaceRole: 'room',
       autoFromWalls: true,
       enclosureStatus: 'enclosed',
