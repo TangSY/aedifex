@@ -118,10 +118,12 @@ export { createAngleAccumulator } from './lib/angle-accumulator'
 export {
   ARTIFACT_URL_PREFIX,
   type ArtifactStore,
+  type ArtifactWrite,
   artifactHash,
   artifactUrl,
   configureArtifactStore,
   getArtifactStore,
+  putArtifacts,
   resolveArtifactUrl,
 } from './lib/artifact-store'
 export {

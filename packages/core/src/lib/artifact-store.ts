@@ -9,6 +9,13 @@ import type { GeometryArtifactMetadata } from '../schema/geometry-metadata'
 
 export const ARTIFACT_URL_PREFIX = 'artifact://'
 
+export type ArtifactWrite = {
+  sha256: string
+  bytes: ArrayBuffer | Uint8Array
+  mimeType: string
+  context?: { nodeId: string; metadata: GeometryArtifactMetadata }
+}
+
 export type ArtifactStore = {
   /** A loadable URL for a stored artifact, or null when this store does not have it. */
   url: (sha256: string) => string | null
@@ -19,6 +26,8 @@ export type ArtifactStore = {
     mimeType: string,
     context?: { nodeId: string; metadata: GeometryArtifactMetadata },
   ) => Promise<string>
+  /** Stores related artifacts as one operation when the host supports it. */
+  putBatch?: (entries: readonly ArtifactWrite[]) => Promise<string[]>
   /** A stored text artifact (an authored object's script), or null when it is missing or unreadable here. */
   text: (sha256: string) => Promise<string | null>
   /**
@@ -27,6 +36,20 @@ export type ArtifactStore = {
    * hashes it could not bring. Absent where artifacts are not kept per project.
    */
   copyFrom?: (projectId: string, sha256s: string[]) => Promise<string[]>
+}
+
+/** Keep legacy stores usable while allowing hosts to enforce atomic group writes. */
+export async function putArtifacts({ store, entries }: {
+  store: ArtifactStore
+  entries: readonly ArtifactWrite[]
+}): Promise<string[]> {
+  const hashes = store.putBatch
+    ? await store.putBatch(entries)
+    : await Promise.all(entries.map(({ sha256, bytes, mimeType, context }) =>
+        store.put(sha256, bytes, mimeType, context)))
+  if (hashes.length !== entries.length || hashes.some((hash) => typeof hash !== 'string' || !hash))
+    throw new Error('Artifact store returned an invalid batch result')
+  return hashes
 }
 
 const memory = new Map<string, { url: string; bytes: ArrayBuffer | Uint8Array }>()

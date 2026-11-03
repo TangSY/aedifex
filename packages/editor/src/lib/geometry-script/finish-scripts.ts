@@ -9,6 +9,7 @@ import {
   type GeometryScriptParamValue,
   getArtifactStore,
   pauseSceneHistory,
+  putArtifacts,
   refreshFinishScripts,
   resumeSceneHistory,
   staleFinishScripts,
@@ -52,15 +53,11 @@ export async function compileAndStoreFinishScript(
     nodeId: input.nodeId,
     metadata: { name: input.face ? 'Wall finish' : 'Floor finish', mount: compiled.mount },
   }
-  const [sha256] = await Promise.all([
-    store.put(compiled.sha256, glb, 'model/gltf-binary', context),
-    store.put(
-      compiled.script,
-      new TextEncoder().encode(input.code),
-      GEOMETRY_SCRIPT_MIME_TYPES.three,
-      context,
-    ),
-  ])
+  const [sha256] = await putArtifacts({ store, entries: [
+    { sha256: compiled.sha256, bytes: glb, mimeType: 'model/gltf-binary', context },
+    { sha256: compiled.script, bytes: new TextEncoder().encode(input.code), mimeType: GEOMETRY_SCRIPT_MIME_TYPES.three, context },
+  ] })
+  if (!sha256) throw new Error('Artifact store returned no geometry hash')
   assertCurrent()
   return { ...compiled, sha256 }
 }

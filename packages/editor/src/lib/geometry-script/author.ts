@@ -11,6 +11,7 @@ import {
   generateId,
   getArtifactStore,
   isScriptedNode,
+  putArtifacts,
   runAsSingleSceneHistoryStep,
   scriptedObjectMeta,
   useScene,
@@ -120,15 +121,11 @@ export async function compileAndStoreGeometryScript(
   })
   input.assertCurrent?.()
   const context = { nodeId, metadata: { ...metadata, mount: compiled.mount } }
-  const [sha256] = await Promise.all([
-    artifacts.put(compiled.sha256, glb, 'model/gltf-binary', context),
-    artifacts.put(
-      compiled.script,
-      new TextEncoder().encode(code),
-      GEOMETRY_SCRIPT_MIME_TYPES.three,
-      context,
-    ),
-  ])
+  const [sha256] = await putArtifacts({ store: artifacts, entries: [
+    { sha256: compiled.sha256, bytes: glb, mimeType: 'model/gltf-binary', context },
+    { sha256: compiled.script, bytes: new TextEncoder().encode(code), mimeType: GEOMETRY_SCRIPT_MIME_TYPES.three, context },
+  ] })
+  if (!sha256) throw new Error('Artifact store returned no geometry hash')
   input.assertCurrent?.()
   return { ...compiled, sha256, nodeId }
 }
