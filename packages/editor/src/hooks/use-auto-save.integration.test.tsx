@@ -255,6 +255,40 @@ test('collaboration scaffold deletion waits for persistence and reports saved', 
   expect(statuses).toEqual(['pending', 'saving', 'saved'])
 })
 
+test('an edit made during a save is flushed if the page closes before the follow-up', async () => {
+  const first = Promise.withResolvers<void>()
+  const { writes, statuses, controls } = await mount(5, false, () => first.promise)
+  useScene.setState(graph(6))
+  controls.saveNow()
+  expect(writes).toEqual([6])
+  useScene.setState(graph(7))
+  first.resolve()
+  await Bun.sleep(0)
+  expect(statuses.at(-1)).toBe('pending')
+  expect(statuses).not.toContain('saved')
+  window.dispatchEvent(new Event('pagehide'))
+  expect(writes).toEqual([6, 7])
+})
+
+test('the follow-up save clears the dirty state only after persisting the newer edit', async () => {
+  const first = Promise.withResolvers<void>()
+  let calls = 0
+  const { writes, statuses, controls } = await mount(5, false, () =>
+    ++calls === 1 ? first.promise : Promise.resolve(),
+  )
+  useScene.setState(graph(6))
+  controls.saveNow()
+  useScene.setState(graph(7))
+  first.resolve()
+  await Bun.sleep(0)
+  controls.saveNow()
+  await Bun.sleep(0)
+  expect(writes).toEqual([6, 7])
+  expect(statuses.at(-1)).toBe('saved')
+  window.dispatchEvent(new Event('pagehide'))
+  expect(writes).toEqual([6, 7])
+})
+
 test.each(['pagehide', 'unmount'])(
   'collaboration scaffold deletion still flushes on %s',
   async (event) => {

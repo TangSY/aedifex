@@ -121,6 +121,7 @@ export function useAutoSave({
   const pendingSaveRef = useRef(false)
   const executeSaveRef = useRef<(() => Promise<void>) | null>(null)
   const hasDirtyChangesRef = useRef(false)
+  const editRevisionRef = useRef(0)
 
   // Keep latest callback/value refs so the stable subscription always uses current values
   const onSaveRef = useRef(onSave)
@@ -197,6 +198,7 @@ export function useAutoSave({
 
       isSavingRef.current = true
       pendingSaveRef.current = false
+      const savedRevision = editRevisionRef.current
       setSaveStatus('saving')
 
       try {
@@ -205,8 +207,10 @@ export function useAutoSave({
         } else {
           saveSceneToLocalStorage(sceneGraph)
         }
-        hasDirtyChangesRef.current = false
-        setSaveStatus('saved')
+        if (editRevisionRef.current === savedRevision) {
+          hasDirtyChangesRef.current = false
+          setSaveStatus('saved')
+        }
       } catch {
         setSaveStatus('error')
       } finally {
@@ -266,6 +270,7 @@ export function useAutoSave({
       lastCollectionsRef = state.collections
       lastMaterialsRef = state.materials
       hasDirtyChangesRef.current = true
+      editRevisionRef.current++
       onDirtyRef.current?.()
       setSaveStatus('pending')
 
