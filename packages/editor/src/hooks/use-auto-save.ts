@@ -163,6 +163,7 @@ export function useAutoSave({
     let lastCollectionsRef = useScene.getState().collections
     let lastMaterialsRef = useScene.getState().materials
     let lastInstalledPluginsRef = useScene.getState().installedPlugins
+    let exitSaveRevision: number | null = null
 
     async function executeSave() {
       // A held scene preview is on screen, not in the document: wait for it to end.
@@ -320,10 +321,11 @@ export function useAutoSave({
         setSaveStatus('error')
         return
       }
+      const revision = editRevisionRef.current
+      if (exitSaveRevision === revision) return
       // 'flush' — adopt the write as the new stored baseline.
       storedNodeCount.allowWrite(currentNodeCount, guardAgainstSceneWipeRef.current)
 
-      hasDirtyChangesRef.current = false
       const sceneGraph = {
         nodes,
         rootNodeIds,
@@ -332,13 +334,34 @@ export function useAutoSave({
         installedPlugins,
       } as SceneGraph
       if (onSaveRef.current) {
-        onSaveRef.current(sceneGraph, { keepalive: true }).catch(() => {})
+        exitSaveRevision = revision
+        try {
+          void onSaveRef.current(sceneGraph, { keepalive: true }).then(
+            () => {
+              if (editRevisionRef.current === revision) hasDirtyChangesRef.current = false
+              if (exitSaveRevision === revision) exitSaveRevision = null
+            },
+            () => { if (exitSaveRevision === revision) exitSaveRevision = null },
+          )
+        } catch {
+          exitSaveRevision = null
+        }
       } else {
         saveSceneToLocalStorage(sceneGraph)
+        hasDirtyChangesRef.current = false
       }
     }
 
-    window.addEventListener('beforeunload', flushOnExit)
+    function beforeUnload(event: BeforeUnloadEvent) {
+      const warn = !isLoadingSceneRef.current && hasDirtyChangesRef.current && !!onSaveRef.current
+      flushOnExit()
+      if (warn) {
+        event.preventDefault()
+        event.returnValue = ''
+      }
+    }
+
+    window.addEventListener('beforeunload', beforeUnload)
     window.addEventListener('pagehide', flushOnExit)
 
     // A save that came due under a held preview was deferred; the live scene is back.
@@ -351,7 +374,7 @@ export function useAutoSave({
     return () => {
       stopWatchingPreview()
       executeSaveRef.current = null
-      window.removeEventListener('beforeunload', flushOnExit)
+      window.removeEventListener('beforeunload', beforeUnload)
       window.removeEventListener('pagehide', flushOnExit)
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
       flushOnExit()

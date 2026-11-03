@@ -171,6 +171,45 @@ test('the exit flush writes an agent edit made right after a hidden load', async
   expect(statuses).not.toContain('error')
 })
 
+test('beforeunload warns while a cloud exit save has not been confirmed', async () => {
+  const save = Promise.withResolvers<void>()
+  const { writes } = await mount(12, false, () => save.promise)
+  agentAddsColumn()
+  const event = new Event('beforeunload', { cancelable: true })
+  expect(window.dispatchEvent(event)).toBe(false)
+  expect(writes).toEqual([13])
+  window.dispatchEvent(new Event('pagehide'))
+  expect(writes).toEqual([13])
+  save.resolve()
+  await Bun.sleep(0)
+  expect(window.dispatchEvent(new Event('beforeunload', { cancelable: true }))).toBe(true)
+})
+
+test('a failed exit save retains the dirty scene for a later retry', async () => {
+  let attempts = 0
+  const { writes } = await mount(12, false, async () => {
+    if (++attempts === 1) throw new Error('network failed')
+  })
+  agentAddsColumn()
+  window.dispatchEvent(new Event('pagehide'))
+  await Bun.sleep(0)
+  window.dispatchEvent(new Event('pagehide'))
+  expect(writes).toEqual([13, 13])
+})
+
+test('an older exit save cannot clear a newer edit', async () => {
+  const first = Promise.withResolvers<void>()
+  let attempts = 0
+  const { writes } = await mount(12, false, () => ++attempts === 1 ? first.promise : Promise.resolve())
+  agentAddsColumn()
+  window.dispatchEvent(new Event('pagehide'))
+  useScene.setState(graph(14))
+  first.resolve()
+  await Bun.sleep(0)
+  window.dispatchEvent(new Event('pagehide'))
+  expect(writes).toEqual([13, 14])
+})
+
 test('the exit flush still skips while a load is in flight', async () => {
   const { writes, controls } = await mount(12)
   agentAddsColumn()
