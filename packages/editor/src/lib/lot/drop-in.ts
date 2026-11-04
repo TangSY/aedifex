@@ -271,12 +271,33 @@ export async function dropInLot(
     roadsFailure = 'skipped'
   }
 
+  const geometry = sitePatchFromParcel(null, input, data, roads, undefined, extras)
+  if (!geometry)
+    return {
+      ok: false,
+      error: 'parcel geometry was unusable',
+      message: 'The parcel geometry was unusable.',
+    }
+
+  let terrain: TerrainSampleSummary | null = null
+  let terrainFailure = ''
+  let terrainRead: TerrainSampleResult | null = null
+  if (options.terrain !== false) {
+    terrainRead = data.originLngLat
+      ? await sampleLotTerrain(geometry.patch.polygon?.points ?? [], data.originLngLat, {
+          provider,
+          ...(options.terrainDeadlineMs ? { deadlineMs: options.terrainDeadlineMs } : {}),
+        })
+      : { ok: false, reason: 'no parcel origin' }
+    if (terrainRead.ok && terrainRead.summary) terrain = terrainRead.summary
+    else terrainFailure = terrainRead.reason ?? 'no terrain'
+  } else {
+    terrainFailure = 'skipped'
+  }
+
+  // Read the site after the asynchronous lookups: scene hydration may replace it while they run.
   const scene = useScene.getState()
   let site = findSiteNode(options.siteId)
-  if (!site) {
-    site = SiteNode.parse({ id: generateId('site'), type: 'site', name: 'Site' })
-    scene.createNodes([{ node: site as AnyNode }])
-  }
   const computed = sitePatchFromParcel(site, input, data, roads, undefined, extras)
   if (!computed)
     return {
@@ -284,56 +305,18 @@ export async function dropInLot(
       error: 'parcel geometry was unusable',
       message: 'The parcel geometry was unusable.',
     }
-  // the surveyed contour lines ride the site with the patch (the site plan
-  // draws them over the heightfield's own); absent without 3DEP lines
   const contours = dossier && dossierOrigin ? contourLinesFromDossier(dossier, dossierOrigin) : null
-  useScene
-    .getState()
-    .updateNode(
-      site.id as AnyNodeId,
-      { ...computed.patch, terrainContours: contours ?? undefined } as Partial<AnyNode>,
-    )
-
-  // The ground over the lot — fail-soft. A sloping lot writes the
-  // heightfield; a flat one (or a failed read) clears any terrain the
-  // previous lot left behind so the site never shows another parcel's hill.
-  let terrain: TerrainSampleSummary | null = null
-  let terrainFailure = ''
-  if (options.terrain !== false) {
-    const read: TerrainSampleResult = data.originLngLat
-      ? await sampleLotTerrain(computed.patch.polygon?.points ?? [], data.originLngLat, {
-          provider,
-          ...(options.terrainDeadlineMs ? { deadlineMs: options.terrainDeadlineMs } : {}),
-        })
-      : { ok: false, reason: 'no parcel origin' }
-    const current = useScene.getState().nodes[site.id as AnyNodeId]
-    const { terrainSample: _previous, ...meta } =
-      current &&
-      typeof current.metadata === 'object' &&
-      current.metadata !== null &&
-      !Array.isArray(current.metadata)
-        ? (current.metadata as Record<string, unknown>)
-        : {}
-    if (read.ok && read.summary) {
-      terrain = read.summary
-      useScene.getState().updateNode(
-        site.id as AnyNodeId,
-        {
-          terrain: read.terrain,
-          metadata: { ...meta, terrainSample: read.summary },
-        } as unknown as Partial<AnyNode>,
-      )
-    } else {
-      terrainFailure = read.reason ?? 'no terrain'
-      useScene
-        .getState()
-        .updateNode(
-          site.id as AnyNodeId,
-          { terrain: undefined, metadata: meta } as unknown as Partial<AnyNode>,
-        )
-    }
+  const patch: Partial<SiteNode> = { ...computed.patch, terrainContours: contours ?? undefined }
+  if (terrainRead) {
+    const { terrainSample: _previous, ...metadata } = computed.patch.metadata as Record<string, unknown>
+    patch.terrain = terrainRead.ok ? terrainRead.terrain : undefined
+    patch.metadata = terrain ? { ...metadata, terrainSample: terrain } : metadata
+  }
+  if (site) {
+    scene.updateNode(site.id as AnyNodeId, patch as Partial<AnyNode>)
   } else {
-    terrainFailure = 'skipped'
+    site = SiteNode.parse({ id: generateId('site'), type: 'site', name: 'Site', ...patch })
+    scene.createNodes([{ node: site as AnyNode }])
   }
 
   // A house the new lot leaves past its lines stands centred on the buildable area again, facing

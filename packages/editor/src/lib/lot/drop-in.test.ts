@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { type AnyNodeId, type SiteNode, useScene } from '@aedifex/core'
+import { type AnyNodeId, generateId, SiteNode, useScene } from '@aedifex/core'
 import { dropInLot } from './drop-in'
 import type { ParcelResolveData } from './lot-patch'
 import type { ParcelProvider } from './parcel-provider'
@@ -243,6 +243,40 @@ describe('dropInLot on a through lot', () => {
 describe('dropInLot onto a site that already has a lot', () => {
   beforeEach(() => {
     useScene.setState({ nodes: {}, rootNodeIds: [], dirtyNodes: new Set() } as never)
+  })
+
+  test('applies the parcel to the site hydrated while terrain is loading', async () => {
+    let release!: () => void
+    let signal!: () => void
+    const waiting = new Promise<void>((resolve) => { release = resolve })
+    const started = new Promise<void>((resolve) => { signal = resolve })
+    const read = fakeProvider(null, 'sloped')
+    const provider: ParcelProvider = async (endpoint, request) => {
+      if (endpoint === 'elevation') {
+        signal()
+        await waiting
+      }
+      return read(endpoint, request)
+    }
+    const dropping = dropInLot({ address: GAINESVILLE }, { dossier: false, roads: false, provider })
+    await started
+    const hydrated = SiteNode.parse({
+      id: generateId('site'), type: 'site', name: 'My site',
+      polygon: { type: 'polygon', points: rect(30, 30) },
+      setbacks: { front: 8, side: 3, rear: 6 },
+      zone: 'Owner verified zone', metadata: { ownerNote: 'Keep the driveway' },
+    })
+    useScene.setState({ nodes: { [hydrated.id]: hydrated }, rootNodeIds: [hydrated.id] } as never)
+    release()
+    const result = await dropping
+    expect(result.ok).toBe(true)
+    expect(result.siteId).toBe(hydrated.id)
+    const current = site(hydrated.id)
+    expect(current.parcel?.apn).toBe('06075-030-062')
+    expect(current.terrain).toBeDefined()
+    expect(current.setbacks).toEqual(hydrated.setbacks)
+    expect(current.zone).toBe(hydrated.zone)
+    expect(current.metadata).toMatchObject({ ownerNote: 'Keep the driveway', terrainSample: result.terrain })
   })
 
   test('the second lot replaces the first lot’s address, APN and county', async () => {
