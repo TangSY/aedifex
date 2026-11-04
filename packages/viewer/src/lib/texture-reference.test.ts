@@ -5,12 +5,32 @@ import * as THREE from 'three'
 import { ASSETS_CDN_URL } from './asset-url'
 import { getAedifexTextureRef, stampAedifexTextureRef } from './texture-reference'
 
-// The module reads the storage origin lazily on first use, so setting the env
-// here (before any stamp call) pins it for the whole test file.
 process.env.NEXT_PUBLIC_SUPABASE_URL ??= 'https://test-storage.supabase.co'
 const STORAGE_ORIGIN = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin
 
 describe('Aedifex texture references', () => {
+  test('uses the current storage origin after missing, invalid, and changed configuration', () => {
+    const original = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const texture = new THREE.Texture()
+    const input = {
+      kind: 'project-asset' as const,
+      src: 'https://second-storage.example/storage/v1/object/public/project-assets/p/a.png',
+      slot: 'map',
+    }
+    try {
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL
+      expect(stampAedifexTextureRef(texture, input)).toBeNull()
+      process.env.NEXT_PUBLIC_SUPABASE_URL = 'not a URL'
+      expect(stampAedifexTextureRef(texture, input)).toBeNull()
+      process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://second-storage.example'
+      expect(stampAedifexTextureRef(texture, input)?.kind).toBe('project-asset')
+      process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://other-storage.example'
+      expect(getAedifexTextureRef(texture)).toBeNull()
+    } finally {
+      if (original === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL
+      else process.env.NEXT_PUBLIC_SUPABASE_URL = original
+    }
+  })
   test("resolves 'material' input to library-material for storage-bucket URLs", () => {
     const texture = new THREE.Texture()
     texture.colorSpace = THREE.SRGBColorSpace

@@ -33,16 +33,13 @@ const STORAGE_BUCKET_BY_KIND = {
   'project-asset': 'project-assets',
 } as const
 
-let cachedStorageOrigin: string | null | undefined
 function aedifexStorageOrigin(): string | null {
-  if (cachedStorageOrigin !== undefined) return cachedStorageOrigin
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    cachedStorageOrigin = url ? new URL(url).origin : null
+    return url ? new URL(url).origin : null
   } catch {
-    cachedStorageOrigin = null
+    return null
   }
-  return cachedStorageOrigin
 }
 
 /** Static catalog materials ship in the app's public dir and resolve through
