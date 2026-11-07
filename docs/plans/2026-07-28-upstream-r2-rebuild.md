@@ -111,7 +111,7 @@
 ### Task 8: Verify the SaaS file-link integration
 
 **Files:**
-- Modify only if required: `/Users/tangshiying/hxkj/aedifex-saas/`
+- Modify only if required: `../aedifex-saas/` (relative to the aedifex repository root)
 
 **Steps:**
 1. Reconfirm the SaaS repository is clean.
