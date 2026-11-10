@@ -116,12 +116,21 @@ function readAllowedOrigins(): ReadonlySet<string> | undefined {
   return allowedOriginsFrom(g.process?.env?.[ALLOWED_ORIGINS_ENV])
 }
 
+// Browsers strip these characters before interpreting slash and backslash prefixes.
+export function isSchemeRelativeAssetUrl(url: string): boolean {
+  const normalized = url.replace(/[\t\n\r]/g, '')
+  let start = 0
+  while (start < normalized.length && normalized.charCodeAt(start) <= 0x20) start++
+  return /^[\\/]{2}/.test(normalized.slice(start))
+}
+
 function isAllowedAssetUrl(url: string): boolean {
   if (typeof url !== 'string' || url.length === 0) return false
   if (url.startsWith('asset://')) return true // internal handle
   if (/^artifact:\/\/[0-9a-f]{64}$/.test(url)) return true // content-addressed artifact
   if (url.startsWith('blob:')) return true // in-memory reference
   if (url.startsWith('data:image/')) return true // inline image only (never data:text/html)
+  if (isSchemeRelativeAssetUrl(url)) return false
   if (url.startsWith('/')) return true // app-relative path
   try {
     const parsed = new URL(url)

@@ -40,6 +40,19 @@ describe('saveAsset', () => {
 })
 
 describe('loadAssetUrl', () => {
+  test('refuses scheme-relative forms while preserving application-relative paths', async () => {
+    for (const url of [
+      '//attacker.example/x',
+      '/\\attacker.example/x',
+      '\\\\attacker.example/x',
+      '\\/attacker.example/x',
+      '\u0000\t//attacker.example/x',
+      '/\n/attacker.example/x',
+    ])
+      expect(await loadAssetUrl(url)).toBeNull()
+    expect(await loadAssetUrl('/assets//x')).toBe('/assets//x')
+    expect(await loadAssetUrl('\\assets/x')).toBe('\\assets/x')
+  })
   test('round-trips a saved asset back to an object URL', async () => {
     const url = await saveAsset(file('round-trip'))
     const objectUrl = await loadAssetUrl(url)

@@ -15,6 +15,21 @@ function isValid(url: string): boolean {
 }
 
 describe('AssetUrl', () => {
+  test('rejects cross-origin scheme-relative forms without rejecting ordinary paths', () => {
+    for (const url of [
+      '//attacker.example/x',
+      '/\\attacker.example/x',
+      '\\\\attacker.example/x',
+      '\\/attacker.example/x',
+      ' \u0000//attacker.example/x',
+      '/\t/attacker.example/x',
+      '/\n\\attacker.example/x',
+    ]) {
+      expect(new URL(url, 'https://safe.example/').origin).toBe('https://attacker.example')
+      expect(isValid(url)).toBe(false)
+    }
+    for (const url of ['/assets/x', '/assets//x', '/assets/\\x']) expect(isValid(url)).toBe(true)
+  })
   describe('allowed URLs', () => {
     const cases: Array<[string, string]> = [
       ['asset://abc', 'internal asset handle'],
@@ -95,6 +110,8 @@ describe('AssetUrl', () => {
       g.process.env[ALLOWED_ORIGINS_ENV] = 'https://cdn.aedifex.com'
       expect(isValid('https://cdn.other.com/a.glb')).toBe(false)
       expect(isValid('https://attacker.example.com/x')).toBe(false)
+      expect(isValid('//attacker.example.com/x')).toBe(false)
+      expect(isValid('/\\attacker.example.com/x')).toBe(false)
     })
 
     test('multi-origin allowlist accepts any listed origin', () => {
