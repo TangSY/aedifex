@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import type { AuthorScenePayload } from '../agent-tools/author-scene'
 import { authorScenePayload } from '../agent-tools/author-scene'
+import { reconcileSceneStructure } from '../lib/structure-reconcile'
 import { cloneNodesInto } from '../registry/subtree'
 import type { AnyNode, CompiledGeometryScript, SceneMaterial } from '../schema'
 import { CEILING_DRAW_OFFSET, resolveCeilingHeight } from '../services'
+import { assertDerivedNodeWrites, filterDerivedNodeWrites } from '../store/derived-node-guard'
 import {
   applySceneChanges,
   authorScene,
@@ -179,6 +181,90 @@ const bedroom: AuthorScenePayload = authorScenePayload.parse({
 })
 
 describe('author_scene', () => {
+  test('revising a nested room leaves derived ceiling holes to reconciliation', () => {
+    const payload = (x: number) =>
+      authorScenePayload.parse({
+        levels: [
+          {
+            name: 'Ground',
+            walls: [
+              { id: 'n', start: [-4, -4], end: [4, -4] },
+              { id: 'e', start: [4, -4], end: [4, 4] },
+              { id: 's', start: [4, 4], end: [-4, 4] },
+              { id: 'w', start: [-4, 4], end: [-4, -4] },
+              { id: 'cn', start: [x - 1, -1], end: [x + 1, -1] },
+              { id: 'ce', start: [x + 1, -1], end: [x + 1, 1] },
+              { id: 'cs', start: [x + 1, 1], end: [x - 1, 1] },
+              { id: 'cw', start: [x - 1, 1], end: [x - 1, -1] },
+            ].map((wall) => ({ ...wall, height: 2.7, thickness: 0.1 })),
+            rooms: [
+              { name: 'Living', seed: [3, 3] },
+              { name: 'Closet', seed: [x, 0] },
+            ],
+          },
+        ],
+      })
+    const written = applySceneChanges(scaffold(), run(payload(0), {}).changes)
+    const scene = reconcileSceneStructure({
+      nodes: written,
+      previousNodes: written,
+      mintId: (kind) => `${kind}_rebuilt`,
+    }).nodes
+    const ceiling = Object.values(scene).find(
+      (node) => node.type === 'ceiling' && node.holes.length,
+    )
+    expect(ceiling?.type).toBe('ceiling')
+    const revision = authorScene(
+      scene,
+      { payload: payload(0.3), compiled: {}, replace: true },
+      { activeLevelId: 'level_0' },
+    )
+    const ceilingPatch = revision.changes?.update?.find((update) => update.id === ceiling!.id)
+    expect(ceilingPatch?.data ?? {}).not.toHaveProperty('holes')
+    expect(ceilingPatch?.data ?? {}).not.toHaveProperty('holeMetadata')
+    const changes = filterDerivedNodeWrites(scene, revision.changes!)
+    expect(() => assertDerivedNodeWrites(scene, changes)).not.toThrow()
+    const after = reconcileSceneStructure({
+      nodes: applySceneChanges(scene, changes),
+      previousNodes: scene,
+      mintId: (kind) => `${kind}_rebuilt`,
+    }).nodes
+    const updated = after[ceiling!.id]
+    expect(updated?.type).toBe('ceiling')
+    if (updated?.type !== 'ceiling') throw new Error('ceiling missing')
+    expect(new Set(updated.holes[0]!.map(([x]) => Math.round(x * 10) / 10))).toEqual(
+      new Set([-0.7, 1.3]),
+    )
+
+    if (ceiling?.type !== 'ceiling') throw new Error('ceiling missing')
+    const cut: [number, number][] = [
+      [2, 2],
+      [2.3, 2],
+      [2.3, 2.3],
+      [2, 2.3],
+    ]
+    const edited = {
+      ...scene,
+      [ceiling.id]: {
+        ...ceiling,
+        holes: [...ceiling.holes, cut],
+        holeMetadata: [...ceiling.holeMetadata, { source: 'manual' as const }],
+      },
+    }
+    const revisedWithCut = authorScene(
+      edited,
+      { payload: payload(0.3), compiled: {}, replace: true },
+      { activeLevelId: 'level_0' },
+    )
+    const cutChanges = filterDerivedNodeWrites(edited, revisedWithCut.changes!)
+    expect(() => assertDerivedNodeWrites(edited, cutChanges)).not.toThrow()
+    const withCut = reconcileSceneStructure({
+      nodes: applySceneChanges(edited, cutChanges),
+      previousNodes: edited,
+      mintId: (kind) => `${kind}_rebuilt`,
+    }).nodes[ceiling.id]
+    expect(withCut?.type === 'ceiling' && withCut.holes).toContainEqual(cut)
+  })
   test('repeated wall ids across storeys refuse before replacing any scene nodes', () => {
     const scene = scaffold()
     const before = structuredClone(scene)

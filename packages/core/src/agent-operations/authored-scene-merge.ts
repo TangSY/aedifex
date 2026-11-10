@@ -1,5 +1,6 @@
 import { refuse } from '../agent-tools/refusal'
 import type { AnyNode } from '../schema'
+import { isDerivedNode } from '../store/derived-node-guard'
 import type { SceneChanges, SceneNodes } from './types'
 
 const equal = (a: unknown, b: unknown): boolean => {
@@ -88,7 +89,13 @@ export function authoredSceneChanges(
       remove.push(id)
       delete effective[id]
     } else {
-      const value = merged(old, now, desired, id) as AnyNode
+      // The structure reconciler owns derived room holes; keep current cuts in
+      // the write so it can rebuild them after the changed walls are applied.
+      const candidate =
+        isDerivedNode(now) && isDerivedNode(desired)
+          ? { ...desired, holes: now.holes, holeMetadata: now.holeMetadata }
+          : desired
+      const value = merged(old, now, candidate, id) as AnyNode
       effective[id] = value
       if (!equal(now, value)) {
         const data: Record<string, unknown> = {}
