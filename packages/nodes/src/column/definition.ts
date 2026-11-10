@@ -394,7 +394,10 @@ export const columnDefinition: NodeDefinition<typeof ColumnNode> = {
       top: { height: (node) => (node as ColumnNodeType).height },
       hosting: columnSurfaceProvider,
     },
-    duplicable: { subtree: true },
+    duplicable: {
+      subtree: true,
+      allow: ({ node }) => !isLeanToManagedColumn(node as ColumnNodeType),
+    },
     deletable: true,
     // Generic 3D translate-on-XZ via `MoveRegistryNodeTool` (grid snap + the
     // mode-driven snapping the overhaul standardised). 2D move keeps using
@@ -402,6 +405,8 @@ export const columnDefinition: NodeDefinition<typeof ColumnNode> = {
     movable: {
       axes: ['x', 'z'],
       gridSnap: true,
+      override: ({ node }) =>
+        isLeanToManagedColumn(node as ColumnNodeType) ? { axes: [], gridSnap: false } : null,
       groupMoveSnapPose: resolveColumnStructuralGridMoveSnap,
     },
     slots: (node) => columnSlots(node as ColumnNodeType),

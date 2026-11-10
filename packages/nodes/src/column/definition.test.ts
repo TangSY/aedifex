@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ColumnNode } from '@aedifex/core'
+import { ColumnNode, isMovable, isNodeDuplicable, nodeRegistry, registerNode } from '@aedifex/core'
 import { columnDefinition } from './definition'
 
 describe('column definition', () => {
@@ -36,5 +36,23 @@ describe('column definition', () => {
       'linear-resize',
       'arc-resize',
     ])
+  })
+
+  test('managed posts cannot be moved while ordinary columns remain movable', () => {
+    const restore = nodeRegistry._snapshot()
+    try {
+      nodeRegistry._reset()
+      registerNode(columnDefinition as never)
+      const managed = ColumnNode.parse({
+        metadata: { managedByLeanTo: 'lean_to_1', leanToRole: 'post' },
+      })
+      const ordinary = ColumnNode.parse({})
+      expect(isNodeDuplicable(managed)).toBe(false)
+      expect(isNodeDuplicable(ordinary)).toBe(true)
+      expect(isMovable(managed)).toBe(false)
+      expect(isMovable(ordinary)).toBe(true)
+    } finally {
+      restore()
+    }
   })
 })

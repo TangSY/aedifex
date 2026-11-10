@@ -97,3 +97,10 @@ export function isMovable(node: AnyNode): boolean {
   const config = resolveMovable(node)
   return config != null && config.axes.length > 0
 }
+
+export function isMoveLocked(node: AnyNode): boolean {
+  const base = nodeRegistry.get(node.type)?.capabilities.movable
+  if (!base?.override) return false
+  const resolved = resolveMovable(node)
+  return resolved !== null && resolved !== base && resolved.axes.length === 0
+}

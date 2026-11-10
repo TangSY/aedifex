@@ -11,8 +11,8 @@ interface MobileSelectionBarProps {
   node: AnyNode | null
   label?: string
   icon?: string
-  onMove: () => void
-  onDuplicate: () => void
+  onMove?: () => void
+  onDuplicate?: () => void
   onDelete: () => void
   onEdit: () => void
 }
@@ -56,7 +56,7 @@ export function MobileSelectionBar({
       </button>
 
       <div className="flex items-center gap-0.5 border-border/40 border-l pl-1">
-        <button
+        {onMove && <button
           aria-label="Move"
           className={ACTION_BTN}
           onClick={(e) => {
@@ -66,8 +66,8 @@ export function MobileSelectionBar({
           type="button"
         >
           <Move className="h-4 w-4" />
-        </button>
-        <button
+        </button>}
+        {onDuplicate && <button
           aria-label="Duplicate"
           className={ACTION_BTN}
           onClick={(e) => {
@@ -77,7 +77,7 @@ export function MobileSelectionBar({
           type="button"
         >
           <Copy className="h-4 w-4" />
-        </button>
+        </button>}
         <button
           aria-label="Delete"
           className={cn(

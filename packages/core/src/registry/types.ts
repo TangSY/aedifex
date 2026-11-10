@@ -1672,6 +1672,7 @@ export type DuplicateSubtreeCloneResult = {
 }
 
 export type DuplicableConfig = {
+  allow?: (args: { node: AnyNode }) => boolean
   /** 'with-children' preserves the root-only draft lifecycle for childless nodes. */
   subtree?: boolean | 'with-children'
   prepareSubtreeClone?: (args: DuplicateSubtreeCloneArgs) => DuplicateSubtreeCloneResult

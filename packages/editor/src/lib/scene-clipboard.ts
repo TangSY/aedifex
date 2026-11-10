@@ -6,6 +6,7 @@ import {
   generateSceneMaterialId,
   getArtifactStore,
   isDerivedNode,
+  isNodeDuplicable,
   isStoreyContent,
   type LevelNode,
   nodeRegistry,
@@ -21,6 +22,7 @@ import {
   useScene,
 } from '@aedifex/core'
 import { clampDoorToWall, clampWindowToWall } from '@aedifex/core/building'
+import { remapNodeReferences as remapCloneReferences } from '@aedifex/core/clone-scene-graph'
 import { useViewer } from '@aedifex/viewer'
 import { referencedSceneMaterialIds, remapSceneMaterialRefs } from './scene-material-refs'
 
@@ -156,7 +158,7 @@ function isClipboardRoot(
 }
 
 function isCopyableRootType(node: AnyNode) {
-  if (isDerivedNode(node)) return false
+  if (isDerivedNode(node) || !isNodeDuplicable(node)) return false
   if (COPYABLE_ROOT_TYPES.has(node.type)) return true
   const definition = nodeRegistry.get(node.type)
   return !!definition && definition.capabilities?.duplicable !== false
@@ -279,9 +281,10 @@ function remapNodeReferences(
     clone.measurement = remapMeasurementReferences(clone.measurement, idMap)
   }
 
+  const mappedMetadata = remapCloneReferences(clone, idMap).metadata
   const metadata =
-    clone.metadata && typeof clone.metadata === 'object' && !Array.isArray(clone.metadata)
-      ? { ...(clone.metadata as Record<string, unknown>) }
+    mappedMetadata && typeof mappedMetadata === 'object' && !Array.isArray(mappedMetadata)
+      ? { ...(mappedMetadata as Record<string, unknown>) }
       : {}
   delete metadata.isNew
   delete metadata.isTransient

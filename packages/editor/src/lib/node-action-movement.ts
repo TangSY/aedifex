@@ -4,12 +4,15 @@ import {
   cloneNodesInto,
   collectSubtree,
   isMovable,
+  isMoveLocked,
+  isNodeDuplicable,
   nodeRegistry,
   useScene,
 } from '@aedifex/core'
 import { copyCreateOps } from './fresh-planar-placement'
 
 export function registryMoveDisabled(node: AnyNode): boolean {
+  if (isMoveLocked(node)) return true
   const def = nodeRegistry.get(node.type)
   return Boolean(
     def?.capabilities.movable &&
@@ -20,6 +23,7 @@ export function registryMoveDisabled(node: AnyNode): boolean {
 }
 
 export function duplicateWithoutMove(node: AnyNode) {
+  if (!isNodeDuplicable(node)) return null
   const subtree = collectSubtree(useScene.getState().nodes, node.id)
   const parentId = node.parentId as AnyNodeId | null
   if (!subtree || !parentId) return null

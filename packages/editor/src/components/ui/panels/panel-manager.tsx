@@ -12,6 +12,7 @@ import {
   type ElevatorNode,
   type FenceNode,
   type ItemNode,
+  isNodeDuplicable,
   type RoofNode,
   type RoofSegmentNode,
   type SlabNode,
@@ -27,6 +28,7 @@ import { useSelectedRoom, useZoneRoom } from '../../../hooks/use-selected-room'
 import { FloorOpeningPanel } from './floor-opening-panel'
 import { OpenRoomPanel, RoomPanel } from './room-panel'
 import { useIsMobile } from '../../../hooks/use-mobile'
+import { registryMoveDisabled } from '../../../lib/node-action-movement'
 import { shouldShowEditingControls } from '../../../lib/interaction/overlay-policy'
 import { captureElementActionOrigin, completeElementAction } from '../../../lib/room-zone-routing'
 import { sfxEmitter } from '../../../lib/sfx-bus'
@@ -154,9 +156,9 @@ function MobilePanelLayer({
         <MobileSelectionBar
           node={node}
           onDelete={handleDelete}
-          onDuplicate={handleDuplicate}
+          onDuplicate={isNodeDuplicable(node) ? handleDuplicate : undefined}
           onEdit={() => setIsSheetOpen((v) => !v)}
-          onMove={handleMove}
+          onMove={registryMoveDisabled(node) ? undefined : handleMove}
         />
       )}
       <MobilePanelSheet

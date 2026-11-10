@@ -3,6 +3,7 @@ import {
   type AnyNodeId,
   calculateLevelMiters,
   getWallPlanFootprint,
+  isMoveLocked,
   nodeRegistry,
   resolveBuildingForLevel,
   sceneRegistry,
@@ -98,7 +99,8 @@ export function classifyParticipant(
   levelId: string | null,
   sceneNodes: Record<string, AnyNode | undefined>,
 ): ParticipantKind | null {
-  if (!node || !isInGroupTransformScope(node, levelId, sceneNodes)) return null
+  if (!node || isMoveLocked(node) || !isInGroupTransformScope(node, levelId, sceneNodes))
+    return null
   const shape = classifyPlacementShape(node)
   if (shape) return shape
   const start = (node as { start?: unknown }).start

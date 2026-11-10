@@ -332,6 +332,12 @@ export function isRegistryMovable(kind: string): boolean {
   return false
 }
 
+export function isNodeDuplicable(node: AnyNode): boolean {
+  const policy = nodeRegistry.get(node.type)?.capabilities.duplicable
+  if (policy === false) return false
+  return typeof policy !== 'object' || !policy.allow || policy.allow({ node })
+}
+
 /**
  * Whether the kind has a move tool that MOUNTS in the 3D viewport — the
  * generic `capabilities.movable` mover or a bespoke `affordanceTools.move`.
