@@ -1,5 +1,8 @@
 import { footprintLift } from '../lib/floor-foundation-datum'
-import { levelConstructionDisplacements } from '../lib/floor-foundation-stack'
+import {
+  levelConstructionDisplacements,
+  upperStoreyFootprints,
+} from '../lib/floor-foundation-stack'
 import { area, intersection } from '../lib/polygon-boolean'
 import { isSiteFlatwork } from '../lib/site-flatwork'
 import { queryNodes } from '../runtime/node-queries'
@@ -407,13 +410,18 @@ function resolveCoveringSlabContext(
   const authoredHeight =
     resolveLevelFloorToFloorHeight(levelId, getAuthoredLevelElevations(nodes)) ??
     getStoredLevelHeight(level)
+  const supporting = new Set(
+    (aboveId ? (upperStoreyFootprints(nodes).get(aboveId) ?? []) : []).map((slab) => slab.id),
+  )
   const context = {
     floorToFloorHeight,
     planeHeight: authoredHeight,
     slabs,
     footprintPlanes: footprints.map(({ slab, lift }) => ({
       slab,
-      top: authoredHeight + lift,
+      top: supporting.has(slab.id)
+        ? Math.max(authoredHeight + lift, floorToFloorHeight)
+        : authoredHeight + lift,
     })),
   }
 

@@ -120,6 +120,26 @@ afterEach(() => {
   useScene.temporal.getState().clear()
 })
 
+test('an upper floor extended over a lower unraised footprint closes the wall gap', () => {
+  const original = scene()
+  const raised = apply(
+    original,
+    setFloorFoundation(original, { slabId: base(original).id, patch: { floorHeight: 0.55 } }),
+  )
+  const extended = reconcileStructureOnLoad({
+    ...raised,
+    slab_1: { ...raised.slab_1, polygon: rect(0, 14) } as AnyNode,
+  }).nodes
+  const wall = extended.wall_lift1_0 as WallNode
+  expect(getLevelElevations(extended).get('level_lift1')?.baseY).toBeCloseTo(3.5)
+  expect(getWallPlaneTop(wall, wall.parentId!, extended)).toBeCloseTo(3.5)
+  expect(base(extended, 'zone_lift1').floorHeight).toBeUndefined()
+  expect(wallSupportForNodes(wall, extended).elevation).toBeCloseTo(
+    wallSupportForNodes(wall, original).elevation,
+  )
+  expect(getWallPlaneTop(wall, wall.parentId!, raised)).toBe(3)
+})
+
 test('footprint lift follows the storey, ceilings and roofs; upper levels move once; shed stays put; reset reverses', () => {
   const before = scene()
   const plate = base(before)
