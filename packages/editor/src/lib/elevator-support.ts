@@ -94,3 +94,11 @@ export function resolveElevatorNodeSupportY(
     z: position[2],
   })
 }
+
+export function resolveElevatorMovePosition(
+  node: AnyNode,
+  position: [number, number, number],
+): [number, number, number] {
+  if (node.type !== 'elevator') return position
+  return [position[0], resolveElevatorNodeSupportY(node, position), position[2]]
+}

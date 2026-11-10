@@ -43,6 +43,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type Group, Vector3 } from 'three'
 import { markToolCancelConsumed } from '../../../hooks/use-keyboard'
+import { resolveElevatorMovePosition } from '../../../lib/elevator-support'
 import { commitFreshPlacementSubtree } from '../../../lib/fresh-planar-placement'
 import {
   isFreshPlacementMetadata,
@@ -1027,6 +1028,7 @@ export function MoveRegistryNodeTool({ node: source }: { node: AnyNode }) {
         ).position
       }
       position = keepStartingElevation(position, rotationRef.current)
+      position = resolveElevatorMovePosition(node, position)
       const visualPosition = getVisualPosition(position)
       hasMovedRef.current = true
       setCursorPosition(visualPosition)
@@ -1320,6 +1322,7 @@ export function MoveRegistryNodeTool({ node: source }: { node: AnyNode }) {
         position = canonicalPositionFromPlan(planOrigin[0], position[1], planOrigin[2])
       }
       position = keepStartingElevation(position, hostedPose?.rotationY ?? nextFreeRotation)
+      if (hasMovedRef.current) position = resolveElevatorMovePosition(node, position)
       lastCursorRef.current = position
       freeRotationRef.current = hostedPose?.rotationY ?? nextFreeRotation
       rotationRef.current = freeRotationRef.current
