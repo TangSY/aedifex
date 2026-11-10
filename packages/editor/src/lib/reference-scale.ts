@@ -69,7 +69,7 @@ export function formatReferenceScaleLabel(reference: GuideScaleReference, locale
   }
 
   const label: unknown = reference.label
-  if (typeof label !== 'string') return label == null ? '' : String(label)
+  if (typeof label !== 'string') return typeof label === 'number' ? String(label) : ''
   if (label.length > MAX_REFERENCE_SCALE_LABEL_LENGTH) return label
 
   const parsed = parseLegacyScaleLabel(label)

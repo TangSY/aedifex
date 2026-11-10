@@ -104,6 +104,8 @@ test('oversized legacy reference labels bypass parsing within the input budget',
 test('reference-scale labels tolerate malformed persisted values', () => {
   expect(formatReferenceScaleLabel(runtimeScaleReference({ label: 42 }), 'en')).toBe('42')
   expect(formatReferenceScaleLabel(runtimeScaleReference({ label: null }), 'en')).toBe('')
+  const malformedLabel = JSON.parse('{"toString":null,"valueOf":null}')
+  expect(formatReferenceScaleLabel(runtimeScaleReference({ label: malformedLabel }), 'en')).toBe('')
   expect(
     formatReferenceScaleLabel(
       runtimeScaleReference({
