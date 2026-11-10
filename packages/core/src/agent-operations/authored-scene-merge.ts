@@ -16,9 +16,33 @@ const equal = (a: unknown, b: unknown): boolean => {
 const record = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value)
 
+const compileFields = new Set(['artifact', 'manifest', 'images', 'inputs'])
+const isScriptSource = (value: unknown): value is Record<string, unknown> =>
+  record(value) && value.kind === 'script' && typeof value.script === 'string'
+const scriptIntent = (value: Record<string, unknown>) =>
+  Object.fromEntries(Object.entries(value).filter(([key]) => !compileFields.has(key)))
+const withoutCompiles = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(withoutCompiles)
+  if (!record(value)) return value
+  const source = isScriptSource(value) ? scriptIntent(value) : value
+  return Object.fromEntries(
+    Object.entries(source).map(([key, entry]) => [key, withoutCompiles(entry)]),
+  )
+}
+
 function merged(base: unknown, current: unknown, next: unknown, path: string): unknown {
   if (equal(base, next) || equal(current, next)) return current
   if (equal(base, current)) return next
+  if (isScriptSource(base) && isScriptSource(current) && isScriptSource(next)) {
+    const [original, edited, proposed] = [base, current, next].map(scriptIntent)
+    if (equal(original, edited) || equal(edited, proposed)) return next
+    if (equal(original, proposed)) return current
+    refuse(
+      'authored_edit_conflict',
+      `Both the design and the current scene changed the script at ${path}. Preserve the current edit and resolve this change explicitly.`,
+      { path, mutationApplied: false },
+    )
+  }
   if (record(base) && record(current) && record(next)) {
     const result: Record<string, unknown> = {}
     for (const key of new Set([
@@ -80,7 +104,7 @@ export function authoredSceneChanges(
       // A person's deletion wins over regeneration, including a same-payload replay.
       delete effective[id]
     } else if (!desired) {
-      if (!equal(now, old))
+      if (!equal(withoutCompiles(now), withoutCompiles(old)))
         refuse(
           'authored_edit_conflict',
           `Node ${id} was edited after conversion and cannot be removed by regeneration.`,
