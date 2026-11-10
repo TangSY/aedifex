@@ -14,7 +14,7 @@ import type {
 import type { Object3D } from 'three'
 
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
 import type { EdgeMode } from '../lib/edge-style'
 import type { ColorPreset, RenderShading } from '../lib/materials'
 import {
@@ -23,6 +23,7 @@ import {
   SCENE_THEME_IDS,
   type SceneTheme,
 } from '../lib/scene-themes'
+import { viewerPreferenceStorage } from '../lib/viewer-preference-storage'
 
 export type RenderContext = 'editor' | 'viewer'
 export type MetricNotation = 'meters' | 'millimeters'
@@ -788,6 +789,7 @@ const useViewer = create<ViewerState>()(
     }),
     {
       name: 'viewer-preferences',
+      storage: createJSONStorage(() => viewerPreferenceStorage),
       merge: (persistedState, currentState) => {
         const persisted = normalizePersistedViewerState(persistedState)
         return {

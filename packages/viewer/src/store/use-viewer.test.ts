@@ -302,3 +302,69 @@ describe('the site ground with showGround off', () => {
     }
   })
 })
+
+test('viewer preferences survive denied storage and resume persistence when it returns', async () => {
+  const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  const original = useViewer.getState()
+  const data = new Map<string, string>()
+  try {
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        get localStorage() {
+          throw new Error('denied')
+        },
+      },
+    })
+    await useViewer.persist.rehydrate()
+    expect(() => useViewer.getState().setShowMeasurements(false)).not.toThrow()
+    expect(useViewer.getState().showMeasurements).toBe(false)
+    expect(() => useViewer.persist.clearStorage()).not.toThrow()
+
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: () => {
+            throw new Error('denied')
+          },
+          setItem: () => {
+            throw new Error('quota')
+          },
+          removeItem: () => {
+            throw new Error('denied')
+          },
+        },
+      },
+    })
+    await useViewer.persist.rehydrate()
+    expect(() => useViewer.getState().setCameraMode('orthographic')).not.toThrow()
+    expect(useViewer.getState().cameraMode).toBe('orthographic')
+    expect(() => useViewer.persist.clearStorage()).not.toThrow()
+
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: (key: string) => data.get(key) ?? null,
+          setItem: (key: string, value: string) => data.set(key, value),
+          removeItem: (key: string) => data.delete(key),
+        },
+      },
+    })
+    useViewer.getState().setCameraMode('perspective')
+    expect(JSON.parse(data.get('viewer-preferences')!).state.cameraMode).toBe('perspective')
+    data.set(
+      'viewer-preferences',
+      JSON.stringify({ state: { cameraMode: 'orthographic' }, version: 0 }),
+    )
+    await useViewer.persist.rehydrate()
+    expect(useViewer.getState().cameraMode).toBe('orthographic')
+    useViewer.persist.clearStorage()
+    expect(data.has('viewer-preferences')).toBe(false)
+  } finally {
+    if (windowDescriptor) Object.defineProperty(globalThis, 'window', windowDescriptor)
+    else Reflect.deleteProperty(globalThis, 'window')
+    useViewer.setState(original, true)
+  }
+})
