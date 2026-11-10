@@ -25,6 +25,7 @@ const clients: Record<string, ClientOptions> = {
 
 function createServer() {
   const bridge = new SceneBridge()
+  bridge.setScene({}, [])
   bridge.loadDefault()
   return createAedifexMcpServer({ bridge })
 }
@@ -58,6 +59,8 @@ describe('connectStdio', () => {
   }
 
   test(`keeps one scene for the whole connection on ${MODERN}`, async () => {
+    const previousWall = WallNode.parse({ start: [0, 0], end: [1, 0] })
+    new SceneBridge().setScene({ [previousWall.id]: previousWall }, [previousWall.id])
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
     const handle = connectStdio(createServer, { transport: serverTransport })
     const client = new Client(
