@@ -40,6 +40,7 @@ import {
 } from 'react'
 import { ViewerOverlay } from '../../components/viewer-overlay'
 import { ViewerZoneSystem } from '../../components/viewer-zone-system'
+import { useAutoFrame } from '../../hooks/use-auto-frame'
 import { type SaveStatus, useAutoSave } from '../../hooks/use-auto-save'
 import { useKeyboard } from '../../hooks/use-keyboard'
 import { useIsMobile } from '../../hooks/use-mobile'
@@ -1519,6 +1520,13 @@ function EditorContent({
   const isPreviewMode = useEditor((s) => s.isPreviewMode)
   const isCaptureMode = useEditor((s) => s.isCaptureMode)
   const readOnly = useScene((s) => s.readOnly)
+  useAutoFrame({
+    enabled: !isVersionPreviewMode,
+    ready: isViewerSceneReady && hasLoadedInitialScene && !isLoading && !isSceneLoading,
+    readyKey: sceneReadyKey,
+    deferReady: !!immersive,
+    suppressReady: isPreviewMode || isVersionPreviewMode,
+  })
   // Chrome only steps down for the top menu while the menu is actually there.
   const topMenuShown =
     dockMenuOnTop &&

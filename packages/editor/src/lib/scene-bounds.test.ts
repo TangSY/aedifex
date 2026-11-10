@@ -46,6 +46,96 @@ function makeSite(points: [number, number][]): AnyNode {
 }
 
 describe('computeSceneBoundsXZ', () => {
+  test('uses world coordinates for a rotated building and excludes wall-local openings', () => {
+    const building = {
+      id: 'building_test',
+      type: 'building',
+      parentId: null,
+      position: [100, 0, 100],
+      rotation: [0, Math.PI / 2, 0],
+    } as unknown as AnyNode
+    const level = { id: 'level_test', type: 'level', parentId: building.id } as AnyNode
+    const wall = { ...makeWall([0, 0], [8, 0]), parentId: level.id } as AnyNode
+    const door = {
+      id: 'door_test',
+      type: 'door',
+      parentId: wall.id,
+      position: [2, 1, 0],
+    } as unknown as AnyNode
+    const bounds = computeSceneBoundsXZ([building, level, wall, door])!
+    expect(bounds.min[0]).toBeCloseTo(100)
+    expect(bounds.max[0]).toBeCloseTo(100)
+    expect(bounds.min[1]).toBeCloseTo(92)
+    expect(bounds.max[1]).toBeCloseTo(100)
+  })
+
+  test('composes nested rotations and translations', () => {
+    const building = {
+      id: 'building_test',
+      type: 'building',
+      parentId: null,
+      position: [50, 0, 50],
+      rotation: [0, Math.PI / 2, 0],
+    } as unknown as AnyNode
+    const host = {
+      id: 'item_host',
+      type: 'item',
+      parentId: building.id,
+      position: [2, 0, 0],
+      rotation: [0, Math.PI / 2, 0],
+    } as unknown as AnyNode
+    const child = {
+      id: 'item_child',
+      type: 'item',
+      parentId: host.id,
+      position: [1, 0, 0],
+    } as unknown as AnyNode
+    const bounds = computeSceneBoundsXZ([building, host, child])!
+    expect(bounds.min[0]).toBeCloseTo(49)
+    expect(bounds.min[1]).toBeCloseTo(48)
+    expect(bounds.max[0]).toBeCloseTo(50)
+    expect(bounds.max[1]).toBeCloseTo(50)
+  })
+
+  test('terminates on a malformed parent cycle', () => {
+    const a = {
+      id: 'item_a',
+      type: 'item',
+      parentId: 'item_b',
+      position: [1, 0, 0],
+    } as unknown as AnyNode
+    const b = {
+      id: 'item_b',
+      type: 'item',
+      parentId: 'item_a',
+      position: [0, 0, 1],
+    } as unknown as AnyNode
+    const bounds = computeSceneBoundsXZ([a, b])!
+    expect(bounds.center.every(Number.isFinite)).toBe(true)
+  })
+
+  test('handles malformed persisted rotations without crashing the scene load', () => {
+    const malformed = JSON.parse('{"toString":null,"valueOf":null}')
+    const building = {
+      id: 'building_bad',
+      type: 'building',
+      parentId: null,
+      position: [10, 0, 20],
+      rotation: [0, malformed, 0],
+    } as unknown as AnyNode
+    const wall = { ...makeWall([0, 0], [4, 0]), parentId: building.id } as AnyNode
+    expect(computeSceneBoundsXZ([building, wall])?.center[0]).toBeCloseTo(12)
+  })
+
+  test('handles deeply nested scene graphs without exhausting the call stack', () => {
+    const nodes: AnyNode[] = []
+    for (let i = 0; i < 15_000; i++) {
+      nodes.push({ id: `item_${i}`, type: 'item', parentId: i ? `item_${i - 1}` : null } as AnyNode)
+    }
+    nodes.reverse()
+    expect(computeSceneBoundsXZ(nodes)).toBeNull()
+  })
+
   test('returns null when given an empty array', () => {
     expect(computeSceneBoundsXZ([])).toBeNull()
   })

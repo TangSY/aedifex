@@ -3,14 +3,14 @@
  *
  * Used by the auto-frame hook to fit the camera onto a freshly loaded scene
  * (see `../hooks/use-auto-frame`). The hook subscribes to the core scene
- * store and, when `nodes` transitions from empty → non-empty, fires a
- * `camera-controls:fit-scene` event on the core event bus carrying the
- * computed bounds.
+ * store and, when `nodes` transitions from empty → non-empty, requests
+ * automatic framing with the computed bounds.
  *
  * This module contains no rendering code: it only walks the flat-dict node
  * tree and derives an axis-aligned bounding box on the XZ (plan) plane.
  */
 
+import { turnPlanPoint, yawOf } from '@aedifex/core'
 import type { AnyNode } from '@aedifex/core/schema'
 
 export type SceneBoundsXZ = {
@@ -26,6 +26,52 @@ export type SceneBoundsXZ = {
 
 // A very small guard against degenerate bounds (e.g. a single wall of zero length).
 const MIN_BOUNDS_EXTENT = 0.0001
+
+type PlanFrame = { x: number; z: number; yaw: number }
+const ORIGIN: PlanFrame = { x: 0, z: 0, yaw: 0 }
+
+function worldFrames(nodes: Map<string, AnyNode>) {
+  const cache = new Map<string, PlanFrame>()
+  const frameOf = (id: string | null | undefined): PlanFrame => {
+    const chain: { id: string; node: AnyNode }[] = []
+    const seen = new Set<string>()
+    let current = id
+    let frame = ORIGIN
+    while (current && !seen.has(current)) {
+      const known = cache.get(current)
+      if (known) {
+        frame = known
+        break
+      }
+      const node = nodes.get(current)
+      if (!node) break
+      seen.add(current)
+      chain.push({ id: current, node })
+      current = node.parentId
+    }
+    for (let index = chain.length - 1; index >= 0; index--) {
+      const entry = chain[index]!
+      const fields = entry.node as unknown as Record<string, unknown>
+      const position = fields.position
+      if (Array.isArray(position) && position.length >= 3) {
+        const x = typeof position[0] === 'number' && Number.isFinite(position[0]) ? position[0] : 0
+        const z = typeof position[2] === 'number' && Number.isFinite(position[2]) ? position[2] : 0
+        const [dx, dz] = turnPlanPoint(x, z, frame.yaw)
+        const rawYaw = Array.isArray(fields.rotation) ? fields.rotation[1] : fields.rotation
+        const yaw =
+          typeof rawYaw === 'number' || typeof rawYaw === 'string' ? yawOf(fields.rotation) : 0
+        frame = {
+          x: frame.x + dx,
+          z: frame.z + dz,
+          yaw: frame.yaw + (Number.isFinite(yaw) ? yaw : 0),
+        }
+      }
+      cache.set(entry.id, frame)
+    }
+    return frame
+  }
+  return frameOf
+}
 
 function extendPoint(
   acc: { minX: number; minZ: number; maxX: number; maxZ: number; hasPoint: boolean },
@@ -70,16 +116,32 @@ export function computeSceneBoundsXZ(
     maxZ: Number.NEGATIVE_INFINITY,
     hasPoint: false,
   }
+  const byId = new Map<string, AnyNode>(
+    list.filter((node) => node && typeof node.id === 'string').map((node) => [node.id, node]),
+  )
+  const frameOf = worldFrames(byId)
 
   for (const node of list) {
     if (!node || typeof node !== 'object') continue
     const anyNode = node as unknown as Record<string, unknown>
+    const frame = frameOf(node.parentId)
+    const extend = (x: unknown, z: unknown) => {
+      if (
+        typeof x !== 'number' ||
+        typeof z !== 'number' ||
+        !Number.isFinite(x) ||
+        !Number.isFinite(z)
+      )
+        return
+      const [dx, dz] = turnPlanPoint(x, z, frame.yaw)
+      extendPoint(acc, frame.x + dx, frame.z + dz)
+    }
 
     // Wall / fence endpoints in level coordinates.
     const start = anyNode.start as unknown
     const end = anyNode.end as unknown
-    if (Array.isArray(start) && start.length >= 2) extendPoint(acc, start[0], start[1])
-    if (Array.isArray(end) && end.length >= 2) extendPoint(acc, end[0], end[1])
+    if (Array.isArray(start) && start.length >= 2) extend(start[0], start[1])
+    if (Array.isArray(end) && end.length >= 2) extend(end[0], end[1])
 
     // Zone / slab polygons (and explicit polygon-shaped site boundaries).
     const polygon = anyNode.polygon as unknown
@@ -88,7 +150,7 @@ export function computeSceneBoundsXZ(
       // points under `polygon.points` (a discriminated PropertyLineData shape).
       for (const point of polygon) {
         if (Array.isArray(point) && point.length >= 2) {
-          extendPoint(acc, point[0], point[1])
+          extend(point[0], point[1])
         }
       }
     } else if (
@@ -105,7 +167,7 @@ export function computeSceneBoundsXZ(
       } else {
         for (const point of points) {
           if (Array.isArray(point) && point.length >= 2) {
-            extendPoint(acc, point[0], point[1])
+            extend(point[0], point[1])
           }
         }
       }
@@ -113,8 +175,12 @@ export function computeSceneBoundsXZ(
 
     // Position on the XZ plane (3D position = [x, y, z]).
     const position = anyNode.position as unknown
-    if (Array.isArray(position) && position.length >= 3) {
-      extendPoint(acc, position[0], position[2])
+    if (
+      Array.isArray(position) &&
+      position.length >= 3 &&
+      byId.get(node.parentId ?? '')?.type !== 'wall'
+    ) {
+      extend(position[0], position[2])
     }
   }
 

@@ -29,9 +29,11 @@ import {
   type Camera,
   type OrthographicCamera,
   type PerspectiveCamera,
+  Sphere,
   Spherical,
   Vector3,
 } from 'three'
+import { subscribeAutoFrame } from '../../hooks/use-auto-frame'
 import {
   type CameraPoseApplicationPlan,
   normalizeCameraPose,
@@ -66,6 +68,7 @@ import { editorOwnsOneFingerDrag } from '../../lib/touch-gesture-priority'
 import { frameViewerCamera } from '../../lib/viewer-selection'
 import { publishCameraPose } from '../../store/camera-pose-store'
 import useEditor, { takePreviewCameraRestore } from '../../store/use-editor'
+import useFollowAedifex from '../../store/use-follow-pascal'
 import {
   useActiveHandleDrag,
   useEndpointReshape,
@@ -73,6 +76,7 @@ import {
 } from '../../store/use-interaction-scope'
 import { visibleScene } from '../../store/view-layout'
 import { createCameraDraggingLifecycle } from './camera-dragging-lifecycle'
+import { createAutoFrameQueue, sceneFitPose } from './fit-scene-framing'
 import { FloorAwareCameraControls } from './floor-aware-camera-controls'
 import { FloorSurface } from './floor-surface'
 
@@ -83,6 +87,7 @@ const tempDelta = new Vector3()
 const tempPosition = new Vector3()
 const tempSize = new Vector3()
 const tempTarget = new Vector3()
+const fitSphere = new Sphere()
 const transitionFreezePosition = new Vector3()
 const transitionFreezeTarget = new Vector3()
 const keyboardPanSpherical = new Spherical()
@@ -374,6 +379,7 @@ function useFirstPersonCameraPoseRestore(
 
 export const CustomCameraControls = ({ paused = false }: { paused?: boolean }) => {
   const controls = useRef<FloorAwareCameraControls | null>(null)
+  const autoFrameQueue = useRef(createAutoFrameQueue())
   const pendingAppliedPose = useRef<CameraPoseApplicationPlan | null>(null)
   const activePoseInterpolation = useRef<{
     camera: Camera
@@ -471,6 +477,7 @@ export const CustomCameraControls = ({ paused = false }: { paused?: boolean }) =
 
   const beginLocalCameraInteraction = useCallback(
     ({ dragging = true }: { dragging?: boolean } = {}) => {
+      autoFrameQueue.current.cancel()
       cancelPoseApplication()
       if (dragging) {
         controls.current?.releaseWrittenPose()
@@ -581,6 +588,27 @@ export const CustomCameraControls = ({ paused = false }: { paused?: boolean }) =
 
   useEffect(() => cancelPoseApplication, [cancelPoseApplication])
 
+  useEffect(() => subscribeAutoFrame((bounds) => autoFrameQueue.current.request(bounds)), [])
+
+  useEffect(() => {
+    const cancel = () => autoFrameQueue.current.cancel()
+    const events = [
+      'camera-controls:apply-pose',
+      'camera-controls:interaction-start',
+      'camera-controls:focus',
+      'camera-controls:frame',
+      'camera-controls:view',
+      'camera-controls:top-view',
+      'camera-controls:orbit-cw',
+      'camera-controls:orbit-ccw',
+      'camera-controls:fit-scene',
+    ] as const
+    for (const event of events) emitter.on(event, cancel)
+    return () => {
+      for (const event of events) emitter.off(event, cancel)
+    }
+  }, [])
+
   useEffect(() => {
     // Dev-only: deterministic camera poses for screenshot/automation tooling.
     // A getter, not a snapshot — drei recreates the impl when the default
@@ -627,15 +655,17 @@ export const CustomCameraControls = ({ paused = false }: { paused?: boolean }) =
     if (!controls.current) return
     if (firstLoad.current) {
       firstLoad.current = false
-      controls.current.setLookAt(
-        20,
-        keepEyeOverGround(20, 20 + targetY, 20, 20),
-        20,
-        0,
-        targetY,
-        0,
-        true,
-      )
+      if (Object.keys(useScene.getState().nodes).length === 0) {
+        controls.current.setLookAt(
+          20,
+          keepEyeOverGround(20, 20 + targetY, 20, 20),
+          20,
+          0,
+          targetY,
+          0,
+          true,
+        )
+      }
     }
     controls.current.getOrbitTarget(currentTarget)
     // Idempotence guard: skip when already there — also swallows the thumbnail
@@ -774,6 +804,38 @@ export const CustomCameraControls = ({ paused = false }: { paused?: boolean }) =
   }, [publishCurrentPose])
 
   useFrame((_, delta) => {
+    const follow = useFollowAedifex.getState()
+    const autoControl = controls.current
+    const projectionReady =
+      cameraMode === 'orthographic' ? isOrthographicCamera(camera) : isPerspectiveCamera(camera)
+    const autoFrame = autoFrameQueue.current.take({
+      ready:
+        !!autoControl &&
+        !isFirstPersonMode &&
+        !isRestoringFirstPersonPose() &&
+        !paused &&
+        !renderPaused &&
+        useEditor.getState().captureMode.mode === 'idle' &&
+        projectionReady,
+      superseded:
+        isPreviewMode ||
+        !!pendingAppliedPose.current ||
+        !!activePoseInterpolation.current ||
+        (follow.on && !follow.paused && follow.building),
+    })
+    if (autoFrame && autoControl) {
+      const pose = sceneFitPose({
+        bounds: autoFrame.bounds,
+        groundY: orbitGroundY(lastLevelId.current),
+      })
+      const [x, y, z] = pose.eye
+      autoControl.setLookAt(x, keepEyeOverGround(x, y, z, pose.height), z, ...pose.target, true)
+      if (isOrthographicCamera(camera)) {
+        fitSphere.center.set(...pose.target)
+        fitSphere.radius = pose.radius
+        autoControl.fitToSphere(fitSphere, true)
+      }
+    }
     if (isFirstPersonMode || !controls.current) return
 
     const activePose = activePoseInterpolation.current
