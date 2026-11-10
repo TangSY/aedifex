@@ -1,8 +1,14 @@
-import { formatNumber, type GuideScaleReference } from '@aedifex/core'
+import { formatNumber, GuideScaleReference } from '@aedifex/core'
 
 export type ReferenceScaleUnit = 'meters' | 'centimeters' | 'feet' | 'inches'
 
 const MAX_REFERENCE_SCALE_LABEL_LENGTH = 64
+const displayLengthSchema = GuideScaleReference.shape.displayLength.unwrap()
+export const MAX_REFERENCE_SCALE_DISPLAY_LENGTH = displayLengthSchema.maxValue
+
+export function isValidReferenceScaleDisplayLength(value: number): boolean {
+  return displayLengthSchema.safeParse(value).success
+}
 
 const REFERENCE_SCALE_UNIT_LABELS: Record<ReferenceScaleUnit, string> = {
   meters: 'm',
@@ -21,10 +27,10 @@ function getReferenceScaleUnitLabel(unit: unknown): string | null {
 }
 
 function parseLegacyScaleLabel(label: string): { unit: string; value: number } | null {
-  const match = label.trim().match(/^([+−-]?[\d.,]+(?:[\s\u00a0\u202f][\d.,]+)*)\s*(m|cm|ft|in)$/i)
+  const match = label.trim().match(/^([+−-]?[\d.,]+(?:\s+[\d.,]+)*)\s*(m|cm|ft|in)$/i)
   if (!match) return null
 
-  const compact = match[1]!.replace(/[\s\u00a0\u202f]/g, '').replace('−', '-')
+  const compact = match[1]!.replace(/\s/g, '').replace('−', '-')
   const lastDot = compact.lastIndexOf('.')
   const lastComma = compact.lastIndexOf(',')
   const separatorIndex = Math.max(lastDot, lastComma)
@@ -49,6 +55,9 @@ export function createGuideScaleReference(
   displayLength: number,
   displayUnit: ReferenceScaleUnit,
 ): GuideScaleReference {
+  if (!isValidReferenceScaleDisplayLength(displayLength)) {
+    throw new RangeError('Reference scale display length is outside the permitted range')
+  }
   const unitLabel = REFERENCE_SCALE_UNIT_LABELS[displayUnit]
   return {
     ...reference,

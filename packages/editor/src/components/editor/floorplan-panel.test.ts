@@ -2,7 +2,11 @@ import { expect, test } from 'bun:test'
 import { GuideScaleReference } from '@aedifex/core'
 import { z } from 'zod'
 import { createGuideScaleReference, formatReferenceScaleLabel } from '../../lib/reference-scale'
-import { formatFloorplanNumber, parseReferenceScaleLength } from './floorplan-panel'
+import {
+  formatFloorplanNumber,
+  getReferenceScaleInputError,
+  parseReferenceScaleLength,
+} from './floorplan-panel'
 
 const Core106GuideScaleReference = z.object({
   start: z.tuple([z.number(), z.number()]),
@@ -165,4 +169,41 @@ test('reference-scale schema caps persisted display lengths', () => {
       }),
     ).success,
   ).toBe(false)
+})
+
+test('reference-scale input respects the persisted schema limit and locale', () => {
+  const error = (raw: string, unit: 'meters' | 'feet' = 'meters', locale = 'en') =>
+    getReferenceScaleInputError({ raw, unit, locale })
+  expect(error('1000000')).toBeNull()
+  expect(error('2.75', 'feet')).toBeNull()
+  expect(error('1000001')).toContain('1000000')
+  expect(error('0')).toBe('Length must be greater than 0.')
+  expect(error('')).toBe('Enter the real length of the line.')
+  expect(error('not a number')).toContain('Enter a length')
+  expect(error('1,5', 'meters', 'fr')).toBeNull()
+})
+
+test('reference-scale creation refuses non-finite and oversized display lengths', () => {
+  const base = {
+    start: [0, 0] as [number, number],
+    end: [1, 0] as [number, number],
+    realLengthMeters: 1,
+    measuredLengthUnits: 1,
+    metersPerUnit: 1,
+  }
+  for (const value of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, 1_000_001]) {
+    expect(() => createGuideScaleReference(base, value, 'meters')).toThrow()
+  }
+  expect(
+    GuideScaleReference.safeParse(createGuideScaleReference(base, 1_000_000, 'meters')).success,
+  ).toBe(true)
+})
+
+test('legacy scale labels accept repeated Unicode whitespace between number groups', () => {
+  expect(formatReferenceScaleLabel(runtimeScaleReference({ label: '1  234,5 m' }), 'en')).toBe(
+    '1234.5 m',
+  )
+  expect(formatReferenceScaleLabel(runtimeScaleReference({ label: '1 \u00a0234 cm' }), 'en')).toBe(
+    '1234 cm',
+  )
 })
