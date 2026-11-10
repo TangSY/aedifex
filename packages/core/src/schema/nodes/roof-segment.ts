@@ -766,6 +766,50 @@ export function getRoofSegmentSurfaceY(
   }
   const peakY = node.wallHeight + activeRh
   if (activeRh === 0) return node.wallHeight
+  const shapeRise = Math.max(0.001, activeRh)
+
+  if (node.roofType === 'gambrel' && node.depth > 0) {
+    const halfDepth = node.depth / 2
+    const shoulder =
+      halfDepth * (node.gambrelLowerWidthRatio ?? ROOF_SHAPE_DEFAULTS.gambrelLowerWidthRatio)
+    if (!(shoulder > 0 && shoulder < halfDepth))
+      return peakY - (Math.abs(localZ) / halfDepth) * activeRh
+    const distance = Math.abs(localZ)
+    const shoulderHeight = (halfDepth - shoulder) * slopeFrame.tanTheta
+    return (
+      node.wallHeight +
+      (distance >= shoulder
+        ? (halfDepth - distance) * slopeFrame.tanTheta
+        : shoulderHeight + (shapeRise - shoulderHeight) * (1 - distance / shoulder))
+    )
+  }
+
+  if (node.roofType === 'mansard' && node.width > 0 && node.depth > 0) {
+    const minHalfSpan = Math.min(node.width, node.depth) / 2
+    const inset =
+      minHalfSpan * 2 * (node.mansardSteepWidthRatio ?? ROOF_SHAPE_DEFAULTS.mansardSteepWidthRatio)
+    if (!(inset > 0 && inset < minHalfSpan))
+      return peakY - (Math.abs(localZ) / (node.depth / 2)) * activeRh
+    const edgeDistance = Math.min(
+      node.width / 2 - Math.abs(localX),
+      node.depth / 2 - Math.abs(localZ),
+    )
+    const shoulderHeight = inset * slopeFrame.tanTheta
+    if (edgeDistance > inset && Math.abs(node.width - node.depth) < 0.01) {
+      const progress = Math.max(
+        Math.abs(localX) / (node.width / 2 - inset),
+        Math.abs(localZ) / (node.depth / 2 - inset),
+      )
+      return node.wallHeight + shapeRise - (shapeRise - shoulderHeight) * progress
+    }
+    return (
+      node.wallHeight +
+      (edgeDistance <= inset
+        ? edgeDistance * slopeFrame.tanTheta
+        : shoulderHeight +
+          ((shapeRise - shoulderHeight) * (edgeDistance - inset)) / (minHalfSpan - inset))
+    )
+  }
 
   if (node.roofType === 'gable' || node.roofType === 'gambrel' || node.roofType === 'mansard') {
     const t = node.depth > 0 ? Math.abs(localZ) / (node.depth / 2) : 0
@@ -813,7 +857,14 @@ export function getRoofSegmentSurfaceY(
   if (node.roofType === 'hip') {
     const fx = node.width > 0 ? Math.abs(localX) / (node.width / 2) : 0
     const fz = node.depth > 0 ? Math.abs(localZ) / (node.depth / 2) : 0
-    return peakY - Math.max(fx, fz) * activeRh
+    if (node.width > 0 && node.depth > 0 && Math.abs(node.width - node.depth) >= 0.01) {
+      const edgeDistance = Math.min(
+        node.width / 2 - Math.abs(localX),
+        node.depth / 2 - Math.abs(localZ),
+      )
+      return node.wallHeight + (shapeRise * edgeDistance) / (Math.min(node.width, node.depth) / 2)
+    }
+    return node.wallHeight + shapeRise * (1 - Math.max(fx, fz))
   }
 
   if (node.roofType === 'conical') {

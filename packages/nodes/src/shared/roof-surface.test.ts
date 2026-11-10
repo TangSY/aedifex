@@ -101,3 +101,38 @@ describe('getRoofSurfaceFaceBoundsAt', () => {
     expect(center).toBeGreaterThan(waist)
   })
 })
+
+test('analytical height agrees with the bare roof faces at the ridge, shoulders and eaves', () => {
+  for (const overrides of [
+    { roofType: 'hip' as const, width: 10, depth: 6 },
+    { roofType: 'hip' as const, width: 6, depth: 10 },
+    { roofType: 'hip' as const, width: 8.005, depth: 8 },
+    { roofType: 'gambrel' as const, width: 10, depth: 8, gambrelLowerWidthRatio: 0.3 },
+    { roofType: 'mansard' as const, width: 12, depth: 8, mansardSteepWidthRatio: 0.2 },
+    { roofType: 'mansard' as const, width: 8.005, depth: 8 },
+    { roofType: 'hip' as const, width: 10, depth: 6, pitch: 0.001 },
+    { roofType: 'gambrel' as const, width: 10, depth: 8, pitch: 0.001 },
+    { roofType: 'mansard' as const, width: 12, depth: 8, pitch: 0.001 },
+  ]) {
+    const segment = fixtureSegment({
+      pitch: 45,
+      ...overrides,
+      wallThickness: 0,
+      deckThickness: 0,
+      overhang: 0,
+      shingleThickness: 0,
+    })
+    for (const [x, z] of [
+      [0, 0],
+      [0.2, 0.1],
+      [0.7, 0.3],
+      [0.95, 0.7],
+      [-0.8, -0.8],
+    ]) {
+      const px = (x! * segment.width) / 2
+      const pz = (z! * segment.depth) / 2
+      const actualFace = getRoofSurfaceFaceBoundsAt(segment, px, pz).surfaceYAt(px, pz)
+      expect(getSurfaceY(px, pz, segment)).toBeCloseTo(actualFace, 5)
+    }
+  }
+})

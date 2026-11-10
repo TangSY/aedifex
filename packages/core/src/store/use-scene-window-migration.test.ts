@@ -196,4 +196,46 @@ describe('scene window migrations', () => {
     const dormer = useScene.getState().nodes.dormer_test as Extract<AnyNode, { type: 'dormer' }>
     expect(dormer.children).toEqual([])
   })
+
+  test('migrates a legacy gambrel dormer window using the actual roof surface', () => {
+    useScene.getState().setScene(
+      {
+        rseg_test: {
+          object: 'node',
+          id: 'rseg_test',
+          type: 'roof-segment',
+          parentId: null,
+          visible: true,
+          metadata: {},
+          children: ['dormer_test'],
+          position: [0, 0, 0],
+          rotation: 0,
+          roofType: 'gambrel',
+          width: 10,
+          depth: 8,
+          wallHeight: 0,
+          pitch: 45,
+        },
+        dormer_test: {
+          object: 'node',
+          id: 'dormer_test',
+          type: 'dormer',
+          parentId: 'rseg_test',
+          visible: true,
+          metadata: {},
+          roofSegmentId: 'rseg_test',
+          position: [0, 0.6, -3],
+          rotation: 0,
+        },
+      } as unknown as Record<string, AnyNode>,
+      ['rseg_test'] as never,
+    )
+
+    const dormer = useScene.getState().nodes.dormer_test as Extract<AnyNode, { type: 'dormer' }>
+    const window = useScene.getState().nodes[dormer.children[0]] as Extract<
+      AnyNode,
+      { type: 'window' }
+    >
+    expect(window.dormerFace).toBe('front')
+  })
 })

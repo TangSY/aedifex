@@ -79,3 +79,36 @@ describe('getRoofSegmentSurfaceY', () => {
     expect(getRoofSegmentSurfaceY(segment, localX, localZ)).toBeCloseTo(expected, 6)
   })
 })
+
+test('gambrel height follows each slope and extends the lower slope past the eave', () => {
+  const segment = RoofSegmentNode.parse({
+    roofType: 'gambrel',
+    width: 10,
+    depth: 8,
+    wallHeight: 0,
+    pitch: 45,
+  })
+  expect(getRoofSegmentSurfaceY(segment, 0, 3)).toBeCloseTo(1)
+  expect(getRoofSegmentSurfaceY(segment, 0, 2)).toBeCloseTo(2)
+  expect(getRoofSegmentSurfaceY(segment, 0, 4.1)).toBeCloseTo(-0.1)
+})
+
+test('rectangular hip and mansard heights follow the ridge in either direction', () => {
+  for (const [width, depth, x, z] of [
+    [10, 6, 1, 0],
+    [6, 10, 0, 1],
+  ]) {
+    const hip = RoofSegmentNode.parse({ roofType: 'hip', width, depth, wallHeight: 0, pitch: 45 })
+    expect(getRoofSegmentSurfaceY(hip, x!, z!)).toBeCloseTo(3)
+  }
+  const mansard = RoofSegmentNode.parse({
+    roofType: 'mansard',
+    width: 12,
+    depth: 8,
+    wallHeight: 0,
+    pitch: 45,
+  })
+  expect(getRoofSegmentSurfaceY(mansard, 0, 3.4)).toBeCloseTo(0.6)
+  expect(getRoofSegmentSurfaceY(mansard, 5.4, 0)).toBeCloseTo(0.6)
+  expect(getRoofSegmentSurfaceY(mansard, 6.1, 0)).toBeCloseTo(-0.1)
+})
