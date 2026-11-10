@@ -4,6 +4,7 @@ import {
   applyStructureReconciliation,
   assertDerivedNodeWrites,
   HIDDEN_SITE_NOTE,
+  hierarchyCycleErrors,
   type NodeDeletionPlan,
   type NodeDeletionScene,
   nodeRegistry,
@@ -728,6 +729,7 @@ export class SceneBridge {
         })
       }
     }
+    errors.push(...hierarchyCycleErrors(nodes))
     return { valid: errors.length === 0, errors, warnings }
   }
 

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import { SiteNode } from '../../schema/nodes/site'
 import type { AnyNode, AnyNodeId } from '../../schema/types'
 import useScene from '../use-scene'
 
@@ -241,4 +242,43 @@ describe('node-actions reparent — repeated segment-hopping', () => {
       childrenOf(SEG_B_ID).filter((id) => id === VENT_ID).length
     expect(totalListings).toBe(1)
   })
+})
+
+test('rejects reparenting a node below its descendant without changing the graph', () => {
+  const parent = SiteNode.parse({ id: 'site_parent', children: ['site_child'] })
+  const child = SiteNode.parse({ id: 'site_child', parentId: parent.id })
+  useScene.setState({ nodes: { [parent.id]: parent, [child.id]: child }, rootNodeIds: [parent.id] })
+  expect(() => useScene.getState().updateNode(parent.id, { parentId: child.id })).toThrow(
+    'would create a cycle',
+  )
+  expect(useScene.getState().nodes[parent.id]?.parentId).toBeNull()
+  expect(useScene.getState().nodes[child.id]?.parentId).toBe(parent.id)
+})
+
+test('rejects a cycle formed by a batch and leaves every update unapplied', () => {
+  const a = SiteNode.parse({ id: 'site_a' })
+  const b = SiteNode.parse({ id: 'site_b' })
+  useScene.setState({ nodes: { [a.id]: a, [b.id]: b }, rootNodeIds: [a.id, b.id] })
+  expect(() =>
+    useScene.getState().updateNodes([
+      { id: a.id, data: { parentId: b.id } },
+      { id: b.id, data: { parentId: a.id } },
+    ]),
+  ).toThrow('would create a cycle')
+  expect(useScene.getState().nodes[a.id]?.parentId).toBeNull()
+  expect(useScene.getState().nodes[b.id]?.parentId).toBeNull()
+})
+
+test('rejects cyclic creates and mixed changes without publishing partial results', () => {
+  const a = SiteNode.parse({ id: 'site_a', parentId: 'site_b' })
+  const b = SiteNode.parse({ id: 'site_b', parentId: 'site_a' })
+  useScene.setState({ nodes: {}, rootNodeIds: [] })
+  expect(() => useScene.getState().createNodes([{ node: a }, { node: b }])).toThrow(
+    'would create a cycle',
+  )
+  expect(useScene.getState().nodes).toEqual({})
+  expect(() =>
+    useScene.getState().applyNodeChanges({ create: [{ node: a }, { node: b }] }),
+  ).toThrow('would create a cycle')
+  expect(useScene.getState().nodes).toEqual({})
 })

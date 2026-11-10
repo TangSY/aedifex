@@ -1,6 +1,7 @@
 import { planWallDeletion } from '../../commands/structure/plan-wall-deletion'
 import type { StructurePlan } from '../../commands/structure/shared'
 import { withoutFloorStepOverrideKeys } from '../../lib/floor-step-finish'
+import { wouldCreateHierarchyCycle } from '../../lib/hierarchy'
 import { isSpaceDetectionPaused } from '../../lib/space-detection'
 import { deletedSurfaceSupportPatch } from '../../lib/surface-support-references'
 import { nodeRegistry } from '../../registry/registry'
@@ -71,6 +72,22 @@ type NodeCreateOp = {
 }
 type NodeUpdateOp = { id: AnyNodeId; data: Partial<AnyNode> }
 type NodeDeleteOp = AnyNodeId
+
+function assertAcyclicParent({
+  nodeId,
+  parentId,
+  nodes,
+}: {
+  nodeId: AnyNodeId
+  parentId: AnyNodeId | null
+  nodes: Readonly<Record<string, AnyNode>>
+}) {
+  if (wouldCreateHierarchyCycle({ nodeId, parentId, nodes })) {
+    throw new Error(
+      `invalid hierarchy: placing "${nodeId}" under "${parentId}" would create a cycle`,
+    )
+  }
+}
 
 /**
  * What a derived write of `updates` changes, for the commit that carries it: a node, and the fields whose
@@ -1207,6 +1224,8 @@ const createNodesActionImpl = (
     for (const { node, parentId, collectionIds } of ops) {
       const effectiveParentId = parentId ?? (node.parentId as AnyNodeId | null) ?? null
 
+      assertAcyclicParent({ nodeId: node.id, parentId: effectiveParentId, nodes: nextNodes })
+
       const newNode = joinCollections(
         nextCollections,
         parseCreatedNode(node, effectiveParentId),
@@ -1372,6 +1391,11 @@ const applyNodeChangesActionImpl = (
       addLeanToHostRoofId(updatedNode, nextNodes, roofsToRefresh)
 
       if (data.parentId !== undefined && data.parentId !== currentNode.parentId) {
+        assertAcyclicParent({
+          nodeId: id,
+          parentId: data.parentId as AnyNodeId | null,
+          nodes: nextNodes,
+        })
         const oldParentId = currentNode.parentId as AnyNodeId | null
         if (oldParentId && nextNodes[oldParentId]) {
           const oldParent = nextNodes[oldParentId] as AnyContainerNode
@@ -1408,6 +1432,7 @@ const applyNodeChangesActionImpl = (
 
     for (const { node, parentId, collectionIds } of createOps) {
       const effectiveParentId = parentId ?? (node.parentId as AnyNodeId | null) ?? null
+      assertAcyclicParent({ nodeId: node.id, parentId: effectiveParentId, nodes: nextNodes })
       const newNode = joinCollections(
         nextCollections,
         parseCreatedNode(node, effectiveParentId),
@@ -1561,6 +1586,11 @@ const updateNodesActionImpl = (
 
       // Handle Reparenting Logic
       if (data.parentId !== undefined && data.parentId !== currentNode.parentId) {
+        assertAcyclicParent({
+          nodeId: id,
+          parentId: data.parentId as AnyNodeId | null,
+          nodes: nextNodes,
+        })
         // 1. Remove from old parent
         const oldParentId = currentNode.parentId as AnyNodeId | null
         if (oldParentId && nextNodes[oldParentId]) {

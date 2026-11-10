@@ -7,6 +7,7 @@ import {
   DoorNode,
   RoofNode,
   RoofSegmentNode,
+  SiteNode,
   WallNode,
   WindowNode,
   ZoneNode,
@@ -48,6 +49,31 @@ describe('apply_patch identity and validation guards', () => {
     expect(seeded.isError).toBe(false)
     return { wall, window }
   }
+
+  test('rejects cycles created across a batch without applying any operations', async () => {
+    const a = SiteNode.parse({ id: 'site_a' })
+    const b = SiteNode.parse({ id: 'site_b' })
+    bridge.setScene({ [a.id]: a, [b.id]: b }, [a.id, b.id])
+    const error = await refusal([
+      { op: 'update', id: a.id, data: { parentId: b.id } },
+      { op: 'update', id: b.id, data: { parentId: a.id } },
+    ])
+    expect(error).toMatchObject({ code: 'invalid_parent', patchIndex: 1, id: b.id })
+    expect(bridge.getNode(a.id)?.parentId).toBeNull()
+    expect(bridge.getNode(b.id)?.parentId).toBeNull()
+  })
+
+  test('rejects cyclic creates in a batch without creating either node', async () => {
+    const a = SiteNode.parse({ id: 'site_a', parentId: 'site_b' })
+    const b = SiteNode.parse({ id: 'site_b', parentId: 'site_a' })
+    const error = await refusal([
+      { op: 'create', node: a },
+      { op: 'create', node: b },
+    ])
+    expect(error).toMatchObject({ code: 'invalid_parent', patchIndex: 1, id: b.id })
+    expect(bridge.getNode(a.id)).toBeNull()
+    expect(bridge.getNode(b.id)).toBeNull()
+  })
 
   beforeEach(async () => {
     bridge = new SceneBridge()

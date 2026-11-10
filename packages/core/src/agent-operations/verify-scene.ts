@@ -2,6 +2,7 @@ import { levelBuildingId } from '../building/level-duplication'
 import { metadataRecord } from '../utils/metadata-record'
 import { levelGradeStanding } from '../lib/grade-standing'
 import { groundSeat } from '../lib/ground-seat'
+import { hierarchyCycleErrors } from '../lib/hierarchy'
 import { getLevelDisplayName } from '../lib/level-name'
 import { HIDDEN_SITE_NOTE } from '../lib/node-visibility'
 import { wallSupportForNodes } from '../lib/opening-floor-datum'
@@ -300,6 +301,7 @@ function checkSchemas(scene: SceneNodes, hostSchema: AgentContext['nodeSchema'])
       errors.push({ nodeId: id, path: issue.path.join('.'), message: issue.message })
     unread.add(id)
   }
+  errors.push(...hierarchyCycleErrors(scene))
   return { errors, unknownKinds, unread, measured }
 }
 

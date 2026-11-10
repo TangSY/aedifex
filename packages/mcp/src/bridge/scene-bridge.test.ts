@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import { AGENT_OPERATIONS } from '@aedifex/core/agent-operations'
 import {
   BuildingNode,
   DoorNode,
@@ -26,6 +27,20 @@ describe('SceneBridge', () => {
     bridge.loadDefault()
     bridge.clearHistory()
     bridge.flushDirty()
+  })
+
+  test('scene validation and verify_scene identify existing parent cycles', () => {
+    const a = SiteNode.parse({ id: 'site_a', parentId: 'site_b', children: ['site_b'] })
+    const b = SiteNode.parse({ id: 'site_b', parentId: 'site_a', children: ['site_a'] })
+    bridge.setScene({ [a.id]: a, [b.id]: b }, [])
+    const validation = bridge.validateScene()
+    expect(validation.valid).toBe(false)
+    expect(validation.errors.map((error) => error.nodeId)).toEqual([a.id, b.id])
+    const verified = AGENT_OPERATIONS.verify_scene(bridge.getNodes(), {}, { activeLevelId: null })
+    expect(verified.result.valid).toBe(false)
+    expect(verified.result.issues.filter((issue) => issue.type === 'schema_invalid')).toHaveLength(
+      2,
+    )
   })
 
   describe('loadDefault / getters', () => {

@@ -8,6 +8,7 @@ import {
   scriptedSize,
   scriptSource,
   validateNodeRelations,
+  wouldCreateHierarchyCycle,
 } from '@aedifex/core'
 import { scriptedFieldRefusal, unknownMaterialPresetRefusal } from '@aedifex/core/agent-operations'
 import {
@@ -348,6 +349,20 @@ export function assertPatchKeepsIdentity(
           `invalid patch: patches[${index}] create parentId "${patch.parentId}" not found`,
         )
       }
+      if (
+        wouldCreateHierarchyCycle({
+          nodeId: node.id,
+          parentId: parentId as AnyNodeId | null,
+          nodes: at,
+        })
+      ) {
+        throw new PatchRefusedError(
+          'invalid_parent',
+          index,
+          node.id,
+          `create would create a hierarchy cycle.`,
+        )
+      }
       put({ ...node, parentId } as AnyNode)
       const parent = parentId ? at(parentId) : undefined
       if (parent) put(withChild(parent, node.id))
@@ -420,6 +435,15 @@ export function assertPatchKeepsIdentity(
         }
       }
       if ('parentId' in data && data.parentId !== current.parentId) {
+        const parentId = typeof data.parentId === 'string' ? (data.parentId as AnyNodeId) : null
+        if (wouldCreateHierarchyCycle({ nodeId: patch.id, parentId, nodes: at })) {
+          throw new PatchRefusedError(
+            'invalid_parent',
+            index,
+            patch.id,
+            `update would create a hierarchy cycle.`,
+          )
+        }
         const newParent = typeof data.parentId === 'string' ? at(data.parentId) : undefined
         if (!(newParent && Array.isArray((newParent as { children?: unknown }).children))) {
           throw new PatchRefusedError(
