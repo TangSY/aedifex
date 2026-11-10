@@ -1,5 +1,10 @@
 import type { AnyNodeId, BuildingNode, LevelNode } from '@aedifex/core'
-import { findLevelAncestorId, useScene } from '@aedifex/core'
+import {
+  findBuildingAncestorId,
+  findLevelAncestorId,
+  resolveBuildingForLevel,
+  useScene,
+} from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
 
 function getAdjacentLevelIdForDeletion(levelId: AnyNodeId): LevelNode['id'] | null {
@@ -36,11 +41,28 @@ export function deleteLevelWithFallbackSelection(levelId: AnyNodeId) {
  * selected, so selecting it there alone would leave it out of sight.
  */
 export function selectPlacedNode(nodeId: AnyNodeId) {
-  const levelId = findLevelAncestorId(nodeId, useScene.getState().nodes)
+  const { nodes } = useScene.getState()
+  const levelId = findLevelAncestorId(nodeId, nodes) as LevelNode['id'] | null
+  const buildingId = ((levelId && resolveBuildingForLevel(levelId, nodes)) ??
+    findBuildingAncestorId(nodeId, nodes)) as BuildingNode['id'] | null
   const { selection, setSelection } = useViewer.getState()
-  setSelection(
-    levelId && levelId !== selection.levelId
-      ? { levelId: levelId as LevelNode['id'], selectedIds: [nodeId] }
-      : { selectedIds: [nodeId] },
-  )
+  const updates: Partial<typeof selection> = { selectedIds: [nodeId] }
+  if (buildingId && buildingId !== selection.buildingId) {
+    updates.buildingId = buildingId
+    updates.levelId =
+      levelId ??
+      (selection.levelId && resolveBuildingForLevel(selection.levelId, nodes) === buildingId
+        ? selection.levelId
+        : null)
+  } else if (levelId && levelId !== selection.levelId) {
+    updates.levelId = levelId
+  } else if (
+    buildingId &&
+    !levelId &&
+    selection.levelId &&
+    resolveBuildingForLevel(selection.levelId, nodes) !== buildingId
+  ) {
+    updates.levelId = null
+  }
+  setSelection(updates)
 }

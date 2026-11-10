@@ -88,6 +88,7 @@ export {
   spatialGridManager,
   type WallSlabSupportSegment,
 } from './hooks/spatial-grid/spatial-grid-manager'
+export { findBuildingAncestorId } from './lib/node-ancestry'
 export {
   findLevelAncestorId,
   initSpatialGridSync,

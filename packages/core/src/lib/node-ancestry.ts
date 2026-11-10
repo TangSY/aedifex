@@ -21,6 +21,23 @@ export function resolveLevelId(node: AnyNode, nodes: Record<string, AnyNode>): s
   return 'default' // fallback for orphaned items
 }
 
+function findAncestorId({
+  nodeId,
+  nodes,
+  type,
+}: {
+  nodeId: AnyNodeId
+  nodes: Record<string, AnyNode>
+  type: 'level' | 'building'
+}): string | null {
+  let current: AnyNode | undefined = nodes[nodeId]
+  for (let guard = 0; current && guard < 16; guard++) {
+    if (current.type === type) return current.id
+    current = current.parentId ? nodes[current.parentId] : undefined
+  }
+  return null
+}
+
 /**
  * Walks the parent chain of `nodeId` and returns the id of the first ancestor
  * whose `type` is `'level'`, or `null` when no level ancestor exists (orphaned
@@ -37,14 +54,14 @@ export function findLevelAncestorId(
   nodeId: AnyNodeId,
   nodes: Record<string, AnyNode>,
 ): string | null {
-  let current: AnyNode | undefined = nodes[nodeId]
-  let guard = 0
-  while (current && guard < 16) {
-    if (current.type === 'level') return current.id
-    current = current.parentId ? nodes[current.parentId] : undefined
-    guard += 1
-  }
-  return null
+  return findAncestorId({ nodeId, nodes, type: 'level' })
+}
+
+export function findBuildingAncestorId(
+  nodeId: AnyNodeId,
+  nodes: Record<string, AnyNode>,
+): string | null {
+  return findAncestorId({ nodeId, nodes, type: 'building' })
 }
 
 /**
