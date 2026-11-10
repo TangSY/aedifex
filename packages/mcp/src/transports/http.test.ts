@@ -241,6 +241,35 @@ test('connectHttp serves authenticated supervisor health', async () => {
   })
 })
 
+test('HTTP session returns a tool result and rejects requests after termination', async () => {
+  handle = await connectHttp(() => server, 0)
+  const url = new URL(`http://127.0.0.1:${handle.port}/mcp`)
+  const transport = new StreamableHTTPClientTransport(url)
+  const client = new Client({ name: 'session-test', version: '0.0.0' })
+  try {
+    await client.connect(transport)
+    const sessionId = transport.sessionId
+    expect(sessionId).toBeTruthy()
+    const result = await client.callTool({ name: 'get_scene', arguments: {} })
+    expect(result.isError).toBeFalsy()
+    expect(JSON.stringify(result.content).length).toBeGreaterThan(200)
+    await transport.terminateSession()
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'application/json, text/event-stream',
+        'mcp-session-id': sessionId!,
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+    })
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: 'invalid_session' })
+  } finally {
+    await client.close()
+  }
+})
+
 test('connectHttp isolates simultaneous client sessions', async () => {
   handle = await connectHttp(() => {
     const sessionBridge = new SceneBridge()

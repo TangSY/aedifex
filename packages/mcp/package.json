@@ -70,7 +70,7 @@
     "@aedifex/geometry-script": "^1.0.3"
   },
   "dependencies": {
-    "@hono/node-server": "^1.19.15",
+    "@hono/node-server": "^2.1.6",
     "@modelcontextprotocol/node": "^2.1.2",
     "@modelcontextprotocol/server": "^2.4.0",
     "@aedifex/lingo": "npm:@pascal-app/lingo@^0.5.0",
