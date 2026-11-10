@@ -262,3 +262,16 @@ describe('shared scene guidance delivery', () => {
     }
   })
 })
+
+test('scene prompts allow a final answer and describe the actual window default', () => {
+  const texts = [
+    buildFromBriefPrompt({ brief: 'A house' }),
+    buildIterateOnFeedbackPrompt({ feedback: 'Move a window' }),
+    ...buildRenovationMessages({ currentPhotos: [], referencePhotos: [], goals: 'Renovate' })
+      .filter((message) => message.content.type === 'text')
+      .map((message) => (message.content.type === 'text' ? message.content.text : '')),
+  ]
+  for (const text of texts) expect(text).not.toMatch(/Respond ONLY with tool calls/i)
+  expect(SCENE_DESIGN_GUIDANCE).toContain('centred vertically')
+  expect(SCENE_DESIGN_GUIDANCE).not.toContain('0.9m sill height')
+})

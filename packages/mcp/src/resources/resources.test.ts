@@ -221,6 +221,7 @@ describe('aedifex://agent-guide', () => {
       expect(text).toContain('room_named_by_person')
       expect(text).toContain('`rename: true` is for when the person asked')
       expect(text).toContain('editor_tab_busy')
+      expect(text).toContain('view_unavailable')
       expect(text).toContain('invalid_input')
     } finally {
       await pair.close()
@@ -234,6 +235,7 @@ describe('aedifex://agent-guide', () => {
     'editor_tab_hidden',
     'editor_tab_required',
     'invalid_input',
+    'view_unavailable',
     'roof_exists',
     // verify_scene's issue type, which names move_roofs_to_roof_level
     'roof_mixed_in_storey',

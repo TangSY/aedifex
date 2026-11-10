@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
-import { SCENE_DESIGN_GUIDANCE } from './scene-guidance'
+import { FINAL_RESPONSE_GUIDANCE, SCENE_DESIGN_GUIDANCE } from './scene-guidance'
 
 const PREAMBLE = [
   'You are iterating on an existing Aedifex scene based on user feedback.',
@@ -14,7 +14,7 @@ const PREAMBLE = [
   '  - Bundle related mutations into a single `apply_patch` call so they share one undo step.',
   '  - For multi-room changes, call verify_scene after the mutation and fix reported issues.',
   SCENE_DESIGN_GUIDANCE,
-  '  - Respond ONLY with tool calls. No prose.',
+  FINAL_RESPONSE_GUIDANCE,
 ].join('\n')
 
 /**

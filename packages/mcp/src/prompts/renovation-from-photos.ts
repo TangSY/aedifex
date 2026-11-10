@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
+import { FINAL_RESPONSE_GUIDANCE } from './scene-guidance'
 
 const PREAMBLE = [
   'You are renovating an existing room based on photos of the current space and reference photos of the target aesthetic.',
@@ -13,7 +14,7 @@ const PREAMBLE = [
   'Rules:',
   '  - Do not invent dimensions. Pull them from the analysis tool results.',
   '  - Do not modify nodes that are unrelated to the goals.',
-  '  - Respond ONLY with tool calls. No prose.',
+  FINAL_RESPONSE_GUIDANCE,
 ].join('\n')
 
 function isDataUrl(s: string): boolean {

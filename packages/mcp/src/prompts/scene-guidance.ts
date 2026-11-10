@@ -3,7 +3,7 @@ export const SCENE_DESIGN_GUIDANCE = [
   '  - Use meters. X/Z are horizontal floor-plan axes; Y is vertical.',
   '  - Read `aedifex://agent/guide` when you need construction rules; do not inspect repository code for ordinary scene editing.',
   '  - Door default: 0.9m wide by 2.1m high, floor-mounted.',
-  '  - Window default: 1.5m wide by 1.5m high with a 0.9m sill height.',
+  '  - Window default: 1.5m wide by 1.5m high, centred vertically on its wall unless a sill height is given.',
   '  - For clear concrete requests, act instead of asking for clarification.',
   '  - Defaults are for technical values (thicknesses, clearances, heights).',
   '  - What a request states (sizes, counts, rooms, style, references, "catalog only", a single room) binds the work exactly: a request for one bedroom is one bedroom.',
@@ -29,3 +29,6 @@ export const SCENE_DESIGN_GUIDANCE = [
   '  - After each major phase, call get_level_summary or aedifex://scene/current/summary so progress is visible and errors are easier to localize.',
   '  - After multi-room or full-floor work, call verify_scene, then fix reported issues before finishing.',
 ].join('\n')
+
+export const FINAL_RESPONSE_GUIDANCE =
+  'When finished, tell the person what was done and checked, any limitations, and the project editorUrl when available.'

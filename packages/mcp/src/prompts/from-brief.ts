@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 import type { SceneOperations } from '../operations'
-import { SCENE_DESIGN_GUIDANCE } from './scene-guidance'
+import { FINAL_RESPONSE_GUIDANCE, SCENE_DESIGN_GUIDANCE } from './scene-guidance'
 
 const PREAMBLE = [
   'You are a Aedifex 3D scene designer.',
@@ -18,7 +18,7 @@ const PREAMBLE = [
   '  - Floor items live under a Level; wall/ceiling-attached items live under their target Wall or Ceiling. Do not place items directly under the Site node.',
   'Use realistic dimensions in meters. Keep wall thickness small (0.1–0.3 m) and ceiling height 2.4–3.0 m unless the brief dictates otherwise.',
   SCENE_DESIGN_GUIDANCE,
-  'Respond ONLY with tool calls. Do not produce verbose narrative or prose; keep any explanations in short tool-call arguments.',
+  FINAL_RESPONSE_GUIDANCE,
 ].join('\n')
 
 /**
