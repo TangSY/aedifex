@@ -27,6 +27,19 @@ export function createElevatorInteractiveState(
   }
 }
 
+function enabledDefaultEntry(
+  elevator: ElevatorNode,
+  entries: ElevatorLevelEntry[],
+  fallback: ElevatorLevelEntry,
+): ElevatorLevelEntry {
+  const disabled = elevator.disabledLevelIds ?? []
+  return (
+    entries.find((entry) => entry.id === fallback.id && !disabled.includes(entry.id)) ??
+    entries.find((entry) => !disabled.includes(entry.id)) ??
+    fallback
+  )
+}
+
 function getInitialElevatorState(
   elevatorId: AnyNodeId,
   nodes: Record<string, AnyNode>,
@@ -34,10 +47,10 @@ function getInitialElevatorState(
   const node = nodes[elevatorId]
   if (node?.type !== 'elevator') return null
 
-  const { defaultEntry } = resolveElevatorLevels(node, nodes)
+  const { entries, defaultEntry } = resolveElevatorLevels(node, nodes)
   if (!defaultEntry) return null
-
-  return createElevatorInteractiveState(defaultEntry.id as AnyNodeId, defaultEntry.baseY)
+  const initial = enabledDefaultEntry(node, entries, defaultEntry)
+  return createElevatorInteractiveState(initial.id as AnyNodeId, initial.baseY)
 }
 
 function ensureElevatorState(
@@ -83,6 +96,9 @@ export function openElevatorDoorState(state: ElevatorInteractiveState): Elevator
 
 export function requestElevatorLevel(elevatorId: AnyNodeId, levelId: AnyNodeId) {
   const nodes = useScene.getState().nodes
+  const node = nodes[elevatorId]
+  if (node?.type !== 'elevator' || (node.disabledLevelIds ?? []).includes(levelId)) return
+  if (!resolveElevatorLevels(node, nodes).entries.some((entry) => entry.id === levelId)) return
   const current = ensureElevatorState(elevatorId, nodes)
   if (!current) return
 
@@ -96,6 +112,13 @@ export function openElevatorDoor(elevatorId: AnyNodeId) {
   const nodes = useScene.getState().nodes
   const current = ensureElevatorState(elevatorId, nodes)
   if (!current) return
+  const node = nodes[elevatorId]
+  if (node?.type !== 'elevator' || !current.currentLevelId) return
+  if ((node.disabledLevelIds ?? []).includes(current.currentLevelId)) return
+  if (
+    !resolveElevatorLevels(node, nodes).entries.some((entry) => entry.id === current.currentLevelId)
+  )
+    return
 
   const next = openElevatorDoorState(current)
   if (next === current) return
@@ -118,19 +141,99 @@ export function stepElevatorRuntimeState({
   now: number
   state: ElevatorInteractiveState
 }): ElevatorInteractiveState {
-  const currentEntry = entries.find((entry) => entry.id === state.currentLevelId) ?? defaultEntry
-  if (currentEntry.id !== state.currentLevelId) {
+  const disabled = elevator.disabledLevelIds ?? []
+  const currentEntry = entries.find((entry) => entry.id === state.currentLevelId)
+  if (
+    currentEntry &&
+    !disabled.includes(currentEntry.id) &&
+    state.phase === 'idle' &&
+    !state.targetLevelId &&
+    !state.queue.length &&
+    !state.requestedStops.length &&
+    state.doorOpen === 0 &&
+    Math.abs(state.carY - currentEntry.baseY) <= EPSILON
+  )
+    return state
+  const available = entries.filter((entry) => !disabled.includes(entry.id))
+  if (!currentEntry) {
+    const fallback = enabledDefaultEntry(elevator, entries, defaultEntry)
+    return createElevatorInteractiveState(fallback.id as AnyNodeId, fallback.baseY)
+  }
+
+  const canServe = (id: AnyNodeId) => available.some((entry) => entry.id === id)
+  const queue = state.queue.filter(canServe)
+  const requestedStops = state.requestedStops.filter(canServe)
+  if (
+    queue.length !== state.queue.length ||
+    requestedStops.length !== state.requestedStops.length
+  ) {
+    state = { ...state, queue, requestedStops }
+  }
+  const closest = () =>
+    available.reduce<ElevatorLevelEntry | null>(
+      (best, entry) =>
+        !best || Math.abs(entry.baseY - state.carY) < Math.abs(best.baseY - state.carY)
+          ? entry
+          : best,
+      null,
+    )
+  if (!available.length) {
+    const doorOpen = Math.max(
+      0,
+      state.doorOpen - (delta * 1000) / Math.max(elevator.doorDurationMs ?? 900, 1),
+    )
+    if (
+      (state.phase === 'idle' || state.phase === 'moving') &&
+      !state.targetLevelId &&
+      !state.queue.length &&
+      !state.requestedStops.length &&
+      doorOpen === state.doorOpen
+    )
+      return state
     return {
       ...state,
-      currentLevelId: currentEntry.id as AnyNodeId,
-      carY: currentEntry.baseY,
       targetLevelId: null,
-      phase: 'idle',
-      phaseStartedAt: null,
       queue: [],
       requestedStops: [],
-      doorOpen: 0,
+      phase: state.phase === 'moving' ? 'moving' : 'idle',
+      phaseStartedAt: null,
+      doorOpen,
     }
+  }
+  if (state.targetLevelId && !canServe(state.targetLevelId)) {
+    const destination = state.phase === 'moving' ? closest() : null
+    state = {
+      ...state,
+      targetLevelId: (destination?.id as AnyNodeId) ?? null,
+      queue: destination
+        ? [destination.id as AnyNodeId, ...state.queue.filter((id) => id !== destination.id)]
+        : state.queue,
+    }
+  }
+  if (state.phase === 'moving' && !state.targetLevelId && !state.queue.length) {
+    const destination = closest()
+    if (destination) {
+      state = {
+        ...state,
+        targetLevelId: destination.id as AnyNodeId,
+        queue: [destination.id as AnyNodeId],
+      }
+    }
+  }
+  if (state.phase !== 'moving' && Math.abs(state.carY - currentEntry.baseY) > EPSILON) {
+    state = { ...state, carY: currentEntry.baseY }
+  }
+  if (disabled.includes(currentEntry.id) && (state.phase === 'open' || state.phase === 'opening')) {
+    state = { ...state, phase: 'closing', phaseStartedAt: now }
+  }
+  if (
+    disabled.includes(currentEntry.id) &&
+    state.phase !== 'moving' &&
+    !state.targetLevelId &&
+    !state.queue.length
+  ) {
+    const destination = closest()
+    if (destination) state = { ...state, queue: [destination.id as AnyNodeId] }
   }
 
   const targetEntry = state.targetLevelId
@@ -250,13 +353,15 @@ export function stepElevatorRuntimes(now: number, delta: number) {
 
     const elevatorId = node.id as AnyNodeId
     const { entries, defaultEntry } = resolveElevatorLevels(node, nodes)
-    if (!defaultEntry) continue
+    if (!defaultEntry) {
+      if (interactive.elevators[elevatorId]) interactive.removeElevator(elevatorId)
+      continue
+    }
 
     const state = useInteractive.getState().elevators[elevatorId]
     if (!state) {
-      useInteractive
-        .getState()
-        .initElevator(elevatorId, defaultEntry.id as AnyNodeId, defaultEntry.baseY)
+      const initial = enabledDefaultEntry(node, entries, defaultEntry)
+      useInteractive.getState().initElevator(elevatorId, initial.id as AnyNodeId, initial.baseY)
       continue
     }
 
