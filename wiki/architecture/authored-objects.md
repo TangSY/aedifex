@@ -27,6 +27,13 @@ export default function build({ params, THREE }) { /* … */ return group }
 
 Allowed imports: `three`, `three/addons/…` (BufferGeometryUtils, RoundedBoxGeometry, ConvexGeometry, LoftGeometry, ParametricGeometry) and `three-bvh-csg`. No network, DOM, `eval`, dynamic import or `process`.
 
+Instanced meshes are expanded before measurement, clipping and export. A build may draw at most
+10,000 instances in total, and geometry cloned for instance colours or shear may use at most
+128 MiB. The 300,000-triangle limit counts each instance before host clipping as well as checking
+the final build. Per-instance morph targets,
+reflected shear, and tinted multi-material instances mixing vertex-colour modes are refused
+explicitly. Existing stored artifacts are not rebuilt merely by loading.
+
 Model in metres, Y up, in the installed orientation. The compiler translates the visible
 bounds without flipping the object:
 

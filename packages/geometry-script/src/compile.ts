@@ -42,6 +42,8 @@ export const GEOMETRY_SCRIPT_LIMITS = {
   triangles: 300_000,
   materials: 32,
   extent: 60,
+  instances: 10_000,
+  instanceGeometryBytes: 128 * 1024 * 1024,
 } as const
 
 const csg = { ADDITION, Brush, DIFFERENCE, Evaluator, INTERSECTION, SUBTRACTION }
@@ -152,6 +154,152 @@ function triangleCount(geometry: THREE.BufferGeometry): number {
   return Math.floor((index ? index.count : (geometry.getAttribute('position')?.count ?? 0)) / 3)
 }
 
+function expandInstances(root: THREE.Object3D) {
+  const sources: THREE.InstancedMesh[] = []
+  const tintedMaterials = new Map<THREE.Material, THREE.Material>()
+  const materialOrigins = new Map<THREE.Material, THREE.Material>()
+  let instances = 0
+  let triangles = 0
+  root.traverse((object) => {
+    const mesh = object as THREE.InstancedMesh
+    if (!mesh.isInstancedMesh) return
+    if (!Number.isInteger(mesh.count) || mesh.count < 0 || mesh.count > mesh.instanceMatrix.count) {
+      throw new Error('Instance count must be a non-negative integer within the instance buffer')
+    }
+    if (mesh.instanceColor && mesh.count > mesh.instanceColor.count)
+      throw new Error('Instance colour buffer is shorter than the instance count')
+    if (mesh.morphTexture) throw new Error('Per-instance morph targets are not supported')
+    if (mesh.instanceColor && mesh.geometry.getAttribute('color') && Array.isArray(mesh.material)) {
+      const modes = new Set(mesh.material.map((material) => material.vertexColors))
+      if (modes.size > 1)
+        throw new Error('Mixed vertex-colour material modes on an instanced mesh are not supported')
+    }
+    instances += mesh.count
+    triangles += triangleCount(mesh.geometry) * mesh.count
+    sources.push(mesh)
+  })
+  if (instances > GEOMETRY_SCRIPT_LIMITS.instances)
+    throw new Error(`${instances} instances exceeds the ${GEOMETRY_SCRIPT_LIMITS.instances} limit`)
+  if (triangles > GEOMETRY_SCRIPT_LIMITS.triangles)
+    throw new Error(`${triangles} triangles exceeds the ${GEOMETRY_SCRIPT_LIMITS.triangles} limit`)
+
+  const matrix = new THREE.Matrix4()
+  const composed = new THREE.Matrix4()
+  const position = new THREE.Vector3()
+  const quaternion = new THREE.Quaternion()
+  const scale = new THREE.Vector3()
+  const requiresBake = () => {
+    if (!matrix.elements.every(Number.isFinite)) throw new Error('Instance matrix is not finite')
+    if (
+      matrix.elements[3] !== 0 ||
+      matrix.elements[7] !== 0 ||
+      matrix.elements[11] !== 0 ||
+      matrix.elements[15] !== 1
+    )
+      throw new Error('Instance matrix must be affine')
+    matrix.decompose(position, quaternion, scale)
+    composed.compose(position, quaternion, scale)
+    return matrix.elements.some(
+      (value, i) =>
+        !Number.isFinite(composed.elements[i]) || Math.abs(value - composed.elements[i]!) > 1e-5,
+    )
+  }
+  let geometryBytes = 0
+  for (const source of sources) {
+    let copies = source.instanceColor ? source.count : 0
+    for (let i = 0; i < source.count; i++) {
+      source.getMatrixAt(i, matrix)
+      if (requiresBake()) {
+        if (matrix.determinant() < 0)
+          throw new Error('Reflected shear in an instance is not supported')
+        if (!source.instanceColor) copies++
+      }
+    }
+    const attributes = [
+      ...Object.values(source.geometry.attributes),
+      ...Object.values(source.geometry.morphAttributes).flat(),
+      ...(source.geometry.index ? [source.geometry.index] : []),
+    ]
+    const bytes = attributes.reduce((sum, attribute) => {
+      const array = 'data' in attribute ? attribute.data.array : attribute.array
+      return sum + array.byteLength
+    }, 0)
+    geometryBytes += bytes * copies
+    if (source.instanceColor)
+      geometryBytes += (source.geometry.getAttribute('position')?.count ?? 0) * 16 * source.count
+  }
+  if (geometryBytes > GEOMETRY_SCRIPT_LIMITS.instanceGeometryBytes)
+    throw new Error('Instances exceed the 128 MiB geometry expansion limit')
+
+  const color = new THREE.Color()
+  for (const source of sources) {
+    const group = THREE.Object3D.prototype.copy.call(
+      new THREE.Group(),
+      source,
+      false,
+    ) as THREE.Group
+    group.uuid = source.uuid
+    for (const child of [...source.children]) group.add(child)
+    const authored = Array.isArray(source.material) ? source.material : [source.material]
+    const own = authored.some((material) => material.vertexColors)
+      ? source.geometry.getAttribute('color')
+      : null
+    const materials = source.instanceColor
+      ? authored.map((material) => {
+          let tinted = tintedMaterials.get(material)
+          if (!tinted) {
+            tinted = Object.assign(material.clone(), { vertexColors: true })
+            tintedMaterials.set(material, tinted)
+            materialOrigins.set(tinted, material)
+          }
+          return tinted
+        })
+      : authored
+    for (let i = 0; i < source.count; i++) {
+      let geometry = source.geometry
+      source.getMatrixAt(i, matrix)
+      const bake = requiresBake()
+      if (source.instanceColor) {
+        source.getColorAt(i, color)
+        if (![color.r, color.g, color.b].every(Number.isFinite))
+          throw new Error('Instance colour is not finite')
+        geometry = source.geometry.clone()
+        const count = geometry.getAttribute('position').count
+        const size = own?.itemSize === 4 ? 4 : 3
+        const values = new Float32Array(count * size)
+        for (let v = 0; v < count; v++) {
+          values[v * size] = color.r * (own ? own.getX(v) : 1)
+          values[v * size + 1] = color.g * (own ? own.getY(v) : 1)
+          values[v * size + 2] = color.b * (own ? own.getZ(v) : 1)
+          if (size === 4 && own) values[v * size + 3] = own.getW(v)
+        }
+        geometry.setAttribute('color', new THREE.BufferAttribute(values, size))
+      }
+      if (bake) {
+        if (!source.instanceColor) geometry = geometry.clone()
+        geometry.applyMatrix4(matrix)
+      }
+      const mesh = new THREE.Mesh(geometry, materials.length === 1 ? materials[0]! : materials)
+      if (isHelper(source)) mesh.name = source.name
+      if (!bake) {
+        mesh.matrix.copy(matrix)
+        matrix.decompose(mesh.position, mesh.quaternion, mesh.scale)
+        mesh.matrixAutoUpdate = false
+      }
+      group.add(mesh)
+    }
+    const parent = source.parent
+    if (parent) {
+      const index = parent.children.indexOf(source)
+      parent.add(group)
+      parent.remove(source)
+      parent.children.splice(parent.children.indexOf(group), 1)
+      parent.children.splice(index, 0, group)
+    }
+  }
+  return materialOrigins
+}
+
 function assertFinite(geometry: THREE.BufferGeometry, label: string) {
   const position = geometry.getAttribute('position')
   if (!position) throw new Error(`${label} has no position attribute`)
@@ -255,7 +403,10 @@ const vec = (v: THREE.Vector3): [number, number, number] => [round(v.x), round(v
  * move to `userData.pascal`, materials get `slot_<id>` names, and lights
  * become manifest entries the item light system drives.
  */
-function readConventions(root: THREE.Object3D) {
+function readConventions(
+  root: THREE.Object3D,
+  materialOrigins: Map<THREE.Material, THREE.Material>,
+) {
   const parts: GeometryArtifactManifest['parts'] = []
   const anchors: GeometryArtifactManifest['anchors'] = []
   const lights: GeometryArtifactManifest['lights'] = []
@@ -378,7 +529,9 @@ function readConventions(root: THREE.Object3D) {
     cutout,
     collider,
     triangles,
-    materialCount: materialSlot.size,
+    materialCount: new Set(
+      [...materialSlot.keys()].map((material) => materialOrigins.get(material) ?? material),
+    ).size,
   }
 }
 
@@ -579,10 +732,12 @@ function flipWinding(source: THREE.BufferGeometry): THREE.BufferGeometry {
  * triangle count and the merge, so both see what is exported.
  */
 function bakeBackFaces(root: THREE.Object3D) {
+  const sides = new Map<THREE.Material, THREE.Side>()
   root.traverse((object) => {
     const mesh = object as THREE.Mesh
     if (!mesh.isMesh || isHelper(mesh) || Array.isArray(mesh.material)) return
-    const { side } = mesh.material
+    const side = sides.get(mesh.material) ?? mesh.material.side
+    sides.set(mesh.material, side)
     if (side === THREE.FrontSide) return
     const back = flipWinding(mesh.geometry)
     mesh.geometry =
@@ -907,6 +1062,8 @@ export async function finishBuild({
   const root = new THREE.Group()
   root.name = 'pascal_script_root'
   root.add(built)
+  const materialOrigins = expandInstances(root)
+  const model = root.children[0]!
   const box = visibleBounds(root)
   if (box.isEmpty()) throw new Error('build() returned no visible meshes')
   if (![box.min.x, box.min.y, box.min.z, box.max.x, box.max.y, box.max.z].every(Number.isFinite)) {
@@ -918,10 +1075,19 @@ export async function finishBuild({
       `The object is ${vec(size).join(' × ')} m; the limit is ${GEOMETRY_SCRIPT_LIMITS.extent} m per side. Units are metres.`,
     )
   }
-  if (!inputs) built.position.sub(originFor(box, mount))
+  if (!inputs) {
+    const origin = originFor(box, mount)
+    if (model.matrixAutoUpdate) model.position.sub(origin)
+    else {
+      const offset = new THREE.Group()
+      offset.position.sub(origin)
+      root.add(offset)
+      offset.add(model)
+    }
+  }
   root.updateWorldMatrix(true, true)
 
-  const read = readAnimations(built, root)
+  const read = readAnimations(model, root)
   const clips = sampleTransformClips(root, read.clips)
   const animated = read.animated
   const region = inputs && hostRegion(inputs)
@@ -936,7 +1102,7 @@ export async function finishBuild({
     coverage = measureCoverage(visibleMeshes(root), region)
   }
   bakeBackFaces(root)
-  const conventions = readConventions(root)
+  const conventions = readConventions(root, materialOrigins)
   if (conventions.triangles > GEOMETRY_SCRIPT_LIMITS.triangles) {
     throw new Error(
       `${conventions.triangles} triangles exceeds the ${GEOMETRY_SCRIPT_LIMITS.triangles} limit`,
