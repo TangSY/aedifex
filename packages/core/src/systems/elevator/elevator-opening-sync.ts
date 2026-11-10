@@ -90,58 +90,6 @@ function isCoveredByExistingHole(existingHoles: Point2D[][], autoHole: Point2D[]
   return existingHoles.some((existingHole) => polygonContainsPolygon(existingHole, autoHole))
 }
 
-function getServedLevelRange(elevator: ElevatorNode, nodes: Record<string, AnyNode>) {
-  const servedLevels = resolveElevatorServiceLevels(elevator, nodes)
-  if (servedLevels.length < 2) return null
-
-  const levelNumbers = servedLevels.map((level) => level.level)
-  return {
-    max: Math.max(...levelNumbers),
-    min: Math.min(...levelNumbers),
-    sortedServedLevels: servedLevels,
-  }
-}
-
-function getLevelNumber(levelId: string | null, nodes: Record<string, AnyNode>) {
-  if (!levelId) return
-  const node = nodes[levelId as AnyNodeId]
-  return node?.type === 'level' ? node.level : undefined
-}
-
-function shouldApplyElevatorToSlab(
-  elevator: ElevatorNode,
-  slabLevelId: string,
-  nodes: Record<string, AnyNode>,
-) {
-  const range = getServedLevelRange(elevator, nodes)
-  if (!range) return false
-
-  const slabLevel = getLevelNumber(slabLevelId, nodes)
-  if (slabLevel !== undefined) {
-    return slabLevel > range.min && slabLevel <= range.max
-  }
-
-  const servedIndex = range.sortedServedLevels.findIndex((level) => level.id === slabLevelId)
-  return servedIndex > 0
-}
-
-function shouldApplyElevatorToCeiling(
-  elevator: ElevatorNode,
-  ceilingLevelId: string,
-  nodes: Record<string, AnyNode>,
-) {
-  const range = getServedLevelRange(elevator, nodes)
-  if (!range) return false
-
-  const ceilingLevel = getLevelNumber(ceilingLevelId, nodes)
-  if (ceilingLevel !== undefined) {
-    return ceilingLevel >= range.min && ceilingLevel < range.max
-  }
-
-  const servedIndex = range.sortedServedLevels.findIndex((level) => level.id === ceilingLevelId)
-  return servedIndex >= 0 && servedIndex < range.sortedServedLevels.length - 1
-}
-
 function getElevatorOpeningPolygon(elevator: ElevatorNode): Point2D[] {
   const wallThickness = Math.max(
     elevator.shaftWallThickness ?? DEFAULT_ELEVATOR_SHAFT_WALL_THICKNESS,
@@ -168,6 +116,12 @@ export function syncAutoElevatorOpenings(nodes: Record<string, AnyNode>) {
   const elevators = Object.values(nodes).filter(
     (node): node is ElevatorNode => node.type === 'elevator' && node.visible !== false,
   )
+  const serviceLevels = new Map<string, string[]>(
+    elevators.map((elevator) => [
+      elevator.id,
+      resolveElevatorServiceLevels(elevator, nodes).map((level) => level.id),
+    ]),
+  )
   const slabs = Object.values(nodes).filter((node): node is SlabNode => node.type === 'slab')
   const ceilings = Object.values(nodes).filter(
     (node): node is CeilingNode => node.type === 'ceiling',
@@ -186,7 +140,7 @@ export function syncAutoElevatorOpenings(nodes: Record<string, AnyNode>) {
     const preservedHolePolygons = preservedHoles.map((entry) => entry.polygon)
 
     const elevatorHoles = elevators
-      .filter((elevator) => shouldApplyElevatorToSlab(elevator, slabLevelId, nodes))
+      .filter((elevator) => (serviceLevels.get(elevator.id)?.indexOf(slabLevelId) ?? -1) > 0)
       .map((elevator) => ({
         polygon: getElevatorOpeningPolygon(elevator),
         metadata: {
@@ -233,7 +187,11 @@ export function syncAutoElevatorOpenings(nodes: Record<string, AnyNode>) {
     const preservedHolePolygons = preservedHoles.map((entry) => entry.polygon)
 
     const elevatorHoles = elevators
-      .filter((elevator) => shouldApplyElevatorToCeiling(elevator, ceilingLevelId, nodes))
+      .filter((elevator) => {
+        const levels = serviceLevels.get(elevator.id) ?? []
+        const index = levels.indexOf(ceilingLevelId)
+        return index >= 0 && index < levels.length - 1
+      })
       .map((elevator) => ({
         polygon: getElevatorOpeningPolygon(elevator),
         metadata: {
