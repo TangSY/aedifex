@@ -1,7 +1,15 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { spatialGridManager } from '../../hooks/spatial-grid/spatial-grid-manager'
 import { initSpatialGridSync } from '../../hooks/spatial-grid/spatial-grid-sync'
-import { type AnyNode, type AnyNodeId, LevelNode, RoofNode, SlabNode, WallNode } from '../../schema'
+import {
+  type AnyNode,
+  type AnyNodeId,
+  LevelNode,
+  RoofNode,
+  RoofSegmentNode,
+  SlabNode,
+  WallNode,
+} from '../../schema'
 import {
   pauseSceneHistory,
   resumeSceneHistory,
@@ -81,6 +89,33 @@ function currentRoof(id: RoofNode['id']): RoofNode {
 }
 
 describe('RoofElevationSystem', () => {
+  test('moving a roof segment resettles its roof on the newly covered walls', async () => {
+    const { level, roof } = setup()
+    const tall = WallNode.parse({ parentId: level.id, start: [10, 0], end: [14, 0], height: 4.2 })
+    const segment = RoofSegmentNode.parse({
+      parentId: roof.id,
+      position: [2, 0, 1],
+      width: 4,
+      depth: 3,
+    })
+    useScene.getState().updateNode(roof.id, { position: [0, 0, 0], rotation: 0 })
+    useScene.getState().createNode(tall, level.id)
+    useScene.getState().createNode(segment, roof.id)
+    await Promise.resolve()
+    expect(currentRoof(roof.id).position[1]).toBeCloseTo(0)
+    clearSceneHistory()
+    useScene.getState().updateNode(segment.id, { position: [12, 0, 1] })
+    await Promise.resolve()
+    expect(currentRoof(roof.id).position[1]).toBeCloseTo(1.2)
+    expect(useScene.temporal.getState().pastStates).toHaveLength(1)
+    useScene.temporal.getState().undo()
+    await Promise.resolve()
+    expect(currentRoof(roof.id).position[1]).toBeCloseTo(0)
+    useScene.temporal.getState().redo()
+    await Promise.resolve()
+    expect(currentRoof(roof.id).position[1]).toBeCloseTo(1.2)
+  })
+
   test('a wall height edit moves the roof after one microtask without adding an undo step', async () => {
     const { wall, roof, manual } = setup()
     await Promise.resolve()

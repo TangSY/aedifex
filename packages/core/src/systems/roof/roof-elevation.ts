@@ -178,6 +178,7 @@ const ROOF_ELEVATION_EPSILON = 1e-4
 export function isRoofElevationInput(node: AnyNode | undefined): boolean {
   return (
     node?.type === 'roof' ||
+    node?.type === 'roof-segment' ||
     node?.type === 'wall' ||
     node?.type === 'slab' ||
     node?.type === 'level' ||
