@@ -22,7 +22,7 @@ test('inline rename preserves untouched names in an isolated renderer', async ()
     if (exitCode !== 0) throw new Error(`${stdout}\n${stderr}`)
     const summary = (await readFile(reportFile, 'utf8')).match(/<testsuites\b[^>]*>/)?.[0] ?? ''
     expect(summary).toContain('failures="0"')
-    expect(Number(summary.match(/\btests="(\d+)"/)?.[1])).toBe(3)
+    expect(Number(summary.match(/\btests="(\d+)"/)?.[1])).toBe(6)
   } finally {
     await rm(reportDir, { recursive: true, force: true })
   }

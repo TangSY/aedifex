@@ -56,14 +56,13 @@ import {
 } from '@aedifex/core/building'
 import {
   formatNumber,
-  getDefaultLevelName,
   getLevelDisplayName,
   roofLevelOrderBreach,
   servesAsRoofLevel,
   useLocale,
   useAedifexI18n,
 } from '@aedifex/core'
-import { localizedLevelName } from '../../i18n/level-name'
+import { authoredLevelName, localizedLevelName } from '../../i18n/level-name'
 import { addStoreyBelow, addStoreyOnTop, setGroundFloor } from '../../lib/add-storey'
 import { deleteLevelWithFallbackSelection } from '../../lib/level-selection'
 import { unitMemberLevels, leaveUnitFocus } from '../../lib/units'
@@ -85,7 +84,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './primitives/popover'
 
 // ── Inline rename input for a level row ─────────────────────────────────────
 
-function LevelInlineRename({
+export function LevelInlineRename({
   level,
   isEditing,
   onStopEditing,
@@ -94,28 +93,31 @@ function LevelInlineRename({
   isEditing: boolean
   onStopEditing: () => void
 }) {
+  const i18n = useAedifexI18n()
+  const locale = useLocale()
   const updateNode = useScene((s) => s.updateNode)
-  const defaultName = getDefaultLevelName(level.level)
-  const [value, setValue] = useState(level.name || '')
+  const defaultName = localizedLevelName({ level: level.level }, i18n, locale)
+  const editableName = authoredLevelName(level)
+  const [value, setValue] = useState(editableName || '')
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (isEditing) {
-      setValue(level.name || '')
+      setValue(editableName || '')
       setTimeout(() => {
         inputRef.current?.focus()
         inputRef.current?.select()
       }, 0)
     }
-  }, [isEditing, level.name])
+  }, [isEditing, editableName])
 
   const handleSave = useCallback(() => {
     const trimmed = value.trim()
-    if (trimmed !== level.name) {
+    if ((trimmed || undefined) !== editableName) {
       updateNode(level.id, { name: trimmed || undefined })
     }
     onStopEditing()
-  }, [value, level.id, level.name, updateNode, onStopEditing])
+  }, [value, level.id, editableName, updateNode, onStopEditing])
 
   if (!isEditing) return null
 

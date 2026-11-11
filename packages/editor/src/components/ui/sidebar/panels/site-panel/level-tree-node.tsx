@@ -3,7 +3,7 @@ import { markPerfAction, useViewer } from '@aedifex/viewer'
 import { Layers } from 'lucide-react'
 import { memo, useCallback, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { localizedLevelName } from '../../../../../i18n/level-name'
+import { authoredLevelName, localizedLevelName } from '../../../../../i18n/level-name'
 import { InlineRenameInput } from './inline-rename-input'
 import { focusTreeNode, TreeNode, TreeNodeWrapper } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
@@ -41,6 +41,10 @@ export const LevelTreeNode = memo(function LevelTreeNode({
   const handleToggle = useCallback(() => setExpanded((prev) => !prev), [])
   const handleStartEditing = useCallback(() => setIsEditing(true), [])
   const handleStopEditing = useCallback(() => setIsEditing(false), [])
+  const editableName = useCallback(
+    (name: string | undefined) => authoredLevelName({ name, level }),
+    [level],
+  )
 
   const defaultName = localizedLevelName({ level }, i18n, locale)
   const displayName = localizedLevelName({ name: levelName, level }, i18n, locale)
@@ -60,6 +64,7 @@ export const LevelTreeNode = memo(function LevelTreeNode({
         <InlineRenameInput
           defaultName={defaultName}
           displayName={displayName}
+          editableName={editableName}
           isEditing={isEditing}
           nodeId={nodeId}
           onStartEditing={handleStartEditing}

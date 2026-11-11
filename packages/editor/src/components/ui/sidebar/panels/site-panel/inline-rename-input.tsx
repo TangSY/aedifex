@@ -18,15 +18,18 @@ interface InlineRenameFieldProps {
 
 type InlineRenameInputProps = Omit<InlineRenameFieldProps, 'name' | 'onRename'> & {
   nodeId: AnyNodeId
+  editableName?: (name: string | undefined) => string | undefined
 }
 
 /** Renames a scene node through `updateNode`. */
 export const InlineRenameInput = memo(function InlineRenameInput({
   nodeId,
+  editableName,
   ...props
 }: InlineRenameInputProps) {
   const updateNode = useScene((s) => s.updateNode)
-  const name = useScene((s) => s.nodes[nodeId]?.name)
+  const storedName = useScene((s) => s.nodes[nodeId]?.name)
+  const name = editableName ? editableName(storedName) : storedName
   const handleRename = useCallback(
     (next: string | undefined) => updateNode(nodeId, { name: next }),
     [nodeId, updateNode],

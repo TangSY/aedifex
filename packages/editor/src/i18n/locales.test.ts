@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from 'bun:test'
 import { createI18n, setLocale, translate } from '@aedifex/core'
-import { localizedLevelName } from './level-name'
+import { authoredLevelName, localizedLevelName } from './level-name'
 import { registerBundledLocales } from './locales'
 
 afterEach(() => setLocale('en'))
@@ -53,4 +53,11 @@ test('generated stored level names localize while authored names remain unchange
     french.destroy()
     japanese.destroy()
   }
+})
+
+test('generated level names remain placeholders while custom names remain editable', () => {
+  expect(authoredLevelName({ level: 1, name: 'Floor 1' })).toBeUndefined()
+  expect(authoredLevelName({ level: 1, name: 'Level 1' })).toBeUndefined()
+  expect(authoredLevelName({ level: 1, name: 'Workshop' })).toBe('Workshop')
+  expect(authoredLevelName({ level: 1, name: 'Level 2' })).toBe('Level 2')
 })
