@@ -1,12 +1,22 @@
 'use client'
 
 import type { AssetInput } from '@aedifex/core'
-import { resolveCdnUrl } from '@aedifex/viewer'
+import { useAssetImageUrl } from '@aedifex/viewer'
+import {
+  activateCatalogItem,
+  filterCatalogItems,
+  isCatalogItemSelected,
+} from '../../../lib/catalog-panel-model'
 import { triggerSFX } from './../../../lib/sfx-bus'
 import { cn } from './../../../lib/utils'
 import useEditor, { type CatalogCategory } from './../../../store/use-editor'
 import { resolveAssetSnapTarget, SnapTargetBadge } from '../snap-target-badge'
-import { activateCatalogItem, filterCatalogItems, isCatalogItemSelected } from '../../../lib/catalog-panel-model'
+
+function CatalogThumbnail({ src, name }: { src: string; name: string }) {
+  const { url } = useAssetImageUrl(src, { catalog: true })
+  if (!url) return null
+  return <img alt={name} className="h-full w-full object-cover" loading="eager" src={url} />
+}
 
 export function ItemCatalog({
   category,
@@ -31,7 +41,14 @@ export function ItemCatalog({
   emptyState?: React.ReactNode
 }) {
   const selectedItem = useEditor((state) => state.selectedItem)
-  const filteredItems = filterCatalogItems({ category, items: itemsOverride, overrideItems, search, activePlacementTag, activeFunctionalTag })
+  const filteredItems = filterCatalogItems({
+    category,
+    items: itemsOverride,
+    overrideItems,
+    search,
+    activePlacementTag,
+    activeFunctionalTag,
+  })
 
   if (filteredItems.length === 0 && emptyState) {
     return <>{emptyState}</>
@@ -61,12 +78,7 @@ export function ItemCatalog({
             type="button"
           >
             <div className="relative aspect-square w-full overflow-hidden rounded-lg">
-              <img
-                alt={item.name}
-                className="h-full w-full object-cover"
-                loading="eager"
-                src={resolveCdnUrl(item.thumbnail) || ''}
-              />
+              <CatalogThumbnail name={item.name} src={item.thumbnail} />
               {snapTarget && (
                 <SnapTargetBadge className="absolute right-1 bottom-1" target={snapTarget} />
               )}

@@ -2,6 +2,7 @@ import type { SceneGraph } from '@aedifex/editor'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
+import { AssetPolicyBoundary } from '@/components/asset-policy-boundary'
 import { EmbedViewer } from '@/components/embed-viewer'
 import { isSceneShared } from '@/lib/scene-sharing'
 import { getSceneOperations } from '@/lib/scene-store-server'
@@ -36,5 +37,9 @@ export default async function EmbedPage({ params, searchParams }: PageProps<'/em
   if (!scene) notFound()
   // `?ui=0` is the bare 3D view: no header, controls bar or 3D/2D switcher.
   const chrome = ui !== '0' && ui !== 'false'
-  return <EmbedViewer chrome={chrome} graph={scene.graph} id={id} name={scene.name} />
+  return (
+    <AssetPolicyBoundary>
+      <EmbedViewer chrome={chrome} graph={scene.graph} id={id} name={scene.name} />
+    </AssetPolicyBoundary>
+  )
 }

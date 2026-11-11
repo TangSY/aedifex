@@ -4,6 +4,8 @@
 // into viewer's internal paths.
 
 export type { SurfaceRole } from '@aedifex/core'
+export { AssetBackground } from './components/asset-background'
+export { AssetPolicyGate } from './components/asset-policy-gate'
 export { ErrorBoundary } from './components/error-boundary'
 // Stage A wrap-exports for the rest of the kinds — `@aedifex/nodes`
 // registers each via `def.renderer` (and `def.system` when present)
@@ -79,6 +81,7 @@ export {
   ViewerPresentations,
   viewerPresentationRegistry,
 } from './components/viewer/viewer-presentations'
+export { useAssetImageUrl } from './hooks/use-asset-image-url'
 export { useAssetUrl } from './hooks/use-asset-url'
 export { useGLTFKTX2 } from './hooks/use-gltf-ktx2'
 export { useLibraryMaterialsVersion } from './hooks/use-library-materials-version'
@@ -127,6 +130,8 @@ export {
   setGroundWindow,
   temporarilyGroundWindowForCapture,
 } from './lib/ground-window'
+export { guardedCdnLocation } from './lib/guarded-cdn-location'
+export { loadGuardedGltf } from './lib/guarded-gltf'
 export {
   computeHeroFraming,
   DEFAULT_FRAMING_EXCLUDED_TYPES,
@@ -207,6 +212,7 @@ export {
   proceduralSlotMeshes,
   setProceduralEmission,
 } from './lib/procedural-emission'
+export { readGuardedAssetImage } from './lib/read-guarded-asset-image'
 export {
   detectRendererCapability,
   initializeGpuRenderer,
@@ -216,6 +222,7 @@ export {
   type RendererInitializationResult,
   type RendererPowerPreference,
 } from './lib/renderer-capability'
+export { retainResourceFailure } from './lib/resource-failures'
 export { commitEditCandidates, commitRevealCandidates } from './lib/reveal-candidates'
 export {
   ANIMATION_SPEEDS,

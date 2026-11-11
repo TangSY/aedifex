@@ -4,6 +4,7 @@ import {
   type AnimationEffect,
   type AnyNodeId,
   deriveSlotId,
+  getClientAssetPolicy,
   getScaledDimensions,
   type Interactive,
   type ItemNode,
@@ -14,6 +15,7 @@ import {
   type LightEffect,
   SCENE_MATERIAL_REF_PREFIX,
   sceneRegistry,
+  subscribeClientAssetPolicy,
   toLibraryMaterialRef,
   useInteractive,
   useLiveNodeOverrides,
@@ -33,6 +35,7 @@ import {
   type RenderShading,
   resolveCdnUrl,
   resolveMaterialRef,
+  retainResourceFailure,
   ScriptedClips,
   stampAedifexTextureRef,
   useClipActions,
@@ -52,6 +55,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react'
 import type { AnimationAction, AnimationClip, Group, Material, Mesh, Object3D } from 'three'
 import { MathUtils, Texture } from 'three'
@@ -65,6 +69,8 @@ import {
   cancelItemModelLoad,
   getItemResourceFailures,
   getUnavailableItemAsset,
+  guardedItemModelKey,
+  isGuardedItemModelKey,
   ItemGLTFLoader,
 } from './model-loader'
 
@@ -316,15 +322,35 @@ function stampItemTextureReferences(gltf: LoadedItemGltf, src: string) {
   })
 }
 
-const useItemGltf = (url: string): LoadedItemGltf => {
+function useItemModelRequest(source: string) {
+  const policy = useSyncExternalStore(
+    subscribeClientAssetPolicy,
+    getClientAssetPolicy,
+    getClientAssetPolicy,
+  )
+  const resolvedUrl = resolveCdnUrl(source) || ''
+  const loadKey =
+    policy.origins !== null && resolvedUrl
+      ? guardedItemModelKey({ source, resolvedUrl, version: policy.version })
+      : resolvedUrl
+  return { loadKey, resolvedUrl }
+}
+
+const useItemGltf = ({
+  loadKey,
+  resolvedUrl,
+}: {
+  loadKey: string
+  resolvedUrl: string
+}): LoadedItemGltf => {
   const renderer = useThree((state) => state.gl)
-  const gltf = useLoader(ItemGLTFLoader, url, (loader) =>
+  const gltf = useLoader(ItemGLTFLoader, loadKey, (loader) =>
     configureItemModelLoader(loader, renderer),
   ) as LoadedItemGltf
   return useMemo(() => {
-    stampItemTextureReferences(gltf, url)
+    stampItemTextureReferences(gltf, resolvedUrl)
     return gltf
-  }, [gltf, url])
+  }, [gltf, resolvedUrl])
 }
 
 type DeferredUnavailableCleanup = {
@@ -371,30 +397,36 @@ const UnavailableItemModel = ({
   markSettled,
   node,
   url,
+  loadKey,
   events,
 }: {
   markSettled: () => void
   node: ItemNode
   url: string
+  loadKey: string
   events: boolean
 }) => {
   useEffect(() => {
     retainUnavailableConsumer(unavailableFailureConsumers, node.id)
-    if (url) retainUnavailableConsumer(unavailableAssetConsumers, url)
+    if (loadKey) retainUnavailableConsumer(unavailableAssetConsumers, loadKey)
     markSettled()
     useViewer.getState().reportItemLoadFailure(node.id, url)
+    const releaseNotice = isGuardedItemModelKey(loadKey)
+      ? retainResourceFailure(`model:${url}`)
+      : undefined
     return () => {
+      releaseNotice?.()
       releaseUnavailableConsumer(unavailableFailureConsumers, node.id, () =>
         useViewer.getState().clearItemLoadFailure(node.id),
       )
-      if (url) {
-        releaseUnavailableConsumer(unavailableAssetConsumers, url, () => {
-          cancelItemModelLoad(url)
-          useLoader.clear(ItemGLTFLoader, url)
+      if (loadKey) {
+        releaseUnavailableConsumer(unavailableAssetConsumers, loadKey, () => {
+          cancelItemModelLoad(loadKey)
+          useLoader.clear(ItemGLTFLoader, loadKey)
         })
       }
     }
-  }, [markSettled, node.id, url])
+  }, [loadKey, markSettled, node.id, url])
 
   return <BrokenItemFallback events={events} node={node} />
 }
@@ -414,14 +446,16 @@ const ModelWithRetry = ({
   /** False when a host node (a scripted window or door) owns the pointer events. */
   events?: boolean
 }) => {
-  const [renderFailed, setRenderFailed] = useState(false)
-  const url = resolveCdnUrl(node.asset.src) || ''
+  const [renderFailureKey, setRenderFailureKey] = useState<string | null>(null)
+  const { loadKey, resolvedUrl: url } = useItemModelRequest(node.asset.src)
+  const renderFailed = renderFailureKey === loadKey
   const markSettled = useCallback(() => setSettled(true), [setSettled])
 
   // Clear before child passive completion effects; a parent passive clear would run after them.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: A new policy key starts another load.
   useLayoutEffect(() => {
     setSettled(false)
-  }, [setSettled])
+  }, [loadKey, setSettled])
 
   useEffect(() => {
     if (!renderFailed) return
@@ -431,16 +465,31 @@ const ModelWithRetry = ({
   }, [markSettled, node.id, renderFailed, url])
 
   if (!url)
-    return <UnavailableItemModel events={events} markSettled={markSettled} node={node} url={url} />
+    return (
+      <UnavailableItemModel
+        events={events}
+        loadKey={loadKey}
+        markSettled={markSettled}
+        node={node}
+        url={url}
+      />
+    )
 
   return (
     <ErrorBoundary
+      key={loadKey}
       fallback={<BrokenItemFallback events={events} node={node} />}
-      onError={() => setRenderFailed(true)}
+      onError={() => setRenderFailureKey(loadKey)}
       scope="item-model"
     >
       <Suspense fallback={<PreviewModel node={node} />}>
-        <ModelRenderer events={events} markSettled={markSettled} node={node} />
+        <ModelRenderer
+          events={events}
+          loadKey={loadKey}
+          resolvedUrl={url}
+          markSettled={markSettled}
+          node={node}
+        />
       </Suspense>
     </ErrorBoundary>
   )
@@ -544,8 +593,16 @@ const PreviewModel = ({ node }: { node: ItemNode }) => {
   )
 }
 
-const LoadedItemPreview = ({ node }: { node: ItemNode }) => {
-  const gltf = useItemGltf(resolveCdnUrl(node.asset.src) || '')
+const LoadedItemPreview = ({
+  node,
+  loadKey,
+  resolvedUrl,
+}: {
+  node: ItemNode
+  loadKey: string
+  resolvedUrl: string
+}) => {
+  const gltf = useItemGltf({ loadKey, resolvedUrl })
   if (getUnavailableItemAsset(gltf)) return <PreviewModel node={node} />
   return (
     <group rotation={node.rotation} scale={node.scale}>
@@ -561,12 +618,16 @@ const LoadedItemPreview = ({ node }: { node: ItemNode }) => {
 }
 
 export const ItemPreview = ({ node }: { node: ItemNode }) => {
-  const url = resolveCdnUrl(node.asset.src) || ''
+  const { loadKey, resolvedUrl: url } = useItemModelRequest(node.asset.src)
   if (!url) return <PreviewModel node={node} />
   return (
     <Suspense fallback={<PreviewModel node={node} />}>
-      <ErrorBoundary fallback={<PreviewModel node={node} />} scope="item-preview-model">
-        <LoadedItemPreview node={node} />
+      <ErrorBoundary
+        key={loadKey}
+        fallback={<PreviewModel node={node} />}
+        scope="item-preview-model"
+      >
+        <LoadedItemPreview loadKey={loadKey} resolvedUrl={url} node={node} />
       </ErrorBoundary>
     </Suspense>
   )
@@ -594,19 +655,24 @@ const ClearPreviewModel = ({ node }: { node: ItemNode }) => {
 
 const ModelRenderer = ({
   node,
+  loadKey,
+  resolvedUrl,
   markSettled,
   events,
 }: {
   node: ItemNode
+  loadKey: string
+  resolvedUrl: string
   markSettled: () => void
   events: boolean
 }) => {
-  const gltf = useItemGltf(resolveCdnUrl(node.asset.src) || '')
+  const gltf = useItemGltf({ loadKey, resolvedUrl })
   const unavailable = getUnavailableItemAsset(gltf)
   if (unavailable) {
     return (
       <UnavailableItemModel
         events={events}
+        loadKey={loadKey}
         markSettled={markSettled}
         node={node}
         url={unavailable.url}

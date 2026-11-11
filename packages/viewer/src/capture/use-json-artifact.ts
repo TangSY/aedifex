@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react'
+import { AssetAccessError, getClientAssetPolicy, subscribeClientAssetPolicy } from '@aedifex/core'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { FileLoader } from 'three'
+import { retainResourceFailure } from '../lib/resource-failures'
 import { rewriteLoopbackAssetUrl } from './asset-url'
+import { readGuardedCaptureArtifact } from './read-guarded-artifact'
 
 const requests = new Map<string, Promise<unknown>>()
 
@@ -14,36 +17,65 @@ function loadJsonArtifact(url: string): Promise<unknown> {
   return request
 }
 
-export function useJsonArtifactPayload(url: string | null): unknown {
+export function useJsonArtifactPayload(url: string | null, sourceUrl?: string): unknown {
+  const policy = useSyncExternalStore(
+    subscribeClientAssetPolicy,
+    getClientAssetPolicy,
+    getClientAssetPolicy,
+  )
   const resolvedUrl = url ? rewriteLoopbackAssetUrl(url) : null
+  const key = `${policy.version}:${sourceUrl ?? ''}:${resolvedUrl ?? ''}`
   const [result, setResult] = useState<{
-    url: string
+    key: string
     payload?: unknown
     error?: Error
+    unavailable?: boolean
   } | null>(null)
 
   useEffect(() => {
     if (!resolvedUrl) return
     let active = true
-    void loadJsonArtifact(resolvedUrl).then(
+    const controller = new AbortController()
+    const unsubscribe = subscribeClientAssetPolicy(() => controller.abort())
+    if (getClientAssetPolicy().version !== policy.version) controller.abort()
+    const request =
+      policy.origins === null
+        ? loadJsonArtifact(resolvedUrl)
+        : readGuardedCaptureArtifact({
+            sourceUrl,
+            resolvedUrl,
+            documentUrl: window.location.href,
+            origins: policy.origins,
+            signal: controller.signal,
+            maxBytes: Number.MAX_SAFE_INTEGER,
+          }).then((bytes) => JSON.parse(new TextDecoder().decode(bytes)) as unknown)
+    void request.then(
       (payload) => {
-        if (active) setResult({ url: resolvedUrl, payload })
+        if (active && !controller.signal.aborted) setResult({ key, payload })
       },
       (cause: unknown) => {
-        if (active) {
+        if (active && !controller.signal.aborted) {
           setResult({
-            url: resolvedUrl,
+            key,
             error: cause instanceof Error ? cause : new Error('Could not load capture data.'),
+            unavailable: cause instanceof AssetAccessError,
           })
         }
       },
     )
     return () => {
       active = false
+      controller.abort()
+      unsubscribe()
     }
-  }, [resolvedUrl])
+  }, [key, policy, resolvedUrl, sourceUrl])
 
-  if (!result || result.url !== resolvedUrl) return null
+  useEffect(() => {
+    if (result?.key !== key || !result.unavailable || !resolvedUrl) return
+    return retainResourceFailure(`capture:${sourceUrl ?? resolvedUrl}`)
+  }, [key, resolvedUrl, result, sourceUrl])
+
+  if (!result || result.key !== key || result.unavailable) return null
   if (result.error) throw result.error
   return result.payload ?? null
 }

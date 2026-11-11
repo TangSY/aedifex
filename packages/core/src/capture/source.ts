@@ -1,4 +1,10 @@
 import { z } from 'zod'
+import { getClientAssetPolicy, subscribeClientAssetPolicy } from '../lib/client-asset-policy'
+import {
+  AssetAccessError,
+  createAssetReadBudget,
+  readRestrictedAsset,
+} from '../lib/restricted-asset-read'
 import {
   type CaptureArtifactReference,
   type CaptureSessionDescriptor,
@@ -75,16 +81,40 @@ export function createHttpCaptureSource(
   const locator = CaptureSessionLocatorSchema.parse(locatorInput)
   const manifestUrl = locator.manifestUrl ?? options.manifestUrl?.(locator)
   if (!manifestUrl) throw new Error(`Capture session ${locator.sessionId} has no manifest URL.`)
-  let descriptorPromise: Promise<CaptureSessionDescriptor> | null = null
+  let descriptorEntry: { version: number; promise: Promise<CaptureSessionDescriptor> } | null = null
 
-  const loadDescriptor = async (): Promise<CaptureSessionDescriptor> => {
+  const loadDescriptor = async (
+    policy: ReturnType<typeof getClientAssetPolicy>,
+    signal: AbortSignal,
+  ): Promise<CaptureSessionDescriptor> => {
     const fetcher = options.fetch ?? globalThis.fetch
-    const response = await fetcher(manifestUrl, {
-      credentials: options.credentials,
-      headers: options.headers,
-    })
-    if (!response.ok) throw new Error(`Capture session ${locator.sessionId} is unavailable.`)
-    const descriptor = normalizeCaptureSessionManifest(await response.json())
+    let data: unknown
+    if (policy.origins === null) {
+      const response = await fetcher(manifestUrl, {
+        credentials: options.credentials,
+        headers: options.headers,
+        signal,
+      })
+      if (!response.ok) throw new Error(`Capture session ${locator.sessionId} is unavailable.`)
+      data = await response.json()
+    } else {
+      if (typeof globalThis.location === 'undefined')
+        throw new AssetAccessError('Asset policy requires a document URL')
+      const documentUrl = globalThis.location.href
+      const { bytes } = await readRestrictedAsset({
+        url: manifestUrl,
+        baseUrl: documentUrl,
+        documentUrl,
+        allowedOrigins: new Set(policy.origins),
+        budget: createAssetReadBudget(Number.MAX_SAFE_INTEGER),
+        fetcher,
+        credentials: options.credentials,
+        headers: options.headers,
+        signal,
+      })
+      data = JSON.parse(new TextDecoder().decode(bytes))
+    }
+    const descriptor = normalizeCaptureSessionManifest(data)
     if (descriptor.sessionId !== locator.sessionId) {
       throw new Error(`Capture manifest session does not match ${locator.sessionId}.`)
     }
@@ -99,11 +129,23 @@ export function createHttpCaptureSource(
 
   return {
     describe(signal) {
-      descriptorPromise ??= loadDescriptor().catch((cause: unknown) => {
-        descriptorPromise = null
-        throw cause
-      })
-      return waitForPromise(descriptorPromise, signal).then(cloneCaptureDescriptor)
+      const policy = getClientAssetPolicy()
+      if (!descriptorEntry || descriptorEntry.version !== policy.version) {
+        const controller = new AbortController()
+        const unsubscribe = subscribeClientAssetPolicy(() => controller.abort())
+        if (getClientAssetPolicy().version !== policy.version) controller.abort()
+        const entry: { version: number; promise: Promise<CaptureSessionDescriptor> } = {
+          version: policy.version,
+          promise: waitForPromise(loadDescriptor(policy, controller.signal), controller.signal)
+            .catch((cause: unknown) => {
+              if (descriptorEntry === entry) descriptorEntry = null
+              throw cause
+            })
+            .finally(unsubscribe),
+        }
+        descriptorEntry = entry
+      }
+      return waitForPromise(descriptorEntry.promise, signal).then(cloneCaptureDescriptor)
     },
     async resolveArtifact(artifact, signal) {
       if (options.resolveArtifact) return options.resolveArtifact(artifact, signal)
@@ -115,9 +157,15 @@ export function createHttpCaptureSource(
 
 function waitForPromise<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
   if (!signal) return promise
-  if (signal.aborted) return Promise.reject(abortError())
+  if (signal.aborted) {
+    void promise.catch(() => {})
+    return Promise.reject(abortError())
+  }
   return new Promise<T>((resolve, reject) => {
-    const onAbort = () => reject(abortError())
+    const onAbort = () => {
+      signal.removeEventListener('abort', onAbort)
+      reject(abortError())
+    }
     signal.addEventListener('abort', onAbort, { once: true })
     void promise.then(resolve, reject).finally(() => signal.removeEventListener('abort', onAbort))
   })

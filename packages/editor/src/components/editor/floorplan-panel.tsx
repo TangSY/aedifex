@@ -20,6 +20,7 @@ import {
   formatNumber as formatLocalizedNumber,
   type GeometryContext,
   type GuideNode,
+  getClientAssetPolicy,
   getRenderableSlabPolygon,
   getWallChordFrame,
   getWallCurveLength,
@@ -27,7 +28,6 @@ import {
   type ItemNode,
   isCurvedWall,
   type LevelNode,
-  loadAssetUrl,
   newZone,
   nodeRegistry,
   normalizeWallCurveOffset,
@@ -270,6 +270,11 @@ import {
 import { useFloorplanBackgroundPlacement } from './use-floorplan-background-placement'
 import { useFloorplanHitTesting } from './use-floorplan-hit-testing'
 import { useFloorplanSceneData } from './use-floorplan-scene-data'
+import {
+  type GuideImageDimensions,
+  useGuideImageDimensions,
+  useResolvedAssetUrl,
+} from './use-guide-image'
 import { sceneSpan } from './views/scene-region'
 
 const FALLBACK_VIEW_SIZE = 12
@@ -561,6 +566,8 @@ type GuideHandleHintAnchor = {
 type GuideInteractionState = {
   pointerId: number
   guideId: GuideNode['id']
+  sourceUrl: string
+  policyVersion: number
   corner: GuideCorner
   mode: GuideInteractionMode
   aspectRatio: number
@@ -570,6 +577,17 @@ type GuideInteractionState = {
   rotationSvg: number
   cornerBaseAngle: number
   scale: number
+}
+
+export function isCurrentGuideInteraction(
+  interaction: Pick<GuideInteractionState, 'guideId' | 'sourceUrl' | 'policyVersion'>,
+) {
+  const current = useScene.getState().nodes[interaction.guideId]
+  return (
+    current?.type === 'guide' &&
+    current.url === interaction.sourceUrl &&
+    getClientAssetPolicy().version === interaction.policyVersion
+  )
 }
 
 type WallEndpointDraft = {
@@ -2839,81 +2857,6 @@ function findClosestWallPoint(
   }
 
   return best
-}
-
-type GuideImageDimensions = {
-  width: number
-  height: number
-}
-
-function useResolvedAssetUrl(url: string) {
-  const [resolvedUrl, setResolvedUrl] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!url) {
-      setResolvedUrl(null)
-      return
-    }
-
-    let cancelled = false
-    setResolvedUrl(null)
-
-    loadAssetUrl(url).then((nextUrl) => {
-      if (!cancelled) {
-        setResolvedUrl(nextUrl)
-      }
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [url])
-
-  return resolvedUrl
-}
-
-function useGuideImageDimensions(url: string | null) {
-  const [dimensions, setDimensions] = useState<GuideImageDimensions | null>(null)
-
-  useEffect(() => {
-    if (!url) {
-      setDimensions(null)
-      return
-    }
-
-    let cancelled = false
-    const image = new globalThis.Image()
-
-    image.onload = () => {
-      if (cancelled) {
-        return
-      }
-
-      const width = image.naturalWidth || image.width
-      const height = image.naturalHeight || image.height
-
-      if (!(width > 0 && height > 0)) {
-        setDimensions(null)
-        return
-      }
-
-      setDimensions({ width, height })
-    }
-
-    image.onerror = () => {
-      if (!cancelled) {
-        setDimensions(null)
-      }
-    }
-
-    image.src = url
-
-    return () => {
-      cancelled = true
-    }
-  }, [url])
-
-  return dimensions
 }
 
 function FloorplanGuideImage({
@@ -8329,6 +8272,10 @@ export function FloorplanPanel({
     const handleWindowPointerMove = (event: PointerEvent) => {
       const guideInteraction = guideInteractionRef.current
       if (guideInteraction && event.pointerId === guideInteraction.pointerId) {
+        if (!isCurrentGuideInteraction(guideInteraction)) {
+          clearGuideInteraction()
+          return
+        }
         event.preventDefault()
 
         const svgPoint = getSvgPointFromClientPoint(event.clientX, event.clientY)
@@ -8496,6 +8443,10 @@ export function FloorplanPanel({
 
       event.preventDefault()
 
+      if (!isCurrentGuideInteraction(interaction)) {
+        clearGuideInteraction()
+        return
+      }
       const guide = guideById.get(interaction.guideId)
       if (!guide) {
         clearGuideInteraction()
@@ -10581,6 +10532,8 @@ export function FloorplanPanel({
       guideInteractionRef.current = {
         pointerId: event.pointerId,
         guideId: guide.id,
+        sourceUrl: guide.url,
+        policyVersion: getClientAssetPolicy().version,
         corner,
         mode: shouldRotate ? 'rotate' : 'resize',
         aspectRatio,
@@ -10650,6 +10603,8 @@ export function FloorplanPanel({
       guideInteractionRef.current = {
         pointerId: event.pointerId,
         guideId: guide.id,
+        sourceUrl: guide.url,
+        policyVersion: getClientAssetPolicy().version,
         corner: 'nw',
         mode: 'translate',
         aspectRatio: 1,

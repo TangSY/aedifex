@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { FloorplanGeometry } from '@aedifex/core'
+import { configureClientAssetPolicy, type FloorplanGeometry } from '@aedifex/core'
 import PDFDocument from 'pdfkit'
 import { floorplanGeometryMetadata } from './floorplan-extension'
 import { FloorplanPdfDocument, loadFloorplanPdfFonts } from './floorplan-pdfkit-document'
@@ -149,6 +149,41 @@ describe('renderFloorplanGeometryToPdfKit', () => {
     const pdf = await renderTestPdf(geometry)
 
     expect(pdf).toContain('/Subtype /Image')
+  })
+
+  test('checks the image origin before PDF export and refuses redirects', async () => {
+    const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
+    const previousFetch = globalThis.fetch
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: { location: { href: 'https://app.example/editor' } },
+    })
+    const requests: Array<{ url: string; redirect: RequestRedirect | undefined }> = []
+    globalThis.fetch = (async (input, init) => {
+      requests.push({ url: String(input), redirect: init?.redirect })
+      return new Response(null, { status: 302, headers: { location: 'https://other.example/x' } })
+    }) as typeof fetch
+    const geometry = {
+      kind: 'image',
+      url: 'https://blocked.example/image.png',
+      center: [2, 2],
+      width: 1,
+      height: 1,
+    } satisfies FloorplanGeometry
+    try {
+      configureClientAssetPolicy(['https://allowed.example'])
+      await expect(renderTestPdf(geometry)).rejects.toThrow()
+      expect(requests).toHaveLength(0)
+      await expect(
+        renderTestPdf({ ...geometry, url: 'https://allowed.example/image.png' }),
+      ).rejects.toThrow()
+      expect(requests).toEqual([{ url: 'https://allowed.example/image.png', redirect: 'error' }])
+    } finally {
+      configureClientAssetPolicy(null)
+      globalThis.fetch = previousFetch
+      if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow)
+      else Reflect.deleteProperty(globalThis, 'window')
+    }
   })
 })
 

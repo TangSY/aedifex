@@ -1,10 +1,10 @@
 import { Icon as IconifyIcon } from '@iconify/react'
 import { type AnyNodeId, nodeRegistry, useScene } from '@aedifex/core'
 import { useViewer } from '@aedifex/viewer'
-import Image from 'next/image'
 import { memo, useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { editorHostTreeChildrenRegistry } from '../../../../../lib/host-tree-children'
+import { NodeIconImage } from '../../../node-icon-image'
 import { resolveNodeSnapTarget, SnapTargetIcon } from '../../../snap-target-badge'
 import { InlineRenameInput } from './inline-rename-input'
 import {
@@ -62,7 +62,7 @@ export const RegistryTreeNode = memo(function RegistryTreeNode({
     icon?.kind === 'iconify' ? (
       <IconifyIcon className="opacity-60" height={14} icon={icon.name} width={14} />
     ) : (
-      <Image
+      <NodeIconImage
         alt=""
         className="object-contain opacity-60"
         height={14}

@@ -1,4 +1,11 @@
-import { type FloorplanGeometry, type FloorplanPoint, loadAssetUrl } from '@aedifex/core'
+import {
+  type FloorplanGeometry,
+  type FloorplanPoint,
+  getClientAssetPolicy,
+  loadAssetUrl,
+  subscribeClientAssetPolicy,
+} from '@aedifex/core'
+import { readGuardedAssetImage } from '@aedifex/viewer'
 import {
   type ArchitecturalDimensionLayout,
   computeArchitecturalDimensionLayout,
@@ -645,20 +652,36 @@ async function drawImage(
   doc: FloorplanPdfDocument,
   geometry: Extract<FloorplanGeometry, { kind: 'image' }>,
 ): Promise<void> {
-  const source = geometry.url.startsWith('data:') ? geometry.url : await loadAssetUrl(geometry.url)
-  if (!source) {
-    throw new Error('[floorplan-export] Could not resolve a floorplan image')
-  }
-
-  let dataUrl = source
-  if (!source.startsWith('data:')) {
-    const response = await fetch(source)
-    if (!response.ok) {
-      throw new Error(
-        `[floorplan-export] Could not load a floorplan image (HTTP ${response.status})`,
-      )
+  const policy = getClientAssetPolicy()
+  const controller = new AbortController()
+  const unsubscribe = subscribeClientAssetPolicy(() => controller.abort())
+  let dataUrl: string
+  try {
+    if (geometry.url.startsWith('data:')) {
+      dataUrl = geometry.url
+    } else if (policy.origins !== null) {
+      if (typeof window === 'undefined') throw new Error('Asset policy requires a document URL')
+      const blob = await readGuardedAssetImage({
+        url: geometry.url,
+        origins: policy.origins,
+        documentUrl: window.location.href,
+        signal: controller.signal,
+      })
+      dataUrl = await blobToDataUrl(blob)
+    } else {
+      const source = await loadAssetUrl(geometry.url)
+      if (!source) throw new Error('[floorplan-export] Could not resolve a floorplan image')
+      const response = await fetch(source, { signal: controller.signal })
+      if (!response.ok) {
+        throw new Error(
+          `[floorplan-export] Could not load a floorplan image (HTTP ${response.status})`,
+        )
+      }
+      dataUrl = await blobToDataUrl(await response.blob())
     }
-    dataUrl = await blobToDataUrl(await response.blob())
+    if (controller.signal.aborted) throw new DOMException('Aborted', 'AbortError')
+  } finally {
+    unsubscribe()
   }
 
   const raw = doc.raw

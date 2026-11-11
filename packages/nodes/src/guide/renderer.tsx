@@ -1,7 +1,7 @@
 'use client'
 
 import { type GuideNode, useRegistry } from '@aedifex/core'
-import { useAssetUrl, useViewer } from '@aedifex/viewer'
+import { useAssetImageUrl, useViewer } from '@aedifex/viewer'
 import { useLoader } from '@react-three/fiber'
 import { Suspense, useEffect, useMemo, useRef } from 'react'
 import { DoubleSide, type Group, PlaneGeometry, type Texture, TextureLoader } from 'three'
@@ -13,7 +13,7 @@ export const GuideRenderer = ({ node }: { node: GuideNode }) => {
   const ref = useRef<Group>(null!)
   useRegistry(node.id, 'guide', ref)
 
-  const resolvedUrl = useAssetUrl(node.url)
+  const { url: resolvedUrl } = useAssetImageUrl(node.url)
 
   return (
     <group

@@ -1,10 +1,10 @@
 'use client'
 
 import { nodeRegistry, type ToolOption } from '@aedifex/core'
-import Image from 'next/image'
 import { useSyncExternalStore } from 'react'
-import { cn } from '../../../lib/utils'
 import { triggerSFX } from '../../../lib/sfx-bus'
+import { cn } from '../../../lib/utils'
+import { NodeIconImage } from '../node-icon-image'
 
 const ALWAYS_VISIBLE = {
   subscribe: () => () => {},
@@ -28,7 +28,8 @@ function ToolOptionRow({
   if (
     !visible ||
     (!active && !option.choices.some((choice) => getChoiceThumbnail?.(option, choice.value)))
-  ) return null
+  )
+    return null
 
   const activeChoice = active && option.choices.find((choice) => choice.value === value)
   return (
@@ -62,7 +63,7 @@ function ToolOptionRow({
               type="button"
             >
               {thumbnail && (
-                <Image
+                <NodeIconImage
                   alt=""
                   className={cn(
                     'mx-auto mb-1 size-14 object-contain',

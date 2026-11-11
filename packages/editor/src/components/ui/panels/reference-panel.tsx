@@ -3,12 +3,12 @@
 import {
   type AnyNode,
   type GuideNode,
-  loadAssetUrl,
   type ScanNode,
   saveAsset,
   useLocale,
   useScene,
 } from '@aedifex/core'
+import { useAssetImageUrl } from '@aedifex/viewer'
 import {
   Eye,
   EyeOff,
@@ -21,7 +21,7 @@ import {
   Unlock,
   Upload,
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { guideEmitter } from '../../../lib/guide-events'
 import { getGuideImageName } from '../../../lib/local-guide-image'
 import { formatReferenceScaleLabel } from '../../../lib/reference-scale'
@@ -62,13 +62,13 @@ export function ReferencePanel() {
   const replaceInputRef = useRef<HTMLInputElement>(null)
   const [isReplacing, setIsReplacing] = useState(false)
   const [replaceError, setReplaceError] = useState<string | null>(null)
-  const [isAssetMissing, setIsAssetMissing] = useState(false)
 
   const node = useScene((s) =>
     selectedReferenceId
       ? (s.nodes[selectedReferenceId as AnyNode['id']] as ReferenceNode | undefined)
       : undefined,
   )
+  const { status: imageStatus } = useAssetImageUrl(node?.type === 'guide' ? node.url : '')
   const isScaleFlowActive = useEditor(
     (s) => s.referenceScaleActiveGuideId !== null && s.referenceScaleActiveGuideId === node?.id,
   )
@@ -156,24 +156,6 @@ export function ReferencePanel() {
     setSelectedReferenceId(null)
   }, [node, setSelectedReferenceId])
 
-  useEffect(() => {
-    if (node?.type !== 'guide' || !node.url.startsWith('asset://')) {
-      setIsAssetMissing(false)
-      return
-    }
-
-    let cancelled = false
-    loadAssetUrl(node.url).then((resolvedUrl) => {
-      if (!cancelled) {
-        setIsAssetMissing(!resolvedUrl)
-      }
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [node])
-
   if (!node || (node.type !== 'scan' && node.type !== 'guide')) return null
 
   const isScan = node.type === 'scan'
@@ -250,9 +232,9 @@ export function ReferencePanel() {
               </div>
             )}
 
-            {isAssetMissing && (
+            {imageStatus === 'unavailable' && (
               <div className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-1.5 text-amber-700 text-xs dark:text-amber-300">
-                Overlay image unavailable. Replace the image to restore it.
+                Overlay image unavailable. Check its source or replace the image.
               </div>
             )}
           </PanelSection>

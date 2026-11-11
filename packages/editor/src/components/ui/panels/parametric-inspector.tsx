@@ -19,11 +19,11 @@ import { commitParametricNodeFields } from '../../../lib/parametric-node-update'
 import { sfxEmitter } from '../../../lib/sfx-bus'
 import { collectZoneContentIds } from '../../../lib/zone-content'
 import useEditor from '../../../store/use-editor'
-import { IconRefImage } from '../icon-ref'
 import { ActionButton, ActionGroup } from '../controls/action-button'
 import { PanelSection } from '../controls/panel-section'
-import { ParametricFieldControl } from './parametric-field-control'
+import { IconRefImage } from '../icon-ref'
 import { InspectorFooterContext, PanelWrapper } from './panel-wrapper'
+import { ParametricFieldControl } from './parametric-field-control'
 
 /**
  * Auto-derived right-panel inspector for any registry-backed node.
@@ -45,7 +45,11 @@ export function ParametricInspector({
   footer,
   nodeId,
   onClose,
-}: { footer?: React.ReactNode; nodeId?: AnyNodeId; onClose?: () => void } = {}) {
+}: {
+  footer?: React.ReactNode
+  nodeId?: AnyNodeId
+  onClose?: () => void
+} = {}) {
   const selectedIdFromSelection = useViewer((s) => s.selection.selectedIds[0]) as
     | AnyNodeId
     | undefined
@@ -168,7 +172,15 @@ export function ParametricInspector({
       )}
       {(canMove || canDelete || (parametrics.actions && parametrics.actions.length > 0)) && (
         <PanelSection title="Actions">
-          <ActionGroup className={isZone ? 'flex-col' : parametrics.actions?.length ? 'grid grid-cols-2 gap-2' : undefined}>
+          <ActionGroup
+            className={
+              isZone
+                ? 'flex-col'
+                : parametrics.actions?.length
+                  ? 'grid grid-cols-2 gap-2'
+                  : undefined
+            }
+          >
             {canMove && (
               <ActionButton icon={<Move className="h-4 w-4" />} label="Move" onClick={handleMove} />
             )}
@@ -211,7 +223,13 @@ export function ParametricInspector({
 // live as the scene mutates — `===` on the boolean keeps unrelated ticks
 // from re-rendering it. The click handler re-reads the live node so the
 // handler always acts on current state.
-function ParamActionButton({ action, nodeId }: { action: ParamAction<AnyNode>; nodeId: AnyNodeId }) {
+function ParamActionButton({
+  action,
+  nodeId,
+}: {
+  action: ParamAction<AnyNode>
+  nodeId: AnyNodeId
+}) {
   const disabled = useScene((s) => {
     if (!action.enabledIf) return false
     const n = s.nodes[nodeId]
@@ -222,7 +240,7 @@ function ParamActionButton({ action, nodeId }: { action: ParamAction<AnyNode>; n
       className={disabled ? 'opacity-40 pointer-events-none' : ''}
       icon={
         action.iconSrc ? (
-          <img alt="" className="h-4 w-4 shrink-0 object-contain" src={action.iconSrc} />
+          <IconRefImage className="h-4 w-4 shrink-0 object-contain" src={action.iconSrc} />
         ) : undefined
       }
       label={action.label}

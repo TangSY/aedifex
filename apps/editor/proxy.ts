@@ -11,6 +11,7 @@ const OPEN_PATHS = new Set([
   '/login',
   '/setup',
   '/api/health',
+  '/api/asset-policy',
   '/api/auth/login',
   '/api/auth/logout',
 ])

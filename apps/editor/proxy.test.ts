@@ -71,7 +71,14 @@ test('public embed pages pass on a password-gated host without a session', () =>
 
 test('login, setup, health and the scene API are never gated here', () => {
   delete process.env.AEDIFEX_ADMIN_PASSWORD
-  for (const path of ['/login', '/setup', '/api/health', '/api/scenes', '/api/artifacts/abc']) {
+  for (const path of [
+    '/login',
+    '/setup',
+    '/api/health',
+    '/api/asset-policy',
+    '/api/scenes',
+    '/api/artifacts/abc',
+  ]) {
     expect(gateRequest(request(path))).toBeNull()
   }
 })

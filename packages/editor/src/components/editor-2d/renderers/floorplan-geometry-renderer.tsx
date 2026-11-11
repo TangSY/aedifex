@@ -1,7 +1,8 @@
 'use client'
 
-import { type FloorplanGeometry, loadAssetUrl } from '@aedifex/core'
-import { memo, useEffect, useState } from 'react'
+import type { FloorplanGeometry } from '@aedifex/core'
+import { useAssetImageUrl } from '@aedifex/viewer'
+import { memo } from 'react'
 import { readFloorplanGeometryMetadata } from '../../../lib/floorplan/floorplan-extension'
 import {
   floorplanAnnotationObstacleMode,
@@ -613,7 +614,7 @@ function formatTransform(t?: {
 
 /**
  * `image` primitive renderer. Resolves the URL asynchronously via
- * `loadAssetUrl` (handles CDN / Supabase storage) and renders an SVG
+ * the shared image resolver and renders an SVG
  * `<image>` centered at `center`, rotated around it, sized in plan-local
  * metres. While the resolution is in flight, renders nothing.
  */
@@ -634,21 +635,7 @@ function FloorplanImage({
   preserveAspectRatio: string
   opacity?: number
 }) {
-  const [resolvedUrl, setResolvedUrl] = useState<string | null>(null)
-  useEffect(() => {
-    if (!url) {
-      setResolvedUrl(null)
-      return
-    }
-    let cancelled = false
-    setResolvedUrl(null)
-    loadAssetUrl(url).then((next) => {
-      if (!cancelled) setResolvedUrl(next)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [url])
+  const { url: resolvedUrl } = useAssetImageUrl(url)
   if (!resolvedUrl) return null
   const rotationDeg = (rotation * 180) / Math.PI
   return (

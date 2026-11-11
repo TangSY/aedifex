@@ -17,6 +17,7 @@ export {
   type AllowedOriginIssue,
   AssetUrl,
   allowedOriginsFrom,
+  isSchemeRelativeAssetUrl,
   parseAllowedOrigins,
 } from './asset-url'
 export { BaseNode, generateId, Material, nodeType, objectId } from './base'

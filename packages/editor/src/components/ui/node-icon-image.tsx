@@ -1,6 +1,7 @@
 'use client'
 
-import { ARTIFACT_URL_PREFIX, resolveArtifactUrl } from '@aedifex/core'
+import { ARTIFACT_URL_PREFIX } from '@aedifex/core'
+import { useAssetImageUrl } from '@aedifex/viewer'
 import Image, { type ImageProps } from 'next/image'
 
 /**
@@ -10,7 +11,15 @@ import Image, { type ImageProps } from 'next/image'
  * private project's artifact with.
  */
 export function NodeIconImage({ src, ...props }: Omit<ImageProps, 'src'> & { src: string }) {
-  if (!src.startsWith(ARTIFACT_URL_PREFIX)) return <Image src={src} {...props} />
-  const url = resolveArtifactUrl(src)
-  return url ? <Image src={url} unoptimized {...props} /> : null
+  const { url } = useAssetImageUrl(src)
+  if (!url) return null
+  return (
+    <Image
+      {...props}
+      src={url}
+      unoptimized={
+        props.unoptimized || src.startsWith(ARTIFACT_URL_PREFIX) || url.startsWith('blob:')
+      }
+    />
+  )
 }

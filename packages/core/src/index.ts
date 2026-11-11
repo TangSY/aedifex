@@ -135,6 +135,22 @@ export {
   resolveAssemblyStack,
 } from './lib/assembly-stack'
 export { loadAssetUrl, saveAsset } from './lib/asset-storage'
+export {
+  configureClientAssetPolicy,
+  getClientAssetPolicy,
+  subscribeClientAssetPolicy,
+} from './lib/client-asset-policy'
+export {
+  type AssetReadBudget,
+  AssetAccessError,
+  AssetNetworkError,
+  createAssetReadBudget,
+  parsePublicAssetOrigins,
+  publicAssetOrigins,
+  publicAssetOriginsFromBindings,
+  readRestrictedAsset,
+  restrictedAssetUrl,
+} from './lib/restricted-asset-read'
 export { hierarchyCycleErrors, wouldCreateHierarchyCycle } from './lib/hierarchy'
 export {
   belowGradeFloorY,

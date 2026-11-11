@@ -1,6 +1,14 @@
 'use client'
 
-import { type ScanNode, sceneRegistry, useScene } from '@aedifex/core'
+import {
+  AssetAccessError,
+  getClientAssetPolicy,
+  restrictedAssetUrl,
+  type ScanNode,
+  sceneRegistry,
+  subscribeClientAssetPolicy,
+  useScene,
+} from '@aedifex/core'
 import {
   type CaptureArtifactReference,
   CaptureArtifactReferenceSchema,
@@ -24,10 +32,13 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react'
 import type { Object3D } from 'three'
 import { ErrorBoundary } from '../components/error-boundary'
 import { useNodeEvents } from '../hooks/use-node-events'
+import { guardedResolvedLocation } from '../lib/guarded-resolved-location'
+import { retainResourceFailure } from '../lib/resource-failures'
 import useViewer from '../store/use-viewer'
 import { resolveCaptureFrameMatrix } from './frame'
 import { isCaptureSessionVisible, isCaptureStreamVisible } from './layer-visibility'
@@ -173,6 +184,11 @@ function CaptureSessionPortal({
     })
   }, [scan.captureSession.sessionId, scan.id, sourceState.error])
 
+  useEffect(() => {
+    if (!(sourceState.error instanceof AssetAccessError)) return
+    return retainResourceFailure(`capture-session:${scan.id}`)
+  }, [scan.id, sourceState.error])
+
   useFrame(() => {
     const nextTarget = sceneRegistry.nodes.get(scan.id) ?? null
     if (nextTarget !== target) setTarget(nextTarget)
@@ -261,7 +277,7 @@ export function CaptureStreamLayer({
   const Renderer = renderers[layerKey] ?? renderers[stream.kind]
   // Extracted previews archive the inline payload shape as a JSON artifact.
   const payloadArtifactUrl = streamHydratesJsonPayload(stream) ? artifactUrl : null
-  const fetchedPayload = useJsonArtifactPayload(payloadArtifactUrl)
+  const fetchedPayload = useJsonArtifactPayload(payloadArtifactUrl, stream.artifact?.uri)
   const payload = stream.inline ?? fetchedPayload
   const frameId = packets.at(-1)?.frameId ?? stream.frameId ?? stream.artifact?.frameId
   const frameMatrix = useMemo(
@@ -324,6 +340,7 @@ export function CaptureStreamLayer({
         format={captureModelFormat(stream.artifact) ?? undefined}
         mediaType={stream.artifact.mediaType}
         opacity={scan.opacity}
+        sourceUrl={stream.artifact.uri}
         url={artifactUrl}
       />
     )
@@ -334,6 +351,7 @@ export function CaptureStreamLayer({
   } else if (layerKey === 'pointCloud') {
     content = (
       <CapturePointCloudLayer
+        artifactSourceUrl={stream.artifact?.uri}
         artifactUrl={
           isCapturePointCloudArtifact(stream.artifact) ? (artifactUrl ?? undefined) : undefined
         }
@@ -362,8 +380,18 @@ function useResolvedArtifact(
   source: CaptureSource,
   artifact: CaptureArtifactReference | undefined,
 ): string | null {
-  const [error, setError] = useState<Error | null>(null)
-  const [url, setUrl] = useState<string | null>(null)
+  const policy = useSyncExternalStore(
+    subscribeClientAssetPolicy,
+    getClientAssetPolicy,
+    getClientAssetPolicy,
+  )
+  const [result, setResult] = useState<{
+    source: CaptureSource
+    key: string | null
+    version: number
+    url?: string
+    error?: Error
+  } | null>(null)
   const artifactKey = artifact ? JSON.stringify(artifact) : null
   const artifactSnapshot = useMemo(
     () =>
@@ -375,38 +403,82 @@ function useResolvedArtifact(
 
   useEffect(() => {
     const abort = new AbortController()
+    const unsubscribe = subscribeClientAssetPolicy(() => abort.abort())
+    if (getClientAssetPolicy().version !== policy.version) abort.abort()
     let dispose: (() => void) | undefined
-    setError(null)
-    setUrl(null)
-    if (!artifactSnapshot) return () => abort.abort()
+    if (!artifactSnapshot)
+      return () => {
+        abort.abort()
+        unsubscribe()
+      }
 
-    const resolve: Promise<CaptureArtifactResolution> = source.resolveArtifact
-      ? source.resolveArtifact(artifactSnapshot, abort.signal)
-      : artifactSnapshot.uri
-        ? Promise.resolve({ url: artifactSnapshot.uri })
-        : Promise.reject(new Error(`Capture artifact ${artifactSnapshot.id} has no URI.`))
+    let resolve: Promise<CaptureArtifactResolution>
+    try {
+      const uri = artifactSnapshot.uri
+      if (policy.origins !== null && uri && !/^(?:asset|artifact):\/\//.test(uri)) {
+        restrictedAssetUrl({
+          url: uri,
+          baseUrl: window.location.href,
+          documentUrl: window.location.href,
+          allowedOrigins: new Set(policy.origins),
+        })
+      }
+      if (abort.signal.aborted) throw new DOMException('Aborted', 'AbortError')
+      resolve = source.resolveArtifact
+        ? source.resolveArtifact(artifactSnapshot, abort.signal)
+        : uri
+          ? Promise.resolve({ url: uri })
+          : Promise.reject(new Error(`Capture artifact ${artifactSnapshot.id} has no URI.`))
+    } catch (cause) {
+      resolve = Promise.reject(cause)
+    }
     void resolve
-      .then((result) => {
+      .then((resolved) => {
         if (abort.signal.aborted) {
-          result.dispose?.()
+          resolved.dispose?.()
           return
         }
-        dispose = result.dispose
-        setUrl(result.url)
+        try {
+          if (policy.origins !== null)
+            guardedResolvedLocation({
+              sourceUrl: artifactSnapshot.uri,
+              resolvedUrl: resolved.url,
+              documentUrl: window.location.href,
+              origins: policy.origins,
+            })
+        } catch (error) {
+          resolved.dispose?.()
+          throw error
+        }
+        dispose = resolved.dispose
+        setResult({ source, key: artifactKey, version: policy.version, url: resolved.url })
       })
       .catch((cause: unknown) => {
         if (!abort.signal.aborted) {
-          setError(
-            cause instanceof Error ? cause : new Error('Could not resolve capture artifact.'),
-          )
+          setResult({
+            source,
+            key: artifactKey,
+            version: policy.version,
+            error:
+              cause instanceof Error ? cause : new Error('Could not resolve capture artifact.'),
+          })
         }
       })
     return () => {
       abort.abort()
+      unsubscribe()
       dispose?.()
     }
-  }, [artifactSnapshot, source])
+  }, [artifactKey, artifactSnapshot, policy, source])
 
-  if (error) throw error
-  return url
+  const current =
+    result?.source === source && result.key === artifactKey && result.version === policy.version
+      ? result
+      : null
+  useEffect(() => {
+    if (!(current?.error instanceof AssetAccessError)) return
+    return retainResourceFailure(`capture:${artifactSnapshot?.uri ?? artifactSnapshot?.id}`)
+  }, [artifactSnapshot, current?.error])
+  if (current?.error && !(current.error instanceof AssetAccessError)) throw current.error
+  return current?.url ?? null
 }

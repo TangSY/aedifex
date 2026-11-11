@@ -1,10 +1,17 @@
 import { expect, test } from 'bun:test'
-import { GuideScaleReference } from '@aedifex/core'
+import {
+  configureClientAssetPolicy,
+  GuideNode,
+  GuideScaleReference,
+  getClientAssetPolicy,
+  useScene,
+} from '@aedifex/core'
 import { z } from 'zod'
 import { createGuideScaleReference, formatReferenceScaleLabel } from '../../lib/reference-scale'
 import {
   formatFloorplanNumber,
   getReferenceScaleInputError,
+  isCurrentGuideInteraction,
   parseReferenceScaleLength,
 } from './floorplan-panel'
 
@@ -206,4 +213,31 @@ test('legacy scale labels accept repeated Unicode whitespace between number grou
   expect(formatReferenceScaleLabel(runtimeScaleReference({ label: '1 \u00a0234 cm' }), 'en')).toBe(
     '1234 cm',
   )
+})
+
+test('guide interactions become invalid when the source or policy changes', () => {
+  const previousNodes = useScene.getState().nodes
+  const guide = GuideNode.parse({ url: 'https://allowed.example/guide.png' })
+  configureClientAssetPolicy(null)
+  useScene.setState({ nodes: { [guide.id]: guide } })
+  const interaction = {
+    guideId: guide.id,
+    sourceUrl: guide.url,
+    policyVersion: getClientAssetPolicy().version,
+  }
+  try {
+    expect(isCurrentGuideInteraction(interaction)).toBe(true)
+    useScene.setState({
+      nodes: { [guide.id]: { ...guide, url: 'https://allowed.example/other.png' } },
+    })
+    expect(isCurrentGuideInteraction(interaction)).toBe(false)
+    useScene.setState({ nodes: { [guide.id]: guide } })
+    configureClientAssetPolicy(['https://allowed.example'])
+    expect(isCurrentGuideInteraction(interaction)).toBe(false)
+    useScene.setState({ nodes: {} })
+    expect(isCurrentGuideInteraction(interaction)).toBe(false)
+  } finally {
+    useScene.setState({ nodes: previousNodes })
+    configureClientAssetPolicy(null)
+  }
 })

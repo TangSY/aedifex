@@ -1,6 +1,7 @@
 import type { SceneGraph } from '@aedifex/editor'
 import Link from 'next/link'
 import { AppCard, PRIMARY_PILL } from '@/components/app-shell'
+import { AssetPolicyBoundary } from '@/components/asset-policy-boundary'
 import { SceneLoader, type SceneMeta } from '@/components/scene-loader'
 import { getSceneOperations } from '@/lib/scene-store-server'
 import { cn } from '@/lib/utils'
@@ -35,5 +36,9 @@ export default async function ScenePage({ params }: { params: Promise<{ id: stri
   }
 
   const { graph, ...meta } = scene
-  return <SceneLoader initialScene={graph} meta={meta} />
+  return (
+    <AssetPolicyBoundary>
+      <SceneLoader initialScene={graph} meta={meta} />
+    </AssetPolicyBoundary>
+  )
 }

@@ -7,6 +7,11 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
+    "./asset-policy": {
+      "types": "./dist/lib/restricted-asset-read.d.ts",
+      "import": "./dist/lib/restricted-asset-read.js",
+      "default": "./dist/lib/restricted-asset-read.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",

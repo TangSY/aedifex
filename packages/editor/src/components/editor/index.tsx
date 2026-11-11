@@ -13,6 +13,7 @@ import {
   useScene,
 } from '@aedifex/core'
 import {
+  AssetBackground,
   type HoverStyles,
   InteractiveSystem,
   PERF_OVERLAY_ENABLED,
@@ -820,13 +821,11 @@ function PaintCursorBadge({
         )}
         {state === 'ready' || state === 'aim' ? (
           isEraser ? null : (
-            <span
+            <AssetBackground
               className="-right-1 -bottom-1 absolute h-3.5 w-3.5 rounded-full border border-white/70 bg-cover bg-center shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
+              imageUrl={swatchImageUrl}
               style={{
                 backgroundColor: swatchColor,
-                backgroundImage: swatchImageUrl
-                  ? `url(${JSON.stringify(swatchImageUrl)})`
-                  : undefined,
                 opacity: state === 'aim' ? 0.55 : 1,
               }}
             />

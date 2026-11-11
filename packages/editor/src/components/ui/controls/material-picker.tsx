@@ -1,8 +1,9 @@
 'use client'
 
 import { type MaterialTarget, toLibraryMaterialRef } from '@aedifex/core'
+import { AssetBackground } from '@aedifex/viewer'
 import { Plus } from 'lucide-react'
-import { useMaterialCatalogModel, type MaterialSourceFilter } from '../../../lib/material-catalog-model'
+import { useMaterialCatalogModel } from '../../../lib/material-catalog-model'
 import { triggerSFX } from '../../../lib/sfx-bus'
 
 export type { MaterialSourceFilter } from '../../../lib/material-catalog-model'
@@ -43,7 +44,12 @@ export function MaterialPicker({
     availableCategories,
     catalogItems,
     select: handleCatalogSelect,
-  } = useMaterialCatalogModel(selectedMaterialPreset, onSelectMaterialPreset, disabled, selectOnCategoryChange)
+  } = useMaterialCatalogModel(
+    selectedMaterialPreset,
+    onSelectMaterialPreset,
+    disabled,
+    selectOnCategoryChange,
+  )
 
   return (
     <div
@@ -131,10 +137,11 @@ export function MaterialPicker({
             >
               <div className="relative aspect-square w-full overflow-hidden rounded-lg">
                 {item.previewThumbnailUrl ? (
-                  <img
-                    alt={item.label}
-                    className="h-full w-full object-cover"
-                    src={item.previewThumbnailUrl}
+                  <AssetBackground
+                    aria-label={item.label}
+                    className="block h-full w-full bg-cover bg-center"
+                    imageUrl={item.previewThumbnailUrl}
+                    role="img"
                   />
                 ) : (
                   <div

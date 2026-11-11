@@ -1,4 +1,5 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, mock, test } from 'bun:test'
+import { configureClientAssetPolicy } from '../lib/client-asset-policy'
 import type { CaptureSessionDescriptor } from './schema'
 import { createHttpCaptureSource, PushCaptureSource } from './source'
 
@@ -150,6 +151,124 @@ describe('PushCaptureSource', () => {
 })
 
 describe('createHttpCaptureSource', () => {
+  test('does not follow manifest redirects to another server', async () => {
+    let destinationHits = 0
+    const destination = Bun.serve({
+      hostname: '127.0.0.1',
+      port: 0,
+      fetch() {
+        destinationHits++
+        return new Response('{}')
+      },
+    })
+    const server = Bun.serve({
+      hostname: '127.0.0.1',
+      port: 0,
+      fetch() {
+        return Response.redirect(`http://127.0.0.1:${destination.port}/manifest`)
+      },
+    })
+    const previousLocation = Object.getOwnPropertyDescriptor(globalThis, 'location')
+    Object.defineProperty(globalThis, 'location', {
+      configurable: true,
+      value: new URL(`http://127.0.0.1:${server.port}/editor`),
+    })
+    try {
+      configureClientAssetPolicy([])
+      const source = createHttpCaptureSource({ sessionId: 'capture_123', manifestUrl: '/manifest' })
+      await expect(source.describe()).rejects.toThrow()
+      expect(destinationHits).toBe(0)
+    } finally {
+      configureClientAssetPolicy(null)
+      if (previousLocation) Object.defineProperty(globalThis, 'location', previousLocation)
+      else Reflect.deleteProperty(globalThis, 'location')
+      server.stop(true)
+      destination.stop(true)
+    }
+  })
+
+  test('guards manifest origins, preserves request options, and invalidates cached descriptors', async () => {
+    const previousLocation = Object.getOwnPropertyDescriptor(globalThis, 'location')
+    Object.defineProperty(globalThis, 'location', {
+      configurable: true,
+      value: new URL('https://app.example/editor'),
+    })
+    const fetcher = mock(
+      async () =>
+        new Response(
+          JSON.stringify({
+            schemaVersion: 2,
+            sessionId: 'capture_123',
+            state: 'live',
+            clocks: [],
+            coordinateFrames: [],
+            streams: [],
+          }),
+        ),
+    )
+    const source = createHttpCaptureSource(
+      { sessionId: 'capture_123', manifestUrl: 'https://allowed.example/manifest.json' },
+      {
+        fetch: fetcher as unknown as typeof fetch,
+        credentials: 'include',
+        headers: { 'x-test': 'value' },
+      },
+    )
+    try {
+      configureClientAssetPolicy([])
+      await expect(source.describe()).rejects.toThrow()
+      expect(fetcher).not.toHaveBeenCalled()
+      configureClientAssetPolicy(['https://allowed.example'])
+      await Promise.all([source.describe(), source.describe()])
+      expect(fetcher).toHaveBeenCalledTimes(1)
+      expect(fetcher.mock.calls[0]?.[1]).toMatchObject({
+        redirect: 'error',
+        credentials: 'include',
+        headers: { 'x-test': 'value' },
+      })
+      configureClientAssetPolicy([])
+      await expect(source.describe()).rejects.toThrow()
+      expect(fetcher).toHaveBeenCalledTimes(1)
+    } finally {
+      configureClientAssetPolicy(null)
+      if (previousLocation) Object.defineProperty(globalThis, 'location', previousLocation)
+      else Reflect.deleteProperty(globalThis, 'location')
+    }
+  })
+
+  test('policy changes abort in-flight manifest reads even when the fetcher stalls', async () => {
+    const previousLocation = Object.getOwnPropertyDescriptor(globalThis, 'location')
+    Object.defineProperty(globalThis, 'location', {
+      configurable: true,
+      value: new URL('https://app.example/editor'),
+    })
+    let requestSignal: AbortSignal | null | undefined
+    const source = createHttpCaptureSource(
+      { sessionId: 'capture_123', manifestUrl: 'https://allowed.example/manifest.json' },
+      {
+        fetch: ((_url: RequestInfo | URL, init?: RequestInit) => {
+          requestSignal = init?.signal
+          return new Promise(() => {})
+        }) as typeof fetch,
+      },
+    )
+    try {
+      configureClientAssetPolicy(['https://allowed.example'])
+      const pending = source.describe().then(
+        () => null,
+        (error: Error) => error,
+      )
+      expect(requestSignal?.aborted).toBe(false)
+      configureClientAssetPolicy([])
+      expect(requestSignal?.aborted).toBe(true)
+      expect((await pending)?.name).toBe('AbortError')
+    } finally {
+      configureClientAssetPolicy(null)
+      if (previousLocation) Object.defineProperty(globalThis, 'location', previousLocation)
+      else Reflect.deleteProperty(globalThis, 'location')
+    }
+  })
+
   test('resolves relative artifacts against an absolute manifest URL', async () => {
     const source = createHttpCaptureSource(
       {

@@ -1,4 +1,17 @@
-import { preserveGltfUnlit } from '@aedifex/viewer'
+import {
+  AssetAccessError,
+  AssetNetworkError,
+  getClientAssetPolicy,
+  isSchemeRelativeAssetUrl,
+  loadAssetUrl,
+  subscribeClientAssetPolicy,
+} from '@aedifex/core'
+import {
+  guardedCdnLocation,
+  loadGuardedGltf,
+  preserveGltfUnlit,
+  resolveCdnUrl,
+} from '@aedifex/viewer'
 import { DefaultLoadingManager, Group, LoadingManager } from 'three'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import { type GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
@@ -7,6 +20,7 @@ const ITEM_ASSET_UNAVAILABLE_KEY = 'aedifexItemAssetUnavailable'
 const ITEM_RESOURCE_FAILURES_KEY = 'aedifexItemResourceFailures'
 const DEFAULT_RETRY_DELAYS_MS = [1_000, 3_000] as const
 const itemLoadGenerations = new Map<string, number>()
+const guardedControllers = new Map<string, Set<AbortController>>()
 const pendingItemModelLoads = new WeakMap<LoadingManager, number>()
 const malformedItemJsonErrors = new WeakSet<Error>()
 
@@ -40,6 +54,8 @@ export function classifyItemModelLoadFailure(error: unknown): ItemModelLoadFailu
     return 'retryable'
   }
   if (status !== undefined && status >= 400 && status < 500) return 'unavailable'
+  if (error instanceof AssetNetworkError) return 'retryable'
+  if (error instanceof AssetAccessError) return 'unavailable'
   if (error instanceof TypeError && /failed to fetch/i.test(error.message)) return 'retryable'
 
   return 'unexpected'
@@ -83,6 +99,40 @@ export function getItemResourceFailures(gltf: Pick<GLTF, 'userData'>): string[] 
 
 export function cancelItemModelLoad(url: string) {
   itemLoadGenerations.set(url, (itemLoadGenerations.get(url) ?? 0) + 1)
+  for (const controller of guardedControllers.get(url) ?? []) controller.abort()
+}
+
+const GUARDED_ITEM_PREFIX = 'aedifex-guarded-item:'
+type GuardedItemRequest = { source: string; resolvedUrl: string; version: number }
+
+export function isGuardedItemModelKey(key: string): boolean {
+  return key.startsWith(GUARDED_ITEM_PREFIX)
+}
+
+export function guardedItemModelKey(request: GuardedItemRequest): string {
+  return `${GUARDED_ITEM_PREFIX}${encodeURIComponent(JSON.stringify(request))}`
+}
+
+function parseGuardedItemKey(key: string): GuardedItemRequest | null {
+  if (!isGuardedItemModelKey(key)) return null
+  try {
+    const value: unknown = JSON.parse(decodeURIComponent(key.slice(GUARDED_ITEM_PREFIX.length)))
+    if (!value || typeof value !== 'object') throw new Error()
+    const record = value as Record<string, unknown>
+    if (
+      typeof record.source !== 'string' ||
+      typeof record.resolvedUrl !== 'string' ||
+      !Number.isSafeInteger(record.version)
+    )
+      throw new Error()
+    return {
+      source: record.source,
+      resolvedUrl: record.resolvedUrl,
+      version: record.version as number,
+    }
+  } catch {
+    throw new AssetAccessError('Asset URL is unavailable')
+  }
 }
 
 export class ItemGLTFLoader extends GLTFLoader {
@@ -91,7 +141,10 @@ export class ItemGLTFLoader extends GLTFLoader {
   private resourceFailureVersion = 0
   private readonly resourceFailures = new Map<string, number>()
 
-  constructor(manager?: LoadingManager, retryDelaysMs = DEFAULT_RETRY_DELAYS_MS) {
+  constructor(
+    manager?: LoadingManager,
+    retryDelaysMs: readonly number[] = DEFAULT_RETRY_DELAYS_MS,
+  ) {
     super(new LoadingManager())
     this.register(preserveGltfUnlit)
     this.manager.onError = (url) => {
@@ -137,6 +190,7 @@ export class ItemGLTFLoader extends GLTFLoader {
     const resourceVersion = this.resourceFailureVersion
     let retryCount = 0
     let finished = false
+    let displayUrl = url
 
     const wasCancelled = () => (itemLoadGenerations.get(url) ?? 0) !== generation
     const end = () => {
@@ -193,35 +247,104 @@ export class ItemGLTFLoader extends GLTFLoader {
       }
     }
 
+    const handleFailure = (error: unknown) => {
+      if (finished) return
+      if (wasCancelled()) {
+        cancel()
+        return
+      }
+      const kind = classifyItemModelLoadFailure(error)
+      if (kind === 'unexpected') {
+        fail(error)
+        return
+      }
+      if (kind === 'unavailable' || retryCount >= this.retryDelaysMs.length) {
+        complete(createUnavailableItemGltf(displayUrl, error))
+        return
+      }
+      const delay = this.retryDelaysMs[retryCount] ?? 0
+      retryCount += 1
+      setTimeout(attempt, delay)
+    }
+
     const attempt = () => {
       if (wasCancelled()) {
         cancel()
         return
       }
       try {
-        super.load(url, complete, onProgress, (error) => {
-          if (finished) return
-          if (wasCancelled()) {
-            cancel()
-            return
-          }
-          const kind = classifyItemModelLoadFailure(error)
-          if (kind === 'unexpected') {
-            fail(error)
-            return
-          }
-          if (kind === 'unavailable' || retryCount >= this.retryDelaysMs.length) {
-            complete(createUnavailableItemGltf(url, error))
-            return
-          }
+        const guarded = parseGuardedItemKey(url)
+        if (!guarded) {
+          super.load(url, complete, onProgress, handleFailure)
+          return
+        }
+        displayUrl = guarded.resolvedUrl
+        const policy = getClientAssetPolicy()
+        if (policy.origins === null || policy.version !== guarded.version)
+          throw new AssetAccessError('Asset policy changed')
+        if (
+          isSchemeRelativeAssetUrl(guarded.source) ||
+          resolveCdnUrl(guarded.source) !== guarded.resolvedUrl
+        )
+          throw new AssetAccessError('Asset URL is unavailable')
 
-          const delay = this.retryDelaysMs[retryCount] ?? 0
-          retryCount += 1
-          setTimeout(attempt, delay)
+        const documentUrl = window.location.href
+        const { source, baseUrl, trustedRelativeOrigin } = guardedCdnLocation({
+          source: guarded.source,
+          resolvedUrl: guarded.resolvedUrl,
+          documentUrl,
         })
+
+        const controller = new AbortController()
+        const controllers = guardedControllers.get(url) ?? new Set<AbortController>()
+        controllers.add(controller)
+        guardedControllers.set(url, controllers)
+        const unsubscribe = subscribeClientAssetPolicy(() => {
+          if (getClientAssetPolicy().version !== guarded.version) controller.abort()
+        })
+        if (getClientAssetPolicy().version !== guarded.version) controller.abort()
+        const release = () => {
+          unsubscribe()
+          controllers.delete(controller)
+          if (controllers.size === 0) guardedControllers.delete(url)
+        }
+        const createLoader = () => {
+          const inner = new ItemGLTFLoader(undefined, [])
+          const sourceInternals = this as unknown as { pluginCallbacks: unknown[] }
+          const targetInternals = inner as unknown as { pluginCallbacks: unknown[] }
+          targetInternals.pluginCallbacks = [...sourceInternals.pluginCallbacks]
+          inner.setDRACOLoader(this.dracoLoader)
+          inner.setKTX2Loader(this.ktx2Loader)
+          inner.setMeshoptDecoder(this.meshoptDecoder)
+          return inner
+        }
+        void loadGuardedGltf({
+          url: source,
+          baseUrl,
+          documentUrl,
+          allowedOrigins: new Set(policy.origins),
+          trustedRelativeOrigin,
+          createLoader,
+          resolveHandle: loadAssetUrl,
+          signal: controller.signal,
+        }).then(
+          (gltf) => {
+            release()
+            complete(gltf)
+          },
+          (error) => {
+            release()
+            if (controller.signal.aborted && getClientAssetPolicy().version !== guarded.version) {
+              complete(
+                createUnavailableItemGltf(displayUrl, new AssetAccessError('Asset policy changed')),
+              )
+            } else handleFailure(error)
+          },
+        )
       } catch (error) {
         if (finished) throw error
-        fail(error)
+        if (error instanceof AssetAccessError) handleFailure(error)
+        else fail(error)
       }
     }
 

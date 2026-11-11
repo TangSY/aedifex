@@ -8,6 +8,7 @@ import {
   nodeRegistry,
   useScene,
 } from '@aedifex/core'
+import { AssetBackground } from '@aedifex/viewer'
 import { useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '../primitives/popover'
 import { MaterialPicker } from './material-picker'
@@ -31,7 +32,8 @@ function describe(ref: string, materials: ReturnType<typeof useScene.getState>['
     }
   const sceneId = getSceneMaterialIdFromRef(ref)
   const scene = sceneId ? materials[sceneId as keyof typeof materials] : undefined
-  if (scene) return { label: scene.name, color: scene.material.properties?.color ?? null, image: null }
+  if (scene)
+    return { label: scene.name, color: scene.material.properties?.color ?? null, image: null }
   if (ref.startsWith('#')) return { label: ref.toUpperCase(), color: ref, image: null }
   return { label: 'Default', color: null, image: null }
 }
@@ -83,20 +85,22 @@ export function FinishSwatch({
             data-finish-swatch={label}
             type="button"
           >
-            <span
+            <AssetBackground
               aria-hidden
-              className="size-4 shrink-0 overflow-hidden rounded-full border border-border/50"
+              className="size-4 shrink-0 overflow-hidden rounded-full border border-border/50 bg-cover bg-center"
+              imageUrl={swatch.image ?? undefined}
               style={{ backgroundColor: swatch.color ?? 'transparent' }}
-            >
-              {swatch.image && <img alt="" className="size-full object-cover" src={swatch.image} />}
-            </span>
+            />
             <span className="truncate">{swatch.label}</span>
           </button>
         </PopoverTrigger>
         <PopoverContent align="end" className="flex h-96 w-80 flex-col p-2" side="left">
           <MaterialPicker
             onSelectMaterialPreset={(ref) => {
-              const live = useScene.getState().nodes[node.id as keyof ReturnType<typeof useScene.getState>['nodes']]
+              const live =
+                useScene.getState().nodes[
+                  node.id as keyof ReturnType<typeof useScene.getState>['nodes']
+                ]
               if (live) paintSurface(live, role, ref)
               setOpen(false)
             }}

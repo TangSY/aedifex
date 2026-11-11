@@ -2,16 +2,16 @@
 
 import type { AssetInput } from '@aedifex/core'
 import { Root as TooltipRoot } from '@radix-ui/react-tooltip'
-import NextImage from 'next/image'
 import { useMemo, useState } from 'react'
-import { triggerSFX } from '../../../../../lib/sfx-bus'
-import { cn } from '../../../../../lib/utils'
-import { ItemCatalog } from '../../../item-catalog/item-catalog'
 import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '../../../../../components/ui/primitives/tooltip'
+import { triggerSFX } from '../../../../../lib/sfx-bus'
+import { cn } from '../../../../../lib/utils'
+import { ItemCatalog } from '../../../item-catalog/item-catalog'
+import { NodeIconImage } from '../../../node-icon-image'
 
 /** A function-axis taxonomy node, assembled into a tree by the embedder. */
 export type FunctionTreeNode = {
@@ -64,9 +64,7 @@ export function FunctionTreePanel({
   leadingTile?: React.ReactNode
   emptyState?: React.ReactNode
 }) {
-  const [activeRootSlug, setActiveRootSlug] = useState<string | null>(
-    functionTree[0]?.slug ?? null,
-  )
+  const [activeRootSlug, setActiveRootSlug] = useState<string | null>(functionTree[0]?.slug ?? null)
   const [activeChildSlug, setActiveChildSlug] = useState<string | null>(null)
   const [activeSource, setActiveSource] = useState<AssetInput['source'] | null>('library')
   const [search, setSearch] = useState('')
@@ -132,6 +130,7 @@ export function FunctionTreePanel({
               <TooltipRoot key={root.slug}>
                 <TooltipTrigger asChild>
                   <button
+                    aria-label={root.name}
                     className={cn(
                       'relative flex aspect-square items-center justify-center rounded-xl transition-all duration-200',
                       isActive
@@ -146,7 +145,7 @@ export function FunctionTreePanel({
                     type="button"
                   >
                     {root.iconUrl ? (
-                      <NextImage
+                      <NodeIconImage
                         alt={root.name}
                         className="size-7 object-contain"
                         height={28}

@@ -1,11 +1,14 @@
 'use client'
 
+import { AssetAccessError, getClientAssetPolicy, subscribeClientAssetPolicy } from '@aedifex/core'
 import type { CaptureStreamPacket } from '@aedifex/core/capture'
 import { useLoader } from '@react-three/fiber'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { BufferGeometry, Float32BufferAttribute } from 'three'
 import { PLYLoader } from 'three/addons/loaders/PLYLoader.js'
+import { retainResourceFailure } from '../../lib/resource-failures'
 import { rewriteLoopbackAssetUrl } from '../asset-url'
+import { readGuardedCaptureArtifact } from '../read-guarded-artifact'
 
 export type PointCloudData = {
   colors: Float32Array | null
@@ -14,12 +17,14 @@ export type PointCloudData = {
 
 export function CapturePointCloudLayer({
   artifactUrl,
+  artifactSourceUrl,
   inline,
   maxPoints = 250_000,
   packets = [],
   pointSize = 0.012,
 }: {
   artifactUrl?: string
+  artifactSourceUrl?: string
   inline?: unknown
   maxPoints?: number
   packets?: readonly CaptureStreamPacket[]
@@ -36,14 +41,104 @@ export function CapturePointCloudLayer({
   if (inlineData.positions.length > 0) {
     return <PointCloudDataLayer data={inlineData} pointSize={pointSize} />
   }
-  return artifactUrl ? <PlyPointCloud pointSize={pointSize} url={artifactUrl} /> : null
+  return artifactUrl ? (
+    <PlyPointCloud pointSize={pointSize} sourceUrl={artifactSourceUrl} url={artifactUrl} />
+  ) : null
 }
 
-function PlyPointCloud({ pointSize, url }: { pointSize: number; url: string }) {
+function PlyPointCloud({
+  pointSize,
+  sourceUrl,
+  url,
+}: {
+  pointSize: number
+  sourceUrl?: string
+  url: string
+}) {
+  const policy = useSyncExternalStore(
+    subscribeClientAssetPolicy,
+    getClientAssetPolicy,
+    getClientAssetPolicy,
+  )
+  if (policy.origins !== null) {
+    return <GuardedPlyPointCloud pointSize={pointSize} sourceUrl={sourceUrl} url={url} />
+  }
+  return <UnrestrictedPlyPointCloud pointSize={pointSize} url={url} />
+}
+
+function UnrestrictedPlyPointCloud({ pointSize, url }: { pointSize: number; url: string }) {
   const source = useLoader(PLYLoader, rewriteLoopbackAssetUrl(url))
   const geometry = useMemo(() => source.clone(), [source])
   useEffect(() => () => geometry.dispose(), [geometry])
 
+  return <PlyGeometry geometry={geometry} pointSize={pointSize} />
+}
+
+function GuardedPlyPointCloud({
+  pointSize,
+  sourceUrl,
+  url,
+}: {
+  pointSize: number
+  sourceUrl?: string
+  url: string
+}) {
+  const policy = useSyncExternalStore(
+    subscribeClientAssetPolicy,
+    getClientAssetPolicy,
+    getClientAssetPolicy,
+  )
+  const resolvedUrl = rewriteLoopbackAssetUrl(url)
+  const key = `${policy.version}:${sourceUrl ?? ''}:${resolvedUrl}`
+  const [result, setResult] = useState<{
+    key: string
+    geometry?: BufferGeometry
+    error?: Error
+    unavailable?: boolean
+  } | null>(null)
+  useEffect(() => {
+    if (policy.origins === null) return
+    const controller = new AbortController()
+    const unsubscribe = subscribeClientAssetPolicy(() => controller.abort())
+    if (getClientAssetPolicy().version !== policy.version) controller.abort()
+    let geometry: BufferGeometry | undefined
+    void readGuardedCaptureArtifact({
+      sourceUrl,
+      resolvedUrl,
+      documentUrl: window.location.href,
+      origins: policy.origins,
+      signal: controller.signal,
+      maxBytes: 256 * 1024 * 1024,
+    })
+      .then((bytes) => {
+        if (controller.signal.aborted) return
+        geometry = new PLYLoader().parse(bytes.buffer as ArrayBuffer)
+        if (!controller.signal.aborted) setResult({ key, geometry })
+      })
+      .catch((cause: unknown) => {
+        if (!controller.signal.aborted)
+          setResult({
+            key,
+            error: cause instanceof Error ? cause : new Error('Could not load point cloud.'),
+            unavailable: cause instanceof AssetAccessError,
+          })
+      })
+    return () => {
+      controller.abort()
+      unsubscribe()
+      geometry?.dispose()
+    }
+  }, [key, policy, resolvedUrl, sourceUrl])
+  useEffect(() => {
+    if (result?.key !== key || !result.unavailable) return
+    return retainResourceFailure(`capture:${sourceUrl ?? resolvedUrl}`)
+  }, [key, resolvedUrl, result, sourceUrl])
+  if (!result || result.key !== key || result.unavailable) return null
+  if (result.error) throw result.error
+  return result.geometry ? <PlyGeometry geometry={result.geometry} pointSize={pointSize} /> : null
+}
+
+function PlyGeometry({ geometry, pointSize }: { geometry: BufferGeometry; pointSize: number }) {
   return (
     <points frustumCulled={false} geometry={geometry}>
       <pointsMaterial

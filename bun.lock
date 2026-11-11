@@ -447,6 +447,7 @@
       "dependencies": {
         "three-bvh-csg": "^0.0.18",
         "three-mesh-bvh": "~0.9.16",
+        "three-stdlib": "^2.35.6",
         "zustand": "^5",
       },
       "devDependencies": {

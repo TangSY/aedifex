@@ -33,13 +33,21 @@ const ScanAsset = ({ url, opacity }: { url: string; opacity: number }) => {
 
   return (
     <Suspense>
-      <ScanModel opacity={opacity} url={resolvedUrl} />
+      <ScanModel opacity={opacity} sourceUrl={url} url={resolvedUrl} />
     </Suspense>
   )
 }
 
-const ScanModel = ({ url, opacity }: { url: string; opacity: number }) => {
-  const gltf = useGLTFKTX2(url) as any
+const ScanModel = ({
+  url,
+  sourceUrl,
+  opacity,
+}: {
+  url: string
+  sourceUrl: string
+  opacity: number
+}) => {
+  const gltf = useGLTFKTX2(url, sourceUrl) as any
   const scene = gltf.scene
 
   useMemo(() => {

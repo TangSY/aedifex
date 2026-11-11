@@ -1,3 +1,9 @@
+import {
+  AssetAccessError,
+  getClientAssetPolicy,
+  restrictedAssetUrl,
+  subscribeClientAssetPolicy,
+} from '@aedifex/core'
 import type {
   CaptureSessionDescriptor,
   CaptureSessionLocator,
@@ -6,7 +12,7 @@ import type {
   CaptureStreamDescriptor,
   CaptureStreamPacket,
 } from '@aedifex/core/capture'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 
 export type CaptureSourceState = {
   descriptor: CaptureSessionDescriptor | null
@@ -36,8 +42,14 @@ export function useCaptureSource(
   options: UseCaptureSourceOptions = {},
 ): CaptureSourceState {
   const { maxPacketsPerStream = 32, streamFilter, subscribe = true } = options
+  const policy = useSyncExternalStore(
+    subscribeClientAssetPolicy,
+    getClientAssetPolicy,
+    getClientAssetPolicy,
+  )
   const [retryVersion, setRetryVersion] = useState(0)
-  const [state, setState] = useState<CaptureSourceSnapshot>({
+  const [state, setState] = useState<CaptureSourceSnapshot & { policyVersion: number }>({
+    policyVersion: policy.version,
     descriptor: null,
     descriptorVersion: 0,
     error: null,
@@ -49,8 +61,17 @@ export function useCaptureSource(
 
   useEffect(() => {
     const abort = new AbortController()
+    const setPolicyState = (
+      update: CaptureSourceSnapshot | ((current: CaptureSourceSnapshot) => CaptureSourceSnapshot),
+    ) => {
+      setState((current) => {
+        if (getClientAssetPolicy().version !== policy.version) return current
+        const next = typeof update === 'function' ? update(current) : update
+        return { ...next, policyVersion: policy.version }
+      })
+    }
     if (!locator) {
-      setState({
+      setPolicyState({
         descriptor: null,
         descriptorVersion: 0,
         error: null,
@@ -62,7 +83,7 @@ export function useCaptureSource(
       return () => abort.abort()
     }
 
-    setState({
+    setPolicyState({
       descriptor: null,
       descriptorVersion: retryVersion,
       error: null,
@@ -79,13 +100,33 @@ export function useCaptureSource(
       maxPacketsPerStream,
       streamFilter,
       subscribe,
-      setState,
+      setPolicyState,
     )
     return () => abort.abort()
-  }, [locator, maxPacketsPerStream, resolveSource, retryVersion, streamFilter, subscribe])
+  }, [
+    locator,
+    maxPacketsPerStream,
+    policy.version,
+    resolveSource,
+    retryVersion,
+    streamFilter,
+    subscribe,
+  ])
 
   const retry = useCallback(() => setRetryVersion((current) => current + 1), [])
-  return { ...state, retry }
+  const { policyVersion, ...snapshot } = state
+  if (policyVersion !== policy.version)
+    return {
+      descriptor: null,
+      descriptorVersion: retryVersion,
+      error: null,
+      loading: Boolean(locator),
+      packets: EMPTY_PACKETS,
+      source: null,
+      streamEpochs: EMPTY_STREAM_EPOCHS,
+      retry,
+    }
+  return { ...snapshot, retry }
 }
 
 async function consumeCaptureSource(
@@ -101,7 +142,19 @@ async function consumeCaptureSource(
   ) => void,
 ): Promise<void> {
   try {
+    const policy = getClientAssetPolicy()
+    if (policy.origins !== null && locator.manifestUrl) {
+      if (typeof window === 'undefined')
+        throw new AssetAccessError('Asset policy requires a document URL')
+      restrictedAssetUrl({
+        url: locator.manifestUrl,
+        baseUrl: window.location.href,
+        documentUrl: window.location.href,
+        allowedOrigins: new Set(policy.origins),
+      })
+    }
     const source = await resolveSource(locator)
+    if (signal.aborted || getClientAssetPolicy().version !== policy.version) return
     const descriptor = await source.describe(signal)
     if (signal.aborted) return
     setState({

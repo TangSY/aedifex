@@ -1,4 +1,5 @@
 import {
+  getClientAssetPolicy,
   getMaterialPresetByRef,
   type MaterialMapProperties,
   type MaterialPresetPayload,
@@ -11,6 +12,8 @@ import {
   type SceneMaterial,
   type SceneMaterialId,
   type SurfaceRole,
+  subscribeClientAssetPolicy,
+  useScene,
 } from '@aedifex/core'
 import { addAfterEffect, invalidate } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -18,7 +21,9 @@ import { float, mix, positionViewDirection, transformedNormalView } from 'three/
 import { MeshLambertNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu'
 
 import { resolveCdnUrl } from './asset-url'
+import { loadGuardedMaterialTexture } from './guarded-material-texture'
 import { isKtx2Url, ktx2Loader, whenKtx2Ready } from './ktx2-loader'
+import { retainResourceFailure } from './resource-failures'
 import { getSceneTheme } from './scene-themes'
 import { stampAedifexTextureRef } from './texture-reference'
 
@@ -117,6 +122,104 @@ const pendingTextures = new Set<string>()
 const failedTextures = new Set<string>()
 const textureLoader = new THREE.TextureLoader()
 let materialTextureVersion = 0
+let materialCacheGeneration = 0
+const guardedTextureControllers = new Set<AbortController>()
+const materialFailureReleases = new Map<string, () => void>()
+const managedMaterials = new Set<WeakRef<CommonMaterial>>()
+const managedSlots = new WeakMap<CommonMaterial, Map<TextureSlot, THREE.Texture>>()
+const assignmentVersions = new WeakMap<CommonMaterial, Map<TextureSlot, number>>()
+const materialFinalizer = new FinalizationRegistry<WeakRef<CommonMaterial>>((ref) => {
+  managedMaterials.delete(ref)
+})
+
+function recordMaterialTexture(
+  material: CommonMaterial,
+  slot: TextureSlot,
+  texture: THREE.Texture,
+) {
+  let slots = managedSlots.get(material)
+  if (!slots) {
+    slots = new Map()
+    managedSlots.set(material, slots)
+    const ref = new WeakRef(material)
+    managedMaterials.add(ref)
+    materialFinalizer.register(material, ref, ref)
+    material.addEventListener('dispose', () => {
+      managedMaterials.delete(ref)
+      materialFinalizer.unregister(ref)
+      managedSlots.delete(material)
+      assignmentVersions.delete(material)
+    })
+  }
+  slots.set(slot, texture)
+}
+
+function nextAssignmentVersion(material: CommonMaterial, slot: TextureSlot): number {
+  let versions = assignmentVersions.get(material)
+  if (!versions) {
+    versions = new Map()
+    assignmentVersions.set(material, versions)
+  }
+  const version = (versions.get(slot) ?? 0) + 1
+  versions.set(slot, version)
+  return version
+}
+
+function clearManagedMaterialTextures() {
+  for (const ref of managedMaterials) {
+    const material = ref.deref()
+    if (!material) {
+      managedMaterials.delete(ref)
+      continue
+    }
+    const slots = managedSlots.get(material)
+    if (!slots) continue
+    for (const [slot, texture] of slots) {
+      if ((material as TextureMaterial)[slot] === texture) {
+        ;(material as TextureMaterial)[slot] = null
+        material.needsUpdate = true
+        materialTextureVersion++
+      }
+    }
+    slots.clear()
+  }
+}
+
+async function guardedTextureLoad(source: string, resolvedUrl: string): Promise<THREE.Texture> {
+  const policy = getClientAssetPolicy()
+  if (policy.origins === null) throw new Error('Asset policy is not restricted')
+  const controller = new AbortController()
+  guardedTextureControllers.add(controller)
+  const load = async (url: string) => {
+    if (isKtx2Url(resolvedUrl)) await whenKtx2Ready()
+    if (controller.signal.aborted) throw new DOMException('Aborted', 'AbortError')
+    return pickTextureLoader(resolvedUrl).loadAsync(url)
+  }
+  try {
+    return await loadGuardedMaterialTexture({
+      source,
+      resolvedUrl,
+      documentUrl: window.location.href,
+      origins: policy.origins,
+      signal: controller.signal,
+      loadTexture: load,
+    })
+  } finally {
+    guardedTextureControllers.delete(controller)
+  }
+}
+
+function markTextureFailure(key: string) {
+  failedTextures.add(key)
+  if (getClientAssetPolicy().origins !== null && !materialFailureReleases.has(key))
+    materialFailureReleases.set(key, retainResourceFailure(`material:${key}`))
+}
+
+function clearTextureFailure(key: string) {
+  failedTextures.delete(key)
+  materialFailureReleases.get(key)?.()
+  materialFailureReleases.delete(key)
+}
 
 // Highlight clones can observe late assignments without polling every material.
 export function getMaterialTextureVersion(): number {
@@ -129,16 +232,19 @@ export function materialTextureLoadState(): { pending: number; failed: number } 
 }
 
 function loadTexture(url: string, key: string): THREE.Texture {
+  const generation = materialCacheGeneration
   pendingTextures.add(key)
   try {
     return pickTextureLoader(url).load(
       url,
       () => {
+        if (generation !== materialCacheGeneration) return
         pendingTextures.delete(key)
         failedTextures.delete(key)
       },
       undefined,
       () => {
+        if (generation !== materialCacheGeneration) return
         pendingTextures.delete(key)
         failedTextures.add(key)
       },
@@ -243,6 +349,10 @@ export function getTextureKey(material?: MaterialSchema): string {
   return `${texture.url}-${repeatX}x${repeatY}`
 }
 
+function resolveCustomTextureUrl(url: string): string {
+  return /^(?:asset|blob|data):/.test(url) ? url : (resolveCdnUrl(url) ?? url)
+}
+
 function getTexture(material?: MaterialSchema): THREE.Texture | undefined {
   const textureConfig = material?.texture
   if (!textureConfig?.url) return undefined
@@ -251,9 +361,7 @@ function getTexture(material?: MaterialSchema): THREE.Texture | undefined {
   const cached = textureCache.get(cacheKey)
   if (cached) return cached
 
-  const resolvedUrl = /^(?:asset|blob|data):/.test(textureConfig.url)
-    ? textureConfig.url
-    : (resolveCdnUrl(textureConfig.url) ?? textureConfig.url)
+  const resolvedUrl = resolveCustomTextureUrl(textureConfig.url)
   const texture = loadTexture(resolvedUrl, cacheKey)
   texture.wrapS = THREE.RepeatWrapping
   texture.wrapT = THREE.RepeatWrapping
@@ -270,6 +378,67 @@ function getTexture(material?: MaterialSchema): THREE.Texture | undefined {
 
   textureCache.set(cacheKey, texture)
   return texture
+}
+
+function queueCustomTexture(material: CommonMaterial, schema: MaterialSchema) {
+  const config = schema.texture
+  if (!config?.url) return
+  const key = getTextureKey(schema)
+  const generation = materialCacheGeneration
+  const assignment = nextAssignmentVersion(material, 'map')
+  const cached = textureCache.get(key)
+  const resolvedUrl = resolveCustomTextureUrl(config.url)
+  let promise = cached ? Promise.resolve(cached) : textureLoadPromises.get(key)
+  if (!promise) {
+    const load =
+      getClientAssetPolicy().origins !== null
+        ? guardedTextureLoad(config.url, resolvedUrl)
+        : whenKtx2Ready().then(() => {
+            if (generation !== materialCacheGeneration) return null
+            return (ktx2Loader as unknown as THREE.TextureLoader).loadAsync(resolvedUrl)
+          })
+    promise = load
+      .then((texture) => {
+        if (!texture) return null
+        if (generation !== materialCacheGeneration) {
+          texture.dispose()
+          return null
+        }
+        texture.wrapS = THREE.RepeatWrapping
+        texture.wrapT = THREE.RepeatWrapping
+        texture.repeat.set(...resolveTextureRepeat(config.repeat, config.scale))
+        texture.updateMatrix()
+        texture.colorSpace = THREE.SRGBColorSpace
+        stampAedifexTextureRef(texture, { kind: 'project-asset', src: resolvedUrl, slot: 'map' })
+        textureCache.set(key, texture)
+        clearTextureFailure(key)
+        return texture
+      })
+      .catch((error) => {
+        if (generation === materialCacheGeneration) {
+          markTextureFailure(key)
+          console.warn('[viewer] Failed to load material texture', resolvedUrl, error)
+        }
+        return null
+      })
+      .finally(() => {
+        if (textureLoadPromises.get(key) === promise) textureLoadPromises.delete(key)
+      })
+    textureLoadPromises.set(key, promise)
+  }
+  void promise.then((texture) => {
+    if (
+      !texture ||
+      generation !== materialCacheGeneration ||
+      assignmentVersions.get(material)?.get('map') !== assignment
+    )
+      return
+    material.map = texture
+    recordMaterialTexture(material, 'map', texture)
+    material.needsUpdate = true
+    materialTextureVersion++
+    invalidate()
+  })
 }
 
 function isStandardMaterial(material: THREE.Material): material is StandardMaterial {
@@ -374,19 +543,27 @@ async function loadPresetTexture(
 
   const existingPromise = textureLoadPromises.get(cacheKey)
   if (existingPromise) return existingPromise
+  const generation = materialCacheGeneration
 
   // `.ktx2` loads wait for `detectSupport` (KTX2Loader.load throws before it) —
   // materials can be created while a capture canvas's renderer is still
   // initializing, and failing here would cache the material permanently
   // texture-less (white).
-  const load = isKtx2Url(resolvedPath)
-    ? whenKtx2Ready().then(() =>
-        (ktx2Loader as unknown as THREE.TextureLoader).loadAsync(resolvedPath),
-      )
-    : textureLoader.loadAsync(resolvedPath)
+  const load =
+    getClientAssetPolicy().origins !== null
+      ? guardedTextureLoad(path, resolvedPath)
+      : isKtx2Url(resolvedPath)
+        ? whenKtx2Ready().then(() =>
+            (ktx2Loader as unknown as THREE.TextureLoader).loadAsync(resolvedPath),
+          )
+        : textureLoader.loadAsync(resolvedPath)
 
   const promise = load
     .then((texture) => {
+      if (generation !== materialCacheGeneration) {
+        texture.dispose()
+        return null
+      }
       applyTextureProperties(texture, props, slot)
       stampAedifexTextureRef(texture, {
         kind: 'material',
@@ -395,14 +572,15 @@ async function loadPresetTexture(
       })
       setTextureCacheKey(texture, cacheKey)
       textureCache.set(cacheKey, texture)
-      textureLoadPromises.delete(cacheKey)
-      failedTextures.delete(cacheKey)
+      if (textureLoadPromises.get(cacheKey) === promise) textureLoadPromises.delete(cacheKey)
+      clearTextureFailure(cacheKey)
       return texture
     })
     .catch((error) => {
+      if (generation !== materialCacheGeneration) return null
       console.warn('[viewer] Failed to load material texture', resolvedPath, error)
-      textureLoadPromises.delete(cacheKey)
-      failedTextures.add(cacheKey)
+      if (textureLoadPromises.get(cacheKey) === promise) textureLoadPromises.delete(cacheKey)
+      markTextureFailure(cacheKey)
       return null
     })
 
@@ -417,6 +595,8 @@ function queueTextureAssignment(
   props: MaterialMapProperties,
 ) {
   const textureMaterial = material as TextureMaterial
+  const assignment = nextAssignmentVersion(material, slot)
+  const generation = materialCacheGeneration
 
   if (!path) {
     if (textureMaterial[slot] != null) {
@@ -441,6 +621,7 @@ function queueTextureAssignment(
   const cached = textureCache.get(cacheKey)
   if (cached) {
     textureMaterial[slot] = createAssignedTexture(cached, props, slot)
+    recordMaterialTexture(material, slot, textureMaterial[slot]!)
     material.needsUpdate = true
     materialTextureVersion++
     return
@@ -457,8 +638,14 @@ function queueTextureAssignment(
   }
 
   loadPresetTexture(path, props, slot).then((texture) => {
-    if (!texture) return
+    if (
+      !texture ||
+      generation !== materialCacheGeneration ||
+      assignmentVersions.get(material)?.get(slot) !== assignment
+    )
+      return
     textureMaterial[slot] = createAssignedTexture(texture, props, slot)
+    recordMaterialTexture(material, slot, textureMaterial[slot]!)
     material.needsUpdate = true
     materialTextureVersion++
   })
@@ -612,7 +799,11 @@ export function createMaterial(
     return materialCache.get(cacheKey)!
   }
 
-  const map = getTexture(material)
+  const restricted = getClientAssetPolicy().origins !== null
+  const deferredTexture = Boolean(
+    material?.texture?.url && isKtx2Url(resolveCustomTextureUrl(material.texture.url)),
+  )
+  const map = restricted || deferredTexture ? undefined : getTexture(material)
   const materialParams: {
     color: string
     map?: THREE.Texture
@@ -641,6 +832,8 @@ export function createMaterial(
   if (glassPreset) maybeApplyGlassFresnel(threeMaterial)
   threeMaterial.userData.__aedifexCachedMaterial = true
   materialCache.set(cacheKey, threeMaterial)
+  if (map) recordMaterialTexture(threeMaterial, 'map', map)
+  if ((restricted || deferredTexture) && material) queueCustomTexture(threeMaterial, material)
   return threeMaterial
 }
 
@@ -868,6 +1061,11 @@ export function registerMaterialCacheCleanup(cleanup: MaterialCacheCleanup): () 
 }
 
 export function clearMaterialCache(): void {
+  materialCacheGeneration++
+  for (const controller of guardedTextureControllers) controller.abort()
+  guardedTextureControllers.clear()
+  for (const release of materialFailureReleases.values()) release()
+  materialFailureReleases.clear()
   const previous = [
     ...materialCache.values(),
     ...defaultMaterialCache.values(),
@@ -894,3 +1092,11 @@ export function clearMaterialCache(): void {
   })
   invalidate()
 }
+
+subscribeClientAssetPolicy(() => {
+  if (!managedMaterials.size && !textureLoadPromises.size && !textureCache.size) return
+  clearManagedMaterialTextures()
+  clearMaterialCache()
+  const scene = useScene.getState()
+  for (const node of Object.values(scene.nodes)) scene.markDirty(node.id)
+})

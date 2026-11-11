@@ -1,7 +1,8 @@
 'use client'
 
-import { Icon } from '@iconify/react'
 import type { IconRef } from '@aedifex/core'
+import { useAssetImageUrl } from '@aedifex/viewer'
+import { Icon } from '@iconify/react'
 import { type ComponentType, lazy, Suspense } from 'react'
 import { cn } from '../../lib/utils'
 
@@ -37,8 +38,10 @@ export function IconRefImage({
   src: string
 }) {
   const style = size === undefined ? undefined : { height: size, width: size }
-  if (!isCurrentColorSvg(src)) return <img alt="" className={className} src={src} style={style} />
-  const mask = `url("${src.replace(/["\\\n\r]/g, encodeURIComponent)}") center / contain no-repeat`
+  const { url } = useAssetImageUrl(src)
+  if (!url) return null
+  if (!isCurrentColorSvg(src)) return <img alt="" className={className} src={url} style={style} />
+  const mask = `url(${JSON.stringify(url)}) center / contain no-repeat`
   return (
     <span
       aria-hidden

@@ -1,12 +1,7 @@
 'use client'
 
-import {
-  type AnyNodeId,
-  useLiveNodeOverrides,
-  useScene,
-  type WallFaceRegion,
-} from '@aedifex/core'
-import { useViewer } from '@aedifex/viewer'
+import { type AnyNodeId, useLiveNodeOverrides, useScene, type WallFaceRegion } from '@aedifex/core'
+import { AssetBackground, useViewer } from '@aedifex/viewer'
 import { Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
 import { removeWallRegion } from '../../../lib/paint-regions'
@@ -67,15 +62,11 @@ export function WallPaintRegionList({ wallId }: { wallId: string }) {
                   onClick={() => setActive({ wallId, regionId: row.id })}
                   type="button"
                 >
-                  <span
+                  <AssetBackground
                     aria-hidden="true"
                     className="h-4 w-4 shrink-0 rounded-sm border border-border/50 bg-center bg-cover"
-                    style={{
-                      backgroundColor: row.finish.color,
-                      backgroundImage: row.finish.imageUrl
-                        ? `url(${row.finish.imageUrl})`
-                        : undefined,
-                    }}
+                    imageUrl={row.finish.imageUrl}
+                    style={{ backgroundColor: row.finish.color }}
                   />
                   <span className="flex min-w-0 flex-col leading-tight">
                     <span className="truncate text-sm">{row.finish.name}</span>
@@ -99,9 +90,7 @@ export function WallPaintRegionList({ wallId }: { wallId: string }) {
               </div>
             )
           })}
-          {capNotice && (
-            <div className="px-1 text-[11px] text-muted-foreground">{capNotice}</div>
-          )}
+          {capNotice && <div className="px-1 text-[11px] text-muted-foreground">{capNotice}</div>}
         </div>
       </PanelSection>
     </div>

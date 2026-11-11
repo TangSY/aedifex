@@ -23,7 +23,7 @@ import {
   triggerSFX,
   useInteractionScope,
 } from '@aedifex/editor'
-import { useViewer } from '@aedifex/viewer'
+import { AssetBackground, useViewer } from '@aedifex/viewer'
 import { Check, Move, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { resolveSlotPaintMaterialRef } from '../shared/slot-paint'
@@ -346,12 +346,12 @@ export default function BlockPanel() {
                   type="button"
                 />
                 <span className="pointer-events-none relative z-10 flex w-12 shrink-0 items-center justify-center">
-                  <span
+                  <AssetBackground
                     className="h-7 w-7 shrink-0 rounded-md border border-black/10 dark:border-white/10 bg-cover bg-center shadow-inner"
+                    imageUrl={preview.imageUrl}
                     style={{
                       backgroundColor:
                         !ref && slot.slotId !== BLOCK_BODY_SLOT_ID ? '#7768d8' : preview.color,
-                      backgroundImage: preview.imageUrl ? `url(${preview.imageUrl})` : undefined,
                     }}
                   />
                 </span>
