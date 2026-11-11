@@ -63,7 +63,7 @@ export const InlineRenameField = memo(function InlineRenameField({
 
   const handleSave = useCallback(() => {
     const trimmed = value.trim()
-    if (trimmed !== name) {
+    if ((trimmed || undefined) !== (name || undefined)) {
       onRename(trimmed || undefined)
     }
     onStopEditing()
