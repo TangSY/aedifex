@@ -21,10 +21,7 @@ import {
   useState,
 } from 'react'
 import * as THREE from 'three/webgpu'
-import {
-  clearScreenshotRenderer,
-  setScreenshotRenderer,
-} from '../../lib/capture-screenshot'
+import { clearScreenshotRenderer, setScreenshotRenderer } from '../../lib/capture-screenshot'
 import { hasDrawableGeometry } from '../../lib/drawable-geometry'
 import { PERF_OVERLAY_ENABLED } from '../../lib/gpu-perf'
 import { applyIsolation, clearIsolation } from '../../lib/isolation'
@@ -34,6 +31,7 @@ import { choosePointerEvents, type ViewerBreadcrumbHandler } from '../../lib/poi
 import { initializeGpuRenderer, type RendererPowerPreference } from '../../lib/renderer-capability'
 import { getSceneTheme } from '../../lib/scene-themes'
 import { installTextureNodeNullGuard } from '../../lib/texture-node-guard'
+import { viewerPreferenceStorage } from '../../lib/viewer-preference-storage'
 import useViewer, { type RenderContext } from '../../store/use-viewer'
 import { FloorElevationSystem } from '../../systems/floor-elevation/floor-elevation-system'
 import { GeometrySystem } from '../../systems/geometry/geometry-system'
@@ -629,8 +627,8 @@ const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
     if (!hasDefaultRender || typeof window === 'undefined') return
 
     let persistedState: Record<string, unknown> = {}
-    const rawPreferences = window.localStorage.getItem('viewer-preferences')
-    if (rawPreferences) {
+    const rawPreferences = viewerPreferenceStorage.getItem('viewer-preferences')
+    if (typeof rawPreferences === 'string' && rawPreferences) {
       try {
         const parsed = JSON.parse(rawPreferences)
         if (

@@ -30,7 +30,7 @@ test('the real <Viewer onRenderError> fixtures run in an isolated process', asyn
     if (exitCode !== 0) throw new Error(`${stdout}\n${stderr}`)
     const summary = (await readFile(reportFile, 'utf8')).match(/<testsuites\b[^>]*>/)?.[0] ?? ''
     expect(summary).toContain('failures="0"')
-    expect(Number(summary.match(/\btests="(\d+)"/)?.[1])).toBe(2)
+    expect(Number(summary.match(/\btests="(\d+)"/)?.[1])).toBe(3)
   } finally {
     await rm(reportDir, { recursive: true, force: true })
   }

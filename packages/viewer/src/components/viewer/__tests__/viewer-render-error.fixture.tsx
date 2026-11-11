@@ -9,6 +9,7 @@ mock.module('@react-three/fiber', () => ({
 }))
 const { create } = await import('@react-three/test-renderer')
 const { default: Viewer } = await import('../index')
+const { default: useViewer } = await import('../../../store/use-viewer')
 
 function FailingRenderer(): null {
   throw new Error('Failed to fetch dynamically imported module: /plugin-renderer.js')
@@ -89,4 +90,46 @@ test('a system that throws in a frame reaches <Viewer onRenderError>', async () 
   }
   expect(seen).toContain('Error: plugin system failed in a frame')
   await renderer.unmount()
+})
+
+test('viewer defaults work when preference storage denies reads and preserve saved choices', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+  const initial = useViewer.getState()
+  try {
+    for (const denied of ['getter', 'read'] as const) {
+      Object.defineProperty(globalThis, 'localStorage', {
+        configurable: true,
+        ...(denied === 'getter'
+          ? {
+              get: () => {
+                throw new Error('storage denied')
+              },
+            }
+          : {
+              value: {
+                getItem: () => {
+                  throw new Error('read denied')
+                },
+                setItem: () => {},
+              },
+            }),
+      })
+      useViewer.setState({ textures: true })
+      const renderer = await create(<Viewer defaultRender={{ textures: false }} disablePostFx />)
+      expect(useViewer.getState().textures).toBe(false)
+      await renderer.unmount()
+    }
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: { getItem: () => JSON.stringify({ state: { textures: true } }), setItem: () => {} },
+    })
+    useViewer.setState({ textures: true })
+    const renderer = await create(<Viewer defaultRender={{ textures: false }} disablePostFx />)
+    expect(useViewer.getState().textures).toBe(true)
+    await renderer.unmount()
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor)
+    else Reflect.deleteProperty(globalThis, 'localStorage')
+    useViewer.setState(initial, true)
+  }
 })
