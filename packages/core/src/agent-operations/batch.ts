@@ -5,7 +5,8 @@ import type { SceneMaterialId } from '../schema/scene-material'
 import { applySceneChanges, mergeSceneChanges } from './apply-changes'
 import { requireFurnishing } from './design-brief'
 import { referencedSceneMaterialIds } from './scene-materials'
-import type { AgentOperation, SceneChanges } from './types'
+import type { AgentOperation, AgentOperationOutcome, SceneChanges } from './types'
+import { type VerifySceneInput, verifyScene, verifySceneSteps } from './verify-scene'
 
 type BatchInput = {
   calls: { tool: string; input?: Record<string, unknown> }[]
@@ -33,12 +34,16 @@ type PreparedCall =
  * round trip per step on what could be serialised (deleting balcony walls one by one, the same
  * build on every floor). Inputs are checked before anything runs.
  */
-export function createBatchOperation(
+export function createBatchSteps(
   operations: Readonly<Record<string, AgentOperation<never>>>,
   contracts: readonly Contract[],
-): AgentOperation<BatchInput> {
+) {
   const names = Object.keys(operations).join(', ')
-  return (nodes, { calls, onRefusal = 'stop' }, context) => {
+  return function* (
+    nodes: Parameters<AgentOperation<BatchInput>>[0],
+    { calls, onRefusal = 'stop' }: BatchInput,
+    context: Parameters<AgentOperation<BatchInput>>[2],
+  ): Generator<void, AgentOperationOutcome, void> {
     const prepared = calls.map((call, index): PreparedCall => {
       const operation = operations[call.tool]
       const contract = contracts.find((candidate) => candidate.name === call.tool)
@@ -78,13 +83,18 @@ export function createBatchOperation(
           code: 'invalid_input',
           error: call.invalid,
         })
+        yield
         continue
       }
       try {
-        const { result, changes } = call.operation(working, call.input as never, {
+        const callContext = {
           ...workingContext,
           batchCall: call.index,
-        })
+        }
+        const { result, changes } =
+          call.tool === 'verify_scene' && call.operation === verifyScene
+            ? yield* verifySceneSteps(working, call.input as VerifySceneInput, callContext)
+            : call.operation(working, call.input as never, callContext)
         if (changes) {
           sets.push(changes)
           working = applySceneChanges(working, changes)
@@ -114,6 +124,7 @@ export function createBatchOperation(
           error: error.message,
         })
       }
+      yield
     }
     const applied = reports.filter((report) => report.status === 'ok').length
     const merged = mergeSceneChanges(sets)
@@ -136,6 +147,20 @@ export function createBatchOperation(
     return {
       result: { status: 'applied', applied, refused: reports.length - applied, calls: reports },
       ...(changed ? { changes: merged } : {}),
+    }
+  }
+}
+
+export function createBatchOperation(
+  operations: Readonly<Record<string, AgentOperation<never>>>,
+  contracts: readonly Contract[],
+): AgentOperation<BatchInput> {
+  const createSteps = createBatchSteps(operations, contracts)
+  return (nodes, input, context) => {
+    const steps = createSteps(nodes, input, context)
+    for (;;) {
+      const result = steps.next()
+      if (result.done) return result.value
     }
   }
 }

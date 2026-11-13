@@ -234,6 +234,10 @@ export class SceneBridge {
     return this.runtime.reader().collections as Record<CollectionId, Collection>
   }
 
+  getInstalledPlugins(): readonly string[] {
+    return this.runtime.reader().installedPlugins()
+  }
+
   getMaterials(): Record<SceneMaterialId, SceneMaterial> {
     return Object.fromEntries(
       this.runtime

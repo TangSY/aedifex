@@ -25,14 +25,10 @@ import {
   readableScript,
   readSourceResult,
   rescriptOpening,
+  resolveAuthorSceneInput,
   verifyScene,
 } from '@aedifex/core/agent-operations'
-import {
-  type AuthorScenePayload,
-  isAgentRefusal,
-  refusalPayload,
-  refuse,
-} from '@aedifex/core/agent-tools'
+import { isAgentRefusal, refusalPayload, refuse } from '@aedifex/core/agent-tools'
 import { planWallOpening } from '@aedifex/core/building'
 import { compileAuthorScene } from '@aedifex/geometry-script/author-scene'
 import { useViewer } from '@aedifex/viewer'
@@ -201,10 +197,18 @@ export async function runSharedAgentTool({
     case 'author_scene': {
       if (args.sceneId && args.sceneId !== projectId)
         refuse('scene_mismatch', 'Open the requested scene before converting it.')
+      const payload = await resolveAuthorSceneInput({
+        payload: args.payload,
+        payloadFile: args.payloadFile as string | undefined,
+        projectId: projectId ?? undefined,
+        readFile: runtime.readProjectFile,
+        signal,
+      })
+      assertWritable()
       const authored = await compileAuthorScene(
         nodes,
         {
-          payload: args.payload as AuthorScenePayload,
+          payload,
           replace: args.replace as boolean,
           buildingId: args.buildingId as string | undefined,
         },

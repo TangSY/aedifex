@@ -26,6 +26,7 @@
  */
 
 import type { AssetInput } from '@aedifex/core'
+import type { ProjectFileReader } from '@aedifex/core/agent-operations'
 import type { AIToolCall } from '../types'
 import type { ChatMessageInput, ChatRequestBody } from './chat-request'
 
@@ -172,12 +173,7 @@ export interface ChatPersistence {
 // AITelemetry — fully optional, no-op friendly
 // ============================================================================
 
-export type LoopExitReason =
-  | 'success'
-  | 'aborted'
-  | 'failed'
-  | 'budget'
-  | 'iteration-cap'
+export type LoopExitReason = 'success' | 'aborted' | 'failed' | 'budget' | 'iteration-cap'
 
 export interface AITelemetry {
   loopStarted?(ctx: { messageId: string; userMessage: string }): void
@@ -209,8 +205,14 @@ export interface AIRuntime {
    * to the default "not available in this deployment" implementation.
    */
   roomPresets?: RoomPresetProvider
+  /** Reads an authorized file in the active project, when provided by the host. */
+  readProjectFile?: ProjectFileReader
   /** Per-turn safeguards supplied by the host; omitted values use editor defaults. */
   agentLimits?: { maxIterations?: number; maxTokens?: number }
   /** Reset and persist through the host's explicit scene-wipe path; absent means unavailable. */
-  clearScene?(input: { reason: string; signal?: AbortSignal; assertCurrent: () => void }): Promise<Record<string, unknown>>
+  clearScene?(input: {
+    reason: string
+    signal?: AbortSignal
+    assertCurrent: () => void
+  }): Promise<Record<string, unknown>>
 }

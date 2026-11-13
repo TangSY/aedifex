@@ -84,6 +84,8 @@ const CATALOG_WORDS = [
   "aedifex's objects",
   'aedifex items',
   'aedifex objects',
+  'item library',
+  'library item',
   'from the stock',
   'in stock',
   'du stock',

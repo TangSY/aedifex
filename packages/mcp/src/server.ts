@@ -1,5 +1,6 @@
 import {
   type HostedServiceExecutor,
+  type ProjectFileReader,
   type ProjectFileToolExecutor,
   recordMade,
   type SceneNodes,
@@ -61,10 +62,14 @@ export type CreateAedifexMcpServerOptions = {
   services?: HostedServiceExecutor
   /** Authenticated project file catalog; absent for a local scene without hosted files. */
   files?: ProjectFileToolExecutor
+  /** Reads a file scoped to the active project for author_scene. */
+  readProjectFile?: ProjectFileReader
   /** Asks an editor open on the project for a picture (`view_scene`); without it, refused. */
   sceneViews?: SceneViewHost
   /** Reads catalog items' pictures and surfaces before view_assets and paint. */
   assetViews?: PlanReadingHosts['assetViews']
+  betweenBatchCalls?: PlanReadingHosts['betweenBatchCalls']
+  betweenSteps?: PlanReadingHosts['betweenSteps']
   /** Lines the host adds to what a client reads at connect (the person's own settings). */
   instructions?: string
 }
@@ -89,6 +94,9 @@ export function createAedifexMcpServer(opts: CreateAedifexMcpServerOptions): Mcp
     geometryScripts: opts.geometryScripts,
     sceneViews: opts.sceneViews,
     assetViews: opts.assetViews,
+    betweenBatchCalls: opts.betweenBatchCalls,
+    betweenSteps: opts.betweenSteps,
+    readProjectFile: opts.readProjectFile,
   })
   registerVisionTools(server, operations)
   if (opts.services) registerHostedServiceTools(server, opts.services)

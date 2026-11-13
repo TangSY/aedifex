@@ -1,3 +1,4 @@
+import type { ProjectFileReader } from '@aedifex/core/agent-operations'
 import type { McpServer } from '@modelcontextprotocol/server'
 import type { SceneOperations } from '../operations'
 import { registerAddColumn } from './add-column'
@@ -44,16 +45,27 @@ export type ToolHosts = PlanReadingHosts & {
   catalog?: AssetCatalog
   geometryScripts?: GeometryScriptHost
   sceneViews?: SceneViewHost
+  readProjectFile?: ProjectFileReader
 }
 
 export function registerTools(
   server: McpServer,
   operations: SceneOperations,
-  { catalog, geometryScripts, sceneViews, assetViews }: ToolHosts = {},
+  {
+    catalog,
+    geometryScripts,
+    sceneViews,
+    assetViews,
+    readProjectFile,
+    betweenBatchCalls,
+    betweenSteps,
+  }: ToolHosts = {},
 ): void {
   registerGetScene(server, operations)
   registerSharedTools(server, operations, catalog, {
     assetViews,
+    betweenBatchCalls,
+    betweenSteps,
     signal: geometryScripts?.signal,
     assertActive: geometryScripts?.assertActive?.bind(geometryScripts),
     buildObject: (args, assertCurrent) =>
@@ -61,7 +73,7 @@ export function registerTools(
   })
   registerAddColumn(server, operations, geometryScripts)
   registerAddObject(server, operations, geometryScripts)
-  registerAuthorScene(server, operations, geometryScripts)
+  registerAuthorScene(server, operations, geometryScripts, readProjectFile)
   registerGetSource(server, operations, geometryScripts)
   registerMeasure(server, operations)
   registerViewScene(server, operations, sceneViews)

@@ -2,10 +2,13 @@ import { metadataRecord } from '@aedifex/core'
 import {
   type AgentContext,
   achievedChanges,
+  type ProjectFileReader,
+  resolveAuthorSceneInput,
   type SceneNodes,
   verifyScene,
 } from '@aedifex/core/agent-operations'
 import { type AuthorScenePayload, authorSceneTool, isAgentRefusal } from '@aedifex/core/agent-tools'
+import { captureRegistryVersions, untracked } from '@aedifex/core/runtime'
 import { type CompiledGeometryScript, GEOMETRY_SCRIPT_MIME_TYPES } from '@aedifex/core/schema'
 import { compileAuthorScene } from '@aedifex/geometry-script/author-scene'
 import type { McpServer } from '@modelcontextprotocol/server'
@@ -18,7 +21,8 @@ import { persistencePayload, publishLiveSceneSnapshot } from './live-sync'
 import { toPatches } from './shared-tools'
 
 type Input = {
-  payload: AuthorScenePayload
+  payload?: AuthorScenePayload
+  payloadFile?: string
   module?: string
   adapter?: string
   replace?: boolean
@@ -35,6 +39,7 @@ export function registerAuthorScene(
   server: McpServer,
   bridge: SceneOperations,
   host: GeometryScriptHost | undefined,
+  readFile?: ProjectFileReader,
 ): void {
   server.registerTool(
     authorSceneTool.name,
@@ -51,12 +56,13 @@ export function registerAuthorScene(
         })
       }
       const args = input as Input
-      const scene = bridge.getActiveScene()
-      if (!scene) {
+      const activeScene = bridge.getActiveScene()
+      if (!activeScene) {
         return toolError('Open or save a scene first: a conversion is stored with a scene.', {
           code: 'no_active_scene',
         })
       }
+      const scene = { ...activeScene }
       if (args.sceneId && args.sceneId !== scene.id) {
         return toolError('Open the requested scene before converting it.', {
           code: 'scene_mismatch',
@@ -64,7 +70,32 @@ export function registerAuthorScene(
         })
       }
       const before = bridge.getNodes() as SceneNodes
-      const beforeJson = JSON.stringify(before)
+      const beforeJson = JSON.stringify(untracked(before))
+      const beforeMaterials = JSON.stringify(untracked(bridge.getMaterials?.()))
+      const beforeCollections = JSON.stringify(untracked(bridge.getCollections()))
+      const beforeRoots = JSON.stringify(bridge.getRootNodeIds())
+      const installedPlugins = () =>
+        bridge.getInstalledPlugins?.() ?? bridge.exportSceneGraph().installedPlugins ?? []
+      const beforePlugins = JSON.stringify(installedPlugins())
+      const beforeRegistry = JSON.stringify(captureRegistryVersions())
+      const beforeLevel = bridge.activeLevelId?.() ?? null
+      const sceneUnchanged = () => {
+        const active = bridge.getActiveScene()
+        return (
+          active?.id === scene.id &&
+          active.projectId === scene.projectId &&
+          active.ownerId === scene.ownerId &&
+          active.version === scene.version &&
+          active.graphHash === scene.graphHash &&
+          JSON.stringify(untracked(bridge.getNodes())) === beforeJson &&
+          JSON.stringify(untracked(bridge.getMaterials?.())) === beforeMaterials &&
+          JSON.stringify(untracked(bridge.getCollections())) === beforeCollections &&
+          JSON.stringify(bridge.getRootNodeIds()) === beforeRoots &&
+          JSON.stringify(installedPlugins()) === beforePlugins &&
+          JSON.stringify(captureRegistryVersions()) === beforeRegistry &&
+          (bridge.activeLevelId?.() ?? null) === beforeLevel
+        )
+      }
       const context: AgentContext = {
         activeLevelId: bridge.activeLevelId?.() ?? null,
         ...(bridge.supportsMaterialUpserts && bridge.getMaterials
@@ -73,10 +104,26 @@ export function registerAuthorScene(
       }
       const compiled: CompiledGeometryScript[] = []
       let outcome: Awaited<ReturnType<typeof compileAuthorScene>>
+      let designPayload: AuthorScenePayload
       try {
+        designPayload = await resolveAuthorSceneInput({
+          payload: args.payload,
+          payloadFile: args.payloadFile,
+          projectId: scene.projectId ?? undefined,
+          readFile,
+          signal: host.signal,
+        })
+        host.signal?.throwIfAborted()
+        await host.assertActive?.()
+        host.signal?.throwIfAborted()
+        if (!sceneUnchanged())
+          return toolError('The scene changed while the payload was being read.', {
+            code: 'scene_changed',
+            mutationApplied: false,
+          })
         outcome = await compileAuthorScene(
           before,
-          args,
+          { ...args, payload: designPayload },
           context,
           async ({ code, kind, inputs, nodeId }) => {
             const built = await compileAndStore(
@@ -104,9 +151,14 @@ export function registerAuthorScene(
         ['adapter', args.adapter],
       ] as const) {
         if (!text) continue
+        host.signal?.throwIfAborted()
+        const digest = await sha256(text)
+        host.signal?.throwIfAborted()
+        await host.assertActive?.()
+        host.signal?.throwIfAborted()
         provenance[kind] = await host.storeArtifact({
           sceneId: scene.id,
-          sha256: await sha256(text),
+          sha256: digest,
           bytes: new TextEncoder().encode(text),
           mimeType: GEOMETRY_SCRIPT_MIME_TYPES.three,
           metadata: { kind: 'item' },
@@ -115,10 +167,8 @@ export function registerAuthorScene(
 
       host.signal?.throwIfAborted()
       await host.assertActive?.()
-      if (
-        bridge.getActiveScene()?.id !== scene.id ||
-        JSON.stringify(bridge.getNodes()) !== beforeJson
-      ) {
+      host.signal?.throwIfAborted()
+      if (!sceneUnchanged()) {
         return toolError(
           'The scene changed while its candidate was compiling. Read the current scene and retry the conversion.',
           { code: 'scene_changed', mutationApplied: false },
@@ -131,7 +181,7 @@ export function registerAuthorScene(
         ...metadataRecord(buildingUpdate.data.metadata),
         authorScene: {
           ...provenance,
-          payload: withoutCode(args.payload),
+          payload: withoutCode(designPayload),
           report: outcome.result,
           at: new Date().toISOString(),
         },

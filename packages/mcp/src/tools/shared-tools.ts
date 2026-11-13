@@ -14,8 +14,10 @@ import {
   createAssetViewLoader,
   createFetchAssetViewIO,
   furnishingRefusal,
+  RUN_BATCH_STEPS,
   type SceneChanges,
   startOfSession,
+  verifySceneSteps,
   writeCollections,
 } from '@aedifex/core/agent-operations'
 import {
@@ -62,7 +64,7 @@ import {
   viewAssetsTool,
 } from '@aedifex/core/agent-tools'
 import { DesignValidationSchema } from '@aedifex/core/procedural-items'
-import { untracked } from '@aedifex/core/runtime'
+import { captureRegistryVersions, untracked } from '@aedifex/core/runtime'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -108,6 +110,10 @@ export type OperationTool = {
 export type PlanReadingHosts = {
   signal?: AbortSignal
   assertActive?: () => Promise<void>
+  /** Yield between batch calls; a changed scene or session refuses the entire batch. */
+  betweenBatchCalls?: () => Promise<void>
+  /** Yield between steps of scene checks and batches. */
+  betweenSteps?: () => Promise<void>
   /** Reads catalog pictures and surfaces before view_assets and paint. */
   assetViews?: AssetViewLoader
   /** Compiles one add_object module for a batch before the synchronous operations run. */
@@ -644,9 +650,26 @@ export function registerOperationTool(
       const before = { ...untracked(nodes) }
       const sceneId = bridge.getActiveScene()?.id
       const beforeJson = JSON.stringify(before)
+      const pause =
+        tool.contract.name === runBatchTool.name && tool.operation === AGENT_OPERATIONS.run_batch
+          ? (hosts.betweenSteps ?? hosts.betweenBatchCalls)
+          : tool.contract.name === verifySceneTool.name &&
+              tool.operation === AGENT_OPERATIONS.verify_scene
+            ? hosts.betweenSteps
+            : undefined
+      const beforeMaterials = pause ? JSON.stringify(untracked(bridge.getMaterials?.())) : null
+      const beforeCollections = pause ? JSON.stringify(untracked(bridge.getCollections())) : null
+      const beforeLevel = pause ? (bridge.activeLevelId?.() ?? null) : null
+      const beforeScene = pause ? JSON.stringify(bridge.getActiveScene()) : null
+      const beforeRoots = pause ? JSON.stringify(bridge.getRootNodeIds()) : null
+      const installedPlugins = () =>
+        bridge.getInstalledPlugins?.() ?? bridge.exportSceneGraph().installedPlugins ?? []
+      const beforePlugins = pause ? JSON.stringify(installedPlugins()) : null
+      const beforeRegistry = pause ? JSON.stringify(captureRegistryVersions()) : null
       // The agent's session begins with its first call, before anything is written.
       const first = bridge.agentSession && startOfSession(bridge.agentSession.read(), before)
       if (first) bridge.agentSession?.keep(first)
+      const beforeSession = pause ? JSON.stringify(bridge.agentSession?.read()) : null
       // Gate before catalog I/O or module compilation.
       const designBrief = briefInForce(bridge)
       if (designBrief !== undefined) {
@@ -723,7 +746,44 @@ export function registerOperationTool(
             'scene_changed',
             'The scene changed while the batch was compiling. Read it and retry; nothing was changed.',
           )
-        outcome = inScene(bridge, () => tool.operation(nodes, input as never, context))
+        if (pause) {
+          const assertUnchanged = () => {
+            hosts.signal?.throwIfAborted()
+            if (
+              bridge.getActiveScene()?.id !== sceneId ||
+              JSON.stringify(bridge.getActiveScene()) !== beforeScene ||
+              JSON.stringify(bridge.getRootNodeIds()) !== beforeRoots ||
+              JSON.stringify(installedPlugins()) !== beforePlugins ||
+              JSON.stringify(captureRegistryVersions()) !== beforeRegistry ||
+              (bridge.activeLevelId?.() ?? null) !== beforeLevel ||
+              JSON.stringify(untracked(bridge.getNodes())) !== beforeJson ||
+              JSON.stringify(untracked(bridge.getMaterials?.())) !== beforeMaterials ||
+              JSON.stringify(untracked(bridge.getCollections())) !== beforeCollections ||
+              JSON.stringify(bridge.agentSession?.read()) !== beforeSession
+            )
+              refuse(
+                'scene_changed',
+                'The scene changed during the operation. Read it and retry; nothing was changed.',
+              )
+          }
+          assertUnchanged()
+          const steps =
+            tool.contract.name === runBatchTool.name
+              ? RUN_BATCH_STEPS(nodes, input as never, context)
+              : verifySceneSteps(nodes, input, context)
+          for (;;) {
+            const step = inScene(bridge, () => steps.next())
+            if (step.done) {
+              outcome = step.value
+              break
+            }
+            await pause()
+            await hosts.assertActive?.()
+            assertUnchanged()
+          }
+        } else {
+          outcome = inScene(bridge, () => tool.operation(nodes, input as never, context))
+        }
       } catch (error) {
         return refusalResult(error)
       }

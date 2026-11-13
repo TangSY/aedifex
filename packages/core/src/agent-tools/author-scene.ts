@@ -10,7 +10,7 @@ Coordinates: metres, plan x/z, Y up, each level's floor at y = 0 in its own fram
 
 The report says what was written, what Aedifex defaulted (defaults: a window with no type is fixed and cannot open), what it warns about but wrote (warnings: thin slabs, too many slabs or regions) and what it refused (defects, by your ids).
 
-Call again with the same scene and a corrected payload to update the previous conversion (replace: true). Stable element identities and manual changes are retained; overlapping changes are refused. An existing building without a conversion baseline is never cleared.`
+Pass exactly one of payload or payloadFile. payloadFile is an uploaded file ID in the active project, containing UTF-8 JSON up to 32 MiB; availability depends on the host. Call again with the same scene and a corrected payload to update the previous conversion (replace: true). Stable element identities and manual changes are retained; overlapping changes are refused. An existing building without a conversion baseline is never cleared.`
 
 const plan = (what: string) =>
   z.array(z.number()).length(2).describe(`[x, z] ${what} in plan metres.`)
@@ -300,7 +300,13 @@ export const authorSceneTool = {
   title: 'Author scene',
   description: DESCRIPTION,
   input: {
-    payload: authorScenePayload,
+    payload: authorScenePayload.optional(),
+    payloadFile: z
+      .string()
+      .min(1)
+      .max(128)
+      .optional()
+      .describe('Project file ID of the JSON payload; use instead of payload.'),
     module: z
       .string()
       .max(400_000)

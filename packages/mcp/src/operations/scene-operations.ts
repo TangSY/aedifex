@@ -70,6 +70,7 @@ export interface SceneOperations {
   getNode(id: AnyNodeId): AnyNode | null
   getNodes(): Record<AnyNodeId, AnyNode>
   getCollections(): Record<CollectionId, Collection>
+  getInstalledPlugins?(): readonly string[]
   getMaterials?(): Readonly<Record<SceneMaterialId, SceneMaterial>>
   /** Replace the scene's collections (one undo step, like any edit). */
   setCollections(collections: Record<CollectionId, Collection>): void
@@ -256,6 +257,11 @@ class SceneOperationsFacade implements SceneOperations {
 
   getCollections(): Record<CollectionId, Collection> {
     return this.requireBridge().getCollections()
+  }
+
+  getInstalledPlugins(): readonly string[] {
+    const bridge = this.requireBridge()
+    return bridge.getInstalledPlugins?.() ?? bridge.exportJSON().installedPlugins ?? []
   }
 
   getMaterials(): Readonly<Record<SceneMaterialId, SceneMaterial>> {

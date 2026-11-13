@@ -5,7 +5,7 @@ import { addLevel } from './add-level'
 import { addObjectInBatch } from './add-object'
 import { addWall } from './add-wall'
 import { viewAssets } from './asset-views'
-import { createBatchOperation } from './batch'
+import { createBatchOperation, createBatchSteps } from './batch'
 import { addCornerWindow } from './corner-window'
 import { createRoof } from './create-roof'
 import { createRoom } from './create-room'
@@ -43,6 +43,7 @@ export * from './add-wall'
 export * from './apply-changes'
 export * from './apply-outcome'
 export * from './author-scene'
+export * from './author-scene-input'
 export * from './authored-scene-merge'
 export * from './collections'
 export * from './corner-window'
@@ -143,6 +144,8 @@ export const AGENT_OPERATIONS = {
   ...SINGLE_OPERATIONS,
   run_batch: createBatchOperation(BATCHED_OPERATIONS, AGENT_TOOL_CONTRACTS),
 } as const satisfies AgentOperations
+
+export const RUN_BATCH_STEPS = createBatchSteps(BATCHED_OPERATIONS, AGENT_TOOL_CONTRACTS)
 
 export {
   type AssetViewFacts,
