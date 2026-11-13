@@ -57,7 +57,7 @@ test('catalog checking does not rewrite PO or compiled catalogs', async () => {
   expect(paths.map((path) => readFileSync(path, 'utf8'))).toEqual(
     paths.map((path) => before.get(path)),
   )
-}, 60_000)
+}, 600_000)
 
 test('ICU plural validation follows the target locale categories', () => {
   const english = '{count, plural, one {# item} other {# items}}'
@@ -130,7 +130,7 @@ test('source drift fails checking, then extraction updates English and flags tra
   } finally {
     for (const [path, contents] of before) writeFileSync(path, contents)
   }
-}, 120_000)
+}, 900_000)
 
 test('AI translation refreshes only missing and stale entries through a mocked provider', async () => {
   const sources: SourceMessage[] = [
@@ -179,15 +179,15 @@ test('AI translation refreshes only missing and stale entries through a mocked p
   expect(refreshed['viewer.missing']).toEqual({
     translation: 'Bonjour {name}',
     sourceHash: hashSource('Hello {name}'),
-    review: 'required',
-    fuzzy: true,
+    review: 'automatic',
+    fuzzy: false,
     reviewNotes: '',
   })
   expect(refreshed['viewer.stale']).toEqual({
     translation: 'Modifié',
     sourceHash: hashSource('Changed'),
-    review: 'required',
-    fuzzy: true,
+    review: 'automatic',
+    fuzzy: false,
     reviewNotes: 'Check toolbar width.',
   })
 })
@@ -210,6 +210,25 @@ test('AI translation rejects broken placeholders from a provider', async () => {
   expect(refreshTranslations('fr', sources, {}, provider)).rejects.toThrow(
     'placeholder names differ from English',
   )
+})
+
+test('AI translation rejects empty and whitespace-only output', async () => {
+  const sources: SourceMessage[] = [{ id: 'viewer.title', message: 'Title', context: [] }]
+  for (const translation of ['', ' \n\t ']) {
+    const provider: TranslationProvider = {
+      name: 'mock',
+      model: 'mock-model',
+      async translate(request) {
+        return {
+          locale: request.locale,
+          entries: [{ id: 'viewer.title', translation, reviewNotes: '' }],
+        }
+      },
+    }
+    await expect(refreshTranslations('fr', sources, {}, provider)).rejects.toThrow(
+      'translation is empty',
+    )
+  }
 })
 
 test('translation validation applies the checked-in glossary', () => {

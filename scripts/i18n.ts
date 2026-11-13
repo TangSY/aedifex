@@ -17,7 +17,7 @@ export type SourceMessage = {
 export type TranslationEntry = {
   translation: string
   sourceHash?: string
-  review: 'human' | 'required' | 'missing'
+  review: 'human' | 'automatic' | 'required' | 'missing'
   fuzzy: boolean
   reviewNotes?: string
 }
@@ -149,7 +149,10 @@ function readTranslationState(po: PoFile): Record<string, TranslationEntry> {
           {
             translation: item.msgstr[0] ?? '',
             sourceHash: commentValue(item, SOURCE_HASH_PREFIX),
-            review: review === 'human' || review === 'required' ? review : 'missing',
+            review:
+              review === 'human' || review === 'automatic' || review === 'required'
+                ? review
+                : 'missing',
             fuzzy: Boolean(item.flags.fuzzy),
             reviewNotes: commentValue(item, REVIEW_NOTES_PREFIX),
           } satisfies TranslationEntry,
@@ -263,6 +266,7 @@ export function validateTranslation(
   locale: string,
   glossary: Glossary = {},
 ): string[] {
+  if (!translation.trim()) return ['translation is empty']
   const errors: string[] = []
   let sourceTokens: CompiledToken[]
   let translatedTokens: CompiledToken[]
@@ -364,8 +368,8 @@ export async function refreshTranslations(
       updated[source.id] = {
         translation: result.translation,
         sourceHash: hashSource(source.message),
-        review: 'required',
-        fuzzy: true,
+        review: 'automatic',
+        fuzzy: false,
         reviewNotes: result.reviewNotes,
       }
     }
@@ -487,7 +491,7 @@ function annotateCatalogs(
         item.flags.fuzzy = true
       } else if (!prior?.sourceHash) {
         replaceComment(item, SOURCE_HASH_PREFIX, sourceHash)
-        replaceComment(item, REVIEW_PREFIX, 'human')
+        replaceComment(item, REVIEW_PREFIX, 'automatic')
         delete item.flags.fuzzy
       }
     }
@@ -505,7 +509,7 @@ function messagesForCompilation(locale: string, sources: SourceMessage[]): Recor
         if (locale === 'en') return true
         return (
           !item.flags.fuzzy &&
-          commentValue(item, REVIEW_PREFIX) === 'human' &&
+          ['human', 'automatic'].includes(commentValue(item, REVIEW_PREFIX) ?? '') &&
           commentValue(item, SOURCE_HASH_PREFIX) === sourceHashes.get(item.msgid)
         )
       })
@@ -557,10 +561,13 @@ function applyTranslations(
   provider: TranslationProvider,
 ): void {
   const byId = new Map(sources.map((source) => [source.id, source]))
+  const prior = readTranslationState(po)
   for (const item of po.items) {
     const source = byId.get(item.msgid)
     const entry = entries[item.msgid]
     if (!(source && entry)) continue
+    if (prior[item.msgid] === entry || JSON.stringify(prior[item.msgid]) === JSON.stringify(entry))
+      continue
     item.msgstr = [entry.translation]
     replaceComment(item, ENGLISH_PREFIX, JSON.stringify(source.message))
     replaceComment(item, SOURCE_HASH_PREFIX, entry.sourceHash)
@@ -573,9 +580,13 @@ function applyTranslations(
     replaceComment(
       item,
       AI_PROVIDER_PREFIX,
-      entry.review === 'required' ? provider.name : undefined,
+      entry.review === 'automatic' || entry.review === 'required' ? provider.name : undefined,
     )
-    replaceComment(item, AI_MODEL_PREFIX, entry.review === 'required' ? provider.model : undefined)
+    replaceComment(
+      item,
+      AI_MODEL_PREFIX,
+      entry.review === 'automatic' || entry.review === 'required' ? provider.model : undefined,
+    )
     if (entry.fuzzy) item.flags.fuzzy = true
     else delete item.flags.fuzzy
   }
@@ -657,8 +668,8 @@ function checkCatalogMessages(sources: SourceMessage[], glossary: Glossary): str
       if (entry.sourceHash !== hashSource(source.message)) {
         errors.push(`${locale}: stale "${source.id}"`)
       }
-      if (entry.fuzzy || entry.review !== 'human') {
-        errors.push(`${locale}: "${source.id}" still requires human review`)
+      if (entry.fuzzy || !['human', 'automatic'].includes(entry.review)) {
+        errors.push(`${locale}: "${source.id}" is not ready for compilation`)
       }
       for (const error of validateTranslation(
         source.message,
@@ -776,7 +787,7 @@ async function main(): Promise<void> {
       )
       applyTranslations(po, sources, refreshed, provider)
       writePo(path, po)
-      console.log(`Updated ${relative(ROOT, path)}; AI entries are fuzzy and require human review`)
+      console.log(`Updated ${relative(ROOT, path)}; AI entries passed automated validation`)
     }
     return
   }

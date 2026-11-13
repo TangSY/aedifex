@@ -37,12 +37,13 @@ After adding or changing a runtime message:
 1. Run `bun run i18n:extract`. Lingui updates the PO catalogs and compiled
    modules.
 2. Translate every new entry in each bundled locale.
-3. Keep the `Source-Hash` comment in sync and mark a reviewed entry
-   `Review: human` without the `fuzzy` flag.
-4. Review the copy in context, then run `bun run i18n:check`.
+3. Keep the `Source-Hash` comment in sync and mark an automatically validated
+   entry `Review: automatic` without the `fuzzy` flag. Existing `Review: human`
+   entries remain valid.
+4. Run `bun run i18n:check` to validate the catalogs.
 
 `i18n:check` needs no API key. It fails for extraction/compiled-catalog drift,
-missing or stale translations, unreviewed entries, malformed ICU, changed
+missing or stale translations, fuzzy entries, malformed ICU, changed
 placeholders or tags, invalid target-locale plural branches, and glossary
 violations. It is read-only: use `i18n:extract` or `i18n:compile` when catalogs
 need to be written. It only warns when a new literal bypasses Lingui on the
@@ -115,8 +116,8 @@ request includes the English ICU source, source locations, and
 branch, and applicable glossary term is validated before any PO file is
 written.
 
-AI output is always marked `fuzzy`, `Review: required`, and records provider,
-model, and review notes. It never becomes a shipping translation until a human
-reviews it, removes `fuzzy`, and changes the review marker to `human`.
+AI output that passes automated validation is marked `Review: automatic`
+without `fuzzy`, and records provider, model, and any review notes. Human
+review is optional. Stale translations stay `fuzzy` until refreshed.
 Translation never runs in the app or ordinary CI, and API keys must not be
 committed.
