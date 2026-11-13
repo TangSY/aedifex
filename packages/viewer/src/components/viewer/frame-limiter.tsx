@@ -1,6 +1,7 @@
 import { useThree } from '@react-three/fiber'
-import { useLayoutEffect, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 import { timeSpan } from '../../lib/perf-tracks'
+import { isSoftwareRenderer, viewerFrameRate } from '../../lib/software-renderer'
 import useViewer from '../../store/use-viewer'
 
 type FrameLimiterProps = {
@@ -65,6 +66,8 @@ const FrameLimiter: React.FC<FrameLimiterProps> = ({ fps = 50, paused = false, o
   onFrameErrorRef.current = onFrameError
   const nextFrameTimeRef = useRef(0)
   const renderer = useThree((state) => state.gl)
+  const software = useMemo(() => isSoftwareRenderer(renderer), [renderer])
+  const frameRate = viewerFrameRate({ fps, software })
   const size = useThree((state) => state.size)
   const dpr = useThree((state) => state.viewport.dpr)
   // Fully covered canvas (e.g. studio gallery) → stop advancing frames
@@ -89,8 +92,7 @@ const FrameLimiter: React.FC<FrameLimiterProps> = ({ fps = 50, paused = false, o
         else console.error('[viewer] a frame callback threw', error)
       }
     }
-    const effectiveFps = Number.isFinite(fps) && fps > 0 ? fps : 50
-    const interval = 1000 / effectiveFps
+    const interval = 1000 / frameRate
     function syncSize() {
       if (sizeSynced) return
       renderer.setPixelRatio(dpr)
@@ -147,7 +149,7 @@ const FrameLimiter: React.FC<FrameLimiterProps> = ({ fps = 50, paused = false, o
   }, [
     advanceFrame,
     dpr,
-    fps,
+    frameRate,
     initFrameloop,
     paused,
     renderPaused,

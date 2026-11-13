@@ -281,6 +281,7 @@ export {
   THUMBNAIL_HEIGHT,
   THUMBNAIL_WIDTH,
 } from './lib/snapshot-pipeline'
+export { isSoftwareRenderer } from './lib/software-renderer'
 export {
   buildTerrainPerimeterFillGeometry,
   type TerrainPerimeterPoint,

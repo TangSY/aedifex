@@ -16,6 +16,7 @@ import {
   GRID_LAYER,
   heroCameraPose,
   holdLiveFrame,
+  isSoftwareRenderer,
   pendingSceneBuildCount,
   presentLevelsForCapture,
   refreshIsolation,
@@ -119,21 +120,14 @@ function captureLimits(renderer: unknown): CaptureLimits {
     }
   ).backend
   let gpuEdge = backend?.device?.limits?.maxTextureDimension2D ?? 0
-  let rendererName = [
-    backend?.device?.adapterInfo?.vendor,
-    backend?.device?.adapterInfo?.architecture,
-    backend?.device?.adapterInfo?.description,
-  ].join(' ')
   const gl = backend?.gl
   if (gl) {
     gpuEdge = Math.min(
       gl.getParameter(gl.MAX_TEXTURE_SIZE) as number,
       gl.getParameter(gl.MAX_RENDERBUFFER_SIZE) as number,
     )
-    const info = gl.getExtension('WEBGL_debug_renderer_info')
-    rendererName = String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER))
   }
-  const software = /swiftshader|llvmpipe|software|softpipe/i.test(rendererName)
+  const software = isSoftwareRenderer(renderer)
   const limits = {
     passEdge: Math.min(MAX_PASS_EDGE, gpuEdge || MAX_PASS_EDGE),
     maxPixels: software ? MAX_SOFTWARE_CAPTURE_PIXELS : MAX_CAPTURE_PIXELS,
