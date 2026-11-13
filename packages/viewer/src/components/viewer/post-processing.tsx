@@ -52,6 +52,7 @@ import {
   worldPositionFromDepth,
 } from '../../lib/underground-ambiance'
 import useViewer from '../../store/use-viewer'
+import { renderDirectWithOverlays } from './direct-overlay'
 import { useSceneAtmosphere } from './scene-atmosphere'
 
 // A mild mid-gray contrast and saturation lift separates surfaces before the
@@ -874,7 +875,7 @@ const PostProcessingPasses = ({
         }
         const submittedAt = PERF_OVERLAY_ENABLED ? performance.now() : 0
         timeSpan('render-encode', () => {
-          ;(renderer as any).render(scene, camera)
+          renderDirectWithOverlays({ renderer: renderer as any, scene, camera })
         })
         if (PERF_OVERLAY_ENABLED) recordFrameGpuTiming(renderer, submittedAt)
       } catch (fallbackError) {
