@@ -171,6 +171,7 @@ function closestStraightWallPoint(
 export function findClosestCabinetWallInPlan({
   excludeIds,
   fallbackToAnyYaw = false,
+  maxDistance = WALL_SNAP_DISTANCE_M,
   nodes,
   parentLevelId,
   planPoint,
@@ -178,6 +179,7 @@ export function findClosestCabinetWallInPlan({
 }: {
   excludeIds: readonly AnyNodeId[]
   fallbackToAnyYaw?: boolean
+  maxDistance?: number
   nodes: Record<AnyNodeId, AnyNode>
   parentLevelId: AnyNodeId
   planPoint: readonly [number, number]
@@ -204,7 +206,7 @@ export function findClosestCabinetWallInPlan({
     const closest = isCurvedWall(wall)
       ? closestCurvedWallPoint(wall, planPoint)
       : closestStraightWallPoint(wall, planPoint)
-    if (!closest || closest.distance > WALL_SNAP_DISTANCE_M) continue
+    if (!closest || closest.distance > maxDistance) continue
     const side = closest.perpDistance >= 0 ? 'front' : 'back'
     const candidate: { distance: number; hit: WallHit } = {
       distance: closest.distance,
@@ -234,7 +236,7 @@ export function findClosestCabinetWallInPlan({
   return bestCompatible?.hit ?? (fallbackToAnyYaw ? (bestAny?.hit ?? null) : null)
 }
 
-function cabinetWallFrameAtLocalX(hit: WallHit, localX: number) {
+export function cabinetWallFrameAtLocalX(hit: WallHit, localX: number) {
   if (isCurvedWall(hit.wall)) {
     return getWallCurveFrameAt(hit.wall, localX / hit.wallLength)
   }

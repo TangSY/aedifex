@@ -87,6 +87,30 @@ msgstr "Draw one wall at a time."
 msgid "editor.buildPanel.rooms.walls.title"
 msgstr "Walls"
 
+#: packages/editor/src/components/editor/floorplan-mode-coordinator.tsx
+msgid "editor.clipboard.unadjustedOpenings"
+msgstr "Openings kept at their original positions: {count}. Check for overlap or an opening above the sloped wall."
+
+#: packages/editor/src/components/tools/shared/precise-placement-input.tsx
+msgid "editor.precisePlacement.angle"
+msgstr "Angle"
+
+#: packages/editor/src/components/tools/shared/precise-placement-input.tsx
+msgid "editor.precisePlacement.distance"
+msgstr "Distance"
+
+#: packages/editor/src/components/tools/shared/precise-placement-input.tsx
+msgid "editor.precisePlacement.length"
+msgstr "Length"
+
+#: packages/editor/src/components/tools/shared/precise-placement-input.tsx
+msgid "editor.precisePlacement.offset"
+msgstr "Offset"
+
+#: packages/nodes/src/wall/panel.tsx
+msgid "node.wall.panel.endHeightOffset"
+msgstr "End height offset"
+
 #: packages/editor/src/components/viewer/viewer-controls-bar.tsx
 msgid "viewer.camera.orbitLeft"
 msgstr "Orbit left"

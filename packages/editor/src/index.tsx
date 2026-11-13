@@ -213,6 +213,7 @@ export {
   type PolygonEditorPlanPointSnapContext,
   type PolygonEditorProps,
 } from './components/tools/shared/polygon-editor'
+export { PrecisePlacementInput } from './components/tools/shared/precise-placement-input'
 export {
   formatAngleRadians,
   getAngleArcToSegmentReference,
@@ -221,6 +222,11 @@ export {
   type SegmentAngleReference,
 } from './components/tools/shared/segment-angle'
 export { preloadRegistryToolModules, ToolManager } from './components/tools/tool-manager'
+export {
+  preciseLengthOptions,
+  preciseWallHeading,
+  resolvePreciseWallEnd,
+} from './components/tools/wall/precise-wall-end'
 export {
   chainEndJoinsExistingWall,
   createWallOnCurrentLevel,
@@ -618,6 +624,7 @@ export {
   editorFinishScriptHost,
   finishScriptCode,
 } from './lib/geometry-script/finish-scripts'
+export { beginGesture, type GestureHandle } from './lib/gesture-lifecycle'
 export { exportSceneToGlb, type GlbExportOptions } from './lib/glb-export'
 export {
   type EditorGridEvent,
@@ -1048,6 +1055,7 @@ export {
   type PlacementPreviewDimension,
 } from './store/use-placement-preview'
 export { usePointAsk } from './store/use-point-ask'
+export { routePreciseKey, usePrecisePlacement } from './store/use-precise-placement'
 export {
   activateQuickMeasurementHudSource,
   clearQuickMeasurementHudSource,

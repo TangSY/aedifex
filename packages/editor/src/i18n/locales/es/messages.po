@@ -153,6 +153,60 @@ msgstr "Dibuja un muro cada vez."
 msgid "editor.buildPanel.rooms.walls.title"
 msgstr "Muros"
 
+# Source-Hash: 013e4dfba9f0af20
+# Review: automatic
+# AI-Provider: openai
+# AI-Model: codex
+# English: "Openings kept at their original positions: {count}. Check for overlap or an opening above the sloped wall."
+#: packages/editor/src/components/editor/floorplan-mode-coordinator.tsx
+msgid "editor.clipboard.unadjustedOpenings"
+msgstr "Aberturas que conservan su posición original: {count}. Comprueba si se solapan o sobresalen del muro inclinado."
+
+# English: "Angle"
+# Source-Hash: c69865ec5d9d1ac9
+# Review: automatic
+# AI-Provider: openai
+# AI-Model: codex
+#: packages/editor/src/components/tools/shared/precise-placement-input.tsx
+msgid "editor.precisePlacement.angle"
+msgstr "Ángulo"
+
+# English: "Distance"
+# Source-Hash: fe7ddb094aa8ff4d
+# Review: automatic
+# AI-Provider: openai
+# AI-Model: codex
+#: packages/editor/src/components/tools/shared/precise-placement-input.tsx
+msgid "editor.precisePlacement.distance"
+msgstr "Distancia"
+
+# English: "Length"
+# Source-Hash: 643687bc3adaac76
+# Review: automatic
+# AI-Provider: openai
+# AI-Model: codex
+#: packages/editor/src/components/tools/shared/precise-placement-input.tsx
+msgid "editor.precisePlacement.length"
+msgstr "Longitud"
+
+# English: "Offset"
+# Source-Hash: 0f0e13abf9b2bb67
+# Review: automatic
+# AI-Provider: openai
+# AI-Model: codex
+#: packages/editor/src/components/tools/shared/precise-placement-input.tsx
+msgid "editor.precisePlacement.offset"
+msgstr "Desplazamiento"
+
+# Source-Hash: 99ae1e9f13fca0ad
+# Review: automatic
+# AI-Provider: openai
+# AI-Model: codex
+# English: "End height offset"
+#: packages/nodes/src/wall/panel.tsx
+msgid "node.wall.panel.endHeightOffset"
+msgstr "Desnivel de altura del extremo"
+
 # Source-Hash: 8bf25afa3cb8baea
 # Review: human
 # English: "Orbit left"

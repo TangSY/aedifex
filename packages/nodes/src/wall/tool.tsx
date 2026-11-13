@@ -1,4 +1,5 @@
 import {
+  AedifexI18nProvider,
   type AnyNode,
   type AnyNodeId,
   calculateLevelMiters,
@@ -13,6 +14,8 @@ import {
   resolveAlignment,
   resolveBuildingForLevel,
   sceneRegistry,
+  useAedifexI18n,
+  useLocale,
   useScene,
   type WallMiterData,
   type WallNode,
@@ -32,18 +35,26 @@ import {
   formatLinearMeasurement,
   getAngleArcToSegmentReference,
   getAngleToSegmentReference,
+  getGridEventScreenProjection,
   getSegmentAngleReferenceAtPoint,
+  getSegmentGridStep,
   getWallDrawVariant,
   type HorizontalConstructionPlane,
   isAlignmentGuideActive,
   isAngleSnapActive,
   isMagneticSnapActive,
+  isTypingTarget,
   markToolCancelConsumed,
+  PrecisePlacementInput,
+  preciseLengthOptions,
+  preciseWallHeading,
   publishHorizontalConstructionPlane,
   publishPlacementSurface,
   resampleTerrainConstructionPlane,
   resolveEventConstructionPlane,
   resolvePointerSupportSurface,
+  resolvePreciseWallEnd,
+  routePreciseKey,
   type SegmentAngleReference,
   snapWallDraftPointDetailed,
   startWallPolygonDraft,
@@ -51,6 +62,7 @@ import {
   useAlignmentGuides,
   useEditor,
   useFloorplanDraftPreview,
+  usePrecisePlacement,
   useSegmentDraftChain,
   useWallDrawVariant,
   useWallSnapIndicator,
@@ -61,6 +73,7 @@ import {
   wallPolygonDraftWalls,
 } from '@aedifex/editor'
 import { getSceneTheme, useViewer } from '@aedifex/viewer'
+import { Html } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useRef, useState } from 'react'
 import { DoubleSide, type Group, type Mesh, Vector3 } from 'three'
@@ -454,6 +467,8 @@ function getBelowLevelWalls(): WallNode[] {
 }
 
 const LineWallTool: React.FC = () => {
+  const locale = useLocale()
+  const i18n = useAedifexI18n()
   const unit = useViewer((state) => state.unit)
   const metricNotation = useViewer((state) => state.metricNotation)
   const isDark = useViewer((state) => getSceneTheme(state.sceneTheme).appearance === 'dark')
@@ -494,6 +509,7 @@ const LineWallTool: React.FC = () => {
   const flatConstructionBase = useRef(false)
   const buildingState = useRef(0)
   const [draftMeasurement, setDraftMeasurement] = useState<DraftMeasurementState>(null)
+  const preciseActive = usePrecisePlacement((state) => state.kind === 'wall')
   // Base Y of an open Polygon room's ghost sides (its construction plane).
   const [polygonGhostY, setPolygonGhostY] = useState(0)
   const [axisGuide, setAxisGuide] = useState<DraftAxisGuideState>(null)
@@ -503,6 +519,8 @@ const LineWallTool: React.FC = () => {
   useEffect(() => {
     let gridPosition: WallPlanPoint = [0, 0]
     let previousWallEnd: [number, number] | null = null
+    let draftPointer: WallPlanPoint | null = null
+    let draftY = 0
 
     // Alignment candidates — anchors of every alignable object. Refreshed
     // after each segment commits (the new wall becomes a candidate too).
@@ -617,6 +635,8 @@ const LineWallTool: React.FC = () => {
     const stopDrafting = () => {
       discardWallPolygonDraft()
       buildingState.current = 0
+      usePrecisePlacement.getState().clear()
+      draftPointer = null
       constructionPlane.current = null
       flatConstructionBase.current = false
       chainFirstVertex.current = null
@@ -639,6 +659,61 @@ const LineWallTool: React.FC = () => {
     // behind the hidden canvas and still hears the plan's grid events, so it
     // must not also draft (it would add every corner twice).
     const planOwnsInput = () => visibleScene(useEditor.getState()) === '2d'
+
+    const preciseEnd = (pointer: WallPlanPoint) => {
+      const state = usePrecisePlacement.getState()
+      if (state.kind !== 'wall') return { status: 'empty' as const }
+      return resolvePreciseWallEnd({
+        start: [startingPoint.current.x, startingPoint.current.z],
+        pointer,
+        lengthText: state.fields[0],
+        angleText: state.fields[1],
+        lengthOptions: preciseLengthOptions({ unit, metricNotation, locale }),
+        step: getSegmentGridStep(),
+      })
+    }
+
+    const redrawDraft = (pointer: WallPlanPoint, y: number, walls: WallNode[]) => {
+      if (!wallPreviewRef.current) return
+      const resolved = preciseEnd(pointer)
+      const end = resolved.status === 'ready' ? resolved.point : pointer
+      endingPoint.current.set(end[0], y, end[1])
+      const draft = useFloorplanDraftPreview.getState()
+      draft.setWallDraftStart([startingPoint.current.x, startingPoint.current.z])
+      draft.setWallDraftEnd(end)
+      cursorRef.current?.position.copy(endingPoint.current)
+      setAxisGuide({
+        origin: [startingPoint.current.x, startingPoint.current.z],
+        endOrigin: end,
+        y: startingPoint.current.y,
+        angleLabel: getNearestAxisAngleLabel(
+          [startingPoint.current.x, startingPoint.current.z],
+          end,
+          startingPoint.current.y,
+        ),
+      })
+      if (previousWallEnd && (end[0] !== previousWallEnd[0] || end[1] !== previousWallEnd[1]))
+        triggerSFX('sfx:grid-snap')
+      previousWallEnd = end
+      updateWallPreview(
+        wallPreviewRef.current,
+        startingPoint.current,
+        endingPoint.current,
+        previewHeightRef.current,
+        previewThicknessRef.current,
+      )
+      setDraftMeasurement(
+        getDraftMeasurementState(
+          [startingPoint.current.x, startingPoint.current.z],
+          end,
+          walls,
+          unit,
+          metricNotation,
+          startingPoint.current.y,
+          previewHeightRef.current,
+        ),
+      )
+    }
 
     const onGridMove = (event: GridEvent) => {
       if (!(cursorRef.current && wallPreviewRef.current) || planOwnsInput()) return
@@ -676,7 +751,10 @@ const LineWallTool: React.FC = () => {
         angleSnap: angleLocked,
         magnetic: isMagneticSnapActive(),
       })
-      gridPosition = alignPoint(snapResult.point, { applySnap: !angleLocked })
+      gridPosition =
+        usePrecisePlacement.getState().kind === 'wall' && getGridEventScreenProjection(event)
+          ? localPoint
+          : alignPoint(snapResult.point, { applySnap: !angleLocked })
       // Stand the magnetic beacon at the endpoint when it locked onto an
       // existing wall corner / wall point; clear it for plain grid/angle moves.
       useWallSnapIndicator
@@ -688,51 +766,9 @@ const LineWallTool: React.FC = () => {
         )
 
       if (buildingState.current === 1) {
-        const snappedLocal = gridPosition
-        const draftY = constructionPlane.current?.localY ?? event.localPosition[1]
-        endingPoint.current.set(snappedLocal[0], draftY, snappedLocal[1])
-        const draftPreview = useFloorplanDraftPreview.getState()
-        draftPreview.setWallDraftStart([startingPoint.current.x, startingPoint.current.z])
-        draftPreview.setWallDraftEnd(snappedLocal)
-        cursorRef.current.position.copy(endingPoint.current)
-        setAxisGuide({
-          origin: [startingPoint.current.x, startingPoint.current.z],
-          endOrigin: snappedLocal,
-          y: startingPoint.current.y,
-          angleLabel: getNearestAxisAngleLabel(
-            [startingPoint.current.x, startingPoint.current.z],
-            snappedLocal,
-            startingPoint.current.y,
-          ),
-        })
-
-        const currentWallEnd: [number, number] = [snappedLocal[0], snappedLocal[1]]
-        if (
-          previousWallEnd &&
-          (currentWallEnd[0] !== previousWallEnd[0] || currentWallEnd[1] !== previousWallEnd[1])
-        ) {
-          triggerSFX('sfx:grid-snap')
-        }
-        previousWallEnd = currentWallEnd
-
-        updateWallPreview(
-          wallPreviewRef.current,
-          startingPoint.current,
-          endingPoint.current,
-          previewHeightRef.current,
-          previewThicknessRef.current,
-        )
-        setDraftMeasurement(
-          getDraftMeasurementState(
-            [startingPoint.current.x, startingPoint.current.z],
-            snappedLocal,
-            walls,
-            unit,
-            metricNotation,
-            startingPoint.current.y,
-            previewHeightRef.current,
-          ),
-        )
+        draftPointer = gridPosition
+        draftY = constructionPlane.current?.localY ?? event.localPosition[1]
+        redrawDraft(draftPointer, draftY, walls)
       } else {
         const hoverPlane = resampleTerrainConstructionPlane(
           resolveEventConstructionPlane(event, pointed),
@@ -762,6 +798,7 @@ const LineWallTool: React.FC = () => {
         : [event.localPosition[0], event.localPosition[2]]
 
       if (buildingState.current === 0) {
+        draftPointer = null
         const snapResult = snapWallDraftPointDetailed({
           point: localClick,
           walls: snapWalls,
@@ -810,17 +847,24 @@ const LineWallTool: React.FC = () => {
         // positions it for the active segment.
         setDraftMeasurement(null)
       } else if (buildingState.current === 1) {
+        const resolved = preciseEnd(draftPointer ?? localClick)
+        if (resolved.status === 'invalid' || resolved.status === 'needs-direction') return
         const angleLocked = isAngleSnapActive()
-        const snappedEnd = alignPoint(
-          snapWallDraftPointDetailed({
-            point: localClick,
-            walls: snapWalls,
-            start: angleLocked ? [startingPoint.current.x, startingPoint.current.z] : undefined,
-            angleSnap: angleLocked,
-            magnetic: isMagneticSnapActive(),
-          }).point,
-          { applySnap: !angleLocked },
-        )
+        const snappedEnd =
+          resolved.status === 'ready'
+            ? resolved.point
+            : alignPoint(
+                snapWallDraftPointDetailed({
+                  point: localClick,
+                  walls: snapWalls,
+                  start: angleLocked
+                    ? [startingPoint.current.x, startingPoint.current.z]
+                    : undefined,
+                  angleSnap: angleLocked,
+                  magnetic: isMagneticSnapActive(),
+                }).point,
+                { applySnap: !angleLocked },
+              )
         const dx = snappedEnd[0] - startingPoint.current.x
         const dz = snappedEnd[1] - startingPoint.current.z
         if (dx * dx + dz * dz < 0.01 * 0.01) return
@@ -895,6 +939,8 @@ const LineWallTool: React.FC = () => {
           }
           nextStart = createdWall.end
         }
+        usePrecisePlacement.getState().clear()
+        draftPointer = null
         // Publish the resolved chain start so the 2D floor-plan draft
         // chains its next segment from the same point (its own snap
         // pipeline can resolve a slightly different endpoint).
@@ -931,9 +977,41 @@ const LineWallTool: React.FC = () => {
       }
     }
 
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (buildingState.current !== 1 || planOwnsInput() || isTypingTarget(event.target)) return
+      const action = routePreciseKey({ event, kind: 'wall' })
+      if (!action) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      if (action !== 'submit') return
+      const pointer = draftPointer ?? [startingPoint.current.x, startingPoint.current.z]
+      const result = preciseEnd(pointer)
+      if (result.status !== 'ready') return
+      const y = draftPointer ? draftY : startingPoint.current.y
+      onGridClick({
+        localPosition: [result.point[0], y, result.point[1]],
+        position: [result.point[0], y, result.point[1]],
+        nativeEvent: { detail: 1 },
+      } as unknown as GridEvent)
+    }
+    const unsubscribePrecise = usePrecisePlacement.subscribe((state, previous) => {
+      if (
+        buildingState.current !== 1 ||
+        planOwnsInput() ||
+        (state.fields === previous.fields && state.kind === previous.kind)
+      )
+        return
+      redrawDraft(
+        draftPointer ?? [startingPoint.current.x, startingPoint.current.z],
+        draftPointer ? draftY : startingPoint.current.y,
+        getCurrentLevelWalls(),
+      )
+    })
+
     emitter.on('grid:move', onGridMove)
     emitter.on('grid:click', onGridClick)
     emitter.on('tool:cancel', onCancel)
+    window.addEventListener('keydown', onKeyDown, true)
 
     return () => {
       // Leaving the tool mid-polygon abandons it (nothing was written).
@@ -941,6 +1019,9 @@ const LineWallTool: React.FC = () => {
       emitter.off('grid:move', onGridMove)
       emitter.off('grid:click', onGridClick)
       emitter.off('tool:cancel', onCancel)
+      window.removeEventListener('keydown', onKeyDown, true)
+      unsubscribePrecise()
+      if (usePrecisePlacement.getState().kind === 'wall') usePrecisePlacement.getState().clear()
       clearPlacementSurface()
       useAlignmentGuides.getState().clear()
       useWallSnapIndicator.getState().clear()
@@ -949,7 +1030,7 @@ const LineWallTool: React.FC = () => {
       draftPreview.setWallDraftStart(null)
       draftPreview.setWallDraftEnd(null)
     }
-  }, [unit, metricNotation])
+  }, [unit, metricNotation, locale])
 
   return (
     <group>
@@ -971,14 +1052,40 @@ const LineWallTool: React.FC = () => {
           transparent
         />
       </mesh>
+      {preciseActive && (draftMeasurement || axisGuide) && (
+        <Html
+          center
+          position={
+            draftMeasurement?.lengthPosition ?? [
+              axisGuide!.origin[0],
+              axisGuide!.y + previewHeight + DRAFT_LABEL_Y_OFFSET,
+              axisGuide!.origin[1],
+            ]
+          }
+          style={{ pointerEvents: 'auto' }}
+        >
+          <AedifexI18nProvider i18n={i18n}>
+            <PrecisePlacementInput
+              placeholders={[
+                draftMeasurement?.lengthLabel ?? '',
+                axisGuide?.endOrigin
+                  ? preciseWallHeading({ start: axisGuide.origin, end: axisGuide.endOrigin })
+                  : '',
+              ]}
+            />
+          </AedifexI18nProvider>
+        </Html>
+      )}
       {draftMeasurement && (
         <>
-          <DraftMeasurementLabel
-            color={measurementColor}
-            label={draftMeasurement.lengthLabel}
-            position={draftMeasurement.lengthPosition}
-            shadowColor={measurementShadowColor}
-          />
+          {!preciseActive && (
+            <DraftMeasurementLabel
+              color={measurementColor}
+              label={draftMeasurement.lengthLabel}
+              position={draftMeasurement.lengthPosition}
+              shadowColor={measurementShadowColor}
+            />
+          )}
           {draftMeasurement.angleLabels.map((angleLabel) => (
             <group key={angleLabel.id}>
               <DraftAngleArc arc={angleLabel.arc} color={measurementColor} />

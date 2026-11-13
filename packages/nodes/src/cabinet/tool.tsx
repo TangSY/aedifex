@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  AedifexI18nProvider,
   type AnyNode,
   type AnyNodeId,
   CabinetModuleNode,
@@ -18,6 +19,7 @@ import {
   resolveSupportSlabPatch,
   runAsSingleSceneHistoryStep,
   spatialGridManager,
+  useAedifexI18n,
   useLocale,
   useScene,
   type WallEvent,
@@ -26,6 +28,7 @@ import {
 import {
   clearPlacementSurface,
   EDITOR_LAYER,
+  formatLinearMeasurement,
   getFloorStackPreviewPosition,
   getSideFromNormal,
   isAlignmentGuideActive,
@@ -37,12 +40,15 @@ import {
   movementSfxStepKey,
   PlacementBox,
   PlacementDimensionGuides,
+  PrecisePlacementInput,
   publishPlacementSurface,
+  routePreciseKey,
   triggerSFX,
   useAlignmentGuides,
   useEditor,
   useFacingPose,
   usePlacementPreview,
+  usePrecisePlacement,
 } from '@aedifex/editor'
 import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
@@ -94,6 +100,11 @@ import {
 } from './placement-snap'
 import useCabinetPlacementStatus from './placement-status'
 import useCabinetPlacementType from './placement-type'
+import {
+  cabinetWallCoordinates,
+  findCabinetReferenceWall,
+  resolveCabinetCoordinates,
+} from './precise-placement'
 import { cabinetPresetById, WALL_CABINET_ELEVATION } from './presets'
 import {
   moduleMaxX,
@@ -412,6 +423,8 @@ const CabinetPlacementTool = () => {
   const unit = useViewer((s) => s.unit)
   const metricNotation = useViewer((s) => s.metricNotation)
   const locale = useLocale()
+  const i18n = useAedifexI18n()
+  const preciseActive = usePrecisePlacement((state) => state.kind === 'cabinet')
   const activeDimensionId = usePlacementPreview((s) => s.activeDimensionId)
   const dimensionInput = usePlacementPreview((s) => s.dimensionInput)
   const [placement, setPlacement] = useState<CabinetPlacement | null>(null)
@@ -711,6 +724,14 @@ const CabinetPlacementTool = () => {
       activeLevelId,
     )
     let lastWallEventTime = -1
+    let preciseSession: {
+      hit: WallHit
+      original: CabinetPlacement
+      defaults: { distance: number; offset: number }
+      valid: boolean
+    } | null = null
+    let lastMove: { kind: 'grid'; event: GridEvent } | { kind: 'wall'; event: WallEvent } | null =
+      null
     let wallOwnedPointerAt = Number.NEGATIVE_INFINITY
     const WALL_OWNS_POINTER_MS = 64
     const markWallOwnedPointer = () => {
@@ -740,6 +761,8 @@ const CabinetPlacementTool = () => {
     const applyPlacementType = (type: 'cabinet' | 'island') => {
       const nextIslandMode = type === 'island'
       if (nextIslandMode === islandModeRef.current) return
+      preciseSession = null
+      if (usePrecisePlacement.getState().kind === 'cabinet') usePrecisePlacement.getState().clear()
       const currentPlacement = placementRef.current
       const hasContinuousDraft =
         draftAnchorRef.current !== null || draftSegmentsRef.current.length > 0
@@ -1116,9 +1139,10 @@ const CabinetPlacementTool = () => {
     const resolveStretchedPlacement = (
       anchor: StretchAnchor,
       event: FloorPlacementClickTriggerEvent,
+      preciseStart?: [number, number, number],
     ): CabinetPlacement => {
       useAlignmentGuides.getState().clear()
-      const raw = resolveRawPosition(event)
+      const raw = preciseStart ?? resolveRawPosition(event)
       let stretch = planCabinetContinuousStretch({
         anchor,
         previewWidth: previewNodeRef.current.width,
@@ -1221,6 +1245,8 @@ const CabinetPlacementTool = () => {
     }
 
     const onGridMove = (event: GridEvent) => {
+      lastMove = { kind: 'grid', event }
+      if (preciseSession) return
       const ts = event.nativeEvent?.timeStamp ?? -1
       if (ts === lastWallEventTime || wallOwnsPointer()) return
       const anchor = resolveDraftAnchor()
@@ -1232,6 +1258,11 @@ const CabinetPlacementTool = () => {
     }
 
     const onWallMove = (event: WallEvent) => {
+      lastMove = { kind: 'wall', event }
+      if (preciseSession) {
+        event.stopPropagation()
+        return
+      }
       lastWallEventTime = event.nativeEvent?.timeStamp ?? -1
       if (event.node.parentId !== activeLevelId) return
       const anchor = resolveDraftAnchor()
@@ -1536,6 +1567,16 @@ const CabinetPlacementTool = () => {
     }
 
     const onClick = (event: FloorPlacementClickTriggerEvent) => {
+      let preciseStart: [number, number, number] | undefined
+      if (preciseSession) {
+        if (!applyPrecisePlacement() || !placementRef.current?.valid) {
+          stopPlacementCommitPropagation(event)
+          return
+        }
+        preciseStart = placementRef.current?.position
+        preciseSession = null
+        usePrecisePlacement.getState().clear()
+      }
       const anchor = resolveDraftAnchor()
       if (anchor) {
         const detail =
@@ -1572,9 +1613,10 @@ const CabinetPlacementTool = () => {
         stopPlacementCommitPropagation(event)
         return
       }
-      const next = isForcePlacementEvent(event)
-        ? resolvePlacement(event)
-        : (placementRef.current ?? resolvePlacement(event))
+      const next =
+        !preciseStart && isForcePlacementEvent(event)
+          ? resolvePlacement(event)
+          : (placementRef.current ?? resolvePlacement(event))
       if (!next.valid) {
         stopPlacementCommitPropagation(event)
         return
@@ -1610,7 +1652,7 @@ const CabinetPlacementTool = () => {
           wallLocalX: next.wallLocalX,
           wallSurfaceNormal: next.wallSurfaceNormal,
         }
-        publishPlacement(resolveStretchedPlacement(draftAnchorRef.current, event))
+        publishPlacement(resolveStretchedPlacement(draftAnchorRef.current, event, preciseStart))
         triggerSFX('sfx:item-pick')
         stopPlacementCommitPropagation(event)
         return
@@ -1776,9 +1818,149 @@ const CabinetPlacementTool = () => {
       return true
     }
 
+    const applyPrecisePlacement = () => {
+      const session = preciseSession
+      if (!session) return false
+      const nodes = useScene.getState().nodes
+      if (nodes[session.hit.wall.id as AnyNodeId] !== session.hit.wall) {
+        session.valid = false
+        return false
+      }
+      const fields = usePrecisePlacement.getState().fields
+      const values = fields.map((text, index) =>
+        text.trim()
+          ? parseCabinetDimensionInput(text, { locale, metricNotation, unit })
+          : index === 0
+            ? session.defaults.distance
+            : session.defaults.offset,
+      )
+      if (values[0] === null || values[1] === null) {
+        session.valid = false
+        return false
+      }
+      const result = resolveCabinetCoordinates({
+        hit: session.hit,
+        levelId: activeLevelId,
+        nodes,
+        width: previewNodeRef.current.width,
+        depth: previewNodeRef.current.depth,
+        position: session.original.position,
+        distance: values[0]!,
+        offset: values[1]!,
+      })
+      if (!result) {
+        session.valid = false
+        return false
+      }
+      const {
+        conflictIds: _conflicts,
+        valid: _valid,
+        guide: _guide,
+        insertionPreview: _insertion,
+        insertionFailure: _failure,
+        neighborJoin: _neighbor,
+        ...base
+      } = session.original
+      const next = withPlacementValidity(
+        {
+          ...base,
+          ...result,
+          snappedToWall: true,
+          wallSurfaceNormal: [Math.sin(result.yaw), 0, Math.cos(result.yaw)],
+        },
+        false,
+      )
+      session.valid = next.valid
+      publishPlacement(next)
+      usePrecisePlacement.getState().setDisplay({
+        defaults: [
+          formatLinearMeasurement(session.defaults.distance, unit, metricNotation),
+          formatLinearMeasurement(session.defaults.offset, unit, metricNotation),
+        ],
+        position: next.position,
+      })
+      return session.valid
+    }
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (isTypingTarget(event.target)) return
       const dimensionEditor = usePlacementPreview.getState()
+      if (
+        !preciseSession &&
+        !usePrecisePlacement.getState().kind &&
+        !dimensionEditor.activeDimensionId &&
+        /^[0-9.]$/.test(event.key) &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        !event.isComposing
+      ) {
+        const current = placementRef.current
+        if (
+          current?.snappedToWall &&
+          current.wallId &&
+          !current.stretch &&
+          !current.insertionPreview &&
+          !current.insertionFailure &&
+          !current.neighborJoin &&
+          !islandModeRef.current &&
+          !draftAnchorRef.current
+        ) {
+          const nodes = useScene.getState().nodes
+          const hit = findCabinetReferenceWall({
+            nodes,
+            levelId: activeLevelId,
+            wallId: current.wallId,
+            position: current.position,
+            yaw: current.yaw,
+          })
+          if (hit)
+            preciseSession = {
+              hit,
+              original: current,
+              valid: current.valid,
+              defaults: cabinetWallCoordinates({
+                hit,
+                levelId: activeLevelId,
+                nodes,
+                width: previewNodeRef.current.width,
+                depth: previewNodeRef.current.depth,
+                position: current.position,
+              }),
+            }
+        }
+      }
+      if (preciseSession) {
+        const action = routePreciseKey({ event, kind: 'cabinet', allowTabStart: false })
+        if (action) {
+          event.preventDefault()
+          event.stopImmediatePropagation()
+          if (action === 'changed' && !usePrecisePlacement.getState().position) {
+            usePrecisePlacement.getState().setDisplay({
+              defaults: [
+                formatLinearMeasurement(preciseSession.defaults.distance, unit, metricNotation),
+                formatLinearMeasurement(preciseSession.defaults.offset, unit, metricNotation),
+              ],
+              position: preciseSession.original.position,
+            })
+          }
+          if (action === 'cancelled') {
+            const original = preciseSession.original
+            preciseSession = null
+            markToolCancelConsumed()
+            lastWallEventTime = -1
+            wallOwnedPointerAt = Number.NEGATIVE_INFINITY
+            if (lastMove?.kind === 'grid') onGridMove(lastMove.event)
+            else if (lastMove?.kind === 'wall') onWallMove(lastMove.event)
+            else publishPlacement(original)
+          } else if (action === 'submit') {
+            if (applyPrecisePlacement())
+              onClick({ position: [0, 0, 0], localPosition: [0, 0, 0] } as GridEvent)
+          } else applyPrecisePlacement()
+          return
+        }
+        return
+      }
       if (event.key === 'Tab' && dimensionEditor.dimensions.length > 0) {
         const currentIndex = dimensionEditor.dimensions.findIndex(
           (dimension) => dimension.id === dimensionEditor.activeDimensionId,
@@ -1890,6 +2072,8 @@ const CabinetPlacementTool = () => {
       unsubscribeCabinetPlacementType()
       unsubscribePlacementClicks()
       unsubscribePlacementDoubleClicks()
+      preciseSession = null
+      if (usePrecisePlacement.getState().kind === 'cabinet') usePrecisePlacement.getState().clear()
       window.removeEventListener('keydown', onKeyDown, true)
       draftAnchorRef.current = null
       usePlacementPreview.getState().clear()
@@ -1900,6 +2084,7 @@ const CabinetPlacementTool = () => {
     }
   }, [
     activeLevelId,
+    locale,
     metricNotation,
     previewNode,
     publishFloorplanPreview,
@@ -1975,6 +2160,20 @@ const CabinetPlacementTool = () => {
 
   return (
     <LevelOffsetGroup>
+      {preciseActive && (
+        <Html
+          center
+          position={[
+            placement.position[0],
+            previewNode.plinthHeight + previewNode.carcassHeight + 0.35,
+            placement.position[2],
+          ]}
+        >
+          <AedifexI18nProvider i18n={i18n}>
+            <PrecisePlacementInput />
+          </AedifexI18nProvider>
+        </Html>
+      )}
       {placement.guide && <WallSnapGuide blocked={!placement.valid} guide={placement.guide} />}
       <PlacementBox
         activeDimensionId={stretch ? null : activeDimensionId}
@@ -2052,7 +2251,7 @@ const CabinetPlacementTool = () => {
           ))}
         </group>
       ) : null}
-      {placementLabel ? (
+      {placementLabel && !preciseActive ? (
         <Html
           center
           position={[

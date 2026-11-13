@@ -12,9 +12,11 @@ import { useViewer } from '@aedifex/viewer'
 import { memo, useMemo } from 'react'
 import { formatLinearMeasurement } from '../../../lib/measurements'
 import usePlacementPreview from '../../../store/use-placement-preview'
+import { usePrecisePlacement } from '../../../store/use-precise-placement'
 import { useFloorplanRender, useFloorplanSceneRotation } from '../floorplan-render-context'
 import { FloorplanDimensionRenderer } from './floorplan-dimension-renderer'
 import { FloorplanGeometryRenderer } from './floorplan-geometry-renderer'
+import { PrecisePlacementPlanHud } from './precise-placement-plan-hud'
 
 export interface FloorplanNodePreviewProps {
   node: AnyNode
@@ -142,11 +144,21 @@ export const FloorplanPlacementPreviewLayer = memo(function FloorplanPlacementPr
   const unit = useViewer((s) => s.unit)
   const metricNotation = useViewer((s) => s.metricNotation)
   const sceneRotationDeg = useFloorplanSceneRotation()
+  const renderContext = useFloorplanRender()
+  const preciseKind = usePrecisePlacement((state) => state.kind)
+  const precisePosition = usePrecisePlacement((state) => state.position)
   if (!node) return null
 
   return (
     <g data-floorplan-placement-preview>
       <FloorplanNodePreview contextNodes={contextNodes} node={node} parentNode={parentNode} />
+      {preciseKind === 'cabinet' && precisePosition && renderContext && (
+        <PrecisePlacementPlanHud
+          anchor={[precisePosition[0], precisePosition[2]]}
+          unitsPerPixel={renderContext.unitsPerPixel}
+          sceneRotationDeg={sceneRotationDeg}
+        />
+      )}
       <g data-floorplan-placement-dimensions>
         {dimensions
           .filter((dimension) => dimension.renderInFloorplan !== false)

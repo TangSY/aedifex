@@ -173,6 +173,7 @@ import useInteractionScope, {
   useReshapingNode,
 } from '../../store/use-interaction-scope'
 import usePlacementPreview from '../../store/use-placement-preview'
+import { usePrecisePlacement } from '../../store/use-precise-placement'
 import { expandSessionSelectionForNode } from '../../store/use-session-groups'
 import { useStairBuildPreview } from '../../store/use-stair-build-preview'
 import {
@@ -207,6 +208,7 @@ import {
   RotationAngleOverlay,
 } from '../editor-2d/renderers/floorplan-registry-layer'
 import { FloorplanVoronoiLayer } from '../editor-2d/renderers/floorplan-voronoi-layer'
+import { PrecisePlacementPlanHud } from '../editor-2d/renderers/precise-placement-plan-hud'
 import { buildSvgPolylinePath, formatPolygonPath } from '../editor-2d/svg-paths'
 import { snapToHalf } from '../tools/item/placement-math'
 import {
@@ -238,8 +240,14 @@ import {
   getSegmentAngleReferenceAtPoint,
 } from '../tools/shared/segment-angle'
 import {
+  preciseLengthOptions,
+  preciseWallHeading,
+  resolvePreciseWallEnd,
+} from '../tools/wall/precise-wall-end'
+import {
   chainEndJoinsExistingWall,
   createWallOnCurrentLevel,
+  getSegmentGridStep,
   isSegmentLongEnough,
   snapWallDraftPoint,
   snapWallDraftPointDetailed,
@@ -267,6 +275,7 @@ import {
   resolveFloorplanPresentationViewBox,
   setFloorplanCompassRotation,
 } from './floorplan-navigation-presentation'
+import { installPreciseWallKeys } from './floorplan-precise-wall-keys'
 import { useFloorplanBackgroundPlacement } from './use-floorplan-background-placement'
 import { useFloorplanHitTesting } from './use-floorplan-hit-testing'
 import { useFloorplanSceneData } from './use-floorplan-scene-data'
@@ -4413,6 +4422,7 @@ function FloorplanLinearDraftLayer({
 }) {
   const metricNotation = useViewer((state) => state.metricNotation)
   const wallDraftEnd = useFloorplanDraftPreview((s) => s.wallDraftEnd)
+  const preciseWall = usePrecisePlacement((state) => state.kind === 'wall')
   const fenceDraftEnd = useFloorplanDraftPreview((s) => s.fenceDraftEnd)
   const roofDraftEnd = useFloorplanDraftPreview((s) => s.roofDraftEnd)
   const roofDraftQuarterTurn = useFloorplanDraftPreview((s) => s.roofDraftQuarterTurn)
@@ -4734,12 +4744,25 @@ function FloorplanLinearDraftLayer({
 
       {draftWallMeasurement && (
         <FloorplanDraftMeasurement
+          hideLength={preciseWall}
           labelBackground={isDark ? '#0f172a' : '#ffffff'}
           labelText={isDark ? '#e2e8f0' : '#171717'}
           measurement={draftWallMeasurement}
           measurementStroke={measurementStroke}
           sceneRotationDeg={sceneRotationDeg}
           unitsPerPixel={unitsPerPixel}
+        />
+      )}
+
+      {preciseWall && isWallBuildActive && wallDraftStart && (
+        <PrecisePlacementPlanHud
+          anchor={draftWallMeasurement?.midpoint ?? wallDraftStart}
+          unitsPerPixel={unitsPerPixel}
+          sceneRotationDeg={sceneRotationDeg}
+          placeholders={[
+            draftWallMeasurement?.lengthLabel ?? '',
+            wallDraftEnd ? preciseWallHeading({ start: wallDraftStart, end: wallDraftEnd }) : '',
+          ]}
         />
       )}
 
@@ -5001,6 +5024,8 @@ export function FloorplanPanel({
   // `grid:move` re-renders only `FloorplanLinearDraftLayer`, not this panel.
   // Shims keep the `setXDraftEnd(value | prev => …)` call sites unchanged.
   const [draftStart, setDraftStart] = useState<WallPlanPoint | null>(null)
+  const wallPointerRef = useRef<WallPlanPoint | null>(null)
+  const wallCommitRef = useRef<((point: WallPlanPoint) => void) | null>(null)
   const [wallChainFirstVertex, setWallChainFirstVertex] = useState<WallPlanPoint | null>(null)
   const wallConstructionOptionsRef =
     useRef<ReturnType<typeof resolveTerrainWallConstructionOptions>>(undefined)
@@ -7831,8 +7856,90 @@ export function FloorplanPanel({
     wallConstructionOptionsRef.current = undefined
     wallChainWallIdsRef.current = []
     setDraftEnd(null)
+    wallPointerRef.current = null
+    if (usePrecisePlacement.getState().kind === 'wall') usePrecisePlacement.getState().clear()
     useSegmentDraftChain.getState().clear('wall')
   }, [setDraftEnd])
+  const wallPreciseRef = useRef({
+    start: draftStart,
+    active: isWallBuildActive,
+    unit,
+    metricNotation,
+    locale,
+  })
+  wallPreciseRef.current = {
+    start: draftStart,
+    active: isWallBuildActive,
+    unit,
+    metricNotation,
+    locale,
+  }
+  useEffect(
+    () =>
+      installPreciseWallKeys({
+        target: window,
+        draft: () => {
+          const snapshot = wallPreciseRef.current
+          return snapshot.active && snapshot.start && visibleScene(useEditor.getState()) === '2d'
+            ? {
+                ...snapshot,
+                start: snapshot.start,
+                pointer: wallPointerRef.current ?? snapshot.start,
+              }
+            : null
+        },
+        commit: (pointer) => wallCommitRef.current?.(pointer),
+      }),
+    [],
+  )
+  useEffect(
+    () =>
+      usePrecisePlacement.subscribe((state, previous) => {
+        if (state.fields === previous.fields && state.kind === previous.kind) return
+        const snapshot = wallPreciseRef.current
+        if (!snapshot.active || !snapshot.start || visibleScene(useEditor.getState()) !== '2d')
+          return
+        const pointer = wallPointerRef.current ?? snapshot.start
+        const result =
+          state.kind === 'wall'
+            ? resolvePreciseWallEnd({
+                start: snapshot.start,
+                pointer,
+                lengthText: state.fields[0],
+                angleText: state.fields[1],
+                lengthOptions: preciseLengthOptions(snapshot),
+                step: getSegmentGridStep(),
+              })
+            : null
+        setDraftEnd(result?.status === 'ready' ? result.point : pointer)
+      }),
+    [setDraftEnd],
+  )
+  useEffect(() => {
+    if (!isWallBuildActive) return
+    return useSegmentDraftChain.subscribe((state, previous) => {
+      if (visibleScene(useEditor.getState()) === '2d' || state.wall === previous.wall) return
+      if (state.wall) {
+        setDraftStart(state.wall)
+        setWallChainFirstVertex((current) => current ?? state.wall)
+      } else if (previous.wall) clearWallPlacementDraft()
+    })
+  }, [isWallBuildActive, clearWallPlacementDraft])
+  useEffect(() => {
+    if (!isWallBuildActive) return
+    return useFloorplanDraftPreview.subscribe((state, previous) => {
+      if (
+        visibleScene(useEditor.getState()) !== 'split' ||
+        state.wallDraftStart === previous.wallDraftStart
+      )
+        return
+      if (state.wallDraftStart) {
+        const start = state.wallDraftStart
+        setDraftStart((current) => (current && pointsEqual(current, start) ? current : start))
+        setWallChainFirstVertex((current) => current ?? start)
+      } else if (previous.wallDraftStart) clearWallPlacementDraft()
+    })
+  }, [isWallBuildActive, clearWallPlacementDraft])
   const clearFencePlacementDraft = useCallback(() => {
     setFenceDraftStart(null)
     setFenceDraftEnd(null)
@@ -9516,8 +9623,22 @@ export function FloorplanPanel({
       // Emit `grid:move` so the registry-driven wall tool's 3D preview
       // tracks the cursor. The local draftEnd update below is what
       // drives the 2D draft polygon — both views update in parallel.
+      wallPointerRef.current = draftStart ? snappedPoint : null
+      const typing = usePrecisePlacement.getState()
+      const projected =
+        draftStart && typing.kind === 'wall'
+          ? resolvePreciseWallEnd({
+              start: draftStart,
+              pointer: snappedPoint,
+              lengthText: typing.fields[0],
+              angleText: typing.fields[1],
+              lengthOptions: preciseLengthOptions({ unit, metricNotation, locale }),
+              step: getSegmentGridStep(),
+            })
+          : null
+      const previewPoint = projected?.status === 'ready' ? projected.point : snappedPoint
       emitFloorplanGridEvent('move', snappedPoint, event)
-      setCursorPoint(snappedPoint)
+      setCursorPoint(previewPoint)
 
       if (!draftStart) {
         return
@@ -9526,17 +9647,20 @@ export function FloorplanPanel({
       setDraftEnd((previousEnd) => {
         if (
           !previousEnd ||
-          previousEnd[0] !== snappedPoint[0] ||
-          previousEnd[1] !== snappedPoint[1]
+          previousEnd[0] !== previewPoint[0] ||
+          previousEnd[1] !== previewPoint[1]
         ) {
           sfxEmitter.emit('sfx:grid-snap')
         }
 
-        return snappedPoint
+        return previewPoint
       })
     },
     [
       buildingRotationDeg,
+      unit,
+      metricNotation,
+      locale,
       applyFloorplanViewportImperatively,
       applyFloorplanRotationImperatively,
       draftStart,
@@ -9753,7 +9877,21 @@ export function FloorplanPanel({
   )
 
   const handleWallPlacementPoint = useCallback(
-    (point: WallPlanPoint) => {
+    (rawPoint: WallPlanPoint) => {
+      const typing = usePrecisePlacement.getState()
+      const precise =
+        draftStart && typing.kind === 'wall'
+          ? resolvePreciseWallEnd({
+              start: draftStart,
+              pointer: rawPoint,
+              lengthText: typing.fields[0],
+              angleText: typing.fields[1],
+              lengthOptions: preciseLengthOptions({ unit, metricNotation, locale }),
+              step: getSegmentGridStep(),
+            })
+          : null
+      if (precise?.status === 'invalid' || precise?.status === 'needs-direction') return
+      const point = precise?.status === 'ready' ? precise.point : rawPoint
       if (!draftStart) {
         wallConstructionOptionsRef.current = levelId
           ? resolveTerrainWallConstructionOptions(
@@ -9772,6 +9910,7 @@ export function FloorplanPanel({
           startWallPolygonDraft(levelId as AnyNodeId, point, wallConstructionOptionsRef.current)
         }
         setDraftStart(point)
+        wallPointerRef.current = null
         setWallChainFirstVertex(point)
         setDraftEnd(point)
         setCursorPoint(point)
@@ -9810,6 +9949,8 @@ export function FloorplanPanel({
         setDraftStart(point)
         setDraftEnd(point)
         setCursorPoint(point)
+        wallPointerRef.current = null
+        if (usePrecisePlacement.getState().kind === 'wall') usePrecisePlacement.getState().clear()
         return
       }
       if (viewIs2DOnly) {
@@ -9818,6 +9959,7 @@ export function FloorplanPanel({
           point,
           wallConstructionOptionsRef.current,
         )
+        if (!createdWall) return
       }
       if (createdWall) {
         wallChainWallIdsRef.current.push(createdWall.id)
@@ -9874,16 +10016,22 @@ export function FloorplanPanel({
       setDraftStart(nextStart)
       setDraftEnd(nextStart)
       setCursorPoint(nextStart)
+      wallPointerRef.current = null
+      if (usePrecisePlacement.getState().kind === 'wall') usePrecisePlacement.getState().clear()
     },
     [
       clearWallPlacementDraft,
       draftStart,
       levelId,
+      unit,
+      metricNotation,
+      locale,
       wallChainFirstVertex,
       setDraftEnd,
       setCursorPoint,
     ],
   )
+  wallCommitRef.current = handleWallPlacementPoint
   const { getFloorplanHitIdAtPoint, getFloorplanSelectionIdsInBounds } = useFloorplanHitTesting({
     sceneRef: floorplanSceneRef,
   })
@@ -10109,6 +10257,7 @@ export function FloorplanPanel({
       setSelection,
       getFloorplanHitIdAtPoint,
       unit,
+      locale,
       emitFloorplanGridEvent,
       setCursorPoint,
     ],

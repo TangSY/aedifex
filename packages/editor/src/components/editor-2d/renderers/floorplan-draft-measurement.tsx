@@ -25,6 +25,7 @@ export function FloorplanDraftMeasurement({
   labelText,
   sceneRotationDeg,
   unitsPerPixel,
+  hideLength = false,
 }: {
   measurement: DraftMeasurement
   measurementStroke: string
@@ -32,6 +33,7 @@ export function FloorplanDraftMeasurement({
   labelText: string
   sceneRotationDeg: number
   unitsPerPixel: number
+  hideLength?: boolean
 }) {
   const stroke = measurementStroke
   const labelBg = labelBackground
@@ -68,33 +70,35 @@ export function FloorplanDraftMeasurement({
 
   return (
     <g pointerEvents="none">
-      <g transform={`translate(${cx} ${cy}) rotate(${labelAngleDeg})`}>
-        <rect
-          fill={labelBg}
-          height={lengthPlateH}
-          opacity={0.92}
-          rx={upx * 3}
-          ry={upx * 3}
-          stroke={stroke}
-          strokeWidth={upx * 0.5}
-          vectorEffect="non-scaling-stroke"
-          width={lengthPlateW}
-          x={-lengthPlateW / 2}
-          y={-lengthPlateH / 2}
-        />
-        <text
-          dominantBaseline="middle"
-          fill={labelText}
-          fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-          fontSize={fontSize}
-          fontWeight={600}
-          textAnchor="middle"
-          x={0}
-          y={0}
-        >
-          {measurement.lengthLabel}
-        </text>
-      </g>
+      {!hideLength && (
+        <g transform={`translate(${cx} ${cy}) rotate(${labelAngleDeg})`}>
+          <rect
+            fill={labelBg}
+            height={lengthPlateH}
+            opacity={0.92}
+            rx={upx * 3}
+            ry={upx * 3}
+            stroke={stroke}
+            strokeWidth={upx * 0.5}
+            vectorEffect="non-scaling-stroke"
+            width={lengthPlateW}
+            x={-lengthPlateW / 2}
+            y={-lengthPlateH / 2}
+          />
+          <text
+            dominantBaseline="middle"
+            fill={labelText}
+            fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+            fontSize={fontSize}
+            fontWeight={600}
+            textAnchor="middle"
+            x={0}
+            y={0}
+          >
+            {measurement.lengthLabel}
+          </text>
+        </g>
+      )}
 
       {measurement.angleLabels.map((arc) => {
         // Sample the arc as a polyline — avoids the SVG arc command's
