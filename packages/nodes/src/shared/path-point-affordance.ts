@@ -15,6 +15,7 @@ import {
   type FittingEndpoint,
   planFittingEndpointReaim,
 } from './fitting-endpoint-reaim'
+import { createMepFollowerFrames } from './mep-follower-frames'
 
 /**
  * Shared "drag a path point" floor-plan affordance for polyline
@@ -87,6 +88,8 @@ export function createPathPointMoveAffordance<N extends PathShape & { id: AnyNod
         ...(connectivity?.connections.map((c) => c.nodeId) ?? []),
       ]
 
+      const writeFrame = createMepFollowerFrames(nodes, node.id, affectedIds)
+
       const endCapUpdates = (nextPath: [number, number, number][]) => {
         if ((kind !== 'duct-segment' && kind !== 'pipe-segment') || !isEndpoint) return []
         const preview = {
@@ -119,6 +122,7 @@ export function createPathPointMoveAffordance<N extends PathShape & { id: AnyNod
       return {
         affectedIds,
         apply({ planPoint, modifiers }) {
+          if (writeFrame.hasConflict()) return
           // Plan coords map x→world X, y→world Z.
           const raw: WallPlanPoint = [planPoint[0], planPoint[1]]
           const [sx, sz] = isGridSnapActive() ? snapPointToGrid(raw) : raw
@@ -133,7 +137,7 @@ export function createPathPointMoveAffordance<N extends PathShape & { id: AnyNod
           if (!detached && fittingEndpoint) {
             const plan = planFittingEndpointReaim(fittingEndpoint, pointIndex, dragged)
             if (!plan) return
-            useScene.getState().updateNodes([
+            writeFrame([
               {
                 id: node.id,
                 data: { path: plan.path, wallAttachment: undefined } as Partial<unknown> as never,
@@ -150,7 +154,7 @@ export function createPathPointMoveAffordance<N extends PathShape & { id: AnyNod
             return
           }
           const nextPath = initialPath.map((p, i) => (i === pointIndex ? dragged : p))
-          useScene.getState().updateNodes([
+          writeFrame([
             {
               id: node.id,
               data: { path: nextPath, wallAttachment: undefined } as Partial<unknown> as never,
@@ -164,6 +168,7 @@ export function createPathPointMoveAffordance<N extends PathShape & { id: AnyNod
         canCommit() {
           const final = useScene.getState().nodes[node.id] as N | undefined
           return (
+            !writeFrame.hasConflict() &&
             !!final &&
             (final as unknown as { type: string }).type === kind &&
             final.path.length >= 2

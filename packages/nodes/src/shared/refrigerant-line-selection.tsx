@@ -14,15 +14,23 @@ import {
   sceneRegistry,
   useScene,
 } from '@aedifex/core'
-import { DimensionPill, swallowNextClick, triggerSFX, useEditor } from '@aedifex/editor'
+import {
+  DimensionPill,
+  isGridSnapActive,
+  swallowNextClick,
+  triggerSFX,
+  useEditor,
+} from '@aedifex/editor'
 import { collectScenePorts, findNearestPortXZ } from '@aedifex/editor/distribution'
 import { useViewer } from '@aedifex/viewer'
 import { Html } from '@react-three/drei'
 import { createPortal, type ThreeEvent, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { type Group, type Object3D, Plane, Raycaster, Vector2, Vector3 } from 'three'
+import { createMepFollowerFrames } from './mep-follower-frames'
 import { REFRIGERANT_PORT_SYSTEMS } from './port-systems'
 import { HandleCube, MoveChevron } from './selection-handles'
+import { useMepHandleGesture } from './use-mep-handle-gesture'
 
 type RefrigerantLineKind = 'lineset' | 'liquid-line'
 type RefrigerantLineNode = LinesetNode | LiquidLineNode
@@ -123,6 +131,7 @@ function RefrigerantLineEndpointHandles({
 
   const unit = useViewer((s) => s.unit)
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
+  const claimGesture = useMepHandleGesture()
   const [openCluster, setOpenCluster] = useState<number | null>(null)
   const toggleCluster = (index: number) => setOpenCluster((cur) => (cur === index ? null : index))
   const dragRef = useRef<{
@@ -234,7 +243,13 @@ function RefrigerantLineEndpointHandles({
     e.stopPropagation()
     const initialPath = line.path.map((p) => [...p] as Point)
     const startPoint = initialPath[index]!
-    const connectivity = analyzePortConnectivity(line as AnyNode, useScene.getState().nodes)
+    const startNodes = useScene.getState().nodes
+    const connectivity = analyzePortConnectivity(line as AnyNode, startNodes)
+    const writeFrame = createMepFollowerFrames(
+      startNodes,
+      line.id as AnyNodeId,
+      connectivity.connections.map((connection) => connection.nodeId),
+    )
     pauseSceneHistory(useScene)
     useViewer.getState().setInputDragging(true)
     document.body.style.cursor = kind.axis === 'y' ? 'ns-resize' : 'grabbing'
@@ -252,8 +267,12 @@ function RefrigerantLineEndpointHandles({
     const onMove = (event: PointerEvent) => {
       const drag = dragRef.current
       if (!drag) return
-      const step = event.shiftKey ? 0 : useEditor.getState().gridSnapStep
-      const detached = event.altKey
+      if (writeFrame.hasConflict()) {
+        finish(false)
+        return
+      }
+      const step = isGridSnapActive() ? useEditor.getState().gridSnapStep : 0
+      const detached = Boolean(event.altKey)
       let next: Point | null = null
       if (canSwing && pivot) {
         const aim =
@@ -289,21 +308,24 @@ function RefrigerantLineEndpointHandles({
         )
         if (port) next = [port.position[0], port.position[1], port.position[2]]
       }
-      if (next[0] === drag.current[0] && next[1] === drag.current[1] && next[2] === drag.current[2])
+      if (
+        next[0] === drag.current[0] &&
+        next[1] === drag.current[1] &&
+        next[2] === drag.current[2] &&
+        detached === drag.detached
+      )
         return
       drag.current = next
       drag.detached = detached
       if (step > 0) triggerSFX('sfx:grid-snap')
       const path = line.path.map((p, i) => (i === drag.index ? next! : p)) as Point[]
-      useScene
-        .getState()
-        .updateNodes([
-          { id: line.id as AnyNodeId, data: { path } as Partial<AnyNode> },
-          ...(detached ? [] : followUpdates(drag.connectivity, path)),
-        ])
+      writeFrame([
+        { id: line.id as AnyNodeId, data: { path } as Partial<AnyNode> },
+        ...(detached ? [] : followUpdates(drag.connectivity, path)),
+      ])
     }
 
-    const onUp = () => {
+    const finish = (commit: boolean) => {
       const drag = dragRef.current
       if (!drag) return
       swallowNextClick()
@@ -314,24 +336,13 @@ function RefrigerantLineEndpointHandles({
       const finalPath = drag.initialPath.map((p, i) =>
         i === drag.index ? drag.current : p,
       ) as Point[]
-      const revert = detached
-        ? []
-        : (drag.connectivity?.connections ?? []).map((conn) =>
-            conn.kind === 'rigid-node'
-              ? { id: conn.nodeId, data: { position: conn.startPosition } as Partial<AnyNode> }
-              : { id: conn.nodeId, data: { path: conn.startPath } as Partial<AnyNode> },
-          )
-      useScene
-        .getState()
-        .updateNodes([
-          { id: line.id as AnyNodeId, data: { path: drag.initialPath } as Partial<AnyNode> },
-          ...revert.filter((u) => useScene.getState().nodes[u.id]),
-        ])
+      const conflict = writeFrame.hasConflict()
+      writeFrame.restore()
       resumeSceneHistory(useScene)
       const moved = finalPath[drag.index]!.some(
         (v, axis) => v !== drag.initialPath[drag.index]![axis],
       )
-      if (moved) {
+      if (commit && moved && !conflict) {
         useScene
           .getState()
           .updateNodes([
@@ -341,10 +352,14 @@ function RefrigerantLineEndpointHandles({
       }
     }
 
+    const onUp = () => finish(true)
+    const onCancel = () => finish(false)
+
     const cleanup = () => {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
-      window.removeEventListener('pointercancel', onUp)
+      window.removeEventListener('pointercancel', onCancel)
+      releaseGesture()
       useViewer.getState().setInputDragging(false)
       document.body.style.cursor = ''
     }
@@ -357,9 +372,10 @@ function RefrigerantLineEndpointHandles({
       connectivity,
       detached: false,
     }
+    const releaseGesture = claimGesture(line.id, 'path-point', onCancel)
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
-    window.addEventListener('pointercancel', onUp)
+    window.addEventListener('pointercancel', onCancel)
   }
 
   const endpointArrows = useMemo(() => getEndpointArrows(line), [line])

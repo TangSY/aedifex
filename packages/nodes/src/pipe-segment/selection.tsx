@@ -30,17 +30,20 @@ import { createPortal, type ThreeEvent, useFrame, useThree } from '@react-three/
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { type Group, type Object3D, Plane, Raycaster, Vector2, Vector3 } from 'three'
 import { planRunEndCapFollowUpdates } from '../shared/automatic-run-end-cap'
-import { fittingPartnerId } from '../shared/fitting-partner'
 import {
   detectFittingEndpoint,
   type FittingEndpoint,
   planFittingEndpointReaim,
 } from '../shared/fitting-endpoint-reaim'
+import { fittingPartnerId } from '../shared/fitting-partner'
+import { createMepFollowerFrames } from '../shared/mep-follower-frames'
 import { PipeFittingGhost, PipeSegmentGhost } from '../shared/mep-ghost'
+import { createMepLivePreview } from '../shared/mep-live-preview'
 import { planPipeRunTranslationOffsets } from '../shared/pipe-run-translation-offset'
 import { planVerticalOffsets, type VerticalOffsetResult } from '../shared/pipe-vertical-offset'
 import { DWV_PORT_SYSTEMS } from '../shared/port-systems'
 import { ContinuePlusHandle, HandleCube, MoveChevron } from '../shared/selection-handles'
+import { useMepHandleGesture } from '../shared/use-mep-handle-gesture'
 import { refreshWallRunAttachment } from '../shared/wall-run-move'
 import {
   activatePipeContinuation,
@@ -154,6 +157,7 @@ const PipePointHandles = ({ pipe, target }: { pipe: PipeSegmentNode; target: Obj
   })
   const unit = useViewer((s) => s.unit)
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
+  const claimGesture = useMepHandleGesture()
   const [runMoving, setRunMoving] = useState(false)
   const [verticalGhost, setVerticalGhost] = useState<{
     tint: 'valid' | 'invalid'
@@ -366,28 +370,10 @@ const PipePointHandles = ({ pipe, target }: { pipe: PipeSegmentNode; target: Obj
     e.stopPropagation()
     const initialPath = pipe.path.map((p) => [...p] as Point)
     const startPoint = initialPath[index]!
-    const connectivity = analyzePortConnectivity(pipe as AnyNode, useScene.getState().nodes)
+    const startNodes = useScene.getState().nodes
+    const connectivity = analyzePortConnectivity(pipe as AnyNode, startNodes)
     pauseSceneHistory(useScene)
-    const livePreviewIds = new Set<AnyNodeId>()
-    const publishLivePreview = (updates: { id: AnyNodeId; data: Partial<AnyNode> }[]) => {
-      const scene = useScene.getState()
-      const entries = updates
-        .filter((update) => scene.nodes[update.id])
-        .map((update) => [update.id, update.data as Record<string, unknown>] as const)
-      useLiveNodeOverrides.getState().setMany(entries)
-      for (const [id] of entries) {
-        livePreviewIds.add(id)
-        scene.markDirty(id)
-      }
-    }
-    const clearLivePreview = () => {
-      const scene = useScene.getState()
-      const overrides = useLiveNodeOverrides.getState()
-      for (const id of livePreviewIds) {
-        overrides.clear(id)
-        if (scene.nodes[id]) scene.markDirty(id)
-      }
-    }
+    const livePreview = createMepLivePreview()
     useViewer.getState().setInputDragging(true)
     document.body.style.cursor = kind.axis === 'y' ? 'ns-resize' : 'grabbing'
     setDraggingIndex(index)
@@ -415,15 +401,24 @@ const PipePointHandles = ({ pipe, target }: { pipe: PipeSegmentNode; target: Obj
       runId: pipe.id,
     })
     const partner = partnerId ? useScene.getState().nodes[partnerId] : undefined
+    const guard = createMepFollowerFrames(startNodes, pipe.id as AnyNodeId, [
+      ...connectivity.connections.map((connection) => connection.nodeId),
+      ...(fittingEndpoint ? [fittingEndpoint.fitting.id as AnyNodeId] : []),
+      ...(partnerId ? [partnerId as AnyNodeId] : []),
+    ])
     const onMove = (event: PointerEvent) => {
       const drag = dragRef.current
       if (!drag) return
+      if (guard.hasConflict()) {
+        finish(false)
+        return
+      }
       // Follow the active snapping mode; Shift cycles that mode globally.
       const step = isGridSnapActive() ? useEditor.getState().gridSnapStep : 0
       // Alt = detach: break the joint for this drag — the endpoint moves on
       // its own, no elbow re-aim and no connectivity follow (it can still
       // port-snap to re-mate elsewhere). Mirrors the wall corner drag.
-      const detached = event.altKey && !drag.jointPartner
+      const detached = Boolean(event.altKey && !drag.jointPartner)
       let next: Point | null = null
       if (canSwing && pivot) {
         const aim =
@@ -462,41 +457,51 @@ const PipePointHandles = ({ pipe, target }: { pipe: PipeSegmentNode; target: Obj
         )
         if (port) next = [port.position[0], port.position[1], port.position[2]]
       }
-      if (next[0] === drag.current[0] && next[1] === drag.current[1] && next[2] === drag.current[2])
+      if (
+        next[0] === drag.current[0] &&
+        next[1] === drag.current[1] &&
+        next[2] === drag.current[2] &&
+        detached === drag.detached
+      )
         return
       const batch = buildDragBatch(drag, next, detached)
       if (!batch) return
       drag.current = next
       drag.detached = detached
       if (step > 0) triggerSFX('sfx:grid-snap')
-      publishLivePreview(batch)
+      livePreview.publish(batch)
     }
 
-    const onUp = () => {
+    const finish = (commit: boolean) => {
       const drag = dragRef.current
       if (!drag) return
       swallowNextClick()
       drag.cleanup()
       dragRef.current = null
       setDraggingIndex(null)
-      clearLivePreview()
+      livePreview.clear()
       // Resume history and apply the final batch as one tracked change. The
       // final batch is built the same way as
       // each live frame (elbow re-aim, rigid connectivity follow, or — when
       // detached — just the pipe path).
+      const conflict = guard.hasConflict()
       const detached = drag.detached
       const moved = drag.current.some((v, axis) => v !== drag.initialPath[drag.index]![axis])
       const finalBatch = buildDragBatch(drag, drag.current, detached)
       resumeSceneHistory(useScene)
-      if (moved && finalBatch) {
+      if (commit && !conflict && moved && finalBatch) {
         useScene.getState().updateNodes(finalBatch)
       }
     }
 
+    const onUp = () => finish(true)
+    const onCancel = () => finish(false)
+
     const cleanup = () => {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
-      window.removeEventListener('pointercancel', onUp)
+      window.removeEventListener('pointercancel', onCancel)
+      releaseGesture()
       useViewer.getState().setInputDragging(false)
       document.body.style.cursor = ''
     }
@@ -514,9 +519,10 @@ const PipePointHandles = ({ pipe, target }: { pipe: PipeSegmentNode; target: Obj
           : undefined,
       detached: false,
     }
+    const releaseGesture = claimGesture(pipe.id, 'path-point', () => finish(false))
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
-    window.addEventListener('pointercancel', onUp)
+    window.addEventListener('pointercancel', onCancel)
   }
 
   const onRunMoveDown = (kind: RunMoveKind) => (e: ThreeEvent<PointerEvent>) => {
@@ -533,6 +539,11 @@ const PipePointHandles = ({ pipe, target }: { pipe: PipeSegmentNode; target: Obj
       ...useScene.getState().nodes,
     }
     const connectivity = analyzePortConnectivity(pipe as AnyNode, nodesById)
+    const guard = createMepFollowerFrames(
+      nodesById,
+      pipe.id as AnyNodeId,
+      connectivity.connections.map((connection) => connection.nodeId),
+    )
     const scenePorts = collectScenePorts({
       excludeNodeId: pipe.id as AnyNodeId,
       systems: DWV_PORT_SYSTEMS,
@@ -641,10 +652,14 @@ const PipePointHandles = ({ pipe, target }: { pipe: PipeSegmentNode; target: Obj
         .filter((u) => useScene.getState().nodes[u.id])
 
     const onMove = (event: PointerEvent) => {
+      if (guard.hasConflict()) {
+        finish(false)
+        return
+      }
       if (startSample === null) return
       const s = sample(event.clientX, event.clientY)
       if (s === null) return
-      const step = isGridSnapActive() ? useEditor.getState().gridSnapStep : 0
+      const step = !event.altKey && isGridSnapActive() ? useEditor.getState().gridSnapStep : 0
       const next = snap(s - startSample, step)
       if (next === delta) return
       delta = next
@@ -698,11 +713,12 @@ const PipePointHandles = ({ pipe, target }: { pipe: PipeSegmentNode; target: Obj
       }
     }
 
-    const onUp = () => {
+    const finish = (commit: boolean) => {
       swallowNextClick()
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
-      window.removeEventListener('pointercancel', onUp)
+      window.removeEventListener('pointercancel', onCancel)
+      releaseGesture()
       useViewer.getState().setInputDragging(false)
       clearPlacementSurface()
       document.body.style.cursor = ''
@@ -710,8 +726,9 @@ const PipePointHandles = ({ pipe, target }: { pipe: PipeSegmentNode; target: Obj
       setVerticalGhost(null)
       clearLivePreview()
       setPreviewHidden([])
+      const conflict = guard.hasConflict()
       resumeSceneHistory(useScene)
-      if (delta === 0) return
+      if (!commit || conflict || delta === 0) return
       const result = offsetResult
       if (result?.status === 'invalid') return
       const scene = useScene.getState()
@@ -774,9 +791,13 @@ const PipePointHandles = ({ pipe, target }: { pipe: PipeSegmentNode; target: Obj
       ensureSceneObjectsVisible(updates.map((update) => update.id))
     }
 
+    const onUp = () => finish(true)
+    const onCancel = () => finish(false)
+
+    const releaseGesture = claimGesture(pipe.id, 'axis-move', () => finish(false))
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
-    window.addEventListener('pointercancel', onUp)
+    window.addEventListener('pointercancel', onCancel)
   }
 
   const cornerArrows = useMemo(() => getCornerArrows(displayPipe), [displayPipe])

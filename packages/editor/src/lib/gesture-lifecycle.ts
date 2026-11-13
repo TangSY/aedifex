@@ -33,7 +33,8 @@ export type GestureSpec = {
   kind: string
   /**
    * Drops the gesture's own in-flight state (draft, preview, listeners,
-   * pending frames). Never writes the scene. Runs once, on cancel only.
+   * pending frames). May revert scene writes made while history was paused;
+   * it must not record history. Runs once, on cancel only.
    */
   onCancel: (reason: GestureCancelReason) => void
   /** A scope the owner begins for the gesture and releases only while it is still this one. */

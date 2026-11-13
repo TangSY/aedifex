@@ -16,6 +16,8 @@ import {
 import {
   ARROW_COLOR,
   EDITOR_LAYER,
+  isAngleSnapActive,
+  isGridSnapActive,
   isTypingTarget,
   swallowNextClick,
   triggerSFX,
@@ -46,7 +48,9 @@ import {
   ROTATE_STEP_RAD,
   type RotationAxis,
 } from '../shared/fitting-rotation'
+import { createMepFollowerFrames } from '../shared/mep-follower-frames'
 import { HandleCube, MoveChevron, RotateArc } from '../shared/selection-handles'
+import { useMepHandleGesture } from '../shared/use-mep-handle-gesture'
 import { pipeFittingLegLength } from './ports'
 
 type Point = [number, number, number]
@@ -294,6 +298,7 @@ const FittingHandles = ({ fitting }: { fitting: PipeFittingNode }) => {
   const [frame, setFrame] = useState<Group | null>(null)
   const [open, setOpen] = useState(false)
   const [dragging, setDragging] = useState(false)
+  const claimGesture = useMepHandleGesture()
   const [sideSign, setSideSign] = useState(1)
 
   const makeRay = (clientX: number, clientY: number) => {
@@ -380,15 +385,20 @@ const FittingHandles = ({ fitting }: { fitting: PipeFittingNode }) => {
   const beginDrag =
     (
       cursor: Cursor,
+      handle: string,
       makeCompute: (
         e: ThreeEvent<PointerEvent>,
       ) => (event: PointerEvent) => FittingTransform | null,
     ) =>
     (e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation()
-      const initialPosition = [...fitting.position] as Point
-      const initialRotation = [...fitting.rotation] as Point
-      const connectivity = analyzePortConnectivity(fitting as AnyNode, useScene.getState().nodes)
+      const startNodes = useScene.getState().nodes
+      const connectivity = analyzePortConnectivity(fitting as AnyNode, startNodes)
+      const writeFrame = createMepFollowerFrames(
+        startNodes,
+        fitting.id as AnyNodeId,
+        connectivity.connections.map((connection) => connection.nodeId),
+      )
       const compute = makeCompute(e)
       pauseSceneHistory(useScene)
       useViewer.getState().setInputDragging(true)
@@ -405,58 +415,42 @@ const FittingHandles = ({ fitting }: { fitting: PipeFittingNode }) => {
       ]
 
       const onMove = (event: PointerEvent) => {
+        if (writeFrame.hasConflict()) {
+          finish(false)
+          return
+        }
         const next = compute(event)
         if (!next) return
         current = next
-        useScene.getState().updateNodes(buildBatch(next))
+        writeFrame(buildBatch(next))
       }
 
       const cleanup = () => {
         window.removeEventListener('pointermove', onMove)
         window.removeEventListener('pointerup', onUp)
-        window.removeEventListener('pointercancel', onUp)
+        window.removeEventListener('pointercancel', onCancel)
+        releaseGesture()
         useViewer.getState().setInputDragging(false)
         setDragging(false)
         if (document.body.style.cursor === cursor) document.body.style.cursor = ''
       }
 
-      const onUp = () => {
+      const finish = (commit: boolean) => {
         swallowNextClick()
         cleanup()
-        const reverts: { id: AnyNodeId; data: Partial<AnyNode> }[] = (
-          connectivity?.connections ?? []
-        ).map((conn) => {
-          if (conn.kind !== 'rigid-node') {
-            return { id: conn.nodeId, data: { path: conn.startPath } as Partial<AnyNode> }
-          }
-          const node = useScene.getState().nodes[conn.nodeId]
-          return {
-            id: conn.nodeId,
-            data:
-              node?.type === 'pipe-fitting'
-                ? preserveFittingParameters(node as PipeFittingNode, {
-                    position: conn.startPosition as Point,
-                  })
-                : ({ position: conn.startPosition } as Partial<AnyNode>),
-          }
-        })
-        useScene.getState().updateNodes([
-          {
-            id: fitting.id as AnyNodeId,
-            data: preserveFittingParameters(fitting, {
-              position: initialPosition,
-              rotation: initialRotation,
-            }),
-          },
-          ...reverts.filter((u) => useScene.getState().nodes[u.id]),
-        ])
+        const conflict = writeFrame.hasConflict()
+        writeFrame.restore()
         resumeSceneHistory(useScene)
-        if (current) useScene.getState().updateNodes(buildBatch(current))
+        if (commit && current && !conflict) useScene.getState().updateNodes(buildBatch(current))
       }
+
+      const onUp = () => finish(true)
+      const onCancel = () => finish(false)
+      const releaseGesture = claimGesture(fitting.id, handle, onCancel)
 
       window.addEventListener('pointermove', onMove)
       window.addEventListener('pointerup', onUp)
-      window.addEventListener('pointercancel', onUp)
+      window.addEventListener('pointercancel', onCancel)
     }
 
   const moveCompute =
@@ -471,7 +465,7 @@ const FittingHandles = ({ fitting }: { fitting: PipeFittingNode }) => {
         if (start === null) return null
         const s = sampleAxis(axis, event.clientX, event.clientY, anchorWorld)
         if (s === null) return null
-        const step = event.shiftKey ? 0 : useEditor.getState().gridSnapStep
+        const step = !event.altKey && isGridSnapActive() ? useEditor.getState().gridSnapStep : 0
         const delta = snap(s - start, step)
         if (delta === lastDelta) return null
         lastDelta = delta
@@ -510,8 +504,9 @@ const FittingHandles = ({ fitting }: { fitting: PipeFittingNode }) => {
         const b = bearing(event.clientX, event.clientY)
         if (b === null) return null
         const raw = b - startBearing
-        const delta = event.shiftKey ? raw : Math.round(raw / ROTATE_STEP_RAD) * ROTATE_STEP_RAD
-        if (!event.shiftKey) {
+        const snapping = !event.altKey && isAngleSnapActive()
+        const delta = snapping ? Math.round(raw / ROTATE_STEP_RAD) * ROTATE_STEP_RAD : raw
+        if (snapping) {
           const step = Math.round(raw / ROTATE_STEP_RAD)
           if (step !== lastStep) {
             lastStep = step
@@ -529,7 +524,6 @@ const FittingHandles = ({ fitting }: { fitting: PipeFittingNode }) => {
     (e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation()
       const baseValue = fitting[dimension]
-      const initialPatch = dimensionPatch(fitting, dimension, baseValue)
       const centerWorld = toWorld(fitting.position as Point)
       const axisWorld = axisToWorld(fitting.position as Point, axisLocal)
       const start = sampleAxisParameter(
@@ -538,6 +532,7 @@ const FittingHandles = ({ fitting }: { fitting: PipeFittingNode }) => {
         centerWorld,
         axisWorld,
       )
+      const writeFrame = createMepFollowerFrames(useScene.getState().nodes, fitting.id as AnyNodeId)
       pauseSceneHistory(useScene)
       useViewer.getState().setInputDragging(true)
       setDragging(true)
@@ -546,7 +541,7 @@ const FittingHandles = ({ fitting }: { fitting: PipeFittingNode }) => {
       let lastValue = Number.NaN
 
       const apply = (patch: Partial<PipeFittingNode>) => {
-        useScene.getState().updateNodes([
+        writeFrame([
           {
             id: fitting.id as AnyNodeId,
             data: preserveFittingParameters(fitting, patch),
@@ -555,38 +550,49 @@ const FittingHandles = ({ fitting }: { fitting: PipeFittingNode }) => {
       }
 
       const onMove = (event: PointerEvent) => {
+        if (writeFrame.hasConflict()) {
+          finish(false)
+          return
+        }
         const rawDeltaM =
           sampleAxisParameter(event.clientX, event.clientY, centerWorld, axisWorld) - start
         const deltaIn = (rawDeltaM / INCHES_TO_METERS) * 2
         const nextRaw = baseValue + deltaIn
-        const nextValue = clamp(event.shiftKey ? nextRaw : snap(nextRaw, RESIZE_STEP_IN), 1.25, 8)
+        const snapping = !event.altKey && isGridSnapActive()
+        const nextValue = clamp(snapping ? snap(nextRaw, RESIZE_STEP_IN) : nextRaw, 1.25, 8)
         if (nextValue === lastValue) return
         lastValue = nextValue
         current = dimensionPatch(fitting, dimension, nextValue)
-        if (!event.shiftKey) triggerSFX('sfx:grid-snap')
+        if (snapping) triggerSFX('sfx:grid-snap')
         apply(current)
       }
 
       const cleanup = () => {
         window.removeEventListener('pointermove', onMove)
         window.removeEventListener('pointerup', onUp)
-        window.removeEventListener('pointercancel', onUp)
+        window.removeEventListener('pointercancel', onCancel)
+        releaseGesture()
         useViewer.getState().setInputDragging(false)
         setDragging(false)
         if (document.body.style.cursor === cursor) document.body.style.cursor = ''
       }
 
-      const onUp = () => {
+      const finish = (commit: boolean) => {
         swallowNextClick()
         cleanup()
-        apply(initialPatch)
+        const conflict = writeFrame.hasConflict()
+        writeFrame.restore()
         resumeSceneHistory(useScene)
-        if (current) apply(current)
+        if (commit && current && !conflict) apply(current)
       }
+
+      const onUp = () => finish(true)
+      const onCancel = () => finish(false)
+      const releaseGesture = claimGesture(fitting.id, `resize-${dimension}`, onCancel)
 
       window.addEventListener('pointermove', onMove)
       window.addEventListener('pointerup', onUp)
-      window.addEventListener('pointercancel', onUp)
+      window.addEventListener('pointercancel', onCancel)
     }
 
   const extent = useMemo(() => fittingExtentM(fitting), [fitting])
@@ -765,6 +771,7 @@ const FittingHandles = ({ fitting }: { fitting: PipeFittingNode }) => {
               key={a.key}
               onPointerDown={beginDrag(
                 a.axis === 'y' ? 'ns-resize' : 'grabbing',
+                'axis-move',
                 moveCompute(a.axis),
               )}
               position={a.position}
@@ -775,7 +782,7 @@ const FittingHandles = ({ fitting }: { fitting: PipeFittingNode }) => {
           {rotateArcs.map((arc) => (
             <RotateArc
               key={arc.key}
-              onPointerDown={beginDrag('grabbing', rotateCompute(arc.axis))}
+              onPointerDown={beginDrag('grabbing', 'rotate-handle', rotateCompute(arc.axis))}
               position={arc.position}
               rotation={arc.rotation}
             />
