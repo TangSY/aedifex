@@ -4,12 +4,14 @@ import {
   type AnyNodeId,
   BuildingNode,
   cornerPair,
+  DoorNode,
   LevelNode,
   useScene,
   WallNode,
   WindowNode,
 } from '@aedifex/core'
 import { windowFloorplanMoveTarget } from './floorplan-move'
+import { doorFloorplanMoveTarget } from '../door/floorplan-move'
 
 // 2D and 3D share the corner join: a window dragged in the plan to a corner where another waits
 // on the other wall lands joined to it, as the 3D move does; Alt drops it plain.
@@ -120,5 +122,46 @@ describe('2D window move near a corner', () => {
     const moving = seed()
     drop(moving, [5.3, 0], true)
     expect(windowNode('window_moving').corner).toBeUndefined()
+  })
+
+  test('a window that cannot fit under a sloped wall is an invalid drop', () => {
+    const moving = seed()
+    useScene.getState().updateNode('wall_south', { height: 0.4, endHeightOffset: 0.2 })
+    const session = windowFloorplanMoveTarget({ node: moving, nodes: useScene.getState().nodes })
+    session.apply({
+      planPoint: [2, 0],
+      modifiers: { shiftKey: false, altKey: false, ctrlKey: false, metaKey: false },
+    })
+    expect(session.canCommit()).toBe(false)
+  })
+
+  test('a door moves to the part of a sloped wall tall enough for it', () => {
+    seed()
+    const door = DoorNode.parse({
+      id: 'door_moving',
+      parentId: 'wall_south',
+      wallId: 'wall_south',
+      position: [1, 1, 0],
+      width: 1,
+      height: 2,
+    })
+    useScene.setState(
+      (state) =>
+        ({
+          nodes: {
+            ...state.nodes,
+            [door.id]: door,
+            wall_south: { ...state.nodes.wall_south, height: 1, endHeightOffset: 2 },
+          },
+        }) as never,
+    )
+    const session = doorFloorplanMoveTarget({ node: door, nodes: useScene.getState().nodes })
+    session.apply({
+      planPoint: [1, 0],
+      modifiers: { shiftKey: false, altKey: false, ctrlKey: false, metaKey: false },
+    })
+    expect(session.canCommit()).toBe(true)
+    session.commit?.()
+    expect((useScene.getState().nodes[door.id] as DoorNode).position[0]).toBeCloseTo(3.5)
   })
 })

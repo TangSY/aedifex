@@ -5,6 +5,7 @@ import {
   resolveLevelId,
   spatialGridManager,
   type WallNode,
+  wallHasSlopedTop,
 } from '@aedifex/core'
 import { disposeObject3DResources } from '@aedifex/viewer'
 import * as THREE from 'three'
@@ -121,6 +122,17 @@ function preparedWallHeight(
 ):
   | { height: number; diagnostic: null }
   | { height: null; diagnostic: PrintShellCompileDiagnostic } {
+  if (node.topProfile ? wallHasSlopedTop(node) : Math.abs(node.endHeightOffset ?? 0) > 1e-7) {
+    return {
+      height: null,
+      diagnostic: {
+        severity: 'error',
+        code: 'unsupported_wall_print_slope',
+        message: `Wall ${node.id} has a sloped top that does not yet have a canonical printable solid.`,
+        nodeIds: [node.id],
+      },
+    }
+  }
   const levelId = resolveLevelId(node, nodes)
   const support = spatialGridManager.getSlabSupportForWall(
     levelId,

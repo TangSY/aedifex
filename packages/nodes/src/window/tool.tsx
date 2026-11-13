@@ -26,6 +26,7 @@ import {
   WallNode as WallNodeSchema,
   type WindowEvent,
   WindowNode,
+  wallHasSlopedTop,
 } from '@aedifex/core'
 import { windowTakesStyle } from '@aedifex/core/building'
 import {
@@ -485,7 +486,7 @@ const WindowTool: React.FC = () => {
       })
       const nodes = useScene.getState().nodes
       const slid = clampToWall(wall, localX, localY, width, height, nodes)
-      const { clampedY } = slid
+      let { clampedY } = slid
       let clampedX = slid.clampedX
       // The corner zone: the edge snaps to the corner, unless a curtain wall's margin keeps it off.
       const found = cornerSnapOn
@@ -502,20 +503,17 @@ const WindowTool: React.FC = () => {
       let { snap, block } = found
       if (snap) {
         const settled = clampToWall(wall, snap.centreX, clampedY, width, height, nodes)
-        if (Math.abs(settled.clampedX - snap.centreX) > 1e-6) {
-          block = { reason: 'curtain', end: snap.end }
+        if (settled.fits === false || Math.abs(settled.clampedX - snap.centreX) > 1e-6) {
+          block = { reason: wallHasSlopedTop(wall) ? 'too_tall' : 'curtain', end: snap.end }
           snap = null
-        } else clampedX = snap.centreX
+        } else {
+          clampedX = snap.centreX
+          clampedY = settled.clampedY
+        }
       }
-      const valid = !hasWallChildOverlap(
-        wall.id,
-        nodes,
-        clampedX,
-        clampedY,
-        width,
-        height,
-        ignoreId,
-      )
+      const valid =
+        slid.fits !== false &&
+        !hasWallChildOverlap(wall.id, nodes, clampedX, clampedY, width, height, ignoreId)
       return { clampedX, clampedY, valid, snap, block }
     }
 

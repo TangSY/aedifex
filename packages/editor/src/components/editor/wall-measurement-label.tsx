@@ -315,7 +315,13 @@ function buildMeasurementGuide(
   const measurementPoints = measurementLine ?? fallbackMiddlePoints
   if (!measurementPoints) return null
 
-  const height = getWallEffectiveHeightForNodes(wall, nodes)
+  const startHeight = getWallEffectiveHeightForNodes(wall, nodes, 0)
+  const endHeight = getWallEffectiveHeightForNodes(wall, nodes, 1)
+  const chordLength = Math.hypot(wall.end[0] - wall.start[0], wall.end[1] - wall.start[1])
+  const heightAt = (localX: number) => {
+    const t = chordLength > 1e-6 ? Math.max(0, Math.min(1, localX / chordLength)) : 0
+    return startHeight + (endHeight - startHeight) * t
+  }
   const startLocal = worldPointToWallLocal(wall, measurementPoints.start)
   const endLocal = worldPointToWallLocal(wall, measurementPoints.end)
   const curvedMeasurementPath = isCurvedWall(wall)
@@ -324,7 +330,7 @@ function buildMeasurementGuide(
   const guidePath: Vec3[] = curvedMeasurementPath
     ? curvedMeasurementPath.map((point) => {
         const localPoint = worldPointToWallLocal(wall, point)
-        return [localPoint[0], height + GUIDE_Y_OFFSET, localPoint[2]]
+        return [localPoint[0], heightAt(localPoint[0]) + GUIDE_Y_OFFSET, localPoint[2]]
       })
     : isCurvedWall(wall)
       ? sampleWallCenterline(wall, 24).map((point, index, points) => {
@@ -335,11 +341,11 @@ function buildMeasurementGuide(
                 ? endLocal
                 : worldPointToWallLocal(wall, point)
 
-          return [localPoint[0], height + GUIDE_Y_OFFSET, localPoint[2]]
+          return [localPoint[0], heightAt(localPoint[0]) + GUIDE_Y_OFFSET, localPoint[2]]
         })
       : [
-          [startLocal[0], height + GUIDE_Y_OFFSET, startLocal[2]],
-          [endLocal[0], height + GUIDE_Y_OFFSET, endLocal[2]],
+          [startLocal[0], startHeight + GUIDE_Y_OFFSET, startLocal[2]],
+          [endLocal[0], endHeight + GUIDE_Y_OFFSET, endLocal[2]],
         ]
 
   if (guidePath.length < 2) return null
@@ -363,7 +369,7 @@ function buildMeasurementGuide(
     ? guidePath[Math.floor(guidePath.length / 2)]!
     : ([
         (guideStart[0] + guideEnd[0]) / 2,
-        guideStart[1],
+        (guideStart[1] + guideEnd[1]) / 2,
         (guideStart[2] + guideEnd[2]) / 2,
       ] as Vec3)
   const rawHeightGuidePosition = [guideEnd[0], 0, guideEnd[2]] as Vec3
@@ -397,26 +403,22 @@ function buildMeasurementGuide(
     ],
   })
   const bottomHeightTick = getHorizontalHeightTick(0)
-  const topHeightTick = getHorizontalHeightTick(height)
+  const topHeightTick = getHorizontalHeightTick(endHeight)
 
   return {
     guidePath,
-    extStartStart: [extensionStartBase[0], height, extensionStartBase[2]],
-    extStartEnd: [
-      extensionStartBase[0],
-      height + GUIDE_Y_OFFSET + extOvershoot,
-      extensionStartBase[2],
-    ],
-    extEndStart: [extensionEndBase[0], height, extensionEndBase[2]],
-    extEndEnd: [extensionEndBase[0], height + GUIDE_Y_OFFSET + extOvershoot, extensionEndBase[2]],
+    extStartStart: [extensionStartBase[0], guideStart[1] - GUIDE_Y_OFFSET, extensionStartBase[2]],
+    extStartEnd: [extensionStartBase[0], guideStart[1] + extOvershoot, extensionStartBase[2]],
+    extEndStart: [extensionEndBase[0], guideEnd[1] - GUIDE_Y_OFFSET, extensionEndBase[2]],
+    extEndEnd: [extensionEndBase[0], guideEnd[1] + extOvershoot, extensionEndBase[2]],
     labelPosition: [midpoint[0], midpoint[1] + LABEL_LIFT, midpoint[2]],
     heightStart: [heightGuidePosition[0], 0, heightGuidePosition[2]],
-    heightEnd: [heightGuidePosition[0], height, heightGuidePosition[2]],
+    heightEnd: [heightGuidePosition[0], endHeight, heightGuidePosition[2]],
     heightBottomTickStart: bottomHeightTick.start,
     heightBottomTickEnd: bottomHeightTick.end,
     heightTopTickStart: topHeightTick.start,
     heightTopTickEnd: topHeightTick.end,
-    heightLabelPosition: [heightGuidePosition[0], height / 2, heightGuidePosition[2]],
+    heightLabelPosition: [heightGuidePosition[0], endHeight / 2, heightGuidePosition[2]],
   }
 }
 
@@ -530,7 +532,7 @@ function WallMeasurementAnnotation({ wall }: { wall: WallNode }) {
     return total
   }, [guide, wall])
   const label = formatLinearMeasurement(length, unit, metricNotation)
-  const height = useMemo(() => getWallEffectiveHeightForNodes(wall, nodes), [nodes, wall])
+  const height = useMemo(() => getWallEffectiveHeightForNodes(wall, nodes, 1), [nodes, wall])
   const heightLabel = `H ${formatLinearMeasurement(height, unit, metricNotation)}`
 
   if (!(guide && Number.isFinite(length) && length >= 0.01)) return null

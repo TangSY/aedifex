@@ -105,7 +105,15 @@ export function wallBaseCells(wall: WallNode, support: WallSupport, top: number)
  * faces and past the wall ends so mitred corners are included — the same
  * band the renderer cuts with.
  */
-export function wallCellBand(wall: WallNode, cell: WallBaseCell): [number, number][] {
+export function wallCellBand({
+  wall,
+  cell,
+  endExtension = 0,
+}: {
+  wall: WallNode
+  cell: WallBaseCell
+  endExtension?: number
+}): [number, number][] {
   const reach = Math.max((wall.thickness ?? DEFAULT_WALL_THICKNESS) * 2, 0.2)
   const center = getWallBodyCenterOffset(wall)
   const left = cell.side === 'b' ? center : reach
@@ -117,7 +125,11 @@ export function wallCellBand(wall: WallNode, cell: WallBaseCell): [number, numbe
     const t = cell.t0 + ((cell.t1 - cell.t0) * index) / samples
     const frame = getWallCurveFrameAt(wall, t)
     const extension =
-      index === 0 && cell.t0 <= 1e-7 ? -reach : index === samples && cell.t1 >= 1 - 1e-7 ? reach : 0
+      index === 0 && cell.t0 <= 1e-7
+        ? -Math.max(reach, endExtension)
+        : index === samples && cell.t1 >= 1 - 1e-7
+          ? Math.max(reach, endExtension)
+          : 0
     const x = frame.point.x + frame.tangent.x * extension
     const z = frame.point.y + frame.tangent.y * extension
     leftSide.push([x + frame.normal.x * left, z + frame.normal.y * left])

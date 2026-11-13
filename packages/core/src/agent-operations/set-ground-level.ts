@@ -9,7 +9,7 @@ type SetGroundLevelInput = { levelId: string }
 
 /**
  * `set_ground_level`: the level asked for becomes the building's ground floor — named on the
- * building, its floor the top of the foundation over grade (as the building's region and style seat it), index 0 — the same change the level panel's "Set as ground floor"
+ * building, its floor at grade, index 0 — the same change the level panel's "Set as ground floor"
  * writes (`buildGroundLevelChanges`).
  */
 export const setGroundLevel: AgentOperation<SetGroundLevelInput> = (nodes, input) => {
@@ -32,13 +32,13 @@ export const setGroundLevel: AgentOperation<SetGroundLevelInput> = (nodes, input
   const { seat, moveBy } = built
   const floorElevation = Math.round((seat.floorElevation + moveBy) * 1e6) / 1e6
   const name = level.name ?? level.id
-  const { aboveGrade, foundation } = seat
+  const { foundation } = seat
+  const aboveGrade = Math.round((seat.offset + moveBy) * 1e6) / 1e6
   const construction = {
     region: foundation.region,
     construction: foundation.construction.id,
     basis: foundation.basis,
   }
-  const inches = Math.round(aboveGrade / 0.0254)
   if (built.unchanged)
     return {
       result: {
@@ -49,7 +49,7 @@ export const setGroundLevel: AgentOperation<SetGroundLevelInput> = (nodes, input
         floorElevation: seat.floorElevation,
         aboveGrade,
         foundation: construction,
-        message: `${name} is already the ground floor, its floor ${aboveGrade} m (${inches} in) over grade (${foundation.construction.label} foundation; ${foundation.basis}).`,
+        message: `${name} is already the ground floor, its floor ${aboveGrade} m over grade (${foundation.construction.label} foundation; ${foundation.basis}).`,
       },
     }
   return {
@@ -63,7 +63,7 @@ export const setGroundLevel: AgentOperation<SetGroundLevelInput> = (nodes, input
       foundation: construction,
       movedBuildingBy: moveBy,
       renumbered: built.renumbered,
-      message: `${name} is the ground floor: its floor, the top of the foundation where the wood framing starts, stands ${aboveGrade} m (${inches} in) over grade (${floorElevation.toFixed(2)} m over grade ${seat.gradeElevation.toFixed(2)} m), as a ${foundation.construction.label} foundation seats it: ${foundation.construction.seatBasis}; ${foundation.basis}. The levels with a lower index are below grade${moveBy === 0 ? '' : `; the building moved ${moveBy.toFixed(2)} m in height, its plan where it was`}.`,
+      message: `${name} is the ground floor: its floor stands at grade (${floorElevation.toFixed(2)} m, grade ${seat.gradeElevation.toFixed(2)} m). Foundation: ${foundation.construction.label}; ${foundation.basis}. The levels with a lower index are below grade${moveBy === 0 ? '' : `; the building moved ${moveBy.toFixed(2)} m in height, its plan where it was`}.`,
     },
     changes: { update: built.update },
   }

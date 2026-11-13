@@ -16,6 +16,7 @@ export function migrateFootprintFollowing(nodes: Record<string, AnyNode>): Recor
   for (const wall of Object.values(nodes)) {
     if (
       wall.type !== 'wall' ||
+      wall.topProfile !== undefined ||
       wall.height === undefined ||
       wall.supportSlabId === 'ground' ||
       !bases.some(

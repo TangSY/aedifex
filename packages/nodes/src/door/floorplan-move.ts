@@ -103,6 +103,7 @@ export const doorFloorplanMoveTarget: FloorplanMoveTarget<DoorNode> = ({ node })
   // overlapping placement, matching the 3D move. Read in `canCommit` so an Alt-
   // held commit over a collision lands instead of reverting.
   let forcePlace = false
+  let fitsWall = true
   let liveTransformActive = useLiveTransforms.getState().transforms.has(nodeId)
   let liveOverrideKey: string | null = null
   let placementPreviewActive = usePlacementPreview.getState().node?.id === nodeId
@@ -210,7 +211,14 @@ export const doorFloorplanMoveTarget: FloorplanMoveTarget<DoorNode> = ({ node })
             nodes,
           })
       const snappedLocalX = neighborX ?? snapToHalf(hit.localX)
-      const { clampedX, clampedY } = clampToWall(hit.wall, snappedLocalX, node.width, node.height)
+      const { clampedX, clampedY, fits } = clampToWall(
+        hit.wall,
+        snappedLocalX,
+        node.width,
+        node.height,
+        nodes,
+      )
+      fitsWall = fits !== false
 
       // One click per real position step, keyed on the SNAPPED along-wall value
       // so it ticks only when the door actually moves to a new cell.
@@ -268,7 +276,7 @@ export const doorFloorplanMoveTarget: FloorplanMoveTarget<DoorNode> = ({ node })
         live.height,
         live.id,
       )
-      return resolveOpeningPlacement({ collides, forcePlace }).placeable
+      return resolveOpeningPlacement({ collides: collides || !fitsWall, forcePlace }).placeable
     },
     commit() {
       // Own the atomic write so the overlay takes the deterministic

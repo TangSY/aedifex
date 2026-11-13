@@ -1,4 +1,5 @@
 import { getWallEffectiveHeightForNodes } from '../../hooks/spatial-grid/spatial-grid-manager'
+import { wallSupportForNodes } from '../../lib/opening-floor-datum'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -11,8 +12,11 @@ import {
   type WallNode,
   type ZoneNode,
 } from '../../schema'
+import { getWallPlaneTop, getWallTop, wallTopContext } from '../../services/storey'
 import { getWallZoneSpans, resolveWallFaceChain } from './wall-finish'
 import { reverseWallDirection } from './wall-frame'
+import { wallFollowsStorey } from './wall-top'
+import { captureWallTopReference, wallTopReference } from './wall-top-reference'
 import type { WallTopologyChanges } from './wall-topology'
 
 // Joining two walls that continue each other at a shared end: the delete heal
@@ -53,7 +57,11 @@ function getWallFreeEndpoint(wall: Pick<WallNode, 'start' | 'end'>, sharedPoint:
 export function wallStyleMismatch(
   a: WallNode,
   b: WallNode,
-  options: { sides: boolean; heightOf?: (wall: WallNode) => number },
+  options: {
+    sides: boolean
+    heightOf?: (wall: WallNode) => number
+    checkSlopedTopSeparately?: boolean
+  },
 ): string | null {
   if ((a.parentId ?? null) !== (b.parentId ?? null)) return 'floor'
   if (Math.abs((a.curveOffset ?? 0) - (b.curveOffset ?? 0)) > 1e-6) return 'curve'
@@ -66,10 +74,14 @@ export function wallStyleMismatch(
   if (a.justification !== alignedB.justification) return 'justification'
   const { heightOf } = options
   if (
-    heightOf
+    !(
+      options.checkSlopedTopSeparately &&
+      (a.endHeightOffset || b.endHeightOffset || a.topProfile || b.topProfile)
+    ) &&
+    (heightOf
       ? Math.abs(heightOf(a) - heightOf(b)) > 1e-6
       : (a.height == null) !== (b.height == null) ||
-        Math.abs((a.height ?? 0) - (b.height ?? 0)) > 1e-6
+        Math.abs((a.height ?? 0) - (b.height ?? 0)) > 1e-6)
   )
     return 'height'
   // Faces are compared as the merged wall will carry them: b read in a's direction.
@@ -277,6 +289,187 @@ export function areWallStylesCompatible(a: WallNode, b: WallNode) {
   return wallStyleMismatch(a, b, { sides: true }) === null
 }
 
+/** Resolve a continuous top and verify it survives the merged wall's support election. */
+export function mergedSlopedWallTop({
+  primary,
+  secondary,
+  joint,
+  nodes,
+  removedIds = [],
+}: {
+  primary: WallNode
+  secondary: WallNode
+  joint: [number, number]
+  nodes: Record<AnyNodeId, AnyNode>
+  removedIds?: readonly AnyNodeId[]
+}): Partial<Pick<WallNode, 'height' | 'endHeightOffset' | 'topProfile' | 'supportOffset'>> | null {
+  if (
+    !(
+      primary.endHeightOffset ||
+      secondary.endHeightOffset ||
+      primary.topProfile ||
+      secondary.topProfile
+    )
+  )
+    return {}
+  const { start, end } = resolveMergedWallEndpoints(primary, secondary, joint)
+  const first =
+    pointsEqual(primary.start, start) || pointsEqual(primary.end, start) ? primary : secondary
+  const second = first === primary ? secondary : primary
+  const ends = (wall: WallNode, from: [number, number]) => {
+    const support = wallSupportForNodes(wall, nodes).elevation
+    const atStart = pointsEqual(wall.start, from)
+    const fromTop = getWallTop(wall, wall.parentId ?? '', nodes, support, atStart ? 0 : 1)
+    const toTop = getWallTop(wall, wall.parentId ?? '', nodes, support, atStart ? 1 : 0)
+    return { fromTop, toTop, base: support, rate: (toTop - fromTop) / wallLength(wall) }
+  }
+  const a = ends(first, start)
+  const b = ends(second, joint)
+  const level = first.parentId ? nodes[first.parentId as AnyNodeId] : undefined
+  const authoredHeight = level?.type === 'level' ? (level.height ?? null) : null
+  const firstFollows = wallFollowsStorey(first, authoredHeight)
+  const secondFollows = wallFollowsStorey(second, authoredHeight)
+  if (firstFollows !== secondFollows) return null
+  if (!firstFollows && Boolean(first.topProfile) !== Boolean(second.topProfile)) return null
+  const useProfile = firstFollows || Boolean(first.topProfile)
+  const referenceA = first.topProfile?.supportReference
+  const referenceB = second.topProfile?.supportReference
+  if (Boolean(referenceA) !== Boolean(referenceB)) return null
+  if (referenceA && referenceB) {
+    const refA = wallTopReference(first)
+    const refB = wallTopReference(second)
+    if (
+      !pointsEqual(refA.start, refB.start) ||
+      !pointsEqual(refA.end, refB.end) ||
+      Math.abs((refA.curveOffset ?? 0) - (refB.curveOffset ?? 0)) > 1e-6 ||
+      refA.height !== refB.height ||
+      refA.supportSlabId !== refB.supportSlabId ||
+      refA.supportOffset !== refB.supportOffset ||
+      refA.thickness !== refB.thickness ||
+      refA.justification !== refB.justification
+    )
+      return null
+  }
+  const orientedSlope = (wall: WallNode, from: [number, number]) => {
+    const source: NonNullable<WallNode['topProfile']> = wall.topProfile ?? {
+      offset: wall.endHeightOffset ?? 0,
+      from: 0,
+      to: 1,
+    }
+    return pointsEqual(wall.start, from)
+      ? source
+      : {
+          ...source,
+          from: source.to,
+          to: source.from,
+          across: -(source.across ?? 0),
+          startShift: source.endShift ?? 0,
+          endShift: source.startShift ?? 0,
+          acrossShift: -(source.acrossShift ?? 0),
+        }
+  }
+  const slopeA = orientedSlope(first, start)
+  const slopeB = orientedSlope(second, joint)
+  if (
+    useProfile &&
+    (slopeA.supportHeight !== slopeB.supportHeight ||
+      Math.abs(slopeA.offset - slopeB.offset) > 1e-6 ||
+      Math.abs(slopeA.to - slopeB.from) > 1e-6 ||
+      Math.abs((slopeA.endShift ?? 0) - (slopeB.startShift ?? 0)) > 1e-6 ||
+      Math.abs(
+        ((slopeA.endShift ?? 0) - (slopeA.startShift ?? 0)) / wallLength(first) -
+          ((slopeB.endShift ?? 0) - (slopeB.startShift ?? 0)) / wallLength(second),
+      ) > 1e-6 ||
+      Math.abs(
+        (slopeA.acrossShift ?? 0) / wallLength(first) -
+          (slopeB.acrossShift ?? 0) / wallLength(second),
+      ) > 1e-6 ||
+      Math.abs(
+        (slopeA.across ?? 0) / wallLength(first) - (slopeB.across ?? 0) / wallLength(second),
+      ) > 1e-6 ||
+      Math.abs(
+        (slopeA.to - slopeA.from) / wallLength(first) -
+          (slopeB.to - slopeB.from) / wallLength(second),
+      ) > 1e-6)
+  )
+    return null
+  if (
+    Math.abs(a.toTop - b.fromTop) > 1e-6 ||
+    (!useProfile && Math.abs(a.rate - b.rate) > 1e-6) ||
+    (!referenceA && Math.abs(a.base - b.base) > 1e-6) ||
+    primary.supportSlabId !== secondary.supportSlabId ||
+    (!referenceA && primary.supportOffset !== secondary.supportOffset)
+  )
+    return null
+  let provisional = { ...primary, start, end }
+  const futureNodes: Record<AnyNodeId, AnyNode> = { ...nodes, [primary.id]: provisional }
+  delete futureNodes[secondary.id]
+  for (const id of removedIds) delete futureNodes[id]
+  let base = wallSupportForNodes(provisional, futureNodes).elevation
+  if (referenceA && primary.supportSlabId === 'ground') {
+    const originalBase = wallTopContext({
+      wall: first,
+      levelId: first.parentId ?? '',
+      nodes,
+      electedBase: a.base,
+      storeyHeight: getWallPlaneTop(first, first.parentId ?? '', nodes),
+    }).electedBase
+    const supportOffset = (primary.supportOffset ?? 0) + originalBase - base
+    provisional = {
+      ...provisional,
+      supportOffset: Math.abs(supportOffset) > 1e-6 ? supportOffset : undefined,
+    }
+    futureNodes[primary.id] = provisional
+    base = wallSupportForNodes(provisional, futureNodes).elevation
+  }
+  const height = pointsEqual(first.start, start) ? first.height : a.fromTop - base
+  const top = {
+    height,
+    endHeightOffset: b.toTop - a.fromTop,
+    ...(referenceA && primary.supportSlabId === 'ground'
+      ? { supportOffset: provisional.supportOffset }
+      : {}),
+    topProfile: useProfile
+      ? {
+          offset: slopeA.offset,
+          from: slopeA.from,
+          to: slopeB.to,
+          across:
+            ((slopeA.across ?? 0) * (wallLength(first) + wallLength(second))) / wallLength(first),
+          ...(slopeA.supportHeight === undefined ? {} : { supportHeight: slopeA.supportHeight }),
+          startShift: slopeA.startShift ?? 0,
+          endShift: slopeB.endShift ?? 0,
+          acrossShift:
+            ((slopeA.acrossShift ?? 0) * (wallLength(first) + wallLength(second))) /
+            wallLength(first),
+          ...(referenceA
+            ? {
+                supportReference: {
+                  ...captureWallTopReference({ source: first, segment: { start, end } }),
+                  supportOffsetDelta:
+                    (wallTopReference(first).supportOffset ?? 0) - (provisional.supportOffset ?? 0),
+                },
+              }
+            : {}),
+        }
+      : undefined,
+  }
+  const candidate = { ...provisional, ...top }
+  futureNodes[primary.id] = candidate
+  const actualBase = wallSupportForNodes(candidate, futureNodes).elevation
+  if (
+    (!referenceA && Math.abs(actualBase - a.base) > 1e-6) ||
+    Math.abs(
+      getWallTop(candidate, candidate.parentId ?? '', futureNodes, actualBase, 0) - a.fromTop,
+    ) > 1e-6 ||
+    Math.abs(
+      getWallTop(candidate, candidate.parentId ?? '', futureNodes, actualBase, 1) - b.toTop,
+    ) > 1e-6
+  )
+    return null
+  return top
+}
+
 export function areWallsCollinearAcrossPoint(
   a: WallNode,
   b: WallNode,
@@ -464,8 +657,12 @@ export function planWallMerge(
     const mismatch = wallStyleMismatch(merged, next, {
       sides: false,
       heightOf: (wall) => getWallEffectiveHeightForNodes(wall, virtual),
+      checkSlopedTopSeparately: true,
     })
     if (mismatch) throw Error(`These walls have a different ${mismatch}.`)
+
+    const top = mergedSlopedWallTop({ primary: merged, secondary: next, joint, nodes: virtual })
+    if (!top) throw Error('These walls have a different slope or support.')
 
     const { start, end } = resolveMergedWallEndpoints(merged, next, joint)
     const faceRegions = mergeWallFaceRegions([merged, next], start, end)
@@ -488,6 +685,7 @@ export function planWallMerge(
     const { faceRegions: _regions, ...kept } = merged
     merged = {
       ...kept,
+      ...top,
       ...(faceRegions.length > 0 ? { faceRegions } : {}),
       start,
       end,

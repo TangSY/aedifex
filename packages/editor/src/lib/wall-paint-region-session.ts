@@ -12,6 +12,7 @@ import {
   wallFaceHasRoom,
 } from './paint-regions'
 import type { WallFaceExtent } from './wall-region-face'
+import { wallRegionProfile } from './wall-region-profile'
 import {
   DEFAULT_WAINSCOT_HEIGHT,
   faceBaseAt,
@@ -78,7 +79,12 @@ function clamp(value: number, low: number, high: number) {
 
 /** Room the face has above its base at `u`. */
 function faceHeightAt(hit: WallRegionHit, u: number) {
-  return hit.extent.top - faceBaseAt(hit.runs, u)
+  const { startTop, endTop, top } = hit.extent
+  const wallTop =
+    startTop !== undefined && endTop !== undefined && hit.length > 0
+      ? startTop + (endTop - startTop) * clamp(u / hit.length, 0, 1)
+      : top
+  return wallTop - faceBaseAt(hit.runs, u)
 }
 
 function targetsFor(hit: WallRegionHit): WallRegionSnapTargets {
@@ -115,7 +121,21 @@ export function wallRegionBoundsFor(state: {
   if (u0 > 1e-6) bounds.u0 = u0
   if (u1 < hit.length - 1e-6) bounds.u1 = u1
   if (v0 > 1e-6) bounds.v0 = v0
-  if (v1 < faceHeightAt(hit, (u0 + u1) / 2) - 1e-6) bounds.v1 = v1
+  const { startTop, endTop } = hit.extent
+  const maxHeight =
+    startTop !== undefined && endTop !== undefined
+      ? Math.max(
+          0,
+          ...wallRegionProfile({
+            length: hit.length,
+            startTop,
+            endTop,
+            runs: hit.runs,
+            region: { u0, u1 },
+          }).flatMap((piece) => [piece.top0 - piece.bottom, piece.top1 - piece.bottom]),
+        )
+      : faceHeightAt(hit, (u0 + u1) / 2)
+  if (v1 < maxHeight - 1e-6) bounds.v1 = v1
   return bounds
 }
 

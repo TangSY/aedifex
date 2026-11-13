@@ -303,6 +303,28 @@ export const WallNode = BaseNode.extend({
   // Absent centers the body; a/b place it left/right of the stored start → end line.
   justification: z.enum(['a', 'b']).optional(),
   height: z.number().optional(),
+  endHeightOffset: z.number().finite().optional(),
+  topProfile: z
+    .object({
+      offset: z.number().finite(),
+      from: z.number().finite().min(0).max(1),
+      to: z.number().finite().min(0).max(1),
+      across: z.number().finite().optional(),
+      supportHeight: z.number().finite().optional(),
+      startShift: z.number().finite().optional(),
+      endShift: z.number().finite().optional(),
+      acrossShift: z.number().finite().optional(),
+      supportReference: z
+        .object({
+          start: z.tuple([z.number().finite(), z.number().finite()]),
+          end: z.tuple([z.number().finite(), z.number().finite()]),
+          curveOffset: z.number().finite().optional(),
+          height: z.number().finite().optional(),
+          supportOffsetDelta: z.number().finite().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
   curveOffset: z.number().optional(),
   // Persisted slab-support host — see ItemNode.supportSlabId for the rules.
   supportSlabId: z.string().optional(),
@@ -336,6 +358,8 @@ export const WallNode = BaseNode.extend({
   - assembly: optional layered construction stack; when present it is the single
     source of truth and thickness is re-derived from it on every edit
   - height: height in meters
+  - endHeightOffset: height change from start to end along the wall chord, default 0
+  - topProfile: original slope plane and represented portion; supportHeight fixes it to its support
   - fillToTerrain: extends the wall downward to the terrain without changing its authored height
   - underpinning: { rim, stem } — the finish carried rim metres below the base over the floor
     platform's edge, then stem metres of concrete stemwall to the ground (the foundation slot)

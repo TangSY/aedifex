@@ -14,8 +14,26 @@ import {
   reverseWallDirection,
 } from './wall-frame'
 import { calculateLevelMiters } from './wall-mitering'
+import { resolveWallTop } from './wall-top'
 
 describe('wall reference frame', () => {
+  test('reversing a storey-following slope keeps its profile at different storey heights', () => {
+    const wall = WallNode.parse({
+      start: [0, 0],
+      end: [4, 0],
+      height: 2.25,
+      endHeightOffset: -2.24,
+      curveOffset: 1,
+      topProfile: { offset: -4, from: 0.25, to: 1, across: 0.4 },
+    })
+    const reversed = { ...wall, ...reverseWallDirection(wall) }
+    for (const height of [2, 3, 5])
+      for (const t of [0, 0.5, 1])
+        expect(resolveWallTop(reversed, height, 0, height, 1 - t)).toBeCloseTo(
+          resolveWallTop(wall, height, 0, height, t),
+          6,
+        )
+  })
   for (const justification of [undefined, 'a', 'b'] as const) {
     test(`offsets, face lines and body line: ${justification ?? 'center'}`, () => {
       const wall = WallNode.parse({ start: [0, 0], end: [4, 0], thickness: 0.2, justification })

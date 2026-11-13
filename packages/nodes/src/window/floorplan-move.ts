@@ -11,6 +11,7 @@ import {
   type WallNode,
   WallNode as WallNodeSchema,
   type WindowNode,
+  wallHasSlopedTop,
 } from '@aedifex/core'
 import {
   isGridSnapActive,
@@ -102,6 +103,7 @@ export const windowFloorplanMoveTarget: FloorplanMoveTarget<WindowNode> = ({ nod
   // Alt force-place (last apply's modifier) — lets `canCommit` allow an
   // overlapping placement, matching the 3D move.
   let forcePlace = false
+  let fitsWall = true
   // Near a corner, as in the 3D move: the edge snaps to it, the window waiting on the other wall
   // is outlined, and the drop joins them. Alt drops it plain.
   let cornerSnap: CornerSnap | null = null
@@ -208,8 +210,9 @@ export const windowFloorplanMoveTarget: FloorplanMoveTarget<WindowNode> = ({ nod
           })
       const snappedLocalX = neighborX ?? snapToHalf(hit.localX)
       const slid = clampToWall(hit.wall, snappedLocalX, startLocalY, node.width, node.height, nodes)
-      const { clampedY } = slid
+      let { clampedY } = slid
       let clampedX = slid.clampedX
+      fitsWall = slid.fits !== false
       // Alt, or snapping off, drops the window where it is.
       const corner =
         forcePlace || snappingTurnedOff()
@@ -234,10 +237,16 @@ export const windowFloorplanMoveTarget: FloorplanMoveTarget<WindowNode> = ({ nod
           node.height,
           nodes,
         )
-        if (Math.abs(settled.clampedX - cornerSnap.centreX) > 1e-6) {
-          corner.block = { reason: 'curtain', end: cornerSnap.end }
+        if (settled.fits === false || Math.abs(settled.clampedX - cornerSnap.centreX) > 1e-6) {
+          corner.block = {
+            reason: wallHasSlopedTop(hit.wall) ? 'too_tall' : 'curtain',
+            end: cornerSnap.end,
+          }
           cornerSnap = null
-        } else clampedX = cornerSnap.centreX
+        } else {
+          clampedX = cornerSnap.centreX
+          clampedY = settled.clampedY
+        }
       }
       showCornerCue(cornerSnap, corner.block)
 
@@ -298,7 +307,7 @@ export const windowFloorplanMoveTarget: FloorplanMoveTarget<WindowNode> = ({ nod
         live.height,
         live.id,
       )
-      return resolveOpeningPlacement({ collides, forcePlace }).placeable
+      return resolveOpeningPlacement({ collides: collides || !fitsWall, forcePlace }).placeable
     },
     commit() {
       // Own the atomic write so the overlay takes the deterministic

@@ -103,6 +103,15 @@ describe('resolveRoofElevation', () => {
     expect(resolveRoofElevation(roof, nodes)).toBe(2)
   })
 
+  test('a roof follows the higher end of a sloped wall in either direction', () => {
+    const { roof, nodes, walls } = scene([2])
+    const first = walls[0]!
+    const rising = { ...first, height: 2, endHeightOffset: 2 }
+    const falling = { ...first, height: 4, endHeightOffset: -2 }
+    expect(resolveRoofElevation(roof, { ...nodes, [first.id]: rising })).toBeCloseTo(1)
+    expect(resolveRoofElevation(roof, { ...nodes, [first.id]: falling })).toBeCloseTo(1)
+  })
+
   test('includes the elected slab base and wall support offset', () => {
     const { level, walls, roof, nodes } = scene([4.5])
     const slab = SlabNode.parse({

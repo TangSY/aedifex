@@ -1,8 +1,10 @@
+import { floorConstructionLift } from '../lib/floor-construction-lift'
 import { footprintLift } from '../lib/floor-foundation-datum'
 import {
   levelConstructionDisplacements,
   upperStoreyFootprints,
 } from '../lib/floor-foundation-stack'
+import { wallSupportForNodes } from '../lib/opening-floor-datum'
 import { area, intersection } from '../lib/polygon-boolean'
 import { isSiteFlatwork } from '../lib/site-flatwork'
 import { queryNodes } from '../runtime/node-queries'
@@ -12,8 +14,22 @@ import {
   pointInPolygon,
   pointOnPolygonBoundary,
   wallOverlapsSlabFootprint,
+  wallSlabCoverageIntervals,
 } from '../systems/slab/slab-support'
-import { resolveWallTop } from '../systems/wall/wall-top'
+import {
+  getWallArcData,
+  getWallChordFrame,
+  getWallCurveFrameAt,
+  getWallCurveLength,
+} from '../systems/wall/wall-curve'
+import { getWallFaceOffsets } from '../systems/wall/wall-frame'
+import {
+  clampWallEndHeightOffset,
+  MIN_WALL_END_HEIGHT,
+  resolveWallTop,
+  resolveWallTopPlane,
+} from '../systems/wall/wall-top'
+import { wallTopReference } from '../systems/wall/wall-top-reference'
 import { DEFAULT_LEVEL_HEIGHT } from './level-height'
 
 /**
@@ -532,14 +548,178 @@ export function getWallTop(
   levelId: string,
   nodes: Record<AnyNodeId, AnyNode>,
   electedBase: number,
+  t = 0,
 ): number {
+  const context = wallTopContext({
+    wall,
+    levelId,
+    nodes,
+    electedBase,
+    storeyHeight: getWallPlaneTop(wall, levelId, nodes),
+  })
   const level = nodes[levelId as LevelNode['id']]
   const authoredStoreyHeight = level?.type === 'level' ? (level.height ?? null) : null
-  return resolveWallTop(
+  return resolveWallTop(wall, context.storeyHeight, context.electedBase, authoredStoreyHeight, t)
+}
+
+const wallTopContextMemo = new WeakMap<
+  object,
+  WeakMap<WallNode, Map<string, { storeyHeight: number; electedBase: number }>>
+>()
+
+export function wallTopContext({
+  wall,
+  levelId,
+  nodes,
+  electedBase,
+  storeyHeight,
+}: {
+  wall: WallNode
+  levelId: string
+  nodes: Record<AnyNodeId, AnyNode>
+  electedBase: number
+  storeyHeight: number
+}): { storeyHeight: number; electedBase: number } {
+  const reference = wallTopReference(wall)
+  if (reference === wall) return { storeyHeight, electedBase }
+  let walls = wallTopContextMemo.get(nodes)
+  if (!walls) {
+    walls = new WeakMap()
+    wallTopContextMemo.set(nodes, walls)
+  }
+  let levels = walls.get(wall)
+  if (!levels) {
+    levels = new Map()
+    walls.set(wall, levels)
+  }
+  const cached = levels.get(levelId)
+  if (cached) return cached
+  const matchingWall =
+    reference.supportSlabId === 'ground' &&
+    Object.values(nodes).some(
+      (node) =>
+        node.type === 'wall' &&
+        node.parentId === reference.parentId &&
+        node.start[0] === reference.start[0] &&
+        node.start[1] === reference.start[1] &&
+        node.end[0] === reference.end[0] &&
+        node.end[1] === reference.end[1],
+    )
+  const lift =
+    reference.supportSlabId === 'ground' && !matchingWall
+      ? floorConstructionLift(nodes, reference)
+      : 0
+  const result = {
+    storeyHeight: getWallPlaneTop(reference, levelId, nodes),
+    electedBase: wallSupportForNodes(reference, nodes).elevation + lift,
+  }
+  levels.set(levelId, result)
+  return result
+}
+
+export function wallTopStationProfile({
+  wall,
+  levelId,
+  nodes,
+  electedBase,
+}: {
+  wall: WallNode
+  levelId: string
+  nodes: Record<AnyNodeId, AnyNode>
+  electedBase: number
+}): {
+  length: number
+  criticalStations: number[]
+  topAt: (station: number, lateral?: number) => number
+} {
+  const arc = getWallArcData(wall)
+  const frame = getWallChordFrame(wall)
+  const context = wallTopContext({
     wall,
-    getWallPlaneTop(wall, levelId, nodes),
+    levelId,
+    nodes,
     electedBase,
-    authoredStoreyHeight,
+    storeyHeight: getWallPlaneTop(wall, levelId, nodes),
+  })
+  const level = nodes[levelId as AnyNodeId]
+  const authoredStoreyHeight = level?.type === 'level' ? (level.height ?? null) : null
+  const start = resolveWallTopPlane({ wall, ...context, authoredStoreyHeight })
+  const end = resolveWallTopPlane({ wall, ...context, authoredStoreyHeight, t: 1 })
+  const along = end - start
+  const across = wall.topProfile
+    ? clampWallEndHeightOffset(
+        wall.topProfile.offset,
+        wall.topProfile.supportHeight ?? context.storeyHeight - context.electedBase,
+      ) *
+        (wall.topProfile.across ?? 0) +
+      (wall.topProfile.acrossShift ?? 0)
+    : 0
+  const x = along * frame.tangent.x + across * frame.normal.x
+  const y = along * frame.tangent.y + across * frame.normal.y
+  const length = getWallCurveLength(wall)
+  const criticalStations =
+    arc && Math.hypot(x, y) >= 1e-12
+      ? [Math.atan2(y, x), Math.atan2(y, x) + Math.PI]
+          .flatMap((angle) => {
+            const distance =
+              (((Math.sign(arc.delta) * (angle - arc.startAngle)) % (2 * Math.PI)) + 2 * Math.PI) %
+              (2 * Math.PI)
+            const fraction = distance / Math.abs(arc.delta)
+            return fraction > 1e-9 && fraction < 1 - 1e-9 ? [fraction * length] : []
+          })
+          .sort((a, b) => a - b)
+      : []
+  const topAt = (station: number, lateral = 0) => {
+    if (frame.length < 1e-9 || length < 1e-9) return getWallTop(wall, levelId, nodes, electedBase)
+    const curve = getWallCurveFrameAt(wall, Math.max(0, Math.min(1, station / length)))
+    const dx = curve.point.x + curve.normal.x * lateral - frame.start.x
+    const dy = curve.point.y + curve.normal.y * lateral - frame.start.y
+    const raw =
+      start +
+      (along * (dx * frame.tangent.x + dy * frame.tangent.y) +
+        across * (dx * frame.normal.x + dy * frame.normal.y)) /
+        frame.length
+    return wall.topProfile ? Math.max(context.electedBase + MIN_WALL_END_HEIGHT, raw) : raw
+  }
+  return { length, criticalStations, topAt }
+}
+
+export function wallTopCriticalStations(
+  args: Parameters<typeof wallTopStationProfile>[0],
+): number[] {
+  return wallTopStationProfile(args).criticalStations
+}
+
+export function wallTopMinimumOver({
+  wall,
+  levelId,
+  nodes,
+  electedBase,
+  from,
+  to,
+  face,
+}: {
+  wall: WallNode
+  levelId: string
+  nodes: Record<AnyNodeId, AnyNode>
+  electedBase: number
+  from: number
+  to: number
+  face?: 'a' | 'b'
+}): number {
+  const profile = wallTopStationProfile({ wall, levelId, nodes, electedBase })
+  const { length } = profile
+  const low = Math.max(0, Math.min(length, Math.min(from, to)))
+  const high = Math.max(0, Math.min(length, Math.max(from, to)))
+  const stations = [
+    low,
+    high,
+    ...profile.criticalStations.filter((station) => station > low && station < high),
+  ]
+  const faces = getWallFaceOffsets(wall)
+  const offsets = face ? [faces[face]] : [faces.a, faces.b]
+  return Math.min(
+    ...stations.flatMap((station) => offsets.map((offset) => profile.topAt(station, offset))),
   )
 }
 
@@ -566,6 +746,43 @@ export function getWallCoveringSlabs(
       underside: coveringUndersideY(context.floorToFloorHeight, slab),
       top: context.floorToFloorHeight + slab.elevation,
     }))
+}
+
+/** Wall-top range where the slab overlaps the wall's center or face lines. */
+export function wallTopOverSlab({
+  wall,
+  slab,
+  levelId,
+  nodes,
+  electedBase,
+}: {
+  wall: WallNode
+  slab: SlabNode
+  levelId: string
+  nodes: Record<AnyNodeId, AnyNode>
+  electedBase: number
+}): { min: number; max: number } | null {
+  const profile = wallTopStationProfile({ wall, levelId, nodes, electedBase })
+  let range: { min: number; max: number } | null = null
+  for (const { from, to, lateral } of wallSlabCoverageIntervals(wall, slab.polygon, slab.holes)) {
+    const start = from * profile.length
+    const end = to * profile.length
+    let spanMin = Infinity
+    let spanMax = -Infinity
+    for (const station of [
+      start,
+      end,
+      ...profile.criticalStations.filter((s) => s > start && s < end),
+    ]) {
+      const height = profile.topAt(station, lateral)
+      spanMin = Math.min(spanMin, height)
+      spanMax = Math.max(spanMax, height)
+    }
+    if (!range) range = { min: spanMin, max: spanMax }
+    range.min = Math.min(range.min, spanMin)
+    range.max = Math.max(range.max, spanMax)
+  }
+  return range
 }
 
 export function getWallPlaneTops(

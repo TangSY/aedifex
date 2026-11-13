@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { type AnyNode, CeilingNode, LevelNode, SlabNode } from '@aedifex/core'
+import { type AnyNode, CeilingNode, LevelNode, SlabNode, WallNode } from '@aedifex/core'
 import useElevationGuides from '../store/use-elevation-guides'
 import {
   clearStructuralElevationGuide,
@@ -45,6 +45,24 @@ function structuralScene() {
 describe('elevation guides', () => {
   afterEach(() => {
     useElevationGuides.setState({ guide: null })
+  })
+
+  test('uses the wall top at the guide anchor for a sloped wall', () => {
+    const level = LevelNode.parse({ height: 4 })
+    const wall = WallNode.parse({
+      parentId: level.id,
+      start: [0, 0],
+      end: [4, 0],
+      height: 3,
+      endHeightOffset: -2,
+    })
+    const nodes = { [level.id]: { ...level, children: [wall.id] }, [wall.id]: wall }
+    const target = collectElevationSnapTargets(
+      { nodeId: 'wall_moving', levelId: level.id, anchor: [5, 0] },
+      nodes,
+    ).find((entry) => entry.id === `${wall.id}:top`)
+    expect(target?.anchor).toEqual([2, 0])
+    expect(target?.elevation).toBeCloseTo(2)
   })
 
   test('collects the level, slab faces, and ceiling plane on the source level', () => {

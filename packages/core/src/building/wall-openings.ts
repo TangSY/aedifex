@@ -1,4 +1,3 @@
-import { metadataRecord } from '../utils/metadata-record'
 import { refuseParamsWithoutScript } from '../agent-operations/add-object'
 import { refuse } from '../agent-tools/refusal'
 import {
@@ -21,9 +20,12 @@ import {
 } from '../schema'
 import { getCurtainWallConfig } from '../schema/nodes/curtain-wall'
 import type { DoorType, WindowType } from '../schema/nodes/opening-types'
-import { getWallTop } from '../services/storey'
+import { getWallTop, wallTopMinimumOver, wallTopStationProfile } from '../services/storey'
 import { resolveWallExteriorSide } from '../systems/wall/wall-assembly'
 import { getWallCurveLength, isCurvedWall } from '../systems/wall/wall-curve'
+import { getWallFaceOffsets } from '../systems/wall/wall-frame'
+import { wallHasSlopedTop } from '../systems/wall/wall-top'
+import { metadataRecord } from '../utils/metadata-record'
 import {
   type DoorStyle,
   doorStyleLook,
@@ -51,12 +53,106 @@ const lengthOf = (wall: Pick<WallNode, 'start' | 'end'>) =>
 export function resolveWallOpeningCeiling(
   wall: WallNode,
   nodes: Readonly<Record<AnyNodeId, AnyNode>>,
+  t?: number,
+): number {
+  const support = wallSupportForNodes(wall, nodes)
+  const top =
+    t === undefined
+      ? wallTopMinimumOver({
+          wall,
+          levelId: wall.parentId ?? '',
+          nodes,
+          electedBase: support.elevation,
+          from: 0,
+          to: getWallCurveLength(wall),
+        })
+      : getWallTop(wall, wall.parentId ?? '', nodes, support.elevation, t)
+  return top - support.elevation
+}
+
+export function wallOpeningCeilingOver(
+  wall: WallNode,
+  nodes: Readonly<Record<AnyNodeId, AnyNode>>,
+  left: number,
+  right: number,
 ): number {
   const support = wallSupportForNodes(wall, nodes)
   return (
-    getWallTop(wall, wall.parentId ?? '', nodes as Record<string, AnyNode>, support.elevation) -
-    support.elevation
+    wallTopMinimumOver({
+      wall,
+      levelId: wall.parentId ?? '',
+      nodes,
+      electedBase: support.elevation,
+      from: left,
+      to: right,
+    }) - support.elevation
   )
+}
+
+function openingCentreRange({
+  wall,
+  nodes,
+  width,
+  need,
+  min,
+  max,
+  preferred,
+}: {
+  wall: WallNode
+  nodes: Readonly<Record<AnyNodeId, AnyNode>>
+  width: number
+  need: number
+  min: number
+  max: number
+  preferred: number
+}): [number, number] | null {
+  if (min > max) return null
+  const support = wallSupportForNodes(wall, nodes)
+  const profile = wallTopStationProfile({
+    wall,
+    levelId: wall.parentId ?? '',
+    nodes,
+    electedBase: support.elevation,
+  })
+  const stations = [0, ...profile.criticalStations, profile.length]
+  const faces = getWallFaceOffsets(wall)
+  const heightAt = (station: number) =>
+    Math.min(profile.topAt(station, faces.a), profile.topAt(station, faces.b)) - support.elevation
+  const spans: Array<[number, number]> = []
+  for (let i = 1; i < stations.length; i++) {
+    let left = stations[i - 1]!
+    let right = stations[i]!
+    const leftFits = heightAt(left) >= need
+    const rightFits = heightAt(right) >= need
+    if (!leftFits && !rightFits) continue
+    if (leftFits !== rightFits) {
+      let a = left
+      let b = right
+      for (let step = 0; step < 40; step++) {
+        const mid = (a + b) / 2
+        if (heightAt(mid) >= need === leftFits) a = mid
+        else b = mid
+      }
+      if (leftFits) right = (a + b) / 2
+      else left = (a + b) / 2
+    }
+    const previous = spans[spans.length - 1]
+    if (previous && left <= previous[1] + TOUCHING) previous[1] = right
+    else spans.push([left, right])
+  }
+  const ranges = spans
+    .map(([left, right]): [number, number] => [
+      Math.max(min, left + width / 2),
+      Math.min(max, right - width / 2),
+    ])
+    .filter(([left, right]) => left <= right + TOUCHING)
+  ranges.sort(
+    (a, b) =>
+      Math.abs(Math.max(a[0], Math.min(a[1], preferred)) - preferred) -
+      Math.abs(Math.max(b[0], Math.min(b[1], preferred)) - preferred),
+  )
+  const best = ranges[0]
+  return best ? [best[0], Math.max(best[0], best[1])] : null
 }
 
 /** A curtain wall keeps its perimeter frame clear of openings. */
@@ -69,11 +165,31 @@ export function clampDoorToWall(
   localX: number,
   width: number,
   height: number,
-): { clampedX: number; clampedY: number } {
+  nodes?: Readonly<Record<AnyNodeId, AnyNode>>,
+): { clampedX: number; clampedY: number; fits?: boolean } {
   const margin = openingMargin(wall)
   const length = getWallCurveLength(wall)
-  const clampedX = Math.max(margin + width / 2, Math.min(length - margin - width / 2, localX))
-  return { clampedX, clampedY: height / 2 }
+  const min = margin + width / 2
+  const max = length - margin - width / 2
+  const fit =
+    wallHasSlopedTop(wall) && nodes
+      ? openingCentreRange({
+          wall,
+          nodes,
+          width,
+          need: height + margin,
+          min,
+          max,
+          preferred: localX,
+        })
+      : ([min, max] as [number, number])
+  const [low, high] = fit ?? [min, max]
+  const clampedX = Math.max(low, Math.min(high, localX))
+  return {
+    clampedX,
+    clampedY: height / 2,
+    ...(wallHasSlopedTop(wall) && nodes ? { fits: fit !== null } : {}),
+  }
 }
 
 /** A window's centre: slid to stay on the wall, and between the floor and the wall's ceiling. */
@@ -84,13 +200,29 @@ export function clampWindowToWall(
   width: number,
   height: number,
   nodes: Readonly<Record<AnyNodeId, AnyNode>>,
-): { clampedX: number; clampedY: number } {
-  const ceiling = resolveWallOpeningCeiling(wall, nodes)
+): { clampedX: number; clampedY: number; fits?: boolean } {
   const margin = openingMargin(wall)
   const length = getWallCurveLength(wall)
-  const clampedX = Math.max(margin + width / 2, Math.min(length - margin - width / 2, localX))
+  const min = margin + width / 2
+  const max = length - margin - width / 2
+  const fit = wallHasSlopedTop(wall)
+    ? openingCentreRange({
+        wall,
+        nodes,
+        width,
+        need: height + 2 * margin,
+        min,
+        max,
+        preferred: localX,
+      })
+    : ([min, max] as [number, number])
+  const [low, high] = fit ?? [min, max]
+  const clampedX = Math.max(low, Math.min(high, localX))
+  const ceiling = wallHasSlopedTop(wall)
+    ? wallOpeningCeilingOver(wall, nodes, clampedX - width / 2, clampedX + width / 2)
+    : resolveWallOpeningCeiling(wall, nodes)
   const clampedY = Math.max(margin + height / 2, Math.min(ceiling - margin - height / 2, localY))
-  return { clampedX, clampedY }
+  return { clampedX, clampedY, ...(wallHasSlopedTop(wall) ? { fits: fit !== null } : {}) }
 }
 
 /**
@@ -335,10 +467,16 @@ export function planWallOpening(nodes: Nodes, input: WallOpeningInput) {
       : input.sillHeight === undefined
         ? resolveWallOpeningCeiling(wall, nodes as Record<AnyNodeId, AnyNode>) / 2
         : input.sillHeight + height / 2
-  const { clampedX, clampedY } =
+  const { clampedX, clampedY, fits } =
     kind === 'door'
-      ? clampDoorToWall(wall, rawX, width, height)
+      ? clampDoorToWall(wall, rawX, width, height, nodes as Record<AnyNodeId, AnyNode>)
       : clampWindowToWall(wall, rawX, rawY, width, height, nodes as Record<AnyNodeId, AnyNode>)
+  if (fits === false)
+    refuse('wall_too_low', `No part of wall ${wallId} can fit this ${kind} under its sloped top.`, {
+      wallId,
+      width,
+      height,
+    })
 
   if (!input.force) {
     const blocking = findWallChildOverlap(wallId, nodes, clampedX, clampedY, width, height)

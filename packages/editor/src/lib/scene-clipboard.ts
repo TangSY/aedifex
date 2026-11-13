@@ -20,8 +20,9 @@ import {
   seatRoofs,
   storeyOf,
   useScene,
+  wallHasSlopedTop,
 } from '@aedifex/core'
-import { clampDoorToWall, clampWindowToWall } from '@aedifex/core/building'
+import { clampDoorToWall, clampWindowToWall, hasWallChildOverlap } from '@aedifex/core/building'
 import { remapNodeReferences as remapCloneReferences } from '@aedifex/core/clone-scene-graph'
 import { useViewer } from '@aedifex/viewer'
 import { referencedSceneMaterialIds, remapSceneMaterialRefs } from './scene-material-refs'
@@ -43,6 +44,8 @@ export type PasteResult = {
   /** Why they were left out, when any were. */
   refusal: PasteRefusal | null
   skippedIds: AnyNodeId[]
+  /** Pasted openings kept at their source position because they could not be fitted safely. */
+  unadjustedOpeningIds: AnyNodeId[]
 }
 
 /**
@@ -663,7 +666,7 @@ function applyClipboardPayloadToLevel(
     }
   }
 
-  fitOpeningsToPastedWalls(pastedNodes, scene.nodes)
+  const unadjustedOpeningIds = fitOpeningsToPastedWalls(pastedNodes, scene.nodes)
 
   if (pastedNodes.length === 0) {
     return {
@@ -672,6 +675,7 @@ function applyClipboardPayloadToLevel(
       refusedIds: [...refused],
       refusal,
       skippedIds,
+      unadjustedOpeningIds,
     }
   }
 
@@ -710,6 +714,7 @@ function applyClipboardPayloadToLevel(
     refusedIds: [...refused],
     refusal,
     skippedIds,
+    unadjustedOpeningIds,
   }
 }
 
@@ -718,6 +723,7 @@ function applyClipboardPayloadToLevel(
  * one: a wall pasted under a lower storey would otherwise leave a tall window poking above it.
  */
 function fitOpeningsToPastedWalls(pasted: AnyNode[], sceneNodes: Record<AnyNodeId, AnyNode>) {
+  const unadjusted: AnyNodeId[] = []
   const byId = Object.fromEntries(pasted.map((node) => [node.id, node])) as Record<
     AnyNodeId,
     AnyNode
@@ -733,12 +739,30 @@ function fitOpeningsToPastedWalls(pasted: AnyNode[], sceneNodes: Record<AnyNodeI
       : [node.width, node.height]
     nodes ??= { ...sceneNodes, ...byId }
     const [x, y, z] = node.position
-    const { clampedY } =
+    const { clampedX, clampedY, fits } =
       node.type === 'door'
-        ? clampDoorToWall(wall, x, width, height)
+        ? clampDoorToWall(wall, x, width, height, nodes)
         : clampWindowToWall(wall, x, y, width, height, nodes)
-    if (clampedY !== y) pasted[index] = { ...node, position: [x, clampedY, z] }
+    if (fits === false) {
+      unadjusted.push(node.id)
+      return
+    }
+    const nextX = wallHasSlopedTop(wall) ? clampedX : x
+    if (
+      nextX !== x &&
+      ((node.type === 'window' && node.corner) ||
+        hasWallChildOverlap(wall.id, nodes, nextX, clampedY, width, height, node.id))
+    ) {
+      unadjusted.push(node.id)
+      return
+    }
+    if (nextX !== x || clampedY !== y) {
+      const updated = { ...node, position: [nextX, clampedY, z] as [number, number, number] }
+      pasted[index] = updated
+      nodes[node.id] = updated
+    }
   })
+  return unadjusted
 }
 
 function withoutRefusedSubtrees(

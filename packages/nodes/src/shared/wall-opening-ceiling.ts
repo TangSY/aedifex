@@ -6,7 +6,7 @@ import {
   type WallNode,
   wallSupportForNodes,
 } from '@aedifex/core'
-import { resolveWallOpeningCeiling } from '@aedifex/core/building'
+import { resolveWallOpeningCeiling, wallOpeningCeilingOver } from '@aedifex/core/building'
 
 /**
  * Structural subset of `SceneApi` the opening-cap readers need — matches
@@ -38,5 +38,13 @@ export function readHostWallCeiling(
   const lift = opening
     ? getOpeningFloorDatum(wall, opening, nodes) - wallSupportForNodes(wall, nodes).elevation
     : 0
-  return resolveWallOpeningCeiling(wall, nodes) - lift
+  const ceiling = opening
+    ? wallOpeningCeilingOver(
+        wall,
+        nodes,
+        opening.position[0] - opening.width / 2,
+        opening.position[0] + opening.width / 2,
+      )
+    : resolveWallOpeningCeiling(wall, nodes)
+  return ceiling - lift
 }

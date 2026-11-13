@@ -88,7 +88,6 @@ export {
   spatialGridManager,
   type WallSlabSupportSegment,
 } from './hooks/spatial-grid/spatial-grid-manager'
-export { findBuildingAncestorId } from './lib/node-ancestry'
 export {
   findLevelAncestorId,
   initSpatialGridSync,
@@ -136,23 +135,6 @@ export {
 } from './lib/assembly-stack'
 export { loadAssetUrl, saveAsset } from './lib/asset-storage'
 export {
-  configureClientAssetPolicy,
-  getClientAssetPolicy,
-  subscribeClientAssetPolicy,
-} from './lib/client-asset-policy'
-export {
-  type AssetReadBudget,
-  AssetAccessError,
-  AssetNetworkError,
-  createAssetReadBudget,
-  parsePublicAssetOrigins,
-  publicAssetOrigins,
-  publicAssetOriginsFromBindings,
-  readRestrictedAsset,
-  restrictedAssetUrl,
-} from './lib/restricted-asset-read'
-export { hierarchyCycleErrors, wouldCreateHierarchyCycle } from './lib/hierarchy'
-export {
   belowGradeFloorY,
   belowGradeFootprints,
   coveredBelowGradeFootprints,
@@ -178,6 +160,11 @@ export {
   computeCeilingSurfaceCells,
   parseCeilingRegionRole,
 } from './lib/ceiling-surface'
+export {
+  configureClientAssetPolicy,
+  getClientAssetPolicy,
+  subscribeClientAssetPolicy,
+} from './lib/client-asset-policy'
 export { cornerPair, fusesAtCorner } from './lib/corner-pair'
 export {
   type CornerBlock,
@@ -299,6 +286,7 @@ export {
   levelStackGroundBox,
   terrainBetweenEyeAndBox,
 } from './lib/ground-window'
+export { hierarchyCycleErrors, wouldCreateHierarchyCycle } from './lib/hierarchy'
 export {
   type ExposedInterval,
   exposedIntervals,
@@ -326,6 +314,7 @@ export {
   remapMeasurementReferences,
 } from './lib/measurement-geometry'
 export { newZone } from './lib/new-zone'
+export { findBuildingAncestorId } from './lib/node-ancestry'
 export { HIDDEN_SITE_NOTE, hidesDescendants } from './lib/node-visibility'
 export {
   cutterContextNodes,
@@ -394,6 +383,17 @@ export {
   subtractPolygonsFromPolygon,
   unionPolygons,
 } from './lib/polygon-union'
+export {
+  AssetAccessError,
+  AssetNetworkError,
+  type AssetReadBudget,
+  createAssetReadBudget,
+  parsePublicAssetOrigins,
+  publicAssetOrigins,
+  publicAssetOriginsFromBindings,
+  readRestrictedAsset,
+  restrictedAssetUrl,
+} from './lib/restricted-asset-read'
 export {
   compareRoofOverlapIdentity,
   getRoofPlanBounds,
@@ -570,6 +570,7 @@ export {
   surfaceHeightAt,
   type TerrainField,
 } from './lib/terrain-field'
+export { terrainFloorCover } from './lib/terrain-floor-cover'
 export { raycastTerrain, type TerrainHit } from './lib/terrain-raycast'
 export {
   commitTerrainField,
@@ -650,7 +651,7 @@ export {
   unregisterLibraryMaterials,
 } from './material-library'
 export * from './node-slots'
-export { matchLibraryMaterial, type LibraryMaterialHints } from './procedural-items/library-colors'
+export { type LibraryMaterialHints, matchLibraryMaterial } from './procedural-items/library-colors'
 export type {
   FloorPlacedFootprint,
   FloorPlacedFootprintContext,
@@ -1005,6 +1006,7 @@ export {
   getClampedWallCurveOffset,
   getMaxWallCurveOffset,
   getWallArcData,
+  getWallChordFractionAt,
   getWallChordFrame,
   getWallCurveFrameAt,
   getWallCurveLength,
@@ -1093,10 +1095,14 @@ export { plannedWallIds, planWallPaint } from './systems/wall/wall-paint-plan'
 export { roomSideFaces } from './systems/wall/wall-room-sides'
 export { wallDoorStepRuns } from './systems/wall/wall-step-openings'
 export {
+  clampWallEndHeightOffset,
+  MIN_WALL_END_HEIGHT,
   MIN_WALL_HEIGHT,
   resolveWallEffectiveHeight,
   resolveWallTop,
+  resolveWallTopPlane,
   wallFollowsStorey,
+  wallHasSlopedTop,
 } from './systems/wall/wall-top'
 export {
   findOpenWallEnds,
@@ -1121,6 +1127,7 @@ export { isObject } from './utils/types'
  */
 export type JSONType = string | number | boolean | null | JSONType[] | { [key: string]: JSONType }
 
+export { resolveStaticMaterialPath } from './material-static-paths'
 export {
   checkOpeningWithinWall,
   formatOpeningBoundsIssue,
@@ -1136,5 +1143,3 @@ export {
   type ValidationSeverity,
   validateBuildJson,
 } from './validation/validate-build-json'
-
-export { resolveStaticMaterialPath } from './material-static-paths'

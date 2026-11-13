@@ -434,6 +434,9 @@ export function duplicateSelectionAndPickUp(): boolean {
     (levelId ?? undefined) as AnyNodeId | undefined,
   )
   if (!result || result.pastedIds.length === 0) return false
+  if (result.unadjustedOpeningIds.length) {
+    useFloorplanMode.getState().showNotice('', result.unadjustedOpeningIds.length)
+  }
   sfxEmitter.emit('sfx:item-pick')
   startGroupPickUp({
     scopeToSelection: true,
@@ -520,10 +523,13 @@ export async function pasteSelectionAndPickUp(targetLevelId?: AnyNodeId): Promis
   } finally {
     pastePending = false
   }
-  if (result?.refusal) {
+  if (result?.refusal || result?.unadjustedOpeningIds.length) {
     useFloorplanMode
       .getState()
-      .showNotice(refusedObjectsNotice(result.refusedIds.length, result.refusal))
+      .showNotice(
+        result.refusal ? refusedObjectsNotice(result.refusedIds.length, result.refusal) : '',
+        result.unadjustedOpeningIds.length,
+      )
   }
   if (!result || result.pastedIds.length === 0) return false
 

@@ -351,22 +351,26 @@ const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNode }) =>
         // component lives in `snapToHalf` (itself mode-aware).
         applySnap: isMagneticSnapActive(),
       })
-      const { clampedX, clampedY } = clampToWall(
+      const nodes = useScene.getState().nodes
+      const { clampedX, clampedY, fits } = clampToWall(
         event.node,
         localX,
         movingDoorNode.width,
         movingDoorNode.height,
+        nodes,
       )
 
-      const valid = !hasWallChildOverlap(
-        event.node.id,
-        useScene.getState().nodes,
-        clampedX,
-        clampedY,
-        movingDoorNode.width,
-        movingDoorNode.height,
-        movingDoorNode.id,
-      )
+      const valid =
+        fits !== false &&
+        !hasWallChildOverlap(
+          event.node.id,
+          nodes,
+          clampedX,
+          clampedY,
+          movingDoorNode.width,
+          movingDoorNode.height,
+          movingDoorNode.id,
+        )
 
       return {
         wallNode: event.node,
@@ -468,11 +472,7 @@ const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNode }) =>
       // frame the ghost renders in. The door's front is its local +Z. Drop it to
       // the floor under the wall (the ghost Y is the opening centre, ~1m up).
       useFacingPose.getState().set({
-        position: [
-          ghostWorldPos[0],
-          wallBaseWorldY,
-          ghostWorldPos[2],
-        ],
+        position: [ghostWorldPos[0], wallBaseWorldY, ghostWorldPos[2]],
         rotationY: ghostYaw,
         depth: movingDoorNode.frameDepth ?? 0.07,
       })

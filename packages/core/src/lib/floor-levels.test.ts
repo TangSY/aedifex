@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test'
+import { verifyScene } from '../agent-operations/verify-scene'
 import { setZoneIntent } from '../commands/structure/set-zone-intent'
 import {
   type AnyNode,
@@ -9,19 +10,27 @@ import {
   type WallNode,
   type ZoneNode,
 } from '../schema'
+import { wallTopMinimumOver } from '../services/storey'
 import {
   assertDerivedNodeWrites,
   derivedFieldViolations,
   filterDerivedNodeWrites,
 } from '../store/derived-node-guard'
 import { floorStepFixture } from '../systems/slab/__fixtures__/floor-step'
+import { getWallCurveLength } from '../systems/wall/wall-curve'
 import { resolveWallTop } from '../systems/wall/wall-top'
 import { migrateFloorPlates } from '../utils/floor-plate-migration'
 import { reconcileStructureOnLoad } from '../utils/reconcile-structure-on-load'
 import { migrateRoomZones } from '../utils/room-zone-migration'
 import { reconcileStructureWithStableIds } from '../utils/structure-id'
-import { expandFloorIntentChanges } from './floor-intent-changes'
-import { getOpeningFloorDatum, getOpeningWallCut, wallSupportForNodes } from './opening-floor-datum'
+import { validateBuildJson } from '../validation/validate-build-json'
+import { expandFloorIntentChanges, floorIntentConflicts } from './floor-intent-changes'
+import {
+  getOpeningFloorDatum,
+  getOpeningWallCut,
+  openingWallTop,
+  wallSupportForNodes,
+} from './opening-floor-datum'
 import { computePlateSurfacePartition, plateLevelContext } from './plate-surface'
 import { area, containsPoint, intersection } from './polygon-boolean'
 import {
@@ -115,6 +124,82 @@ test('D6 exterior raised door retains an upstand; wall windows keep their datum'
   expect(getOpeningFloorDatum(wall, { ...door, position: [2, 1.5, 0], height: 1 }, nodes)).toBe(
     0.05,
   )
+})
+
+test('sloped-wall opening checks use the same stepped-floor datum as rendering', () => {
+  const s = scene(0.55, 0.05)
+  const wall = { ...(s.nodes[s.divider.id] as WallNode), height: 2.4, endHeightOffset: -0.5 }
+  const door = { ...s.door, height: 2, position: [2, 1, 0] as [number, number, number] }
+  const nodes = { ...s.nodes, [wall.id]: wall, [door.id]: door }
+  expect(getOpeningFloorDatum(wall, door, nodes)).toBeCloseTo(0.05)
+  const verify = (graph: typeof nodes) =>
+    (
+      verifyScene(graph, {}, { activeLevelId: s.level.id }).result.issues as { type: string }[]
+    ).filter((issue) => issue.type === 'opening_outside_height')
+  const imported = (graph: typeof nodes) =>
+    validateBuildJson({ nodes: graph, rootNodeIds: [s.level.id] }).warnings.filter(
+      (warning) => warning.code === 'opening_outside_wall' && warning.nodeId === door.id,
+    )
+  expect(verify(nodes)).toHaveLength(0)
+  expect(imported(nodes)).toHaveLength(0)
+  const higherWall = { ...wall, height: 3.2 }
+  const raised = { ...nodes, [wall.id]: higherWall }
+  expect(getOpeningFloorDatum(higherWall, door, raised)).toBeCloseTo(0.55)
+  expect(verify(raised)).toHaveLength(0)
+  expect(imported(raised)).toHaveLength(0)
+  const tall = { ...door, height: 2.3, position: [2, 1.15, 0] as [number, number, number] }
+  const over = { ...nodes, [door.id]: tall }
+  expect(verify(over)).toHaveLength(1)
+  expect(imported(over)).toHaveLength(1)
+})
+
+test('floor feasibility measures a sloped wall at the opening instead of its high end', () => {
+  const s = scene(0.3)
+  const wall = { ...(s.nodes[s.divider.id] as WallNode), height: 3.5, endHeightOffset: -1.5 }
+  const door = { ...s.door, width: 0.8, height: 2, position: [3, 1, 0] as [number, number, number] }
+  const nodes = { ...s.nodes, [wall.id]: wall, [door.id]: door }
+  const top = openingWallTop({ wall, opening: door, nodes })
+  const checked = checkRoomFloor(nodes, s.zones[0]!.id, 0.3)
+  expect(checked.maxElevation).toBeCloseTo(top - 2, 5)
+  const taller = { height: 2.5, position: [3, 1.25, 0] as [number, number, number] }
+  expect(floorIntentConflicts(nodes, [{ id: door.id, data: taller }])).toContainEqual(
+    expect.objectContaining({ code: 'floor-opening-fit', severity: 'error' }),
+  )
+})
+
+test('floor headroom accounts for the low end of a sloped boundary wall', () => {
+  const s = scene(0.3, 0.05, false)
+  const wall = { ...(s.nodes[s.divider.id] as WallNode), height: 3.5, endHeightOffset: -2.5 }
+  const nodes = { ...s.nodes, [wall.id]: wall }
+  const support = wallSupportForNodes(wall, nodes)
+  const lowest = wallTopMinimumOver({
+    wall,
+    levelId: s.level.id,
+    nodes,
+    electedBase: support.elevation,
+    from: 0,
+    to: getWallCurveLength(wall),
+  })
+  expect(checkRoomFloor(nodes, s.zones[0]!.id, 0.3).maxElevation).toBeCloseTo(lowest - 0.5, 5)
+})
+
+test('a room uses only its portion of a sloped wall shared with its neighbour', () => {
+  const s = scene(0.3, 0.05, false)
+  const wall = { ...(s.nodes[s.walls[0]!.id] as WallNode), height: 3.5, endHeightOffset: -2.5 }
+  const nodes = { ...s.nodes, [wall.id]: wall }
+  const base = wallSupportForNodes(wall, nodes).elevation
+  const length = getWallCurveLength(wall)
+  const minimum = (from: number, to: number) =>
+    wallTopMinimumOver({
+      wall,
+      levelId: s.level.id,
+      nodes,
+      electedBase: base,
+      from: from * length,
+      to: to * length,
+    }) - 0.5
+  expect(checkRoomFloor(nodes, s.zones[0]!.id, 0.3).maxElevation).toBeCloseTo(minimum(0, 0.5), 5)
+  expect(checkRoomFloor(nodes, s.zones[1]!.id, 0.05).maxElevation).toBeCloseTo(minimum(0.5, 1), 5)
 })
 
 test('D9 room plate ID survives edits and raised/sunken flips; base ID survives retirement', () => {

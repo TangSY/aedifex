@@ -15,7 +15,7 @@ import { resolveRoomRoofFootprintOnLevel } from '../systems/roof/roof-footprint'
 import { computeWallSlabSupport } from '../systems/slab/slab-support'
 import { sampleWallCenterline } from '../systems/wall/wall-curve'
 import { resolveWallTop } from '../systems/wall/wall-top'
-import { getWallPlaneTop } from './storey'
+import { getWallPlaneTop, getWallTop } from './storey'
 
 /**
  * What a roof bears on: the walls along its edges with open air past them, their tops in their
@@ -52,11 +52,13 @@ export function wallSpans(nodes: Nodes, levelId: string): Map<string, WallSpan> 
         0,
         nodes,
       )
-      const top = resolveWallTop(
-        wall,
-        getWallPlaneTop(wall, levelId, nodes as Record<AnyNodeId, AnyNode>),
-        support.elevation,
-      )
+      const top = wall.topProfile?.supportReference
+        ? getWallTop(wall, levelId, nodes as Record<AnyNodeId, AnyNode>, support.elevation)
+        : resolveWallTop(
+            wall,
+            getWallPlaneTop(wall, levelId, nodes as Record<AnyNodeId, AnyNode>),
+            support.elevation,
+          )
       return [wall.id, { base: support.elevation, top }]
     }),
   )

@@ -2,12 +2,11 @@ import { liftedManualSlab } from '../../lib/floor-construction-lift'
 import { selectSlabSupportForItem, slabSupportsItemFootprint } from '../../lib/item-slab-support'
 import { type PlanAabb, planFootprintAABB, planFootprintCorners } from '../../lib/plan-footprint'
 import { getRenderableSlabPolygon } from '../../lib/slab-polygon'
-import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import { levelBaseElevationAt } from '../../lib/terrain-support'
 import { floorPlacedCollides, nodeRegistry } from '../../registry'
 import type { AnyNode, AnyNodeId, CeilingNode, ItemNode, SlabNode, WallNode } from '../../schema'
 import { getScaledDimensions, isLowProfileItemSurface } from '../../schema'
-import { getWallTop } from '../../services/storey'
+import { getWallTop, wallTopMinimumOver } from '../../services/storey'
 import useLiveNodeOverrides, { getEffectiveNode } from '../../store/use-live-node-overrides'
 import useLiveTerrain from '../../store/use-live-terrain'
 import useLiveTransforms, { type LiveTransform } from '../../store/use-live-transforms'
@@ -18,8 +17,10 @@ import {
   type WallSlabSupport,
   wallOverlapsPolygon,
 } from '../../systems/slab/slab-support'
+import { getWallStationAtChordFraction } from '../../systems/wall/wall-curve'
 import { DEFAULT_WALL_THICKNESS } from '../../systems/wall/wall-footprint'
 import type { WallJustification } from '../../systems/wall/wall-frame'
+import { wallHasSlopedTop } from '../../systems/wall/wall-top'
 import { getFloorPlacedFootprints } from './floor-placed-elevation'
 import { SpatialGrid } from './spatial-grid'
 import { WallSpatialGrid } from './wall-spatial-grid'
@@ -343,16 +344,22 @@ export class SpatialGridManager {
     return this.wallGrids.get(levelId)!
   }
 
+  private getWall(wallId: string): WallNode | undefined {
+    const current = this.source.nodes()[wallId]
+    const wall = current?.type === 'wall' ? current : this.walls.get(wallId)
+    return wall ? this.source.effective(wall) : undefined
+  }
+
   private getWallLength(wallId: string): number {
-    const wall = this.walls.get(wallId)
+    const wall = this.getWall(wallId)
     if (!wall) return 0
     const dx = wall.end[0] - wall.start[0]
     const dy = wall.end[1] - wall.start[1]
     return Math.sqrt(dx * dx + dy * dy)
   }
 
-  private getWallHeight(wallId: string): number {
-    const wall = this.walls.get(wallId)
+  private getWallHeight(wallId: string, t: number): number {
+    const wall = this.getWall(wallId)
     if (!wall) return 0
 
     const nodes = this.source.nodes()
@@ -368,7 +375,7 @@ export class SpatialGridManager {
       wall.supportOffset,
       wall.justification,
     )
-    return getWallTop(wall, levelId, nodes, support.elevation) - support.elevation
+    return getWallTop(wall, levelId, nodes, support.elevation, t) - support.elevation
   }
 
   private getCeilingGrid(ceilingId: string): SpatialGrid {
@@ -756,10 +763,40 @@ export class SpatialGridManager {
     if (wallLength === 0) {
       return { valid: false, conflictIds: [] }
     }
-    const wallHeight = this.getWallHeight(wallId)
     // Convert local X position to parametric t (0-1)
     const tCenter = localX / wallLength
     const [itemWidth, itemHeight] = dimensions
+    const halfWidth = itemWidth / wallLength / 2
+    const hostWall = this.getWall(wallId)
+    const left = Math.max(0, Math.min(1, tCenter - halfWidth))
+    const right = Math.max(0, Math.min(1, tCenter + halfWidth))
+    let wallHeight = Math.min(this.getWallHeight(wallId, left), this.getWallHeight(wallId, right))
+    if (hostWall && wallHasSlopedTop(hostWall)) {
+      const nodes = this.source.nodes()
+      const support = this.getSlabSupportForWall(
+        levelId,
+        hostWall.start,
+        hostWall.end,
+        hostWall.curveOffset ?? 0,
+        hostWall.thickness,
+        hostWall.supportSlabId ?? null,
+        undefined,
+        hostWall.supportOffset,
+        hostWall.justification,
+      )
+      wallHeight =
+        wallTopMinimumOver({
+          wall: hostWall,
+          levelId,
+          nodes,
+          electedBase: support.elevation,
+          from: getWallStationAtChordFraction(hostWall, left),
+          to: getWallStationAtChordFraction(hostWall, right),
+        }) - support.elevation
+    }
+    if (hostWall && wallHasSlopedTop(hostWall) && itemHeight > wallHeight) {
+      return { valid: false, conflictIds: [], adjustedY: localY, wasAdjusted: false }
+    }
     const baseResult = this.getWallGrid(levelId).canPlaceOnWall(
       wallId,
       wallLength,
@@ -1384,6 +1421,7 @@ export function getWallBaseElevationForNodes(
 export function getWallEffectiveHeightForNodes(
   wall: WallNode,
   nodes: Record<string, AnyNode>,
+  t = 0,
 ): number {
   const levelId = resolveNodeLevelId(wall, nodes)
   const support = activeSpatialGrid().getSlabSupportForWall(
@@ -1397,5 +1435,5 @@ export function getWallEffectiveHeightForNodes(
     wall.supportOffset,
     wall.justification,
   )
-  return getWallTop(wall, levelId, nodes, support.elevation) - support.elevation
+  return getWallTop(wall, levelId, nodes, support.elevation, t) - support.elevation
 }

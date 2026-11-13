@@ -13,8 +13,8 @@ import { DEFAULT_SLAB_ELEVATION } from '../schema/nodes/slab'
 import {
   findLevelBelowId,
   getLevelElevations,
-  getWallCoveringSlabUnderside,
-  getWallTop,
+  getWallCoveringSlabs,
+  wallTopOverSlab,
 } from '../services/storey'
 import {
   automaticFloorHeight,
@@ -28,7 +28,7 @@ import {
   footprintStackChanges,
 } from './floor-foundation-stack'
 import { floorRoomFaces } from './floor-room-faces'
-import { getOpeningFloorTarget, wallSupportForNodes } from './opening-floor-datum'
+import { getOpeningFloorTarget, openingWallTop, wallSupportForNodes } from './opening-floor-datum'
 import { area, intersection } from './polygon-boolean'
 import {
   checkRoomFloor,
@@ -540,7 +540,7 @@ export function floorIntentConflicts(
         getOpeningFloorTarget(host, opening, graph) +
         opening.position[1] +
         opening.height / 2 -
-        getWallTop(host, host.parentId!, graph, wallSupportForNodes(host, graph).elevation)
+        openingWallTop({ wall: host, opening, nodes: graph })
       )
     }
     const after = excess(drafted, node)
@@ -568,9 +568,22 @@ export function floorIntentConflicts(
       !loweringPlates.some(({ plate }) => footprintSupportsNode(plate, node, drafted))
     )
       continue
-    const excess = (graph: Readonly<Record<string, AnyNode>>, wall: typeof node) =>
-      getWallTop(wall, wall.parentId!, graph, wallSupportForNodes(wall, graph).elevation) -
-      (getWallCoveringSlabUnderside(wall, wall.parentId!, graph) ?? Infinity)
+    const excess = (graph: Readonly<Record<string, AnyNode>>, wall: typeof node) => {
+      const electedBase = wallSupportForNodes(wall, graph).elevation
+      return getWallCoveringSlabs(wall, wall.parentId!, graph).reduce(
+        (maximum, { slab, underside }) => {
+          const range = wallTopOverSlab({
+            wall,
+            slab,
+            levelId: wall.parentId!,
+            nodes: graph,
+            electedBase,
+          })
+          return range ? Math.max(maximum, range.max - underside) : maximum
+        },
+        -Infinity,
+      )
+    }
     const after = excess(drafted, node)
     const previous = nodes[node.id]
     const before = previous?.type === 'wall' ? excess(nodes, previous) : -Infinity

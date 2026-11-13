@@ -454,6 +454,34 @@ export function wallOverlapsSlabFootprint(
   return overlap >= threshold
 }
 
+/** Covered portions of the same center and face lines used by the overlap test. */
+export function wallSlabCoverageIntervals(
+  wall: WallOverlapInput,
+  polygon: Array<[number, number]>,
+  holes?: ReadonlyArray<Array<[number, number]>>,
+): Array<{ from: number; to: number; lateral: number }> {
+  const lines = wallTestPolylines(wall.start, wall.end, wall.curveOffset ?? 0, wall)
+  const faces = getWallFaceOffsets({
+    ...wall,
+    thickness: Math.max(wall.thickness ?? DEFAULT_WALL_THICKNESS, 0),
+  })
+  const offsets = [0, faces.a, faces.b]
+  return lines.flatMap((line, index) => {
+    const length = polylineLength(line)
+    if (length < 1e-9) return []
+    let intervals = polylineInsideIntervals(line, polygon)
+    for (const hole of holes ?? []) {
+      if (hole.length >= 3)
+        intervals = subtractIntervals(intervals, polylineInsideIntervals(line, hole, false))
+    }
+    return intervals.map(([from, to]) => ({
+      from: from / length,
+      to: to / length,
+      lateral: offsets[index]!,
+    }))
+  })
+}
+
 /**
  * Tolerance for the pointer-decided support cap: a slab still counts as
  * "the surface you're pointing at (or below)" when its walking surface is

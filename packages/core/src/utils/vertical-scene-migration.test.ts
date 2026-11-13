@@ -51,6 +51,15 @@ function flatScene(wallExtra: RawNode, slabExtra: RawNode | null, siteExtra: Raw
 }
 
 describe('ground-pin heal', () => {
+  test('does not reinterpret a saved split-wall top profile as a legacy ground pin', () => {
+    const profile = { offset: -1, from: 0.5, to: 1, supportHeight: 3 }
+    const nodes = flatScene(
+      { height: 3, supportSlabId: 'ground', supportOffset: 0.0000005, topProfile: profile },
+      { elevation: 0.15, thickness: 0.15 },
+    )
+    const migrated = migrateVerticalSceneNodes(nodes)
+    expect(migrated.nodes.wall_a).toEqual(nodes.wall_a)
+  })
   test('strips a ground pin (and draft offset) from a wall buried in a floor slab', () => {
     const result = migrateVerticalSceneNodes(
       flatScene(

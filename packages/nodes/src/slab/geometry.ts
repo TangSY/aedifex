@@ -6,6 +6,7 @@ import {
   computePlateSurfacePartition,
   cutterContextNodes,
   FenceNode,
+  FLAT_GROUND_Y,
   FOUNDATION_SLOT_DEFAULT,
   type GeometryContext,
   getLevelElevations,
@@ -245,7 +246,7 @@ function buildSlabTerrainFillGeometry(
   const localPoints = points.map(([x, z]) => ({ x, z }))
   const bottomY = points.map(([x, z]) => {
     const [siteX, siteZ] = toSite(x, z)
-    const ground = terrain.field ? surfaceHeightAt(terrain.field, siteX, siteZ) : 0
+    const ground = terrain.field ? surfaceHeightAt(terrain.field, siteX, siteZ) : FLAT_GROUND_Y
     return Math.min(top, ground - terrain.baseWorldY)
   })
   const geometry = buildTerrainPerimeterFillGeometry(localPoints, bottomY, top, 1e-4)

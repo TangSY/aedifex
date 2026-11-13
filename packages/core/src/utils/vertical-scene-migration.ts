@@ -104,6 +104,7 @@ function migrateVerticalSceneNodesOnView(
     const slabs = children.filter((child) => child.type === 'slab')
     const walls = children.filter((child) => child.type === 'wall')
     for (const wall of walls) {
+      if (wall.topProfile !== undefined) continue
       const electedBase = computeWallSlabSupport(
         {
           start: wall.start,
@@ -196,7 +197,12 @@ function migrateVerticalSceneNodesOnView(
   )
   if (!hasSculptedTerrain) {
     for (const [id, node] of Object.entries(nodes)) {
-      if (node?.type !== 'wall' || node.supportSlabId !== GROUND_SUPPORT_ID) continue
+      if (
+        node?.type !== 'wall' ||
+        node.topProfile !== undefined ||
+        node.supportSlabId !== GROUND_SUPPORT_ID
+      )
+        continue
       const levelId = typeof node.parentId === 'string' ? node.parentId : null
       if (!levelId || nodes[levelId]?.type !== 'level') continue
       const siblings = Object.values(nodes).filter(

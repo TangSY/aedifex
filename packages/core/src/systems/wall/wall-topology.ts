@@ -1,6 +1,7 @@
-import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import { withFoundationConstruction } from '../../lib/foundation-wall'
+import { wallSupportForNodes } from '../../lib/opening-floor-datum'
 import { detectOpenWallEnds, type OpenWallEnd, wallEndJoinCandidates } from '../../lib/room-graph'
+import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import { terrainSupportLift } from '../../lib/terrain-support'
 import {
   type AnyNode,
@@ -12,8 +13,18 @@ import {
   WallNode as WallSchema,
   type WindowNode,
 } from '../../schema'
-import { getWallArcData, getWallCurveFrameAt, getWallCurveLength, isCurvedWall } from './wall-curve'
+import { getWallPlaneTop, wallTopContext } from '../../services/storey'
+import {
+  getWallArcData,
+  getWallChordFractionAt,
+  getWallChordFrame,
+  getWallCurveFrameAt,
+  getWallCurveLength,
+  isCurvedWall,
+} from './wall-curve'
 import type { WallPlanPoint } from './wall-move'
+import { resolveWallTop, wallFollowsStorey } from './wall-top'
+import { captureWallTopReference } from './wall-top-reference'
 
 export const WALL_MIN_LENGTH = 0.01
 const WALL_SPLIT_ENDPOINT_EPSILON = 0.02
@@ -439,10 +450,128 @@ export function splitWall(
     1,
   ]
   const { id: _id, parentId: _parentId, children: _children, ...properties } = wall
+  const level = wall.parentId ? nodes[wall.parentId as AnyNodeId] : undefined
+  const hasSlope = Boolean(wall.endHeightOffset || wall.topProfile)
+  const support = hasSlope ? wallSupportForNodes(wall, nodes).elevation : 0
+  const plane = hasSlope ? getWallPlaneTop(wall, wall.parentId ?? '', nodes) : 0
+  const authoredHeight = level?.type === 'level' ? (level.height ?? null) : null
+  const topContext = wallTopContext({
+    wall,
+    levelId: wall.parentId ?? '',
+    nodes,
+    electedBase: support,
+    storeyHeight: plane,
+  })
+  const length = wallLength(wall)
+  if (hasSlope && getWallChordFrame(wall).length < 1e-9) return null
+  if (
+    hasSlope &&
+    parameters
+      .slice(0, -1)
+      .some(
+        (t, i) =>
+          distanceSquared(wallPointAt(wall, t), wallPointAt(wall, parameters[i + 1]!)) < 1e-18,
+      )
+  )
+    return null
+  const topAt = (t: number) =>
+    resolveWallTop(
+      wall,
+      topContext.storeyHeight,
+      topContext.electedBase,
+      authoredHeight,
+      getWallChordFractionAt(wall, t * length),
+    )
   const parsedSegments = parameters.slice(0, -1).map((startT, index) => {
     const endT = parameters[index + 1]!
+    const slope = hasSlope
+      ? {
+          height: startT === 0 ? wall.height : topAt(startT) - support,
+          endHeightOffset: topAt(endT) - topAt(startT),
+          ...(() => {
+            const source: NonNullable<WallNode['topProfile']> = wall.topProfile ?? {
+              offset: wall.endHeightOffset ?? 0,
+              from: 0,
+              to: 1,
+              ...(!wallFollowsStorey(wall, authoredHeight) ? { supportHeight: wall.height! } : {}),
+            }
+            const parent = getWallChordFrame(wall)
+            const segment = getWallChordFrame({
+              start: wallPointAt(wall, startT),
+              end: wallPointAt(wall, endT),
+            })
+            const along = source.to - source.from
+            const across = 'across' in source ? (source.across ?? 0) : 0
+            const at = (point: { x: number; y: number }) => {
+              const dx = point.x - parent.start.x
+              const dy = point.y - parent.start.y
+              return Math.max(
+                0,
+                Math.min(
+                  1,
+                  source.from +
+                    (along * (dx * parent.tangent.x + dy * parent.tangent.y) +
+                      across * (dx * parent.normal.x + dy * parent.normal.y)) /
+                      parent.length,
+                ),
+              )
+            }
+            const transverse =
+              (segment.length / parent.length) *
+              (along * (segment.normal.x * parent.tangent.x + segment.normal.y * parent.tangent.y) +
+                across * (segment.normal.x * parent.normal.x + segment.normal.y * parent.normal.y))
+            const shiftStart = source.startShift ?? 0
+            const shiftAlong = (source.endShift ?? 0) - shiftStart
+            const shiftAcross = source.acrossShift ?? 0
+            const shiftAt = (point: { x: number; y: number }) => {
+              const dx = point.x - parent.start.x
+              const dy = point.y - parent.start.y
+              return (
+                shiftStart +
+                (shiftAlong * (dx * parent.tangent.x + dy * parent.tangent.y) +
+                  shiftAcross * (dx * parent.normal.x + dy * parent.normal.y)) /
+                  parent.length
+              )
+            }
+            const shiftedAcross =
+              (segment.length / parent.length) *
+              (shiftAlong *
+                (segment.normal.x * parent.tangent.x + segment.normal.y * parent.tangent.y) +
+                shiftAcross *
+                  (segment.normal.x * parent.normal.x + segment.normal.y * parent.normal.y))
+            return {
+              topProfile: {
+                offset: source.offset,
+                from: at(segment.start),
+                to: at(segment.end),
+                ...(Math.abs(transverse) > 1e-12 ? { across: transverse } : {}),
+                ...(source.supportHeight !== undefined
+                  ? { supportHeight: source.supportHeight }
+                  : {}),
+                supportReference: captureWallTopReference({
+                  source: wall,
+                  segment: {
+                    start: wallPointAt(wall, startT),
+                    end: wallPointAt(wall, endT),
+                  },
+                }),
+                ...(source.startShift !== undefined ||
+                source.endShift !== undefined ||
+                source.acrossShift !== undefined
+                  ? {
+                      startShift: shiftAt(segment.start),
+                      endShift: shiftAt(segment.end),
+                      acrossShift: shiftedAcross,
+                    }
+                  : {}),
+              },
+            }
+          })(),
+        }
+      : {}
     return WallSchema.parse({
       ...properties,
+      ...slope,
       id: mintId?.(),
       start: wallPointAt(wall, startT),
       end: wallPointAt(wall, endT),
@@ -460,9 +589,20 @@ export function splitWall(
     const terrainElevation =
       terrainSupportLift(nodes, wall.parentId, segment.start[0], segment.start[1]) ?? 0
     const supportOffset = originalElevation - terrainElevation
+    const supportReference = segment.topProfile?.supportReference
+    const supportOffsetDelta =
+      (supportReference?.supportOffsetDelta ?? 0) + (segment.supportOffset ?? 0) - supportOffset
     return {
       ...segment,
       supportOffset: Math.abs(supportOffset) > 1e-6 ? supportOffset : undefined,
+      ...(segment.topProfile && supportReference
+        ? {
+            topProfile: {
+              ...segment.topProfile,
+              supportReference: { ...supportReference, supportOffsetDelta },
+            },
+          }
+        : {}),
     }
   })
 

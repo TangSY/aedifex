@@ -2,15 +2,58 @@ import { describe, expect, test } from 'bun:test'
 import {
   BuildingNode,
   computeWallSlabSupport,
-  getWallTop,
   LevelNode,
   resolveWallEffectiveHeight,
   resolveWallTop,
   SlabNode,
   WallNode,
 } from '../../index'
+import { getWallTop, wallTopStationProfile } from '../../services/storey'
+import { getWallChordFractionAt } from './wall-curve'
 
 describe('resolveWallTop', () => {
+  test('station profile agrees with the exact wall-top query along curved slopes', () => {
+    const level = LevelNode.parse({ id: 'level_profile', height: 3 })
+    for (const curveOffset of [-1, 1])
+      for (const supportHeight of [undefined, 2]) {
+        const wall = WallNode.parse({
+          parentId: level.id,
+          start: [0, 0],
+          end: [4, 0],
+          curveOffset,
+          topProfile: {
+            offset: -4,
+            from: 0.2,
+            to: 0.8,
+            across: 0.3,
+            endShift: -0.7,
+            acrossShift: 0.4,
+            supportHeight,
+          },
+        })
+        const nodes = { [level.id]: level, [wall.id]: wall }
+        const profile = wallTopStationProfile({ wall, levelId: level.id, nodes, electedBase: 0.3 })
+        for (let i = 0; i <= 20; i++) {
+          const station = (profile.length * i) / 20
+          expect(profile.topAt(station)).toBeCloseTo(
+            getWallTop(wall, level.id, nodes, 0.3, getWallChordFractionAt(wall, station)),
+            6,
+          )
+        }
+      }
+  })
+  test('samples a sloped top along its chord while preserving the authored-height argument', () => {
+    const wall = { height: 3.6, endHeightOffset: -1 }
+    expect(resolveWallTop(wall, 3.4, 0.05, 3.6, 0)).toBeCloseTo(3.4)
+    expect(resolveWallTop(wall, 3.4, 0.05, 3.6, 0.5)).toBeCloseTo(2.9)
+    expect(resolveWallTop(wall, 3.4, 0.05, 3.6, 1)).toBeCloseTo(2.4)
+    expect(resolveWallTop(wall, 3.4, 0.05, 3.6)).toBeCloseTo(3.4)
+  })
+
+  test('a falling end retains a nonzero wall body', () => {
+    expect(resolveWallTop({ height: 2, endHeightOffset: -5 }, 3, 0, 3, 1)).toBeCloseTo(0.01)
+  })
+
   test('explicit height on zero base keeps the stored top', () => {
     expect(resolveWallTop({ height: 2.5 }, 3, 0)).toBe(2.5)
   })
@@ -135,6 +178,9 @@ describe('resolveWallEffectiveHeight', () => {
     expect(getWallTop(wall, ground.id, thicker, base)).toBeCloseTo(3.4)
     const taller = { ...wall, height: 4.2 }
     expect(getWallTop(taller, ground.id, { ...nodes, [wall.id]: taller }, base)).toBeCloseTo(4.25)
+    const sloped = { ...wall, endHeightOffset: -1 }
+    expect(getWallTop(sloped, ground.id, nodes, base, 1)).toBeCloseTo(2.6)
+    expect(getWallTop(sloped, ground.id, nodes, base)).toBeCloseTo(3.6)
     expect(wall.height).toBe(3.6)
   })
 })

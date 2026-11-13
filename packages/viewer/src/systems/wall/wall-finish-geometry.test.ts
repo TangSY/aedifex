@@ -197,6 +197,44 @@ describe('wall finish geometry', () => {
     })
   }
 
+  test('face finish regions remain bounded on rising and falling walls', () => {
+    for (const descending of [false, true]) {
+      const { walls, host } = fixture({
+        height: descending ? 4 : 2,
+        endHeightOffset: descending ? -2 : 2,
+        faceRegions: [{ id: 'stripe', face: 'a', u0: 1, u1: 7, v1: 1, finish: 'library:wood' }],
+      })
+      const geometry = build(host, walls, [])
+      const layout = buildWallFinishLayout(host, [])
+      try {
+        const faceTriangles = triangles(geometry).filter((triangle) =>
+          triangle.vertices.every(
+            (vertex) => Math.abs(vertex.z - (host.thickness ?? 0.1) / 2) < 1e-5,
+          ),
+        )
+        expect(faceTriangles.length).toBeGreaterThan(0)
+        for (const triangle of faceTriangles) {
+          for (const [axis, bound] of [
+            ['x', 1],
+            ['x', 7],
+            ['y', 1],
+          ] as const) {
+            const sides = new Set(
+              triangle.vertices
+                .filter((vertex) => Math.abs(vertex[axis] - bound) > 1e-5)
+                .map((vertex) => vertex[axis] > bound),
+            )
+            expect(sides.size).toBeLessThanOrEqual(1)
+          }
+          const finish = resolveWallFinish(layout, 'a', triangle.centroid.x, triangle.centroid.y)
+          expect(triangle.materialIndex).toBe(wallFinishMaterialIndex(layout, 'a', finish))
+        }
+      } finally {
+        geometry.dispose()
+      }
+    }
+  })
+
   test('terrain infill below the base splits and groups with the face above it', () => {
     const wall = WallNode.parse({
       id: 'wall_fill',

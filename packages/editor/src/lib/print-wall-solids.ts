@@ -4,6 +4,7 @@ import {
   getWallThickness,
   type WallNode,
   type WindowNode,
+  wallHasSlopedTop,
 } from '@aedifex/core'
 import * as THREE from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
@@ -27,6 +28,7 @@ export type PrintWallSolidDiagnostic = {
   code:
     | 'invalid_wall_print_dimensions'
     | 'unsupported_wall_print_curve'
+    | 'unsupported_wall_print_slope'
     | 'unsupported_wall_print_terrain'
     | 'unsupported_wall_print_opening_shape'
     | 'invalid_wall_print_opening'
@@ -255,6 +257,18 @@ export function buildPrintableWallSolids(
       severity: 'error',
       code: 'unsupported_wall_print_curve',
       message: `Curved wall ${node.id} does not yet have a canonical printable solid.`,
+      nodeIds: [node.id],
+    })
+  }
+  if (
+    node.topProfile
+      ? wallHasSlopedTop(node)
+      : Math.abs(node.endHeightOffset ?? 0) > DIMENSION_EPSILON
+  ) {
+    diagnostics.push({
+      severity: 'error',
+      code: 'unsupported_wall_print_slope',
+      message: `Sloped wall ${node.id} does not yet have a canonical printable solid.`,
       nodeIds: [node.id],
     })
   }

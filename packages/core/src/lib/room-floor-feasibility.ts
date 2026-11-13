@@ -5,15 +5,20 @@ import {
   MIN_GROUND_FLOOR_THICKNESS,
   MIN_SLAB_THICKNESS,
 } from '../schema/nodes/slab'
-import { getStoredLevelHeight, getWallTop } from '../services/storey'
-import { getWallCurveFrameAt, getWallCurveLength } from '../systems/wall/wall-curve'
-import { MIN_WALL_HEIGHT } from '../systems/wall/wall-top'
+import { getStoredLevelHeight, getWallTop, wallTopMinimumOver } from '../services/storey'
+import {
+  getWallCurveFrameAt,
+  getWallCurveLength,
+  getWallStationAtChordFraction,
+} from '../systems/wall/wall-curve'
+import { MIN_WALL_HEIGHT, wallHasSlopedTop } from '../systems/wall/wall-top'
 import { floorPlateHoldsUnderside, footprintLift } from './floor-foundation-datum'
 import { isFloorAnchoredOpening } from './floor-opening-footprints'
 import { floorRoomFaces } from './floor-room-faces'
 import {
   getOpeningFloorTarget,
   openingFitsAtDatum,
+  openingWallTop,
   supportSegmentAt,
   wallSupportForNodes,
 } from './opening-floor-datum'
@@ -247,12 +252,29 @@ function computeRoomFloor(
       (id) => nodes[id]?.type === 'door' || nodes[id]?.type === 'window',
     )
     const support =
-      hasOpenings || wall.height !== undefined ? wallSupportForNodes(wall, candidate) : undefined
-    const top = getWallTop(wall, level.id, nodes, support?.elevation ?? 0)
+      hasOpenings || wall.height !== undefined || wallHasSlopedTop(wall)
+        ? wallSupportForNodes(wall, candidate)
+        : undefined
     const openingSpans =
-      hasOpenings && linked
+      (hasOpenings || wallHasSlopedTop(wall)) && linked
         ? (roomFace(nodes, zone, floorRoomFaces(boundaries(nodes, zone.parentId!)))?.spans ?? [])
         : spans
+    const wallSpans = openingSpans.filter((span) => span.boundaryId === wall.id)
+    const top = wallHasSlopedTop(wall)
+      ? Math.min(
+          ...(wallSpans.length ? wallSpans : [undefined]).map((span) =>
+            wallTopMinimumOver({
+              wall,
+              levelId: level.id,
+              nodes,
+              electedBase: support?.elevation ?? 0,
+              from: span ? getWallStationAtChordFraction(wall, span.t0) : 0,
+              to: span ? getWallStationAtChordFraction(wall, span.t1) : getWallCurveLength(wall),
+              face: span?.face,
+            }),
+          ),
+        )
+      : getWallTop(wall, level.id, nodes, support?.elevation ?? 0)
     maxElevation = Math.min(maxElevation, top - MIN_WALL_HEIGHT)
     ceiling = Math.min(ceiling, top)
     const length = getWallCurveLength(wall)
@@ -308,12 +330,13 @@ function computeRoomFloor(
               message: 'The door swings toward the lower floor across a step.',
             })
         }
-        const limit = top - opening.position[1] - opening.height / 2
+        const openingTop = openingWallTop({ wall, opening, nodes: candidate, support })
+        const limit = openingTop - opening.position[1] - opening.height / 2
         maxElevation = Math.min(maxElevation, limit)
         if (!openingFitsAtDatum(wall, opening, datum, candidate, support))
           conflicts.push({
             code: 'floor-opening-fit',
-            excess: datum + opening.position[1] + opening.height / 2 - top,
+            excess: datum + opening.position[1] + opening.height / 2 - openingTop,
             nodeIds: [zoneId, id],
             severity: 'error',
             message: `Floor must be at most ${roundFloorElevation(limit)} m for ${opening.name || opening.type} to fit.`,

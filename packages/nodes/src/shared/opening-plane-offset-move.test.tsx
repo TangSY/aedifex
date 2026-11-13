@@ -163,8 +163,14 @@ function wallEvent(wallId: AnyNodeId, localX: number, localY: number) {
   } as never
 }
 
-async function drag3d(kind: 'door' | 'window', wallId: AnyNodeId, toLocalX: number) {
+async function drag3d(
+  kind: 'door' | 'window',
+  wallId: AnyNodeId,
+  toLocalX: number,
+  wallHeight?: { height: number; endHeightOffset: number },
+) {
   const node = seedScene(kind)
+  if (wallHeight) useScene.getState().updateNode(wallId, wallHeight)
   const y = node.position[1]
   const Tool = kind === 'door' ? MoveDoorTool : MoveWindowTool
   const renderer = await create(
@@ -209,6 +215,17 @@ function drag2d(kind: 'door' | 'window', planPoint: [number, number]) {
 }
 
 describe('opening move keeps the wall-local plane offset on its own wall', () => {
+  test('3D door slides to the part of a sloped wall tall enough for it', async () => {
+    const moved = await drag3d('door', WALL_B_ID, 1, { height: 1, endHeightOffset: 2 })
+    expect(moved.wallId).toBe(WALL_B_ID)
+    expect(moved.position[0]).toBeCloseTo(3.9, 5)
+  })
+
+  test('3D window does not move to a wall that is too low', async () => {
+    const moved = await drag3d('window', WALL_B_ID, 2, { height: 0.3, endHeightOffset: 0.2 })
+    expect(moved.wallId).toBe(WALL_A_ID)
+  })
+
   for (const kind of ['door', 'window'] as const) {
     test(`3D ${kind} slid along its own wall keeps position[2]`, async () => {
       const moved = await drag3d(kind, WALL_A_ID, 3.5)

@@ -8,6 +8,7 @@ import {
 } from '@aedifex/core'
 import { Matrix4, Quaternion, Vector3 } from 'three'
 import type { WallRegionBounds } from './paint-regions'
+import type { WallRegionProfilePiece } from './wall-region-profile'
 
 // Geometry for editing a selected wall's paint regions in place. Everything is
 // in the wall mesh's local frame: x along the chord from the start (= region
@@ -285,6 +286,102 @@ export function regionHandlePlacements(
 }
 
 export type OutlinePoint = { position: [number, number, number]; normal: [number, number] }
+
+/** Outlines of the visible pieces; separate islands must not be joined across empty wall. */
+export function regionProfileOutlines({
+  surface,
+  pieces,
+  lift = 0.004,
+}: {
+  surface: WallFaceSurface
+  pieces: readonly WallRegionProfilePiece[]
+  lift?: number
+}): OutlinePoint[][] {
+  const outlines: OutlinePoint[][] = []
+  let bottom: OutlinePoint[] = []
+  let top: OutlinePoint[] = []
+  let previous: WallRegionProfilePiece | undefined
+  const at = (u: number, y: number): OutlinePoint => {
+    const point = faceSurfacePoint(surface, u)
+    return {
+      position: [point.x + point.nx * lift, y, point.z + point.nz * lift],
+      normal: [point.nx, point.nz],
+    }
+  }
+  const flush = () => {
+    if (bottom.length) outlines.push([...bottom, ...top.reverse()])
+    bottom = []
+    top = []
+  }
+  for (const piece of pieces) {
+    if (
+      previous &&
+      (Math.abs(previous.u1 - piece.u0) > 1e-6 ||
+        Math.min(previous.top1, piece.top0) <= Math.max(previous.bottom, piece.bottom))
+    )
+      flush()
+    const count = surface.kind === 'arc' ? Math.max(1, Math.ceil((piece.u1 - piece.u0) / 0.2)) : 1
+    for (let i = 0; i <= count; i++) {
+      const t = i / count
+      const u = piece.u0 + (piece.u1 - piece.u0) * t
+      bottom.push(at(u, piece.bottom))
+      top.push(at(u, piece.top0 + (piece.top1 - piece.top0) * t))
+    }
+    previous = piece
+  }
+  flush()
+  return outlines
+}
+
+/** Handles on authored bounds that are actually visible after the top is clipped. */
+export function regionProfilePlacements({
+  surface,
+  region,
+  pieces,
+  keep = null,
+  lift = 0.01,
+}: {
+  surface: WallFaceSurface
+  region: WallFaceRegion
+  pieces: readonly WallRegionProfilePiece[]
+  keep?: RegionEdge | null
+  lift?: number
+}): RegionHandlePlacement[] {
+  const placements: RegionHandlePlacement[] = []
+  const add = (edge: RegionEdge, u: number, y: number) => {
+    const point = faceSurfacePoint(surface, u)
+    placements.push({
+      edge,
+      position: [point.x + point.nx * lift, y, point.z + point.nz * lift],
+      yaw: yawOf(point),
+      tipAngle: TIP_ANGLE[edge],
+    })
+  }
+  for (const edge of ['u0', 'u1'] as const) {
+    if (region[edge] === undefined && keep !== edge) continue
+    const target = region[edge] ?? (edge === 'u0' ? 0 : surface.length)
+    const piece = pieces.find((item) => Math.abs(item[edge] - target) < 1e-6)
+    if (!piece) continue
+    const topY = edge === 'u0' ? piece.top0 : piece.top1
+    add(edge, target, (piece.bottom + topY) / 2)
+  }
+  for (const edge of ['v0', 'v1'] as const) {
+    if (region[edge] === undefined && keep !== edge) continue
+    const candidates = pieces.filter((piece) => {
+      if (edge === 'v0' || region.v1 === undefined) return true
+      const cap = piece.bottom - (region.v0 ?? 0) + region.v1
+      return Math.abs(piece.top0 - cap) < 1e-6 && Math.abs(piece.top1 - cap) < 1e-6
+    })
+    const piece = candidates.reduce<WallRegionProfilePiece | undefined>(
+      (best, item) => (!best || item.u1 - item.u0 > best.u1 - best.u0 ? item : best),
+      undefined,
+    )
+    if (!piece) continue
+    const y = edge === 'v0' ? piece.bottom : (piece.top0 + piece.top1) / 2
+    add(edge, (piece.u0 + piece.u1) / 2, y)
+  }
+  return placements
+}
 
 /** Closed outline of a region on its face (counter-clockwise seen from outside), lifted off it. */
 export function regionOutline(

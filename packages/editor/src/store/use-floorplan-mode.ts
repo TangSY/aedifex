@@ -12,6 +12,7 @@ export type FloorplanModeNotice = {
   id: number
   kind: 'info' | 'switch-to-expert'
   message: string
+  unadjustedOpeningCount?: number
 }
 
 type FloorplanModeState = {
@@ -24,7 +25,7 @@ type FloorplanModeState = {
   setMode: (mode: FloorplanMode) => void
   setProjectId: (projectId: string | null) => void
   showExpertModeNotice: (toolLabel: string) => void
-  showNotice: (message: string) => void
+  showNotice: (message: string, unadjustedOpeningCount?: number) => void
 }
 
 let nextNoticeId = 0
@@ -74,12 +75,13 @@ const useFloorplanMode = create<FloorplanModeState>()(
             message: `${toolLabel} is available in Expert mode.`,
           },
         }),
-      showNotice: (message) =>
+      showNotice: (message, unadjustedOpeningCount) =>
         set({
           notice: {
             id: ++nextNoticeId,
             kind: 'info',
             message,
+            unadjustedOpeningCount,
           },
         }),
     }),

@@ -1,5 +1,4 @@
 import {
-  metadataRecord,
   type AnyNode,
   type AnyNodeId,
   type BuildingNode,
@@ -7,6 +6,7 @@ import {
   type Collection,
   type ColumnNode,
   calculateLevelMiters,
+  clampWallEndHeightOffset,
   DEFAULT_WALL_THICKNESS,
   type DoorNode,
   difference,
@@ -18,6 +18,7 @@ import {
   getWallCurveFrameAt,
   getWallCurveLength,
   getWallFaceOffsets,
+  getWallPlaneTop,
   getWallPlanFootprint,
   getWallTop,
   hidesDescendants,
@@ -26,10 +27,13 @@ import {
   isCurvedWall,
   type LevelNode,
   liftedManualSlab,
+  MIN_WALL_END_HEIGHT,
   measureStair,
+  metadataRecord,
   prepareSlabPolygonContext,
   resolveCeilingHeight,
   resolveWallExteriorSide,
+  resolveWallTopPlane,
   type SlabNode,
   type StairNode,
   type StairSegmentNode,
@@ -39,8 +43,10 @@ import {
   type WallNode,
   type WindowNode,
   wallSupportForNodes,
+  wallTopContext,
   type ZoneNode,
 } from '@aedifex/core'
+import { wallOpeningCeilingOver } from '@aedifex/core/building'
 import { doorGlazingFraction, doorOperationForIfc } from './door-operation'
 import {
   bool,
@@ -64,6 +70,7 @@ import {
 } from './ifc-model'
 import { type StepRef, type StepValue, typed } from './step'
 import { wallBaseCells, wallCellBand } from './wall-base'
+import { wallSlopeFootprints } from './wall-slope-footprint'
 
 /** Triangle geometry for one node, in the rendered scene's world frame (metres, Y-up). */
 export interface IfcMeshPart {
@@ -781,7 +788,9 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
     return emitElement(
       cls,
       seed,
-      seed === node.id ? node : { ...node, metadata: { ...metadataRecord(node.metadata), globalId: undefined } },
+      seed === node.id
+        ? node
+        : { ...node, metadata: { ...metadataRecord(node.metadata), globalId: undefined } },
       nodeName(node, cls.entity),
       model.localPlacement(relativeTo, frame),
       shape,
@@ -908,9 +917,11 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
       const chord = Math.hypot(endPlan[0] - startPlan[0], endPlan[1] - startPlan[1])
       const support = wallSupportForNodes(wall, nodes)
       const base = support.elevation
-      const top = getWallTop(wall, levelId, nodes as Record<AnyNodeId, AnyNode>, base)
-      const cells = wallBaseCells(wall, support, top)
-      if (chord < 1e-6 || cells.every((cell) => top - cell.bottom <= 1e-4)) {
+      const startTop = getWallTop(wall, levelId, nodes as Record<AnyNodeId, AnyNode>, base, 0)
+      const endTop = getWallTop(wall, levelId, nodes as Record<AnyNodeId, AnyNode>, base, 1)
+      let top = Math.max(startTop, endTop)
+      let cells = wallBaseCells(wall, support, top)
+      if (chord < 1e-6) {
         skipped.push({ nodeId: wall.id, type: wall.type, reason: 'degenerate' })
         continue
       }
@@ -941,36 +952,121 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
           [0, -faces.b],
         ]
       }
+      const level = nodes[levelId as AnyNodeId]
+      const storeyHeight = getWallPlaneTop(wall, levelId, nodes as Record<AnyNodeId, AnyNode>)
+      const topContext = wallTopContext({
+        wall,
+        levelId,
+        nodes: nodes as Record<AnyNodeId, AnyNode>,
+        electedBase: base,
+        storeyHeight,
+      })
+      const authoredStoreyHeight = level?.type === 'level' ? (level.height ?? null) : null
+      const rawStart = wall.topProfile
+        ? resolveWallTopPlane({ wall, ...topContext, authoredStoreyHeight })
+        : startTop
+      const rawEnd = wall.topProfile
+        ? resolveWallTopPlane({ wall, ...topContext, authoredStoreyHeight, t: 1 })
+        : endTop
+      const slope = (rawEnd - rawStart) / chord
+      const crossSlope = wall.topProfile
+        ? -(
+            clampWallEndHeightOffset(
+              wall.topProfile.offset,
+              wall.topProfile.supportHeight ?? topContext.storeyHeight - topContext.electedBase,
+            ) *
+              (wall.topProfile.across ?? 0) +
+            (wall.topProfile.acrossShift ?? 0)
+          ) / chord
+        : 0
+      const minimum = wall.topProfile
+        ? topContext.electedBase - base + MIN_WALL_END_HEIGHT
+        : Math.min(startTop - base, MIN_WALL_END_HEIGHT)
+      const startFrame = getWallCurveFrameAt(wall, 0)
+      const endFrame = getWallCurveFrameAt(wall, 1)
+      const endExtension =
+        Math.max(
+          0,
+          ...planFootprint.flatMap(([x, z]) => [
+            -(
+              (x - startFrame.point.x) * startFrame.tangent.x +
+              (z - startFrame.point.y) * startFrame.tangent.y
+            ),
+            (x - endFrame.point.x) * endFrame.tangent.x +
+              (z - endFrame.point.y) * endFrame.tangent.y,
+          ]),
+        ) + 0.01
+      const sloped =
+        Math.abs(slope) > 1e-7 || Math.abs(crossSlope) > 1e-7 || rawStart - base < minimum
+      if (sloped) {
+        top =
+          base +
+          Math.max(
+            ...footprint.map(([x, y]) =>
+              Math.max(minimum, rawStart - base + slope * x + crossSlope * y),
+            ),
+          )
+        cells = wallBaseCells(wall, support, top)
+      }
+      if (cells.every((cell) => top - cell.bottom <= 1e-4)) {
+        skipped.push({ nodeId: wall.id, type: wall.type, reason: 'degenerate' })
+        continue
+      }
       // A stepped base (runs on different supports, or faces on different
       // floors) becomes one prism per run, each clipped from the footprint.
-      const solids =
+      const regions =
         cells.length === 1
-          ? [
-              model.extrusion(
-                model.polygonProfile(footprint),
-                cells[0]!.bottom - base,
-                top - cells[0]!.bottom,
-              ),
-            ]
+          ? [{ polygon: { outer: footprint, holes: [] }, bottom: cells[0]!.bottom }]
           : cells.flatMap((cell) =>
               top - cell.bottom <= 1e-4
                 ? []
-                : intersection(planFootprint, wallCellBand(wall, cell)).flatMap((region) => {
-                    const ring = cleanRing(region.outer.map(([x, z]) => toWallLocal(x, z)))
-                    return ring.length > 0
-                      ? [
-                          model.extrusion(
-                            model.polygonProfile(ring),
-                            cell.bottom - base,
-                            top - cell.bottom,
-                          ),
-                        ]
-                      : []
-                  }),
+                : intersection(planFootprint, wallCellBand({ wall, cell, endExtension })).flatMap(
+                    (region) => {
+                      const ring = cleanRing(region.outer.map(([x, z]) => toWallLocal(x, z)))
+                      return ring.length > 0
+                        ? [{ polygon: { outer: ring, holes: [] }, bottom: cell.bottom }]
+                        : []
+                    },
+                  ),
             )
+      const solids = regions.flatMap(({ polygon, bottom }) => {
+        if (!sloped)
+          return [
+            model.extrusion(
+              model.polygonProfile(polygon.outer, polygon.holes),
+              bottom - base,
+              top - bottom,
+            ),
+          ]
+        return wallSlopeFootprints({
+          polygon,
+          startHeight: rawStart - base,
+          slope,
+          crossSlope,
+          minimum,
+        }).flatMap(({ polygon: part, clamped }) => {
+          const height = clamped
+            ? minimum
+            : Math.max(...part.outer.map(([x, y]) => rawStart - base + slope * x + crossSlope * y))
+          if (height + base - bottom <= 1e-4) return []
+          const solid = model.extrusion(
+            model.polygonProfile(part.outer, part.holes),
+            bottom - base,
+            height + base - bottom + (clamped ? 0.01 : 0),
+          )
+          return [
+            model.clipAboveSlope({
+              solid,
+              startHeight: clamped ? minimum : rawStart - base,
+              slope: clamped ? 0 : slope,
+              crossSlope: clamped ? 0 : crossSlope,
+            }),
+          ]
+        })
+      })
       const shape = model.shape([
         model.axisRepresentation(model.polyline2(axisPoints, false)),
-        model.bodyRepresentation('SweptSolid', solids),
+        model.bodyRepresentation(sloped ? 'Clipping' : 'SweptSolid', solids),
       ])
       const wallPlacement = model.localPlacement(storey.placement, frame)
       const wallRef = emitElement(
@@ -1061,8 +1157,20 @@ export function buildIfcExport(input: IfcExportInput): IfcExportResult {
           angle: Math.atan2(-curve.tangent.y, curve.tangent.x),
         }
         const cutBottom = (cut?.bottom ?? nominalBottom) - nominalBottom
-        const cutDepth =
-          (cut?.top ?? nominalBottom + opening.height) - (cut?.bottom ?? nominalBottom)
+        const nominalTop = cut?.top ?? nominalBottom + opening.height
+        const safeTop = sloped
+          ? Math.min(
+              nominalTop,
+              base +
+                wallOpeningCeilingOver(
+                  wall,
+                  nodes,
+                  opening.position[0] - opening.width / 2,
+                  opening.position[0] + opening.width / 2,
+                ),
+            )
+          : nominalTop
+        const cutDepth = safeTop - (cut?.bottom ?? nominalBottom)
         let openingRef: StepRef | null = null
         let openingPlacement: StepRef | null = null
         if (cutDepth > 1e-4 && opening.width > 1e-4) {

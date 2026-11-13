@@ -86,8 +86,8 @@ function levelPlates(nodes: Record<AnyNodeId, AnyNode>): LevelPlates[] {
  * Where the ground meets the levels below grade, in the site's plan: each such level's floor slabs
  * placed where its building stands and joined into outlines, the levels' together as one set (a
  * deeper level wider than the one over it, or under part of it, gives one outline, not overlapping
- * ones). The 3D view cuts its hole in the ground and draws its grade ring along them while the
- * ground is veiled. An automatic floor follows the walls' centrelines, so an outline runs half a
+ * ones). The 3D view cuts its hole in the ground over these outlines. An automatic floor follows
+ * the walls' centrelines, so an outline runs half a
  * wall inside the outer faces. A level only partly below grade (a walk-out on a hillside) gives
  * the part of its floor the ground stands over by more than {@link BELOW_GRADE_TOLERANCE}, the
  * edge following the slope; fully buried levels give their whole floor.
@@ -182,9 +182,8 @@ export function belowGradeFloorY(
 /** How far under the top of the floor plate the pit hangs its own floor: the default plate's thickness. */
 export const GROUND_PIT_FLOOR_DROP = 0.05
 /**
- * How far the pit's floor keeps from the plane of the plate's underside. The foundation under the
- * level tops out on that plane (`genericFoundation`), and seen through the hole it has to stand
- * on the pit's floor, not share its plane: two faces on one plane flicker. 2 cm is what a 24-bit
+ * How far the pit's floor keeps from the plane of the plate's underside: two faces on one plane
+ * flicker. 2 cm is what a 24-bit
  * depth buffer with the viewer's 0.3 m near plane tells apart out to about 300 m, further than
  * the hole is ever looked into from.
  */
@@ -193,7 +192,7 @@ export const GROUND_PIT_PLATE_CLEARANCE = 0.02
 /**
  * The world Y the pit under the hole draws its dark floor at, over the level shown: under the top
  * of its lowest floor (`belowGradeFloorY`) by {@link GROUND_PIT_FLOOR_DROP}, which for the default
- * plate is exactly its underside, where the footing and the walls on it stop. When that lands
+ * plate is exactly its underside. When that lands
  * within {@link GROUND_PIT_PLATE_CLEARANCE} of the underside (the default plate, a thinner one, a
  * plate whose top is the level plane) the floor lies that far under it instead; anywhere else it
  * keeps to its place. `null` when `belowGradeFloorY` is.

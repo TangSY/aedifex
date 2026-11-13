@@ -1,6 +1,5 @@
-import { metadataRecord } from '../utils/metadata-record'
 import type { AnyNode, DoorNode, SlabNode, WallNode, WindowNode } from '../schema'
-import { getWallTop } from '../services/storey'
+import { wallTopMinimumOver } from '../services/storey'
 import {
   computeWallSlabSupport,
   type WallSlabSupport,
@@ -9,6 +8,7 @@ import {
 import { getWallCurveFrameAt, getWallCurveLength } from '../systems/wall/wall-curve'
 import { calculateLevelMiters, getWallPlanFootprint } from '../systems/wall/wall-footprint'
 import { getWallBodyCenterOffset } from '../systems/wall/wall-frame'
+import { metadataRecord } from '../utils/metadata-record'
 import {
   isFloorAnchoredOpening,
   openingAperture,
@@ -101,15 +101,40 @@ export function getOpeningFloorTarget(
   return openingDatumFromSupport(wall, opening, wallSupportForNodes(wall, nodes))
 }
 
+export function openingWallTop({
+  wall,
+  opening,
+  nodes,
+  support = wallSupportForNodes(wall, nodes),
+}: {
+  wall: WallNode
+  opening: Pick<DoorNode | WindowNode, 'position'> & Partial<Pick<DoorNode | WindowNode, 'width'>>
+  nodes: Readonly<Record<string, AnyNode>>
+  support?: WallSlabSupport
+}): number {
+  const halfWidth = (opening.width ?? 0) / 2
+  return wallTopMinimumOver({
+    wall,
+    levelId: wall.parentId ?? '',
+    nodes,
+    electedBase: support.elevation,
+    from: opening.position[0] - halfWidth,
+    to: opening.position[0] + halfWidth,
+  })
+}
+
 export function openingFitsAtDatum(
   wall: WallNode,
-  opening: Pick<DoorNode | WindowNode, 'position' | 'height'>,
+  opening: Pick<DoorNode | WindowNode, 'position' | 'height'> &
+    Partial<Pick<DoorNode | WindowNode, 'width'>>,
   datum: number,
   nodes: Readonly<Record<string, AnyNode>>,
   support = wallSupportForNodes(wall, nodes),
 ): boolean {
-  const top = getWallTop(wall, wall.parentId!, nodes, support.elevation)
-  return datum + opening.position[1] + opening.height / 2 <= top + 1e-9
+  return (
+    datum + opening.position[1] + opening.height / 2 <=
+    openingWallTop({ wall, opening, nodes, support }) + 1e-9
+  )
 }
 
 export function getOpeningFloorDatum(
@@ -205,7 +230,7 @@ export function getOpeningWallPlacement(
   },
   nodes: Readonly<Record<string, AnyNode>>,
 ) {
-  if ((metadataRecord(opening.metadata).curvedWindowMaster) || getWallCurveLength(wall) < 1e-6)
+  if (metadataRecord(opening.metadata).curvedWindowMaster || getWallCurveLength(wall) < 1e-6)
     return { position: opening.position, rotation: opening.rotation }
   const frame = getWallCurveFrameAt(wall, opening.position[0] / getWallCurveLength(wall))
   const angle = Math.atan2(wall.end[1] - wall.start[1], wall.end[0] - wall.start[0]),

@@ -4,12 +4,13 @@ import {
   buildPortComponents,
   collectSystemPorts,
   distributionPointToWorld,
+  findLevelAncestorId,
   getWallBaseElevationForNodes,
   getWallCurveFrameAt,
-  getWallEffectiveHeightForNodes,
   getWallFaceOffsets,
   nodeRegistry,
   validateDwv,
+  wallTopStationProfile,
 } from '@aedifex/core'
 import { connectionCompatibility } from '@aedifex/editor/distribution'
 import { Box3, Ray, Vector3 } from 'three'
@@ -122,7 +123,18 @@ export function checkDistributionSystems(nodes: Record<AnyNodeId, AnyNode>): Sys
   for (const wall of Object.values(nodes)) {
     if (wall.type !== 'wall') continue
     const base = getWallBaseElevationForNodes(wall, nodes)
-    const top = base + getWallEffectiveHeightForNodes(wall, nodes)
+    const profile = wallTopStationProfile({
+      wall,
+      levelId: findLevelAncestorId(wall.id, nodes) ?? 'default',
+      nodes,
+      electedBase: base,
+    })
+    const faces = getWallFaceOffsets(wall)
+    const top = Math.max(
+      ...[0, profile.length, ...profile.criticalStations].flatMap((station) =>
+        [faces.a, faces.b].map((face) => profile.topAt(station, face)),
+      ),
+    )
     const points: Vector3[] = []
     for (let i = 0; i <= 16; i++) {
       const frame = getWallCurveFrameAt(wall, i / 16)

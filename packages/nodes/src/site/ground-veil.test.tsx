@@ -6,7 +6,6 @@ import {
   createTerrainField,
   encodeTerrainField,
   GROUND_PIT_PLATE_CLEARANCE,
-  genericFoundation,
   groundPitFloorY,
   LevelNode,
   SiteNode,
@@ -18,6 +17,7 @@ import {
   groundHoleOpenNode,
   groundWindowBoxNow,
   SCENE_LAYER,
+  SITE_FOUNDATION,
   SITE_GROUND,
   setSurfaceRaycastLayers,
   useViewer,
@@ -161,17 +161,11 @@ test.each([false, true])(
     await act(async () => useViewer.setState({ belowGrade: true, gradeStanding: 'below-grade' }))
     groundHoleOpenNode().value = 1
     await renderer.advanceFrames(2, 0.05)
-    // The ground stays solid and drawn (the hole is in its mask), no veil sheet over it, the grade
-    // ring where it meets the plate, drawn along the plate's outline (the ribbon's half-width
-    // widens it by 8 cm).
+    // The ground stays solid and drawn (the hole is in its mask), with no veil over it.
     expect(solid.every(drawn)).toBe(true)
     const { sheets, rings } = veilsOf(scene)
     expect(sheets.filter(drawn)).toHaveLength(0)
-    expect(rings.filter(drawn)).toHaveLength(1)
-    const ring = rings[0]?.geometry.boundingBox ?? new Box3()
-    expect(
-      [ring.min.x, ring.max.x, ring.min.z, ring.max.z].map((v) => Math.abs(Math.round(v))),
-    ).toEqual([0, 6, 0, 4])
+    expect(rings.filter(drawn)).toHaveLength(0)
     // Over the plate the click falls through to the floor; past the hole's reach it lands.
     expect(groundPickedAt(scene, 3, 2)).toHaveLength(0)
     expect(groundPickedAt(scene, 9, 9).length).toBeGreaterThan(0)
@@ -201,11 +195,11 @@ test.each([
   expect(ground(scene, 'solid').every(drawn)).toBe(true)
   expect(ground(scene, 'veil').some(drawn)).toBe(false)
   expect(groundPickedAt(scene, 3, 2).length).toBeGreaterThan(0)
-  // Leaving the walkthrough: the overview rule is back (the ring under the veil).
+  // Leaving the walkthrough returns to the overview without a grade ribbon.
   if ('walkthroughMode' in state) {
     await act(async () => useViewer.setState({ walkthroughMode: false }))
     await renderer.advanceFrames(2, 0.05)
-    expect(veilsOf(scene).rings.filter(drawn)).toHaveLength(1)
+    expect(veilsOf(scene).rings.filter(drawn)).toHaveLength(0)
   }
   await renderer.unmount()
 })
@@ -314,15 +308,6 @@ test('the hole follows the level shown (it and the levels between it and grade, 
   withFourBasements()
   const renderer = await create(<SiteRenderer node={lot(false)} />)
   const scene = renderer.scene.instance as Object3D
-  // The grade ring's extent, rounded: the lot's own sheets are the wide ones.
-  const ringExtents = () =>
-    ground(scene, 'veil')
-      .map((veil) => {
-        veil.geometry.computeBoundingBox()
-        const box = veil.geometry.boundingBox ?? new Box3()
-        return [box.min.x, box.max.x, box.min.z, box.max.z].map((v) => Math.round(v))
-      })
-      .filter(([x0, x1]) => (x1 ?? 0) - (x0 ?? 0) < 19)
   expect(useViewer.getState().hasLevelBelowGrade).toBe(true)
   groundHoleOpenNode().value = 1
 
@@ -332,7 +317,6 @@ test('the hole follows the level shown (it and the levels between it and grade, 
   expect(groundHoleDistanceAt(0, 0)).toBeLessThan(0)
   expect(groundHoleDistanceAt(8, 1)).toBeGreaterThan(3)
   expect(groundHoleDistanceAt(-7, 6)).toBeGreaterThan(3)
-  expect(ringExtents()).toEqual([[-3, 3, -3, 3]])
   // The pit goes down to the floor of the level shown, which is shallow here.
   expect(groundPitFloorNow()).toBeLessThan(0)
   expect(groundPitFloorNow()).toBeGreaterThan(-4)
@@ -343,7 +327,6 @@ test('the hole follows the level shown (it and the levels between it and grade, 
   // east, is not opened (it is deeper than the level shown).
   expect(groundHoleDistanceAt(-7, 6)).toBeLessThan(0)
   expect(groundHoleDistanceAt(8.5, 1)).toBeGreaterThan(0.3)
-  expect(ringExtents()).toEqual([[-8, 8, -8, 7]])
 
   await act(async () => showLevel('level_m4'))
   await renderer.advanceFrames(2, 0.05)
@@ -358,7 +341,6 @@ test('the hole follows the level shown (it and the levels between it and grade, 
     [-6, 5],
   ] as const)
     expect(groundHoleDistanceAt(x, z)).toBeLessThan(0)
-  expect(ringExtents()).toEqual([[-8, 9, -8, 7]])
   // -4 sits 12 m down (its 0.2 m plate on top).
   expect(groundPitFloorNow()).toBeCloseTo(-11.8, 1)
 
@@ -453,8 +435,7 @@ test('switching levels, ground mode and the edge look rebuilds no material and s
 
 /**
  * A basement on the default 0.05 m plate, as a person draws one: the building seated 2.697 m down,
- * the plate out to the walls' outer faces, a ground floor over it. The footing under it tops out
- * at the plate's underside, which is where the pit's floor used to be drawn.
+ * the plate out to the walls' outer faces, a ground floor over it.
  */
 function withSeatedBasement() {
   const corners: Array<[number, number]> = [
@@ -513,21 +494,32 @@ function withSeatedBasement() {
   })
 }
 
-test('the pit draws its floor off the plane the footing under the basement stops on', async () => {
+test('the site does not draw a generic foundation beneath existing walls', async () => {
+  withSeatedBasement()
+  const renderer = await create(<SiteRenderer node={lot(false)} />)
+  try {
+    const marked: Object3D[] = []
+    ;(renderer.scene.instance as Object3D).traverse((object) => {
+      if (object.userData[SITE_FOUNDATION]) marked.push(object)
+    })
+    expect(marked.length).toBe(0)
+  } finally {
+    await renderer.unmount()
+  }
+})
+
+test('the pit draws its floor clear of the basement slab underside', async () => {
   withSeatedBasement()
   const renderer = await create(<SiteRenderer node={lot(false)} />)
   await act(async () => showLevel('level_b'))
   groundHoleOpenNode().value = 1
   await renderer.advanceFrames(3, 0.05)
   const { nodes } = useScene.getState()
-  const footings = genericFoundation(nodes).filter((member) => member.kind === 'footing')
-  expect(footings).toHaveLength(4)
-  // What the pit draws is what core says, and the footing's top is not on its plane.
+  // What the pit draws is what core says, and it stays clear of the slab underside.
   expect(groundPitDrawnFloorNow()).toBeCloseTo(groundPitFloorY(nodes, 'level_b') ?? Number.NaN, 9)
-  for (const footing of footings)
-    expect(Math.abs(footing.topY - groundPitDrawnFloorNow())).toBeGreaterThanOrEqual(
-      GROUND_PIT_PLATE_CLEARANCE - 1e-9,
-    )
+  expect(-2.697 - groundPitDrawnFloorNow()).toBeGreaterThanOrEqual(
+    GROUND_PIT_PLATE_CLEARANCE - 1e-9,
+  )
   // The pit still goes down to the floor of the level shown (the floor top, -2.647).
   expect(groundPitFloorNow()).toBeCloseTo(-2.647, 3)
   await renderer.unmount()
@@ -564,7 +556,7 @@ function withHillsideHouse(walkoutEast: number) {
   return site
 }
 
-test('on a hillside the hole, the grade ring and the pit stop where the ground does: the valley side of a walk-out stays closed', async () => {
+test('on a hillside the hole and pit stop where the ground does: the valley side of a walk-out stays closed', async () => {
   const site = withHillsideHouse(9)
   const renderer = await create(<SiteRenderer node={site} />)
   const scene = renderer.scene.instance as Object3D
@@ -578,17 +570,13 @@ test('on a hillside the hole, the grade ring and the pit stop where the ground d
   expect(groundHoleDistanceAt(7, 0)).toBeLessThan(0)
   expect(groundHoleDistanceAt(-6, 0)).toBeGreaterThan(1)
 
-  // The grade ring runs along the same outline. (The sheets are transparent: the terrain's cut
-  // round the opening under the walk-out, where the house covers the cellar, is one of them.)
+  // No opaque grade ribbon is drawn on top of the basement walls.
   const rings = ground(scene, 'veil').filter((veil) => {
     veil.geometry.computeBoundingBox()
     const box = veil.geometry.boundingBox ?? new Box3()
     return box.max.x - box.min.x < 15 && !(veil.material as { transparent?: boolean }).transparent
   })
-  expect(rings).toHaveLength(1)
-  const ringBox = rings[0]!.geometry.boundingBox ?? new Box3()
-  expect(ringBox.min.x).toBeGreaterThan(-2.5)
-  expect(ringBox.max.x).toBeLessThan(9.5)
+  expect(rings).toHaveLength(0)
 
   await renderer.unmount()
 })

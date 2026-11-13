@@ -1,4 +1,5 @@
 import type { AnyNode } from '../schema/types'
+import { getWallCurveLength } from '../systems/wall/wall-curve'
 
 type OpeningNode = Extract<AnyNode, { type: 'door' | 'window' }>
 type WallNode = Extract<AnyNode, { type: 'wall' }>
@@ -25,10 +26,10 @@ export type OpeningBoundsIssue = {
  */
 export function checkOpeningWithinWall(
   opening: Pick<OpeningNode, 'id' | 'type' | 'position' | 'width' | 'height'>,
-  wall: Pick<WallNode, 'id' | 'start' | 'end'>,
+  wall: Pick<WallNode, 'id' | 'start' | 'end'> & Partial<Pick<WallNode, 'curveOffset'>>,
   wallHeight: number,
 ): OpeningBoundsIssue[] {
-  const wallLength = Math.hypot(wall.end[0] - wall.start[0], wall.end[1] - wall.start[1])
+  const wallLength = getWallCurveLength(wall)
   const from = opening.position[0] - opening.width / 2
   const to = opening.position[0] + opening.width / 2
   const bottom = opening.position[1] - opening.height / 2

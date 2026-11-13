@@ -252,6 +252,22 @@ test('on a sculpted site, with a sunken room beside the opening, the ground is c
   expect(standing.garden).toBeGreaterThan(0)
 })
 
+test('terrain slightly above a visible floor is cut without opening the neighbouring garden', async () => {
+  setHouse({ basement: false })
+  const field = createTerrainField({ origin: [-12, -12], cols: 25, rows: 25, spacing: 1 })
+  const site = SiteNode.parse({
+    ...lot(),
+    terrain: encodeTerrainField({
+      ...field,
+      heights: new Int16Array(field.heights.length).fill(15),
+    }),
+  })
+  useScene.setState({ nodes: { ...useScene.getState().nodes, [site.id]: site } })
+  const { standing } = await groundAt(site, groundFloor, POINTS)
+  expect(standing.house).toBe(0)
+  expect(standing.garden).toBeGreaterThan(0)
+})
+
 test('showGround off, the ground floor shown: there is no site ground to cut; with the basement shown the stand-in is cut like the rest', async () => {
   setHouse()
   expect((await groundAt(lot({ showGround: false }), groundFloor, POINTS)).surfaces).toBe(0)

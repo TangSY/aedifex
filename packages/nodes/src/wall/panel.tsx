@@ -14,6 +14,7 @@ import {
   getMaxWallCurveOffset,
   getWallAssemblyPreset,
   getWallCurveLength,
+  MIN_WALL_END_HEIGHT,
   normalizeWallCurveOffset,
   resolveWallAssembly,
   runAsSingleSceneHistoryStep,
@@ -21,6 +22,7 @@ import {
   STONE_VENEER_UNVERIFIED,
   STUCCO_3_COAT,
   terrainSupportLift,
+  useAedifexI18n,
   useLiveNodeOverrides,
   useScene,
   WALL_ASSEMBLY_PRESETS,
@@ -69,7 +71,7 @@ import { CurtainWallPanel } from './curtain-wall-panel'
 import { hasWallCurveBlockingChildren } from './curve-eligibility'
 import { buildWallLengthPatch } from './length-patch'
 import { wallReferenceModel } from './panel-model'
-import { createWallPropertyPreview } from './property-preview'
+import { createWallPropertyPreview, wallSlopeEditPatch } from './property-preview'
 
 /**
  * Base half of the plane-bound repair: a stamped draft offset goes, and a
@@ -119,6 +121,7 @@ const WALL_TRIM_PROFILE_OPTIONS: Record<
 }
 
 export default function WallPanel() {
+  const i18n = useAedifexI18n()
   const selectedId = useViewer((s) => s.selection.selectedIds[0])
   const unit = useViewer((s) => s.unit)
   const setSelection = useViewer((s) => s.setSelection)
@@ -159,7 +162,7 @@ export default function WallPanel() {
   const resolvedHeightMeters = useScene((s) => {
     const wall = selectedId ? (s.nodes[selectedId as AnyNodeId] as WallNode | undefined) : undefined
     if (wall?.type !== 'wall') return undefined
-    return resolveWallOpeningCeiling(wall, s.nodes)
+    return resolveWallOpeningCeiling(wall, s.nodes, 0)
   })
 
   const sceneNodes = useScene((s) => s.nodes)
@@ -207,15 +210,20 @@ export default function WallPanel() {
     (mode: 'storey' | 'custom') => {
       const n = nodeRef.current
       if (!n) return
-      const isCustom = n.height != null
+      const isCustom = n.topProfile ? n.topProfile.supportHeight !== undefined : n.height != null
       if (mode === 'custom' && !isCustom) {
         // Seed from the current effective height so the geometry doesn't
         // jump at the moment of detaching from the storey plane.
-        const seeded = resolveWallOpeningCeiling(n, useScene.getState().nodes)
-        handleUpdate({ height: Math.max(0.1, seeded) })
+        const seeded = resolveWallOpeningCeiling(n, useScene.getState().nodes, 0)
+        const end = resolveWallOpeningCeiling(n, useScene.getState().nodes, 1)
+        handleUpdate({
+          height: Math.max(0.1, seeded),
+          endHeightOffset: end - seeded,
+          topProfile: undefined,
+        })
       } else if (mode === 'storey' && isCustom) {
         // Absent `height` = plane-bound; the store strips undefined keys.
-        handleUpdate({ height: undefined, ...wallBaseRepairPatch(n) })
+        handleUpdate({ height: undefined, topProfile: undefined, ...wallBaseRepairPatch(n) })
       }
     },
     [handleUpdate],
@@ -256,14 +264,26 @@ export default function WallPanel() {
   const length = getWallCurveLength(node)
 
   const followsTerrain = node.fillToTerrain === true
-  const isPlaneBound = node.height == null
-  const height = node.height ?? resolvedHeightMeters ?? 2.5
+  const isPlaneBound = node.topProfile
+    ? node.topProfile.supportHeight === undefined
+    : node.height == null
+  const height = node.topProfile
+    ? (resolvedHeightMeters ?? 2.5)
+    : (node.height ?? resolvedHeightMeters ?? 2.5)
   const thickness = node.thickness ?? 0.1
   const curveOffset = getClampedWallCurveOffset(node)
   const maxCurveOffset = getMaxWallCurveOffset(node)
   const unitLabel = getLinearUnitLabel(unit)
   const displayLength = metersToLinearUnit(length, unit)
   const displayHeight = metersToLinearUnit(height, unit)
+  const startHeight = resolveWallOpeningCeiling(node, sceneNodes, 0)
+  const minEndOffset = MIN_WALL_END_HEIGHT - Math.max(MIN_WALL_END_HEIGHT, startHeight)
+  const displayEndOffset = metersToLinearUnit(
+    node.topProfile
+      ? resolveWallOpeningCeiling(node, sceneNodes, 1) - startHeight
+      : (node.endHeightOffset ?? 0),
+    unit,
+  )
   const displayThickness = metersToLinearUnit(thickness, unit)
   const displayCurveOffset = metersToLinearUnit(curveOffset, unit)
   const displayMaxCurveOffset = metersToLinearUnit(maxCurveOffset, unit)
@@ -337,6 +357,12 @@ export default function WallPanel() {
             onChange={(v) =>
               handlePreview({
                 height: linearControlValueToMeters(v, unit, { maxMeters: 1000, minMeters: 0.1 }),
+                ...(node.topProfile
+                  ? {
+                      topProfile: undefined,
+                      endHeightOffset: resolveWallOpeningCeiling(node, sceneNodes, 1) - startHeight,
+                    }
+                  : {}),
               })
             }
             precision={2}
@@ -345,6 +371,34 @@ export default function WallPanel() {
             value={Math.round(displayHeight * 100) / 100}
           />
         )}
+        <SliderControl
+          onCommit={handleCommit}
+          onCancel={handleCancel}
+          restoreOnCommit={false}
+          previewWhileTyping
+          label={i18n._({ id: 'node.wall.panel.endHeightOffset', message: 'End height offset' })}
+          min={metersToLinearUnit(minEndOffset, unit)}
+          onChange={(value) => {
+            const nodes = useScene.getState().nodes
+            const saved = nodes[selectedId as AnyNodeId]
+            if (saved?.type !== 'wall') return
+            const current = {
+              ...saved,
+              ...useLiveNodeOverrides.getState().get(saved.id),
+            } as WallNode
+            handlePreview(
+              wallSlopeEditPatch({
+                wall: current,
+                nodes,
+                offset: linearControlValueToMeters(value, unit, { minMeters: minEndOffset }),
+              }),
+            )
+          }}
+          precision={2}
+          step={0.1}
+          unit={unitLabel}
+          value={displayEndOffset}
+        />
         <div className="px-1 font-medium text-[10px] text-muted-foreground/80 uppercase tracking-wider">
           Bottom
         </div>

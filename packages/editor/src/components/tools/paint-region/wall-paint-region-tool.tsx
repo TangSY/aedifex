@@ -4,6 +4,7 @@ import {
   type AnyNode,
   type AnyNodeId,
   emitter,
+  getWallEffectiveHeightForNodes,
   sceneRegistry,
   useScene,
   type WallFace,
@@ -108,6 +109,23 @@ const sample = (event: PointerSample): PointerSample => ({
   altKey: event.altKey,
 })
 
+function paintFaceExtent({
+  wall,
+  mesh,
+  face,
+  nodes,
+}: {
+  wall: WallNode
+  mesh: Mesh
+  face: WallFace
+  nodes: Readonly<Record<string, AnyNode | undefined>>
+}) {
+  const extent = wallFaceExtent(wall, face, mesh.geometry)
+  const startTop = getWallEffectiveHeightForNodes(wall, nodes as Record<string, AnyNode>, 0)
+  const endTop = getWallEffectiveHeightForNodes(wall, nodes as Record<string, AnyNode>, 1)
+  return Math.abs(endTop - startTop) > 1e-9 ? { ...extent, startTop, endTop } : extent
+}
+
 function pointerRaycaster(event: PointerSample, canvas: HTMLCanvasElement, camera: Camera) {
   const bounds = canvas.getBoundingClientRect()
   const raycaster = new Raycaster()
@@ -137,7 +155,7 @@ function regionHit(
     u,
     v,
     length: Math.hypot(wall.end[0] - wall.start[0], wall.end[1] - wall.start[1]),
-    extent: wallFaceExtent(wall, face, mesh.geometry),
+    extent: paintFaceExtent({ wall, mesh, face, nodes }),
     runs: faceBase?.[face] ?? null,
   }
 }
@@ -338,7 +356,7 @@ function buildPreviewGeometry(preview: WallRegionPreview, wall: WallNode): Previ
   const nodes = useScene.getState().nodes
   const frame = wallFaceFrame(wall, preview.face)
   const other = wallFaceFrame(wall, preview.face === 'a' ? 'b' : 'a')
-  const extent = wallFaceExtent(wall, preview.face, mesh.geometry)
+  const extent = paintFaceExtent({ wall, mesh, face: preview.face, nodes })
   const runs = resolveWallFaceBase(wall, mesh.geometry, nodes)?.[preview.face] ?? null
   const strips = (span: FaceSpan) => faceSpanStrips(frame, extent, runs, span)
   const fillStrips = preview.bounds ? strips(preview.bounds) : []

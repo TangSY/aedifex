@@ -7,6 +7,7 @@ import {
   generateId,
   getStoredLevelHeight,
   getWallBaseElevationForNodes,
+  getWallChordFractionAt,
   getWallCurveFrameAt,
   getWallCurveLength,
   getWallEffectiveHeightForNodes,
@@ -166,7 +167,11 @@ function wallPushHandle(
   const offsets = getWallFaceOffsets(wall)
   const face = side === 'a' ? offsets.a : -offsets.b
   const offset = Math.max(face + HANDLE_OFFSET, HANDLE_MIN_OFFSET)
-  const wallHeight = getWallEffectiveHeightForNodes(wall, nodes)
+  const chordFraction = getWallChordFractionAt(
+    wall,
+    ((span.t0 + span.t1) / 2) * getWallCurveLength(wall),
+  )
+  const wallHeight = getWallEffectiveHeightForNodes(wall, nodes, chordFraction)
   return {
     key,
     wallId: wall.id,

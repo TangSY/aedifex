@@ -70,7 +70,7 @@ const whenWallVariant = (variant: WallDrawVariant) => ({
 export const wallDefinition: NodeDefinition<typeof WallNode> = {
   kind: 'wall',
   snapProfile: 'structural',
-  schemaVersion: 10,
+  schemaVersion: 11,
   schema: WallNode,
   category: 'structure',
   surfaceRole: 'wall',

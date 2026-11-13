@@ -35,14 +35,15 @@ import type { Collection, CollectionId } from '../../schema/collections'
 import { Provenance } from '../../schema/provenance'
 import { constrainWallCurveOffsetToAvoidIntersections } from '../../systems/wall/wall-curve'
 import {
-  areWallStylesCompatible,
   areWallsCollinearAcrossPoint,
   buildMergedWallAttachmentUpdates,
   getWallEndpointAtPoint,
+  mergedSlopedWallTop,
   mergeWallFaceRegions,
   planMergedZoneReferences,
   resolveMergedWallEndpoints,
   type WallAttachmentUpdate,
+  wallStyleMismatch,
 } from '../../systems/wall/wall-merge'
 import { areSemanticValuesEqual } from '../../utils/semantic-equal'
 import {
@@ -114,6 +115,7 @@ type WallMergePlan = {
   mergedEnd: [number, number]
   mergedChildren: WallNode['children']
   mergedFaceRegions: WallNode['faceRegions']
+  mergedTop: Partial<Pick<WallNode, 'height' | 'endHeightOffset' | 'topProfile' | 'supportOffset'>>
   attachmentUpdates: WallAttachmentUpdate[]
   zoneUpdates: Array<{ id: AnyNodeId; data: Partial<AnyNode> }>
 }
@@ -1161,7 +1163,8 @@ function buildWallMergePlans(
         !(
           primary &&
           secondary &&
-          areWallStylesCompatible(primary, secondary) &&
+          wallStyleMismatch(primary, secondary, { sides: true, checkSlopedTopSeparately: true }) ===
+            null &&
           areWallsCollinearAcrossPoint(primary, secondary, junction)
         )
       ) {
@@ -1169,6 +1172,14 @@ function buildWallMergePlans(
       }
 
       const { start, end } = resolveMergedWallEndpoints(primary, secondary, junction)
+      const mergedTop = mergedSlopedWallTop({
+        primary,
+        secondary,
+        joint: junction,
+        nodes,
+        removedIds: idsToDelete,
+      })
+      if (!mergedTop) continue
       // A heal that would repaint a room or overflow a side's regions leaves the walls split.
       const mergedFaceRegions = mergeWallFaceRegions([primary, secondary], start, end)
       const zoneUpdates = planMergedZoneReferences(nodes, primary, secondary, start, end)
@@ -1192,6 +1203,7 @@ function buildWallMergePlans(
         mergedEnd: end,
         mergedChildren,
         mergedFaceRegions: mergedFaceRegions.length > 0 ? mergedFaceRegions : undefined,
+        mergedTop,
         attachmentUpdates,
         zoneUpdates,
       })
@@ -1879,6 +1891,7 @@ export function planNodeDeletion(
     const { faceRegions: _regions, ...keptWall } = primaryWall
     nextNodes[plan.primaryWallId] = {
       ...keptWall,
+      ...plan.mergedTop,
       ...(plan.mergedFaceRegions ? { faceRegions: plan.mergedFaceRegions } : {}),
       start: plan.mergedStart,
       end: plan.mergedEnd,

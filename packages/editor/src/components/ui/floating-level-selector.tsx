@@ -466,13 +466,12 @@ function SortableLevelRow({
 type GroundLineState = {
   levelId: string
   seated: boolean
-  atFoundationTop: boolean
   offset: number
 }
 
 /**
  * "Ground · +0.20": where the stack meets grade, read as the ground floor's datum over the ground
- * (the top of the foundation, 8 in over it once seated). The levels under it are below grade. When
+ * (at grade once seated). The levels under it are below grade. When
  * the datum stands outside the seat (a stack that lifted it, or sank it) the line turns amber and
  * a click seats the building.
  */
@@ -496,7 +495,7 @@ function GroundLine({ ground, onSeat }: { ground: GroundLineState; onSeat: () =>
         <button
           className="shrink-0 rounded-full px-1.5 font-mono text-[10px] text-amber-400 tabular-nums transition-colors hover:bg-amber-400/10"
           onClick={onSeat}
-          title={`The ground floor stands ${Math.abs(toDisplay(ground.offset)).toFixed(precision)} ${displayUnit} ${ground.offset > 0 ? 'over' : 'under'} grade. Seat the ground floor 8 in over grade`}
+          title={`The ground floor stands ${Math.abs(toDisplay(ground.offset)).toFixed(precision)} ${displayUnit} ${ground.offset > 0 ? 'over' : 'under'} grade. Seat the ground floor at grade`}
           type="button"
         >
           {label}
@@ -607,7 +606,6 @@ export function FloatingLevelSelector() {
         ? {
             levelId: seat.levelId,
             seated: seat.seated,
-            atFoundationTop: seat.atFoundationTop,
             offset: seat.offset,
           }
         : null
@@ -810,7 +808,7 @@ export function FloatingLevelSelector() {
                         }
                         onDuplicate={(preset) => handleDuplicateLevel(level, preset)}
                         onPaste={() => handlePasteToLevel(level)}
-                        isGround={ground?.levelId === level.id && ground.atFoundationTop}
+                        isGround={ground?.levelId === level.id && ground.seated}
                         onRequestDelete={() => setDeletingLevel(level)}
                         onSetGround={() => handleSetGround(level.id)}
                         onSelect={() => {

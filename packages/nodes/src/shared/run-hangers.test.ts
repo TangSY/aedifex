@@ -111,6 +111,30 @@ describe('automatic run hangers', () => {
     nodes[wall.id] = { ...wall, height: 1 }
     expect(planRunHangers(pipe, nodes).every((h) => h.hostId === ceiling.id)).toBe(true)
   })
+  test('checks the wall top at each hanger on a descending wall', () => {
+    const { pipe, wall, nodes, ceiling } = fixture()
+    nodes[wall.id] = { ...wall, endHeightOffset: -2 }
+    const hangers = planRunHangers(pipe, nodes)
+    expect(hangers.map((hanger) => hanger.hostId)).toEqual([wall.id, ceiling.id])
+  })
+  test('uses the wall top at the selected face for a transverse slope', () => {
+    const { pipe, wall, nodes, ceiling } = fixture()
+    delete nodes[ceiling.id]
+    nodes[wall.id] = {
+      ...wall,
+      height: 1,
+      topProfile: { offset: 0, from: 0, to: 1, supportHeight: 1, acrossShift: 7 },
+    }
+    const onSide = (z: number) => ({
+      ...pipe,
+      path: [
+        [0, 1.05, z],
+        [3, 1.05, z],
+      ] as [number, number, number][],
+    })
+    expect(planRunHangers(onSide(0.5), nodes)).toHaveLength(2)
+    expect(planRunHangers(onSide(-0.5), nodes)).toHaveLength(0)
+  })
   test('does not anchor in ceiling holes or beyond its polygon', () => {
     const { pipe, nodes, wall, ceiling } = fixture()
     delete nodes[wall.id]

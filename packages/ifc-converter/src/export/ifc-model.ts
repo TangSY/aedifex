@@ -169,6 +169,30 @@ export class IfcModel {
     return solid
   }
 
+  clipAboveSlope({
+    solid,
+    startHeight,
+    slope,
+    crossSlope = 0,
+  }: {
+    solid: StepRef
+    startHeight: number
+    slope: number
+    crossSlope?: number
+  }): StepRef {
+    const norm = Math.hypot(1, slope, crossSlope)
+    const tangentNorm = Math.hypot(1, slope)
+    const placement = this.step.add(
+      'IFCAXIS2PLACEMENT3D',
+      this.point3([0, 0, startHeight]),
+      this.direction([-slope / norm, -crossSlope / norm, 1 / norm]),
+      this.direction([1 / tangentNorm, 0, slope / tangentNorm]),
+    )
+    const plane = this.step.add('IFCPLANE', placement)
+    const above = this.step.add('IFCHALFSPACESOLID', plane, false)
+    return this.step.add('IFCBOOLEANCLIPPINGRESULT', enumValue('DIFFERENCE'), solid, above)
+  }
+
   triangulatedFaceSet(set: TriangleSet): StepRef | null {
     const { positions, indices } = set
     const vertexCount = Math.floor(positions.length / 3)
@@ -224,7 +248,7 @@ export class IfcModel {
     return this.step.add('IFCPRODUCTDEFINITIONSHAPE', null, null, representations)
   }
 
-  bodyRepresentation(type: 'SweptSolid' | 'Tessellation', items: StepRef[]): StepRef {
+  bodyRepresentation(type: 'SweptSolid' | 'Clipping' | 'Tessellation', items: StepRef[]): StepRef {
     return this.step.add('IFCSHAPEREPRESENTATION', this.bodyContext, 'Body', type, items)
   }
 

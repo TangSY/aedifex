@@ -25,6 +25,7 @@ import {
   type WallEvent,
   type WindowEvent,
   WindowNode,
+  wallHasSlopedTop,
 } from '@aedifex/core'
 import {
   calculateItemRotation,
@@ -454,7 +455,7 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
         movingWindowNode.height,
         nodes,
       )
-      const { clampedY } = slid
+      let { clampedY } = slid
       let clampedX = slid.clampedX
       // The corner zone: the edge snaps to the corner, unless a curtain wall's margin keeps it off.
       // Alt, or snapping off, places the window where it is dropped.
@@ -480,21 +481,26 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
           movingWindowNode.height,
           nodes,
         )
-        if (Math.abs(settled.clampedX - snap.centreX) > 1e-6) {
-          block = { reason: 'curtain', end: snap.end }
+        if (settled.fits === false || Math.abs(settled.clampedX - snap.centreX) > 1e-6) {
+          block = { reason: wallHasSlopedTop(event.node) ? 'too_tall' : 'curtain', end: snap.end }
           snap = null
-        } else clampedX = snap.centreX
+        } else {
+          clampedX = snap.centreX
+          clampedY = settled.clampedY
+        }
       }
 
-      const valid = !hasWallChildOverlap(
-        event.node.id,
-        nodes,
-        clampedX,
-        clampedY,
-        movingWindowNode.width,
-        movingWindowNode.height,
-        movingWindowNode.id,
-      )
+      const valid =
+        slid.fits !== false &&
+        !hasWallChildOverlap(
+          event.node.id,
+          nodes,
+          clampedX,
+          clampedY,
+          movingWindowNode.width,
+          movingWindowNode.height,
+          movingWindowNode.id,
+        )
 
       return {
         wallNode: event.node,
@@ -612,11 +618,7 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
       // frame the ghost renders in. The window's front is its local +Z. Drop it
       // to the floor under the wall (the ghost Y is the sill centre, up the wall).
       useFacingPose.getState().set({
-        position: [
-          ghostWorldPos[0],
-          wallBaseWorldY,
-          ghostWorldPos[2],
-        ],
+        position: [ghostWorldPos[0], wallBaseWorldY, ghostWorldPos[2]],
         rotationY: ghostYaw,
         depth: movingWindowNode.frameDepth ?? 0.07,
       })

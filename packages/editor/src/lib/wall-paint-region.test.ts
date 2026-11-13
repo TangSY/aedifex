@@ -25,9 +25,11 @@ import {
   useWallPaintRegionSession,
   WALL_PAINT_REGION_HANDLE,
   type WallRegionHit,
+  wallRegionBoundsFor,
 } from './wall-paint-region-session'
 import {
   faceSpanStrips,
+  faceStripTriangles,
   faceSurfaceXZ,
   projectLocalRayToFace,
   resolveWallFaceBase,
@@ -196,6 +198,23 @@ describe('face coordinates', () => {
     expect(faceB.uMin).toBeCloseTo(0.1, 6)
     expect(faceB.uMax).toBeCloseTo(3.9, 6)
   })
+
+  test('a sloped region preview follows its top and its painted height limit', () => {
+    const frame = wallFaceFrame(wall, 'a')
+    const strips = faceSpanStrips(
+      frame,
+      { uMin: 0, uMax: 4, top: 3, startTop: 1, endTop: 3 },
+      null,
+      { v1: 2 },
+    )
+    expect(strips).toEqual([
+      { u0: 0, u1: 2, low: 0, high: 2, high0: 1, high1: 2 },
+      { u0: 2, u1: 4, low: 0, high: 2, high0: 2, high1: 2 },
+    ])
+    const vertices = faceStripTriangles(frame, wallFaceFrame(wall, 'b'), strips, 0)
+    for (let i = 0; i < vertices.length; i += 3)
+      expect(vertices[i + 1]!).toBeLessThanOrEqual(1 + vertices[i]! / 2 + 1e-6)
+  })
 })
 
 describe('snapping', () => {
@@ -247,6 +266,38 @@ describe('snapping', () => {
 })
 
 describe('gesture', () => {
+  test('a sloped top clamps the pointer locally without opening a bounded region at the high end', () => {
+    const slopeHit = {
+      ...hit(4, 2),
+      extent: { uMin: 0, uMax: 4, top: 3, startTop: 1, endTop: 3 },
+    }
+    expect(wallRegionBoundsFor({ hit: slopeHit, corner: [0, 0] })).toEqual({ v1: 2 })
+    expect(wallRegionBoundsFor({ hit: { ...slopeHit, u: 0, v: 2 }, corner: [4, 0] })).toEqual({
+      v1: 1,
+    })
+  })
+
+  test('a sloped-wall gesture commits its bounded paint and remains undoable', () => {
+    useScene.setState({
+      nodes: {
+        ...useScene.getState().nodes,
+        [wall.id]: { ...wall, height: 1, endHeightOffset: 2 },
+      },
+    })
+    clearSceneHistory()
+    const slope = (u: number, v: number): WallRegionHit => ({
+      ...hit(u, v),
+      extent: { uMin: 0, uMax: 4, top: 3, startTop: 1, endTop: 3 },
+    })
+    expect(pressWallRegion(slope(0, 0), OFF)).toBe(true)
+    dragWallRegion(slope(4, 2), OFF)
+    expect(useWallPaintRegionSession.getState().preview?.bounds).toEqual({ v1: 2 })
+    releaseWallRegion()
+    expect(regions()[0]).toMatchObject({ face: 'a', v1: 2 })
+    expect(pastStates()).toBe(1)
+    useScene.temporal.getState().undo()
+    expect(regions()).toHaveLength(0)
+  })
   test('rectangle: hover marks the corner a press would start; nothing is written', () => {
     hoverWallRegion(hit(1.4, 1), LINES)
     expect(useWallPaintRegionSession.getState().preview).toMatchObject({

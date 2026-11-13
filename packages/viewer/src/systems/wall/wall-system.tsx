@@ -2,6 +2,7 @@ import {
   type AnyNode,
   type AnyNodeId,
   buildWallFinishLayout,
+  clampWallEndHeightOffset,
   containsPoint,
   cornerPair,
   DEFAULT_LEVEL_HEIGHT,
@@ -21,6 +22,7 @@ import {
   getWallThickness,
   isCurvedWall,
   isCutterName,
+  MIN_WALL_END_HEIGHT,
   type Point2D,
   pointToKey,
   resolveCutterHost,
@@ -28,6 +30,7 @@ import {
   resolveWallFaceBottom,
   resolveWallFinish,
   resolveWallTop,
+  resolveWallTopPlane,
   sceneRegistry,
   spatialGridManager,
   terrainSupportLift,
@@ -42,6 +45,7 @@ import {
   type WallSlabSupportSegment,
   type WindowNode,
   wallFinishMaterialIndex,
+  wallTopContext,
   type ZoneNode,
   zoneHasWallFinish,
 } from '@aedifex/core'
@@ -77,6 +81,7 @@ import {
 } from './wall-finish-data'
 import { sweepUnbuiltWalls, WALL_PLACEHOLDER_SWEEP_INTERVAL } from './wall-placeholder-sweep'
 import { notifyWallRebuilt } from './wall-rebuild-notifications'
+import { splitWallAtSlopeClamp } from './wall-slope-geometry'
 
 export { isWallInitialBuildActive } from './wall-build-lifecycle'
 export { drainRebuiltWalls } from './wall-rebuild-notifications'
@@ -1572,7 +1577,19 @@ export function generateExtrudedWall(
   const levelId = resolveLevelId(wallNode, sceneNodes as Record<string, AnyNode>)
   const level = sceneNodes[levelId]
   const authoredStoreyHeight = level?.type === 'level' ? (level.height ?? null) : null
-  const topElevation = resolveWallTop(wallNode, storeyHeight, slabElevation, authoredStoreyHeight)
+  const topContext = wallTopContext({
+    wall: wallNode,
+    levelId,
+    nodes: sceneNodes as Record<AnyNodeId, AnyNode>,
+    electedBase: slabElevation,
+    storeyHeight,
+  })
+  const topElevation = resolveWallTop(
+    wallNode,
+    topContext.storeyHeight,
+    topContext.electedBase,
+    authoredStoreyHeight,
+  )
   const faceDatum = faceBase
   if (faceBase)
     faceBase = {
@@ -1611,6 +1628,46 @@ export function generateExtrudedWall(
   if (L < 1e-9) {
     return new THREE.BufferGeometry()
   }
+  const localTop = topElevation - slabElevation
+  const endTop =
+    resolveWallTop(
+      wallNode,
+      topContext.storeyHeight,
+      topContext.electedBase,
+      authoredStoreyHeight,
+      1,
+    ) - slabElevation
+  const rawStart = wallNode.topProfile
+    ? resolveWallTopPlane({
+        wall: wallNode,
+        storeyHeight: topContext.storeyHeight,
+        electedBase: topContext.electedBase,
+        authoredStoreyHeight,
+      }) - slabElevation
+    : localTop
+  const rawEnd = wallNode.topProfile
+    ? resolveWallTopPlane({
+        wall: wallNode,
+        storeyHeight: topContext.storeyHeight,
+        electedBase: topContext.electedBase,
+        authoredStoreyHeight,
+        t: 1,
+      }) - slabElevation
+    : endTop
+  const slopeX = (rawEnd - rawStart) / L
+  const slopeZ = wallNode.topProfile
+    ? (clampWallEndHeightOffset(
+        wallNode.topProfile.offset,
+        wallNode.topProfile.supportHeight ?? topContext.storeyHeight - topContext.electedBase,
+      ) *
+        (wallNode.topProfile.across ?? 0) +
+        (wallNode.topProfile.acrossShift ?? 0)) /
+      L
+    : 0
+  const minimumTop = wallNode.topProfile
+    ? topContext.electedBase - slabElevation + MIN_WALL_END_HEIGHT
+    : Math.min(localTop, MIN_WALL_END_HEIGHT)
+  const topAt = (x: number, z = 0) => Math.max(rawStart + slopeX * x + slopeZ * z, minimumTop)
   const boundaryPoints = getWallMiterBoundaryPoints(wallNode, miterData)
   const polyPoints = isCurvedWall(wallNode)
     ? getWallSurfacePolygon(
@@ -1670,7 +1727,7 @@ export function generateExtrudedWall(
   footprint.closePath()
 
   // Extrude along Z by height
-  const geometry = new THREE.ExtrudeGeometry(footprint, {
+  let geometry: THREE.BufferGeometry = new THREE.ExtrudeGeometry(footprint, {
     depth: height,
     bevelEnabled: false,
   })
@@ -1678,6 +1735,28 @@ export function generateExtrudedWall(
   // Rotate so extrusion direction (Z) becomes height direction (Y)
   geometry.rotateX(-Math.PI / 2)
   if (Math.abs(localBottom) > 1e-9) geometry.translate(0, localBottom, 0)
+  if (slopeX || slopeZ) {
+    const distances = localPoints.map(
+      (point) => slopeX * point.x + slopeZ * point.z - (minimumTop - rawStart),
+    )
+    if (Math.min(...distances) < -1e-6 && Math.max(...distances) > 1e-6) {
+      const split = splitWallAtSlopeClamp(geometry, {
+        x: slopeX,
+        z: slopeZ,
+        offset: minimumTop - rawStart,
+      })
+      if (split !== geometry) {
+        geometry.dispose()
+        geometry = split
+      }
+    }
+    const position = geometry.getAttribute('position')
+    for (let i = 0; i < position.count; i++) {
+      if (Math.abs(position.getY(i) - localTop) <= 1e-4)
+        position.setY(i, topAt(position.getX(i), position.getZ(i)))
+    }
+    position.needsUpdate = true
+  }
   geometry.computeVertexNormals()
   assignWallMaterialGroups(geometry, wallNode, boundaryEdges, finish)
   ensureRenderableGeometryAttributes(geometry)
@@ -1820,6 +1899,7 @@ export function generateExtrudedWall(
       slabElevation,
       sceneNodes,
       baseSegments,
+      slopeX || slopeZ ? topAt : undefined,
     ),
   ]
   if (cutoutBrushes.length === 0) {
@@ -1952,6 +2032,7 @@ function collectCutoutBrushes(
   elevation = 0,
   sceneNodes: Readonly<Record<string, AnyNode>> = useScene.getState().nodes,
   baseSegments: readonly WallSlabSupportSegment[] = [{ start: 0, end: 1, elevation }],
+  topAt?: (x: number, z?: number) => number,
 ): Brush[] {
   const brushes: Brush[] = []
   const wallMesh = sceneRegistry.nodes.get(wallNode.id) as THREE.Mesh
@@ -2006,6 +2087,16 @@ function collectCutoutBrushes(
       // clipped to the wall's own footprint (the doorway floor), so extruding it
       // would leave coplanar faces and CSG would drop the cut.
       if (!isCurvedWall(wallNode)) {
+        const faces = getWallFaceOffsets(wallNode)
+        const top = topAt
+          ? Math.min(
+              topAt(child.position[0] - child.width / 2, faces.a),
+              topAt(child.position[0] - child.width / 2, faces.b),
+              topAt(child.position[0] + child.width / 2, faces.a),
+              topAt(child.position[0] + child.width / 2, faces.b),
+            )
+          : undefined
+        if (top !== undefined && top <= cut.bottom - elevation + 1e-9) continue
         brushes.push(
           createOpeningCutoutBrush(
             {
@@ -2020,6 +2111,7 @@ function collectCutoutBrushes(
             getWallBodyCenterOffset(wallNode),
             cut.bottom - elevation,
             child.type === 'window' ? cornerPair(sceneNodes, child)?.end : undefined,
+            top,
           ),
         )
         continue
@@ -2038,8 +2130,12 @@ function collectCutoutBrushes(
         )
       })
       const padding = getOpeningCutoutBottomPadding(child, cut.bottom - elevation)
+      const top = topAt
+        ? Math.min(cut.top - elevation, ...points.map((point) => topAt(point.x, -point.y)))
+        : cut.top - elevation
+      if (top <= cut.bottom - elevation + 1e-9) continue
       const geometry = new THREE.ExtrudeGeometry(new THREE.Shape(points), {
-        depth: cut.top - cut.bottom + padding,
+        depth: top - (cut.bottom - elevation) + padding,
         bevelEnabled: false,
       })
       geometry.rotateX(-Math.PI / 2)
@@ -2062,6 +2158,8 @@ function collectCutoutBrushes(
         wallThickness,
         getWallBodyCenterOffset(wallNode),
         cut.bottom - elevation,
+        undefined,
+        top,
       )
       const frame = getWallCurveFrameAt(wallNode, child.position[0] / getWallCurveLength(wallNode))
       const offset = getWallBodyCenterOffset(wallNode)
@@ -2153,6 +2251,7 @@ function createOpeningCutoutBrush(
   centerOffset: number,
   cutBottom?: number,
   cornerEnd?: 'start' | 'end',
+  topLimit?: number,
 ): Brush {
   const halfWidth = opening.width / 2
   const bottom = cutBottom ?? opening.position[1] - opening.height / 2
@@ -2164,7 +2263,7 @@ function createOpeningCutoutBrush(
       left: opening.position[0] - halfWidth - (cornerEnd === 'start' ? reach : 0),
       right: opening.position[0] + halfWidth + (cornerEnd === 'end' ? reach : 0),
       bottom: bottom - bottomPadding,
-      top: opening.position[1] + opening.height / 2,
+      top: Math.min(opening.position[1] + opening.height / 2, topLimit ?? Number.POSITIVE_INFINITY),
     },
     wallThickness * 2,
     wallThickness,

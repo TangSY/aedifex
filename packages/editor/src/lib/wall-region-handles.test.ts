@@ -20,6 +20,8 @@ import {
   REGION_MIN_SIZE,
   regionHandlePlacements,
   regionOutline,
+  regionProfileOutlines,
+  regionProfilePlacements,
   resolveRegionBoundDrag,
   wallLocalMatrix,
   withRegionBounds,
@@ -246,6 +248,56 @@ describe('handles and outline', () => {
     }
     const ribbon = buildOutlineRibbon(outline, 0.01)
     expect(ribbon.length).toBe(outline.length * 6 * 3)
+  })
+
+  test('profile outlines follow a sloped top and the step between face bases', () => {
+    const surface = getWallFaceSurface(straight, 'a')
+    const outlines = regionProfileOutlines({
+      surface,
+      pieces: [
+        { u0: 0, u1: 2, bottom: 0, top0: 3, top1: 2 },
+        { u0: 2, u1: 3, bottom: 0.5, top0: 2, top1: 1.5 },
+      ],
+      lift: 0,
+    })
+    expect(outlines).toHaveLength(1)
+    const xy = outlines[0]!.map(({ position }) => position.slice(0, 2))
+    expect(xy).toContainEqual([0, 3])
+    expect(xy).toContainEqual([2, 2])
+    expect(xy).toContainEqual([3, 1.5])
+    expect(xy).toContainEqual([2, 0])
+    expect(xy).toContainEqual([2, 0.5])
+  })
+
+  test('profile handles stay on the visible part of a sloped region', () => {
+    const placements = regionProfilePlacements({
+      surface: getWallFaceSurface(straight, 'a'),
+      region: { id: 'r', face: 'a', u0: 0.5, u1: 3.5, v1: 2, finish: 'x' },
+      pieces: [
+        { u0: 0.5, u1: 2, bottom: 0, top0: 1.25, top1: 2 },
+        { u0: 2, u1: 3.5, bottom: 0, top0: 2, top1: 2 },
+      ],
+      lift: 0,
+    })
+    expect(placements.find((entry) => entry.edge === 'u0')?.position).toEqual([0.5, 0.625, 0.1])
+    expect(placements.find((entry) => entry.edge === 'u1')?.position).toEqual([3.5, 1, 0.1])
+    expect(placements.find((entry) => entry.edge === 'v1')?.position).toEqual([2.75, 2, 0.1])
+  })
+
+  test('profile outlines do not join islands or leave the curved face', () => {
+    const surface = getWallFaceSurface(curved, 'a')
+    const outlines = regionProfileOutlines({
+      surface,
+      pieces: [
+        { u0: 0, u1: 1, bottom: 0, top0: 2, top1: 2.5 },
+        { u0: 3, u1: 4, bottom: 0, top0: 2.5, top1: 3 },
+      ],
+      lift: 0,
+    })
+    expect(outlines).toHaveLength(2)
+    for (const outline of outlines)
+      for (const point of outline)
+        expect(point.position[2]).toBeCloseTo(faceSurfacePoint(surface, point.position[0]).z, 6)
   })
 })
 

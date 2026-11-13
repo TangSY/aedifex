@@ -14,11 +14,8 @@ import { levelLocalToWorldXZ, SITE_DATUM_Y } from './terrain-support-query'
 export const GROUND_SEAT_TOLERANCE = 0.05
 
 /**
- * Where "Set as ground floor" and `set_ground_level` stand the ground floor over finished grade
- * on the generic (block) foundation: the top of the foundation, where the wood framing starts, 8
- * in (0.203 m) above the ground. IRC R317.1 keeps wood framing resting on a foundation wall at
- * least 8 in from exposed ground. A building's region and style can choose another construction
- * and its own seat (`GroundSeat.aboveGrade`, `FOUNDATION_CONSTRUCTIONS`).
+ * Legacy reference height for a generic block foundation. Seating uses grade itself; this remains
+ * available to consumers that report foundation construction recommendations.
  */
 export const GROUND_FLOOR_ABOVE_GRADE = FOUNDATION_CONSTRUCTIONS.cmu.seatAboveGrade
 
@@ -58,12 +55,7 @@ export type GroundSeat = {
   aboveGrade: number
   /** The construction, the region and style it was read from. */
   foundation: FoundationReading
-  /**
-   * The floor datum stands between grade and the foundation's top (`aboveGrade`, or the block's
-   * 8 in where that is higher), within {@link GROUND_SEAT_TOLERANCE}: what a scene seated before
-   * the 8 in rule, one seated by it and one seated by its own region's construction all satisfy,
-   * so a check has nothing to say about any of them.
-   */
+  /** The floor datum stands at grade, within {@link GROUND_SEAT_TOLERANCE}. */
   seated: boolean
   /** The floor datum stands at `aboveGrade` over grade, within the tolerance. */
   atFoundationTop: boolean
@@ -90,9 +82,7 @@ export function groundSeat(
     offset,
     aboveGrade,
     foundation,
-    seated:
-      offset >= -GROUND_SEAT_TOLERANCE &&
-      offset <= Math.max(aboveGrade, GROUND_FLOOR_ABOVE_GRADE) + GROUND_SEAT_TOLERANCE,
+    seated: Math.abs(offset) <= GROUND_SEAT_TOLERANCE,
     atFoundationTop: Math.abs(offset - aboveGrade) <= GROUND_SEAT_TOLERANCE,
   }
 }

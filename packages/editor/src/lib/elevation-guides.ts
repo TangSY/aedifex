@@ -156,7 +156,7 @@ export function collectElevationSnapTargets(
       })
       targets.push({
         id: `${node.id}:top`,
-        elevation: base + getWallEffectiveHeightForNodes(node, nodes),
+        elevation: base + getWallEffectiveHeightForNodes(node, nodes, 0.5),
         anchor: center,
         label: 'Wall top',
       })

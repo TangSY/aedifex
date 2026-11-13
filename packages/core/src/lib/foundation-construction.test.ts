@@ -324,7 +324,7 @@ describe('what reads the construction', () => {
     for (const footing of footings) expect(footing.material).toBe('concrete')
   })
 
-  test('the ground seat reads the construction: a floor 0.15 m over grade is seated in Paris, a floor 0.3 m over it is not', () => {
+  test('the ground seat reads the construction: a floor at the construction height is not seated at grade', () => {
     const seated = (nodes: Nodes, offset: number) => {
       const raised = {
         ...nodes,
@@ -333,12 +333,12 @@ describe('what reads the construction', () => {
       return groundSeat(raised, 'building_a')
     }
     const paris = seated(house({ dossier: dossier('Paris, France') }), 0.15)
-    expect(paris).toMatchObject({ aboveGrade: 0.15, atFoundationTop: true, seated: true })
+    expect(paris).toMatchObject({ aboveGrade: 0.15, atFoundationTop: true, seated: false })
     const us = seated(house({ address: { state: 'TX' } }), 0.203)
     expect(us).toMatchObject({ aboveGrade: 0.203, atFoundationTop: true })
-    // a European scene seated at the block's 0.203 m before the region was read is still seated
+    // A legacy block-height scene is no longer at grade.
     const before = seated(house({ dossier: dossier('Paris, France') }), 0.203)
-    expect(before).toMatchObject({ seated: true, atFoundationTop: false })
+    expect(before).toMatchObject({ seated: false, atFoundationTop: false })
     const tooHigh = seated(house({ dossier: dossier('Paris, France') }), 0.3)
     expect(tooHigh).toMatchObject({ seated: false })
   })

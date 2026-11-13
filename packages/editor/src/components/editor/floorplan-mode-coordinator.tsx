@@ -1,6 +1,6 @@
 'use client'
 
-import { emitter, nodeRegistry } from '@aedifex/core'
+import { emitter, nodeRegistry, useAedifexI18n } from '@aedifex/core'
 import { X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { getFloorplanNodeExtension } from '../../lib/floorplan/floorplan-extension'
@@ -13,6 +13,7 @@ function getToolLabel(tool: string): string {
 }
 
 export function FloorplanModeCoordinator() {
+  const i18n = useAedifexI18n()
   const editorMode = useEditor((state) => state.mode)
   const tool = useEditor((state) => state.tool)
   const floorplanMode = useFloorplanMode((state) => state.mode)
@@ -56,7 +57,18 @@ export function FloorplanModeCoordinator() {
       className="fixed top-16 left-1/2 z-[100] flex max-w-md -translate-x-1/2 items-center gap-3 rounded-lg border border-border/60 bg-background/95 px-3 py-2 text-sm text-foreground shadow-elevation-3 backdrop-blur-xl"
       role="status"
     >
-      <span>{notice.message}</span>
+      <span>
+        {notice.message}
+        {notice.message && notice.unadjustedOpeningCount ? ' ' : null}
+        {notice.unadjustedOpeningCount
+          ? i18n._({
+              id: 'editor.clipboard.unadjustedOpenings',
+              message:
+                'Openings kept at their original positions: {count}. Check for overlap or an opening above the sloped wall.',
+              values: { count: notice.unadjustedOpeningCount },
+            })
+          : null}
+      </span>
       {notice.kind === 'switch-to-expert' ? (
         <button
           className="shrink-0 rounded-md bg-cyan-500/15 px-2.5 py-1 font-medium text-cyan-700 dark:text-cyan-400 hover:bg-cyan-500/25"

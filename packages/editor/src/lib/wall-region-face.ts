@@ -13,6 +13,7 @@ import {
 } from '@aedifex/core'
 import { getWallFinishData } from '@aedifex/viewer'
 import type { BufferGeometry } from 'three'
+import { wallRegionProfile } from './wall-region-profile'
 import { faceBaseAt, type WallFaceBaseRuns } from './wall-region-snap'
 
 // Face geometry for the paint tool's wall regions, all in the wall mesh's local
@@ -40,6 +41,9 @@ export type WallFaceExtent = {
   uMax: number
   /** Local y of the face top. */
   top: number
+  /** Top at the reference chord's endpoints, when the wall is sloped. */
+  startTop?: number
+  endTop?: number
 }
 
 type FaceBase = Record<WallFace, WallFaceBaseRuns> | null
@@ -252,7 +256,14 @@ export function wallFaceExtent(
 /** A span of the face in region terms: absent bounds run to the face's edges. */
 export type FaceSpan = { u0?: number; u1?: number; v0?: number; v1?: number }
 
-type FaceStrip = { u0: number; u1: number; low: number; high: number }
+type FaceStrip = {
+  u0: number
+  u1: number
+  low: number
+  high: number
+  high0?: number
+  high1?: number
+}
 
 /**
  * The span cut into pieces that each stand on one base run (and, on a curved
@@ -264,6 +275,34 @@ export function faceSpanStrips(
   runs: WallFaceBaseRuns,
   span: FaceSpan,
 ): FaceStrip[] {
+  if (extent.startTop !== undefined && extent.endTop !== undefined) {
+    const profile = wallRegionProfile({
+      length: frame.length,
+      startTop: extent.startTop,
+      endTop: extent.endTop,
+      runs,
+      region: span,
+      minU: extent.uMin,
+      maxU: extent.uMax,
+    })
+    return profile.flatMap((piece) => {
+      const count = frame.arc ? Math.max(1, Math.ceil((piece.u1 - piece.u0) / 0.1)) : 1
+      return Array.from({ length: count }, (_, index) => {
+        const t0 = index / count
+        const t1 = (index + 1) / count
+        const high0 = piece.top0 + (piece.top1 - piece.top0) * t0
+        const high1 = piece.top0 + (piece.top1 - piece.top0) * t1
+        return {
+          u0: piece.u0 + (piece.u1 - piece.u0) * t0,
+          u1: piece.u0 + (piece.u1 - piece.u0) * t1,
+          low: piece.bottom,
+          high: Math.max(high0, high1),
+          high0,
+          high1,
+        }
+      })
+    })
+  }
   const start = Math.max(span.u0 ?? extent.uMin, extent.uMin)
   const end = Math.min(span.u1 ?? extent.uMax, extent.uMax)
   if (end - start < 1e-6) return []
@@ -303,10 +342,10 @@ export function faceStripTriangles(
   offset: number,
 ): Float32Array {
   const out: number[] = []
-  for (const { u0, u1, low, high } of strips) {
+  for (const { u0, u1, low, high, high0 = high, high1 = high } of strips) {
     const [ax, az] = lift(frame, other, u0, offset)
     const [bx, bz] = lift(frame, other, u1, offset)
-    out.push(ax, low, az, bx, low, bz, bx, high, bz, ax, low, az, bx, high, bz, ax, high, az)
+    out.push(ax, low, az, bx, low, bz, bx, high1, bz, ax, low, az, bx, high1, bz, ax, high0, az)
   }
   return new Float32Array(out)
 }
@@ -322,19 +361,30 @@ export function faceStripOutline(
   strips.forEach((strip, index) => {
     const [ax, az] = lift(frame, other, strip.u0, offset)
     const [bx, bz] = lift(frame, other, strip.u1, offset)
-    out.push(ax, strip.low, az, bx, strip.low, bz, ax, strip.high, az, bx, strip.high, bz)
+    const high0 = strip.high0 ?? strip.high
+    const high1 = strip.high1 ?? strip.high
+    out.push(ax, strip.low, az, bx, strip.low, bz, ax, high0, az, bx, high1, bz)
     const previous = strips[index - 1]
-    if (!previous || Math.abs(previous.u1 - strip.u0) > 1e-6) {
-      out.push(ax, strip.low, az, ax, strip.high, az)
+    const previousHigh = previous?.high1 ?? previous?.high ?? 0
+    const joined =
+      previous &&
+      Math.abs(previous.u1 - strip.u0) <= 1e-6 &&
+      Math.min(previousHigh, high0) > Math.max(previous.low, strip.low)
+    if (!joined) {
+      out.push(ax, strip.low, az, ax, high0, az)
     } else {
       if (Math.abs(previous.low - strip.low) > 1e-6)
         out.push(ax, previous.low, az, ax, strip.low, az)
-      if (Math.abs(previous.high - strip.high) > 1e-6)
-        out.push(ax, previous.high, az, ax, strip.high, az)
+      if (Math.abs(previousHigh - high0) > 1e-6) out.push(ax, previousHigh, az, ax, high0, az)
     }
     const next = strips[index + 1]
-    if (!next || Math.abs(next.u0 - strip.u1) > 1e-6)
-      out.push(bx, strip.low, bz, bx, strip.high, bz)
+    const nextHigh = next?.high0 ?? next?.high ?? 0
+    if (
+      !next ||
+      Math.abs(next.u0 - strip.u1) > 1e-6 ||
+      Math.min(high1, nextHigh) <= Math.max(strip.low, next.low)
+    )
+      out.push(bx, strip.low, bz, bx, high1, bz)
   })
   return new Float32Array(out)
 }

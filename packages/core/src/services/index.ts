@@ -168,6 +168,8 @@ export {
   isLevelBelowGrade,
   type LevelElevation,
   levelFloorWorldY,
+  wallTopContext,
+  wallTopStationProfile,
 } from './storey'
 export {
   canHostSurfaceChild,

@@ -149,6 +149,44 @@ export function reverseWallDirection(wall: WallNode): Partial<WallNode> {
     end: wall.start,
     frontSide: wall.backSide,
     backSide: wall.frontSide,
+    ...(wall.topProfile === undefined
+      ? {}
+      : {
+          topProfile: {
+            ...wall.topProfile,
+            from: wall.topProfile.to,
+            to: wall.topProfile.from,
+            ...(wall.topProfile.across === undefined ? {} : { across: -wall.topProfile.across }),
+            ...(wall.topProfile.startShift === undefined && wall.topProfile.endShift === undefined
+              ? {}
+              : {
+                  startShift: wall.topProfile.endShift ?? 0,
+                  endShift: wall.topProfile.startShift ?? 0,
+                }),
+            ...(wall.topProfile.acrossShift === undefined
+              ? {}
+              : { acrossShift: -wall.topProfile.acrossShift }),
+            ...(wall.topProfile.supportReference === undefined
+              ? {}
+              : {
+                  supportReference: {
+                    ...wall.topProfile.supportReference,
+                    start: [
+                      1 - wall.topProfile.supportReference.start[0],
+                      -wall.topProfile.supportReference.start[1],
+                    ],
+                    end: [
+                      1 - wall.topProfile.supportReference.end[0],
+                      -wall.topProfile.supportReference.end[1],
+                    ],
+                  },
+                }),
+          },
+          ...(wall.height === undefined
+            ? {}
+            : { height: wall.height + (wall.endHeightOffset ?? 0) }),
+          ...(wall.endHeightOffset === undefined ? {} : { endHeightOffset: -wall.endHeightOffset }),
+        }),
     ...(wall.justification === undefined
       ? {}
       : { justification: wall.justification === 'a' ? 'b' : 'a' }),

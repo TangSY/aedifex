@@ -11,6 +11,7 @@ import {
   type WallFace,
   type WallFaceRegion,
   type WallNode,
+  wallHasSlopedTop,
 } from '@aedifex/core'
 import { getWallFaceBaseAt, getWallFinishData, useViewer } from '@aedifex/viewer'
 import { createPortal, useFrame, useThree } from '@react-three/fiber'
@@ -41,13 +42,20 @@ import {
   type RegionHandlePlacement,
   regionHandlePlacements,
   regionOutline,
+  regionProfileOutlines,
+  regionProfilePlacements,
   resolveRegionBoundDrag,
   resolveRegionBounds,
   type WallFaceSurface,
   wallLocalMatrix,
   withRegionBounds,
 } from '../../lib/wall-region-handles'
-import { wallRegionSnapTargets } from '../../lib/wall-region-snap'
+import { wallRegionProfile } from '../../lib/wall-region-profile'
+import {
+  faceBaseAt,
+  type WallFaceBaseRuns,
+  wallRegionSnapTargets,
+} from '../../lib/wall-region-snap'
 import useEditor, { isGridSnapActive, isMagneticSnapActive } from '../../store/use-editor'
 import useInteractionScope from '../../store/use-interaction-scope'
 import {
@@ -170,6 +178,7 @@ type WallFrame = {
   wall: WallNode
   baseElevation: number
   wallHeight: number
+  endHeight: number
   angle: number
   levelObject: Object3D
 }
@@ -204,6 +213,7 @@ function WallRegionHandlesForWall({ wall }: { wall: WallNode }) {
     wall: effectiveWall,
     baseElevation: getWallBaseElevationForNodes(effectiveWall, nodes),
     wallHeight: getWallEffectiveHeightForNodes(effectiveWall, nodes),
+    endHeight: getWallEffectiveHeightForNodes(effectiveWall, nodes, 1),
     angle: Math.atan2(
       effectiveWall.end[1] - effectiveWall.start[1],
       effectiveWall.end[0] - effectiveWall.start[0],
@@ -250,7 +260,11 @@ function FaceRegionHandles({ face, frame }: { face: WallFace; frame: WallFrame }
   })
 
   if (regions.length === 0) return null
-  const baseAt = faceBaseSampler(wall.id, face)
+  const mesh = sceneRegistry.nodes.get(wall.id as AnyNodeId) as Mesh | undefined
+  const runs = resolveWallFaceBase(wall, mesh?.geometry, useScene.getState().nodes)?.[face] ?? null
+  const baseAt = wallHasSlopedTop(wall)
+    ? (u: number) => faceBaseAt(runs, u)
+    : faceBaseSampler(wall.id, face)
   return (
     <group ref={groupRef}>
       {facing &&
@@ -260,6 +274,7 @@ function FaceRegionHandles({ face, frame }: { face: WallFace; frame: WallFrame }
             frame={frame}
             key={region.id}
             region={region}
+            runs={runs}
             surface={surface}
           />
         ))}
@@ -283,11 +298,13 @@ function RegionEditor({
   surface,
   frame,
   baseAt,
+  runs,
 }: {
   region: WallFaceRegion
   surface: WallFaceSurface
   frame: WallFrame
   baseAt: (u: number) => number
+  runs: WallFaceBaseRuns
 }) {
   const { wall } = frame
   const [outlineHovered, setOutlineHovered] = useState(false)
@@ -298,25 +315,71 @@ function RegionEditor({
     (state) => state.active?.wallId === wall.id && state.active.regionId === region.id,
   )
   const faceHeight = regionFaceHeight(region, surface.length, frame.wallHeight, baseAt)
-  const boundsKey = [region.u0, region.u1, region.v0, region.v1, faceHeight, surface.length].join(
-    ':',
-  )
+  const sloped = Math.abs(frame.endHeight - frame.wallHeight) > 1e-9
+  const boundsKey = [
+    region.u0,
+    region.u1,
+    region.v0,
+    region.v1,
+    faceHeight,
+    surface.length,
+    frame.wallHeight,
+    frame.endHeight,
+    JSON.stringify(runs),
+  ].join(':')
   // biome-ignore lint/correctness/useExhaustiveDependencies: boundsKey captures every input
-  const outline = useMemo(
-    () => regionOutline(surface, region, faceHeight, baseAt),
+  const outlines = useMemo(
+    () =>
+      sloped
+        ? regionProfileOutlines({
+            surface,
+            pieces: wallRegionProfile({
+              length: surface.length,
+              startTop: frame.wallHeight,
+              endTop: frame.endHeight,
+              runs,
+              region,
+            }),
+          })
+        : [regionOutline(surface, region, faceHeight, baseAt)],
     [boundsKey, surface],
   )
-  const placements = regionHandlePlacements(surface, region, faceHeight, baseAt, draggingEdge)
+  const placements = sloped
+    ? regionProfilePlacements({
+        surface,
+        region,
+        keep: draggingEdge,
+        pieces: wallRegionProfile({
+          length: surface.length,
+          startTop: frame.wallHeight,
+          endTop: frame.endHeight,
+          runs,
+          region,
+        }),
+      })
+    : regionHandlePlacements(surface, region, faceHeight, baseAt, draggingEdge)
   const hovered =
     outlineHovered ||
     (hoveredArrow !== null && placements.some((placement) => placement.edge === hoveredArrow))
   const showArrows = isActive || hovered || arrowsLinger || draggingEdge !== null
   const halfWidth = isActive || hovered ? OUTLINE_ACTIVE_HALF_WIDTH : OUTLINE_HALF_WIDTH
   const ribbon = useRibbonGeometry(
-    useMemo(() => buildOutlineRibbon(outline, halfWidth), [outline, halfWidth]),
+    useMemo(
+      () =>
+        new Float32Array(
+          outlines.flatMap((outline) => [...buildOutlineRibbon(outline, halfWidth)]),
+        ),
+      [outlines, halfWidth],
+    ),
   )
   const hitRibbon = useRibbonGeometry(
-    useMemo(() => buildOutlineRibbon(outline, OUTLINE_HIT_HALF_WIDTH), [outline]),
+    useMemo(
+      () =>
+        new Float32Array(
+          outlines.flatMap((outline) => [...buildOutlineRibbon(outline, OUTLINE_HIT_HALF_WIDTH)]),
+        ),
+      [outlines],
+    ),
   )
   const hitMaterial = useInvisibleHitAreaMaterial()
   const select = () =>
@@ -425,13 +488,34 @@ function RegionEdgeHandle({
       const nodes = useScene.getState().nodes
       const face = region.face
       const faceSurface = getWallFaceSurface(initialNode, face)
-      const baseAt = faceBaseSampler(initialNode.id, face)
       const wallHeight = getWallEffectiveHeightForNodes(initialNode, nodes)
-      const faceHeight = regionFaceHeight(region, faceSurface.length, wallHeight, baseAt)
-      const bounds = resolveRegionBounds(region, faceSurface.length, faceHeight)
-      const midU = (bounds.u0 + bounds.u1) / 2
+      const endHeight = getWallEffectiveHeightForNodes(initialNode, nodes, 1)
       const mesh = sceneRegistry.nodes.get(initialNode.id) as Mesh | undefined
       const runs = resolveWallFaceBase(initialNode, mesh?.geometry, nodes)?.[face] ?? null
+      const sloped = Math.abs(endHeight - wallHeight) > 1e-9
+      const baseAt = sloped
+        ? (u: number) => faceBaseAt(runs, u)
+        : faceBaseSampler(initialNode.id, face)
+      const fullProfile = sloped
+        ? wallRegionProfile({
+            length: faceSurface.length,
+            startTop: wallHeight,
+            endTop: endHeight,
+            runs,
+            region: { u0: region.u0, u1: region.u1 },
+          })
+        : []
+      const faceHeight = sloped
+        ? Math.max(
+            0,
+            ...fullProfile.flatMap((piece) => [
+              piece.top0 - piece.bottom,
+              piece.top1 - piece.bottom,
+            ]),
+          )
+        : regionFaceHeight(region, faceSurface.length, wallHeight, baseAt)
+      const bounds = resolveRegionBounds(region, faceSurface.length, faceHeight)
+      const midU = sloped && edge[0] === 'v' ? placement.position[0] : (bounds.u0 + bounds.u1) / 2
       const faceTargets = wallRegionSnapTargets(initialNode, face, nodes, runs, {
         excludeRegionId: regionId,
       })
@@ -449,7 +533,10 @@ function RegionEdgeHandle({
         if (!hit) return null
         return edge[0] === 'u' ? hit.u : hit.y - baseAt(midU)
       }
-      const initialValue = bounds[edge]
+      const initialValue =
+        sloped && edge === 'v1' && region.v1 === undefined
+          ? placement.position[1] - baseAt(midU)
+          : bounds[edge]
       const initialPointer =
         pointerValue(getPointerRay(event.nativeEvent.clientX, event.nativeEvent.clientY, ray)) ??
         initialValue

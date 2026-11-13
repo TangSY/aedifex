@@ -220,7 +220,7 @@ describe('buildSlabGeometry', () => {
     expect(fill.geometry.boundingBox?.max.y).toBeCloseTo(0.6)
   })
 
-  test('follows the flat datum before the site has a persisted terrain field', () => {
+  test('reaches the rendered flat ground before the site has a persisted terrain field', () => {
     const site = SiteNode.parse({ id: 'site_test', children: ['building_test'] })
     const slab = SlabNode.parse({
       elevation: 0.4,
@@ -237,8 +237,30 @@ describe('buildSlabGeometry', () => {
     const group = buildSlabGeometry(slab, geometryContext(site), 'solid', false)
     const fill = group.children.filter((child): child is Mesh => child instanceof Mesh)[2]!
     fill.geometry.computeBoundingBox()
-    expect(fill.geometry.boundingBox?.min.y).toBeCloseTo(0)
+    expect(fill.geometry.boundingBox?.min.y).toBeCloseTo(-0.05)
     expect(fill.geometry.boundingBox?.max.y).toBeCloseTo(0.3)
+  })
+
+  test('fills the gap under a ground-level slab down to the rendered flat ground', () => {
+    const site = SiteNode.parse({ id: 'site_test', children: ['building_test'] })
+    const slab = SlabNode.parse({
+      elevation: 0.05,
+      thickness: 0.05,
+      fillToTerrain: true,
+      polygon: [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+      ],
+    })
+    const group = buildSlabGeometry(slab, geometryContext(site), 'solid', false)
+    const fill = meshesOf(group)[2]
+    expect(fill).toBeDefined()
+    fill!.geometry.computeBoundingBox()
+    expect(fill!.geometry.boundingBox?.min.y).toBeCloseTo(-0.05)
+    expect(fill!.geometry.boundingBox?.max.y).toBeCloseTo(0)
+    disposeGroup(group)
   })
 })
 

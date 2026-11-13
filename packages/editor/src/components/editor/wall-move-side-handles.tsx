@@ -298,7 +298,7 @@ function StructureThicknessHandle({
   const structureHeight =
     node.type === 'fence'
       ? (node.height ?? 1.8)
-      : getWallEffectiveHeightForNodes(node, useScene.getState().nodes)
+      : getWallEffectiveHeightForNodes(node, useScene.getState().nodes, 0.5)
   const outward = new Vector2(frame.normal.x * side, frame.normal.y * side)
   const faceOffset = getWallLocalFaceZ({ ...node, thickness }, side > 0 ? 'a' : 'b') * side + 0.006
   const position: [number, number, number] = [
@@ -372,7 +372,7 @@ function StructureThicknessHandle({
       const initialStructureHeight =
         initialNode.type === 'fence'
           ? (initialNode.height ?? 1.8)
-          : getWallEffectiveHeightForNodes(initialNode, useScene.getState().nodes)
+          : getWallEffectiveHeightForNodes(initialNode, useScene.getState().nodes, 0.5)
       const initialStructureThickness =
         initialNode.type === 'fence'
           ? (initialNode.thickness ?? 0.08)
@@ -575,7 +575,11 @@ function WallCornerLeaderHandle({ wall, endpoint }: { wall: WallNode; endpoint: 
   const corner = endpoint === 'start' ? wall.start : wall.end
   const x = corner[0]
   const z = corner[1]
-  const wallHeight = getWallEffectiveHeightForNodes(wall, useScene.getState().nodes)
+  const wallHeight = getWallEffectiveHeightForNodes(
+    wall,
+    useScene.getState().nodes,
+    endpoint === 'start' ? 0 : 1,
+  )
 
   const dashedGeometry = useMemo(() => buildDashedVerticalGeometry(wallHeight), [wallHeight])
   const hitGeometry = useMemo(() => createEndpointHitAreaGeometry(CORNER_HEX_RADIUS), [])
@@ -917,7 +921,7 @@ function WallHeightArrowHandle({ wall }: { wall: WallNode }) {
   const wallAngle = Math.atan2(-dirZ, dirX)
   // `wall` is the override-merged effective wall (see
   // WallMoveSideHandlesForWall), so this height is already live during a drag.
-  const wallHeight = getWallEffectiveHeightForNodes(wall, useScene.getState().nodes)
+  const wallHeight = getWallEffectiveHeightForNodes(wall, useScene.getState().nodes, 0.5)
   const handleY = wallHeight + HEIGHT_HANDLE_OFFSET
 
   const activateHeightResize = (event: ThreeEvent<PointerEvent>) => {
@@ -971,6 +975,8 @@ function WallHeightArrowHandle({ wall }: { wall: WallNode }) {
     // Dragging the top makes the wall custom-height; seed from the resolved
     // effective height so a plane-bound wall's drag starts at its real top.
     const initialHeight = getWallEffectiveHeightForNodes(wall, useScene.getState().nodes)
+    const initialEndOffset =
+      getWallEffectiveHeightForNodes(wall, useScene.getState().nodes, 1) - initialHeight
     const wallId = wall.id as AnyNodeId
     let pendingHeight = initialHeight
     let releaseSpatialCapture: (() => void) | null = null
@@ -1009,7 +1015,10 @@ function WallHeightArrowHandle({ wall }: { wall: WallNode }) {
       const newHeight = Math.max(MIN_WALL_HEIGHT, initialHeight + (currentY - initialY))
       if (Math.abs(newHeight - pendingHeight) < 1e-6) return
       pendingHeight = newHeight
-      useLiveNodeOverrides.getState().set(wallId, { height: newHeight })
+      useLiveNodeOverrides.getState().set(wallId, {
+        height: newHeight,
+        ...(wall.topProfile ? { topProfile: undefined, endHeightOffset: initialEndOffset } : {}),
+      })
       useScene.getState().markDirty(wallId)
     }
 
@@ -1036,7 +1045,10 @@ function WallHeightArrowHandle({ wall }: { wall: WallNode }) {
       // falls back to the scene store.
       useScene.temporal.getState().resume()
       if (pendingHeight !== initialHeight) {
-        useScene.getState().updateNode(wallId, { height: pendingHeight })
+        useScene.getState().updateNode(wallId, {
+          height: pendingHeight,
+          ...(wall.topProfile ? { topProfile: undefined, endHeightOffset: initialEndOffset } : {}),
+        })
       }
       useLiveNodeOverrides.getState().clear(wallId)
       useScene.getState().markDirty(wallId)

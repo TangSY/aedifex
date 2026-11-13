@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import {
   checkOpeningWithinWall,
   clearSceneHistory,
@@ -12,12 +11,16 @@ import {
   useScene,
   type WallTopologyChanges,
 } from '../../index'
+import { wallSupportForNodes } from '../../lib/opening-floor-datum'
 import { detectOpenWallEnds, extractRooms } from '../../lib/room-graph'
+import { GROUND_SUPPORT_ID } from '../../lib/support-host'
 import { encodeTerrainField } from '../../lib/terrain-codec'
 import { applyHeightPatch, createTerrainField, flattenPatch } from '../../lib/terrain-field'
 import { type AnyNode, type AnyNodeId, DoorNode, WallNode, ZoneNode } from '../../schema'
+import { getWallTop } from '../../services/storey'
 import { getWallArcData, getWallCurveFrameAt } from './wall-curve'
-import { planWallInsertion, planWallSplitAtPoint } from './wall-topology'
+import { planWallMerge } from './wall-merge'
+import { planWallInsertion, planWallSplitAtPoint, splitWall } from './wall-topology'
 
 const LEVEL_ID = 'level_topology' as AnyNodeId
 
@@ -68,6 +71,70 @@ function terrainSceneNodes() {
     },
   ] as unknown as AnyNode[]
 }
+
+test('ground-pinned sloped wall splits retain their top over uneven terrain', () => {
+  const wall = WallNode.parse({
+    parentId: LEVEL_ID,
+    supportSlabId: GROUND_SUPPORT_ID,
+    start: [-3, 3],
+    end: [4, 3],
+    height: 2,
+    endHeightOffset: 1,
+  })
+  const before = nodeMap([...terrainSceneNodes(), wall])
+  const sourceBase = wallSupportForNodes(wall, before).elevation
+  const parts = splitWall(wall, [6 / 7], before)!.create.map((part) => ({
+    ...part,
+    parentId: LEVEL_ID,
+  }))
+  const after = nodeMap([...terrainSceneNodes(), ...parts])
+  expect(parts[1]!.supportOffset).toBeCloseTo(-2.5)
+  for (const [part, from, to] of [
+    [parts[0]!, 0, 6 / 7],
+    [parts[1]!, 6 / 7, 1],
+  ] as const) {
+    const base = wallSupportForNodes(part, after).elevation
+    for (const t of [0, 0.5, 1])
+      expect(getWallTop(part, LEVEL_ID, after, base, t)).toBeCloseTo(
+        getWallTop(wall, LEVEL_ID, before, sourceBase, from + (to - from) * t),
+        6,
+      )
+  }
+  const merge = planWallMerge(
+    after,
+    parts.map((part) => part.id),
+  )
+  const merged = merge.changes.update.find((entry) => entry.id === merge.wallId)!.data as WallNode
+  const mergedNodes = nodeMap([...terrainSceneNodes(), merged])
+  expect(wallSupportForNodes(merged, mergedNodes).elevation).toBeCloseTo(sourceBase, 6)
+  for (const t of [0, 0.5, 1])
+    expect(
+      getWallTop(
+        merged,
+        LEVEL_ID,
+        mergedNodes,
+        wallSupportForNodes(merged, mergedNodes).elevation,
+        t,
+      ),
+    ).toBeCloseTo(getWallTop(wall, LEVEL_ID, before, sourceBase, t), 6)
+  const renamed = parts.map((part, index) => ({
+    ...part,
+    id: (index ? 'wall_aaa' : 'wall_zzz') as WallNode['id'],
+  }))
+  const renamedNodes = nodeMap([...terrainSceneNodes(), ...renamed])
+  const reversePriority = planWallMerge(
+    renamedNodes,
+    renamed.map((part) => part.id),
+  )
+  const other = reversePriority.changes.update.find((entry) => entry.id === reversePriority.wallId)!
+    .data as WallNode
+  const otherNodes = nodeMap([...terrainSceneNodes(), other])
+  expect(wallSupportForNodes(other, otherNodes).elevation).toBeCloseTo(sourceBase, 6)
+  for (const t of [0, 0.5, 1])
+    expect(
+      getWallTop(other, LEVEL_ID, otherNodes, wallSupportForNodes(other, otherNodes).elevation, t),
+    ).toBeCloseTo(getWallTop(wall, LEVEL_ID, before, sourceBase, t), 6)
+})
 
 describe('planWallInsertion', () => {
   test('rejects the whole insertion when adjacent crossings would create a sliver', () => {

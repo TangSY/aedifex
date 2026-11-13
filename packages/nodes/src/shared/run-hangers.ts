@@ -3,15 +3,16 @@ import {
   type AnyNodeId,
   type DuctSegmentNode,
   type FloorplanGeometry,
+  findLevelAncestorId,
   type GeometryContext,
   getWallBaseElevationForNodes,
   getWallCurveFrameAt,
-  getWallEffectiveHeightForNodes,
   getWallLocalFaceZ,
   getWallThickness,
   type PipeSegmentNode,
   pointInPolygon,
   resolveCeilingHeight,
+  wallTopStationProfile,
 } from '@aedifex/core'
 import {
   BoxGeometry,
@@ -75,6 +76,10 @@ export function planRunHangerSlots(
   const hosts = Object.values(nodes).filter(
     (n) => n.parentId === run.parentId && (n.type === 'wall' || n.type === 'ceiling'),
   )
+  const wallProfiles = new Map<
+    string,
+    { base: number; profile: ReturnType<typeof wallTopStationProfile> }
+  >()
   const result: RunHangerSlot[] = []
   for (let i = 1; i < run.path.length; i++) {
     const start = new Vector3(...run.path[i - 1]!)
@@ -110,13 +115,27 @@ export function planRunHangerSlots(
             reach + thickness,
           )
           if (!hit) continue
-          const base = getWallBaseElevationForNodes(host, nodes)
-          const top = base + getWallEffectiveHeightForNodes(host, nodes)
-          if (center.y < base || center.y > top) continue
-          if (hasWallChildOverlap(host.id, nodes, hit.localX, center.y - base, 0.08, 0.08)) continue
+          let wallProfile = wallProfiles.get(host.id)
+          if (!wallProfile) {
+            const base = getWallBaseElevationForNodes(host, nodes)
+            wallProfile = {
+              base,
+              profile: wallTopStationProfile({
+                wall: host,
+                levelId: findLevelAncestorId(host.id, nodes) ?? 'default',
+                nodes,
+                electedBase: base,
+              }),
+            }
+            wallProfiles.set(host.id, wallProfile)
+          }
+          const { base, profile } = wallProfile
           const frame = getWallCurveFrameAt(host, hit.localX / hit.wallLength)
           const side = hit.perpDistance >= 0 ? 1 : -1
           const faceOffset = getWallLocalFaceZ(host, side > 0 ? 'a' : 'b')
+          const top = profile.topAt(hit.localX, faceOffset)
+          if (center.y < base || center.y > top) continue
+          if (hasWallChildOverlap(host.id, nodes, hit.localX, center.y - base, 0.08, 0.08)) continue
           anchor = new Vector3(
             frame.point.x - hit.dirY * faceOffset,
             center.y,

@@ -306,6 +306,32 @@ export function getWallCurveLength(wall: WallCurveLike, segments = DEFAULT_SAMPL
   return totalLength
 }
 
+function chordFractionAtParameter(wall: WallCurveLike, t: number): number {
+  const chord = getWallChordFrame(wall)
+  if (chord.length < CURVE_EPSILON) return 0
+  const point = getWallCurveFrameAt(wall, t).point
+  return clamp01(((point.x - chord.start.x) * chord.tangent.x + (point.y - chord.start.y) * chord.tangent.y) / chord.length)
+}
+
+export function getWallChordFractionAt(wall: WallCurveLike, station: number): number {
+  const length = getWallCurveLength(wall)
+  return length < CURVE_EPSILON ? 0 : chordFractionAtParameter(wall, station / length)
+}
+
+export function getWallStationAtChordFraction(wall: WallCurveLike, fraction: number): number {
+  const length = getWallCurveLength(wall)
+  const target = clamp01(fraction)
+  if (!isCurvedWall(wall) || target === 0 || target === 1) return target * length
+  let low = 0
+  let high = 1
+  for (let i = 0; i < 32; i++) {
+    const mid = (low + high) / 2
+    if (chordFractionAtParameter(wall, mid) < target) low = mid
+    else high = mid
+  }
+  return ((low + high) / 2) * length
+}
+
 export function getWallSurfacePolygon(
   wall: Pick<WallNode | FenceNode, 'start' | 'end' | 'curveOffset' | 'thickness'> &
     Pick<WallNode, 'justification'>,
