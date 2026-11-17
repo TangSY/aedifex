@@ -32,6 +32,12 @@ The source and translated catalogs are PO files under
 catalogs next to them are what the browser loads; PO files and the ICU compiler
 are not part of the normal rendering path.
 
+The catalog compiler also generates `packages/core/src/i18n/english-formatting-fallback.ts`
+for formatted messages used by core, viewer, nodes, and the editor's viewer controls.
+This enables English interpolation in standalone hosts without registering the editor
+catalog. Host-registered messages still take precedence. `i18n:check` verifies the
+fallback is synchronized with the source catalog.
+
 After adding or changing a runtime message:
 
 1. Run `bun run i18n:extract`. Lingui updates the PO catalogs and compiled

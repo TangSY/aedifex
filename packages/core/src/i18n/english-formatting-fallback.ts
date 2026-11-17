@@ -1,0 +1,1 @@
+/*eslint-disable*/import type{Messages}from"@lingui/core";export const messages=JSON.parse("{\"viewer.floorplan.viewLabel\":[[\"floor\"],\" 2D view\"],\"viewer.levels.label\":[\"Levels: \",[\"mode\"]],\"viewer.walkthrough.label\":[\"Walkthrough: \",[\"state\"]],\"viewer.walls.label\":[\"Walls: \",[\"mode\"]]}")as Messages;
