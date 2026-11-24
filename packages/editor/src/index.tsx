@@ -366,6 +366,7 @@ export {
 } from './components/viewer/floorplan-preview'
 export { useViewerCameraNavigationSync } from './components/viewer/use-viewer-camera-navigation-sync'
 export {
+  DaylightSettingsButton,
   ViewerControlsBar,
   type ViewerControlsBarProps,
 } from './components/viewer/viewer-controls-bar'

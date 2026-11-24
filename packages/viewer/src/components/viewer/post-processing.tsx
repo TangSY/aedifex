@@ -5,6 +5,7 @@ import { ssgi } from 'three/addons/tsl/display/SSGINode.js'
 import { denoise } from 'three/examples/jsm/tsl/display/DenoiseNode.js'
 import {
   add,
+  context,
   diffuseColor,
   mix,
   normalView,
@@ -25,8 +26,9 @@ import {
   vec3,
   vec4,
 } from 'three/tsl'
-import { RenderPipeline, TimestampQuery, type WebGPURenderer } from 'three/webgpu'
+import { type ContextNode, RenderPipeline, TimestampQuery, type WebGPURenderer } from 'three/webgpu'
 import { backdropColors, backdropGradient, flatBackdropOutput } from '../../lib/backdrop'
+import { daylightGrade, isDaylightAtmosphere } from '../../lib/daylight/look'
 import { edgeColorFor, edgeOpacityScaleFor } from '../../lib/edge-style'
 import { PERF_OVERLAY_ENABLED } from '../../lib/gpu-perf'
 import { createEdgeDepthSampler, inkedEdges } from '../../lib/ink-edges'
@@ -37,6 +39,7 @@ import { isLiveFrameHeld } from '../../lib/live-frame-hold'
 import { mergedOutline } from '../../lib/merged-outline-node'
 import { recordPerfSample, timeSpan } from '../../lib/perf-tracks'
 import { PostProcessingResources } from '../../lib/post-processing-resources'
+import { createRenderStateGuard } from '../../lib/render-state-guard'
 import { sceneLightingMask, scenePassMrt } from '../../lib/scene-pass-mrt'
 import { packNormalToRGB, unpackRGBToNormal } from '../../lib/tsl-compat'
 import {
@@ -216,8 +219,27 @@ const PostProcessingPasses = ({
   disablePostFx?: boolean
 }) => {
   const { gl: renderer, invalidate, scene, camera, size } = useThree()
-  const resourcesRef = useRef<PostProcessingResources | null>(null)
   const atmosphere = useSceneAtmosphere()
+  const resourcesRef = useRef<{
+    atmosphere: typeof atmosphere
+    resources: PostProcessingResources
+  } | null>(null)
+  const daylight = isDaylightAtmosphere(atmosphere) ? atmosphere : null
+  const gpuRenderer = renderer as unknown as WebGPURenderer
+  const renderWithStateGuard = useMemo(
+    () => createRenderStateGuard({ renderer: gpuRenderer, scene, camera }),
+    [camera, gpuRenderer, scene],
+  )
+  const roomContext = useMemo(() => {
+    if (!daylight) return undefined
+    const base = gpuRenderer.contextNode as
+      | (ContextNode<unknown> & { getFlowContextData(): object })
+      | undefined
+    return context({
+      ...base?.getFlowContextData(),
+      ...(daylight.roomContext.value as object),
+    })
+  }, [daylight, gpuRenderer])
   // Under the ground the sky is the dark mode's: the same mix the pipeline's backdrop makes.
   const directSkyNode = useMemo(
     () =>
@@ -329,7 +351,7 @@ const PostProcessingPasses = ({
   }, [])
 
   const disposePipeline = useCallback(() => {
-    resourcesRef.current?.dispose()
+    resourcesRef.current?.resources.dispose()
     resourcesRef.current = null
   }, [])
 
@@ -447,6 +469,7 @@ const PostProcessingPasses = ({
     const hasWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator
     if (!hasWebGPU) {
       hasPipelineErrorRef.current = true
+      if (daylight) daylight.rooms.roomPassAvailable = false
       resourcesRef.current = null
       return
     }
@@ -460,11 +483,12 @@ const PostProcessingPasses = ({
     outliner.hoveredObjects.length = 0
 
     const resources = new PostProcessingResources()
-    resourcesRef.current = resources
+    resourcesRef.current = { atmosphere, resources }
     try {
       const layerIndex = new LayerPassIndex(scene, [ZONE_LAYER, OVERLAY_LAYER])
       resources.layerIndex = layerIndex
       const scenePass = pass(scene, camera)
+      if (daylight) scenePass.contextNode = daylight.roomContext
       resources.passes.push(scenePass)
       scenePass.setLayers(sceneOnlyLayers)
       const zonePass = new LayerPassNode(layerIndex, camera, ZONE_LAYER, scenePass)
@@ -602,10 +626,12 @@ const PostProcessingPasses = ({
       // backdrop below so geometry that fades to the background colour (the
       // horizon disc) matches it exactly.
       const gradeRgb = (rgb: any) =>
-        saturation(
-          rgb.div(0.18).pow(vec3(GRADE_PARAMS.contrast)).mul(0.18),
-          GRADE_PARAMS.saturation,
-        )
+        daylight
+          ? daylightGrade(rgb, daylight)
+          : saturation(
+              rgb.div(0.18).pow(vec3(GRADE_PARAMS.contrast)).mul(0.18),
+              GRADE_PARAMS.saturation,
+            )
       if (shading === 'rendered' && colorGrading) {
         sceneColor = vec4(gradeRgb(sceneColor.rgb), sceneColor.a)
       }
@@ -754,9 +780,9 @@ const PostProcessingPasses = ({
       renderPipeline.outputColorTransform =
         !transparentBackground && !(flatBackground && !atmosphere)
       renderPipeline.outputNode = finalOutput
-      retryCountRef.current = 0
     } catch (error) {
       hasPipelineErrorRef.current = true
+      if (daylight) daylight.rooms.roomPassAvailable = false
       console.error(
         '[viewer/post-processing] Failed to set up post-processing pipeline. Rendering without post FX.',
         {
@@ -777,6 +803,7 @@ const PostProcessingPasses = ({
     // never trigger a rebuild either.
     atmosphere,
     camera,
+    daylight,
     disablePostFx,
     disposePipeline,
     hoverHiddenColor,
@@ -853,14 +880,12 @@ const PostProcessingPasses = ({
     sanitizeOutlineObjects(outliner.selectedObjects)
     sanitizeOutlineObjects(outliner.hoveredObjects)
 
-    if (
-      disablePostFx ||
-      PERF_POST_FX_DISABLED ||
-      hasPipelineErrorRef.current ||
-      !resourcesRef.current?.pipeline
-    ) {
+    const built = resourcesRef.current
+    const pipeline = built?.atmosphere === atmosphere ? built.resources.pipeline : null
+    if (disablePostFx || PERF_POST_FX_DISABLED || hasPipelineErrorRef.current || !pipeline) {
       const previousBackgroundNode = scene.backgroundNode
       if (directSkyNode && !transparentBackground) scene.backgroundNode = directSkyNode
+      const directRoomContext = hasPipelineErrorRef.current ? undefined : roomContext
       try {
         const clearAlpha = transparentBackground ? 0 : 1
         // Without the pipeline there is no fog and no vignette: the clear colour is the dark mode's.
@@ -875,10 +900,21 @@ const PostProcessingPasses = ({
         }
         const submittedAt = PERF_OVERLAY_ENABLED ? performance.now() : 0
         timeSpan('render-encode', () => {
-          renderDirectWithOverlays({ renderer: renderer as any, scene, camera })
+          const draw = () =>
+            renderDirectWithOverlays({
+              renderer: gpuRenderer,
+              scene,
+              camera,
+              contextNode: directRoomContext,
+            })
+          if (daylight) renderWithStateGuard(draw)
+          else draw()
         })
+        if (daylight) daylight.rooms.roomPassAvailable = directRoomContext !== undefined
         if (PERF_OVERLAY_ENABLED) recordFrameGpuTiming(renderer, submittedAt)
       } catch (fallbackError) {
+        if (daylight) daylight.rooms.roomPassAvailable = false
+        if (directRoomContext) hasPipelineErrorRef.current = true
         console.error('[viewer/post-processing] Fallback render failed.', fallbackError)
       } finally {
         scene.backgroundNode = previousBackgroundNode
@@ -887,20 +923,24 @@ const PostProcessingPasses = ({
       return
     }
 
-    const pipeline = resourcesRef.current.pipeline
     try {
-      // Clear alpha=0 so background pixels in the output MRT attachment (index 0) get a=0,
-      // making scenePassColor.a a reliable geometry mask (geometry pixels write a=1 via output node).
-      ;(renderer as any).setClearAlpha(0)
       const submittedAt = PERF_OVERLAY_ENABLED ? performance.now() : 0
       timeSpan('render-encode', () => {
-        pipeline.render()
+        const draw = () => {
+          // Alpha distinguishes background from geometry in the scene pass.
+          gpuRenderer.setClearAlpha(0)
+          pipeline.render()
+        }
+        if (daylight) renderWithStateGuard(draw)
+        else draw()
       })
+      retryCountRef.current = 0
+      if (daylight) daylight.rooms.roomPassAvailable = true
       if (PERF_OVERLAY_ENABLED) recordFrameGpuTiming(renderer, submittedAt)
     } catch (error) {
+      if (daylight) daylight.rooms.roomPassAvailable = false
       hasPipelineErrorRef.current = true
-      // A failed MRT pass may leave its target bound; clear it before the fallback render.
-      ;(renderer as any).setRenderTarget?.(null)
+      if (!daylight) gpuRenderer.setRenderTarget(null)
       console.error('[viewer/post-processing] Render pass failed.', {
         retryCount: retryCountRef.current,
         rendererCtor: (renderer as any).constructor?.name,

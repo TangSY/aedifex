@@ -41,6 +41,7 @@ import { subscribeWallBuildInteractions } from '../../systems/wall/wall-build-li
 import { ImmersiveXRPresentationProvider } from '../../xr/presentation-context'
 import { SceneRenderer } from '../renderers/scene-renderer'
 import { BATCH_SPIKE_ENABLED, BatchedMeshSpike } from './batched-mesh-spike'
+import { DaylightAtmosphere } from './daylight-atmosphere'
 import FrameLimiter from './frame-limiter'
 import { Lights } from './lights'
 import { PerfMonitor } from './perf-monitor'
@@ -821,6 +822,7 @@ function ViewerScene({
   useBvh: boolean
   SceneWrapper?: ViewerImmersiveSession['Scene']
 }) {
+  const daylight = useViewer((state) => state.sceneTheme === 'daylight')
   const renderedScene = useBvh ? (
     <SceneBvh>
       <SceneRenderer />
@@ -854,6 +856,7 @@ function ViewerScene({
         sceneReadyMaxWaitMs={sceneReadyMaxWaitMs}
       />
       <SceneErrorBoundary handlers={renderErrorHandlers}>
+        {daylight && !immersiveXR && <DaylightAtmosphere />}
         <Lights />
         {SceneWrapper ? <SceneWrapper>{spatialScene}</SceneWrapper> : spatialScene}
         {!immersiveXR && <PostProcessing disablePostFx={disablePostFx} hoverStyles={hoverStyles} />}

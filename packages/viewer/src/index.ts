@@ -316,6 +316,8 @@ export { catalogLightSource, useItemLightPool } from './store/use-item-light-poo
 export {
   anyGroundVeiled,
   applyCountryUnitDefault,
+  type DaylightSettings,
+  type DaylightTime,
   DEFAULT_UNDERGROUND_LOOK,
   default as useViewer,
   type GroundMode,

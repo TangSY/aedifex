@@ -30,8 +30,10 @@ import {
 import { GRADE_PARAMS, SSGI_PARAMS } from '../components/viewer/post-processing'
 import type { SceneAtmosphereSource } from '../components/viewer/scene-atmosphere'
 import { backdropColors, backdropGradient, flatBackdropOutput } from './backdrop'
+import { daylightGrade, isDaylightAtmosphere } from './daylight/look'
 import { type EdgeMode, edgeColorFor, edgeOpacityScaleFor } from './edge-style'
 import { createEdgeDepthSampler, inkedEdges } from './ink-edges'
+import { createRenderStateGuard } from './render-state-guard'
 import { sceneLightingMask, scenePassMrt } from './scene-pass-mrt'
 import type { SceneTheme } from './scene-themes'
 import { packNormalToRGB, unpackRGBToNormal } from './tsl-compat'
@@ -181,6 +183,8 @@ export async function createSnapshotPipeline({
     // The scene pass owns MRT and its transparent clear, including when nested
     // inside FXAA's intermediate render target.
     const scenePass = new SnapshotScenePass('color', scene, camera)
+    const daylight = isDaylightAtmosphere(atmosphere) ? atmosphere : null
+    const renderWithStateGuard = createRenderStateGuard({ renderer, scene, camera })
     scenePass.setMRT(
       scenePassMrt({
         output,
@@ -247,7 +251,12 @@ export async function createSnapshotPipeline({
     })
     const ungradedSceneRgb = mix(aoRgb, inkedRgb, inkMixUniform)
     const gradeRgb = (rgb: any) =>
-      saturation(rgb.div(0.18).pow(vec3(GRADE_PARAMS.contrast)).mul(0.18), GRADE_PARAMS.saturation)
+      daylight
+        ? daylightGrade(rgb, daylight)
+        : saturation(
+            rgb.div(0.18).pow(vec3(GRADE_PARAMS.contrast)).mul(0.18),
+            GRADE_PARAMS.saturation,
+          )
     const sceneRgb = mix(ungradedSceneRgb, gradeRgb(ungradedSceneRgb), gradeMixUniform)
 
     // Per-pixel world ray from the capture camera → sky gradient above the
@@ -365,12 +374,13 @@ export async function createSnapshotPipeline({
           renderTarget.setSize(captureWidth, captureHeight)
         }
 
-        try {
+        // The viewport's real lights stay active when its room pass is unavailable.
+        scenePass.contextNode = daylight?.rooms.roomPassAvailable ? daylight.roomContext : null
+        renderWithStateGuard(() => {
           renderer.setRenderTarget(renderTarget)
           pipeline.render()
-        } finally {
           renderer.setRenderTarget(null)
-        }
+        })
 
         // Let callers restore visibility and other capture policy immediately
         // after the render, before the asynchronous GPU readback begins.

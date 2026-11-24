@@ -3,6 +3,8 @@
 import { type AedifexI18n, emitter, useAedifexI18n } from '@aedifex/core'
 import {
   CLAY_PALETTE,
+  type DaylightSettings,
+  type DaylightTime,
   type EdgeMode,
   getSceneTheme,
   SCENE_THEMES,
@@ -24,6 +26,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   Square,
+  Sun,
   SwatchBook,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
@@ -39,6 +42,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '../ui/primitives/dropdown-menu'
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/primitives/popover'
 import { TooltipProvider } from '../ui/primitives/tooltip'
 
 const wallModeConfig = {
@@ -70,6 +74,7 @@ function wallModeLabel(mode: keyof typeof wallModeConfig, i18n: AedifexI18n): st
 }
 
 function sceneThemeName(id: string, fallback: string, i18n: AedifexI18n): string {
+  if (id === 'daylight') return i18n._({ id: 'viewer.theme.daylight', message: 'Daylight' })
   if (id === 'studio') return i18n._({ id: 'viewer.theme.studio', message: 'Studio' })
   if (id === 'paper') return i18n._({ id: 'viewer.theme.paper', message: 'Paper' })
   if (id === 'sunset') return i18n._({ id: 'viewer.theme.sunset', message: 'Sunset' })
@@ -148,8 +153,159 @@ function VisibilityMenu({
   )
 }
 
-// One "Display" button gathering shadows, camera projection, colors, render
-// mode, scene theme and edges.
+const daylightFieldClass = 'h-8 rounded-md border border-border bg-background px-2 text-sm'
+
+export function DaylightSettingsButton({
+  className,
+  side = 'top',
+  showThemeChoice = false,
+}: {
+  className?: string
+  side?: 'top' | 'bottom'
+  showThemeChoice?: boolean
+}) {
+  const i18n = useAedifexI18n()
+  const theme = useViewer((state) => state.sceneTheme)
+  const active = theme === 'daylight'
+  const settings = useViewer((state) => state.daylight)
+  const setDaylight = useViewer((state) => state.setDaylight)
+  const customMinutes = typeof settings.time === 'number' ? settings.time : null
+  const timeValue =
+    customMinutes === null
+      ? ''
+      : [Math.floor(customMinutes / 60), customMinutes % 60]
+          .map((part) => String(part).padStart(2, '0'))
+          .join(':')
+  const label = i18n._({ id: 'viewer.daylight.settings', message: 'Daylight settings' })
+
+  if (!active && !showThemeChoice) return null
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <ActionButton
+          aria-label={label}
+          className={cn(active && 'text-amber-400 hover:bg-white/5', className)}
+          label={label}
+          size="icon"
+          tooltipClassName="dark"
+          tooltipSide={side}
+          variant="ghost"
+        >
+          <Sun className="h-5 w-5" />
+        </ActionButton>
+      </PopoverTrigger>
+      <PopoverContent aria-label={label} className="dark grid gap-3" side={side} sideOffset={8}>
+        {showThemeChoice && (
+          <label className="grid gap-1.5 text-sm">
+            {i18n._({ id: 'viewer.theme.title', message: 'Scene theme' })}
+            <select
+              className={daylightFieldClass}
+              onChange={(event) => useViewer.getState().setSceneTheme(event.currentTarget.value)}
+              value={theme}
+            >
+              {SCENE_THEMES.map((choice) => (
+                <option key={choice.id} value={choice.id}>
+                  {sceneThemeName(choice.id, choice.name, i18n)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {active && (
+          <>
+            <label className="grid gap-1.5 text-sm">
+              {i18n._({ id: 'viewer.daylight.time', message: 'Time of day' })}
+              <select
+                className={daylightFieldClass}
+                onChange={(event) => {
+                  const selected = event.currentTarget.value
+                  setDaylight({ time: selected === 'custom' ? 720 : (selected as DaylightTime) })
+                }}
+                value={customMinutes === null ? settings.time : 'custom'}
+              >
+                <option value="midday">
+                  {i18n._({ id: 'viewer.daylight.midday', message: 'Midday' })}
+                </option>
+                <option value="golden">
+                  {i18n._({ id: 'viewer.daylight.golden', message: 'Golden hour' })}
+                </option>
+                <option value="blue">
+                  {i18n._({ id: 'viewer.daylight.blue', message: 'Blue hour' })}
+                </option>
+                <option value="night">
+                  {i18n._({ id: 'viewer.daylight.night', message: 'Night' })}
+                </option>
+                <option value="live">
+                  {i18n._({ id: 'viewer.daylight.live', message: 'Current time' })}
+                </option>
+                <option value="custom">
+                  {i18n._({ id: 'viewer.daylight.custom', message: 'Custom time' })}
+                </option>
+              </select>
+            </label>
+            {customMinutes !== null && (
+              <label className="grid gap-1.5 text-sm">
+                {i18n._({ id: 'viewer.daylight.solarTime', message: 'Local solar time' })}
+                <input
+                  className={daylightFieldClass}
+                  onChange={(event) => {
+                    const minute = event.currentTarget.valueAsNumber / 60_000
+                    if (Number.isInteger(minute)) setDaylight({ time: minute })
+                  }}
+                  type="time"
+                  value={timeValue}
+                />
+              </label>
+            )}
+            <label className="grid gap-1.5 text-sm">
+              {i18n._({ id: 'viewer.daylight.weather', message: 'Weather' })}
+              <select
+                className={daylightFieldClass}
+                onChange={(event) =>
+                  setDaylight({ weather: event.currentTarget.value as DaylightSettings['weather'] })
+                }
+                value={settings.weather}
+              >
+                <option value="clear">
+                  {i18n._({ id: 'viewer.daylight.clear', message: 'Clear' })}
+                </option>
+                <option value="fair">
+                  {i18n._({ id: 'viewer.daylight.fair', message: 'Mostly clear' })}
+                </option>
+                <option value="cloudy">
+                  {i18n._({ id: 'viewer.daylight.cloudy', message: 'Cloudy' })}
+                </option>
+                <option value="overcast">
+                  {i18n._({ id: 'viewer.daylight.overcast', message: 'Overcast' })}
+                </option>
+              </select>
+            </label>
+            <label className="grid gap-1.5 text-sm">
+              {i18n._({ id: 'viewer.daylight.quality', message: 'Lighting quality' })}
+              <select
+                className={daylightFieldClass}
+                onChange={(event) =>
+                  setDaylight({ quality: event.currentTarget.value as DaylightSettings['quality'] })
+                }
+                value={settings.quality}
+              >
+                <option value="low">{i18n._({ id: 'viewer.daylight.low', message: 'Low' })}</option>
+                <option value="medium">
+                  {i18n._({ id: 'viewer.daylight.medium', message: 'Medium' })}
+                </option>
+                <option value="high">
+                  {i18n._({ id: 'viewer.daylight.high', message: 'High' })}
+                </option>
+              </select>
+            </label>
+          </>
+        )}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 function DisplayMenu() {
   const i18n = useAedifexI18n()
   const cameraMode = useViewer((s) => s.cameraMode)
@@ -469,6 +625,7 @@ export const ViewerControlsBar = ({
           <div className="mx-1 h-5 w-px bg-border/40" />
 
           <DisplayMenu />
+          <DaylightSettingsButton />
 
           <div className="mx-1 h-5 w-px bg-border/40" />
 

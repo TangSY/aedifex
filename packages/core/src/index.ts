@@ -322,6 +322,7 @@ export {
   hostedCutterHoles,
   withHostedCutterHoles,
 } from './lib/object-cuts'
+export { isOpenAirRoom, openPlanRoomGroups } from './lib/open-air-room'
 export {
   getOpeningFloorDatum,
   getOpeningWallCut,

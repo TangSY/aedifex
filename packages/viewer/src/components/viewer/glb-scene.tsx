@@ -20,11 +20,12 @@ import {
   ProceduralMotionController,
 } from '@aedifex/core/procedural-items'
 import { type ThreeEvent, useFrame, useThree } from '@react-three/fiber'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { lerp } from 'three/src/math/MathUtils.js'
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh'
 import { useGLTFKTX2 } from '../../hooks/use-gltf-ktx2'
+import { registerBakedRoomSource } from '../../lib/daylight/room-scene'
 import { createSurfaceRoleMaterial } from '../../lib/materials'
 import { applyShadowOnly, clearShadowOnly } from '../../lib/shadow-only'
 import useViewer from '../../store/use-viewer'
@@ -238,6 +239,7 @@ export function GlbScene({
   }
   const rootRef = useRef<THREE.Group>(null!)
   const actions = useClipActions(gltf.animations, rootRef)
+  const scene = useThree((state) => state.scene)
   const proceduralPlayback = useMemo(() => {
     const byNode = new Map<
       string,
@@ -474,6 +476,22 @@ export function GlbScene({
       levelsWithZones: new Set(zoneList.map((zone) => zone.levelId)),
     }
   }, [gltf.scene])
+  useLayoutEffect(
+    () =>
+      registerBakedRoomSource(scene, {
+        root: gltf.scene,
+        doorOpenness: (id) => {
+          const node = identity.get(id)
+          const clip = (node?.userData as AedifexExtras | undefined)?.clips?.find((name) =>
+            name.endsWith(': open'),
+          )
+          const action = clip ? actions[clip] : null
+          const duration = action?.getClip().duration ?? 0
+          return action && duration > 0 ? action.time / duration : 0
+        },
+      }),
+    [actions, gltf.scene, identity, scene],
+  )
   // Level pascalIds bottom-to-top, for the interactive light pool's level factor.
   const levelOrder = useMemo(() => levels.map((entry) => entry.id), [levels])
   // Loop clips no other controller plays (a plugin kind's mechanism) run on

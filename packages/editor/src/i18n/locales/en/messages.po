@@ -132,6 +132,78 @@ msgid "viewer.common.on"
 msgstr "On"
 
 #: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.blue"
+msgstr "Blue hour"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.clear"
+msgstr "Clear"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.cloudy"
+msgstr "Cloudy"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.custom"
+msgstr "Custom time"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.fair"
+msgstr "Mostly clear"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.golden"
+msgstr "Golden hour"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.high"
+msgstr "High"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.live"
+msgstr "Current time"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.low"
+msgstr "Low"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.medium"
+msgstr "Medium"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.midday"
+msgstr "Midday"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.night"
+msgstr "Night"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.overcast"
+msgstr "Overcast"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.quality"
+msgstr "Lighting quality"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.settings"
+msgstr "Daylight settings"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.solarTime"
+msgstr "Local solar time"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.time"
+msgstr "Time of day"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.weather"
+msgstr "Weather"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
 msgid "viewer.display.camera"
 msgstr "Camera"
 
@@ -302,6 +374,10 @@ msgstr "Split"
 #: packages/editor/src/components/viewer/viewer-controls-bar.tsx
 msgid "viewer.theme.blueprint"
 msgstr "Blueprint"
+
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.theme.daylight"
+msgstr "Daylight"
 
 #: packages/editor/src/components/viewer/viewer-controls-bar.tsx
 msgid "viewer.theme.mediterranean"

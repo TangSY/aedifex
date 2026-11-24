@@ -32,6 +32,8 @@ import {
   Vector3,
 } from 'three'
 import { useShallow } from 'zustand/react/shallow'
+import { isDaylightAtmosphere } from '../../lib/daylight/look'
+import { registerDaylightLampFeed } from '../../lib/daylight/room-scene'
 import { SCENE_LAYER } from '../../lib/layers'
 import {
   decorateProceduralEmission,
@@ -43,6 +45,7 @@ import useViewer from '../../store/use-viewer'
 import { ControlWidget } from '../../systems/interactive/control-widget'
 import { proceduralControlDescriptors } from '../../systems/interactive/procedural-controls'
 import { type ScriptedClipActions, ScriptedClips } from '../../systems/interactive/scripted-clips'
+import { useSceneAtmosphere } from './scene-atmosphere'
 
 /** An interactive item recovered from the scene graph so the baked GLB can be
  *  re-lit / re-animated by joining on `pascalId`. The GLB carries the geometry
@@ -172,6 +175,7 @@ export function buildGlbLightRegs(
           object,
           color: light.color,
           distance: light.distance,
+          peak: light.intensity,
           getWorldPosition: (out) => {
             const anchor = motion ?? object
             anchor.updateWorldMatrix(true, false)
@@ -197,6 +201,7 @@ export function buildGlbLightRegs(
         object,
         color: effect.color,
         distance: effect.distance ?? 0,
+        peak: Math.max(...effect.intensityRange),
         getWorldPosition: (out) => {
           object.updateWorldMatrix(true, false)
           if (item.scripted) {
@@ -398,6 +403,7 @@ export type GlbLightReg = {
   object: Object3D
   color: string
   distance: number
+  peak: number
   getWorldPosition: (out: Vector3) => void
   getIntensity: () => number
   isOn: () => boolean
@@ -460,6 +466,9 @@ function GlbItemLights({
   regs: GlbLightReg[]
   levelIndexById: Map<string, number>
 }) {
+  const scene = useThree((state) => state.scene)
+  const atmosphere = useSceneAtmosphere()
+  const rooms = isDaylightAtmosphere(atmosphere) ? atmosphere.rooms : undefined
   const lightRefs = useRef<Array<PointLight | null>>(Array.from({ length: POOL_SIZE }, () => null))
   const slots = useRef<SlotRuntime[]>(
     Array.from({ length: POOL_SIZE }, () => ({ key: null, pendingKey: null, isFadingOut: false })),
@@ -468,6 +477,24 @@ function GlbItemLights({
   const prevCamPos = useRef(new Vector3())
   const prevCamFwd = useRef(new Vector3(0, 0, -1))
   const regByKey = useMemo(() => new Map(regs.map((r) => [r.key as string, r])), [regs])
+
+  useLayoutEffect(() => {
+    if (!rooms) return
+    const lights = regs.map((lamp) => ({
+      ...lamp,
+      getWorldPosition: (out: Vector3) => {
+        lamp.getWorldPosition(out)
+        return true
+      },
+    }))
+    return registerDaylightLampFeed(scene, {
+      lights: () => lights,
+      intensity: (light) => {
+        const lamp = regByKey.get(light.key)
+        return lamp?.isOn() && isRendered(lamp.object) ? lamp.getIntensity() : 0
+      },
+    })
+  }, [regByKey, regs, rooms, scene])
 
   useFrame(({ camera }, delta) => {
     const dt = Math.min(delta, 0.1)
@@ -575,6 +602,8 @@ function GlbItemLights({
       const light = lightRefs.current[i]
       const slot = slots.current[i]
       if (!(light && slot)) continue
+      const managed = !!slot.key && rooms?.managesLamp(slot.key)
+      if (managed) light.intensity = 0
 
       if (slot.isFadingOut) {
         light.intensity = MathUtils.lerp(light.intensity, 0, dt * 12)
@@ -606,7 +635,8 @@ function GlbItemLights({
 
       reg.getWorldPosition(_lightWorld)
       light.position.copy(_lightWorld)
-      const targetIntensity = reg.isOn() && isRendered(reg.object) ? reg.getIntensity() : 0
+      const targetIntensity =
+        !managed && reg.isOn() && isRendered(reg.object) ? reg.getIntensity() : 0
       light.intensity = MathUtils.lerp(light.intensity, targetIntensity, dt * 12)
     }
   }, 6)

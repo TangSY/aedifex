@@ -4,6 +4,7 @@ import { emitter } from '@aedifex/core'
 import Image from 'next/image'
 import useEditor from '../../../store/use-editor'
 import { visibleScene } from '../../../store/view-layout'
+import { DaylightSettingsButton } from '../../viewer/viewer-controls-bar'
 import { ActionButton } from './action-button'
 import { FollowAedifexToggle } from './follow-pascal-toggle'
 
@@ -66,6 +67,7 @@ export function CameraActions({ hideOrbit = false }: { hideOrbit?: boolean }) {
 
       {/* Follow Aedifex */}
       {!is2dOnly && <FollowAedifexToggle />}
+      {!is2dOnly && <DaylightSettingsButton showThemeChoice side="bottom" />}
 
       {/* Top View */}
       {!is2dOnly && (

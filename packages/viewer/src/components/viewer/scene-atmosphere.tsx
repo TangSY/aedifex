@@ -40,6 +40,7 @@ type SceneNodeSnapshot = {
 type AtmosphereOwner = {
   id: symbol
   source: SceneAtmosphereSource
+  fallback: boolean
   fogNode: Node<'vec4'>
 }
 
@@ -67,7 +68,7 @@ function registryFor(scene: Scene): SceneAtmosphereRegistry {
 }
 
 function applyActiveOwner(scene: Scene, registry: SceneAtmosphereRegistry): void {
-  const active = registry.owners.at(-1)
+  const active = registry.owners.filter((owner) => !owner.fallback).at(-1) ?? registry.owners.at(-1)
   if (active) {
     scene.environmentNode = active.source.environmentNode
     scene.environmentIntensity = 1
@@ -97,7 +98,13 @@ export function useSceneAtmosphere(): SceneAtmosphereSource | null {
  * Installs a generic radiance source into the current scene. The source object is
  * expected to remain stable while its colors, vectors, and numbers mutate.
  */
-export function SceneAtmosphere({ source }: { source: SceneAtmosphereSource }) {
+export function SceneAtmosphere({
+  source,
+  fallback = false,
+}: {
+  source: SceneAtmosphereSource
+  fallback?: boolean
+}) {
   const scene = useThree((state) => state.scene)
   const invalidate = useThree((state) => state.invalidate)
   const ownerId = useRef(Symbol('scene-atmosphere'))
@@ -125,7 +132,7 @@ export function SceneAtmosphere({ source }: { source: SceneAtmosphereSource }) {
       }
     }
 
-    const owner: AtmosphereOwner = { id: ownerId.current, source, fogNode }
+    const owner: AtmosphereOwner = { id: ownerId.current, source, fallback, fogNode }
     registry.owners.push(owner)
     applyActiveOwner(scene, registry)
     invalidate()
@@ -133,14 +140,11 @@ export function SceneAtmosphere({ source }: { source: SceneAtmosphereSource }) {
     return () => {
       const index = registry.owners.findIndex((entry) => entry.id === owner.id)
       if (index < 0) return
-      const wasActive = index === registry.owners.length - 1
       registry.owners.splice(index, 1)
-      if (wasActive) {
-        applyActiveOwner(scene, registry)
-        invalidate()
-      }
+      applyActiveOwner(scene, registry)
+      invalidate()
     }
-  }, [fogNode, invalidate, registry, scene, source])
+  }, [fallback, fogNode, invalidate, registry, scene, source])
 
   return null
 }

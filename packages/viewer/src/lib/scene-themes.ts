@@ -61,6 +61,18 @@ export const SCENE_THEMES: SceneTheme[] = [
     },
   },
   {
+    id: 'daylight',
+    name: 'Daylight',
+    appearance: 'light',
+    background: '#dbe4ed',
+    backgroundSky: '#94b8df',
+    ground: '#dcd9ce',
+    ambient: { color: '#ffffff', intensity: 0.4 },
+    hemi: { sky: '#ebf3ff', ground: '#c4ba9f', intensity: 0.55 },
+    lights: [{ position: [15, 24, 10], color: '#fff4d9', intensity: 3, castShadow: true }],
+    toneMappingExposure: 0.9,
+  },
+  {
     id: 'paper',
     name: 'Paper',
     appearance: 'light',

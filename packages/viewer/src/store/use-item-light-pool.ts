@@ -14,6 +14,7 @@ export type LightSource = {
   nodeId: AnyNodeId
   color: string
   distance: number
+  peak?: number
   getWorldPosition: (out: Vector3) => boolean
   getIntensity: () => number
   isEligible: () => boolean
@@ -34,6 +35,7 @@ export function catalogLightSource(
     nodeId,
     color: effect.color,
     distance: effect.distance ?? 0,
+    peak: Math.max(...effect.intensityRange),
     getWorldPosition: (out) => {
       const object = sceneRegistry.nodes.get(nodeId)
       if (!object) return false

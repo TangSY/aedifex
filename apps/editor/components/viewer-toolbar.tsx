@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  DaylightSettingsButton,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -676,6 +677,7 @@ export function EditorViewerToolbarRight({
       <WallModeToggle />
       <div className="my-1.5 w-px bg-border/50" />
       <DisplayMenu />
+      <DaylightSettingsButton className="h-8 w-8" side="bottom" />
       <div className="my-1.5 w-px bg-border/50" />
       <WalkthroughButton />
       {onVRToggle || vrButton

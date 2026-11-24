@@ -8,6 +8,7 @@ import type {
   OrthographicCamera,
 } from 'three/webgpu'
 import * as THREE from 'three/webgpu'
+import { isDaylightAtmosphere } from '../../lib/daylight/look'
 import { getKeyLightDirectionOverride } from '../../lib/key-light-override'
 import { SHADOW_ONLY_LAYER } from '../../lib/layers'
 import { registerSkyLights } from '../../lib/underground-ambiance'
@@ -171,6 +172,7 @@ export function Lights() {
     const dt = Math.min(delta, 0.1) * 4
     const sourceShadow = atmosphere ? undefined : theme.lights[0]?.shadow
     const sourceCamera = sourceShadow?.camera
+    const shadowSettings = isDaylightAtmosphere(atmosphere) ? atmosphere.shadow : sourceShadow
 
     // Atmosphere directions are stable mutable vectors. Keep both light
     // resources mounted and move them imperatively so time/angle changes never
@@ -271,11 +273,11 @@ export function Lights() {
           // The calibrated building bias detaches furniture-scale contact shadows.
           // Small scenes need finer shadow edges too; retain the building map budget.
           const smallScene = !sourceCamera && shadowRadius.current < 1.5
-          light.shadow.mapSize.setScalar(sourceShadow?.mapSize ?? (smallScene ? 2048 : 1024))
-          light.shadow.bias = sourceShadow?.bias ?? SHADOW_DEPTH_BIAS
-          light.shadow.radius = sourceShadow?.radius ?? 2
+          light.shadow.mapSize.setScalar(shadowSettings?.mapSize ?? (smallScene ? 2048 : 1024))
+          light.shadow.bias = shadowSettings?.bias ?? SHADOW_DEPTH_BIAS
+          light.shadow.radius = shadowSettings?.radius ?? 2
           light.shadow.normalBias =
-            sourceShadow?.normalBias ??
+            shadowSettings?.normalBias ??
             (smallScene
               ? Math.min(SHADOW_NORMAL_BIAS, (4 * size) / light.shadow.mapSize.x)
               : SHADOW_NORMAL_BIAS)

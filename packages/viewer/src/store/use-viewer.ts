@@ -15,6 +15,8 @@ import type { Object3D } from 'three'
 
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import type { Weather } from '../lib/daylight/sky'
+import type { TimeOfDay } from '../lib/daylight/solar'
 import type { EdgeMode } from '../lib/edge-style'
 import type { ColorPreset, RenderShading } from '../lib/materials'
 import {
@@ -27,6 +29,15 @@ import { viewerPreferenceStorage } from '../lib/viewer-preference-storage'
 
 export type RenderContext = 'editor' | 'viewer'
 export type MetricNotation = 'meters' | 'millimeters'
+export type DaylightQuality = 'low' | 'medium' | 'high'
+export type DaylightTime = TimeOfDay | 'live' | number
+
+export type DaylightSettings = {
+  time: DaylightTime
+  weather: Weather
+  quality: DaylightQuality
+}
+
 export type WallMode = 'up' | 'cutaway' | 'down' | 'translucent'
 
 type SelectionPath = {
@@ -71,6 +82,8 @@ type ViewerState = {
 
   sceneTheme: string
   sceneAppearance: SceneTheme
+  daylight: DaylightSettings
+  setDaylight: (settings: Partial<DaylightSettings>) => void
   lookDefaults: LookDefaults
   projectPresentation?: SitePresentation
   setProjectPresentation: (presentation: SitePresentation | undefined) => void
@@ -552,6 +565,8 @@ const useViewer = create<ViewerState>()(
       cameraMode: 'perspective',
       setCameraMode: (mode) => set({ cameraMode: mode }),
 
+      daylight: { time: 'midday', weather: 'fair', quality: 'medium' },
+      setDaylight: (settings) => set((state) => ({ daylight: { ...state.daylight, ...settings } })),
       sceneTheme: 'studio',
       sceneAppearance: getSceneTheme('studio'),
       lookDefaults: { theme: 'studio', edges: 'soft', shadows: true },

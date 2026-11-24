@@ -9,11 +9,13 @@ import {
   getLevelDisplayName,
   hidesDescendants,
   isNodeKindEnabled,
+  isOpenAirRoom,
   isOperationDoorType,
   itemClipRegistry,
   type LevelNode,
   levelBaseElevationAt,
   nodeRegistry,
+  openPlanRoomGroups,
   sceneRegistry,
   useScene,
   type WindowNode,
@@ -1783,6 +1785,7 @@ function stampIdentity(
   clipNamesByNode: Map<string, string[]>,
   registryEntries: readonly RegistryEntry[],
 ) {
+  const roomGroups = openPlanRoomGroups(nodes)
   scene.traverse((object) => {
     const presentationId = object.userData.aedifexPresentationId
     const label = object.userData.label
@@ -1802,7 +1805,10 @@ function stampIdentity(
     const slotId = object.userData.slotId
     object.userData =
       typeof presentationId === 'string' ? { aedifexPresentationId: presentationId, label } : {}
-    if (Array.isArray(surfaceNodeIds) && surfaceNodeIds.every((id) => typeof id === 'string' && nodes[id]))
+    if (
+      Array.isArray(surfaceNodeIds) &&
+      surfaceNodeIds.every((id) => typeof id === 'string' && nodes[id])
+    )
       object.userData.surfaceNodeIds = surfaceNodeIds
     if (typeof ifcRole === 'string') object.userData.aedifexIfcRole = ifcRole
     if (Array.isArray(ifcParts) && ifcParts.every(isIfcRolePart))
@@ -1862,6 +1868,11 @@ function stampIdentity(
       extras.polygon = zone.polygon
       if (zone.holes?.length) extras.holes = zone.holes
       extras.color = zone.color
+      extras.spaceRole = zone.spaceRole
+      if (zone.visible === false) extras.roomVisible = false
+      if (zone.spaceRole === 'room' && isOpenAirRoom(nodes, zone)) extras.open = true
+      const group = roomGroups.get(id)
+      if (group) extras.group = group
       target.visible = true
     }
     if (node.type === 'spawn') {

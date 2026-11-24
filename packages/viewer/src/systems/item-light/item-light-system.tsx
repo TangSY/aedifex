@@ -1,8 +1,11 @@
 import type { AnyNodeId, LevelNode } from '@aedifex/core'
 import { findLevelAncestorId, sceneRegistry, useScene } from '@aedifex/core'
 import { useFrame, useThree } from '@react-three/fiber'
-import { useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { MathUtils, type PointLight, Vector3 } from 'three'
+import { useSceneAtmosphere } from '../../components/viewer/scene-atmosphere'
+import { isDaylightAtmosphere } from '../../lib/daylight/look'
+import { registerDaylightLampFeed, sceneContains } from '../../lib/daylight/room-scene'
 import { SCENE_LAYER } from '../../lib/layers'
 import { type LightSource, useItemLightPool } from '../../store/use-item-light-pool'
 import useViewer from '../../store/use-viewer'
@@ -97,6 +100,8 @@ function scoreRegistration(
 export function ItemLightSystem() {
   const scene = useThree((state) => state.scene)
   const bakedOwner = useItemLightPool((state) => state.bakedCanvases.has(scene))
+  const atmosphere = useSceneAtmosphere()
+  const rooms = isDaylightAtmosphere(atmosphere) ? atmosphere.rooms : undefined
   const lightRefs = useRef<Array<PointLight | null>>(Array.from({ length: POOL_SIZE }, () => null))
   const slots = useRef<SlotRuntime[]>(
     Array.from({ length: POOL_SIZE }, () => ({ key: null, pendingKey: null, isFadingOut: false })),
@@ -106,6 +111,22 @@ export function ItemLightSystem() {
   // Track camera state at last reassignment to detect meaningful movement
   const prevReassignCamPos = useRef(new Vector3())
   const prevReassignCamFwd = useRef(new Vector3(0, 0, -1))
+
+  useLayoutEffect(() => {
+    if (!rooms || bakedOwner) return
+    return registerDaylightLampFeed(scene, {
+      lights: function* () {
+        for (const lamp of useItemLightPool.getState().registrations.values()) {
+          if (sceneContains(scene, sceneRegistry.nodes.get(lamp.nodeId)))
+            yield { ...lamp, peak: lamp.peak ?? lamp.getIntensity() }
+        }
+      },
+      intensity: (light) => {
+        const lamp = useItemLightPool.getState().registrations.get(light.key)
+        return lamp?.isEligible() && isRendered(lamp.nodeId) ? lamp.getIntensity() : 0
+      },
+    })
+  }, [bakedOwner, rooms, scene])
 
   useFrame(({ camera }, delta) => {
     if (bakedOwner) return
@@ -235,6 +256,8 @@ export function ItemLightSystem() {
 
       const slot = slots.current[i]
       if (!slot) continue
+      const managed = !!slot.key && rooms?.managesLamp(slot.key)
+      if (managed) light.intensity = 0
 
       // Fade-out phase: lerp intensity → 0, then complete the transition
       if (slot.isFadingOut) {
@@ -270,7 +293,8 @@ export function ItemLightSystem() {
       }
 
       if (reg.getWorldPosition(_itemPos)) light.position.copy(_itemPos)
-      const targetIntensity = reg.isEligible() && isRendered(reg.nodeId) ? reg.getIntensity() : 0
+      const targetIntensity =
+        !managed && reg.isEligible() && isRendered(reg.nodeId) ? reg.getIntensity() : 0
 
       light.intensity = MathUtils.lerp(light.intensity, targetIntensity, dt * 12)
       if (targetIntensity <= 0 && light.intensity < 0.01) {

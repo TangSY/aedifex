@@ -106,7 +106,7 @@ test('a capture can temporarily aim an authored light without losing its saved p
   }
 })
 
-test('an atmosphere owns the light while mounted and releases back to the authored shadow', async () => {
+test('a host atmosphere takes precedence over daylight and releases back to the authored shadow', async () => {
   const source: SceneAtmosphereSource = {
     skyRadiance: () => vec3(1),
     reflectionRadiance: () => vec3(1),
@@ -126,10 +126,12 @@ test('an atmosphere owns the light while mounted and releases back to the author
     fogStart: 50,
     fogEnd: 100,
   }
+  const fallback = { ...source, sunIntensity: 1 }
   const renderer = await create(
     <>
-      <SceneAtmosphere source={source} />
-      <Lights />
+      <SceneAtmosphere key="host" source={source} />
+      <SceneAtmosphere fallback key="daylight" source={fallback} />
+      <Lights key="lights" />
     </>,
   )
   try {
@@ -137,7 +139,17 @@ test('an atmosphere owns the light while mounted and releases back to the author
     const light = renderer.scene.findAllByType('DirectionalLight')[0]!.instance as DirectionalLight
     expect(light.shadow.camera.right).toBeGreaterThan(100)
     expect(light.shadow.mapSize.toArray()).toEqual([1024, 1024])
-    await renderer.update(<Lights />)
+    expect(light.intensity).toBe(2)
+
+    await renderer.update(
+      <>
+        <SceneAtmosphere fallback key="daylight" source={fallback} />
+        <Lights key="lights" />
+      </>,
+    )
+    await renderer.advanceFrames(1, 0.016)
+    expect(light.intensity).toBe(1)
+    await renderer.update(<Lights key="lights" />)
     await renderer.advanceFrames(1, 0.016)
     const restored = renderer.scene.findByType('DirectionalLight').instance as DirectionalLight
     expect(restored.shadow.camera.right).toBe(26)

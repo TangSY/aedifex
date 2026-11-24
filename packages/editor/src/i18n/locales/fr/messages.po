@@ -242,6 +242,132 @@ msgstr "Désactivé"
 msgid "viewer.common.on"
 msgstr "Activé"
 
+# Source-Hash: dfa53e6471dec872
+# Review: automatic
+# English: "Blue hour"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.blue"
+msgstr "Heure bleue"
+
+# Source-Hash: d0f86d2093269896
+# Review: automatic
+# English: "Clear"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.clear"
+msgstr "Dégagé"
+
+# Source-Hash: e0b8ff55f635f9ad
+# Review: automatic
+# English: "Cloudy"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.cloudy"
+msgstr "Nuageux"
+
+# Source-Hash: 011d7fbbd9a25072
+# Review: automatic
+# English: "Custom time"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.custom"
+msgstr "Heure personnalisée"
+
+# Source-Hash: 382d9f81f1677793
+# Review: automatic
+# English: "Mostly clear"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.fair"
+msgstr "Peu nuageux"
+
+# Source-Hash: cbeb868b31e2efcb
+# Review: automatic
+# English: "Golden hour"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.golden"
+msgstr "Heure dorée"
+
+# Source-Hash: b77127463c51fa94
+# Review: automatic
+# English: "High"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.high"
+msgstr "Élevée"
+
+# Source-Hash: 5a08df1978e6fe94
+# Review: automatic
+# English: "Current time"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.live"
+msgstr "Heure actuelle"
+
+# Source-Hash: 803532407fb5962b
+# Review: automatic
+# English: "Low"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.low"
+msgstr "Basse"
+
+# Source-Hash: 866bf047c116b31d
+# Review: automatic
+# English: "Medium"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.medium"
+msgstr "Moyenne"
+
+# Source-Hash: 9c3d8d45d0478768
+# Review: automatic
+# English: "Midday"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.midday"
+msgstr "Midi"
+
+# Source-Hash: b399942ec5d7e1ba
+# Review: automatic
+# English: "Night"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.night"
+msgstr "Nuit"
+
+# Source-Hash: f512d1b947b8ae5a
+# Review: automatic
+# English: "Overcast"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.overcast"
+msgstr "Couvert"
+
+# Source-Hash: af6ce79350da15bd
+# Review: automatic
+# English: "Lighting quality"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.quality"
+msgstr "Qualité de l’éclairage"
+
+# Source-Hash: 59ea0a96411e58f4
+# Review: automatic
+# English: "Daylight settings"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.settings"
+msgstr "Réglages de la lumière du jour"
+
+# Source-Hash: 3f551e5bc002baa6
+# Review: automatic
+# English: "Local solar time"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.solarTime"
+msgstr "Heure solaire locale"
+
+# Source-Hash: ffb31a52dd7aa8c8
+# Review: automatic
+# English: "Time of day"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.time"
+msgstr "Moment de la journée"
+
+# Source-Hash: a1100ef1041993bd
+# Review: automatic
+# English: "Weather"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.weather"
+msgstr "Météo"
+
 # Source-Hash: 14622745dbf93f4c
 # Review: human
 # English: "Camera"
@@ -542,6 +668,13 @@ msgstr "Partagé"
 #: packages/editor/src/components/viewer/viewer-controls-bar.tsx
 msgid "viewer.theme.blueprint"
 msgstr "Plan"
+
+# Source-Hash: ba38e27938a646ad
+# Review: automatic
+# English: "Daylight"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.theme.daylight"
+msgstr "Lumière du jour"
 
 # Source-Hash: 142bcb2841f423c5
 # Review: human

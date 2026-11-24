@@ -242,6 +242,132 @@ msgstr "关闭"
 msgid "viewer.common.on"
 msgstr "开启"
 
+# Source-Hash: dfa53e6471dec872
+# Review: automatic
+# English: "Blue hour"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.blue"
+msgstr "蓝调时刻"
+
+# Source-Hash: d0f86d2093269896
+# Review: automatic
+# English: "Clear"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.clear"
+msgstr "晴朗"
+
+# Source-Hash: e0b8ff55f635f9ad
+# Review: automatic
+# English: "Cloudy"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.cloudy"
+msgstr "多云"
+
+# Source-Hash: 011d7fbbd9a25072
+# Review: automatic
+# English: "Custom time"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.custom"
+msgstr "自定义时间"
+
+# Source-Hash: 382d9f81f1677793
+# Review: automatic
+# English: "Mostly clear"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.fair"
+msgstr "大部晴朗"
+
+# Source-Hash: cbeb868b31e2efcb
+# Review: automatic
+# English: "Golden hour"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.golden"
+msgstr "黄金时刻"
+
+# Source-Hash: b77127463c51fa94
+# Review: automatic
+# English: "High"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.high"
+msgstr "高"
+
+# Source-Hash: 5a08df1978e6fe94
+# Review: automatic
+# English: "Current time"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.live"
+msgstr "当前时间"
+
+# Source-Hash: 803532407fb5962b
+# Review: automatic
+# English: "Low"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.low"
+msgstr "低"
+
+# Source-Hash: 866bf047c116b31d
+# Review: automatic
+# English: "Medium"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.medium"
+msgstr "中"
+
+# Source-Hash: 9c3d8d45d0478768
+# Review: automatic
+# English: "Midday"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.midday"
+msgstr "正午"
+
+# Source-Hash: b399942ec5d7e1ba
+# Review: automatic
+# English: "Night"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.night"
+msgstr "夜间"
+
+# Source-Hash: f512d1b947b8ae5a
+# Review: automatic
+# English: "Overcast"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.overcast"
+msgstr "阴天"
+
+# Source-Hash: af6ce79350da15bd
+# Review: automatic
+# English: "Lighting quality"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.quality"
+msgstr "光照质量"
+
+# Source-Hash: 59ea0a96411e58f4
+# Review: automatic
+# English: "Daylight settings"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.settings"
+msgstr "日光设置"
+
+# Source-Hash: 3f551e5bc002baa6
+# Review: automatic
+# English: "Local solar time"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.solarTime"
+msgstr "当地太阳时"
+
+# Source-Hash: ffb31a52dd7aa8c8
+# Review: automatic
+# English: "Time of day"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.time"
+msgstr "时段"
+
+# Source-Hash: a1100ef1041993bd
+# Review: automatic
+# English: "Weather"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.daylight.weather"
+msgstr "天气"
+
 # Source-Hash: 14622745dbf93f4c
 # Review: human
 # English: "Camera"
@@ -542,6 +668,13 @@ msgstr "分屏"
 #: packages/editor/src/components/viewer/viewer-controls-bar.tsx
 msgid "viewer.theme.blueprint"
 msgstr "蓝图"
+
+# Source-Hash: ba38e27938a646ad
+# Review: automatic
+# English: "Daylight"
+#: packages/editor/src/components/viewer/viewer-controls-bar.tsx
+msgid "viewer.theme.daylight"
+msgstr "日光"
 
 # Source-Hash: 142bcb2841f423c5
 # Review: human
