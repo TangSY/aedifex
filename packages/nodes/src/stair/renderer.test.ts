@@ -120,7 +120,16 @@ test('painted flights retain parent slots and per-flight finishes in selected an
       segmentDefinition.renderer?.kind !== 'parametric'
     )
       throw Error('Missing renderer')
+    const Flight = (await segmentDefinition.renderer.module()).default
     renderer = await mountStair(stair)
+    for (let retry = 0; retry < 100; retry++) {
+      if (sceneRegistry.nodes.has(first.id) && sceneRegistry.nodes.has(second.id)) break
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 5))
+      })
+    }
+    expect(sceneRegistry.nodes.get(first.id)).toBeInstanceOf(Mesh)
+    expect(sceneRegistry.nodes.get(second.id)).toBeInstanceOf(Mesh)
     await renderer.advanceFrames(4, 1 / 60)
     const merged = mergedBody(sceneRegistry.nodes.get(stair.id)!)
     await act(async () =>
@@ -197,7 +206,6 @@ test('painted flights retain parent slots and per-flight finishes in selected an
         dirtyNodes: new Set([orphan.id]),
       }),
     )
-    const Flight = (await segmentDefinition.renderer.module()).default
     await renderer.update(
       createElement(
         'group',
