@@ -46,6 +46,7 @@ import { type SaveStatus, useAutoSave } from '../../hooks/use-auto-save'
 import { useKeyboard } from '../../hooks/use-keyboard'
 import { useIsMobile } from '../../hooks/use-mobile'
 import { useSaveShortcut } from '../../hooks/use-save-shortcut'
+import { useViewerSceneReady } from '../../hooks/use-viewer-scene-ready'
 import { useCeilingEditSessionOwner } from '../../lib/ceiling-edit-session'
 import { showsWholeBuilding, useEditorLevelDisplay } from '../../lib/editor-level-display'
 import { isSceneView } from '../../lib/editor-views'
@@ -154,7 +155,6 @@ const PAINT_CURSOR_BADGE_DISABLED_COLOR = '#94a3b8'
 const ERASE_CURSOR_BADGE_COLOR = '#e4e4e7'
 const PAINT_CURSOR_BADGE_OFFSET_X = 14
 const PAINT_CURSOR_BADGE_OFFSET_Y = 14
-const SCENE_READY_FALLBACK_MS = 8000
 const PRESENTATION_PROJECT_NOT_RESTORED = Symbol('presentation-project-not-restored')
 const useClientLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 // `aim`: a region sub-mode off what it draws on — the HUD says where to go; no
@@ -1519,9 +1519,15 @@ function EditorContent({
   const isPreviewMode = useEditor((s) => s.isPreviewMode)
   const isCaptureMode = useEditor((s) => s.isCaptureMode)
   const readOnly = useScene((s) => s.readOnly)
+  const isSceneDataLoading = isLoading || isSceneLoading || !hasLoadedInitialScene
+  const readyToShowScene = useViewerSceneReady({
+    isSceneDataLoading,
+    isViewerSceneReady,
+    sceneReadyKey,
+  })
   useAutoFrame({
     enabled: !isVersionPreviewMode,
-    ready: isViewerSceneReady && hasLoadedInitialScene && !isLoading && !isSceneLoading,
+    ready: readyToShowScene,
     readyKey: sceneReadyKey,
     deferReady: !!immersive,
     suppressReady: isPreviewMode || isVersionPreviewMode,
@@ -1657,30 +1663,9 @@ function EditorContent({
     setIsViewerSceneReady(ready)
   }, [])
 
-  useEffect(() => {
-    if (isLoading || isSceneLoading || !hasLoadedInitialScene || isViewerSceneReady) return
-
-    const timer = window.setTimeout(() => {
-      console.warn('[editor] viewer scene readiness timed out; showing editor shell anyway', {
-        sceneReadyKey,
-      })
-      setIsViewerSceneReady(true)
-    }, SCENE_READY_FALLBACK_MS)
-
-    return () => window.clearTimeout(timer)
-  }, [hasLoadedInitialScene, isLoading, isSceneLoading, isViewerSceneReady, sceneReadyKey])
-
-  const isSceneDataLoading = isLoading || isSceneLoading || !hasLoadedInitialScene
-  const showLoader = isSceneDataLoading || !isViewerSceneReady
+  const showLoader = !readyToShowScene
   const visibleLoader =
-    showLoader &&
-    !(
-      isPreviewMode &&
-      previewStageMode === '2d' &&
-      !isLoading &&
-      !isSceneLoading &&
-      hasLoadedInitialScene
-    )
+    showLoader && !(isPreviewMode && previewStageMode === '2d' && !isSceneDataLoading)
 
   useEffect(() => {
     onLoaderChange?.(visibleLoader)
