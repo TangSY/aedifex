@@ -5,7 +5,26 @@ import { create } from '@react-three/test-renderer'
 import { act } from 'react'
 import { Object3D } from 'three'
 import { installBrowserFixture } from './__tests__/browser-fixture'
-import { IconRefImage } from './icon-ref'
+import { IconRefGlyph, IconRefImage } from './icon-ref'
+
+test('a URL icon renders the resolved raster source after mount', async () => {
+  const restoreBrowser = installBrowserFixture()
+  extend({ Img: Object3D })
+  configureClientAssetPolicy(null)
+  const src = '/icons/room.webp'
+  let renderer: Awaited<ReturnType<typeof create>> | undefined
+  try {
+    renderer = await create(<IconRefGlyph icon={{ kind: 'url', src }} />)
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(renderer.scene.children[0]?.props.src).toBe(src)
+  } finally {
+    await renderer?.unmount()
+    configureClientAssetPolicy(null)
+    restoreBrowser()
+  }
+})
 
 test('plugin icons retain currentColor masks and reject unlisted image sources', async () => {
   const restoreBrowser = installBrowserFixture()

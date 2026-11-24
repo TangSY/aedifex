@@ -1,7 +1,10 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, setDefaultTimeout, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { DRAFTING_EXTENSION_KEY } from './interaction/registered-drafting'
+
+// Each probe starts a fresh Bun process and loads the core and viewer module graphs.
+setDefaultTimeout(30_000)
 
 function runSourceHistoryTest(body: string) {
   const cache = join(import.meta.dir, '.turbo')

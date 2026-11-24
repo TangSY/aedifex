@@ -93,6 +93,11 @@ describe('Divide HUD', () => {
 
 describe('HUD header', () => {
   test('names the tool in hand with its icon and key, above the gesture rows', () => {
+    const title = toolHudTitle('wall', 'rectangle')
+    expect(title).toMatchObject({
+      icon: { kind: 'url', src: '/icons/room.webp' },
+      shortcut: 'B',
+    })
     const html = renderToStaticMarkup(
       <TooltipProvider>
         <ContextualHelperPanel
@@ -101,12 +106,13 @@ describe('HUD header', () => {
             { keys: ['Esc'], label: 'Cancel' },
           ]}
           snapContext="wall"
-          title={toolHudTitle('wall', 'rectangle')}
+          title={title}
         />
       </TooltipProvider>,
     )
     expect(html).toContain('data-hud-title="Rectangle room"')
-    expect(html).toContain('src="/icons/room.webp"')
+    expect(html).toContain('aria-label="B"')
+    expect(html).not.toContain('src="/icons/room.webp"')
     // Header, then the gesture, then the mode chips, with Esc last.
     const order = ['Rectangle room', 'Set one corner', 'Snapping: Grid', 'Cancel'].map((text) =>
       html.indexOf(text),
