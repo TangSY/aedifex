@@ -8,8 +8,9 @@
  * RL-02 (roofs) must reproduce these numbers when they consume intents.
  */
 import { describe, expect, test } from 'bun:test'
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import path from 'node:path'
+import { findMatchingSources } from '../__tests__/source-files'
 import type { Capabilities, CuttableConfig } from '../registry'
 import { CutIntent } from '../schema/cut'
 import type { AnyNode, AnyNodeId, FidelityV3 } from '../schema/types'
@@ -246,24 +247,28 @@ describe('publishers declare capabilities.cuts', () => {
     expect(capabilities.cuts!({ ...vent, parentId: null } as AnyNode, { nodes })).toEqual([])
   })
 
-  test('the deprecated cuttable alias still type-checks (plugin API v1) and nothing reads it', () => {
+  test('the deprecated cuttable alias still type-checks (plugin API v1) and nothing reads it', async () => {
     const config: CuttableConfig = { hostKinds: ['wall'] }
     const legacy: Capabilities = { deletable: false, cuttable: config }
     expect(legacy.cuttable?.hostKinds).toEqual(['wall'])
 
     const packages = path.resolve(import.meta.dir, '../../..')
-    const readers: string[] = []
+    const sources: string[] = []
     for (const pkg of readdirSync(packages)) {
       const src = path.join(packages, pkg, 'src')
       if (!existsSync(src)) continue
       for (const file of readdirSync(src, { recursive: true }) as string[]) {
         if (!/\.tsx?$/.test(file) || /\.test\.tsx?$/.test(file)) continue
         if (pkg === 'core' && file === path.join('registry', 'types.ts')) continue
-        if (/\bcuttable\b/.test(readFileSync(path.join(src, file), 'utf8'))) {
-          readers.push(`${pkg}/src/${file}`)
-        }
+        sources.push(`${pkg}/src/${file}`)
       }
     }
+    const readers = await findMatchingSources({
+      root: packages,
+      paths: sources,
+      matches: (source) => /\bcuttable\b/.test(source),
+    })
+    expect(sources.length).toBeGreaterThan(0)
     expect(readers).toEqual([])
   })
 })

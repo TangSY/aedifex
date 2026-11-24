@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test'
+import { findMatchingSources } from '../__tests__/source-files'
 
 // Review guardrail for the writers contract (DECISIONS.md E-012, wiki/architecture/space-detection.md):
 // derived construction — a slab or ceiling marked `boundary: 'auto'` or the
@@ -48,13 +49,18 @@ function repoRoot() {
 
 test('only the structure kernel and the load migrations author derived construction', async () => {
   const root = repoRoot()
-  const offenders: string[] = []
-  for await (const relative of new Bun.Glob(PACKAGE_SOURCES).scan({ cwd: root, onlyFiles: true })) {
-    const path = relative.replaceAll('\\', '/')
-    if (isFixtureOrTest(path) || ALLOWLIST.has(path)) continue
-    const source = withoutComments(await Bun.file(root + relative).text())
-    if (MARKERS.some((marker) => marker.test(source))) offenders.push(path)
-  }
+  const paths = Array.from(new Bun.Glob(PACKAGE_SOURCES).scanSync({ cwd: root, onlyFiles: true }))
+    .map((path) => path.replaceAll('\\', '/'))
+    .filter((path) => !isFixtureOrTest(path) && !ALLOWLIST.has(path))
+  const offenders = await findMatchingSources({
+    root,
+    paths,
+    matches: (source) => {
+      const code = withoutComments(source)
+      return MARKERS.some((marker) => marker.test(code))
+    },
+  })
+  expect(paths.length).toBeGreaterThan(0)
   expect(offenders).toEqual([])
 })
 
