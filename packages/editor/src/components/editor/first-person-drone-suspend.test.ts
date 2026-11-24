@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
+import ts from '@typescript/typescript6'
 import { Euler, PerspectiveCamera, Vector3 } from 'three'
-import ts from 'typescript'
 import { isModalKeyboardTarget } from '../../lib/modal-keyboard'
 import { isTypingTarget } from '../../lib/typing-target'
 

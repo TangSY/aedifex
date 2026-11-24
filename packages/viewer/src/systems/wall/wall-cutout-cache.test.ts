@@ -874,9 +874,14 @@ test('hysteresis holds both sides near zero and switches beyond the band', () =>
 
 test('legacy wall extensions preserve the viewer-to-nodes dependency boundary', async () => {
   const root = new URL('../../', import.meta.url).pathname
-  for (const file of new Bun.Glob('**/*.{ts,tsx}').scanSync(root)) {
-    const source = await Bun.file(`${root}${file}`).text()
-    expect(source).not.toMatch(/(?:from|import\s*\()\s*['"]@aedifex\/nodes/)
+  const files = [...new Bun.Glob('**/*.{ts,tsx}').scanSync(root)]
+  const batchSize = 32
+  for (let index = 0; index < files.length; index += batchSize) {
+    const batch = files.slice(index, index + batchSize)
+    const sources = await Promise.all(batch.map((file) => Bun.file(`${root}${file}`).text()))
+    for (const source of sources) {
+      expect(source).not.toMatch(/(?:from|import\s*\()\s*['"]@aedifex\/nodes/)
+    }
   }
   for (const file of ['wall-cutout-cache.ts', 'wall-rebuild-notifications.ts']) {
     const source = await Bun.file(new URL(file, import.meta.url)).text()

@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url'
 import { createCompiledCatalog, getCatalogs } from '@lingui/cli/api'
 import { getConfig } from '@lingui/conf'
 import { compileMessageOrThrow } from '@lingui/message-utils/compileMessage'
+import ts from '@typescript/typescript6'
 import { type PoFile, type PoItem, parsePo, stringifyPo } from 'pofile-ts'
-import ts from 'typescript'
 
 export type SourceMessage = {
   id: string

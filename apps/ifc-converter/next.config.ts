@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   logging: {
     browserToTerminal: true,
   },
+  experimental: {
+    useTypeScriptCli: true,
+  },
   transpilePackages: [
     'three',
     '@aedifex/core',

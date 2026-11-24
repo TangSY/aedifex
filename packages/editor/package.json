@@ -16,7 +16,7 @@
     "./distribution": "./src/components/tools/distribution/distribution-public.ts"
   },
   "scripts": {
-    "check-types": "tsgo --noEmit",
+    "check-types": "tsc --noEmit",
     "check-boundary": "bash ./scripts/check-oss-boundary.sh",
     "test": "bun run test:upstream && bun run test:ai",
     "test:upstream": "bun test --path-ignore-patterns='src/components/ai/**'",
@@ -31,7 +31,7 @@
     "next": ">=15",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",
-    "three": "^0.186",
+    "three": "^0.187",
     "@aedifex/mcp": "^0.3.2",
     "@aedifex/geometry-script": "^1.0.3",
     "@aedifex/ifc-converter": "^0.1.3"
@@ -63,17 +63,17 @@
     "cmdk": "^1.1.1",
     "fflate": "^0.8.3",
     "howler": "^2.2.4",
-    "lucide-react": "^1.61.0",
-    "manifold-3d": "3.5.4",
+    "lucide-react": "^1.77.0",
+    "manifold-3d": "3.5.5",
     "mitt": "^3.0.1",
-    "motion": "^14.6.0",
+    "motion": "^14.14.0",
     "nanoid": "^6.0.2",
-    "pdfkit": "^0.20.2",
-    "tailwind-merge": "^3.7.0",
+    "pdfkit": "^0.21.0",
+    "tailwind-merge": "^3.7.1",
     "three-bvh-csg": "^0.0.18",
     "three-mesh-bvh": "~0.9.16",
     "zod": ">=4.6.7 <4.7",
-    "zustand": "^5.0.16"
+    "zustand": "^5.1.0"
   },
   "devDependencies": {
     "@aedifex/core": "^0.10.0",
@@ -84,14 +84,15 @@
     "@react-three/test-renderer": "^9.1.1",
     "@repo/typescript-config": "*",
     "@types/blob-stream": "^0.1.33",
-    "@types/bun": "^1.4.4",
+    "@types/bun": "^1.4.5",
     "@types/howler": "^2.2.13",
     "@types/pdfkit": "^0.17.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@types/three": "^0.186.0",
-    "fast-xml-parser": "^5.11.2",
-    "typescript": "6.0.3"
+    "@types/three": "^0.187",
+    "@typescript/typescript6": "6.0.2",
+    "fast-xml-parser": "^5.12.1",
+    "typescript": "7.0.2"
   },
   "repository": {
     "type": "git",

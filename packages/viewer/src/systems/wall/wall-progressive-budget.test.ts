@@ -79,7 +79,7 @@ describe('progressive wall budget', () => {
 })
 
 // Isolate source aliases from Bun's process-global mocks while live dists stay untouched.
-test('initial wall drain lifecycle and scheduling against source packages', () => {
+test('initial wall drain lifecycle and scheduling against source packages', async () => {
   const sourcePath = (path: string) =>
     JSON.stringify(resolve(import.meta.dir, '../../../../..', path))
   const cache = join(import.meta.dir, '.turbo')
@@ -678,14 +678,6 @@ test('a new hydration resets counters and pending neighbours; node stats preserv
 
     `,
     )
-    const result = Bun.spawnSync(
-      [process.execPath, 'test', '--preload', preload, probe, '--randomize', '--seed=1'],
-      { stdout: 'pipe', stderr: 'pipe' },
-    )
-    expect({
-      code: result.exitCode,
-      failures: result.exitCode ? result.stderr.toString() : '',
-    }).toEqual({ code: 0, failures: '' })
     const mountPreload = join(directory, 'mount-preload.ts')
     writeFileSync(
       mountPreload,
@@ -790,17 +782,35 @@ test('canvas and live-state owner precede the lazy wall consumer; remount retain
 })
 `,
     )
-    for (const perf of ['on', 'off']) {
-      const mountResult = Bun.spawnSync(
-        [process.execPath, 'test', '--preload', mountPreload, mountProbe],
-        { stdout: 'pipe', stderr: 'pipe', env: { ...process.env, WALL_TEST_PERF: perf } },
-      )
-      expect({
-        code: mountResult.exitCode,
-        failures: mountResult.exitCode ? mountResult.stderr.toString() : '',
-      }).toEqual({ code: 0, failures: '' })
-    }
+    const probes = [
+      {
+        name: 'lifecycle',
+        args: ['--preload', preload, probe, '--randomize', '--seed=1'],
+        env: process.env,
+      },
+      ...['on', 'off'].map((perf) => ({
+        name: `mount with perf ${perf}`,
+        args: ['--preload', mountPreload, mountProbe],
+        env: { ...process.env, WALL_TEST_PERF: perf },
+      })),
+    ]
+    const results = await Promise.all(
+      probes.map(async ({ name, args, env }) => {
+        const child = Bun.spawn([process.execPath, 'test', ...args], {
+          env,
+          stdout: 'ignore',
+          stderr: 'pipe',
+          // Cold source loading is slower than the wall behavior being tested.
+          timeout: 90_000,
+        })
+        const [code, stderr] = await Promise.all([child.exited, new Response(child.stderr).text()])
+        return { name, code, signal: child.signalCode, failures: code === 0 ? '' : stderr }
+      }),
+    )
+    expect(results).toEqual(
+      probes.map(({ name }) => ({ name, code: 0, signal: null, failures: '' })),
+    )
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
-}, 10_000)
+}, 100_000)

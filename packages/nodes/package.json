@@ -33,7 +33,7 @@
   ],
   "scripts": {
     "build": "NODE_OPTIONS=--max-old-space-size=6144 tsc --build && bun ../../scripts/fix-node-esm-imports.ts dist",
-    "dev": "tsgo --build --watch",
+    "dev": "tsc --build --watch",
     "test": "bun test",
     "prepublishOnly": "bun run build && bun test"
   },
@@ -46,7 +46,7 @@
     "lucide-react": "^1",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",
-    "three": "^0.186",
+    "three": "^0.187",
     "zustand": "^5"
   },
   "devDependencies": {
@@ -57,11 +57,11 @@
     "@modelcontextprotocol/client": "^2.4.0",
     "@modelcontextprotocol/server": "^2.4.0",
     "@react-three/test-renderer": "^9.1.1",
-    "@types/bun": "^1.4.4",
+    "@types/bun": "^1.4.5",
     "@types/node": "^26.6.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@types/three": "^0.186.0",
+    "@types/three": "^0.187",
     "typescript": "7.0.2",
     "@aedifex/mcp": "workspace:*"
   },

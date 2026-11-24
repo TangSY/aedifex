@@ -67,6 +67,7 @@ const nextConfig: NextConfig = {
     },
   },
   experimental: {
+    useTypeScriptCli: true,
     serverActions: {
       bodySizeLimit: '100mb',
     },

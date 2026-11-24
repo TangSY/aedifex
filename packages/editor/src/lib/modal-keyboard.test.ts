@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
-import ts from 'typescript'
+import ts from '@typescript/typescript6'
 import { isModalKeyboardTarget } from './modal-keyboard'
 import { isTypingTarget } from './typing-target'
 

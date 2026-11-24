@@ -58,7 +58,7 @@
   ],
   "scripts": {
     "build": "tsc --build && bun ../../scripts/fix-node-esm-imports.ts ../core/dist && bun ../../scripts/fix-node-esm-imports.ts ../geometry-script/dist && bun ../../scripts/fix-node-esm-imports.ts dist",
-    "dev": "tsgo --build --watch",
+    "dev": "tsc --build --watch",
     "start": "bun dist/bin/aedifex-mcp.js",
     "test": "bun test",
     "smoke": "bun run scripts/smoke.ts",
@@ -70,7 +70,7 @@
     "@aedifex/geometry-script": "^1.0.3"
   },
   "dependencies": {
-    "@hono/node-server": "^2.1.6",
+    "@hono/node-server": "^2.1.11",
     "@modelcontextprotocol/node": "^2.1.2",
     "@modelcontextprotocol/server": "^2.4.0",
     "@aedifex/lingo": "npm:@pascal-app/lingo@^0.5.0",

@@ -154,7 +154,7 @@
   ],
   "scripts": {
     "build": "tsc --build && bun ../../scripts/fix-node-esm-imports.ts dist",
-    "dev": "tsgo --build --watch",
+    "dev": "tsc --build --watch",
     "test": "bun test --timeout 30000 src",
     "check-types": "tsc -p tsconfig.contracts.json --pretty false",
     "bench:registry": "bun run src/registry/__bench__/relations-resolver.bench.ts",
@@ -165,7 +165,7 @@
     "@react-three/drei": "^10",
     "@react-three/fiber": "^9",
     "react": "^18 || ^19",
-    "three": "^0.186"
+    "three": "^0.187"
   },
   "dependencies": {
     "@aedifex/lingo": "npm:@pascal-app/lingo@^0.5.0",
@@ -182,11 +182,12 @@
   },
   "devDependencies": {
     "@repo/typescript-config": "*",
-    "@types/bun": "^1.4.4",
+    "@types/bun": "^1.4.5",
     "@types/react": "19.3.0",
-    "@types/three": "^0.186.0",
-    "fake-indexeddb": "^6.2.6",
-    "typescript": "6.0.3"
+    "@types/three": "^0.187",
+    "@typescript/typescript6": "6.0.2",
+    "fake-indexeddb": "^6.2.8",
+    "typescript": "7.0.2"
   },
   "keywords": [
     "3d",

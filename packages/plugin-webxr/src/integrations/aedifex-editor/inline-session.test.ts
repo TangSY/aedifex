@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
-import ts from 'typescript'
+import ts from '@typescript/typescript6'
 
 function sessionEffect() {
   const source = ts.createSourceFile('inline-session.tsx', readFileSync(new URL('./inline-session.tsx', import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)

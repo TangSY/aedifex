@@ -28,7 +28,7 @@
   ],
   "scripts": {
     "build": "tsc --build",
-    "dev": "tsgo --build --watch",
+    "dev": "tsc --build --watch",
     "test": "bun test src",
     "prepublishOnly": "npm run build"
   },
@@ -38,7 +38,7 @@
     "@react-three/fiber": "^9",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",
-    "three": "^0.186"
+    "three": "^0.187"
   },
   "dependencies": {
     "three-bvh-csg": "^0.0.18",
@@ -53,7 +53,7 @@
     "@types/node": "^26",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@types/three": "^0.186.0",
+    "@types/three": "^0.187",
     "typescript": "7.0.2"
   },
   "keywords": [
